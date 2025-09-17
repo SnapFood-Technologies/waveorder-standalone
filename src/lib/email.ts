@@ -25,6 +25,14 @@ interface WelcomeEmailParams extends BaseEmailParams {
   dashboardUrl: string
 }
 
+interface TeamInvitationParams extends BaseEmailParams {
+  businessName: string
+  inviterName: string
+  role: string
+  inviteUrl: string
+}
+
+
 interface ContactFormParams {
   name: string
   email: string
@@ -139,6 +147,71 @@ const createMagicLinkEmailContent = (magicLinkUrl: string) => `
   </p>
 </div>
 `
+// Team invitation template
+const createTeamInvitationContent = (name: string, businessName: string, inviterName: string, role: string, inviteUrl: string) => `
+<div style="padding: 40px 30px;">
+  <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">You're Invited to Join ${businessName}</h2>
+  <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
+    ${inviterName} has invited you to join their WaveOrder team as a <strong>${role.toLowerCase()}</strong>. You'll be able to help manage orders, products, and customer interactions.
+  </p>
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">Role: ${role}</h3>
+    <p style="color: #6b7280; margin: 0; font-size: 14px;">
+      ${role === 'MANAGER' 
+        ? 'As a manager, you\'ll have access to manage orders, menu items, settings, and can invite other team members.' 
+        : 'As a staff member, you\'ll be able to view and manage orders to help serve customers efficiently.'}
+    </p>
+  </div>
+  
+  <!-- Accept Invitation Button -->
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${inviteUrl}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);">
+      Accept Invitation
+    </a>
+  </div>
+  
+  <p style="color: #6b7280; margin: 24px 0 0; font-size: 14px; line-height: 1.5;">
+    If the button doesn't work, you can also copy and paste this link into your browser:<br>
+    <a href="${inviteUrl}" style="color: #0d9488; word-break: break-all;">${inviteUrl}</a>
+  </p>
+  
+  <div style="background-color: #fef3cd; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: 500;">
+      📅 Invitation Expires
+    </p>
+    <p style="color: #92400e; margin: 8px 0 0; font-size: 14px;">
+      This invitation will expire in 7 days. If you don't have a WaveOrder account, one will be created for you when you accept.
+    </p>
+  </div>
+</div>
+`
+
+// Add team invitation email function
+export async function sendTeamInvitationEmail({ to, name = 'there', businessName, inviterName, role, inviteUrl }: TeamInvitationParams) {
+  const content = createTeamInvitationContent(name, businessName, inviterName, role, inviteUrl)
+  const html = createEmailTemplate(content, 'Team Invitation')
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `You're invited to join ${businessName} on WaveOrder`,
+      html,
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Business-Name': businessName,
+        'X-Role': role,
+        'X-Inviter': inviterName,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send team invitation email:', error)
+    throw new Error('Failed to send team invitation email')
+  }
+}
 
 // Password reset template
 const createPasswordResetEmailContent = (name: string, resetUrl: string) => `
