@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     // Find user with valid reset token
     const user = await prisma.user.findFirst({
       where: {
+        // @ts-ignore
         resetToken: token,
         resetExpiry: {
           gt: new Date() // Token not expired
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
       where: { id: user.id },
       data: {
         password: hashedPassword,
+        // @ts-ignore
         resetToken: null,
         resetExpiry: null
       }

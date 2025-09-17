@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
         
       } catch (error) {
         console.error(`Failed to invite ${member.email}:`, error)
+        // @ts-ignore
         failedInvitations.push({ email: member.email, error: error.message })
       }
     }

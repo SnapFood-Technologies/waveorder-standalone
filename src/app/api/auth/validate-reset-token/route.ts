@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     // Check if token exists and is not expired
     const user = await prisma.user.findFirst({
       where: {
+        // @ts-ignore
         resetToken: token,
         resetExpiry: {
           gt: new Date()

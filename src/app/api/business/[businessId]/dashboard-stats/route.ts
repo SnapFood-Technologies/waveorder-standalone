@@ -6,24 +6,26 @@ const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
+    const { businessId } = await params
+    
     const [orders, products, customers] = await Promise.all([
       prisma.order.count({
-        where: { businessId: params.businessId }
+        where: { businessId }
       }),
       prisma.product.count({
-        where: { businessId: params.businessId, isActive: true }
+        where: { businessId, isActive: true }
       }),
       prisma.customer.count({
-        where: { businessId: params.businessId }
+        where: { businessId }
       })
     ])
 
     const revenue = await prisma.order.aggregate({
       where: { 
-        businessId: params.businessId,
+        businessId,
         status: { not: 'CANCELLED' }
       },
       _sum: { total: true }

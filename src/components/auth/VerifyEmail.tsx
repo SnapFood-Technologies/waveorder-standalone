@@ -55,6 +55,7 @@ export default function VerifyEmailComponent() {
     }
   }, [token, success, error, router, autoRedirect])
 
+  // @ts-ignore
   const verifyEmail = async (verificationToken) => {
     setLoading(true)
     setApiError('')

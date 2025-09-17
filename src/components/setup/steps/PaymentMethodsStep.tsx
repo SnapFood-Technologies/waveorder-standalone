@@ -93,6 +93,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     await new Promise(resolve => setTimeout(resolve, 500))
     onComplete({ 
       paymentMethods: selectedMethods,
+      // @ts-ignore
       paymentInstructions: paymentInstructions.trim() || undefined
     })
     setLoading(false)

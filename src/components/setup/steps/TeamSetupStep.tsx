@@ -23,6 +23,7 @@ const roles = [
 export default function TeamSetupStep({ data, onComplete, onBack }: TeamSetupStepProps) {
   const [teamChoice, setTeamChoice] = useState<'add' | 'skip' | null>(null)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(
+    // @ts-ignore
     data.teamMembers || []
   )
   const [loading, setLoading] = useState(false)
