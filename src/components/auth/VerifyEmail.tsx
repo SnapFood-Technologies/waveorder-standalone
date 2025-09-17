@@ -20,6 +20,9 @@ export default function VerifyEmailComponent() {
   const [resendSuccess, setResendSuccess] = useState(false)
   const [autoRedirect, setAutoRedirect] = useState(true)
 
+  const [setupUrl, setSetupUrl] = useState('/setup')
+
+
   useEffect(() => {
   
     if (token) {
@@ -55,22 +58,24 @@ export default function VerifyEmailComponent() {
   const verifyEmail = async (verificationToken) => {
     setLoading(true)
     setApiError('')
-
+  
     try {
       const response = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: verificationToken })
       })
-
+  
       const data = await response.json()
       
       if (response.ok) {
         setVerified(true)
+        setSetupUrl(data.setupUrl || '/setup')  // Store the URL
         setTimeout(() => {
-          router.push('/setup')
+          router.push(data.setupUrl || '/setup')
         }, 5000)
-      } else {
+      }
+       else {
         setApiError(data.message || 'Invalid or expired verification link')
       }
     } catch (error) {
@@ -166,7 +171,7 @@ export default function VerifyEmailComponent() {
             
             <div className="space-y-3">
               <Link
-                href="/setup"
+                 href={setupUrl} 
                 className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-teal-600 hover:to-teal-700 transition-all text-center block"
               >
                 Start Setup

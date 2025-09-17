@@ -152,7 +152,8 @@ export default function SetupComponent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           step: currentStep,
-          data: updatedData
+          data: updatedData,
+          setupToken: token
         })
       })
     } catch (error) {
@@ -253,10 +254,7 @@ export default function SetupComponent() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">WaveOrder Setup</span>
+              <span className="text-xl font-bold text-gray-900">Complete Your Setup</span>
             </div>
             <div className="text-sm text-gray-600">
               Step {currentStep} of {TOTAL_STEPS}
