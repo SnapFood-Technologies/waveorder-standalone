@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
             subscriptionStatus: true,
             isActive: true,
             createdAt: true,
-            onboardingCompleted: true
+            onboardingCompleted: true,
+            setupWizardCompleted: true
           }
         }
       }
