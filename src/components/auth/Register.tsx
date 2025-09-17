@@ -216,7 +216,7 @@ export default function RegisterComponent() {
           {/* Full Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+            Full Name <span className="text-gray-400">(optional)</span>
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -224,7 +224,7 @@ export default function RegisterComponent() {
                 id="name"
                 name="name"
                 type="text"
-                required
+                // required
                 value={formData.name}
                 onChange={handleInputChange}
                 autoComplete="name"
