@@ -149,7 +149,7 @@ export default function Features() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="/register"
+                href="/auth/register"
                 className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
               >
                 Start Free Trial
@@ -330,7 +330,7 @@ export default function Features() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/register"
+              href="/auth/register"
               className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
             >
               Start Your Free Trial

@@ -166,7 +166,7 @@ export default function Resources() {
               <p className="text-gray-600 text-sm">See WaveOrder in action with live examples</p>
             </Link>
             
-            <Link href="/register" className="group bg-white border-2 border-gray-100 rounded-xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
+            <Link href="/auth/register" className="group bg-white border-2 border-gray-100 rounded-xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
               <ArrowRight className="w-8 h-8 text-teal-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-teal-600">Get Started</h3>
               <p className="text-gray-600 text-sm">Start your free trial and set up in minutes</p>
@@ -291,7 +291,7 @@ export default function Resources() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
               <Link
-                href="/register"
+                href="/auth/register"
                 className="inline-flex items-center px-6 py-3 border-2 border-teal-600 text-teal-600 font-semibold rounded-lg hover:bg-teal-50 transition-colors"
               >
                 Start Learning by Doing

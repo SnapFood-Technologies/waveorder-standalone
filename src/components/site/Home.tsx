@@ -25,7 +25,7 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
-                  href="/register"
+                  href="/auth/register"
                   className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
                 >
                   Start Free Trial
@@ -191,7 +191,7 @@ export default function Home() {
             Set up takes just minutes.
           </p>
           <Link 
-            href="/register"
+            href="/auth/register"
             className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
           >
             Get Started Free

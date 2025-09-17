@@ -27,7 +27,7 @@ export default function Sitemap() {
         },
         { 
           title: "Get Started", 
-          href: "/register", 
+          href: "/auth/register", 
           description: "Sign up for your free WaveOrder account and create your first WhatsApp catalog" 
         }
       ]
@@ -64,12 +64,12 @@ export default function Sitemap() {
       links: [
         { 
           title: "Sign Up", 
-          href: "/register", 
+          href: "/auth/register", 
           description: "Create your free WaveOrder account to start building WhatsApp catalogs" 
         },
         { 
           title: "Log In", 
-          href: "/login", 
+          href: "/auth/login", 
           description: "Access your WaveOrder dashboard to manage orders and catalog" 
         },
         { 
@@ -103,7 +103,7 @@ export default function Sitemap() {
   ]
 
   const quickLinks = [
-    { title: "Start Free Trial", href: "/register", type: "primary" },
+    { title: "Start Free Trial", href: "/auth/register", type: "primary" },
     { title: "View Pricing", href: "/pricing", type: "secondary" },
     { title: "Schedule Demo", href: "/contact", type: "secondary" },
     { title: "See Features", href: "/features", type: "secondary" }
