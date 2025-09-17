@@ -22,7 +22,7 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center text-gray-300">
                 <Mail className="w-4 h-4 mr-3 text-teal-400" />
-                <span>hello@waveorder.store</span>
+                <span>hello@waveorder.app</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <Phone className="w-4 h-4 mr-3 text-teal-400" />

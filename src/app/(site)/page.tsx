@@ -7,15 +7,15 @@ export const metadata: Metadata = {
   description: 'Create beautiful catalogs and receive orders directly on WhatsApp. Perfect for restaurants, cafes, and retail businesses. No expensive WhatsApp Business API required.',
   keywords: 'whatsapp ordering, restaurant ordering, whatsapp business, food ordering, catalog ordering, whatsapp menu, restaurant technology',
   alternates: {
-    canonical: 'https://waveorder.store',
+    canonical: 'https://waveorder.app',
   },
   openGraph: {
     title: 'WaveOrder - Make WhatsApp Ordering Super Easy',
     description: 'Restaurant-first WhatsApp ordering platform. Create catalogs, receive orders, manage everything.',
     type: 'website',
-    url: 'https://waveorder.store',
+    url: 'https://waveorder.app',
     images: [{
-      url: 'https://waveorder.store/images/og-image.png',
+      url: 'https://waveorder.app/images/og-image.png',
       width: 1200,
       height: 630,
       alt: 'WaveOrder - WhatsApp Ordering Platform',
@@ -84,14 +84,14 @@ export default function HomePage() {
             "@type": "Organization",
             "name": "WaveOrder",
             "description": "WhatsApp ordering platform for restaurants and businesses. Create beautiful catalogs and receive orders directly on WhatsApp.",
-            "url": "https://waveorder.store",
-            "logo": "https://waveorder.store/images/logo.png",
+            "url": "https://waveorder.app",
+            "logo": "https://waveorder.app/images/logo.png",
             "foundingDate": "2025",
             "slogan": "Make WhatsApp Ordering Super Easy",
             "contactPoint": {
               "@type": "ContactPoint",
               "contactType": "customer service",
-              "email": "support@waveorder.store"
+              "email": "support@waveorder.app"
             }
           })
         }}
@@ -105,11 +105,11 @@ export default function HomePage() {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "WaveOrder",
-            "url": "https://waveorder.store",
+            "url": "https://waveorder.app",
             "description": "Make WhatsApp ordering super easy for restaurants and businesses",
             "potentialAction": {
               "@type": "SearchAction",
-              "target": "https://waveorder.store/search?q={search_term_string}",
+              "target": "https://waveorder.app/search?q={search_term_string}",
               "query-input": "required name=search_term_string"
             }
           })
