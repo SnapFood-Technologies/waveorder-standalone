@@ -1,7 +1,8 @@
-// app/api/setup/complete/route.ts
+// Updated app/api/setup/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient, BusinessType, SubscriptionPlan, PaymentMethod, BusinessGoal } from '@prisma/client'
+import { sendTeamInvitationEmail } from '@/lib/email'
 import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
@@ -91,19 +92,37 @@ export async function POST(request: NextRequest) {
 
     // Send team invitations if any
     if (setupData.teamMembers?.length > 0) {
-      const invitations = setupData.teamMembers.map((member: any) => ({
-        email: member.email,
-        businessId: business.id,
-        role: member.role,
-        token: generateInviteToken(),
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-      }))
+      const invitations = []
+      
+      for (const member of setupData.teamMembers) {
+        const token = generateInviteToken()
+        const invitation = await prisma.teamInvitation.create({
+          data: {
+            email: member.email,
+            businessId: business.id,
+            role: member.role,
+            token,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+          }
+        })
 
-      await prisma.teamInvitation.createMany({
-        data: invitations
-      })
-
-      // TODO: Send invitation emails
+        // Send invitation email
+        try {
+          const inviteUrl = `${process.env.NEXTAUTH_URL}/team/invite/${token}`
+          await sendTeamInvitationEmail({
+            to: member.email,
+            businessName: business.name,
+            inviterName: user.name || 'Team Admin',
+            role: member.role,
+            inviteUrl
+          })
+          
+          invitations.push(invitation)
+        } catch (emailError) {
+          console.error(`Failed to send invitation to ${member.email}:`, emailError)
+          // Continue with other invitations even if one fails
+        }
+      }
     }
 
     return NextResponse.json({

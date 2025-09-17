@@ -21,6 +21,13 @@ export default function VerifyEmailComponent() {
   const [autoRedirect, setAutoRedirect] = useState(true)
 
   useEffect(() => {
+    console.log('🔍 VerifyEmailComponent mounted with params:', {
+      email,
+      token: token ? token.substring(0, 8) + '...' : null,
+      success,
+      error
+    })
+
     if (token) {
       verifyEmail(token)
     } else if (success) {
@@ -51,9 +58,11 @@ export default function VerifyEmailComponent() {
     }
   }, [token, success, error, router, autoRedirect])
 
-  const verifyEmail = async (verificationToken: string) => {
+  const verifyEmail = async (verificationToken) => {
     setLoading(true)
     setApiError('')
+
+    console.log('📧 Verifying email with token:', verificationToken.substring(0, 8) + '...')
 
     try {
       const response = await fetch('/api/auth/verify-email', {
@@ -63,6 +72,7 @@ export default function VerifyEmailComponent() {
       })
 
       const data = await response.json()
+      console.log('✅ Verify email response:', { status: response.status, data })
 
       if (response.ok) {
         setVerified(true)
@@ -73,6 +83,7 @@ export default function VerifyEmailComponent() {
         setApiError(data.message || 'Invalid or expired verification link')
       }
     } catch (error) {
+      console.error('❌ Verify email error:', error)
       setApiError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -80,8 +91,17 @@ export default function VerifyEmailComponent() {
   }
 
   const resendVerification = async () => {
+    console.log('🔄 Resend verification called with email:', email)
+    
     if (!email) {
+      console.log('❌ No email available for resend')
       setApiError('Email address is required to resend verification')
+      return
+    }
+
+    if (typeof email !== 'string' || !email.trim()) {
+      console.log('❌ Invalid email format:', email)
+      setApiError('Invalid email address')
       return
     }
 
@@ -89,21 +109,42 @@ export default function VerifyEmailComponent() {
     setApiError('')
     setResendSuccess(false)
 
+    const requestBody = { email: email.trim() }
+    console.log('📤 Sending request to /api/auth/resend-verification with body:', requestBody)
+
     try {
       const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       })
 
-      const data = await response.json()
+      console.log('📥 Response status:', response.status)
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()))
+
+      let data
+      try {
+        data = await response.json()
+        console.log('📥 Response data:', data)
+      } catch (parseError) {
+        console.error('❌ Failed to parse response JSON:', parseError)
+        const responseText = await response.text()
+        console.log('📥 Raw response text:', responseText)
+        throw new Error('Invalid JSON response from server')
+      }
 
       if (response.ok) {
+        console.log('✅ Resend verification successful')
         setResendSuccess(true)
       } else {
+        console.log('❌ Resend verification failed:', data.message)
         setApiError(data.message || 'Failed to resend verification email')
       }
     } catch (error) {
+      console.error('❌ Resend verification network error:', error)
       setApiError('Network error. Please try again.')
     } finally {
       setResendLoading(false)
@@ -204,6 +245,13 @@ export default function VerifyEmailComponent() {
             {email ? <strong>{email}</strong> : 'your email address'}.
             Click the link in your email to verify your account.
           </p>
+        </div>
+
+        {/* Debug info - remove in production */}
+        <div className="bg-gray-100 p-3 rounded text-xs">
+          <p><strong>Debug Info:</strong></p>
+          <p>Email: {email || 'Not provided'}</p>
+          <p>Token: {token ? 'Present' : 'Not present'}</p>
         </div>
 
         {apiError && (
