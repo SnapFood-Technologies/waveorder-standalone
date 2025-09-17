@@ -35,18 +35,21 @@ model Session {
 }
 
 model User {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
-  email         String         @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          UserRole       @default(BUSINESS_OWNER)
-  accounts      Account[]
-  sessions      Session[]
-  businesses    BusinessUser[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+
+  verificationToken  String?
+  verificationExpiry DateTime?
+  role               UserRole       @default(BUSINESS_OWNER)
+  accounts           Account[]
+  sessions           Session[]
+  businesses         BusinessUser[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 }
 
 model Business {
