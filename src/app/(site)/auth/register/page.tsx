@@ -1,4 +1,4 @@
-// app/auth/register/page.tsx
+// app/site/auth/register/page.tsx
 import type { Metadata } from 'next'
 import RegisterComponent from '@/components/auth/Register'
 

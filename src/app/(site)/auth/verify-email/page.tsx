@@ -1,4 +1,4 @@
-// app/auth/verify-email/page.tsx
+// app/site/auth/verify-email/page.tsx
 import type { Metadata } from 'next'
 import VerifyEmailComponent from '@/components/auth/VerifyEmail'
 

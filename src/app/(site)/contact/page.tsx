@@ -1,60 +1,70 @@
+// src/app/site/contact/page.tsx
+import Contact from '@/components/site/Contact'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Contact WaveOrder Support - Get Help with WhatsApp Ordering',
+  description: 'Get in touch with WaveOrder support team. Ask questions, schedule demos, or get help setting up your WhatsApp ordering system.',
+  keywords: 'contact waveorder, customer support, whatsapp ordering help, schedule demo, technical support',
+  alternates: {
+    canonical: 'https://waveorder.app/contact',
+  },
+  openGraph: {
+    title: 'Contact WaveOrder - We are Here to Help',
+    description: 'Need help with WhatsApp ordering? Our support team is ready to assist you with setup, questions, and demos.',
+    type: 'website',
+    url: 'https://waveorder.app/contact',
+    images: [{
+      url: 'https://waveorder.app/images/contact-og.png',
+      width: 1200,
+      height: 630,
+      alt: 'Contact WaveOrder Support',
+    }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  }
+}
+
 export default function ContactPage() {
   return (
-    <div className="max-w-2xl mx-auto py-16 px-4">
-      <h1 className="text-4xl font-bold text-center mb-8">Contact Us</h1>
-      
-      <div className="bg-white p-8 rounded-lg shadow-lg">
-        <form className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Name
-            </label>
-            <input 
-              type="text" 
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input 
-              type="email" 
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Business Type
-            </label>
-            <select className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option>Restaurant</option>
-              <option>Cafe</option>
-              <option>Retail</option>
-              <option>Other</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Message
-            </label>
-            <textarea 
-              rows={4}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            ></textarea>
-          </div>
-          
-          <button 
-            type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700"
-          >
-            Send Message
-          </button>
-        </form>
-      </div>
-    </div>
+    <>
+      {/* Contact Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ContactPage",
+            "name": "Contact WaveOrder",
+            "description": "Get in touch with WaveOrder support for help with WhatsApp ordering platform",
+            "url": "https://waveorder.app/contact",
+            "mainEntity": {
+              "@type": "Organization",
+              "name": "WaveOrder",
+              "contactPoint": [
+                {
+                  "@type": "ContactPoint",
+                  "contactType": "customer service",
+                  "email": "hello@waveorder.app",
+                  "availableLanguage": ["English"],
+                  "areaServed": "Worldwide"
+                },
+                {
+                  "@type": "ContactPoint", 
+                  "contactType": "technical support",
+                  "email": "support@waveorder.app",
+                  "availableLanguage": ["English"],
+                  "areaServed": "Worldwide"
+                }
+              ]
+            }
+          })
+        }}
+      />
+
+      <Contact />
+    </>
   )
 }

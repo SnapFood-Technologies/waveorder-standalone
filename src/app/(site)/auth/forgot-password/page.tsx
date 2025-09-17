@@ -1,4 +1,4 @@
-// app/auth/forgot-password/page.tsx
+// app/site/auth/forgot-password/page.tsx
 import type { Metadata } from 'next'
 import ForgotPasswordComponent from '@/components/auth/ForgotPassword'
 

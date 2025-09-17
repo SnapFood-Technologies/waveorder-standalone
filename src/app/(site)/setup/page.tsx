@@ -1,5 +1,5 @@
 
-// app/setup/page.tsx
+// app/site/setup/page.tsx
 import type { Metadata } from 'next'
 import SetupComponent from '@/components/setup/Setup'
 
