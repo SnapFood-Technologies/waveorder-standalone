@@ -323,7 +323,7 @@ export default function Resources() {
               href="/demo"
               className="inline-flex items-center px-8 py-4 border-2 border-teal-600 text-teal-600 text-lg font-semibold rounded-lg hover:bg-teal-50 transition-colors"
             >
-              Schedule a Demo
+              Check our Video Demo
             </Link>
           </div>
         </div>

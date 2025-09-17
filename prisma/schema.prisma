@@ -215,6 +215,46 @@ model ProductVariant {
   updatedAt DateTime @updatedAt
 }
 
+
+model ContactMessage {
+  id      String      @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  email   String
+  company String?     // Business name (optional)
+  subject ContactSubject @default(GENERAL)
+  message String
+  
+  // Spam detection
+  isSpam    Boolean @default(false)
+  spamScore Float?  // Akismet confidence score
+  
+  // Request metadata
+  ipAddress String?
+  userAgent String?
+  referer   String?
+  
+  // Status tracking
+  status ContactStatus @default(PENDING)
+  
+  // Admin handling
+  adminNotes  String?
+  assignedTo  String? // Admin user ID
+  respondedAt DateTime?
+  respondedBy String? // Admin user ID
+  
+  // Email tracking
+  emailSent      Boolean   @default(false)
+  emailSentAt    DateTime?
+  emailConfirmed Boolean   @default(false)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("contact_messages")
+}
+
+
 model ProductModifier {
   id        String  @id @default(auto()) @map("_id") @db.ObjectId
   name      String
@@ -433,4 +473,21 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   CANCELLED
+}
+
+enum ContactSubject {
+  GENERAL
+  DEMO
+  SETUP
+  BILLING
+  TECHNICAL
+  FEATURE
+}
+
+enum ContactStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  SPAM
+  CLOSED
 }

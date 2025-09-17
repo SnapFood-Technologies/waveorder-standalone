@@ -2,10 +2,20 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { Plus, Minus, MessageSquare, CreditCard, Menu, Shield, Palette, Package } from 'lucide-react'
 
-export default function FAQ() {
+interface FAQProps {
+  showContactSection?: boolean
+}
+
+export default function FAQ({ showContactSection = true }: FAQProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const pathname = usePathname()
+  
+  // Don't show contact section if we're on the contact page or if explicitly disabled
+  const shouldShowContact = showContactSection && pathname !== '/contact'
 
   const faqs = [
     {
@@ -43,6 +53,18 @@ export default function FAQ() {
       answer: "Yes, you can track inventory levels and toggle items on/off when they're out of stock. Our dashboard shows you real-time inventory status.",
       icon: Package,
       iconColor: "bg-yellow-100 text-yellow-600"
+    },
+    {
+      question: "How quickly can I get started?",
+      answer: "Most businesses have their catalog live within 30 minutes. Our setup wizard guides you through each step, from adding your WhatsApp number to uploading your first products.",
+      icon: MessageSquare,
+      iconColor: "bg-green-100 text-green-600"
+    },
+    {
+      question: "Do I need technical knowledge?",
+      answer: "Not at all! WaveOrder is designed for restaurant owners, not developers. If you can use WhatsApp, you can use WaveOrder. Our interface is intuitive and user-friendly.",
+      icon: Shield,
+      iconColor: "bg-indigo-100 text-indigo-600"
     }
   ]
 
@@ -106,31 +128,33 @@ export default function FAQ() {
           })}
         </div>
 
-        {/* Contact section at bottom */}
-        <div className="mt-16 text-center">
-          <div className="bg-white p-8 rounded-xl border border-gray-200">
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Still have questions?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Our support team is here to help you get started with WhatsApp ordering.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/contact"
-                className="px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
-              >
-                Contact Support
-              </a>
-              <a 
-                href="/demo"
-                className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Schedule Demo
-              </a>
+        {/* Contact section - only show if not on contact page */}
+        {shouldShowContact && (
+          <div className="mt-16 text-center">
+            <div className="bg-white p-8 rounded-xl border border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Still have questions?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Our support team is here to help you get started with WhatsApp ordering.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link 
+                  href="/contact"
+                  className="px-6 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  Contact Support
+                </Link>
+                <Link 
+                  href="/demo"
+                  className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Schedule Demo
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )

@@ -41,6 +41,27 @@ interface ContactFormParams {
   type: string
 }
 
+
+interface ContactNotificationParams {
+  messageId: string
+  name: string
+  email: string
+  company?: string
+  subject: string
+  message: string
+  type: string
+  ipAddress?: string
+  isSpam?: boolean
+  spamScore?: number
+}
+
+interface ContactConfirmationParams {
+  to: string
+  name: string
+  subject: string
+  messageId: string
+}
+
 interface AdminNotificationParams extends ContactFormParams {
   messageId: string
   isSpam?: boolean
@@ -370,6 +391,150 @@ export async function sendWelcomeEmail({ to, name = 'there', businessName, dashb
   } catch (error) {
     console.error('Failed to send welcome email:', error)
     throw new Error('Failed to send welcome email')
+  }
+}
+
+// Contact form notification email content (to admin)
+const createContactNotificationContent = ({ 
+  messageId, name, email, company, subject, message, type, ipAddress, isSpam, spamScore 
+}: ContactNotificationParams) => `
+<div style="padding: 40px 30px;">
+  <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
+    📧 New Contact Form Submission
+  </h2>
+  
+  ${isSpam ? `
+  <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0;">
+    <p style="color: #dc2626; margin: 0; font-size: 14px; font-weight: 500;">
+      ⚠️ POTENTIAL SPAM DETECTED (Score: ${spamScore?.toFixed(2) || 'N/A'})
+    </p>
+  </div>
+  ` : ''}
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+    <h3 style="color: #1f2937; margin: 0 0 16px; font-size: 16px;">Contact Details:</h3>
+    <div style="font-size: 14px; line-height: 1.6;">
+      <p style="margin: 0 0 8px; color: #374151;"><strong>Message ID:</strong> <code style="background: #f3f4f6; padding: 2px 4px; border-radius: 4px;">${messageId}</code></p>
+      <p style="margin: 0 0 8px; color: #374151;"><strong>Name:</strong> ${name}</p>
+      <p style="margin: 0 0 8px; color: #374151;"><strong>Email:</strong> <a href="mailto:${email}" style="color: #0d9488;">${email}</a></p>
+      ${company ? `<p style="margin: 0 0 8px; color: #374151;"><strong>Business:</strong> ${company}</p>` : ''}
+      <p style="margin: 0 0 8px; color: #374151;"><strong>Subject:</strong> ${subject.charAt(0).toUpperCase() + subject.slice(1)}</p>
+      <p style="margin: 0 0 8px; color: #374151;"><strong>Type:</strong> ${type.charAt(0).toUpperCase() + type.slice(1)}</p>
+      ${ipAddress ? `<p style="margin: 0 0 8px; color: #6b7280;"><strong>IP Address:</strong> ${ipAddress}</p>` : ''}
+    </div>
+  </div>
+  
+  <div style="background-color: #f0f9ff; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #bae6fd;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">Message:</h3>
+    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+      <p style="color: #374151; margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${message}</p>
+    </div>
+  </div>
+  
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${process.env.NEXTAUTH_URL}/admin/contacts/${messageId}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+      View in Admin Dashboard
+    </a>
+  </div>
+</div>
+`
+
+// Contact form confirmation email content (to user)
+const createContactConfirmationContent = (name: string, subject: string, messageId: string) => `
+<div style="padding: 40px 30px;">
+  <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">Thank You for Contacting WaveOrder!</h2>
+  <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
+    Hi ${name}! We've received your message about "${subject}" and appreciate you reaching out to us.
+  </p>
+  
+  <div style="background-color: #f0f9ff; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #bae6fd;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">What happens next?</h3>
+    <div style="color: #374151; font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 12px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>Our team will review your ${subject} inquiry carefully</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 12px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>You'll receive a detailed response within 24 hours</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>For urgent matters, you can also reach us directly at hello@waveorder.app</span>
+      </div>
+    </div>
+  </div>
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">While you wait, explore WaveOrder:</h3>
+    <div style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+      <p style="margin: 0 0 8px;">📚 <a href="${process.env.NEXTAUTH_URL}/resources" style="color: #0d9488; text-decoration: none;">Check our documentation</a></p>
+      <p style="margin: 0 0 8px;">❓ <a href="${process.env.NEXTAUTH_URL}/resources" style="color: #0d9488; text-decoration: none;">Browse frequently asked questions</a></p>
+      <p style="margin: 0;">🚀 <a href="${process.env.NEXTAUTH_URL}/demo" style="color: #0d9488; text-decoration: none;">Try our live demo</a></p>
+    </div>
+  </div>
+  
+  <p style="color: #9ca3af; margin: 24px 0 0; font-size: 12px;">
+    Reference ID: ${messageId}
+  </p>
+</div>
+`
+
+// Contact notification email function
+export async function sendContactNotificationEmail(params: ContactNotificationParams) {
+  const content = createContactNotificationContent(params)
+  const html = createEmailTemplate(content, 'New Contact Form Submission')
+  
+  const subjectLine = params.isSpam 
+    ? `🚨 [POTENTIAL SPAM] Contact Form: ${params.subject} - ${params.name}`
+    : `📧 New Contact: ${params.subject} - ${params.name}`
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: ['hello@waveorder.app'], // Admin email
+      subject: subjectLine,
+      html,
+      // @ts-ignore
+      reply_to: params.email,
+      headers: {
+        'X-Message-ID': params.messageId,
+        'X-Contact-Type': params.type,
+        'X-Spam-Score': params.spamScore?.toString() || '0',
+        'X-IP-Address': params.ipAddress || 'unknown',
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send contact notification email:', error)
+    throw new Error('Failed to send contact notification email')
+  }
+}
+
+// Contact confirmation email function
+export async function sendContactConfirmationEmail({ to, name, subject, messageId }: ContactConfirmationParams) {
+  const content = createContactConfirmationContent(name, subject, messageId)
+  const html = createEmailTemplate(content, 'Thank You for Contacting WaveOrder')
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `Thank you for contacting WaveOrder, ${name}!`,
+      html,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Message-ID': messageId,
+        'X-Contact-Confirmation': 'true',
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send contact confirmation email:', error)
+    throw new Error('Failed to send contact confirmation email')
   }
 }
 

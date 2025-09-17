@@ -3,7 +3,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, Phone, MapPin, Clock, MessageSquare, HelpCircle, Calendar, Send } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, MessageSquare, HelpCircle, Calendar, Send, CheckCircle, AlertCircle } from 'lucide-react'
+import FAQ from './FAQ'
+
+interface FormErrors {
+  name?: string
+  email?: string
+  company?: string
+  subject?: string
+  message?: string
+}
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -16,72 +25,227 @@ export default function Contact() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<FormErrors>({})
+
+  // Helper function to display subject options
+  const getSubjectDisplay = (subject: string): string => {
+    const subjects: Record<string, string> = {
+      'general': 'General Question',
+      'demo': 'Schedule Demo',
+      'setup': 'Setup Help',
+      'billing': 'Billing Question',
+      'technical': 'Technical Support',
+      'feature': 'Feature Request'
+    }
+    return subjects[subject] || 'General Question'
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {}
+
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required'
+    } else if (formData.name.length > 100) {
+      newErrors.name = 'Name must be less than 100 characters'
+    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.name)) {
+      newErrors.name = 'Name contains invalid characters'
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address'
+    } else if (formData.email.length > 255) {
+      newErrors.email = 'Email must be less than 255 characters'
+    }
+
+    // Company validation (optional)
+    if (formData.company && formData.company.length > 100) {
+      newErrors.company = 'Company name must be less than 100 characters'
+    }
+
+    // Subject validation
+    const validSubjects = ['general', 'demo', 'setup', 'billing', 'technical', 'feature']
+    if (!validSubjects.includes(formData.subject)) {
+      newErrors.subject = 'Please select a valid subject'
+    }
+
+    // Message validation
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required'
+    } else if (formData.message.length < 10) {
+      newErrors.message = 'Message must be at least 10 characters'
+    } else if (formData.message.length > 2000) {
+      newErrors.message = 'Message must be less than 2000 characters'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
+    
+    if (!validateForm()) {
+      return
+    }
+
     setIsSubmitting(true)
     
-    // Simulate form submission (no actual API call)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setSubmitted(true)
-    setIsSubmitting(false)
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          setError('Too many requests. Please wait 15 minutes before sending another message.')
+        } else if (data.details && Array.isArray(data.details)) {
+          // Handle validation errors from API
+          const newErrors: FormErrors = {}
+          data.details.forEach((detail: any) => {
+            if (detail.field && detail.message) {
+              newErrors[detail.field as keyof FormErrors] = detail.message
+            }
+          })
+          setErrors(newErrors)
+        } else {
+          setError(data.error || 'Failed to send message. Please try again.')
+        }
+        return
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      console.error('Contact form error:', err)
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }))
+    
+    // Clear errors when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }))
+    }
+    
+    if (error) {
+      setError(null)
+    }
   }
 
-  const faqs = [
-    {
-      question: "How quickly can I get started?",
-      answer: "Most businesses have their catalog live within 30 minutes. Our setup wizard guides you through each step."
-    },
-    {
-      question: "Do I need technical knowledge?",
-      answer: "Not at all! WaveOrder is designed for restaurant owners, not developers. If you can use WhatsApp, you can use WaveOrder."
-    },
-    {
-      question: "What if I need help setting up?",
-      answer: "We offer free setup assistance via email, chat, or scheduled demo calls. Our team will help you get everything configured perfectly."
-    },
-    {
-      question: "Can I migrate from another platform?",
-      answer: "Yes! We can help you import your existing menu and customer data. Contact us for migration assistance."
-    }
-  ]
-  
-  const contactMethods = [
-    {
-      icon: Mail,
-      title: "Email Support",
-      description: "Get help via email within 24 hours",
-      contact: "hello@waveorder.app",
-      action: "Send Email"
-    },
-    {
-      icon: MessageSquare,
-      title: "Live Chat",
-      description: "Chat with our support team in real-time",
-      contact: "Available 9 AM - 6 PM EST",
-      action: "Start Chat"
-    },
-    {
-      icon: Calendar,
-      title: "Schedule Demo",
-      description: "Book a personalized demo call",
-      contact: "30-minute sessions available",
-      action: "Book Demo"
-    }
-  ]
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      company: '',
+      subject: 'general',
+      message: ''
+    })
+    setErrors({})
+    setError(null)
+    setSubmitted(false)
+  }
 
+
+  // Success page
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-emerald-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-lg w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-emerald-100">
+            {/* Success Icon */}
+            <div className="text-center mb-6">
+              <div className="relative inline-flex items-center justify-center">
+                <div className="bg-gradient-to-r from-teal-500 to-emerald-500 p-4 rounded-full w-20 h-20 mb-4 flex items-center justify-center">
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">Message Sent Successfully!</h2>
+              <p className="text-lg text-gray-600 mb-6 leading-relaxed">
+                Thank you for reaching out! We've received your message about "{getSubjectDisplay(formData.subject)}" and our team will review it carefully.
+              </p>
+            </div>
+
+            {/* What happens next */}
+            <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-6 mb-6 border border-teal-100">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-teal-600" />
+                What happens next?
+              </h3>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>
+                  <span>We'll review your {getSubjectDisplay(formData.subject).toLowerCase()} inquiry within 24 hours</span>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>
+                  <span>You'll receive a detailed response at {formData.email}</span>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5 mr-3 flex-shrink-0"></div>
+                  <span>Check your email for a confirmation message</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={resetForm}
+                className="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                Send Another Message
+              </button>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center font-medium"
+                >
+                  Back to Home
+                </Link>
+                <Link
+                  href="/demo"
+                  className="px-4 py-2 bg-teal-100 text-teal-700 rounded-lg hover:bg-teal-200 transition-colors text-center font-medium"
+                >
+                Video Demo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Main contact form page
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-16 pb-12 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <section className="pt-16 pb-6 bg-gradient-to-br from-teal-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -98,33 +262,6 @@ export default function Contact() {
       {/* Contact Methods */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Get in Touch
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Choose the way that works best for you to connect with our support team
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 mb-16">
-            {contactMethods.map((method, index) => {
-              const IconComponent = method.icon
-              return (
-                <div key={index} className="bg-white border-2 border-gray-100 rounded-2xl p-8 text-center hover:border-teal-200 hover:shadow-lg transition-all duration-300">
-                  <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mx-auto mb-6">
-                    <IconComponent className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{method.title}</h3>
-                  <p className="text-gray-600 mb-4">{method.description}</p>
-                  <div className="text-lg font-medium text-teal-600 mb-6">{method.contact}</div>
-                  <button className="w-full bg-teal-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-teal-700 transition-colors">
-                    {method.action}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
 
           {/* Contact Form */}
           <div className="max-w-4xl mx-auto">
@@ -138,195 +275,145 @@ export default function Contact() {
                 </p>
               </div>
 
-              {submitted ? (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Send className="w-8 h-8" />
-                  </div>
-                  <h4 className="text-xl font-bold text-gray-900 mb-3">Message Sent!</h4>
-                  <p className="text-gray-600 mb-6">
-                    Thank you for reaching out. We'll get back to you within 24 hours.
-                  </p>
-                  <button 
-                    onClick={() => setSubmitted(false)}
-                    className="text-teal-600 font-semibold hover:text-teal-700"
-                  >
-                    Send Another Message
-                  </button>
+              {/* Global Error Message */}
+              {error && (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+                  <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+                  <p className="text-red-700">{error}</p>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        required
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        placeholder="Your full name"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address *
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required
-                        value={formData.email}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        placeholder="your@email.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
-                        Business Name
-                      </label>
-                      <input
-                        type="text"
-                        id="company"
-                        name="company"
-                        value={formData.company}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        placeholder="Your restaurant or business name"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                        Subject *
-                      </label>
-                      <select
-                        id="subject"
-                        name="subject"
-                        required
-                        value={formData.subject}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      >
-                        <option value="general">General Question</option>
-                        <option value="demo">Schedule Demo</option>
-                        <option value="setup">Setup Help</option>
-                        <option value="billing">Billing Question</option>
-                        <option value="technical">Technical Support</option>
-                        <option value="feature">Feature Request</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                      Message *
-                    </label>
-                    <textarea
-                      id="message"
-                      name="message"
-                      required
-                      rows={6}
-                      value={formData.message}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="Tell us how we can help you..."
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full bg-teal-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  >
-                    {isSubmitting ? (
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    ) : (
-                      <Send className="w-5 h-5 mr-2" />
-                    )}
-                    {isSubmitting ? 'Sending...' : 'Send Message'}
-                  </button>
-                </form>
               )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                        errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                      }`}
+                      placeholder="Your full name"
+                    />
+                    {errors.name && (
+                      <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                        errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                      }`}
+                      placeholder="your@email.com"
+                    />
+                    {errors.email && (
+                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Name
+                    </label>
+                    <input
+                      type="text"
+                      id="company"
+                      name="company"
+                      value={formData.company}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                        errors.company ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                      }`}
+                      placeholder="Your restaurant or business name"
+                    />
+                    {errors.company && (
+                      <p className="mt-1 text-sm text-red-600">{errors.company}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                      Subject *
+                    </label>
+                    <select
+                      id="subject"
+                      name="subject"
+                      required
+                      value={formData.subject}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                        errors.subject ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                      }`}
+                    >
+                      <option value="general">General Question</option>
+                      <option value="demo">Schedule Demo</option>
+                      <option value="setup">Setup Help</option>
+                      <option value="billing">Billing Question</option>
+                      <option value="technical">Technical Support</option>
+                      <option value="feature">Feature Request</option>
+                    </select>
+                    {errors.subject && (
+                      <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                    Message * <span className="text-gray-500 text-xs">({formData.message.length}/2000)</span>
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    required
+                    rows={6}
+                    value={formData.message}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors resize-none ${
+                      errors.message ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                    }`}
+                    placeholder="Tell us how we can help you..."
+                  />
+                  {errors.message && (
+                    <p className="mt-1 text-sm text-red-600">{errors.message}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-teal-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  ) : (
+                    <Send className="w-5 h-5 mr-2" />
+                  )}
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                </button>
+              </form>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-gray-600">
-              Quick answers to common questions about getting started with WaveOrder
-            </p>
-          </div>
-
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <div key={index} className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link 
-              href="/resources"
-              className="inline-flex items-center text-teal-600 font-semibold hover:text-teal-700"
-            >
-              View All FAQs
-              <HelpCircle className="w-4 h-4 ml-2" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Info */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
-              <p className="text-gray-600 mb-1">hello@waveorder.app</p>
-              <p className="text-sm text-gray-500">Response within 24 hours</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Support Hours</h3>
-              <p className="text-gray-600 mb-1">Monday - Friday</p>
-              <p className="text-sm text-gray-500">9:00 AM - 6:00 PM EST</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Location</h3>
-              <p className="text-gray-600 mb-1">San Francisco, CA</p>
-              <p className="text-sm text-gray-500">Serving businesses worldwide</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <FAQ />
     </div>
   )
 }
