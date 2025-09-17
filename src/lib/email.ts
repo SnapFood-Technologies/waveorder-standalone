@@ -362,7 +362,7 @@ export async function sendWelcomeEmail({ to, name = 'there', businessName, dashb
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       to: [to],
-      subject: `Welcome to WaveOrder, ${name}! Your store is ready 🎉`,
+      subject: `Welcome to WaveOrder, ${name}! Your account is verified 🎉`,
       html,
     })
 
