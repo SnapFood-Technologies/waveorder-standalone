@@ -238,7 +238,7 @@ export default function Sitemap() {
       </section>
 
       {/* XML Sitemap Notice */}
-      <section className="py-12 bg-white border-t border-gray-100">
+      {/* <section className="py-12 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-600">
             Looking for our XML sitemap for search engines? 
@@ -247,7 +247,7 @@ export default function Sitemap() {
             </Link>
           </p>
         </div>
-      </section>
+      </section> */}
     </div>
   )
 }

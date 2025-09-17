@@ -8,15 +8,15 @@ clarity -> done
 
 static pages
 - about
-- contact
-- sitemap
+- contact -> done
+- sitemap -> done
 - features
 - pricing
 - demo 
-- resources
+- resources -> done
 
-contact functional
-email/akismet
+contact functional -> done
+email/akismet -> done
 
 
 open emails - zoo -> done
