@@ -106,6 +106,22 @@ model Business {
   greetingMessage       String?
   orderNumberFormat     String         @default("WO-{number}")
 
+  // SEO Configuration
+  seoTitle       String? // Custom page title, falls back to displayName or username
+  seoDescription String? // Meta description for search engines
+  seoKeywords    String? // Comma-separated keywords
+  favicon        String? // Custom favicon URL (PRO feature with custom domain)
+  ogImage        String? // Open Graph image for social sharing
+  canonicalUrl   String? // Canonical URL if using custom domain
+  noIndex        Boolean @default(false) // Override isIndexable for specific SEO control
+  noFollow       Boolean @default(false) // Add nofollow to external links
+
+  // Structured Data / Schema.org
+  schemaType String? @default("Person") // Person, Organization, LocalBusiness, etc.
+  schemaData Json? // Additional schema.org structured data
+
+  isIndexable Boolean @default(false)
+
   users      BusinessUser[]
   categories Category[]
   products   Product[]
@@ -347,6 +363,7 @@ enum SubscriptionPlan {
   FREE
   BASIC
   PREMIUM
+  PRO
   ENTERPRISE
 }
 
