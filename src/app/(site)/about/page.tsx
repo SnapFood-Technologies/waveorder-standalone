@@ -1,24 +1,62 @@
+// src/app/site/about/page.tsx
+import About from '@/components/site/About'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'About WaveOrder - WhatsApp Ordering Platform for Restaurants',
+  description: 'Learn about WaveOrder mission to make WhatsApp ordering simple for restaurants and businesses. Discover our story, values, and commitment to helping businesses grow.',
+  keywords: 'about waveorder, company mission, whatsapp ordering platform, restaurant technology, business growth',
+  alternates: {
+    canonical: 'https://waveorder.app/about',
+  },
+  openGraph: {
+    title: 'About WaveOrder - Making WhatsApp Ordering Super Easy',
+    description: 'Our mission is to help restaurants and businesses leverage WhatsApp for seamless ordering experiences.',
+    type: 'website',
+    url: 'https://waveorder.app/about',
+    images: [{
+      url: 'https://waveorder.app/images/about-og.png',
+      width: 1200,
+      height: 630,
+      alt: 'About WaveOrder',
+    }],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  }
+}
+
 export default function AboutPage() {
   return (
-    <div className="max-w-4xl mx-auto py-16 px-4">
-      <h1 className="text-4xl font-bold mb-8">About WaveOrder</h1>
-      <div className="prose prose-lg">
-        <p>
-          WaveOrder is a comprehensive WhatsApp ordering platform designed specifically 
-          for restaurants, cafes, and retail businesses. Our mission is to make online 
-          ordering as simple as sending a WhatsApp message.
-        </p>
-        <h2>Our Story</h2>
-        <p>
-          Born from the need to simplify online ordering, WaveOrder bridges the gap 
-          between businesses and customers through the world's most popular messaging platform.
-        </p>
-        <h2>Why WhatsApp?</h2>
-        <p>
-          With over 2 billion users worldwide, WhatsApp is already on every customer's phone. 
-          No new apps to download, no complicated signup processes - just simple, familiar ordering.
-        </p>
-      </div>
-    </div>
+    <>
+      {/* Organization Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "AboutPage",
+            "name": "About WaveOrder",
+            "description": "Learn about WaveOrder's mission to simplify WhatsApp ordering for restaurants and businesses",
+            "url": "https://waveorder.app/about",
+            "mainEntity": {
+              "@type": "Organization",
+              "name": "WaveOrder",
+              "foundingDate": "2025",
+              "description": "WhatsApp ordering platform for restaurants and businesses",
+              "mission": "To make WhatsApp ordering super easy for businesses worldwide",
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "email": "hello@waveorder.app"
+              }
+            }
+          })
+        }}
+      />
+
+      <About />
+    </>
   )
 }

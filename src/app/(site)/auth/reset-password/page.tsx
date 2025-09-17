@@ -1,4 +1,4 @@
-// app/auth/reset-password/page.tsx
+// app/site/auth/reset-password/page.tsx
 import type { Metadata } from 'next'
 import ResetPasswordComponent from '@/components/auth/ResetPassword'
 

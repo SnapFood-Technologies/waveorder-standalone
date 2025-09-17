@@ -1,4 +1,4 @@
-// app/auth/login/page.tsx
+// app/site/auth/login/page.tsx
 import type { Metadata } from 'next'
 import LoginComponent from '@/components/auth/Login'
 
