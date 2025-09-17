@@ -38,11 +38,11 @@ export default function Header() {
           </nav>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login" className="text-gray-700 hover:text-teal-600 font-medium">
+            <Link href="/auth/login" className="text-gray-700 hover:text-teal-600 font-medium">
               Sign In
             </Link>
             <Link
-              href="/register"
+              href="/auth/register"
               className="bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-colors"
             >
               Get Started
@@ -76,11 +76,11 @@ export default function Header() {
                 Contact
               </Link>
               <div className="pt-4 border-t border-gray-200">
-                <Link href="/login" className="block text-gray-700 hover:text-teal-600 font-medium mb-2">
+                <Link href="/auth/login" className="block text-gray-700 hover:text-teal-600 font-medium mb-2">
                   Sign In
                 </Link>
                 <Link
-                  href="/register"
+                  href="/auth/register"
                   className="block bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold text-center"
                 >
                   Get Started
