@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, MessageSquare, Upload, ShoppingCart, BarChart, Smartphone, Zap } from 'lucide-react'
+import { ArrowRight, MessageSquare, Upload, ShoppingCart, BarChart, Smartphone, Zap, Check, Clock, CreditCard } from 'lucide-react'
 import Pricing from './Pricing'
 import FAQ from './FAQ'
 
@@ -12,7 +12,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center mb-12">
             <div>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 WhatsApp Ordering for Restaurants
@@ -23,7 +23,7 @@ export default function Home() {
                 Perfect for restaurants, cafes, and food businesses. No expensive API required.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
                   href="/register"
                   className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
@@ -39,17 +39,6 @@ export default function Home() {
                   View Demo
                 </Link>
               </div>
-
-              {/* Alternative to the gray box - Simple list */}
-              <div className="text-gray-600">
-                <p className="mb-2 font-medium">Why choose WaveOrder:</p>
-                <div className="text-sm space-y-1">
-                  <p>• Works with your existing WhatsApp number</p>
-                  <p>• No expensive API fees required</p>
-                  <p>• Set up your catalog in minutes</p>
-                  <p>• Streamlined order management</p>
-                </div>
-              </div>
             </div>
 
             <div className="relative">
@@ -61,6 +50,39 @@ export default function Home() {
                   <p className="text-lg font-medium">Restaurant Catalog Demo</p>
                   <p className="text-sm">Mobile-optimized ordering interface</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Benefits section - Full width below hero content */}
+          <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-8 rounded-xl border border-teal-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-700 font-medium">Use existing WhatsApp</span>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-700 font-medium">No API fees</span>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-700 font-medium">5-minute setup</span>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-emerald-600 rounded-full flex items-center justify-center">
+                  <MessageSquare className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-gray-700 font-medium">Instant notifications</span>
               </div>
             </div>
           </div>

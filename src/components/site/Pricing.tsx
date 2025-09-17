@@ -42,7 +42,7 @@ export default function Pricing() {
         "Wholesale pricing",
         "Priority support"
       ],
-      buttonText: "Start Free Trial",
+      buttonText: "Get Started",
       buttonStyle: "bg-teal-600 text-white hover:bg-teal-700",
       popular: true
     }
@@ -122,12 +122,20 @@ export default function Pricing() {
                 ))}
               </ul>
               
-              <Link
-                href={plan.name === 'Free' ? '/register' : '/register'}
-                className={`block text-center px-6 py-3 rounded-lg font-semibold transition-colors ${plan.buttonStyle}`}
-              >
-                {plan.buttonText}
-              </Link>
+              <div className="space-y-3">
+                <Link
+                  href={plan.name === 'Free' ? '/register' : '/register'}
+                  className={`block text-center px-6 py-3 rounded-lg font-semibold transition-colors ${plan.buttonStyle}`}
+                >
+                  {plan.buttonText}
+                </Link>
+                
+                {plan.popular && (
+                  <p className="text-center text-sm text-gray-500">
+                    You can cancel anytime
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>

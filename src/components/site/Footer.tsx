@@ -6,9 +6,9 @@ export default function Footer() {
   return (
     <footer className="bg-gray-800 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Company Info - spans 2 cols on mobile, 2 cols on desktop */}
+          <div className="col-span-2">
             <div className="flex items-center space-x-3 mb-6">
               <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
                 <Waves className="w-6 h-6 text-white" />
@@ -22,7 +22,7 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center text-gray-300">
                 <Mail className="w-4 h-4 mr-3 text-teal-400" />
-                <span>hello@waveorder.app</span>
+                <span>hello@waveorder.store</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <Phone className="w-4 h-4 mr-3 text-teal-400" />

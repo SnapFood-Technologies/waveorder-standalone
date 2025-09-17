@@ -102,8 +102,8 @@ src/
 WaveOrder supports custom domains for businesses:
 
 - **Owned Domains:** waveorder.xyz, waveorder.store, waveorder.shop
-- **Available:** waveorder.co, waveorder.app, waveorder.ai
-- **Primary Options:** waveorder.app (recommended)
+- **Available:** waveorder.co, waveorder.store, waveorder.ai
+- **Primary Options:** waveorder.store (recommended)
 
 ## Brand Colors
 
