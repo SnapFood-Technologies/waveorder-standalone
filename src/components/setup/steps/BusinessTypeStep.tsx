@@ -21,10 +21,10 @@ interface BusinessTypeStepProps {
 const businessTypes = [
   { value: 'RESTAURANT', label: 'Restaurant', icon: UtensilsCrossed },
   { value: 'CAFE', label: 'Cafe', icon: Coffee },
-  { value: 'RETAIL', label: 'Food & Dining', icon: UtensilsCrossed },
+  { value: 'FOOD', label: 'Food & Dining', icon: UtensilsCrossed },
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
-  { value: 'OTHER', label: 'Health & Beauty (Spa, Salon, Gym, etc.)', icon: Scissors },
+  { value: 'HEALTH_BEAUTY', label: 'Health & Beauty (Spa, Salon, Gym, etc.)', icon: Scissors },
   { value: 'JEWELRY', label: 'Jewelry Store', icon: Gem },
   { value: 'FLORIST', label: 'Florist', icon: Flower2 },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }

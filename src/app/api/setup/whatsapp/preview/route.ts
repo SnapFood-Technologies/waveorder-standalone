@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const businessName = searchParams.get('businessName') || 'Your Business'
     const orderFormat = searchParams.get('orderFormat') || 'WO-{number}'
     const deliveryFee = parseFloat(searchParams.get('deliveryFee') || '0')
-    const storeUrl = searchParams.get('storeUrl') || 'waveorder.com/your-store'
+    const storeUrl = searchParams.get('storeUrl') || 'waveorder.app/your-store'
 
     const orderNumber = orderFormat.replace('{number}', '123')
     

@@ -90,9 +90,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+  const handleSubmit = async () => {
     if (!formData.businessName || !formData.whatsappNumber || !formData.storeSlug) {
       return
     }
@@ -113,26 +111,26 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
   }
 
   const fullWhatsAppNumber = `${formData.countryCode}${formData.whatsappNumber}`
-  const storeUrl = `waveorder.com/${formData.storeSlug}`
+  const storeUrl = `waveorder.app/${formData.storeSlug}`
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="grid lg:grid-cols-2 gap-12 items-start">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
         {/* Left Side - Form */}
-        <div>
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <div className="order-2 lg:order-1">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
               Create your store
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-base sm:text-lg text-gray-600">
               Set up your basic store information to get started
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-5 sm:space-y-6">
             {/* Business Name */}
             <div>
-              <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
                 Business Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -144,7 +142,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
                   required
                   value={formData.businessName}
                   onChange={handleInputChange}
-                  className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                   placeholder="Enter your business name"
                 />
               </div>
@@ -152,15 +150,15 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
 
             {/* WhatsApp Number */}
             <div>
-              <label htmlFor="whatsappNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="whatsappNumber" className="block text-sm font-medium text-gray-700 mb-2">
                 WhatsApp Number <span className="text-red-500">*</span>
               </label>
-              <div className="flex">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-0">
                 <select
                   name="countryCode"
                   value={formData.countryCode}
                   onChange={handleInputChange}
-                  className="px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                  className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base sm:min-w-[100px]"
                 >
                   {COUNTRY_CODES.map(country => (
                     <option key={country.code} value={country.code}>
@@ -177,7 +175,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
                     required
                     value={formData.whatsappNumber}
                     onChange={handleInputChange}
-                    className="pl-10 w-full px-3 py-2 border-l-0 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-l-none sm:border-l-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                     placeholder="123456789"
                   />
                 </div>
@@ -186,13 +184,13 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
 
             {/* Store URL */}
             <div>
-              <label htmlFor="storeSlug" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="storeSlug" className="block text-sm font-medium text-gray-700 mb-2">
                 Store URL <span className="text-red-500">*</span>
               </label>
-              <div className="flex">
-                <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-l-lg border-r-0 flex items-center">
+              <div className="flex flex-col sm:flex-row">
+                <div className="px-3 py-3 sm:py-2 bg-gray-50 border border-gray-300 rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none border-b-0 sm:border-b sm:border-r-0 flex items-center justify-center sm:justify-start">
                   <Globe className="w-5 h-5 text-gray-400 mr-2" />
-                  <span className="text-gray-600">waveorder.com/</span>
+                  <span className="text-gray-600 text-sm sm:text-base">waveorder.app/</span>
                 </div>
                 <input
                   id="storeSlug"
@@ -201,7 +199,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
                   required
                   value={formData.storeSlug}
                   onChange={handleInputChange}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                   placeholder="your-business-name"
                 />
               </div>
@@ -219,78 +217,79 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
               )}
             </div>
 
-            <div className="flex justify-between pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between pt-4 sm:pt-6">
               <button
                 type="button"
                 onClick={onBack}
-                className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
               >
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back
               </button>
               
               <button
-                type="submit"
+                type="button"
                 disabled={loading || !formData.businessName || !formData.whatsappNumber || !formData.storeSlug || slugAvailable === false}
-                className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                onClick={handleSubmit}
+                className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
               >
                 {loading ? 'Creating...' : 'Create Store'}
               </button>
             </div>
-          </form>
+          </div>
         </div>
 
         {/* Right Side - Live Preview */}
-        <div className="lg:sticky lg:top-8">
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <div className="order-1 lg:order-2 lg:sticky lg:top-8">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Smartphone className="w-5 h-5 mr-2 text-teal-600" />
               Live Preview
             </h3>
             
             {/* Mobile Preview */}
-            <div className="bg-gray-100 rounded-xl p-4 max-w-sm mx-auto">
+            <div className="bg-gray-100 rounded-xl p-3 sm:p-4 max-w-sm mx-auto">
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-6 text-white text-center">
-                  <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <Store className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-4 sm:py-6 text-white text-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white bg-opacity-20 rounded-full mx-auto mb-2 sm:mb-3 flex items-center justify-center">
+                    <Store className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                   </div>
-                  <h2 className="text-xl font-bold">
+                  <h2 className="text-lg sm:text-xl font-bold">
                     {formData.businessName || 'Your Business Name'}
                   </h2>
-                  <p className="text-teal-100 text-sm mt-1">
+                  <p className="text-teal-100 text-xs sm:text-sm mt-1">
                     WhatsApp Ordering
                   </p>
                 </div>
 
                 {/* Content */}
-                <div className="p-4">
-                  <div className="text-center mb-4">
-                    <p className="text-gray-600 text-sm">
+                <div className="p-3 sm:p-4">
+                  <div className="text-center mb-3 sm:mb-4">
+                    <p className="text-gray-600 text-xs sm:text-sm">
                       Browse our menu and order via WhatsApp
                     </p>
                   </div>
 
                   {/* Sample Categories */}
                   <div className="space-y-2">
-                    <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-                      <span className="text-gray-800 font-medium">Appetizers</span>
-                      <span className="text-gray-500 text-sm">5 items</span>
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+                      <span className="text-gray-800 font-medium text-sm">Appetizers</span>
+                      <span className="text-gray-500 text-xs">5 items</span>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-                      <span className="text-gray-800 font-medium">Main Courses</span>
-                      <span className="text-gray-500 text-sm">12 items</span>
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+                      <span className="text-gray-800 font-medium text-sm">Main Courses</span>
+                      <span className="text-gray-500 text-xs">12 items</span>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-                      <span className="text-gray-800 font-medium">Desserts</span>
-                      <span className="text-gray-500 text-sm">6 items</span>
+                    <div className="bg-gray-50 rounded-lg p-2 sm:p-3 flex items-center justify-between">
+                      <span className="text-gray-800 font-medium text-sm">Desserts</span>
+                      <span className="text-gray-500 text-xs">6 items</span>
                     </div>
                   </div>
 
                   {/* WhatsApp Button */}
-                  <div className="mt-4">
-                    <div className="bg-green-500 text-white rounded-lg p-3 text-center font-medium">
+                  <div className="mt-3 sm:mt-4">
+                    <div className="bg-green-500 text-white rounded-lg p-2 sm:p-3 text-center font-medium text-sm">
                       Order via WhatsApp
                     </div>
                   </div>
@@ -299,17 +298,17 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
             </div>
 
             {/* Store Info */}
-            <div className="mt-6 space-y-3">
+            <div className="mt-4 sm:mt-6 space-y-3">
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-600 mb-1">Store URL:</div>
-                <div className="font-mono text-sm text-teal-600">
-                  {formData.storeSlug ? storeUrl : 'waveorder.com/your-store'}
+                <div className="text-xs sm:text-sm text-gray-600 mb-1">Store URL:</div>
+                <div className="font-mono text-xs sm:text-sm text-teal-600 break-all">
+                  {formData.storeSlug ? storeUrl : 'waveorder.app/your-store'}
                 </div>
               </div>
 
               <div className="bg-gray-50 rounded-lg p-3">
-                <div className="text-sm text-gray-600 mb-1">WhatsApp Number:</div>
-                <div className="font-mono text-sm text-gray-900">
+                <div className="text-xs sm:text-sm text-gray-600 mb-1">WhatsApp Number:</div>
+                <div className="font-mono text-xs sm:text-sm text-gray-900">
                   {formData.whatsappNumber ? fullWhatsAppNumber : 'Not set'}
                 </div>
               </div>

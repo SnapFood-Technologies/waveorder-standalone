@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    const storeUrl = `https://waveorder.com/${business.slug}`
+    const storeUrl = `https://waveorder.app/${business.slug}`
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(storeUrl)}`
 
     return NextResponse.json({

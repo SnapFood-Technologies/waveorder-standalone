@@ -135,37 +135,22 @@ model Business {
   - `metaDescription String?`
   - `keywords String[]`
 
-## 7. Order Management System (Internal APIs Only)
+## 7. WhatsApp Integration
 
-### 7.1 Order Processing API
-**Task:** Build internal order tracking system
+### 7.1 WhatsApp Message Templates
+**Task:** Create business type-specific WhatsApp message templates
+- **Location:** `lib/whatsapp-templates.ts`
+- **Description:** Different message formats for different business types
+- **Implementation:** Template system based on business type and order data
+
+### 7.2 Order Processing
+**Task:** Build order processing system
 - **Location:** `app/api/orders/route.ts`
-- **Description:** Handle order creation and management without external WhatsApp API
+- **Description:** Handle order creation and WhatsApp message generation
 - **Features:**
-  - Order validation and creation
-  - WhatsApp deep link generation
-  - Order status tracking (internal only)
-  - Order history for businesses
-
-### 7.2 Order Status Management
-**Task:** Create order status tracking for business dashboard
-- **Location:** `app/api/orders/[orderId]/status/route.ts`
-- **Description:** Allow businesses to update order status internally
-- **Features:**
-  - Status updates (pending, confirmed, preparing, ready, completed)
-  - Order timeline tracking
-  - Admin dashboard integration
-  - No automated customer notifications (business handles manually via WhatsApp)
-
-### 7.3 WhatsApp Deep Link Generator
-**Task:** Create utility for generating WhatsApp order links
-- **Location:** `lib/whatsapp-links.ts`
-- **Description:** Generate WhatsApp deep links with pre-filled order messages
-- **Features:**
-  - Business type-specific message templates
-  - Order formatting for WhatsApp messages
-  - URL encoding and validation
-  - No API dependencies - uses wa.me links only
+  - Order validation
+  - WhatsApp link generation
+  - Order status tracking
 
 ## 8. Development Setup Tasks
 
@@ -184,55 +169,7 @@ model Business {
   - `npx prisma db push` (for development)
   - `npx prisma migrate deploy` (for production)
 
-## 10. Setup Progress Persistence
-
-### 10.1 Setup Progress Database Schema
-**Task:** Create schema to store setup progress
-- **Location:** `prisma/schema.prisma`
-- **Description:** Store user's setup progress to resume later
-- **Schema:**
-```prisma
-model SetupProgress {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String   @db.ObjectId
-  setupToken String   @unique
-  currentStep Int     @default(1)
-  data       Json     // Store all setup data as JSON
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-```
-
-### 10.2 Setup Progress API Routes
-**Task:** Create APIs to save and retrieve setup progress
-- **Location:** `app/api/setup/save-progress/route.ts` (update existing)
-- **Description:** Enhanced progress saving with persistence
-- **Features:**
-  - Save progress after each step completion
-  - Retrieve saved progress when returning to setup
-  - Handle setup token validation with saved state
-  - Clean up completed setups
-
-### 10.3 Setup Component State Recovery
-**Task:** Update setup component to load saved progress
-- **Location:** `components/setup/Setup.tsx`
-- **Description:** Restore user's progress when returning to setup link
-- **Implementation:**
-  - Check for existing progress on setup token validation
-  - Restore `currentStep` and `setupData` from saved state
-  - Allow user to continue from where they left off
-  - Handle edge cases (completed setups, expired tokens)
-
-### 10.4 Progress Cleanup Job
-**Task:** Create cleanup for old/completed setup progress
-- **Location:** `app/api/cron/cleanup-setup/route.ts`
-- **Description:** Remove old setup progress data
-- **Features:**
-  - Delete progress for completed setups
-  - Clean up expired setup tokens
-  - Remove progress older than 7 days
+## 9. Testing Tasks
 
 ### 9.1 Setup Wizard Testing
 **Task:** Test complete setup wizard flow
