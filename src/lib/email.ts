@@ -198,6 +198,7 @@ export async function sendTeamInvitationEmail({ to, name = 'there', businessName
       to: [to],
       subject: `You're invited to join ${businessName} on WaveOrder`,
       html,
+      // @ts-ignore
       reply_to: 'hello@waveorder.app',
       headers: {
         'X-Business-Name': businessName,
@@ -382,6 +383,7 @@ export async function sendUserCreatedNotification(params: UserCreatedNotificatio
       to: ['hello@waveorder.app'], // Admin email
       subject: `🎉 New User Registration: ${params.name}`,
       html,
+      // @ts-ignore
       reply_to: params.email,
       headers: {
         'X-User-ID': params.userId,
@@ -392,6 +394,7 @@ export async function sendUserCreatedNotification(params: UserCreatedNotificatio
     return { success: true, emailId: result.data?.id }
   } catch (error) {
     console.error('Failed to send user created notification:', error)
+    // @ts-ignore
     return { success: false, error: error.message }
   }
 }

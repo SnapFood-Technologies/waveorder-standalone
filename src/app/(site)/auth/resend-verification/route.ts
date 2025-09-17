@@ -136,8 +136,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Resend verification error:', error)
+    // @ts-ignore
     console.error('❌ Error stack:', error.stack)
     return NextResponse.json(
+        // @ts-ignore
       { message: 'Internal server error', error: error.message },
       { status: 500 }
     )

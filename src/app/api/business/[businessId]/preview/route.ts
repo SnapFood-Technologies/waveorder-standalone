@@ -6,11 +6,13 @@ const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
+    const { businessId } = await params
+    
     const business = await prisma.business.findUnique({
-      where: { id: params.businessId },
+      where: { id: businessId },
       include: {
         products: {
           where: { isActive: true },

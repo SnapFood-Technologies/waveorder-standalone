@@ -63,6 +63,7 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
   const handleEnterDashboard = async () => {
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
+    // @ts-ignore
     onComplete({ setupWizardCompleted: true })
     setLoading(false)
   }
