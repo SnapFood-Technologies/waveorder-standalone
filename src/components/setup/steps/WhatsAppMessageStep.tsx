@@ -13,7 +13,7 @@ interface WhatsAppMessageStepProps {
 export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsAppMessageStepProps) {
   const [settings, setSettings] = useState(data.whatsappSettings || {
     orderNumberFormat: 'WO-{number}',
-    greetingMessage: `Hello! Welcome to ${data.businessName || 'Your Business'}.\nYou can browse our menu at waveorder.com/${data.storeSlug || 'your-store'}\nLet us know if you need help!`,
+    greetingMessage: `Hello! Welcome to ${data.businessName || 'Your Business'}.\nYou can browse our menu at waveorder.app/${data.storeSlug || 'your-store'}\nLet us know if you need help!`,
     messageTemplate: ''
   })
   const [loading, setLoading] = useState(false)
@@ -31,7 +31,7 @@ export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsA
   const generateSampleOrder = () => {
     const orderNumber = settings.orderNumberFormat.replace('{number}', '123')
     const businessName = data.businessName || 'Your Business'
-    const storeUrl = `waveorder.com/${data.storeSlug || 'your-store'}`
+    const storeUrl = `waveorder.app/${data.storeSlug || 'your-store'}`
     const deliveryFee = data.deliveryMethods?.deliveryFee || 3.00
 
     return `Order ${orderNumber}

@@ -26,7 +26,7 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const storeUrl = `https://waveorder.com/${data.storeSlug}`
+  const storeUrl = `https://waveorder.app/${data.storeSlug}`
 
   const copyToClipboard = async () => {
     try {
@@ -76,67 +76,60 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
   ]
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-green-600" />
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="text-center mb-6 sm:mb-8">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
         </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
           Your store is ready to share!
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-base sm:text-lg text-gray-600 px-2">
           Start taking orders right away
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-8 mb-8">
+      <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-6 sm:mb-8">
         {/* Store Information */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
+        <div className="space-y-4 sm:space-y-6 order-2 lg:order-1">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Store Information</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Store URL</label>
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm">
+                <label className="block text-sm font-medium text-gray-600 mb-2">Store URL</label>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <div className="flex-1 px-3 py-3 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-xs sm:text-sm break-all">
                     {storeUrl}
                   </div>
                   <button
                     type="button"
                     onClick={copyToClipboard}
-                    className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="px-4 py-3 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center sm:justify-start min-w-0"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-4 h-4 mr-2 sm:mr-0" />
+                    <span className="sm:hidden">Copy URL</span>
                   </button>
                 </div>
                 {copied && (
-                  <p className="text-sm text-green-600 mt-1">✓ Copied to clipboard!</p>
+                  <p className="text-sm text-green-600 mt-2">✓ Copied to clipboard!</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
                 <button
                   type="button"
                   onClick={handleViewStore}
-                  className="flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   View My Store
-                </button>
-                
-                <button
-                  type="button"
-                  className="flex items-center justify-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  QR Code
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Share2 className="w-5 h-5 mr-2 text-teal-600" />
               Share Your Store
@@ -146,48 +139,48 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
               <button
                 type="button"
                 onClick={() => shareOnSocial('instagram')}
-                className="w-full flex items-center px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Instagram className="w-5 h-5 mr-3 text-pink-600" />
-                <div className="text-left">
-                  <div className="font-medium text-gray-900">Add to Instagram Bio</div>
-                  <div className="text-sm text-gray-500">Copy link for your Instagram bio</div>
+                <Instagram className="w-5 h-5 mr-3 text-pink-600 flex-shrink-0" />
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">Add to Instagram Bio</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Copy link for your Instagram bio</div>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => shareOnSocial('facebook')}
-                className="w-full flex items-center px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Facebook className="w-5 h-5 mr-3 text-blue-600" />
-                <div className="text-left">
-                  <div className="font-medium text-gray-900">Share on Facebook</div>
-                  <div className="text-sm text-gray-500">Post to your Facebook page</div>
+                <Facebook className="w-5 h-5 mr-3 text-blue-600 flex-shrink-0" />
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">Share on Facebook</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Post to your Facebook page</div>
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={() => shareOnSocial('twitter')}
-                className="w-full flex items-center px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <Twitter className="w-5 h-5 mr-3 text-blue-400" />
-                <div className="text-left">
-                  <div className="font-medium text-gray-900">Share on Twitter</div>
-                  <div className="text-sm text-gray-500">Tweet your store link</div>
+                <Twitter className="w-5 h-5 mr-3 text-blue-400 flex-shrink-0" />
+                <div className="text-left min-w-0 flex-1">
+                  <div className="font-medium text-gray-900 text-sm sm:text-base">Share on Twitter</div>
+                  <div className="text-xs sm:text-sm text-gray-500">Tweet your store link</div>
                 </div>
               </button>
             </div>
           </div>
 
-          <div className="bg-gray-50 p-6 rounded-xl">
+          <div className="bg-gray-50 p-4 sm:p-6 rounded-xl">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Next Steps</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 sm:space-y-3">
               {setupTips.map((tip, index) => (
                 <li key={index} className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-teal-600 mt-1 mr-2 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">{tip}</span>
+                  <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
+                  <span className="text-sm sm:text-base text-gray-600">{tip}</span>
                 </li>
               ))}
             </ul>
@@ -195,22 +188,22 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
         </div>
 
         {/* Live Preview */}
-        <div className="lg:sticky lg:top-8">
-          <div className="bg-gray-100 rounded-xl p-6">
+        <div className="order-1 lg:order-2 lg:sticky lg:top-8">
+          <div className="bg-gray-100 rounded-xl p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
               Store Preview
             </h3>
             
             <div className="bg-white rounded-lg border border-gray-200 max-w-sm mx-auto overflow-hidden">
               {/* Mobile Header */}
-              <div className="bg-teal-600 text-white p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                    <Smartphone className="w-5 h-5" />
+              <div className="bg-teal-600 text-white p-3 sm:p-4">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <div className="font-semibold text-lg">{data.businessName}</div>
-                    <div className="text-sm text-teal-100">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm sm:text-lg truncate">{data.businessName}</div>
+                    <div className="text-xs sm:text-sm text-teal-100 truncate">
                       {data.businessType?.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                     </div>
                   </div>
@@ -218,23 +211,23 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
               </div>
 
               {/* Mobile Content */}
-              <div className="p-4 space-y-4">
+              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3">
                     Welcome to our online store! Browse our menu and order directly through WhatsApp.
                   </p>
                 </div>
 
                 {/* Sample Categories */}
-                <div className="space-y-3">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="font-medium text-gray-900">Categories</div>
-                    <div className="text-sm text-gray-500 mt-1">Main Dishes, Beverages, Desserts</div>
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="font-medium text-gray-900 text-sm">Categories</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-1">Main Dishes, Beverages, Desserts</div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="font-medium text-gray-900">Order Options</div>
-                    <div className="text-sm text-gray-500 mt-1">
+                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                    <div className="font-medium text-gray-900 text-sm">Order Options</div>
+                    <div className="text-xs sm:text-sm text-gray-500 mt-1">
                       {[
                         data.deliveryMethods?.delivery && 'Delivery',
                         data.deliveryMethods?.pickup && 'Pickup',
@@ -243,7 +236,7 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
                     </div>
                   </div>
 
-                  <button className="w-full bg-green-600 text-white py-3 rounded-lg font-medium">
+                  <button className="w-full bg-green-600 text-white py-2 sm:py-3 rounded-lg font-medium text-sm">
                     Order on WhatsApp
                   </button>
                 </div>
@@ -259,11 +252,11 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+          className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Back
@@ -272,7 +265,7 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
         <button
           onClick={handleEnterDashboard}
           disabled={loading}
-          className="flex items-center px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
         >
           {loading ? 'Loading...' : 'Enter Dashboard'}
           <ArrowRight className="w-5 h-5 ml-2" />

@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    const storeUrl = `https://waveorder.com/${business.slug}`
+    const storeUrl = `https://waveorder.app/${business.slug}`
     
     // Generate QR code URL using a service like qr-server.com
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(storeUrl)}`
