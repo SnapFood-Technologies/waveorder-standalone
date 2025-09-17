@@ -32,6 +32,14 @@ export async function middleware(request: NextRequest) {
 
   // Protect setup route - only for authenticated users without businesses
   if (pathname.startsWith('/setup')) {
+
+    const setupToken = request.nextUrl.searchParams.get('token')
+  
+  // Allow access if there's a valid setup token (even without auth session)
+  if (setupToken) {
+    return NextResponse.next()
+  }
+  
     if (!isAuth) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }

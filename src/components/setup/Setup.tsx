@@ -80,20 +80,21 @@ export default function SetupComponent() {
 
   useEffect(() => {
     if (status === 'loading') return
-
+  
+    // If there's a token, validate it (bypass session check)
+    if (token) {
+      validateSetupToken()
+      return
+    }
+    
+    // No token - require authenticated session
     if (!session) {
       router.push('/auth/login')
       return
     }
-
-    // If no token provided, check if user should be here
-    if (!token) {
-      checkUserBusinesses()
-      return
-    }
-
-    // Validate setup token
-    validateSetupToken()
+  
+    // Authenticated user without token - check existing businesses
+    checkUserBusinesses()
   }, [session, status, token, router])
 
   const checkUserBusinesses = async () => {
