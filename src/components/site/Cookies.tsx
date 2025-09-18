@@ -386,27 +386,24 @@ export default function Cookies() {
                   title: 'Analytics Services',
                   icon: '📊',
                   services: [
-                    'Google Analytics - Website traffic analysis',
-                    'Mixpanel - Product usage analytics',
-                    'Hotjar - User session recordings'
+                    'Google Analytics - Website traffic and user behavior analysis',
+                    'Microsoft Clarity - User session recordings and heatmaps'
                   ]
                 },
                 {
-                  title: 'Support & Communication',
-                  icon: '💬',
+                  title: 'Email Communication',
+                  icon: '📧',
                   services: [
-                    'Intercom - Customer support chat',
-                    'Zendesk - Help desk management',
-                    'Email providers - Communication'
+                    'Resend - Transactional email delivery',
+                    'Email notifications - Account and order updates'
                   ]
                 },
                 {
                   title: 'Payment Processing',
                   icon: '💳',
                   services: [
-                    'Stripe - Secure payment processing',
-                    'PayPal - Alternative payment options',
-                    'Banking partners - Financial services'
+                    'Stripe - Secure payment processing and billing',
+                    'Payment security - PCI DSS compliant transactions'
                   ]
                 }
               ].map((category, index) => (
