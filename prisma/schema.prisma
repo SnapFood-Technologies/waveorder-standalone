@@ -56,6 +56,17 @@ model User {
   updatedAt  DateTime       @updatedAt
 }
 
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
 model Business {
   id                 String             @id @default(auto()) @map("_id") @db.ObjectId
   name               String
