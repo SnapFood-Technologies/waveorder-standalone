@@ -209,3 +209,5 @@ model Business {
 - Current authentication and email verification systems are working
 - Database schema is mostly complete, only minor additions needed
 - Focus on core functionality first, then SEO and enhancements
+
+and don't forget currency chooser
