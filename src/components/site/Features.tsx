@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, MessageSquare, Upload, ShoppingCart, BarChart, Smartphone, Zap, Check, Clock, CreditCard, Users, Globe, Settings, Target, Truck, Shield, ChevronRight, Star, Award, TrendingUp, Package, Palette, Database } from 'lucide-react'
+import { ArrowRight, MessageSquare, Upload, ShoppingCart, BarChart, Smartphone, Zap, Check, Clock, CreditCard, Users, Globe, Settings, Target, Truck, Shield, ChevronRight, Star, Award, TrendingUp, Package, Palette, Database, Bell } from 'lucide-react'
 
 export default function Features() {
   const mainFeatures = [
@@ -11,42 +11,54 @@ export default function Features() {
       title: "Direct WhatsApp Orders",
       description: "Orders come straight to your existing WhatsApp number with all customer details formatted perfectly. No expensive API required.",
       benefits: ["Use your current WhatsApp", "No monthly API fees", "Instant notifications", "Formatted order messages"],
-      highlight: "Save $50-200/month on API costs"
+      highlight: "API-free solution",
+      gradient: "from-blue-50 to-indigo-50",
+      iconColor: "bg-blue-100 text-blue-600"
     },
     {
       icon: Upload,
       title: "Flexible Menu Setup",
       description: "Choose how you want to build your catalog - manual entry, CSV upload, or API integration for advanced users.",
       benefits: ["Manual product entry", "Bulk CSV import", "API integration option", "Live preview as you build"],
-      highlight: "3 ways to get started"
+      highlight: "3 setup methods",
+      gradient: "from-green-50 to-emerald-50",
+      iconColor: "bg-green-100 text-green-600"
     },
     {
       icon: Smartphone,
       title: "Mobile-First Catalogs",
       description: "Beautiful, fast-loading catalogs optimized for mobile devices where your customers actually shop.",
       benefits: ["Sub-2 second load times", "Mobile-optimized design", "Works on all devices", "Professional appearance"],
-      highlight: "Lightning fast performance"
+      highlight: "Lightning fast",
+      gradient: "from-purple-50 to-pink-50",
+      iconColor: "bg-purple-100 text-purple-600"
     },
     {
       icon: Users,
       title: "Team Collaboration",
       description: "Invite team members with different access levels to help manage orders, inventory, and customer service.",
       benefits: ["Multiple user accounts", "Role-based permissions", "Owner/Manager/Staff roles", "Team invitations"],
-      highlight: "Built for restaurants"
+      highlight: "Multi-user ready",
+      gradient: "from-orange-50 to-amber-50",
+      iconColor: "bg-orange-100 text-orange-600"
     },
     {
       icon: BarChart,
       title: "Analytics & Insights",
       description: "Track your best-selling items, peak order times, and customer patterns to optimize your business.",
       benefits: ["Order analytics", "Revenue tracking", "Customer insights", "Performance metrics"],
-      highlight: "Data-driven decisions"
+      highlight: "Data-driven decisions",
+      gradient: "from-teal-50 to-cyan-50",
+      iconColor: "bg-teal-100 text-teal-600"
     },
     {
       icon: Palette,
       title: "Custom Branding",
       description: "Customize your catalog with your business's colors, logo, and branding to create a professional experience.",
       benefits: ["Brand colors", "Logo upload", "Custom themes", "Professional look"],
-      highlight: "Your brand, your way"
+      highlight: "Your brand identity",
+      gradient: "from-rose-50 to-pink-50",
+      iconColor: "bg-rose-100 text-rose-600"
     }
   ]
 
@@ -55,109 +67,84 @@ export default function Features() {
       icon: Package,
       title: "Inventory Management",
       description: "Track stock levels and toggle items on/off when out of stock",
-      category: "Management"
+      category: "Management",
+      color: "bg-blue-50 border-blue-100 text-blue-700"
     },
     {
       icon: Globe,
       title: "Multi-language Support",
       description: "Serve customers in their preferred language",
-      category: "Localization"
+      category: "Localization",
+      color: "bg-green-50 border-green-100 text-green-700"
     },
     {
       icon: CreditCard,
       title: "Payment Flexibility",
       description: "Cash on delivery, bank transfers, and regional payment methods",
-      category: "Payments"
+      category: "Payments",
+      color: "bg-purple-50 border-purple-100 text-purple-700"
     },
     {
-      icon: Target,
-      title: "Customer Tiers",
-      description: "VIP pricing and wholesale options for bulk buyers",
-      category: "Customer Management"
+      icon: Bell,
+      title: "Order Notifications",
+      description: "Real-time alerts and automated status updates for customers",
+      category: "Communication",
+      color: "bg-orange-50 border-orange-100 text-orange-700"
     },
     {
       icon: Truck,
       title: "Delivery Management",
       description: "Delivery zones, fees, and estimated delivery times",
-      category: "Operations"
+      category: "Operations",
+      color: "bg-teal-50 border-teal-100 text-teal-700"
     },
     {
       icon: Database,
       title: "Order History",
       description: "Complete order tracking and customer relationship management",
-      category: "Management"
+      category: "Management",
+      color: "bg-rose-50 border-rose-100 text-rose-700"
     },
     {
       icon: Shield,
       title: "Business Types",
       description: "Optimized for restaurants, cafes, retail, grocery, and more",
-      category: "Flexibility"
+      category: "Flexibility",
+      color: "bg-indigo-50 border-indigo-100 text-indigo-700"
     },
     {
       icon: Settings,
       title: "Custom Domains",
       description: "Professional URLs with your own domain name",
-      category: "Branding"
-    }
-  ]
-
-  const comparisonData = [
-    {
-      feature: "Setup Time",
-      waveorder: "5 minutes",
-      competitors: "Days to weeks",
-      advantage: true
-    },
-    {
-      feature: "WhatsApp API Cost",
-      waveorder: "$0/month",
-      competitors: "$50-200/month",
-      advantage: true
-    },
-    {
-      feature: "Team Members",
-      waveorder: "Unlimited",
-      competitors: "Limited or extra cost",
-      advantage: true
-    },
-    {
-      feature: "Custom Branding",
-      waveorder: "Full customization",
-      competitors: "Basic themes only",
-      advantage: true
-    },
-    {
-      feature: "Mobile Performance",
-      waveorder: "Sub-2 seconds",
-      competitors: "3-5 seconds",
-      advantage: true
+      category: "Branding",
+      color: "bg-amber-50 border-amber-100 text-amber-700"
     }
   ]
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-16 pb-12 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <section className="pt-20 pb-6 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Everything You Need for WhatsApp Orders
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              WaveOrder combines simplicity with powerful features to help restaurants and businesses 
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+              WaveOrder combines simplicity with powerful features to help businesses 
               manage WhatsApp orders efficiently. No technical expertise required.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="/register"
-                className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
+                href="/auth/register"
+                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
               >
-                Start Free Trial
+                Start Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 
                 href="/demo"
-                className="px-8 py-4 border-2 border-teal-600 text-teal-600 text-lg font-semibold rounded-lg hover:bg-teal-50 transition-colors inline-flex items-center justify-center"
+                className="px-8 py-4 border-2 border-teal-500 text-teal-600 text-lg font-semibold rounded-xl hover:bg-teal-50 transition-colors inline-flex items-center justify-center"
               >
                 View Demo
               </Link>
@@ -174,35 +161,35 @@ export default function Features() {
               Core Features
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Built specifically for restaurants and food businesses that want to leverage WhatsApp
+              Built for businesses that want to leverage WhatsApp for seamless ordering
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-8">
             {mainFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
-                <div key={index} className="bg-white border-2 border-gray-100 rounded-2xl p-8 hover:border-teal-200 hover:shadow-lg transition-all duration-300">
+                <div key={index} className={`bg-gradient-to-br ${feature.gradient} rounded-2xl p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
                   <div className="flex items-start space-x-6">
-                    <div className="w-16 h-16 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className={`w-16 h-16 ${feature.iconColor} rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
                       <IconComponent className="w-8 h-8" />
                     </div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-4">
                         <h3 className="text-2xl font-bold text-gray-900">{feature.title}</h3>
-                        <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-medium rounded-full">
+                        <span className="px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
                           {feature.highlight}
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-6 leading-relaxed">{feature.description}</p>
-                      <ul className="space-y-3">
+                      <p className="text-gray-700 mb-6 leading-relaxed text-lg">{feature.description}</p>
+                      <div className="grid grid-cols-1 gap-3">
                         {feature.benefits.map((benefit, benefitIndex) => (
-                          <li key={benefitIndex} className="flex items-center">
-                            <Check className="w-5 h-5 text-teal-600 mr-3 flex-shrink-0" />
-                            <span className="text-gray-700">{benefit}</span>
-                          </li>
+                          <div key={benefitIndex} className="flex items-center bg-white/60 rounded-lg p-3 backdrop-blur-sm">
+                            <Check className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
+                            <span className="text-gray-800 font-medium">{benefit}</span>
+                          </div>
                         ))}
-                      </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -228,17 +215,17 @@ export default function Features() {
             {additionalFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
-                <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
-                    <IconComponent className="w-6 h-6" />
+                <div key={index} className={`bg-white rounded-2xl p-6 border-2 ${feature.color} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
+                  <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mb-4">
+                    <IconComponent className="w-7 h-7 text-gray-600" />
                   </div>
-                  <div className="mb-2">
-                    <span className="text-xs font-medium text-teal-600 uppercase tracking-wide">
+                  <div className="mb-3">
+                    <span className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full ${feature.color}`}>
                       {feature.category}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm">{feature.description}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                 </div>
               )
             })}
@@ -246,99 +233,126 @@ export default function Features() {
         </div>
       </section>
 
-      {/* Comparison Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Choose WaveOrder?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              See how we compare to other WhatsApp ordering solutions
-            </p>
-          </div>
-
-          <div className="bg-white border-2 border-gray-100 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feature</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-teal-600">WaveOrder</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-500">Competitors</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {comparisonData.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.feature}</td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex items-center justify-center">
-                          <span className="text-sm font-semibold text-teal-600">{item.waveorder}</span>
-                          {item.advantage && <Star className="w-4 h-4 text-yellow-400 ml-2" />}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center text-sm text-gray-500">{item.competitors}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Business Types Section */}
-      <section className="py-20 bg-gradient-to-br from-emerald-50 to-teal-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Perfect for Any Business
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              While optimized for restaurants, WaveOrder works great for many business types
+              While optimized for food businesses, WaveOrder works great for many business types
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { name: "Restaurants", icon: "🍽️", description: "Full menu management with modifiers and variants" },
-              { name: "Cafes", icon: "☕", description: "Perfect for coffee shops and quick service" },
-              { name: "Retail Stores", icon: "🛍️", description: "Product catalogs with inventory tracking" },
-              { name: "Grocery Stores", icon: "🛒", description: "Large product catalogs with categories" },
-              { name: "Jewelry Stores", icon: "💎", description: "High-value items with detailed descriptions" },
-              { name: "Florists", icon: "🌸", description: "Seasonal products and custom arrangements" }
+              { name: "Restaurants", icon: "🍽️", description: "Full menu management with modifiers and variants", color: "from-red-50 to-orange-50 border-red-100" },
+              { name: "Cafes", icon: "☕", description: "Perfect for coffee shops and quick service", color: "from-amber-50 to-yellow-50 border-amber-100" },
+              { name: "Retail Stores", icon: "🛍️", description: "Product catalogs with inventory tracking", color: "from-blue-50 to-indigo-50 border-blue-100" },
+              { name: "Grocery Stores", icon: "🛒", description: "Large product catalogs with categories", color: "from-green-50 to-emerald-50 border-green-100" },
+              { name: "Jewelry Stores", icon: "💎", description: "High-value items with detailed descriptions", color: "from-purple-50 to-pink-50 border-purple-100" },
+              { name: "Florists", icon: "🌸", description: "Seasonal products and custom arrangements", color: "from-rose-50 to-pink-50 border-rose-100" }
             ].map((business, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl border border-gray-200 text-center hover:shadow-md transition-shadow">
-                <div className="text-4xl mb-4">{business.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{business.name}</h3>
-                <p className="text-gray-600">{business.description}</p>
+              <div key={index} className={`bg-gradient-to-br ${business.color} p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
+                <div className="text-5xl mb-6">{business.icon}</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{business.name}</h3>
+                <p className="text-gray-700 leading-relaxed">{business.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Key Benefits Section */}
+      <section className="py-20 bg-gradient-to-br from-teal-50 to-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Businesses Choose WaveOrder
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              The advantages that make WaveOrder the preferred WhatsApp ordering solution
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Zap,
+                title: "5-Minute Setup",
+                description: "Get your WhatsApp ordering system live in minutes, not days or weeks",
+                highlight: "Instant deployment"
+              },
+              {
+                icon: Shield,
+                title: "No API Costs",
+                description: "Use your existing WhatsApp without expensive API integrations",
+                highlight: "Zero monthly fees"
+              },
+              {
+                icon: Users,
+                title: "Unlimited Team",
+                description: "Add as many team members as you need without extra charges",
+                highlight: "Scale freely"
+              },
+              {
+                icon: Smartphone,
+                title: "Mobile Performance",
+                description: "Lightning-fast catalogs that load in under 2 seconds",
+                highlight: "Speed optimized"
+              },
+              {
+                icon: Palette,
+                title: "Full Customization",
+                description: "Complete control over branding, colors, and appearance",
+                highlight: "Your unique style"
+              },
+              {
+                icon: Globe,
+                title: "Works Everywhere",
+                description: "Perfect for businesses in any country with WhatsApp",
+                highlight: "Global ready"
+              }
+            ].map((benefit, index) => {
+              const IconComponent = benefit.icon
+              return (
+                <div key={index} className="bg-white rounded-2xl p-8 border border-gray-200 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <IconComponent className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">{benefit.description}</p>
+                  <div className="inline-block bg-teal-100 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold">
+                    {benefit.highlight}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
-      <section className="py-20 bg-teal-600">
+      <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Transform Your WhatsApp Orders?
           </h2>
           <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            Join hundreds of businesses already using WaveOrder to streamline their operations and grow their revenue.
+            Join businesses worldwide who are already streamlining their operations and growing their revenue with WaveOrder.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
-              href="/register"
-              className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
+              href="/auth/register"
+              className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Start Your Free Trial
+              Start Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 
               href="/contact"
-              className="inline-flex items-center px-8 py-4 border-2 border-white text-white text-lg font-semibold rounded-lg hover:bg-white hover:text-teal-600 transition-colors"
+              className="inline-flex items-center px-8 py-4 border-2 border-white text-white text-lg font-semibold rounded-xl hover:bg-white hover:text-teal-600 transition-colors"
             >
               Schedule Demo
             </Link>

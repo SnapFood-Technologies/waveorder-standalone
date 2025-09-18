@@ -1,25 +1,25 @@
-favicon + logo
-social share logo
-sitemap
-robots
-google analytics
+favicon + logo -> done
+social share logo -> done
+sitemap -> done
+robots -> done
+google analytics -> done
 webmaster
-clarity
+clarity -> done
 
 static pages
-- about
-- contact
-- sitemap
-- features
-- pricing
-- demo 
-- resources
+- about -> done
+- contact -> done
+- sitemap -> done
+- features -> done
+- pricing  -> done
+- demo  -> done
+- resources -> done
 
-contact functional
-email/akismet
+contact functional -> done
+email/akismet -> done
 
 
-open emails - zoo
-@waveorder.app
+open emails - zoo -> done
+@waveorder.app -> done
 
-legal, contact, support, privacy
+legal, contact, support, privacy -> done

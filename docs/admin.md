@@ -428,7 +428,7 @@
 - Feature comparison table
 - Pricing display
 - Upgrade call-to-action
-- Trial period information
+- Trial period information ---> no needed, we have free version but no trial
 
 ### 11.2 Data Table Component
 **Component:** `components/admin/DataTable.tsx`

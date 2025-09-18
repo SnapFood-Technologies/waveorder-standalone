@@ -232,13 +232,6 @@ export default function VerifyEmailComponent() {
           </p>
         </div>
 
-        {/* Debug info - remove in production */}
-        <div className="bg-gray-100 p-3 rounded text-xs">
-          <p><strong>Debug Info:</strong></p>
-          <p>Email: {email || 'Not provided'}</p>
-          <p>Token: {token ? 'Present' : 'Not present'}</p>
-        </div>
-
         {apiError && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
             <AlertCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />

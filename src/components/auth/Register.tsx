@@ -192,14 +192,14 @@ export default function RegisterComponent() {
             Continue with Google
           </button>
 
-          <button
+          {/* <button
             onClick={handleMagicLink}
             disabled={loading || !formData.email}
             className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Mail className="w-5 h-5 mr-3" />
             Send Magic Link
-          </button>
+          </button> */}
         </div>
 
         <div className="relative">
@@ -216,7 +216,7 @@ export default function RegisterComponent() {
           {/* Full Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+            Full Name <span className="text-gray-400">(optional)</span>
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -224,7 +224,7 @@ export default function RegisterComponent() {
                 id="name"
                 name="name"
                 type="text"
-                required
+                // required
                 value={formData.name}
                 onChange={handleInputChange}
                 autoComplete="name"

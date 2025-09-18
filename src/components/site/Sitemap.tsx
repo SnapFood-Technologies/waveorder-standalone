@@ -27,7 +27,7 @@ export default function Sitemap() {
         },
         { 
           title: "Get Started", 
-          href: "/register", 
+          href: "/auth/register", 
           description: "Sign up for your free WaveOrder account and create your first WhatsApp catalog" 
         }
       ]
@@ -64,12 +64,12 @@ export default function Sitemap() {
       links: [
         { 
           title: "Sign Up", 
-          href: "/register", 
+          href: "/auth/register", 
           description: "Create your free WaveOrder account to start building WhatsApp catalogs" 
         },
         { 
           title: "Log In", 
-          href: "/login", 
+          href: "/auth/login", 
           description: "Access your WaveOrder dashboard to manage orders and catalog" 
         },
         { 
@@ -103,7 +103,7 @@ export default function Sitemap() {
   ]
 
   const quickLinks = [
-    { title: "Start Free Trial", href: "/register", type: "primary" },
+    { title: "Get Started Free", href: "/auth/register", type: "primary" },
     { title: "View Pricing", href: "/pricing", type: "secondary" },
     { title: "Schedule Demo", href: "/contact", type: "secondary" },
     { title: "See Features", href: "/features", type: "secondary" }
@@ -238,7 +238,7 @@ export default function Sitemap() {
       </section>
 
       {/* XML Sitemap Notice */}
-      <section className="py-12 bg-white border-t border-gray-100">
+      {/* <section className="py-12 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-600">
             Looking for our XML sitemap for search engines? 
@@ -247,7 +247,7 @@ export default function Sitemap() {
             </Link>
           </p>
         </div>
-      </section>
+      </section> */}
     </div>
   )
 }

@@ -700,8 +700,8 @@ export default function Header() {
             <Link href="/site/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
           </nav>
           <div className="flex space-x-4">
-            <Link href="/login" className="text-blue-600 hover:text-blue-800">Login</Link>
-            <Link href="/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            <Link href="/auth/login" className="text-blue-600 hover:text-blue-800">Login</Link>
+            <Link href="/auth/register" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
               Get Started
             </Link>
           </div>

@@ -124,7 +124,7 @@ export default function Pricing() {
               
               <div className="space-y-3">
                 <Link
-                  href={plan.name === 'Free' ? '/register' : '/register'}
+                  href={plan.name === 'Free' ? '/auth/register' : '/auth/register'}
                   className={`block text-center px-6 py-3 rounded-lg font-semibold transition-colors ${plan.buttonStyle}`}
                 >
                   {plan.buttonText}
