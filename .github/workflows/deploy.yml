@@ -1,0 +1,51 @@
+name: Deploy to self-hosted
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'   # or 20, match your server node
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          # add more secrets as needed
+        run: npm run build
+
+      - name: Prune dev deps (optional)
+        run: npm prune --production
+
+      # If you need a .env.production file (example) - create one from secrets
+      - name: Write .env.production
+        run: |
+          cat > .env.production <<'EOF'
+          NODE_ENV=production
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          EOF
+
+      - name: Ensure PM2 installed (in case)
+        run: npm install -g pm2
+
+      - name: Start or Restart with PM2
+        run: |
+          # start if not running; otherwise reload. Use your start script name.
+          if pm2 list | grep -q "my-next-app"; then
+            pm2 reload my-next-app || pm2 restart my-next-app
+          else
+            pm2 start npm --name "my-next-app" -- start
+          fi
+          pm2 save
