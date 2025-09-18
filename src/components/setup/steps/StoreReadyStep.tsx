@@ -15,6 +15,7 @@ import {
   CheckCircle,
   ArrowRight
 } from 'lucide-react'
+import { signIn } from 'next-auth/react'
 
 interface StoreReadyStepProps {
   data: SetupData
@@ -73,8 +74,17 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
   
       if (response.ok) {
         const data = await response.json()
+        
+        // Auto-login for token users
+        if (data.autoLogin) {
+          await signIn('credentials', { 
+            email: data.email,
+            redirect: false 
+          })
+        }
+        
         // Redirect to dashboard
-        window.location.href = data.redirectUrl || `/admin/stores/${data.business.id}/dashboard`
+        window.location.href = data.redirectUrl || `/admin/stores/${data.business.slug}/dashboard`
       } else {
         console.error('Failed to complete setup')
       }
