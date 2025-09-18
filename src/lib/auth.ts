@@ -24,6 +24,14 @@ export const authOptions: NextAuthOptions = {
     EmailProvider({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       sendVerificationRequest: async ({ identifier: email, url }) => {
+        // Check if user already exists
+        const existingUser = await prisma.user.findUnique({
+          where: { email: email.toLowerCase() }
+        })
+        
+        if (!existingUser) {
+          throw new Error('No account found with this email address. Please sign up first.')
+        }
         try {
           await sendMagicLinkEmail({
             to: email,
