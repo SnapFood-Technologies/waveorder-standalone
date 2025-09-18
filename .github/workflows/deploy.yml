@@ -1,91 +1,160 @@
-name: Deploy to self-hosted
+name: 🚀 Deploy to Azure Production Server
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: # Allows manual triggering
+
+# Configuration variables - change these as needed
+env:
+  NODE_VERSION: '22'
+  APP_NAME: 'waveorder-web-app'  # Change this to your preferred app name
+  PM2_ECOSYSTEM_FILE: 'ecosystem.config.js'  # Optional: if you want to use PM2 ecosystem file
 
 jobs:
-  build-and-deploy:
+  deploy:
+    name: 🏗️ Build and Deploy
     runs-on: self-hosted
+    timeout-minutes: 15  # Prevents hanging builds
+    
     steps:
-      - name: Checkout
+      # 📥 CHECKOUT CODE
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
+        with:
+          clean: true  # Ensures clean checkout
 
-      - name: Use Node LTS
+      # ⚙️ SETUP NODE.JS
+      - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'  # Cache npm dependencies
 
-      - name: Install dependencies
-        run: npm ci
+      # 📦 INSTALL DEPENDENCIES
+      - name: 📦 Install Dependencies
+        run: |
+          echo "Installing dependencies..."
+          npm ci --no-audit --no-fund
+          echo "✅ Dependencies installed successfully"
 
-      - name: Build
+      # 🏗️ BUILD APPLICATION
+      - name: 🏗️ Build Application
         env:
-          # Database
+          # 🗄️ Database
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           
-          # Auth
+          # 🔐 Authentication
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           
-          # APIs
+          # 🔧 API Keys
           AKISMET_API_KEY: ${{ secrets.AKISMET_API_KEY }}
           BKT_API_KEY: ${{ secrets.BKT_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           
-          # Public variables (these will be embedded in the client-side code)
+          # 🌐 Public Environment Variables
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_CLARITY_ID: ${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
           NEXT_PUBLIC_GA_ID: ${{ secrets.NEXT_PUBLIC_GA_ID }}
           
-          # Email addresses
+          # 📧 Email Configuration
           CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           LEGAL_EMAIL: ${{ secrets.LEGAL_EMAIL }}
           PRIVACY_EMAIL: ${{ secrets.PRIVACY_EMAIL }}
           
-          # Build environment
+          # 🏭 Build Environment
           NODE_ENV: production
-        run: npm run build
-
-      - name: Prune dev deps (optional)
-        run: npm prune --production
-
-      # Create .env.production file with all required variables
-      - name: Write .env.production
         run: |
+          echo "Starting build process..."
+          npm run build
+          echo "✅ Build completed successfully"
+
+      # 🧹 CLEANUP DEPENDENCIES
+      - name: 🧹 Remove Development Dependencies
+        run: |
+          echo "Removing development dependencies..."
+          npm prune --production --no-audit
+          echo "✅ Development dependencies removed"
+
+      # 📝 CREATE PRODUCTION ENVIRONMENT FILE
+      - name: 📝 Create Production Environment
+        run: |
+          echo "Creating production environment file..."
           cat > .env.production <<'EOF'
+          # 🏭 Production Environment Configuration
           NODE_ENV=production
+          
+          # 🗄️ Database
           DATABASE_URL=${{ secrets.DATABASE_URL }}
+          
+          # 🔐 Authentication
           NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          
+          # 🔧 API Keys
           AKISMET_API_KEY=${{ secrets.AKISMET_API_KEY }}
           BKT_API_KEY=${{ secrets.BKT_API_KEY }}
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}
+          
+          # 🌐 Public Variables
           NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_CLARITY_ID=${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
           NEXT_PUBLIC_GA_ID=${{ secrets.NEXT_PUBLIC_GA_ID }}
+          
+          # 📧 Email Configuration
           CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
           EMAIL_FROM=${{ secrets.EMAIL_FROM }}
           LEGAL_EMAIL=${{ secrets.LEGAL_EMAIL }}
           PRIVACY_EMAIL=${{ secrets.PRIVACY_EMAIL }}
           EOF
+          echo "✅ Production environment file created"
 
-      - name: Ensure PM2 installed (in case)
-        run: npm install -g pm2
-
-      - name: Start or Restart with PM2
+      # 📦 SETUP PM2
+      - name: 📦 Setup PM2 Process Manager
         run: |
-          # start if not running; otherwise reload. Use your start script name.
-          if pm2 list | grep -q "my-next-app"; then
-            pm2 reload my-next-app || pm2 restart my-next-app
+          echo "Checking PM2 installation..."
+          if ! command -v pm2 &> /dev/null; then
+            echo "Installing PM2 globally..."
+            npm install -g pm2
           else
-            pm2 start npm --name "my-next-app" -- start
+            echo "PM2 is already installed"
           fi
+          pm2 --version
+
+      # 🚀 DEPLOY APPLICATION
+      - name: 🚀 Deploy Application
+        run: |
+          echo "Deploying application: ${{ env.APP_NAME }}"
+          
+          # Check if app is already running
+          if pm2 list | grep -q "${{ env.APP_NAME }}"; then
+            echo "♻️ Reloading existing application..."
+            pm2 reload ${{ env.APP_NAME }} --wait-ready --listen-timeout 10000 || {
+              echo "⚠️ Reload failed, attempting restart..."
+              pm2 restart ${{ env.APP_NAME }}
+            }
+          else
+            echo "🆕 Starting new application..."
+            pm2 start npm --name "${{ env.APP_NAME }}" -- start
+          fi
+          
+          # Save PM2 process list
           pm2 save
+          
+          echo "✅ Application deployed successfully!"
+
+      # ✅ DEPLOYMENT STATUS
+      - name: ✅ Verify Deployment
+        run: |
+          echo "🔍 Checking application status..."
+          pm2 status
+          pm2 logs ${{ env.APP_NAME }} --lines 5 --nostream
+          echo "✅ Deployment verification complete!"
