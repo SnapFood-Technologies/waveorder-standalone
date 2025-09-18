@@ -14,27 +14,67 @@ jobs:
       - name: Use Node LTS
         uses: actions/setup-node@v4
         with:
-          node-version: '22'   # or 20, match your server node
+          node-version: '22'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          # add more secrets as needed
+          # Database
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          
+          # Auth
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          
+          # APIs
+          AKISMET_API_KEY: ${{ secrets.AKISMET_API_KEY }}
+          BKT_API_KEY: ${{ secrets.BKT_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          
+          # Public variables (these will be embedded in the client-side code)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_CLARITY_ID: ${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
+          NEXT_PUBLIC_GA_ID: ${{ secrets.NEXT_PUBLIC_GA_ID }}
+          
+          # Email addresses
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          LEGAL_EMAIL: ${{ secrets.LEGAL_EMAIL }}
+          PRIVACY_EMAIL: ${{ secrets.PRIVACY_EMAIL }}
+          
+          # Build environment
+          NODE_ENV: production
         run: npm run build
 
       - name: Prune dev deps (optional)
         run: npm prune --production
 
-      # If you need a .env.production file (example) - create one from secrets
+      # Create .env.production file with all required variables
       - name: Write .env.production
         run: |
           cat > .env.production <<'EOF'
           NODE_ENV=production
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
-          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          AKISMET_API_KEY=${{ secrets.AKISMET_API_KEY }}
+          BKT_API_KEY=${{ secrets.BKT_API_KEY }}
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_CLARITY_ID=${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
+          NEXT_PUBLIC_GA_ID=${{ secrets.NEXT_PUBLIC_GA_ID }}
+          CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
+          EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+          LEGAL_EMAIL=${{ secrets.LEGAL_EMAIL }}
+          PRIVACY_EMAIL=${{ secrets.PRIVACY_EMAIL }}
           EOF
 
       - name: Ensure PM2 installed (in case)
