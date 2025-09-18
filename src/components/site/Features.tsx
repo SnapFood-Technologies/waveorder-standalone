@@ -127,24 +127,24 @@ export default function Features() {
       <section className="pt-20 pb-6 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Everything You Need for WhatsApp Orders
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
               WaveOrder combines simplicity with powerful features to help businesses 
               manage WhatsApp orders efficiently. No technical expertise required.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/auth/register"
-                className="px-8 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
               >
                 Start Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 
                 href="/demo"
-                className="px-8 py-4 border-2 border-teal-500 text-teal-600 text-lg font-semibold rounded-xl hover:bg-teal-50 transition-colors inline-flex items-center justify-center"
+                className="px-6 sm:px-8 py-3 sm:py-4 border-2 border-teal-500 text-teal-600 text-lg font-semibold rounded-xl hover:bg-teal-50 transition-colors inline-flex items-center justify-center"
               >
                 View Demo
               </Link>
@@ -160,33 +160,44 @@ export default function Features() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Core Features
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Built for businesses that want to leverage WhatsApp for seamless ordering
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid gap-8 lg:grid-cols-2">
             {mainFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
-                <div key={index} className={`bg-gradient-to-br ${feature.gradient} rounded-2xl p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
-                  <div className="flex items-start space-x-6">
-                    <div className={`w-16 h-16 ${feature.iconColor} rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                      <IconComponent className="w-8 h-8" />
+                <div key={index} className={`bg-gradient-to-br ${feature.gradient} rounded-2xl p-6 sm:p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
+                  {/* Mobile-first: Stacked layout */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-6">
+                    {/* Icon and Title Section */}
+                    <div className="flex items-center justify-between mb-4 sm:mb-0 sm:flex-col sm:items-center sm:space-y-4">
+                      <div className={`w-14 h-14 sm:w-16 sm:h-16 ${feature.iconColor} rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                        <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />
+                      </div>
+                      <span className="sm:hidden px-3 py-1.5 bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
+                        {feature.highlight}
+                      </span>
                     </div>
+                    
+                    {/* Content Section */}
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-2xl font-bold text-gray-900">{feature.title}</h3>
-                        <span className="px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
+                      <div className="flex items-center justify-between mb-4 sm:mb-4">
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900">{feature.title}</h3>
+                        <span className="hidden sm:inline-block px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 text-sm font-semibold rounded-full border border-gray-200">
                           {feature.highlight}
                         </span>
                       </div>
-                      <p className="text-gray-700 mb-6 leading-relaxed text-lg">{feature.description}</p>
-                      <div className="grid grid-cols-1 gap-3">
+                      <p className="text-gray-700 mb-6 leading-relaxed text-base sm:text-lg">{feature.description}</p>
+                      
+                      {/* Benefits Grid - Mobile optimized */}
+                      <div className="grid grid-cols-1 gap-2 sm:gap-3">
                         {feature.benefits.map((benefit, benefitIndex) => (
-                          <div key={benefitIndex} className="flex items-center bg-white/60 rounded-lg p-3 backdrop-blur-sm">
-                            <Check className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
-                            <span className="text-gray-800 font-medium">{benefit}</span>
+                          <div key={benefitIndex} className="flex items-center bg-white/60 rounded-lg p-2.5 sm:p-3 backdrop-blur-sm">
+                            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 mr-2 sm:mr-3 flex-shrink-0" />
+                            <span className="text-gray-800 font-medium text-sm sm:text-base">{benefit}</span>
                           </div>
                         ))}
                       </div>
@@ -206,12 +217,12 @@ export default function Features() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Additional Features
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               Every tool you need to run a successful WhatsApp ordering business
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {additionalFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
@@ -225,7 +236,7 @@ export default function Features() {
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                  <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{feature.description}</p>
                 </div>
               )
             })}
@@ -240,12 +251,12 @@ export default function Features() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Perfect for Any Business
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               While optimized for food businesses, WaveOrder works great for many business types
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[
               { name: "Restaurants", icon: "🍽️", description: "Full menu management with modifiers and variants", color: "from-red-50 to-orange-50 border-red-100" },
               { name: "Cafes", icon: "☕", description: "Perfect for coffee shops and quick service", color: "from-amber-50 to-yellow-50 border-amber-100" },
@@ -254,10 +265,10 @@ export default function Features() {
               { name: "Jewelry Stores", icon: "💎", description: "High-value items with detailed descriptions", color: "from-purple-50 to-pink-50 border-purple-100" },
               { name: "Florists", icon: "🌸", description: "Seasonal products and custom arrangements", color: "from-rose-50 to-pink-50 border-rose-100" }
             ].map((business, index) => (
-              <div key={index} className={`bg-gradient-to-br ${business.color} p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
-                <div className="text-5xl mb-6">{business.icon}</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{business.name}</h3>
-                <p className="text-gray-700 leading-relaxed">{business.description}</p>
+              <div key={index} className={`bg-gradient-to-br ${business.color} p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
+                <div className="text-4xl sm:text-5xl mb-4 sm:mb-6">{business.icon}</div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{business.name}</h3>
+                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{business.description}</p>
               </div>
             ))}
           </div>
@@ -271,12 +282,12 @@ export default function Features() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Why Businesses Choose WaveOrder
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
               The advantages that make WaveOrder the preferred WhatsApp ordering solution
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: Zap,
@@ -317,13 +328,13 @@ export default function Features() {
             ].map((benefit, index) => {
               const IconComponent = benefit.icon
               return (
-                <div key={index} className="bg-white rounded-2xl p-8 border border-gray-200 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <IconComponent className="w-8 h-8" />
+                <div key={index} className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                    <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
-                  <p className="text-gray-600 mb-4 leading-relaxed">{benefit.description}</p>
-                  <div className="inline-block bg-teal-100 text-teal-700 px-4 py-2 rounded-full text-sm font-semibold">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed text-sm sm:text-base">{benefit.description}</p>
+                  <div className="inline-block bg-teal-100 text-teal-700 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold">
                     {benefit.highlight}
                   </div>
                 </div>
@@ -336,23 +347,23 @@ export default function Features() {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Transform Your WhatsApp Orders?
           </h2>
-          <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
             Join businesses worldwide who are already streamlining their operations and growing their revenue with WaveOrder.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/auth/register"
-              className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
             >
               Start Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 
               href="/contact"
-              className="inline-flex items-center px-8 py-4 border-2 border-white text-white text-lg font-semibold rounded-xl hover:bg-white hover:text-teal-600 transition-colors"
+              className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white text-lg font-semibold rounded-xl hover:bg-white hover:text-teal-600 transition-colors"
             >
               Schedule Demo
             </Link>
