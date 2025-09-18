@@ -10,8 +10,8 @@ static pages
 - about -> done
 - contact -> done
 - sitemap -> done
-- features
-- pricing
+- features -> done
+- pricing  -> done
 - demo  -> done
 - resources -> done
 
