@@ -97,19 +97,34 @@ export async function POST(request: NextRequest) {
         console.log(`Invitation sent to ${invitation.email}`)
       } catch (emailError) {
         console.error(`Failed to send invitation to ${invitation.email}:`, emailError)
-        // Continue with other invitations even if one fails
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      business: {
-        id: business.id,
-        name: business.name,
-        slug: business.slug
-      },
-      redirectUrl: `/admin/stores/${business.id}/dashboard`
-    })
+    if (setupToken) {
+      // Token user - needs auto-login
+      return NextResponse.json({
+        success: true,
+        autoLogin: true,
+        email: user.email,
+        business: {
+          id: business.id,
+          name: business.name,
+          slug: business.slug
+        },
+        redirectUrl: `/admin/stores/${business.id}/dashboard`
+      })
+    } else {
+      // Session user (Google OAuth) - normal response
+      return NextResponse.json({
+        success: true,
+        business: {
+          id: business.id,
+          name: business.name,
+          slug: business.slug
+        },
+        redirectUrl: `/admin/stores/${business.id}/dashboard`
+      })
+    }
 
   } catch (error) {
     console.error('Complete setup error:', error)
@@ -118,9 +133,4 @@ export async function POST(request: NextRequest) {
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
-}
-
-function generateInviteToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15)
 }
