@@ -181,10 +181,10 @@ const messageTerms = {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  context: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params
+    const { slug } = await context.params
     const orderData = await request.json()
 
     // Find business
@@ -306,6 +306,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const businessType = business.businessType || 'RESTAURANT'
   
   // Get appropriate terms for business type and language
+  // @ts-ignore
   const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
   
   let message = `*${terms.order} ${order.orderNumber}*\n\n`

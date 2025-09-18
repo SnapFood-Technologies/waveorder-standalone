@@ -4,7 +4,7 @@ import StoreFront from '@/components/storefront/StoreFront'
 import type { Metadata } from 'next'
 
 interface PageProps {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 async function getStoreData(slug: string) {
@@ -95,7 +95,8 @@ function getPriceRange(categories: any[], currency: string): string {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const storeData = await getStoreData(params.slug)
+  const { slug } = await params
+  const storeData = await getStoreData(slug)
   
   if (!storeData) {
     return {
@@ -133,7 +134,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: primaryImage ? [primaryImage] : [],
     },
     alternates: {
-      canonical: storeData.canonicalUrl || `https://waveorder.app/${params.slug}`,
+      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}`,
     },
     other: {
       'business:contact_data:street_address': storeData.address || '',
@@ -145,7 +146,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function StorePage({ params }: PageProps) {
-  const storeData = await getStoreData(params.slug)
+  const { slug } = await params
+  const storeData = await getStoreData(slug)
 
   if (!storeData) {
     notFound()
@@ -166,7 +168,7 @@ export default async function StorePage({ params }: PageProps) {
             "description": storeData.description,
             "image": primaryImage,
             "logo": storeData.logo,
-            "url": storeData.canonicalUrl || `https://waveorder.app/${params.slug}`,
+            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}`,
             "telephone": storeData.phone,
             "email": storeData.email,
             "priceRange": priceRange,

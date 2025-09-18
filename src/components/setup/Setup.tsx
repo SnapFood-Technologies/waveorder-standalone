@@ -24,6 +24,7 @@ export interface SetupData {
   businessGoals: string[]
   subscriptionPlan: 'FREE' | 'PRO'
   businessName: string
+  language?: string
   whatsappNumber: string
   storeSlug: string
   teamMembers: { email: string; role: string }[]
