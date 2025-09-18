@@ -103,7 +103,7 @@ export default function Sitemap() {
   ]
 
   const quickLinks = [
-    { title: "Start Free Trial", href: "/auth/register", type: "primary" },
+    { title: "Get Started Free", href: "/auth/register", type: "primary" },
     { title: "View Pricing", href: "/pricing", type: "secondary" },
     { title: "Schedule Demo", href: "/contact", type: "secondary" },
     { title: "See Features", href: "/features", type: "secondary" }

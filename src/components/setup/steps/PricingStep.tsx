@@ -70,27 +70,6 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
         </p>
       </div>
 
-      {/* Timeline for Pro Plan */}
-      {selectedPlan === 'PRO' && (
-        <div className="max-w-2xl mx-auto mb-8 bg-gradient-to-r from-teal-50 to-emerald-50 p-6 rounded-xl border border-teal-200">
-          <h3 className="font-semibold text-teal-800 mb-3">Pro Plan Timeline:</h3>
-          <div className="space-y-2 text-sm text-teal-700">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-              <span><strong>Today:</strong> Get Instant Access - Start your free trial</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-              <span><strong>7 days:</strong> We'll Remind You - Get reminders before trial ends</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-teal-600 rounded-full"></div>
-              <span><strong>After trial:</strong> Billing Begins - Subscription starts automatically. Cancel anytime in settings.</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
         {plans.map((plan) => (
           <div

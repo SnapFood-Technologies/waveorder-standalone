@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Heart, Target, Shield, Users, Globe, Zap, Award, TrendingUp } from 'lucide-react'
+import { ArrowRight, Heart, Target, Shield, Users, Globe, Zap, Award, TrendingUp, Smartphone, QrCode, Settings, BarChart3, CreditCard, Upload } from 'lucide-react'
 
 export default function About() {
   const values = [
@@ -28,47 +28,108 @@ export default function About() {
     }
   ]
 
-  const stats = [
-    { number: "500+", label: "Businesses Using WaveOrder" },
-    { number: "50K+", label: "Orders Processed Monthly" },
-    { number: "25+", label: "Countries Served" },
-    { number: "99.9%", label: "Uptime Reliability" }
+  const platforms = [
+    {
+      icon: Smartphone,
+      title: "Mobile-First Design",
+      description: "Beautiful catalogs optimized for smartphones where most orders happen"
+    },
+    {
+      icon: Globe,
+      title: "No App Required",
+      description: "Customers use WhatsApp they already have - no downloads needed"
+    },
+    {
+      icon: Zap,
+      title: "Instant Setup",
+      description: "Get your WhatsApp ordering catalog live in under 5 minutes"
+    }
   ]
 
-  const team = [
+  const setupOptions = [
     {
-      name: "Alex Rodriguez",
-      role: "Founder & CEO",
-      description: "Former restaurant owner who experienced firsthand the challenges of managing WhatsApp orders manually.",
-      background: "15 years in restaurant operations"
+      icon: Settings,
+      title: "Manual Setup",
+      description: "Add products directly through our intuitive dashboard interface",
+      time: "Start immediately"
     },
     {
-      name: "Sarah Chen",
-      role: "Head of Product", 
-      description: "Product strategist focused on creating intuitive experiences for business owners and their customers.",
-      background: "10 years in SaaS product development"
+      icon: Upload,
+      title: "CSV Import",
+      description: "Bulk upload your entire menu using CSV file import",
+      time: "5-10 minutes"
     },
     {
-      name: "Marcus Johnson",
-      role: "Head of Engineering",
-      description: "Technical architect ensuring WaveOrder scales reliably as more businesses join the platform.",
-      background: "12 years building scalable systems"
+      icon: Target,
+      title: "API Integration",
+      description: "Connect existing systems through custom API integrations",
+      time: "Upon request"
+    }
+  ]
+
+  const businessTypes = [
+    {
+      category: "Primary Focus",
+      types: ["Restaurants & Cafes", "Food Delivery Services", "Quick Service Restaurants"]
+    },
+    {
+      category: "Secondary Markets",
+      types: ["Retail Stores", "Home-based Food Businesses", "Jewelry Stores", "Florists", "Any Product-based Business"]
+    }
+  ]
+
+  const dashboardFeatures = [
+    {
+      icon: BarChart3,
+      title: "Analytics & Insights",
+      description: "Track order patterns, popular items, and business performance"
+    },
+    {
+      icon: Users,
+      title: "Customer Management",
+      description: "CRM features with customer contact info and order history"
+    },
+    {
+      icon: CreditCard,
+      title: "Flexible Payments",
+      description: "Cash on delivery, local payments, and wholesale pricing options"
+    },
+    {
+      icon: Settings,
+      title: "Team Collaboration",
+      description: "Multi-user access with customizable permissions for your team"
     }
   ]
 
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-16 pb-12 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <section className="pt-20 pb-16 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Making WhatsApp Ordering Super Easy
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
               We believe every restaurant and business should be able to leverage WhatsApp for orders 
               without technical complexity or expensive setup costs. WaveOrder makes this vision a reality.
             </p>
+            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 inline-block border border-white/20">
+              <div className="flex items-center justify-center space-x-8">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">5 min</div>
+                  <div className="text-sm text-gray-600">Setup Time</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">$0</div>
+                  <div className="text-sm text-gray-600">API Costs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">24/7</div>
+                  <div className="text-sm text-gray-600">Order Processing</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -90,20 +151,6 @@ export default function About() {
                 order management - losing orders in chat threads, spending hours creating digital menus, 
                 and missing out on the convenience their customers wanted.
               </p>
-              <div className="flex items-center space-x-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-teal-600">5 min</div>
-                  <div className="text-sm text-gray-600">Setup Time</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-teal-600">$0</div>
-                  <div className="text-sm text-gray-600">API Costs</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-teal-600">24/7</div>
-                  <div className="text-sm text-gray-600">Order Processing</div>
-                </div>
-              </div>
             </div>
             <div className="bg-gradient-to-br from-teal-100 to-emerald-100 p-8 rounded-2xl">
               <div className="text-center">
@@ -150,95 +197,192 @@ export default function About() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-teal-600">
+      {/* Platform Features */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Growing Together
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              WhatsApp-Native Platform
             </h2>
-            <p className="text-xl text-teal-100 max-w-2xl mx-auto">
-              We're proud to support businesses worldwide in their WhatsApp ordering journey
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Leveraging the platform customers already use, without requiring expensive API integrations
             </p>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-teal-100">{stat.label}</div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {platforms.map((platform, index) => {
+              const IconComponent = platform.icon
+              return (
+                <div key={index} className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-100 text-center">
+                  <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-6">
+                    <IconComponent className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{platform.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{platform.description}</p>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-12 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8 border border-emerald-100">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">Customer Journey</h3>
+            <div className="grid md:grid-cols-5 gap-4 text-center">
+              {[
+                "Customer clicks catalog link",
+                "Browses beautiful web catalog", 
+                "Selects items & clicks 'Order via WhatsApp'",
+                "Formatted message opens in WhatsApp",
+                "Business receives order on WhatsApp"
+              ].map((step, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-2 text-sm font-bold">
+                    {index + 1}
+                  </div>
+                  <p className="text-sm text-gray-700">{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Setup Options */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Flexible Setup Options
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Choose the setup method that works best for your business and technical comfort level
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {setupOptions.map((option, index) => {
+              const IconComponent = option.icon
+              return (
+                <div key={index} className="bg-white p-8 rounded-xl border border-gray-200 hover:border-orange-200 transition-colors">
+                  <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center mb-6">
+                    <IconComponent className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{option.title}</h3>
+                  <p className="text-gray-600 mb-4 leading-relaxed">{option.description}</p>
+                  <div className="text-sm font-medium text-orange-600">{option.time}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Business Dashboard */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Comprehensive Business Dashboard
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Everything you need to manage your WhatsApp orders, track performance, and grow your business
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {dashboardFeatures.map((feature, index) => {
+              const IconComponent = feature.icon
+              return (
+                <div key={index} className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100 text-center">
+                  <div className="w-14 h-14 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <IconComponent className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Target Markets */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Who We Serve
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From restaurants to retail, WaveOrder adapts to any product-based business
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12">
+            {businessTypes.map((group, index) => (
+              <div key={index} className="bg-white rounded-2xl p-8 border border-gray-200">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">{group.category}</h3>
+                <div className="space-y-4">
+                  {group.types.map((type, typeIndex) => (
+                    <div key={typeIndex} className="flex items-center bg-gray-50 rounded-lg p-4">
+                      <div className="w-3 h-3 bg-teal-500 rounded-full mr-4"></div>
+                      <span className="text-gray-700 font-medium">{type}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Story Section */}
+      {/* Key Value Propositions */}
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8 text-center">
-              Our Story
-            </h2>
-            
-            <div className="prose prose-lg prose-gray mx-auto">
-              <p className="text-xl text-gray-600 leading-relaxed mb-6">
-                WaveOrder began when our founder, a restaurant owner, spent countless hours manually 
-                managing WhatsApp orders. Orders were getting lost in chat threads, creating digital 
-                menus was expensive, and there had to be a better way.
-              </p>
-              
-              <p className="text-lg text-gray-600 leading-relaxed mb-6">
-                After researching existing solutions, we found they were either too expensive, too 
-                complex, or required technical expertise that most restaurant owners didn't have. 
-                We decided to build the solution we wished existed.
-              </p>
-              
-              <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                Today, WaveOrder helps hundreds of businesses streamline their WhatsApp orders with 
-                beautiful catalogs, seamless order management, and tools that actually work for 
-                real restaurant operations.
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-r from-teal-50 to-emerald-50 p-8 rounded-2xl border border-teal-100">
-              <div className="text-center">
-                <Award className="w-12 h-12 text-teal-600 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  Committed to Your Success
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  We measure our success by your success. Every feature we build, every update we release, 
-                  and every support interaction is focused on helping your business grow through better WhatsApp ordering.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Meet Our Team
+              Why Choose WaveOrder?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Restaurant operators and technology experts working together to solve real business challenges
-            </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="bg-white p-8 rounded-xl border border-gray-200 text-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <Users className="w-10 h-10 text-teal-600" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Easy Setup",
+                description: "Get started in minutes without technical expertise",
+                highlight: "5-minute setup"
+              },
+              {
+                title: "WhatsApp Native",
+                description: "Leverages the platform customers already use daily",
+                highlight: "No new apps needed"
+              },
+              {
+                title: "No Website Required",
+                description: "Complete solution without needing separate website development",
+                highlight: "Instant online presence"
+              },
+              {
+                title: "Mobile Optimized",
+                description: "Perfect experience on all devices, especially smartphones",
+                highlight: "Sub-2 second load times"
+              },
+              {
+                title: "Customizable Branding",
+                description: "Maintain your brand identity with custom colors and logos",
+                highlight: "Your brand, your way"
+              },
+              {
+                title: "Scalable Solution",
+                description: "Grows with your business from startup to enterprise",
+                highlight: "No commission fees"
+              }
+            ].map((prop, index) => (
+              <div key={index} className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-100">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{prop.title}</h3>
+                <p className="text-gray-600 mb-4 leading-relaxed">{prop.description}</p>
+                <div className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                  {prop.highlight}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{member.name}</h3>
-                <div className="text-teal-600 font-medium mb-4">{member.role}</div>
-                <p className="text-gray-600 mb-4 leading-relaxed">{member.description}</p>
-                <div className="text-sm text-gray-500">{member.background}</div>
               </div>
             ))}
           </div>
@@ -246,28 +390,28 @@ export default function About() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-r from-teal-50 to-emerald-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Join Our Growing Community
+            Ready to Transform Your WhatsApp Orders?
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Become part of the WaveOrder family and transform how your business handles WhatsApp orders. 
-            Start your free trial today.
+            Join businesses worldwide who are already streamlining their WhatsApp ordering with WaveOrder. 
+            Start free today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/auth/register"
-              className="inline-flex items-center px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Start Free Trial
+              Start Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 
-              href="/contact"
-              className="inline-flex items-center px-8 py-4 border-2 border-teal-600 text-teal-600 text-lg font-semibold rounded-lg hover:bg-teal-50 transition-colors"
+              href="/demo"
+              className="inline-flex items-center px-8 py-4 border-2 border-teal-500 text-teal-600 text-lg font-semibold rounded-xl hover:bg-teal-50 transition-colors"
             >
-              Get in Touch
+              View Live Demo
             </Link>
           </div>
         </div>

@@ -7,12 +7,12 @@ webmaster
 clarity -> done
 
 static pages
-- about
+- about -> done
 - contact -> done
 - sitemap -> done
 - features
 - pricing
-- demo 
+- demo  -> done
 - resources -> done
 
 contact functional -> done

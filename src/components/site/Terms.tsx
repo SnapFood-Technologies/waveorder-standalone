@@ -341,10 +341,9 @@ export default function Terms() {
               </div>
 
               <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">Free Trial and Free Plan</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">Free Plan</h3>
                 <div className="space-y-4">
                   {[
-                    'Free trials are available for new customers only, one per business',
                     'Free plan users have access to limited features and usage quotas',
                     'We reserve the right to modify free plan limitations with notice',
                     'No payment information required for free plan usage and evaluation'

@@ -122,7 +122,7 @@ export default function Demo() {
                 href="/auth/register"
                 className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
               >
-                Start Your Free Trial
+                Start Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 
@@ -181,7 +181,7 @@ export default function Demo() {
                   
                   <button className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center group">
                     <Play className="w-4 h-4 mr-2" />
-                    Try Interactive Demo
+                    Play Interactive Demo
                     <ExternalLink className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 </div>
@@ -191,58 +191,7 @@ export default function Demo() {
         </div>
       </section>
 
-      {/* Sample Business Demos */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Real Business Examples
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Explore catalogs from different types of businesses to see how WaveOrder adapts to various industries
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {businessTypes.map((business, index) => (
-              <div key={index} className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="h-48 bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center">
-                  <div className="text-center text-gray-600">
-                    <Smartphone className="w-16 h-16 mx-auto mb-4" />
-                    <p className="font-medium">{business.name} Demo</p>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xl font-bold text-gray-900">{business.name}</h3>
-                    <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-medium rounded-full">
-                      {business.type}
-                    </span>
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4">{business.description}</p>
-                  
-                  <div className="space-y-2 mb-6">
-                    {business.highlights.map((highlight, highlightIndex) => (
-                      <div key={highlightIndex} className="flex items-center text-sm text-gray-600">
-                        <Eye className="w-4 h-4 text-teal-500 mr-2" />
-                        {highlight}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <button className="w-full bg-teal-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-teal-700 transition-colors flex items-center justify-center">
-                    <Play className="w-4 h-4 mr-2" />
-                    View {business.type} Demo
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+    
       {/* How It Works Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -267,7 +216,7 @@ export default function Demo() {
                 step: "2", 
                 title: "Share Your Link",
                 description: "Get your unique catalog URL and share it with customers via social media, QR codes, or add it to your existing website.",
-                features: ["Unique URL", "QR code generation", "Social sharing"]
+                features: ["Unique URL", "Advanced Analytics", "Social sharing"]
               },
               {
                 step: "3",
@@ -311,7 +260,7 @@ export default function Demo() {
               href="/auth/register"
               className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
             >
-              Start Free Trial
+              Start Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

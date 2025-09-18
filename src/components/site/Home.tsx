@@ -28,7 +28,7 @@ export default function Home() {
                   href="/auth/register"
                   className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
                 >
-                  Start Free Trial
+                  Start Free
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
                 
