@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { 
   Search, 
   ShoppingCart, 
@@ -9,18 +9,17 @@ import {
   X, 
   MapPin, 
   Clock, 
-  Star,
-  ChevronDown,
   Heart,
   Share2,
   Truck,
   Store,
   UtensilsCrossed,
   Phone,
-  Mail,
-  Globe,
-  Info
+  Info,
+  Package,
+  AlertCircle
 } from 'lucide-react'
+import { getStorefrontTranslations } from '@/utils/storefront-translations'
 
 interface StoreData {
   id: string
@@ -39,6 +38,7 @@ interface StoreData {
   secondaryColor: string
   fontFamily: string
   currency: string
+  language: string
   deliveryFee: number
   minimumOrder: number
   deliveryRadius: number
@@ -145,6 +145,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [isOrderLoading, setIsOrderLoading] = useState(false)
 
   const currencySymbol = getCurrencySymbol(storeData.currency)
+  const translations = getStorefrontTranslations(storeData.language)
+  
+  // Use WaveOrder default color if no primary color is set
+//   const primaryColor = storeData.primaryColor || '#0D9488' // teal-600
+  const primaryColor = '#0D9488' // teal-600
 
   // Calculate cart totals
   const cartSubtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -233,7 +238,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     }
 
     if (!meetsMinimumOrder) {
-      alert(`Minimum order is ${currencySymbol}${storeData.minimumOrder.toFixed(2)} for delivery`)
+      alert(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`)
       return
     }
 
@@ -290,9 +295,9 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const getDeliveryOptions = () => {
     const options = []
-    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: 'Delivery', icon: Truck })
-    if (storeData.pickupEnabled) options.push({ key: 'pickup', label: 'Pickup', icon: Store })
-    if (storeData.dineInEnabled) options.push({ key: 'dineIn', label: 'Dine-in', icon: UtensilsCrossed })
+    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: translations.delivery, icon: Truck })
+    if (storeData.pickupEnabled) options.push({ key: 'pickup', label: translations.pickup, icon: Store })
+    if (storeData.dineInEnabled) options.push({ key: 'dineIn', label: translations.dineIn, icon: UtensilsCrossed })
     return options
   }
 
@@ -307,7 +312,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             ) : (
               <div 
                 className="w-16 h-16 rounded-lg flex items-center justify-center text-white text-2xl font-bold"
-                style={{ backgroundColor: storeData.primaryColor }}
+                style={{ backgroundColor: primaryColor }}
               >
                 {storeData.name.charAt(0)}
               </div>
@@ -321,7 +326,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {storeData.isOpen ? '● Open' : '● Closed'}
+                  {storeData.isOpen ? translations.open : translations.closed}
                 </span>
               </div>
               {storeData.description && (
@@ -334,10 +339,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     {storeData.address}
                   </span>
                 )}
-                <span className="flex items-center">
-                  <Star className="w-4 h-4 mr-1 text-yellow-400" />
-                  4.8 (250+ reviews)
-                </span>
               </div>
             </div>
             
@@ -364,11 +365,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
         <div className="h-32 md:h-48 bg-cover bg-center relative" style={{ backgroundImage: `url(${storeData.coverImage})` }}>
           <div className="h-full bg-black bg-opacity-40 flex items-center justify-center">
             <div className="text-center text-white">
-              <h2 className="text-xl md:text-3xl font-bold">{storeData.greetingMessage || 'Welcome!'}</h2>
+              <h2 className="text-xl md:text-3xl font-bold">{storeData.greetingMessage || translations.welcome}</h2>
               {storeData.estimatedDeliveryTime && (
                 <p className="text-sm md:text-base mt-2 flex items-center justify-center">
                   <Clock className="w-4 h-4 mr-1" />
-                  Delivery in {storeData.estimatedDeliveryTime}
+                  {translations.deliveryIn} {storeData.estimatedDeliveryTime}
                 </p>
               )}
             </div>
@@ -387,20 +388,20 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search menu items..."
+                    placeholder={translations.search}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                   />
                 </div>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
                 >
-                  <option value="all">All Categories</option>
+                  <option value="all">{translations.allCategories}</option>
                   {storeData.categories.map(category => (
                     <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
@@ -418,10 +419,10 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     : 'text-gray-700 hover:bg-white'
                 }`}
                 style={{ 
-                  backgroundColor: selectedCategory === 'all' ? storeData.primaryColor : 'transparent'
+                  backgroundColor: selectedCategory === 'all' ? primaryColor : 'transparent'
                 }}
               >
-                All
+                {translations.all}
               </button>
               {storeData.categories.map(category => (
                 <button
@@ -433,7 +434,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                       : 'text-gray-700 hover:bg-white'
                   }`}
                   style={{ 
-                    backgroundColor: selectedCategory === category.id ? storeData.primaryColor : 'transparent'
+                    backgroundColor: selectedCategory === category.id ? primaryColor : 'transparent'
                   }}
                 >
                   {category.name}
@@ -444,34 +445,78 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             {/* Products */}
             <div className="space-y-8">
               {selectedCategory === 'all' ? (
-                storeData.categories.map(category => (
-                  <div key={category.id}>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">{category.name}</h2>
-                    <div className="space-y-4">
-                      {category.products.map(product => (
-                        <ProductCard 
-                          key={product.id} 
-                          product={product} 
-                          onOpenModal={openProductModal}
-                          primaryColor={storeData.primaryColor}
-                          currencySymbol={currencySymbol}
+                storeData.categories.length === 0 ? (
+                  <EmptyState 
+                    type="no-categories"
+                    primaryColor={primaryColor}
+                    translations={translations}
+                  />
+                ) : storeData.categories.every(category => category.products.length === 0) ? (
+                  <EmptyState 
+                    type="no-products"
+                    primaryColor={primaryColor}
+                    translations={translations}
+                  />
+                ) : (
+                  storeData.categories.map(category => (
+                    <div key={category.id}>
+                      <h2 className="text-xl font-semibold text-gray-900 mb-4">{category.name}</h2>
+                      {category.products.length === 0 ? (
+                        <EmptyState 
+                          type="category-empty"
+                          primaryColor={primaryColor}
+                          translations={translations}
+                          onShowAll={() => setSelectedCategory('all')}
                         />
-                      ))}
+                      ) : (
+                        <div className="space-y-4">
+                          {category.products.map(product => (
+                            <ProductCard 
+                              key={product.id} 
+                              product={product} 
+                              onOpenModal={openProductModal}
+                              primaryColor={primaryColor}
+                              currencySymbol={currencySymbol}
+                              translations={translations}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  ))
+                )
               ) : (
-                <div className="space-y-4">
-                  {filteredProducts.map(product => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      onOpenModal={openProductModal}
-                      primaryColor={storeData.primaryColor}
-                      currencySymbol={currencySymbol}
+                filteredProducts.length === 0 ? (
+                  searchTerm ? (
+                    <EmptyState 
+                      type="search-empty"
+                      primaryColor={primaryColor}
+                      translations={translations}
+                      onClearSearch={() => setSearchTerm('')}
+                      onShowAll={() => setSelectedCategory('all')}
                     />
-                  ))}
-                </div>
+                  ) : (
+                    <EmptyState 
+                      type="category-empty"
+                      primaryColor={primaryColor}
+                      translations={translations}
+                      onShowAll={() => setSelectedCategory('all')}
+                    />
+                  )
+                ) : (
+                  <div className="space-y-4">
+                    {filteredProducts.map(product => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onOpenModal={openProductModal}
+                        primaryColor={primaryColor}
+                        currencySymbol={currencySymbol}
+                        translations={translations}
+                      />
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -495,6 +540,8 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               submitOrder={submitOrder}
               isOrderLoading={isOrderLoading}
               deliveryOptions={getDeliveryOptions()}
+              primaryColor={primaryColor}
+              translations={translations}
             />
           </div>
         </div>
@@ -506,7 +553,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           <button
             onClick={() => setShowCartModal(true)}
             className="w-full py-3 rounded-lg font-semibold text-white flex items-center justify-between"
-            style={{ backgroundColor: storeData.primaryColor }}
+            style={{ backgroundColor: primaryColor }}
           >
             <div className="flex items-center">
               <ShoppingCart className="w-5 h-5 mr-2" />
@@ -522,7 +569,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
           <div className="bg-white w-full max-h-[80vh] rounded-t-2xl overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Your Order</h2>
+              <h2 className="text-lg font-semibold">{translations.yourOrder}</h2>
               <button
                 onClick={() => setShowCartModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full"
@@ -548,6 +595,8 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 submitOrder={submitOrder}
                 isOrderLoading={isOrderLoading}
                 deliveryOptions={getDeliveryOptions()}
+                primaryColor={primaryColor}
+                translations={translations}
                 isMobile={true}
               />
             </div>
@@ -566,9 +615,142 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           onAddToCart={addToCart}
           onClose={() => setShowProductModal(false)}
           currencySymbol={currencySymbol}
-          primaryColor={storeData.primaryColor}
+          primaryColor={primaryColor}
+          translations={translations}
         />
       )}
+
+      {/* Powered by WaveOrder Footer */}
+      <footer className="bg-white border-t mt-12">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              {translations.poweredBy}{' '}
+              <a 
+                href="https://waveorder.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-medium hover:underline"
+                style={{ color: primaryColor }}
+              >
+                WaveOrder
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+// Empty State Component
+function EmptyState({ 
+  type, 
+  primaryColor, 
+  translations,
+  onClearSearch,
+  onShowAll
+}: { 
+  type: 'no-categories' | 'no-products' | 'category-empty' | 'search-empty'
+  primaryColor: string
+  translations: any
+  onClearSearch?: () => void
+  onShowAll?: () => void
+}) {
+  const getEmptyStateContent = () => {
+    switch (type) {
+      case 'no-categories':
+        return {
+          icon: Package,
+          title: translations.comingSoon,
+          description: translations.checkBackLater,
+          showActions: false
+        }
+      case 'no-products':
+        return {
+          icon: Package,
+          title: translations.comingSoon,
+          description: translations.checkBackLater,
+          showActions: false
+        }
+      case 'category-empty':
+        return {
+          icon: Package,
+          title: translations.noProductsInCategory,
+          description: translations.noProductsInCategoryDescription,
+          showActions: true,
+          actionText: translations.browseAllProducts,
+          actionCallback: onShowAll
+        }
+      case 'search-empty':
+        return {
+          icon: AlertCircle,
+          title: translations.noProductsFound,
+          description: translations.noProductsFoundDescription,
+          showActions: true,
+          actionText: translations.tryDifferentSearch,
+          actionCallback: onClearSearch,
+          secondaryActionText: translations.browseAllProducts,
+          secondaryActionCallback: onShowAll
+        }
+      default:
+        return {
+          icon: Package,
+          title: translations.comingSoon,
+          description: translations.checkBackLater,
+          showActions: false
+        }
+    }
+  }
+
+  const content = getEmptyStateContent()
+  const IconComponent = content.icon
+
+  return (
+    <div className="text-center py-16 px-4">
+      <div className="max-w-md mx-auto">
+        <div 
+          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+          style={{ backgroundColor: `${primaryColor}15` }}
+        >
+          <IconComponent 
+            className="w-10 h-10"
+            style={{ color: primaryColor }}
+          />
+        </div>
+        
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">
+          {content.title}
+        </h3>
+        
+        <p className="text-gray-600 mb-6 leading-relaxed">
+          {content.description}
+        </p>
+        
+        {content.showActions && (
+          <div className="space-y-3">
+            {content.actionCallback && (
+              <button
+                onClick={content.actionCallback}
+                className="w-full sm:w-auto px-6 py-3 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {content.actionText}
+              </button>
+            )}
+            
+            {content.secondaryActionCallback && (
+              <button
+                onClick={content.secondaryActionCallback}
+                className="block w-full sm:w-auto px-6 py-3 border-2 rounded-lg font-medium hover:bg-gray-50 transition-colors mx-auto"
+                style={{ borderColor: primaryColor, color: primaryColor }}
+              >
+                {content.secondaryActionText}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -578,12 +760,14 @@ function ProductCard({
   product, 
   onOpenModal, 
   primaryColor, 
-  currencySymbol 
+  currencySymbol,
+  translations
 }: { 
   product: Product
   onOpenModal: (product: Product) => void
   primaryColor: string
   currencySymbol: string
+  translations: any
 }) {
   const hasVariantsOrModifiers = product.variants.length > 0 || product.modifiers.length > 0
 
@@ -618,10 +802,10 @@ function ProductCard({
               </div>
               
               {product.stock <= 5 && product.stock > 0 && (
-                <p className="text-orange-600 text-xs mt-1">Only {product.stock} left!</p>
+                <p className="text-orange-600 text-xs mt-1">{translations.onlyLeft} {product.stock} {translations.left}</p>
               )}
               {product.stock === 0 && (
-                <p className="text-red-600 text-xs mt-1">Out of stock</p>
+                <p className="text-red-600 text-xs mt-1">{translations.outOfStock}</p>
               )}
             </div>
             
@@ -631,7 +815,7 @@ function ProductCard({
               className="ml-4 px-4 py-2 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               style={{ backgroundColor: primaryColor }}
             >
-              {hasVariantsOrModifiers ? 'Customize' : 'Add'}
+              {hasVariantsOrModifiers ? translations.customize : translations.add}
             </button>
           </div>
         </div>
@@ -650,7 +834,8 @@ function ProductModal({
   onAddToCart,
   onClose,
   currencySymbol,
-  primaryColor
+  primaryColor,
+  translations
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -661,6 +846,7 @@ function ProductModal({
   onClose: () => void
   currencySymbol: string
   primaryColor: string
+  translations: any
 }) {
   const [quantity, setQuantity] = useState(1)
 
@@ -712,7 +898,7 @@ function ProductModal({
             {/* Variants */}
             {product.variants.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold mb-3">Choose Size</h3>
+                <h3 className="font-semibold mb-3">{translations.chooseSize}</h3>
                 <div className="space-y-2">
                   {product.variants.map(variant => (
                     <button
@@ -739,7 +925,7 @@ function ProductModal({
             {/* Modifiers */}
             {product.modifiers.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold mb-3">Add Extras</h3>
+                <h3 className="font-semibold mb-3">{translations.addExtras}</h3>
                 <div className="space-y-2">
                   {product.modifiers.map(modifier => (
                     <button
@@ -755,7 +941,7 @@ function ProductModal({
                         <div>
                           <span className="font-medium">{modifier.name}</span>
                           {modifier.required && (
-                            <span className="text-red-500 text-sm ml-1">(Required)</span>
+                            <span className="text-red-500 text-sm ml-1">{translations.required}</span>
                           )}
                         </div>
                         <span className="font-semibold">
@@ -770,7 +956,7 @@ function ProductModal({
 
             {/* Quantity */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-3">Quantity</h3>
+              <h3 className="font-semibold mb-3">{translations.quantity}</h3>
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -792,7 +978,7 @@ function ProductModal({
 
         <div className="p-6 border-t bg-gray-50">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold">Total</span>
+            <span className="text-lg font-semibold">{translations.total}</span>
             <span className="text-xl font-bold" style={{ color: primaryColor }}>
               {currencySymbol}{totalPrice.toFixed(2)}
             </span>
@@ -802,7 +988,7 @@ function ProductModal({
             className="w-full py-3 rounded-lg text-white font-semibold"
             style={{ backgroundColor: primaryColor }}
           >
-            Add to Cart
+            {translations.addToCart}
           </button>
         </div>
       </div>
@@ -828,6 +1014,8 @@ function OrderPanel({
   submitOrder,
   isOrderLoading,
   deliveryOptions,
+  primaryColor,
+  translations,
   isMobile = false
 }: {
   storeData: StoreData
@@ -846,12 +1034,14 @@ function OrderPanel({
   submitOrder: () => void
   isOrderLoading: boolean
   deliveryOptions: Array<{ key: string; label: string; icon: any }>
+  primaryColor: string
+  translations: any
   isMobile?: boolean
 }) {
   return (
     <div className={`${isMobile ? 'p-4' : 'sticky top-6'}`}>
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">Order Details</h2>
+        <h2 className="text-xl font-semibold mb-4">{translations.orderDetails}</h2>
         
         {/* Delivery Type Toggle */}
         {deliveryOptions.length > 1 && (
@@ -869,7 +1059,7 @@ function OrderPanel({
                         : 'text-gray-700 hover:bg-white'
                     }`}
                     style={{ 
-                      backgroundColor: deliveryType === option.key ? storeData.primaryColor : 'transparent'
+                      backgroundColor: deliveryType === option.key ? primaryColor : 'transparent'
                     }}
                   >
                     <IconComponent className="w-4 h-4 mr-1" />
@@ -884,39 +1074,39 @@ function OrderPanel({
         {/* Customer Information */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.name} *</label>
             <input
               type="text"
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
               placeholder="Your full name"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.whatsappNumber} *</label>
             <input
               type="tel"
               required
               value={customerInfo.phone}
               onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
               placeholder="+1234567890"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.email}</label>
             <input
               type="email"
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
               placeholder="your.email@example.com"
             />
           </div>
@@ -924,27 +1114,27 @@ function OrderPanel({
           {deliveryType === 'delivery' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{translations.addressLine1} *</label>
                 <input
                   type="text"
                   required
                   value={customerInfo.address}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
-                  placeholder="Street address"
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder={translations.streetAddress}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{translations.addressLine2}</label>
                 <input
                   type="text"
                   value={customerInfo.address2}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
-                  placeholder="Apartment, suite, etc."
+                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+                  placeholder={translations.apartment}
                 />
               </div>
             </>
@@ -952,15 +1142,15 @@ function OrderPanel({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {deliveryType === 'delivery' ? 'Delivery' : deliveryType === 'pickup' ? 'Pickup' : 'Arrival'} Time
+              {deliveryType === 'delivery' ? translations.deliveryTime : deliveryType === 'pickup' ? translations.pickupTime : translations.arrivalTime}
             </label>
             <select
               value={customerInfo.deliveryTime}
               onChange={(e) => setCustomerInfo({ ...customerInfo, deliveryTime: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             >
-              <option value="asap">ASAP ({storeData.estimatedDeliveryTime || '30-45 mins'})</option>
+              <option value="asap">{translations.asap} ({storeData.estimatedDeliveryTime || '30-45 ' + translations.mins})</option>
               <option value="1:00 PM">1:00 PM</option>
               <option value="1:30 PM">1:30 PM</option>
               <option value="2:00 PM">2:00 PM</option>
@@ -973,7 +1163,7 @@ function OrderPanel({
         {/* Cart Items */}
         {cart.length > 0 && (
           <div className="border-t pt-4 mb-6">
-            <h3 className="font-semibold mb-3">Cart Items</h3>
+            <h3 className="font-semibold mb-3">{translations.cartItems}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => (
                 <div key={item.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
@@ -1018,17 +1208,17 @@ function OrderPanel({
           <div className="border-t pt-4 mb-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
+                <span>{translations.subtotal}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
               {cartDeliveryFee > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span>Delivery Fee</span>
+                  <span>{translations.deliveryFee}</span>
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                <span>Total</span>
+                <span>{translations.total}</span>
                 <span>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
             </div>
@@ -1039,22 +1229,22 @@ function OrderPanel({
         {!meetsMinimumOrder && deliveryType === 'delivery' && (
           <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mb-4">
             <p className="text-yellow-800 text-sm">
-              Minimum order is {currencySymbol}{storeData.minimumOrder.toFixed(2)} for delivery. 
-              Add {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} more to place your order.
+              {translations.minimumOrder} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery} 
+              {translations.moreTo.replace('Add', '').replace('more', '')} {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} {translations.moreTo.split('Add')[1]}
             </p>
           </div>
         )}
 
         {/* Special Instructions */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{translations.specialInstructions}</label>
           <textarea
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ '--tw-ring-color': storeData.primaryColor } as React.CSSProperties}
+            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
             rows={3}
-            placeholder="Any special requests..."
+            placeholder={translations.anySpecialRequests}
           />
         </div>
 
@@ -1073,13 +1263,13 @@ function OrderPanel({
           onClick={submitOrder}
           disabled={isOrderLoading || cart.length === 0 || !meetsMinimumOrder || !customerInfo.name || !customerInfo.phone}
           className="w-full py-3 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-          style={{ backgroundColor: storeData.primaryColor }}
+          style={{ backgroundColor: primaryColor }}
         >
-          {isOrderLoading ? 'Placing Order...' : `Order via WhatsApp - ${currencySymbol}${cartTotal.toFixed(2)}`}
+          {isOrderLoading ? translations.placingOrder : `${translations.orderViaWhatsapp} - ${currencySymbol}${cartTotal.toFixed(2)}`}
         </button>
 
         <p className="text-xs text-gray-500 text-center mt-2">
-          Clicking this button will open WhatsApp with your order details
+          {translations.clickingButton}
         </p>
       </div>
     </div>

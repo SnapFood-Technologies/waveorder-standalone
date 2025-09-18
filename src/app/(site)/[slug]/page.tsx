@@ -1,4 +1,4 @@
-// app/[slug]/page.tsx
+// app/site/[slug]/page.tsx
 import { notFound } from 'next/navigation'
 import StoreFront from '@/components/storefront/StoreFront'
 import type { Metadata } from 'next'

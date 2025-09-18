@@ -56,7 +56,6 @@ model User {
   updatedAt  DateTime       @updatedAt
 }
 
-
 model VerificationToken {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
@@ -84,7 +83,7 @@ model Business {
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
 
   // Branding
-  primaryColor   String @default("#3B82F6")
+  primaryColor   String @default("#0D9488")
   secondaryColor String @default("#1F2937")
   fontFamily     String @default("Inter")
 

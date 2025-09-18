@@ -39,6 +39,12 @@
 - Date range selector (premium only for custom ranges)
 - Default range: "September 1, 2025 – September 17, 2025"
 
+**Business Status Widget:**
+- Current open/closed status with live indicator
+- Next opening/closing time display
+- Quick business hours toggle
+- "Store closing soon" alerts
+
 **Recent Orders Widget:**
 - "Last 30 days" filter
 - "No orders" empty state
@@ -60,6 +66,7 @@
 - GET dashboard metrics
 - GET recent orders summary
 - GET analytics data based on plan
+- GET business hours status
 
 ## 3. Orders Management
 
@@ -281,6 +288,7 @@
 **File:** `app/admin/stores/[businessId]/settings/layout.tsx`
 **Tabs:**
 - Business Details
+- Business Hours
 - Team Management
 - Billing
 - SEO Settings
@@ -298,7 +306,22 @@
 - Contact information
 - Address details
 
-### 8.3 Team Management Tab
+### 8.3 Business Hours Tab
+**File:** `app/admin/stores/[businessId]/settings/hours/page.tsx`
+**Features:**
+- Visual weekly schedule editor
+- Day-by-day hour configuration (open/close times)
+- Open/closed toggle per day
+- Special hours for holidays
+- Timezone display (inherited from business settings)
+- "Currently Open/Closed" status indicator
+- Bulk apply same hours to multiple days
+- Copy hours from one day to another
+- Preview of customer-facing hours display
+- Validation (opening before closing time)
+- Holiday/special hours override system
+
+### 8.4 Team Management Tab
 **File:** `app/admin/stores/[businessId]/settings/team/page.tsx`
 **Features:**
 - Team members list
@@ -307,7 +330,7 @@
 - Pending invitations
 - Remove team members
 
-### 8.4 Billing Tab
+### 8.5 Billing Tab
 **File:** `app/admin/stores/[businessId]/settings/billing/page.tsx`
 **Features:**
 - Current plan display
@@ -317,7 +340,7 @@
 - Upgrade/downgrade options
 - Invoice downloads
 
-### 8.5 SEO Settings Tab
+### 8.6 SEO Settings Tab
 **File:** `app/admin/stores/[businessId]/settings/seo/page.tsx`
 **Fields:**
 - Meta title
@@ -327,7 +350,7 @@
 - Social media preview
 - Schema markup options
 
-### 8.6 Store Settings Tab
+### 8.7 Store Settings Tab
 **File:** `app/admin/stores/[businessId]/settings/store/page.tsx`
 **Features:**
 - Temporary store closure toggle
@@ -337,7 +360,7 @@
 - Store visibility settings
 - Maintenance mode
 
-### 8.7 Danger Zone Tab
+### 8.8 Danger Zone Tab
 **File:** `app/admin/stores/[businessId]/settings/danger/page.tsx`
 **Features:**
 - Organization deletion
@@ -353,6 +376,7 @@
 - Business type selection
 - Delivery methods setup
 - Payment methods configuration
+- Business hours configuration
 - WhatsApp message customization
 - Order settings
 
@@ -362,7 +386,7 @@
 - Delivery fee settings
 - Delivery radius configuration
 - Estimated delivery times
-- Service hours
+- Service hours integration with business hours
 
 ### 9.3 Payment Methods Setup
 **Features:**
@@ -371,7 +395,16 @@
 - Online payment integration (future)
 - Payment instructions
 
-### 9.4 WhatsApp Message Customization
+### 9.4 Business Hours Configuration
+**File:** `app/admin/stores/[businessId]/configure/hours/page.tsx`
+**Features:**
+- Simplified business hours setup wizard
+- Quick templates (e.g., "Standard Business Hours", "Restaurant Hours")
+- Integration with delivery method availability
+- Automatic order cutoff times
+- Customer notification preferences
+
+### 9.5 WhatsApp Message Customization
 **File:** `app/admin/stores/[businessId]/configure/whatsapp/page.tsx`
 **Features:**
 - Order number format selection (WO-123, ORD-456, etc.)
@@ -380,7 +413,7 @@
 - Auto-reply settings
 - Message preview with sample order
 
-### 9.5 Wallet Balance (Future Feature)
+### 9.6 Wallet Balance (Future Feature)
 **Features:**
 - Current balance display
 - Transaction history
@@ -419,6 +452,7 @@
 - Custom date ranges
 - Export reports
 - Goal tracking
+- Business hours performance analysis
 
 ## 11. Shared Components
 
@@ -428,9 +462,19 @@
 - Feature comparison table
 - Pricing display
 - Upgrade call-to-action
-- Trial period information ---> no needed, we have free version but no trial
 
-### 11.2 Data Table Component
+### 11.2 Business Hours Editor
+**Component:** `components/admin/BusinessHoursEditor.tsx`
+**Features:**
+- Rich time picker components
+- Visual weekly schedule grid
+- Drag-to-select time ranges
+- Quick templates (9-5, restaurant hours, etc.)
+- Timezone awareness
+- Holiday exceptions handler
+- Real-time preview of customer display
+
+### 11.3 Data Table Component
 **Component:** `components/admin/DataTable.tsx`
 **Features:**
 - Sortable columns
@@ -440,7 +484,7 @@
 - Export functionality
 - Responsive design
 
-### 11.3 Form Components
+### 11.4 Form Components
 **Components:** `components/admin/forms/`
 **Includes:**
 - Form validation
@@ -449,7 +493,7 @@
 - Required field indicators
 - Help tooltips
 
-### 11.4 Image Upload Component
+### 11.5 Image Upload Component
 **Component:** `components/admin/ImageUpload.tsx`
 **Features:**
 - Drag and drop upload
@@ -468,6 +512,11 @@
 - `/api/admin/stores/[businessId]/appearance`
 - `/api/admin/stores/[businessId]/settings`
 
+### Business Hours APIs:
+- `/api/admin/stores/[businessId]/hours`
+- `/api/admin/stores/[businessId]/hours/status`
+- `/api/admin/stores/[businessId]/hours/templates`
+
 ### Configuration APIs:
 - `/api/admin/stores/[businessId]/configure`
 - `/api/admin/stores/[businessId]/whatsapp`
@@ -482,20 +531,20 @@
 
 ### Phase 1 (Essential Features):
 1. Admin layout and navigation
-2. Dashboard with basic metrics
+2. Dashboard with basic metrics and business hours status
 3. Orders management (list, details, creation)
 4. Products management (CRUD operations)
-5. Basic settings (business details, store closure)
+5. Basic settings (business details, business hours, store closure)
 
 ### Phase 2 (Enhanced Features):
 1. Customers management
 2. Appearance customization
 3. Marketing tools
 4. Team management
-5. Configuration management
+5. Configuration management with business hours integration
 
 ### Phase 3 (Pro Features):
-1. Advanced analytics
+1. Advanced analytics with business hours performance
 2. Inventory management
 3. Discounts system
 4. Advanced SEO tools
