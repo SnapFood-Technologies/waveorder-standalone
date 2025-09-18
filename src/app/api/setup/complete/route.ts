@@ -1,7 +1,7 @@
-// Updated app/api/setup/complete/route.ts
+// app/api/setup/complete/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { PrismaClient, BusinessType, SubscriptionPlan, PaymentMethod, BusinessGoal } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { authOptions } from '@/lib/auth'
 
@@ -9,119 +9,95 @@ const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
+    const { setupToken } = await request.json()
+    
+    let user = null
+
+    // Try to get user via session first
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      })
+    }
+    
+    // If no session, try setup token
+    if (!user && setupToken) {
+      user = await prisma.user.findFirst({
+        where: {
+          setupToken: setupToken,
+          setupExpiry: {
+            gt: new Date()
+          }
+        }
+      })
+    }
+
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const setupData = await request.json()
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 })
-    }
-
-    // Create business with all setup data
-    const business = await prisma.business.create({
-      data: {
-        name: setupData.businessName,
-        slug: setupData.storeSlug,
-        whatsappNumber: setupData.whatsappNumber,
-        businessType: setupData.businessType as BusinessType,
-        subscriptionPlan: setupData.subscriptionPlan as SubscriptionPlan,
-        businessGoals: setupData.businessGoals as BusinessGoal[],
-        
-        // Delivery settings
-        deliveryEnabled: setupData.deliveryMethods?.delivery || false,
-        pickupEnabled: setupData.deliveryMethods?.pickup || true,
-        dineInEnabled: setupData.deliveryMethods?.dineIn || false,
-        deliveryFee: setupData.deliveryMethods?.deliveryFee || 0,
-        deliveryRadius: setupData.deliveryMethods?.deliveryRadius || 10,
-        estimatedDeliveryTime: setupData.deliveryMethods?.estimatedDeliveryTime,
-        
-        // Payment settings
-        paymentMethods: setupData.paymentMethods as PaymentMethod[],
-        
-        // WhatsApp settings
-        orderNumberFormat: setupData.whatsappSettings?.orderNumberFormat || 'WO-{number}',
-        greetingMessage: setupData.whatsappSettings?.greetingMessage,
-        
-        // Setup completion
-        setupWizardCompleted: true,
-        onboardingCompleted: true,
-        onboardingStep: 12,
-        
+    // Find the business that should already exist from progress API
+    const business = await prisma.business.findFirst({
+      where: {
         users: {
-          create: {
+          some: {
             userId: user.id,
             role: 'OWNER'
           }
         }
       },
       include: {
-        users: true
+        TeamInvitation: {
+          where: {
+            status: 'PENDING'
+          }
+        }
       }
     })
 
-    // Create default category if products exist
-    if (setupData.products?.length > 0) {
-      const category = await prisma.category.create({
-        data: {
-          name: 'General',
-          businessId: business.id,
-          isActive: true,
-          sortOrder: 0
-        }
-      })
+    if (!business) {
+      return NextResponse.json({ message: 'Business not found. Please complete the setup steps first.' }, { status: 404 })
+    }
 
-      // Create products
-      await prisma.product.createMany({
-        data: setupData.products.map((product: any) => ({
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          categoryId: category.id,
-          businessId: business.id,
-          isActive: true
-        }))
+    // Mark setup as completed
+    await prisma.business.update({
+      where: { id: business.id },
+      data: {
+        setupWizardCompleted: true,
+        onboardingCompleted: true,
+        onboardingStep: 999, // Completed
+        isActive: true
+      }
+    })
+
+    // Clear setup token if used
+    if (setupToken) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          setupToken: null,
+          setupExpiry: null
+        }
       })
     }
 
-    // Send team invitations if any
-    if (setupData.teamMembers?.length > 0) {
-      const invitations = []
-      
-      for (const member of setupData.teamMembers) {
-        const token = generateInviteToken()
-        const invitation = await prisma.teamInvitation.create({
-          data: {
-            email: member.email,
-            businessId: business.id,
-            role: member.role,
-            token,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-          }
+    // Send team invitations if any exist
+    for (const invitation of business.TeamInvitation) {
+      try {
+        const inviteUrl = `${process.env.NEXTAUTH_URL}/team/invite/${invitation.token}`
+        await sendTeamInvitationEmail({
+          to: invitation.email,
+          businessName: business.name,
+          inviterName: user.name || 'Team Admin',
+          role: invitation.role,
+          inviteUrl
         })
-
-        // Send invitation email
-        try {
-          const inviteUrl = `${process.env.NEXTAUTH_URL}/team/invite/${token}`
-          await sendTeamInvitationEmail({
-            to: member.email,
-            businessName: business.name,
-            inviterName: user.name || 'Team Admin',
-            role: member.role,
-            inviteUrl
-          })
-          
-          invitations.push(invitation)
-        } catch (emailError) {
-          console.error(`Failed to send invitation to ${member.email}:`, emailError)
-          // Continue with other invitations even if one fails
-        }
+        
+        console.log(`Invitation sent to ${invitation.email}`)
+      } catch (emailError) {
+        console.error(`Failed to send invitation to ${invitation.email}:`, emailError)
+        // Continue with other invitations even if one fails
       }
     }
 
@@ -131,12 +107,16 @@ export async function POST(request: NextRequest) {
         id: business.id,
         name: business.name,
         slug: business.slug
-      }
+      },
+      redirectUrl: `/admin/stores/${business.id}/dashboard`
     })
 
   } catch (error) {
     console.error('Complete setup error:', error)
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
 

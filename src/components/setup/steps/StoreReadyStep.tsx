@@ -20,9 +20,10 @@ interface StoreReadyStepProps {
   data: SetupData
   onComplete: (data: Partial<SetupData>) => void
   onBack: () => void
+  setupToken?: string | null
 }
 
-export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyStepProps) {
+export default function StoreReadyStep({ data, onComplete, onBack, setupToken }: StoreReadyStepProps) {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -62,10 +63,26 @@ export default function StoreReadyStep({ data, onComplete, onBack }: StoreReadyS
 
   const handleEnterDashboard = async () => {
     setLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // @ts-ignore
-    onComplete({ setupWizardCompleted: true })
-    setLoading(false)
+    
+    try {
+      const response = await fetch('/api/setup/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ setupToken })
+      })
+  
+      if (response.ok) {
+        const data = await response.json()
+        // Redirect to dashboard
+        window.location.href = data.redirectUrl || `/admin/stores/${data.business.id}/dashboard`
+      } else {
+        console.error('Failed to complete setup')
+      }
+    } catch (error) {
+      console.error('Error completing setup:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const setupTips = [

@@ -20,7 +20,9 @@ export async function middleware(request: NextRequest) {
       if (businessesResponse.ok) {
         const data = await businessesResponse.json()
         if (data.businesses?.length > 0) {
+          if (data.businesses[0].setupWizardCompleted) {
           return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
+          }
         }
       }
     } catch (error) {
@@ -56,7 +58,9 @@ export async function middleware(request: NextRequest) {
       if (businessesResponse.ok) {
         const data = await businessesResponse.json()
         if (data.businesses?.length > 0) {
-          return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
+          if (data.businesses[0].setupWizardCompleted) {
+            return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
+          }
         }
       }
     } catch (error) {

@@ -6,38 +6,57 @@ import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const token = searchParams.get('token')
+    
+    let user = null
+
+    // Try to get user via session first
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (session?.user?.email) {
+      user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      })
+    }
+    
+    // If no session, try setup token
+    if (!user && token) {
+      user = await prisma.user.findFirst({
+        where: {
+          setupToken: token,
+          setupExpiry: {
+            gt: new Date()
+          }
+        }
+      })
+    }
+
+    if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const userWithBusiness = await prisma.user.findUnique({
+      where: { id: user.id },
       include: {
         businesses: {
           include: {
             business: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-                businessType: true,
-                businessGoals: true,
-                subscriptionPlan: true,
-                whatsappNumber: true,
-                deliveryEnabled: true,
-                pickupEnabled: true,
-                dineInEnabled: true,
-                deliveryFee: true,
-                deliveryRadius: true,
-                estimatedDeliveryTime: true,
-                paymentMethods: true,
-                orderNumberFormat: true,
-                greetingMessage: true,
-                setupWizardCompleted: true,
-                onboardingStep: true
+              include: {
+                categories: {
+                  orderBy: { sortOrder: 'asc' }
+                },
+                products: {
+                  include: {
+                    category: true
+                  }
+                },
+                TeamInvitation: {
+                  where: {
+                    status: 'PENDING'
+                  }
+                }
               }
             }
           }
@@ -45,17 +64,17 @@ export async function GET() {
       }
     })
 
-    if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 })
-    }
-
     // If user has a business, return its data
-    if (user.businesses.length > 0) {
-      const business = user.businesses[0].business
+    // @ts-ignore
+    if (userWithBusiness?.businesses.length > 0) {
+        // @ts-ignore
+      const business = userWithBusiness.businesses[0].business
+      
       return NextResponse.json({
         currentStep: business.onboardingStep || 1,
         setupData: {
           businessType: business.businessType,
+          currency: business.currency, // NEW FIELD
           businessGoals: business.businessGoals,
           subscriptionPlan: business.subscriptionPlan,
           businessName: business.name,
@@ -70,10 +89,28 @@ export async function GET() {
             estimatedDeliveryTime: business.estimatedDeliveryTime
           },
           paymentMethods: business.paymentMethods,
+          paymentInstructions: business.paymentInstructions, // NEW FIELD
           whatsappSettings: {
             orderNumberFormat: business.orderNumberFormat,
-            greetingMessage: business.greetingMessage
-          }
+            greetingMessage: business.greetingMessage,
+            messageTemplate: business.messageTemplate
+          },
+          // NEW: Include categories, products, and team members
+          categories: business.categories.map(cat => ({
+            id: cat.id,
+            name: cat.name
+          })),
+          products: business.products.map(product => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.category.name,
+            description: product.description
+          })),
+          teamMembers: business.TeamInvitation.map(invite => ({
+            email: invite.email,
+            role: invite.role
+          }))
         },
         completed: business.setupWizardCompleted
       })

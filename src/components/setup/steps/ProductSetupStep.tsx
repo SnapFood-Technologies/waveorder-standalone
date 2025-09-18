@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { SetupData } from '../Setup'
-import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, DollarSign } from 'lucide-react'
+import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, DollarSign, X } from 'lucide-react'
 
 interface ProductSetupStepProps {
   data: SetupData
@@ -18,23 +18,115 @@ interface Product {
   description?: string
 }
 
-const sampleCategories = ['Appetizers', 'Main Courses', 'Desserts', 'Beverages', 'Specials']
+interface Category {
+  id: string
+  name: string
+}
+
+// Business type specific terminology
+const businessTypeConfig = {
+  RESTAURANT: {
+    itemName: 'Menu Item',
+    categoryPlaceholder: 'e.g., Appetizers, Main Courses, Desserts',
+    itemPlaceholder: 'e.g., Margherita Pizza',
+    deliveryOptions: ['delivery', 'pickup', 'dine-in'],
+    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Dine-in' }
+  },
+  CAFE: {
+    itemName: 'Menu Item',
+    categoryPlaceholder: 'e.g., Coffee, Pastries, Sandwiches',
+    itemPlaceholder: 'e.g., Cappuccino',
+    deliveryOptions: ['delivery', 'pickup', 'takeaway'],
+    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Takeaway' }
+  },
+  RETAIL: {
+    itemName: 'Product',
+    categoryPlaceholder: 'e.g., Clothing, Electronics, Accessories',
+    itemPlaceholder: 'e.g., Blue T-Shirt',
+    deliveryOptions: ['shipping', 'pickup', 'in-store'],
+    deliveryLabels: { delivery: 'Shipping', pickup: 'Pickup', dineIn: 'In-store Shopping' }
+  },
+  GROCERY: {
+    itemName: 'Product',
+    categoryPlaceholder: 'e.g., Fresh Produce, Dairy, Pantry',
+    itemPlaceholder: 'e.g., Organic Bananas',
+    deliveryOptions: ['delivery', 'pickup', 'curbside'],
+    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Curbside' }
+  },
+  JEWELRY: {
+    itemName: 'Product',
+    categoryPlaceholder: 'e.g., Rings, Necklaces, Watches',
+    itemPlaceholder: 'e.g., Gold Wedding Ring',
+    deliveryOptions: ['shipping', 'pickup', 'appointment'],
+    deliveryLabels: { delivery: 'Shipping', pickup: 'Pickup', dineIn: 'Appointment Viewing' }
+  },
+  FLORIST: {
+    itemName: 'Product',
+    categoryPlaceholder: 'e.g., Bouquets, Plants, Arrangements',
+    itemPlaceholder: 'e.g., Red Rose Bouquet',
+    deliveryOptions: ['delivery', 'pickup', 'local-delivery'],
+    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Local Delivery' }
+  },
+  HEALTH_BEAUTY: {
+    itemName: 'Service/Product',
+    categoryPlaceholder: 'e.g., Haircuts, Massages, Products',
+    itemPlaceholder: 'e.g., Men\'s Haircut',
+    deliveryOptions: ['appointment', 'pickup', 'home-service'],
+    deliveryLabels: { delivery: 'Home Service', pickup: 'Pickup', dineIn: 'In-Store Appointment' }
+  },
+  OTHER: {
+    itemName: 'Product/Service',
+    categoryPlaceholder: 'e.g., Category 1, Category 2',
+    itemPlaceholder: 'e.g., Product Name',
+    deliveryOptions: ['delivery', 'pickup', 'service'],
+    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Service' }
+  }
+}
+
+const getCurrencySymbol = (currency: string) => {
+  switch (currency) {
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'ALL': return 'L'
+    default: return '$'
+  }
+}
 
 export default function ProductSetupStep({ data, onComplete, onBack }: ProductSetupStepProps) {
   const [setupMethod, setSetupMethod] = useState<'manual' | 'csv' | null>(null)
   const [products, setProducts] = useState<Product[]>(data.products || [])
+  const [categories, setCategories] = useState<Category[]>(data.categories || [])
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
-    category: sampleCategories[0],
+    category: '',
     description: ''
   })
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [csvUploading, setCsvUploading] = useState(false)
 
+  const config = businessTypeConfig[data.businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
+  const currencySymbol = getCurrencySymbol(data.currency || 'USD')
+
+  const addCategory = () => {
+    if (!newCategoryName.trim()) return
+    
+    const category: Category = {
+      id: Date.now().toString(),
+      name: newCategoryName.trim()
+    }
+    
+    setCategories(prev => [...prev, category])
+    setNewProduct(prev => ({ ...prev, category: category.name }))
+    setNewCategoryName('')
+    setShowNewCategoryInput(false)
+  }
+
   const addProduct = () => {
-    if (!newProduct.name || !newProduct.price) return
+    if (!newProduct.name || !newProduct.price || !newProduct.category) return
 
     const product: Product = {
       id: Date.now().toString(),
@@ -45,11 +137,17 @@ export default function ProductSetupStep({ data, onComplete, onBack }: ProductSe
     }
 
     setProducts(prev => [...prev, product])
-    setNewProduct({ name: '', price: '', category: sampleCategories[0], description: '' })
+    setNewProduct({ name: '', price: '', category: '', description: '' })
   }
 
   const removeProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id))
+  }
+
+  const removeCategory = (categoryName: string) => {
+    // Remove category and all products in that category
+    setCategories(prev => prev.filter(c => c.name !== categoryName))
+    setProducts(prev => prev.filter(p => p.category !== categoryName))
   }
 
   const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,27 +157,47 @@ export default function ProductSetupStep({ data, onComplete, onBack }: ProductSe
     setCsvFile(file)
     setCsvUploading(true)
 
-    // Simulate CSV processing
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
 
-    // Mock parsed products from CSV
-    const mockProducts: Product[] = [
-      { id: '1', name: 'Caesar Salad', price: 12.99, category: 'Appetizers', description: 'Fresh romaine lettuce with parmesan' },
-      { id: '2', name: 'Grilled Salmon', price: 24.99, category: 'Main Courses', description: 'Atlantic salmon with lemon butter' },
-      { id: '3', name: 'Chocolate Cake', price: 8.99, category: 'Desserts', description: 'Rich chocolate layer cake' },
-    ]
+      const response = await fetch('/api/products/import-csv', {
+        method: 'POST',
+        body: formData
+      })
 
-    setProducts(prev => [...prev, ...mockProducts])
-    setCsvUploading(false)
-    setCsvFile(null)
+      if (response.ok) {
+        const { products: importedProducts, categories: importedCategories } = await response.json()
+        
+        // Add imported categories
+        if (importedCategories) {
+          setCategories(prev => {
+            const existingNames = new Set(prev.map(c => c.name))
+            const newCategories = importedCategories
+              .filter((cat: any) => !existingNames.has(cat.name))
+              .map((cat: any) => ({ id: Date.now().toString() + Math.random(), name: cat.name }))
+            return [...prev, ...newCategories]
+          })
+        }
+        
+        // Add imported products
+        setProducts(prev => [...prev, ...importedProducts])
+      } else {
+        console.error('CSV upload failed')
+      }
+    } catch (error) {
+      console.error('CSV processing error:', error)
+    } finally {
+      setCsvUploading(false)
+      setCsvFile(null)
+    }
   }
 
   const downloadSampleCsv = () => {
     const csvContent = `name,price,category,description
-Caesar Salad,12.99,Appetizers,Fresh romaine lettuce with parmesan
-Grilled Salmon,24.99,Main Courses,Atlantic salmon with lemon butter
-Chocolate Cake,8.99,Desserts,Rich chocolate layer cake
-Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
+${config.itemPlaceholder},12.99,Category 1,Sample description
+Sample Item 2,24.99,Category 2,Another sample description
+Sample Item 3,8.99,Category 1,Third sample description`
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
@@ -93,7 +211,10 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
   const handleSubmit = async (skip = false) => {
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
-    onComplete({ products: skip ? [] : products })
+    onComplete({ 
+      products: skip ? [] : products,
+      categories: skip ? [] : categories
+    })
     setLoading(false)
   }
 
@@ -104,10 +225,10 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
         <div className="lg:col-span-2 order-2 lg:order-1">
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Add your products
+              Add your {config.itemName.toLowerCase()}s
             </h1>
             <p className="text-base sm:text-lg text-gray-600">
-              Set up your menu so customers can browse and order
+              Set up your catalog so customers can browse and order
             </p>
           </div>
 
@@ -127,7 +248,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                       Manual Entry
                     </h3>
                     <p className="text-sm sm:text-base text-gray-600">
-                      Add products one by one with our easy form
+                      Add {config.itemName.toLowerCase()}s one by one with our easy form
                     </p>
                   </div>
                 </div>
@@ -165,21 +286,41 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
           ) : setupMethod === 'manual' ? (
             /* Manual Entry */
             <div className="space-y-4 sm:space-y-6">
+              {/* Categories Management */}
+              {categories.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map(category => (
+                      <div key={category.id} className="flex items-center bg-gray-100 rounded-lg px-3 py-1">
+                        <span className="text-sm text-gray-700">{category.name}</span>
+                        <button
+                          onClick={() => removeCategory(category.name)}
+                          className="ml-2 text-gray-500 hover:text-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Add Product Form */}
               <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Product</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New {config.itemName}</h3>
                 
                 <div className="space-y-4">
                   {/* Product Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Product Name *
+                      {config.itemName} Name *
                     </label>
                     <input
                       type="text"
                       value={newProduct.name}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Margherita Pizza"
+                      placeholder={config.itemPlaceholder}
                       className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                     />
                   </div>
@@ -191,31 +332,71 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                         Price *
                       </label>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 font-medium">
+                          {currencySymbol}
+                        </span>
                         <input
                           type="number"
                           step="0.01"
                           value={newProduct.price}
                           onChange={(e) => setNewProduct(prev => ({ ...prev, price: e.target.value }))}
                           placeholder="0.00"
-                          className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                          className="pl-8 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                         />
                       </div>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category
+                        Category *
                       </label>
-                      <select
-                        value={newProduct.category}
-                        onChange={(e) => setNewProduct(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
-                      >
-                        {sampleCategories.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                      <div className="flex gap-2">
+                        <select
+                          value={newProduct.category}
+                          onChange={(e) => {
+                            if (e.target.value === 'CREATE_NEW') {
+                              setShowNewCategoryInput(true)
+                            } else {
+                              setNewProduct(prev => ({ ...prev, category: e.target.value }))
+                            }
+                          }}
+                          className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                        >
+                          <option value="">Select category</option>
+                          {categories.map(cat => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                          ))}
+                          <option value="CREATE_NEW">+ Create New Category</option>
+                        </select>
+                      </div>
+                      
+                      {showNewCategoryInput && (
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            placeholder={config.categoryPlaceholder}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                          />
+                          <button
+                            onClick={addCategory}
+                            disabled={!newCategoryName.trim()}
+                            className="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm"
+                          >
+                            Add
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowNewCategoryInput(false)
+                              setNewCategoryName('')
+                            }}
+                            className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -235,10 +416,10 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
 
                   <button
                     onClick={addProduct}
-                    disabled={!newProduct.name || !newProduct.price}
+                    disabled={!newProduct.name || !newProduct.price || !newProduct.category}
                     className="w-full px-4 py-3 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Add Product
+                    Add {config.itemName}
                   </button>
                 </div>
               </div>
@@ -247,7 +428,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
               {products.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Added Products ({products.length})
+                    Added {config.itemName}s ({products.length})
                   </h3>
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {products.map(product => (
@@ -255,7 +436,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900">{product.name}</div>
                           <div className="text-sm text-gray-600">
-                            {product.category} • ${product.price.toFixed(2)}
+                            {product.category} • {currencySymbol}{product.price.toFixed(2)}
                           </div>
                           {product.description && (
                             <div className="text-sm text-gray-500 mt-1">{product.description}</div>
@@ -322,7 +503,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
               {products.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Imported Products ({products.length})
+                    Imported {config.itemName}s ({products.length})
                   </h3>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {products.map(product => (
@@ -330,7 +511,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900">{product.name}</div>
                           <div className="text-sm text-gray-600">
-                            {product.category} • ${product.price.toFixed(2)}
+                            {product.category} • {currencySymbol}{product.price.toFixed(2)}
                           </div>
                           {product.description && (
                             <div className="text-sm text-gray-500 mt-1">{product.description}</div>
@@ -379,7 +560,7 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                 disabled={loading}
                 className="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
               >
-                Skip - I'll add products later
+                Skip - I'll add {config.itemName.toLowerCase()}s later
               </button>
               <button
                 onClick={() => handleSubmit(false)}
@@ -412,28 +593,40 @@ Iced Tea,3.99,Beverages,Freshly brewed sweet tea`
                   {products.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-gray-500">
                       <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-xs sm:text-sm">No products added yet</p>
+                      <p className="text-xs sm:text-sm">No {config.itemName.toLowerCase()}s added yet</p>
                     </div>
                   ) : (
                     <div className="space-y-2 sm:space-y-3">
-                      {products.slice(0, 4).map(product => (
-                        <div key={product.id} className="flex justify-between items-start p-2 sm:p-3 border border-gray-200 rounded-lg">
-                          <div className="flex-1 min-w-0 pr-2">
-                            <h4 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{product.name}</h4>
-                            <p className="text-xs text-gray-600 mt-0.5">{product.category}</p>
-                            {product.description && (
-                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{product.description}</p>
-                            )}
+                      {/* Show categories */}
+                      {categories.slice(0, 3).map(category => {
+                        const categoryProducts = products.filter(p => p.category === category.name)
+                        if (categoryProducts.length === 0) return null
+                        
+                        return (
+                          <div key={category.id} className="mb-3">
+                            <h4 className="font-semibold text-gray-800 text-xs sm:text-sm mb-2 px-1">
+                              {category.name}
+                            </h4>
+                            {categoryProducts.slice(0, 2).map(product => (
+                              <div key={product.id} className="flex justify-between items-start p-2 sm:p-3 border border-gray-200 rounded-lg mb-2">
+                                <div className="flex-1 min-w-0 pr-2">
+                                  <h5 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{product.name}</h5>
+                                  {product.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{product.description}</p>
+                                  )}
+                                </div>
+                                <div className="text-xs sm:text-sm font-semibold text-teal-600 flex-shrink-0">
+                                  {currencySymbol}{product.price.toFixed(2)}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div className="text-xs sm:text-sm font-semibold text-teal-600 flex-shrink-0">
-                            ${product.price.toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                       
-                      {products.length > 4 && (
+                      {products.length > 6 && (
                         <div className="text-center py-2 text-xs sm:text-sm text-gray-500">
-                          +{products.length - 4} more products
+                          +{products.length - 6} more {config.itemName.toLowerCase()}s
                         </div>
                       )}
                     </div>
