@@ -15,57 +15,49 @@ const businessTypeConfig = {
   RESTAURANT: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your restaurant',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup/Dine-in',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Please have exact change ready for delivery orders"'
   },
   CAFE: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your cafe',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup/Takeaway',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Mobile orders must be paid in advance"'
   },
   RETAIL: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your store',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Returns accepted within 30 days with receipt"'
   },
   GROCERY: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your grocery business',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Please check expiry dates upon delivery"'
   },
   JEWELRY: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your jewelry business',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup/Appointment',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "All purchases come with certificate of authenticity"'
   },
   FLORIST: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your flower business',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Orders must be placed 24 hours in advance"'
   },
   HEALTH_BEAUTY: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your services',
-    cashOnDeliveryLabel: 'Cash for Home Service',
-    cashOnPickupLabel: 'Cash on Appointment',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Payment due at time of service"'
   },
   OTHER: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your business',
-    cashOnDeliveryLabel: 'Cash on Delivery',
-    cashOnPickupLabel: 'Cash on Pickup',
+    cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Add any special payment instructions"'
   }
 }
@@ -82,27 +74,19 @@ const getCurrencyPaymentMethods = (currency: string, businessType: string) => {
 
   return [
     {
-      id: 'CASH_ON_DELIVERY',
+      id: 'CASH',
       name: config.cashOnDeliveryLabel,
       description: `Customer pays with cash in ${currencyNames[currency as keyof typeof currencyNames] || 'local currency'} when order is delivered`,
       icon: Banknote,
       available: true,
       color: 'green'
     },
-    {
-      id: 'CASH_ON_PICKUP',
-      name: config.cashOnPickupLabel,
-      description: `Customer pays with cash in ${currencyNames[currency as keyof typeof currencyNames] || 'local currency'} when collecting order`,
-      icon: Coins,
-      available: true,
-      color: 'green'
-    }
   ]
 }
 
 export default function PaymentMethodsStep({ data, onComplete, onBack }: PaymentMethodsStepProps) {
   const [selectedMethods, setSelectedMethods] = useState<string[]>(
-    data.paymentMethods || ['CASH_ON_DELIVERY']
+    data.paymentMethods || ['CASH']
   )
   const [paymentInstructions, setPaymentInstructions] = useState(
     data.paymentInstructions || ''
@@ -211,13 +195,8 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
   }
 
   // Filter available methods based on selected delivery methods
-  const deliveryMethods = data.deliveryMethods
-  const showCashOnDelivery = deliveryMethods?.delivery
-  const showCashOnPickup = deliveryMethods?.pickup || deliveryMethods?.dineIn
-
+  // const deliveryMethods = data.deliveryMethods
   const filteredAvailableMethods = availablePaymentMethods.filter(method => {
-    if (method.id === 'CASH_ON_DELIVERY') return showCashOnDelivery
-    if (method.id === 'CASH_ON_PICKUP') return showCashOnPickup
     return true
   })
 

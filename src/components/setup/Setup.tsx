@@ -40,7 +40,7 @@ export interface SetupData {
     deliveryRadius?: number
     estimatedDeliveryTime?: string
   }
-  paymentMethods: string[] // For now just ['CASH_ON_DELIVERY']
+  paymentMethods: string[]
   whatsappSettings: {
     orderNumberFormat: string
     greetingMessage: string
@@ -76,7 +76,7 @@ export default function SetupComponent() {
       pickup: true,
       dineIn: false
     },
-    paymentMethods: ['CASH_ON_DELIVERY'],
+    paymentMethods: ['CASH'],
     paymentInstructions: '', // Add this
     whatsappSettings: {
       orderNumberFormat: 'WO-{number}',
@@ -253,7 +253,7 @@ export default function SetupComponent() {
       case 3:
         return <PricingStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} />
       case 4:
-        return <StoreCreationStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} />
+        return <StoreCreationStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} setupToken={token} />
       case 5:
         return <TeamSetupStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} />
       // Step 6 (Domain) is skipped

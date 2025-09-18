@@ -8,6 +8,7 @@ interface StoreCreationStepProps {
   data: SetupData
   onComplete: (data: Partial<SetupData>) => void
   onBack: () => void
+  setupToken?: string | null
 }
 
 const COUNTRY_CODES = [
@@ -15,7 +16,7 @@ const COUNTRY_CODES = [
   { code: '+1', country: 'US', flag: '🇺🇸' }
 ]
 
-export default function StoreCreationStep({ data, onComplete, onBack }: StoreCreationStepProps) {
+export default function StoreCreationStep({ data, onComplete, onBack, setupToken }: StoreCreationStepProps) {
   const [formData, setFormData] = useState({
     businessName: data.businessName || '',
     countryCode: '+355',
@@ -25,6 +26,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
   const [loading, setLoading] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
+  const [hasUserChangedSlug, setHasUserChangedSlug] = useState(false)
 
   // Generate slug from business name
   useEffect(() => {
@@ -40,15 +42,33 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
     }
   }, [formData.businessName])
 
+  useEffect(() => {
+    if (data.whatsappNumber) {
+      if (data.whatsappNumber.startsWith('+355')) {
+        setFormData(prev => ({
+          ...prev,
+          countryCode: '+355',
+          whatsappNumber: data.whatsappNumber.replace('+355', '')
+        }))
+      } else if (data.whatsappNumber.startsWith('+1')) {
+        setFormData(prev => ({
+          ...prev,
+          countryCode: '+1',
+          whatsappNumber: data.whatsappNumber.replace('+1', '')
+        }))
+      }
+    }
+  }, [data.whatsappNumber])
+
   // Check slug availability
   useEffect(() => {
-    if (formData.storeSlug && formData.storeSlug.length >= 3) {
+    if (formData.storeSlug && formData.storeSlug.length >= 3 && hasUserChangedSlug) {
       const timeoutId = setTimeout(checkSlugAvailability, 500)
       return () => clearTimeout(timeoutId)
     } else {
       setSlugAvailable(null)
     }
-  }, [formData.storeSlug])
+  }, [formData.storeSlug, hasUserChangedSlug])
 
   const checkSlugAvailability = async () => {
     if (!formData.storeSlug) return
@@ -58,7 +78,10 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
       const response = await fetch('/api/setup/check-slug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: formData.storeSlug })
+        body: JSON.stringify({ 
+          slug: formData.storeSlug,
+          setupToken: setupToken
+        })
       })
       const { available } = await response.json()
       setSlugAvailable(available)
@@ -73,6 +96,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
     const { name, value } = e.target
     
     if (name === 'storeSlug') {
+      setHasUserChangedSlug(true)
       // Clean slug input
       const cleanSlug = value
         .toLowerCase()
@@ -81,6 +105,7 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
         .replace(/^-|-$/g, '')
       
       setFormData(prev => ({ ...prev, [name]: cleanSlug }))
+      
     } else if (name === 'whatsappNumber') {
       // Only allow numbers
       const cleanNumber = value.replace(/[^0-9]/g, '')
@@ -120,7 +145,9 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
         <div className="order-2 lg:order-1">
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-              Create your store
+            <h1>
+  {data.businessName ? 'Update your store' : 'Create your store'}
+</h1>
             </h1>
             <p className="text-base sm:text-lg text-gray-600">
               Set up your basic store information to get started
@@ -228,13 +255,16 @@ export default function StoreCreationStep({ data, onComplete, onBack }: StoreCre
               </button>
               
               <button
-                type="button"
-                disabled={loading || !formData.businessName || !formData.whatsappNumber || !formData.storeSlug || slugAvailable === false}
-                onClick={handleSubmit}
-                className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
-              >
-                {loading ? 'Creating...' : 'Create Store'}
-              </button>
+  type="button"
+  disabled={loading || !formData.businessName || !formData.whatsappNumber || !formData.storeSlug || slugAvailable === false}
+  onClick={handleSubmit}
+  className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
+>
+  {loading 
+    ? (data.businessName ? 'Updating...' : 'Creating...') 
+    : (data.businessName ? 'Update Store' : 'Create Store')
+  }
+</button>
             </div>
           </div>
         </div>

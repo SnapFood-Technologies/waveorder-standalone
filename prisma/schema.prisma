@@ -413,7 +413,7 @@ enum SubscriptionStatus {
 }
 
 enum PaymentMethod {
-  CASH_ON_DELIVERY
+  CASH
   BANK_TRANSFER
   STRIPE
   PAYPAL

@@ -278,8 +278,8 @@ const getCurrencySymbol = (currency: string) => {
 
 export default function DeliveryMethodsStep({ data, onComplete, onBack }: DeliveryMethodsStepProps) {
   const [methods, setMethods] = useState(data.deliveryMethods || {
-    delivery: false,
-    pickup: true,
+    delivery: true,
+    pickup: false,
     dineIn: false,
     deliveryFee: 0,
     deliveryRadius: 10,
