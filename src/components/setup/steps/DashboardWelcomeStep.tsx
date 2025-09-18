@@ -251,6 +251,15 @@ export default function DashboardWelcomeStep({ data }: DashboardWelcomeStepProps
                   <h3 className="font-semibold text-gray-900 mb-1">Setup Complete</h3>
                   <p className="text-sm text-gray-600">All essential features configured</p>
                 </div>
+                
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-1">Ready to Grow</h3>
+                  <p className="text-sm text-gray-600">Start accepting orders today</p>
+                </div>
+              </div>
             </div>
           </div>
 
