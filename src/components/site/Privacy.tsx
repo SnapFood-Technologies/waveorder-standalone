@@ -56,7 +56,7 @@ export default function Privacy() {
             </p>
             <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 inline-block border border-white/20">
               <p className="text-sm text-gray-500">
-                Last updated: <span className="font-semibold text-gray-700">January 15, 2025</span>
+                Last updated: <span className="font-semibold text-gray-700">September 18, 2025</span>
               </p>
             </div>
           </div>
