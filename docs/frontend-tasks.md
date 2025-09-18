@@ -3,7 +3,7 @@ social share logo -> done
 sitemap -> done
 robots -> done
 google analytics -> done
-webmaster
+webmaster  -> done
 clarity -> done
 
 static pages
