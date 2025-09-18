@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { SetupData } from '../Setup'
-import { ArrowLeft, Banknote, CreditCard, Building2, Smartphone, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Banknote, CreditCard, Building2, Smartphone, AlertCircle, Coins } from 'lucide-react'
 
 interface PaymentMethodsStepProps {
   data: SetupData
@@ -10,42 +10,120 @@ interface PaymentMethodsStepProps {
   onBack: () => void
 }
 
-export default function PaymentMethodsStep({ data, onComplete, onBack }: PaymentMethodsStepProps) {
-  const [selectedMethods, setSelectedMethods] = useState<string[]>(
-    data.paymentMethods || ['CASH_ON_DELIVERY']
-  )
-  const [paymentInstructions, setPaymentInstructions] = useState('')
-  const [loading, setLoading] = useState(false)
+// Business type specific payment configurations
+const businessTypeConfig = {
+  RESTAURANT: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your restaurant',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup/Dine-in',
+    instructionsPlaceholder: 'e.g., "Please have exact change ready for delivery orders"'
+  },
+  CAFE: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your cafe',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup/Takeaway',
+    instructionsPlaceholder: 'e.g., "Mobile orders must be paid in advance"'
+  },
+  RETAIL: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your store',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup',
+    instructionsPlaceholder: 'e.g., "Returns accepted within 30 days with receipt"'
+  },
+  GROCERY: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your grocery business',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup',
+    instructionsPlaceholder: 'e.g., "Please check expiry dates upon delivery"'
+  },
+  JEWELRY: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your jewelry business',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup/Appointment',
+    instructionsPlaceholder: 'e.g., "All purchases come with certificate of authenticity"'
+  },
+  FLORIST: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your flower business',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup',
+    instructionsPlaceholder: 'e.g., "Orders must be placed 24 hours in advance"'
+  },
+  HEALTH_BEAUTY: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your services',
+    cashOnDeliveryLabel: 'Cash for Home Service',
+    cashOnPickupLabel: 'Cash on Appointment',
+    instructionsPlaceholder: 'e.g., "Payment due at time of service"'
+  },
+  OTHER: {
+    title: 'How will customers pay?',
+    subtitle: 'Choose payment methods for your business',
+    cashOnDeliveryLabel: 'Cash on Delivery',
+    cashOnPickupLabel: 'Cash on Pickup',
+    instructionsPlaceholder: 'e.g., "Add any special payment instructions"'
+  }
+}
 
-  // Check if we're in development mode
-  const isDevelopment = process.env.NODE_ENV === 'development'
+// Currency-specific cash payment methods
+const getCurrencyPaymentMethods = (currency: string, businessType: string) => {
+  const config = businessTypeConfig[businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
+  
+  const currencyNames = {
+    USD: 'US Dollars',
+    EUR: 'Euros',
+    ALL: 'Albanian Lek'
+  }
 
-  // For now, only cash methods are available
-  const availablePaymentMethods = [
+  return [
     {
       id: 'CASH_ON_DELIVERY',
-      name: 'Cash on Delivery',
-      description: 'Customer pays with cash when order is delivered',
+      name: config.cashOnDeliveryLabel,
+      description: `Customer pays with cash in ${currencyNames[currency as keyof typeof currencyNames] || 'local currency'} when order is delivered`,
       icon: Banknote,
       available: true,
       color: 'green'
     },
     {
       id: 'CASH_ON_PICKUP',
-      name: 'Cash on Pickup',
-      description: 'Customer pays with cash when collecting order',
-      icon: Banknote,
+      name: config.cashOnPickupLabel,
+      description: `Customer pays with cash in ${currencyNames[currency as keyof typeof currencyNames] || 'local currency'} when collecting order`,
+      icon: Coins,
       available: true,
       color: 'green'
     }
   ]
+}
 
-  // TODO: Future payment methods (currently disabled)
+export default function PaymentMethodsStep({ data, onComplete, onBack }: PaymentMethodsStepProps) {
+  const [selectedMethods, setSelectedMethods] = useState<string[]>(
+    data.paymentMethods || ['CASH_ON_DELIVERY']
+  )
+  const [paymentInstructions, setPaymentInstructions] = useState(
+    data.paymentInstructions || ''
+  )
+  const [loading, setLoading] = useState(false)
+
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development'
+
+  const config = businessTypeConfig[data.businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
+  const currency = data.currency || 'USD'
+  
+  // Get currency-specific payment methods
+  const availablePaymentMethods = getCurrencyPaymentMethods(currency, data.businessType || 'OTHER')
+
+  // Future payment methods with currency awareness
   const futurePaymentMethods = [
     {
       id: 'STRIPE',
       name: 'Credit/Debit Cards',
-      description: 'Accept card payments via Stripe',
+      description: `Accept card payments in ${currency} via Stripe`,
       icon: CreditCard,
       available: false,
       color: 'blue'
@@ -53,7 +131,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     {
       id: 'PAYPAL',
       name: 'PayPal',
-      description: 'Accept payments via PayPal',
+      description: `Accept PayPal payments in ${currency}`,
       icon: Building2,
       available: false,
       color: 'blue'
@@ -61,20 +139,54 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     {
       id: 'BANK_TRANSFER',
       name: 'Bank Transfer',
-      description: 'Customer transfers money directly to your bank',
+      description: `Direct bank transfers in ${currency}`,
       icon: Building2,
       available: false,
       color: 'gray'
-    },
-    {
+    }
+  ]
+
+  // Add Albania-specific payment methods
+  if (currency === 'ALL') {
+    futurePaymentMethods.push({
+      id: 'BKT',
+      name: 'BKT Payment',
+      description: 'Accept payments via Bank of Tirana',
+      icon: Building2,
+      available: false,
+      color: 'purple'
+    })
+  }
+
+  // Add mobile wallet based on currency/region
+  if (currency === 'USD') {
+    futurePaymentMethods.push({
       id: 'MOBILE_WALLET',
-      name: 'Mobile Wallet',
-      description: 'Accept payments via mobile wallets',
+      name: 'Mobile Wallets',
+      description: 'Apple Pay, Google Pay, and other mobile wallets',
       icon: Smartphone,
       available: false,
       color: 'purple'
-    }
-  ]
+    })
+  } else if (currency === 'EUR') {
+    futurePaymentMethods.push({
+      id: 'MOBILE_WALLET',
+      name: 'Mobile Wallets',
+      description: 'Apple Pay, Google Pay, and European mobile wallets',
+      icon: Smartphone,
+      available: false,
+      color: 'purple'
+    })
+  } else if (currency === 'ALL') {
+    futurePaymentMethods.push({
+      id: 'MOBILE_WALLET',
+      name: 'Mobile Wallets',
+      description: 'Local Albanian mobile payment solutions',
+      icon: Smartphone,
+      available: false,
+      color: 'purple'
+    })
+  }
 
   const togglePaymentMethod = (methodId: string, available: boolean) => {
     if (!available) return
@@ -93,7 +205,6 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     await new Promise(resolve => setTimeout(resolve, 500))
     onComplete({ 
       paymentMethods: selectedMethods,
-      // @ts-ignore
       paymentInstructions: paymentInstructions.trim() || undefined
     })
     setLoading(false)
@@ -114,16 +225,30 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
       <div className="text-center mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-          How will customers pay?
+          {config.title}
         </h1>
         <p className="text-base sm:text-lg text-gray-600 px-2">
-          Choose the payment methods you want to accept
+          {config.subtitle}
         </p>
+        
+        {/* Currency Indicator */}
+        <div className="mt-4 inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600">
+          <Coins className="w-4 h-4 mr-2" />
+          Currency: {currency}
+        </div>
       </div>
 
       {/* Available Payment Methods */}
       <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
         <h3 className="text-lg font-semibold text-gray-900">Available Now</h3>
+        
+        {filteredAvailableMethods.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+            <p className="text-yellow-800 text-sm">
+              No cash payment methods available based on your delivery options. Please go back and select at least one delivery method.
+            </p>
+          </div>
+        )}
         
         {filteredAvailableMethods.map(method => {
           const IconComponent = method.icon
@@ -227,7 +352,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
         <textarea
           value={paymentInstructions}
           onChange={(e) => setPaymentInstructions(e.target.value)}
-          placeholder="Add any special payment instructions for your customers (optional)"
+          placeholder={config.instructionsPlaceholder}
           className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none text-base"
           rows={3}
         />
@@ -251,7 +376,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
         </div>
       )}
 
-      {selectedMethods.length === 0 && (
+      {selectedMethods.length === 0 && filteredAvailableMethods.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 sm:mb-8">
           <p className="text-yellow-800 text-sm">
             Please select at least one payment method for your customers.

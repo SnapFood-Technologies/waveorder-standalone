@@ -20,12 +20,15 @@ import DashboardWelcomeStep from './steps/DashboardWelcomeStep'
 
 export interface SetupData {
   businessType: string
+  currency: string
   businessGoals: string[]
   subscriptionPlan: 'FREE' | 'PRO'
   businessName: string
   whatsappNumber: string
   storeSlug: string
   teamMembers: { email: string; role: string }[]
+  paymentInstructions?: string
+  categories: { id: string; name: string }[]
   // Step 6 (Domain) - Hidden but tracked
   domainSkipped: boolean
   products: any[]
@@ -58,20 +61,23 @@ export default function SetupComponent() {
   const [currentStep, setCurrentStep] = useState(1)
   const [setupData, setSetupData] = useState<SetupData>({
     businessType: '',
+    currency: 'USD', // Add this
     businessGoals: [],
     subscriptionPlan: 'FREE',
     businessName: '',
     whatsappNumber: '',
     storeSlug: '',
     teamMembers: [],
-    domainSkipped: true, // Step 6 automatically skipped
+    domainSkipped: true,
     products: [],
+    categories: [], // Add this
     deliveryMethods: {
       delivery: false,
       pickup: true,
       dineIn: false
     },
-    paymentMethods: ['CASH_ON_DELIVERY'], // Default to cash only
+    paymentMethods: ['CASH_ON_DELIVERY'],
+    paymentInstructions: '', // Add this
     whatsappSettings: {
       orderNumberFormat: 'WO-{number}',
       greetingMessage: ''
@@ -103,8 +109,20 @@ export default function SetupComponent() {
       const data = await response.json()
       
       if (data.businesses?.length > 0) {
+        if (data.businesses[0].setupWizardCompleted) {
         // User already has businesses, redirect to dashboard
         router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+        } else {
+           // Load existing progress
+  const progressResponse = await fetch('/api/setup/progress')
+  if (progressResponse.ok) {
+    const progressData = await progressResponse.json()
+    setCurrentStep(progressData.currentStep)
+    setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+  }
+
+  setLoading(false)
+        }
       } else {
         // User can access setup without token (already authenticated)
         setLoading(false)
@@ -117,24 +135,33 @@ export default function SetupComponent() {
 
   const validateSetupToken = async () => {
     try {
-      const response = await fetch('/api/setup/validate', {
+      // First validate token
+      const validateResponse = await fetch('/api/setup/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token })
       })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setLoading(false)
-      } else {
+  
+      if (!validateResponse.ok) {
+        const data = await validateResponse.json()
         if (data.redirectTo) {
           router.push(data.redirectTo)
         } else {
           setError(data.message || 'Invalid setup token')
-          setLoading(false)
         }
+        setLoading(false)
+        return
       }
+  
+      // Then load progress
+      const progressResponse = await fetch(`/api/setup/progress?token=${token}`)
+      if (progressResponse.ok) {
+        const progressData = await progressResponse.json()
+        setCurrentStep(progressData.currentStep)
+        setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+      }
+      
+      setLoading(false)
     } catch (error) {
       setError('Failed to validate setup token')
       setLoading(false)
@@ -239,7 +266,7 @@ export default function SetupComponent() {
       case 10:
         return <WhatsAppMessageStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} />
       case 11:
-        return <StoreReadyStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} />
+        return <StoreReadyStep data={setupData} onComplete={handleStepComplete} onBack={handleBack} setupToken={token} />
       case 12:
         return <DashboardWelcomeStep data={setupData} />
       default:

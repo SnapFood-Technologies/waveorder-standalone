@@ -48,8 +48,13 @@ export default function LoginComponent() {
         const data = await response.json()
         
         if (data.businesses?.length > 0) {
+          if (data.businesses[0].setupWizardCompleted) {
           // Redirect to first business dashboard
           router.push(`/admin/stores/${data.businesses[0].id}`)
+          } {
+             // Redirect to setup/onboarding
+          router.push('/setup')
+          }
         } else {
           // Redirect to setup/onboarding
           router.push('/setup')

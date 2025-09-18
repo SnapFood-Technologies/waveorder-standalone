@@ -41,15 +41,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already has businesses
+    // Check if user already has completed businesses
     if (user.businesses?.length > 0) {
-      return NextResponse.json(
-        { 
-          message: 'User already has businesses',
-          redirectTo: `/admin/stores/${user.businesses[0].business.id}`
-        },
-        { status: 400 }
-      )
+      const business = user.businesses[0].business
+      if (business.setupWizardCompleted) {
+        return NextResponse.json(
+          { 
+            message: 'User already has businesses',
+            redirectTo: `/admin/stores/${business.id}/dashboard`
+          },
+          { status: 400 }
+        )
+      }
     }
 
     return NextResponse.json(
