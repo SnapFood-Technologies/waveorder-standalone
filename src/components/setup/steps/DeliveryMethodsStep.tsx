@@ -43,15 +43,7 @@ const businessTypeConfig = {
         title: 'Pickup',
         description: 'Customers collect orders from your restaurant',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: UtensilsCrossed,
-        title: 'Dine-in',
-        description: 'Table service for customers eating at your restaurant',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -73,15 +65,7 @@ const businessTypeConfig = {
         title: 'Pickup',
         description: 'Customers collect orders from your cafe',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: UtensilsCrossed,
-        title: 'Takeaway',
-        description: 'Quick service for customers on the go',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -103,15 +87,7 @@ const businessTypeConfig = {
         title: 'Store Pickup',
         description: 'Customers collect purchases from your store',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: ShoppingBag,
-        title: 'In-Store Shopping',
-        description: 'Browse and purchase products in your store',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -133,15 +109,7 @@ const businessTypeConfig = {
         title: 'Store Pickup',
         description: 'Customers collect groceries from your store',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: Users,
-        title: 'Curbside Service',
-        description: 'Bring groceries to customer vehicles',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -163,15 +131,7 @@ const businessTypeConfig = {
         title: 'Store Pickup',
         description: 'Customers collect jewelry from your store',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: Calendar,
-        title: 'Appointment Viewing',
-        description: 'Private consultations and fittings',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -193,45 +153,7 @@ const businessTypeConfig = {
         title: 'Shop Pickup',
         description: 'Customers collect arrangements from your shop',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: Home,
-        title: 'Local Delivery',
-        description: 'Same-day delivery in your local area',
-        color: 'blue',
-        settings: []
-      }
-    ]
-  },
-  HEALTH_BEAUTY: {
-    title: 'How do customers receive services?',
-    subtitle: 'Choose the service methods for your business',
-    methods: [
-      {
-        key: 'delivery' as const,
-        icon: Home,
-        title: 'Home Service',
-        description: 'Provide services at customer locations',
-        color: 'teal',
-        settings: ['deliveryFee', 'deliveryRadius', 'estimatedDeliveryTime']
-      },
-      {
-        key: 'pickup' as const,
-        icon: Store,
-        title: 'Product Pickup',
-        description: 'Customers collect products from your location',
-        color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: Calendar,
-        title: 'In-Store Appointment',
-        description: 'Services provided at your business location',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   },
@@ -253,15 +175,7 @@ const businessTypeConfig = {
         title: 'Pickup',
         description: 'Customers collect orders from your location',
         color: 'emerald',
-        settings: []
-      },
-      {
-        key: 'dineIn' as const,
-        icon: Users,
-        title: 'On-Site Service',
-        description: 'Provide services at your business location',
-        color: 'blue',
-        settings: []
+        settings: ['estimatedPickupTime']
       }
     ]
   }
@@ -276,14 +190,32 @@ const getCurrencySymbol = (currency: string) => {
   }
 }
 
+// Get default pickup times based on business type
+const getDefaultPickupTime = (businessType: string) => {
+  switch (businessType) {
+    case 'RESTAURANT':
+    case 'CAFE':
+      return '15-20 minutes'
+    case 'RETAIL':
+    case 'JEWELRY':
+      return '1-2 hours'
+    case 'GROCERY':
+      return '30 minutes'
+    case 'FLORIST':
+      return '2-4 hours'
+    default:
+      return '15-20 minutes'
+  }
+}
+
 export default function DeliveryMethodsStep({ data, onComplete, onBack }: DeliveryMethodsStepProps) {
   const [methods, setMethods] = useState(data.deliveryMethods || {
     delivery: true,
     pickup: false,
-    dineIn: false,
     deliveryFee: 0,
     deliveryRadius: 10,
-    estimatedDeliveryTime: '30-45 minutes'
+    estimatedDeliveryTime: '30-45 minutes',
+    estimatedPickupTime: getDefaultPickupTime(data.businessType || 'OTHER')
   })
   const [loading, setLoading] = useState(false)
 
@@ -302,7 +234,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
 
   const handleSubmit = async () => {
     // Ensure at least one method is selected
-    if (!methods.delivery && !methods.pickup && !methods.dineIn) {
+    if (!methods.delivery && !methods.pickup) {
       return
     }
 
@@ -312,39 +244,55 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
     setLoading(false)
   }
 
-  const hasSelection = methods.delivery || methods.pickup || methods.dineIn
+  const hasSelection = methods.delivery || methods.pickup
 
   // Get field labels based on business type
   const getFieldLabel = (field: string) => {
     switch (field) {
       case 'deliveryFee':
         if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Fee'
-        if (data.businessType === 'HEALTH_BEAUTY') return 'Service Fee'
         return 'Delivery Fee'
       case 'deliveryRadius':
         if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Radius (km)'
-        if (data.businessType === 'HEALTH_BEAUTY') return 'Service Area (km)'
         return 'Delivery Radius (km)'
       case 'estimatedDeliveryTime':
         if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Time'
-        if (data.businessType === 'HEALTH_BEAUTY') return 'Service Time'
         return 'Delivery Time'
+      case 'estimatedPickupTime':
+        if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Pickup Time'
+        if (data.businessType === 'GROCERY') return 'Preparation Time'
+        return 'Pickup Time'
       default:
         return field
     }
   }
 
-  const getTimePlaceholder = () => {
+  const getDeliveryTimePlaceholder = () => {
     switch (data.businessType) {
       case 'RETAIL':
       case 'JEWELRY':
         return '2-5 business days'
-      case 'HEALTH_BEAUTY':
-        return '1-2 hours'
       case 'FLORIST':
         return '2-4 hours'
       default:
         return '30-45 minutes'
+    }
+  }
+
+  const getPickupTimePlaceholder = () => {
+    switch (data.businessType) {
+      case 'RESTAURANT':
+      case 'CAFE':
+        return '15-20 minutes'
+      case 'RETAIL':
+      case 'JEWELRY':
+        return '1-2 hours'
+      case 'GROCERY':
+        return '30 minutes'
+      case 'FLORIST':
+        return '2-4 hours'
+      default:
+        return '15-20 minutes'
     }
   }
 
@@ -407,10 +355,11 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                 </div>
               </button>
 
-              {/* Delivery-specific settings */}
-              {option.key === 'delivery' && isSelected && option.settings.length > 0 && (
+              {/* Method-specific settings */}
+              {isSelected && option.settings.length > 0 && (
                 <div className={`px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 border-t border-${option.color}-200 pt-4 mt-4`}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Delivery Fee */}
                     {option.settings.includes('deliveryFee') && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
@@ -432,6 +381,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                       </div>
                     )}
 
+                    {/* Delivery Radius */}
                     {option.settings.includes('deliveryRadius') && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
@@ -450,6 +400,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                       </div>
                     )}
 
+                    {/* Delivery Time */}
                     {option.settings.includes('estimatedDeliveryTime') && (
                       <div className="sm:col-span-2 lg:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
@@ -459,10 +410,30 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
                             type="text"
-                            value={methods.estimatedDeliveryTime || getTimePlaceholder()}
+                            value={methods.estimatedDeliveryTime || getDeliveryTimePlaceholder()}
                             onChange={(e) => updateValue('estimatedDeliveryTime', e.target.value)}
                             className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
-                            placeholder={getTimePlaceholder()}
+                            placeholder={getDeliveryTimePlaceholder()}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Pickup Time */}
+                    {option.settings.includes('estimatedPickupTime') && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                          {getFieldLabel('estimatedPickupTime')}
+                        </label>
+                        <div className="relative">
+                          <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            // @ts-ignore
+                            value={methods.estimatedPickupTime || getPickupTimePlaceholder()}
+                            onChange={(e) => updateValue('estimatedPickupTime', e.target.value)}
+                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base"
+                            placeholder={getPickupTimePlaceholder()}
                           />
                         </div>
                       </div>
@@ -484,10 +455,8 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
               <div>✓ <strong>{config.methods[0].title}:</strong> {currencySymbol}{methods.deliveryFee?.toFixed(2) || '0.00'} fee • {methods.estimatedDeliveryTime} • {methods.deliveryRadius}km radius</div>
             )}
             {methods.pickup && (
-              <div>✓ <strong>{config.methods[1].title}:</strong> Available at your location</div>
-            )}
-            {methods.dineIn && (
-              <div>✓ <strong>{config.methods[2].title}:</strong> {config.methods[2].description}</div>
+               // @ts-ignore
+              <div>✓ <strong>{config.methods[1].title}:</strong> Ready in {methods.estimatedPickupTime}</div>
             )}
           </div>
         </div>
