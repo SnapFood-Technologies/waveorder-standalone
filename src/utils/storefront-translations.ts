@@ -75,6 +75,35 @@ export interface StorefrontTranslations {
     browseAllProducts: string
     comingSoon: string
     checkBackLater: string
+
+    now: string
+    schedule: string
+    selectDate: string
+    selectTime: string
+    today: string
+    tomorrow: string
+    noTimeSlots: string
+    address: string
+    pickupLocation: string
+    directions: string
+    tapForDirections: string
+    pickupInstructions: string
+    mapView: string
+    businessInfo: string
+    about: string
+    contact: string
+    hours: string
+    serviceOptions: string
+    share: string
+    copyLink: string
+    shareVia: string
+    temporarilyClosed: string
+    expectedReopen: string
+    storeTemporarilyClosed: string
+    storeClosedMessage: string
+    time: string
+    serviceFee: string
+    popular: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -113,6 +142,36 @@ export interface StorefrontTranslations {
     arrivalTime: "Arrival Time",
     asap: "ASAP",
     mins: "mins",
+
+    // English translations:
+    now: "Now",
+    schedule: "Schedule",
+    selectDate: "Select Date",
+    selectTime: "Select Time",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    noTimeSlots: "No available time slots for this date",
+    address: "Address",
+    pickupLocation: "Pickup Location",
+    directions: "Directions",
+    tapForDirections: "Tap for directions",
+    pickupInstructions: "Please come to this location to collect your order.",
+    mapView: "Map View",
+    businessInfo: "Business Info",
+    about: "About",
+    contact: "Contact",
+    hours: "Hours",
+    serviceOptions: "Service Options",
+    share: "Share",
+    copyLink: "Copy Link",
+    shareVia: "Share via",
+    temporarilyClosed: "Temporarily Closed",
+    expectedReopen: "Expected to reopen",
+    storeTemporarilyClosed: "Store Temporarily Closed",
+    storeClosedMessage: "We apologize for any inconvenience.",
+    time: "Time",
+    serviceFee: "Service Fee",
+    popular: "Popular",
     
     // Cart & Checkout
     cartItems: "Cart Items",
@@ -172,6 +231,35 @@ export interface StorefrontTranslations {
     outOfStock: "Nuk ka në stok",
     onlyLeft: "Vetëm",
     left: "të mbetur!",
+
+    now: "Tani",
+    schedule: "Planifiko",
+    selectDate: "Zgjidh Datën",
+    selectTime: "Zgjidh Kohën",
+    today: "Sot",
+    tomorrow: "Nesër",
+    noTimeSlots: "Nuk ka kohë të disponueshme për këtë datë",
+    address: "Adresa",
+    pickupLocation: "Vendi i Marrjes",
+    directions: "Udhëzimet",
+    tapForDirections: "Prek për udhëzime",
+    pickupInstructions: "Ju lutemi ejani në këtë vendndodhje për të marrë porosinë tuaj.",
+    mapView: "Pamja e Hartës",
+    businessInfo: "Informacioni i Biznesit",
+    about: "Rreth Nesh",
+    contact: "Kontakti",
+    hours: "Oraret",
+    serviceOptions: "Opsionet e Shërbimit",
+    share: "Shpërndaj",
+    copyLink: "Kopjo Linkun",
+    shareVia: "Shpërndaj përmes",
+    temporarilyClosed: "Mbyllur Përkohësisht",
+    expectedReopen: "Pritet të rihapet",
+    storeTemporarilyClosed: "Dyqani është Mbyllur Përkohësisht",
+    storeClosedMessage: "Na vjen keq për çdo shqetësim.",
+    time: "Koha",
+    serviceFee: "Taksa e Shërbimit",
+    popular: "Popullore",
     
     // Order Details
     orderDetails: "Detajet e Porosisë",

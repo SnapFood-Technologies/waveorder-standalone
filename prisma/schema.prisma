@@ -76,6 +76,8 @@ model Business {
   phone              String?
   email              String?
   address            String?
+  storeLatitude      Float?
+  storeLongitude     Float?
   website            String?
   whatsappNumber     String
   businessType       BusinessType       @default(RESTAURANT)
@@ -326,6 +328,9 @@ model Order {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   items OrderItem[]
+
+  customerLatitude  Float?
+  customerLongitude Float?
 
   // Pricing
   subtotal    Float
