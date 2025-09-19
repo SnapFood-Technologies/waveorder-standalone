@@ -24,7 +24,6 @@ export const authOptions: NextAuthOptions = {
     EmailProvider({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       sendVerificationRequest: async ({ identifier: email, url }) => {
-        // Check if user already exists
         const existingUser = await prisma.user.findUnique({
           where: { email: email.toLowerCase() }
         })
@@ -44,15 +43,39 @@ export const authOptions: NextAuthOptions = {
       }
     }),
 
-    // Email/Password Provider
+    // Email/Password Provider + Setup Token
     CredentialsProvider({
       id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        setupToken: { label: 'Setup Token', type: 'text' }
       },
       async authorize(credentials) {
+        // Handle setup token login
+        if (credentials?.setupToken && credentials?.email) {
+          const user = await prisma.user.findFirst({
+            where: {
+              email: credentials.email.toLowerCase(),
+              setupToken: credentials.setupToken,
+              setupExpiry: { gt: new Date() }
+            }
+          })
+
+          if (user) {
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              role: user.role
+            }
+          }
+          return null
+        }
+
+        // Handle regular email/password login
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -101,7 +124,6 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
       }
       
-      // Always fetch fresh user data from database
       if (token.id) {
         try {
           const freshUser = await prisma.user.findUnique({
@@ -142,7 +164,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async signIn({ user, account, profile }) {
-      // Handle Google OAuth
       if (account?.provider === 'google') {
         try {
           let existingUser = await prisma.user.findUnique({
@@ -150,18 +171,16 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!existingUser) {
-            // Create user for Google OAuth
             const newUser = await prisma.user.create({
               data: {
                 name: user.name!,
                 email: user.email!.toLowerCase(),
                 emailVerified: new Date(),
                 image: user.image,
-                role: 'BUSINESS_OWNER' // Default role for new users
+                role: 'BUSINESS_OWNER'
               }
             })
 
-            // Send user registration notification
             try {
               const { sendUserCreatedNotification } = await import('@/lib/email')
               await sendUserCreatedNotification({
@@ -178,7 +197,6 @@ export const authOptions: NextAuthOptions = {
             existingUser = newUser
           }
           
-          // Update user object
           user.id = existingUser.id
           user.role = existingUser.role
         } catch (error) {
@@ -194,7 +212,6 @@ export const authOptions: NextAuthOptions = {
   events: {
     async createUser({ user }) {
       try {
-        // Update user role if not set
         const existingUser = await prisma.user.findUnique({
           where: { id: user.id }
         })
@@ -203,7 +220,7 @@ export const authOptions: NextAuthOptions = {
           await prisma.user.update({
             where: { id: user.id },
             data: { 
-              role: 'BUSINESS_OWNER' // Default role for email/magic link users
+              role: 'BUSINESS_OWNER'
             }
           })
         }

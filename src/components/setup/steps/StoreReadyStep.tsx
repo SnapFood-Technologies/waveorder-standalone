@@ -177,10 +177,15 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
         
         // Auto-login for token users
         if (data.autoLogin) {
-          await signIn('credentials', { 
+          const result = await signIn('credentials', { 
+            setupToken: setupToken,
             email: data.email,
             redirect: false 
           })
+          
+          if (result?.error) {
+            console.error('Auto-login failed:', result.error)
+          }
         }
         
         // Redirect to dashboard
