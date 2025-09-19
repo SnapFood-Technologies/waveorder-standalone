@@ -103,7 +103,7 @@ export default function Terms() {
               <p className="text-lg text-gray-700 leading-relaxed">
                 By accessing or using WaveOrder ("Service"), you agree to be bound by these Terms of Service ("Terms"). 
                 If you disagree with any part of these terms, you may not access the Service. These terms create a 
-                legally binding agreement between you and WaveOrder Inc.
+                legally binding agreement between you and Electral Shpk.
               </p>
             </div>
           </div>
@@ -568,14 +568,14 @@ export default function Terms() {
                 <Globe className="w-5 h-5 text-blue-600 mr-3" />
                 <div>
                   <div className="font-medium text-gray-900">Address</div>
-                  <div className="text-gray-600 text-sm">123 Legal Street, San Francisco, CA 94105</div>
+                  <div className="text-gray-600 text-sm">Sami Frashëri Sreet, Tiranë, Albania</div>
                 </div>
               </div>
               <div className="flex items-center">
                 <Shield className="w-5 h-5 text-blue-600 mr-3" />
                 <div>
-                  <div className="font-medium text-gray-900">Phone</div>
-                  <div className="text-gray-600">+1 (555) 123-WAVE</div>
+                  <div className="font-medium text-gray-900">Company</div>
+                  <div className="text-gray-600">Electral Shpk.</div>
                 </div>
               </div>
             </div>
@@ -594,7 +594,7 @@ export default function Terms() {
                   Important Legal Notice
                 </h3>
                 <p className="text-amber-800 leading-relaxed mb-4">
-                  These Terms of Service constitute a legally binding agreement between you and WaveOrder Inc. 
+                  These Terms of Service constitute a legally binding agreement between you and Electral Shpk. 
                   Please read them carefully and ensure you understand all provisions before using our service.
                 </p>
                 <p className="text-amber-700 text-sm">

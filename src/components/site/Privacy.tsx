@@ -101,7 +101,7 @@ export default function Privacy() {
             </div>
             <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-8 border border-teal-100">
               <p className="text-lg text-gray-700 leading-relaxed">
-                WaveOrder Inc. ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp ordering platform service. We believe transparency builds trust, and we want you to understand exactly how we handle your data.
+              Electral Shpk. ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp ordering platform service. We believe transparency builds trust, and we want you to understand exactly how we handle your data.
               </p>
             </div>
           </div>
@@ -483,14 +483,14 @@ export default function Privacy() {
                 <Globe className="w-5 h-5 text-teal-600 mr-3" />
                 <div>
                   <div className="font-medium text-gray-900">Address</div>
-                  <div className="text-gray-600 text-sm">123 Privacy Street, San Francisco, CA 94105</div>
+                  <div className="text-gray-600 text-sm">Sami Frashëri Sreet, Tiranë, Albania</div>
                 </div>
               </div>
               <div className="flex items-center">
                 <Shield className="w-5 h-5 text-teal-600 mr-3" />
                 <div>
-                  <div className="font-medium text-gray-900">Phone</div>
-                  <div className="text-gray-600">+1 (555) 123-WAVE</div>
+                  <div className="font-medium text-gray-900">Company</div>
+                  <div className="text-gray-600">Electral Shpk.</div>
                 </div>
               </div>
             </div>
