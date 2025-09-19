@@ -765,23 +765,23 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 <div className="absolute top-5 right-5 flex gap-3">
   <button 
     className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : undefined }}
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
   >
-    <Share2 className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': primaryColor} as React.CSSProperties} />
+    <Share2 className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
   </button>
   <button 
     className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : undefined }}
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
       // @ts-ignore
     onClick={() => document.querySelector('.search-input')?.focus()}
   >
-    <Search className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': primaryColor} as React.CSSProperties} />
+    <Search className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
   </button>
   <button 
     className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : undefined }}
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
   >
-    <Info className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': primaryColor} as React.CSSProperties} />
+    <Info className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
   </button>
 </div>
     </div>
