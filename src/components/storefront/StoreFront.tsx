@@ -1158,6 +1158,60 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     setShowProductModal(true)
   }
 
+
+  const getFilteredProducts = () => {
+     // @ts-ignore
+    let products = []
+  
+    if (selectedCategory === 'all') {
+      // Get all products from all categories
+      products = storeData.categories.flatMap(category => 
+        category.products.map(product => ({ 
+          ...product, 
+          categoryName: category.name,
+          categoryId: category.id 
+        }))
+      )
+    } else {
+      // Get products from selected category only
+      const category = storeData.categories.find(cat => cat.id === selectedCategory)
+      if (category) {
+        products = category.products.map(product => ({ 
+          ...product, 
+          categoryName: category.name,
+          categoryId: category.id 
+        }))
+      }
+    }
+  
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchTermLower = searchTerm.toLowerCase().trim()
+       // @ts-ignore
+      products = products.filter(product => {
+        // Search in product name, description, and category name
+        const nameMatch = product.name.toLowerCase().includes(searchTermLower)
+        const descriptionMatch = product.description?.toLowerCase().includes(searchTermLower) || false
+        const categoryMatch = product.categoryName.toLowerCase().includes(searchTermLower)
+        
+        // Also search in modifiers and variants
+         // @ts-ignore
+        const modifierMatch = product.modifiers?.some(modifier => 
+          modifier.name.toLowerCase().includes(searchTermLower)
+        ) || false
+        
+         // @ts-ignore
+        const variantMatch = product.variants?.some(variant => 
+          variant.name.toLowerCase().includes(searchTermLower)
+        ) || false
+  
+        return nameMatch || descriptionMatch || categoryMatch || modifierMatch || variantMatch
+      })
+    }
+  
+    return products
+  }
+
   const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = []) => {
     const basePrice = variant?.price || product.price
     const modifierPrice = modifiers.reduce((sum, mod) => sum + mod.price, 0)
@@ -1449,116 +1503,177 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={translations.search || "Search for dishes, ingredients..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
-                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                disabled={storeData.isTemporarilyClosed}
-              />
-            </div>
-          </div>
+  <div className="relative">
+    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <input
+      type="text"
+      placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (translations.search || "Search for dishes, ingredients...")}
+      value={searchTerm}
+      onChange={(e) => {
+        setSearchTerm(e.target.value)
+        // Auto-switch to "All" category when searching to show all results
+        if (e.target.value.trim() && selectedCategory !== 'all') {
+          setSelectedCategory('all')
+        }
+      }}
+      className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
+      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+      onFocus={(e) => e.target.style.borderColor = primaryColor}
+      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+      disabled={storeData.isTemporarilyClosed}
+    />
+    {/* Clear search button */}
+    {searchTerm && (
+      <button
+        onClick={() => setSearchTerm('')}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+      >
+        <X className="w-3 h-3 text-gray-600" />
+      </button>
+    )}
+  </div>
+  
+  {/* Search suggestions/results count */}
+  {searchTerm && (
+    <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+      <p className="text-sm text-gray-600">
+        {getFilteredProducts().length === 0 
+          ? `No results for "${searchTerm}"`
+          : `${getFilteredProducts().length} result${getFilteredProducts().length !== 1 ? 's' : ''} for "${searchTerm}"`
+        }
+      </p>
+    </div>
+  )}
+</div>
 
           {/* Category Tabs */}
           <div className="flex gap-1 mb-6 overflow-x-auto">
             <button
-              onClick={() => setSelectedCategory('all')}
-              disabled={storeData.isTemporarilyClosed}
-              className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
-                selectedCategory === 'all'
-                  ? 'border-b-2'
-                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={{ 
-                color: selectedCategory === 'all' ? primaryColor : undefined,
-                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
-              }}
-            >
-              {translations.all || 'All'}
-            </button>
-            {storeData.categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => {
+                setSelectedCategory('all')
+                // Keep search term when switching to "All"
+                }}
                 disabled={storeData.isTemporarilyClosed}
-                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
-                  selectedCategory === category.id
+                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                selectedCategory === 'all'
                     ? 'border-b-2'
                     : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
                 } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ 
-                  color: selectedCategory === category.id ? primaryColor : undefined,
-                  borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                color: selectedCategory === 'all' ? primaryColor : undefined,
+                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
                 }}
-              >
-                {category.name}
-              </button>
-            ))}
+            >
+                {translations.all || 'All'}
+                {searchTerm && selectedCategory === 'all' && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {getFilteredProducts().length}
+                </span>
+                )}
+            </button>
+            {storeData.categories.map(category => {
+                // Count products in this category that match search
+                const categoryProductCount = searchTerm 
+                ? category.products.filter(product => {
+                    const searchTermLower = searchTerm.toLowerCase().trim()
+                    return product.name.toLowerCase().includes(searchTermLower) ||
+                            product.description?.toLowerCase().includes(searchTermLower) ||
+                            category.name.toLowerCase().includes(searchTermLower)
+                    }).length
+                : category.products.length
+                
+                return (
+                <button
+                    key={category.id}
+                    onClick={() => {
+                    setSelectedCategory(category.id)
+                    // Clear search when switching to specific category
+                    if (searchTerm) {
+                        setSearchTerm('')
+                    }
+                    }}
+                    disabled={storeData.isTemporarilyClosed}
+                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                    selectedCategory === category.id
+                        ? 'border-b-2'
+                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{ 
+                    color: selectedCategory === category.id ? primaryColor : undefined,
+                    borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                    }}
+                >
+                    {category.name}
+                    {searchTerm && selectedCategory !== 'all' && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        {categoryProductCount}
+                    </span>
+                    )}
+                </button>
+                )
+            })}
           </div>
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {selectedCategory === 'all' ? (
-              storeData.categories.length === 0 ? (
-                <div className="col-span-full">
-                  <EmptyState 
-                    type="no-categories"
-                    primaryColor={primaryColor}
-                    translations={translations}
-                  />
-                </div>
-              ) : storeData.categories.every(category => category.products.length === 0) ? (
-                <div className="col-span-full">
-                  <EmptyState 
-                    type="no-products"
-                    primaryColor={primaryColor}
-                    translations={translations}
-                  />
-                </div>
-              ) : (
-                storeData.categories.flatMap(category => 
-                  category.products.map(product => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      onOpenModal={openProductModal}
-                      primaryColor={primaryColor}
-                      currencySymbol={currencySymbol}
-                      translations={translations}
-                      disabled={storeData.isTemporarilyClosed}
+            {(() => {
+                const filteredProducts = getFilteredProducts()
+                
+                if (storeData.categories.length === 0) {
+                return (
+                    <div className="col-span-full">
+                    <EmptyState 
+                        type="no-categories"
+                        primaryColor={primaryColor}
+                        translations={translations}
                     />
-                  ))
+                    </div>
                 )
-              )
-            ) : (
-              filteredProducts.length === 0 ? (
-                <div className="col-span-full">
-                  {searchTerm ? (
-                    <EmptyState 
-                      type="search-empty"
-                      primaryColor={primaryColor}
-                      translations={translations}
-                      onClearSearch={() => setSearchTerm('')}
-                      onShowAll={() => setSelectedCategory('all')}
-                    />
-                  ) : (
-                    <EmptyState 
-                      type="category-empty"
-                      primaryColor={primaryColor}
-                      translations={translations}
-                      onShowAll={() => setSelectedCategory('all')}
-                    />
-                  )}
-                </div>
-              ) : (
-                filteredProducts.map(product => (
-                  <ProductCard 
+                }
+                
+                if (filteredProducts.length === 0) {
+                if (searchTerm) {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="search-empty"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        searchTerm={searchTerm}
+                        onClearSearch={() => setSearchTerm('')}
+                        onShowAll={() => {
+                            setSearchTerm('')
+                            setSelectedCategory('all')
+                        }}
+                        />
+                    </div>
+                    )
+                } else if (selectedCategory !== 'all') {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="category-empty"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        onShowAll={() => setSelectedCategory('all')}
+                        />
+                    </div>
+                    )
+                } else {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="no-products"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        />
+                    </div>
+                    )
+                }
+                }
+                
+                return filteredProducts.map(product => (
+                <ProductCard 
                     key={product.id} 
                     product={product} 
                     onOpenModal={openProductModal}
@@ -1566,11 +1681,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     currencySymbol={currencySymbol}
                     translations={translations}
                     disabled={storeData.isTemporarilyClosed}
-                  />
+                    // searchTerm={searchTerm} // Pass search term for highlighting
+                />
                 ))
-              )
-            )}
-          </div>
+            })()}
+            </div>
         </div>
 
         {/* Right Side - Order Panel (Desktop) */}
@@ -1734,13 +1849,15 @@ function EmptyState({
   primaryColor, 
   translations,
   onClearSearch,
-  onShowAll
+  onShowAll,
+  searchTerm
 }: { 
   type: 'no-categories' | 'no-products' | 'category-empty' | 'search-empty'
   primaryColor: string
   translations: any
   onClearSearch?: () => void
   onShowAll?: () => void
+  searchTerm?: string
 }) {
   const getEmptyStateContent = () => {
     switch (type) {
@@ -1769,14 +1886,14 @@ function EmptyState({
         }
       case 'search-empty':
         return {
-          icon: AlertCircle,
-          title: translations.noProductsFound || 'No products found',
-          description: translations.noProductsFoundDescription || 'Try adjusting your search or browse our full menu.',
-          showActions: true,
-          actionText: translations.tryDifferentSearch || 'Clear Search',
-          actionCallback: onClearSearch,
-          secondaryActionText: translations.browseAllProducts || 'Browse All Products',
-          secondaryActionCallback: onShowAll
+            icon: Search,
+            title: `No results for "${searchTerm}"`,
+            description: 'Try a different search term or browse all products',
+            showActions: true,
+            actionText: 'Clear Search',
+            actionCallback: onClearSearch,
+            secondaryActionText: 'Browse All Products',
+            secondaryActionCallback: onShowAll
         }
       default:
         return {
@@ -1849,12 +1966,13 @@ function ProductCard({
     translations,
     disabled = false
   }: { 
-    product: Product
+    product: Product & { categoryName?: string }
     onOpenModal: (product: Product) => void
     primaryColor: string
     currencySymbol: string
     translations: any
     disabled?: boolean
+    // searchTerm?: string
   }) {
     const hasImage = product.images.length > 0
   
@@ -1932,6 +2050,7 @@ function ProductCard({
       </div>
     )
   }
+  
 
   // Improved Product Modal Component
   function ProductModal({
@@ -1964,9 +2083,12 @@ function ProductCard({
     const totalPrice = (basePrice + modifierPrice) * quantity
   
     const toggleModifier = (modifier: ProductModifier) => {
+        // @ts-ignore
       setSelectedModifiers(prev => {
+         // @ts-ignore
         const exists = prev.find(m => m.id === modifier.id)
         if (exists) {
+             // @ts-ignore
           return prev.filter(m => m.id !== modifier.id)
         } else {
           return [...prev, modifier]

@@ -25,6 +25,7 @@ export interface SetupData {
   subscriptionPlan: 'FREE' | 'PRO'
   businessName: string
   language?: string
+  primaryColor?: string
   whatsappNumber: string
   storeSlug: string
   teamMembers: { email: string; role: string }[]
@@ -36,10 +37,11 @@ export interface SetupData {
   deliveryMethods: {
     delivery: boolean
     pickup: boolean
-    dineIn: boolean
+    dineIn?: boolean
     deliveryFee?: number
     deliveryRadius?: number
     estimatedDeliveryTime?: string
+    estimatedPickupTime?: string
   }
   paymentMethods: string[]
   whatsappSettings: {

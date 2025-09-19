@@ -597,6 +597,14 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
           if (result?.error) {
             console.error('Auto-login failed:', result.error)
           }
+
+          if (result?.ok) {
+            // Now clear the token
+            await fetch('/api/setup/clear-token', {
+              method: 'POST',
+              body: JSON.stringify({ setupToken })
+            })
+          }
         }
         
         // Redirect to dashboard
