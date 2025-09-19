@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
           name: data.businessName || 'My Business',
           slug: data.storeSlug || `business-${Date.now()}`,
           businessType: data.businessType || 'OTHER',
-          currency: data.currency || 'USD', // NEW FIELD
+          currency: data.currency || 'USD',
+          language: data.language || 'en', // NEW FIELD
           whatsappNumber: data.whatsappNumber || '',
           onboardingStep: step,
           users: {
@@ -75,12 +76,13 @@ export async function POST(request: NextRequest) {
       if (data.businessName) updateData.name = data.businessName
       if (data.storeSlug) updateData.slug = data.storeSlug
       if (data.businessType) updateData.businessType = data.businessType
-      if (data.currency) updateData.currency = data.currency // NEW FIELD
+      if (data.currency) updateData.currency = data.currency
+      if (data.language) updateData.language = data.language // NEW FIELD
       if (data.whatsappNumber) updateData.whatsappNumber = data.whatsappNumber
       if (data.businessGoals) updateData.businessGoals = data.businessGoals
       if (data.subscriptionPlan) updateData.subscriptionPlan = data.subscriptionPlan
       if (data.paymentMethods) updateData.paymentMethods = data.paymentMethods
-      if (data.paymentInstructions !== undefined) updateData.paymentInstructions = data.paymentInstructions // NEW FIELD
+      if (data.paymentInstructions !== undefined) updateData.paymentInstructions = data.paymentInstructions
 
       // Handle delivery methods
       if (data.deliveryMethods) {

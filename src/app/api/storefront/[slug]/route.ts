@@ -5,7 +5,22 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 function formatBusinessHours(businessHours: any): string | null {
-  if (!businessHours || !Array.isArray(businessHours)) return null
+  if (!businessHours) return null
+  
+  // Handle both array format (old) and object format (new)
+  let hoursArray = businessHours
+  if (!Array.isArray(businessHours) && typeof businessHours === 'object') {
+    // Convert object format to array for processing
+    const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    hoursArray = dayNames.map(day => ({
+      day,
+      open: businessHours[day]?.open || '09:00',
+      close: businessHours[day]?.close || '17:00',
+      closed: businessHours[day]?.closed || false
+    }))
+  }
+  
+  if (!Array.isArray(hoursArray)) return null
   
   const dayMap = {
     monday: 'Mo',
@@ -17,7 +32,7 @@ function formatBusinessHours(businessHours: any): string | null {
     sunday: 'Su'
   }
   
-  const openDays = businessHours.filter(day => !day.closed)
+  const openDays = hoursArray.filter(day => !day.closed)
   if (openDays.length === 0) return null
   
   // Group consecutive days with same hours
@@ -44,13 +59,21 @@ function formatBusinessHours(businessHours: any): string | null {
 }
 
 function calculateIsOpen(businessHours: any, timezone: string): boolean {
-  if (!businessHours || !Array.isArray(businessHours)) return true // Default open if no hours set
+  if (!businessHours) return true // Default open if no hours set
   
   const now = new Date()
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   const currentDay = dayNames[now.getDay()]
   
-  const todaysHours = businessHours.find(day => day.day.toLowerCase() === currentDay)
+  let todaysHours = null
+  
+  // Handle both array format (old) and object format (new)
+  if (Array.isArray(businessHours)) {
+    todaysHours = businessHours.find(day => day.day.toLowerCase() === currentDay)
+  } else if (typeof businessHours === 'object') {
+    todaysHours = businessHours[currentDay]
+  }
+  
   if (!todaysHours || todaysHours.closed) return false
   
   const currentTime = now.toTimeString().slice(0, 5) // HH:MM format
@@ -58,7 +81,7 @@ function calculateIsOpen(businessHours: any, timezone: string): boolean {
 }
 
 function getNextOpenTime(businessHours: any, timezone: string): string | null {
-  if (!businessHours || !Array.isArray(businessHours)) return null
+  if (!businessHours) return null
   
   const now = new Date()
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
@@ -69,7 +92,15 @@ function getNextOpenTime(businessHours: any, timezone: string): string | null {
     checkDate.setDate(checkDate.getDate() + i)
     const dayName = dayNames[checkDate.getDay()]
     
-    const dayHours = businessHours.find(day => day.day.toLowerCase() === dayName)
+    let dayHours = null
+    
+    // Handle both array format (old) and object format (new)
+    if (Array.isArray(businessHours)) {
+      dayHours = businessHours.find(day => day.day.toLowerCase() === dayName)
+    } else if (typeof businessHours === 'object') {
+      dayHours = businessHours[dayName]
+    }
+    
     if (dayHours && !dayHours.closed) {
       return `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} at ${dayHours.open}`
     }
@@ -100,8 +131,12 @@ export async function GET(
             products: {
               where: { isActive: true },
               include: {
-                variants: true,
-                modifiers: true
+                variants: {
+                  orderBy: { price: 'asc' }
+                },
+                modifiers: {
+                  orderBy: { price: 'asc' }
+                }
               }
             }
           }
@@ -159,6 +194,8 @@ export async function GET(
       pickupEnabled: business.pickupEnabled,
       dineInEnabled: business.dineInEnabled,
       estimatedDeliveryTime: business.estimatedDeliveryTime,
+      // @ts-ignore
+      estimatedPickupTime: business.estimatedPickupTime, // Added this field
       
       // Payment
       paymentMethods: business.paymentMethods,
@@ -167,6 +204,18 @@ export async function GET(
       // WhatsApp
       greetingMessage: business.greetingMessage,
       orderNumberFormat: business.orderNumberFormat,
+      
+      // Store Closure Fields - NEW
+      // @ts-ignore
+      isTemporarilyClosed: business.isTemporarilyClosed || false,
+      // @ts-ignore
+      closureReason: business.closureReason,
+      // @ts-ignore
+      closureMessage: business.closureMessage,
+      // @ts-ignore
+      closureStartDate: business.closureStartDate?.toISOString(),
+      // @ts-ignore
+      closureEndDate: business.closureEndDate?.toISOString(),
       
       // SEO
       seoTitle: business.seoTitle,
@@ -179,10 +228,11 @@ export async function GET(
       favicon: business.favicon,
       noIndex: business.noIndex,
       
-      // Business Hours
+      // Business Hours - Support both formats
       // @ts-ignore
       businessHours: business.businessHours,
-      isOpen,
+      // @ts-ignore
+      isOpen: isOpen && !business.isTemporarilyClosed, // Store is open only if both conditions are met
       nextOpenTime,
       openingHoursSchema,
       
@@ -230,5 +280,7 @@ export async function GET(
       { error: 'Internal server error' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }

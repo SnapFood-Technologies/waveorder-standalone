@@ -99,7 +99,8 @@ model Business {
   paymentMethods      PaymentMethod[]
   paymentInstructions String?
 
-  businessHours Json?
+  // Business hours - JSON structure for each day of week
+  businessHours Json? // {"monday": {"open": "09:00", "close": "21:00", "closed": false}, ...}
 
   // WhatsApp settings
   messageTemplate  String?
@@ -115,10 +116,18 @@ model Business {
   pickupEnabled         Boolean        @default(true)
   dineInEnabled         Boolean        @default(false)
   estimatedDeliveryTime String? // "30-45 minutes"
+  estimatedPickupTime   String? // "15-20 minutes"
   greetingMessage       String?
   orderNumberFormat     String         @default("WO-{number}")
 
-  // SEO Configuration
+  // Store Closure Fields
+  isTemporarilyClosed Boolean   @default(false)
+  closureReason       String? // Predefined reasons or custom
+  closureMessage      String? // Custom message for customers
+  closureStartDate    DateTime? // When closure started
+  closureEndDate      DateTime? // Expected reopening (optional)
+
+  // SEO Configuration (English/Default)
   seoTitle       String? // Custom page title, falls back to displayName or username
   seoDescription String? // Meta description for search engines
   seoKeywords    String? // Comma-separated keywords
@@ -131,6 +140,12 @@ model Business {
   // Structured Data / Schema.org
   schemaType String? @default("Person") // Person, Organization, LocalBusiness, etc.
   schemaData Json? // Additional schema.org structured data
+
+  // Albanian SEO Configuration
+  seoTitleAl       String? // Albanian version of SEO title
+  seoDescriptionAl String? // Albanian version of SEO description
+  seoKeywordsAl    String? // Albanian version of SEO keywords
+  descriptionAl    String? // Albanian version of business description (for SEO meta description)
 
   isIndexable Boolean @default(false)
 

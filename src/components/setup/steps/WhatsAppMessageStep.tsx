@@ -2,18 +2,13 @@
 
 import { useState } from 'react'
 import { SetupData } from '../Setup'
-import { ArrowLeft, MessageSquare, Smartphone, Copy, ExternalLink, Globe } from 'lucide-react'
+import { ArrowLeft, MessageSquare, Smartphone, ExternalLink } from 'lucide-react'
 
 interface WhatsAppMessageStepProps {
   data: SetupData
   onComplete: (data: Partial<SetupData>) => void
   onBack: () => void
 }
-
-const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'sq', name: 'Albanian', flag: '🇦🇱' }
-]
 
 const messageTemplates = {
   en: {
@@ -131,7 +126,7 @@ const messageTemplates = {
 }
 
 export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsAppMessageStepProps) {
-  const [selectedLanguage, setSelectedLanguage] = useState(data.language || 'en')
+  const selectedLanguage = data.language || 'en' // Use language from first step
   const [settings, setSettings] = useState(data.whatsappSettings || {
     orderNumberFormat: 'WO-{number}',
     // @ts-ignore
@@ -148,24 +143,6 @@ export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsA
 
   const updateSetting = (field: string, value: string) => {
     setSettings(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleLanguageChange = (languageCode: string) => {
-    setSelectedLanguage(languageCode)
-    
-    // Update greeting message with new language and business type template
-    const businessTypeKey = data.businessType || 'RESTAURANT'
-    // @ts-ignore
-    const template = messageTemplates[languageCode][businessTypeKey] || messageTemplates[languageCode]['RESTAURANT']
-    const newGreeting = template.greeting(
-      data.businessName || 'Your Business', 
-      data.storeSlug || 'your-store'
-    )
-    
-    setSettings(prev => ({
-      ...prev,
-      greetingMessage: newGreeting
-    }))
   }
 
   const generateSampleOrder = () => {
@@ -280,33 +257,6 @@ ${storeUrl}`
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Configuration Panel */}
         <div className="space-y-6">
-          {/* Language Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Globe className="w-4 h-4 inline mr-2" />
-              Message Language
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {languages.map(language => (
-                <button
-                  key={language.code}
-                  type="button"
-                  onClick={() => handleLanguageChange(language.code)}
-                  className={`p-3 border-2 rounded-lg text-left transition-all ${
-                    selectedLanguage === language.code
-                      ? 'border-teal-500 bg-teal-50 text-teal-700'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{language.flag}</span>
-                    <span className="font-medium">{language.name}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Order Number Format
