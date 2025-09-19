@@ -260,7 +260,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
       </div>
       
       {/* Mobile Phone Frame */}
-      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '300px' }}>
+      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '320px' }}>
         <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative">
           
           {/* Cover Image Header */}
@@ -426,7 +426,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
           {cartCount > 0 && (
             <div className="absolute bottom-4 left-4 right-4">
               <button
-                className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-between shadow-lg"
+                className="w-full py-3 px-6 rounded-xl font-semibold text-white text-sm flex items-center justify-between shadow-lg"
                 style={{ backgroundColor: primaryColor }}
               >
                 <div className="flex items-center">

@@ -195,16 +195,16 @@ const getDefaultPickupTime = (businessType: string) => {
   switch (businessType) {
     case 'RESTAURANT':
     case 'CAFE':
-      return '15-20 minutes'
+      return '15-20 min'
     case 'RETAIL':
     case 'JEWELRY':
       return '1-2 hours'
     case 'GROCERY':
-      return '30 minutes'
+      return '30 min'
     case 'FLORIST':
       return '2-4 hours'
     default:
-      return '15-20 minutes'
+      return '15-20 min'
   }
 }
 
@@ -214,7 +214,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
     pickup: false,
     deliveryFee: 0,
     deliveryRadius: 10,
-    estimatedDeliveryTime: '30-45 minutes',
+    estimatedDeliveryTime: '30-45 min',
     estimatedPickupTime: getDefaultPickupTime(data.businessType || 'OTHER')
   })
   const [loading, setLoading] = useState(false)
@@ -275,7 +275,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
       case 'FLORIST':
         return '2-4 hours'
       default:
-        return '30-45 minutes'
+        return '30-45 min'
     }
   }
 
@@ -283,16 +283,16 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
     switch (data.businessType) {
       case 'RESTAURANT':
       case 'CAFE':
-        return '15-20 minutes'
+        return '15-20 min'
       case 'RETAIL':
       case 'JEWELRY':
         return '1-2 hours'
       case 'GROCERY':
-        return '30 minutes'
+        return '30 min'
       case 'FLORIST':
         return '2-4 hours'
       default:
-        return '15-20 minutes'
+        return '15-20 min'
     }
   }
 
