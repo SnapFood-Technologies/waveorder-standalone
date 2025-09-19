@@ -1,6 +1,6 @@
 // src/components/site/Footer.tsx
 import Link from 'next/link'
-import { Waves, MapPin, Phone, Mail } from 'lucide-react'
+import { Waves, MapPin, Phone, Mail, Building } from 'lucide-react'
 
 export default function Footer() {
   return (
@@ -25,12 +25,12 @@ export default function Footer() {
                 <span>hello@waveorder.app</span>
               </div>
               <div className="flex items-center text-gray-300">
-                <Phone className="w-4 h-4 mr-3 text-teal-400" />
-                <span>+1 (555) 123-WAVE</span>
+                <Building className="w-4 h-4 mr-3 text-teal-400" />
+                <span>Electral Shpk.</span>
               </div>
               <div className="flex items-center text-gray-300">
                 <MapPin className="w-4 h-4 mr-3 text-teal-400" />
-                <span>San Francisco, CA</span>
+                <span>Sami Frashëri Sreet, Tiranë, Albania</span>
               </div>
             </div>
           </div>
@@ -61,7 +61,7 @@ export default function Footer() {
         <div className="border-t border-gray-700 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              &copy; 2025 WaveOrder Inc. All rights reserved.
+              &copy; 2025 Electral Shpk. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link href="/privacy" className="text-gray-400 hover:text-teal-400 text-sm transition-colors">

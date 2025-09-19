@@ -537,7 +537,7 @@ export default function Cookies() {
                 <Shield className="w-5 h-5 text-orange-600 mr-3" />
                 <div>
                   <div className="font-medium text-gray-900">Address</div>
-                  <div className="text-gray-600 text-sm">123 Cookie Street, San Francisco, CA</div>
+                  <div className="text-gray-600 text-sm">Sami Frashëri Sreet, Tiranë, Albania</div>
                 </div>
               </div>
             </div>
