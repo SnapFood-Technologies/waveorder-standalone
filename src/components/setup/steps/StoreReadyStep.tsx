@@ -260,7 +260,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
       </div>
       
       {/* Mobile Phone Frame */}
-      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '320px' }}>
+      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '310px' }}>
         <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative">
           
           {/* Cover Image Header */}
@@ -273,14 +273,17 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
             }}
           >
             {/* Header Icons */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
-                <Share2 className="w-3 h-3 text-white" />
-              </div>
-              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
-                <Search className="w-3 h-3 text-white" />
-              </div>
-            </div>
+            <div className="absolute top-2 right-2 flex gap-2">
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Share2 className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Search className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Info className="w-3 h-3 text-white" />
+        </div>
+      </div>
           </div>
 
           {/* Store Info Section */}

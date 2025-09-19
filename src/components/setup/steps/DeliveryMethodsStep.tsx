@@ -208,15 +208,39 @@ const getDefaultPickupTime = (businessType: string) => {
   }
 }
 
+// Get default delivery times based on business type
+const getDefaultDeliveryTime = (businessType: string) => {
+  switch (businessType) {
+    case 'RESTAURANT':
+    case 'CAFE':
+      return '30-45 min'
+    case 'RETAIL':
+    case 'JEWELRY':
+      return '2-5 business days'
+    case 'GROCERY':
+      return '2-4 hours'
+    case 'FLORIST':
+      return '2-4 hours'
+    default:
+      return '30-45 min'
+  }
+}
+
 export default function DeliveryMethodsStep({ data, onComplete, onBack }: DeliveryMethodsStepProps) {
-  const [methods, setMethods] = useState(data.deliveryMethods || {
-    delivery: true,
-    pickup: false,
-    deliveryFee: 0,
-    deliveryRadius: 10,
-    estimatedDeliveryTime: '30-45 min',
-    estimatedPickupTime: getDefaultPickupTime(data.businessType || 'OTHER')
+  // Initialize state with existing data or sensible defaults
+  const [methods, setMethods] = useState(() => {
+    const existingMethods = data.deliveryMethods
+    
+    return {
+      delivery: existingMethods?.delivery ?? true,
+      pickup: existingMethods?.pickup ?? false,
+      deliveryFee: existingMethods?.deliveryFee ?? 0,
+      deliveryRadius: existingMethods?.deliveryRadius ?? 10,
+      estimatedDeliveryTime: existingMethods?.estimatedDeliveryTime ?? getDefaultDeliveryTime(data.businessType || 'OTHER'),
+      estimatedPickupTime: existingMethods?.estimatedPickupTime ?? getDefaultPickupTime(data.businessType || 'OTHER')
+    }
   })
+  
   const [loading, setLoading] = useState(false)
 
   const config = businessTypeConfig[data.businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
@@ -372,7 +396,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <input
                             type="number"
                             step="0.01"
-                            value={methods.deliveryFee || 0}
+                            value={methods.deliveryFee}
                             onChange={(e) => updateValue('deliveryFee', parseFloat(e.target.value) || 0)}
                             className="pl-8 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                             placeholder="0.00"
@@ -391,7 +415,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
                             type="number"
-                            value={methods.deliveryRadius || 10}
+                            value={methods.deliveryRadius}
                             onChange={(e) => updateValue('deliveryRadius', parseInt(e.target.value) || 10)}
                             className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                             placeholder="10"
@@ -410,7 +434,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
                             type="text"
-                            value={methods.estimatedDeliveryTime || getDeliveryTimePlaceholder()}
+                            value={methods.estimatedDeliveryTime}
                             onChange={(e) => updateValue('estimatedDeliveryTime', e.target.value)}
                             className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                             placeholder={getDeliveryTimePlaceholder()}
@@ -429,8 +453,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                           <input
                             type="text"
-                            // @ts-ignore
-                            value={methods.estimatedPickupTime || getPickupTimePlaceholder()}
+                            value={methods.estimatedPickupTime}
                             onChange={(e) => updateValue('estimatedPickupTime', e.target.value)}
                             className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base"
                             placeholder={getPickupTimePlaceholder()}
@@ -455,7 +478,6 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
               <div>✓ <strong>{config.methods[0].title}:</strong> {currencySymbol}{methods.deliveryFee?.toFixed(2) || '0.00'} fee • {methods.estimatedDeliveryTime} • {methods.deliveryRadius}km radius</div>
             )}
             {methods.pickup && (
-               // @ts-ignore
               <div>✓ <strong>{config.methods[1].title}:</strong> Ready in {methods.estimatedPickupTime}</div>
             )}
           </div>

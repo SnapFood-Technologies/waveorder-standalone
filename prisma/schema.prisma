@@ -114,8 +114,8 @@ model Business {
   subdomainEnabled Boolean      @default(false)
 
   businessGoals         BusinessGoal[]
-  deliveryEnabled       Boolean        @default(false)
-  pickupEnabled         Boolean        @default(true)
+  deliveryEnabled       Boolean        @default(true)
+  pickupEnabled         Boolean        @default(false)
   dineInEnabled         Boolean        @default(false)
   estimatedDeliveryTime String? // "30-45 minutes"
   estimatedPickupTime   String? // "15-20 minutes"
