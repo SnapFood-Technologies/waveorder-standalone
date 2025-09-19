@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SetupData } from '../Setup'
 import { 
   UtensilsCrossed, 
@@ -13,7 +13,8 @@ import {
   MoreHorizontal,
   DollarSign,
   Euro,
-  Banknote
+  Banknote,
+  Globe
 } from 'lucide-react'
 
 interface BusinessTypeStepProps {
@@ -38,20 +39,63 @@ const currencies = [
   { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote }
 ]
 
+const languages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'sq', name: 'Albanian', flag: '🇦🇱' }
+]
+
+// Function to detect if user is from Albania
+function detectAlbanianUser(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  // Check browser language
+  const browserLanguage = navigator.language.toLowerCase()
+  if (browserLanguage.startsWith('sq') || browserLanguage.includes('al')) {
+    return true
+  }
+  
+  // Check timezone (Albania uses Europe/Tirane)
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (timezone === 'Europe/Tirane') {
+      return true
+    }
+  } catch (error) {
+    // Timezone detection failed, ignore
+  }
+  
+  return false
+}
+
 export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepProps) {
   const [selectedType, setSelectedType] = useState(data.businessType || '')
   const [selectedCurrency, setSelectedCurrency] = useState(data.currency || 'USD')
+  const [selectedLanguage, setSelectedLanguage] = useState(data.language || 'en')
+  const [showAlbanian, setShowAlbanian] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    // Detect if user should see Albanian option
+    const isAlbanianUser = detectAlbanianUser()
+    setShowAlbanian(isAlbanianUser)
+    
+    // Auto-select Albanian if detected and not already set
+    if (isAlbanianUser && !data.language) {
+      setSelectedLanguage('sq')
+      setSelectedCurrency('ALL') // Default to Albanian Lek for Albanian users
+    }
+  }, [data.language])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedType || !selectedCurrency) return
+    if (!selectedType || !selectedCurrency || !selectedLanguage) return
 
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
     onComplete({ 
       businessType: selectedType,
-      currency: selectedCurrency
+      currency: selectedCurrency,
+      language: selectedLanguage
     })
     setLoading(false)
   }
@@ -68,37 +112,66 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+        {/* Language Selection - Only show if Albanian is detected */}
+        {showAlbanian && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Globe className="w-5 h-5 mr-2" />
+              Language
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {languages.map(language => (
+                <button
+                  key={language.code}
+                  type="button"
+                  onClick={() => setSelectedLanguage(language.code)}
+                  className={`p-4 border-2 rounded-lg text-left transition-all hover:border-teal-300 hover:bg-teal-50 ${
+                    selectedLanguage === language.code
+                      ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-200'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="text-2xl">{language.flag}</div>
+                    <span className="font-medium text-gray-900">{language.name}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Business Type Selection */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Business Type</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-  {businessTypes.map((type) => {
-    const IconComponent = type.icon
-    return (
-      <button
-        key={type.value}
-        type="button"
-        onClick={() => setSelectedType(type.value)}
-        className={`p-3 border-2 rounded-lg text-left transition-all hover:border-teal-300 hover:bg-teal-50 ${
-          selectedType === type.value
-            ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-200'
-            : 'border-gray-200 bg-white'
-        }`}
-      >
-        <div className="flex items-center space-x-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-            selectedType === type.value
-              ? 'bg-teal-600 text-white'
-              : 'bg-gray-100 text-gray-600'
-          }`}>
-            <IconComponent className="w-5 h-5" />
+            {businessTypes.map((type) => {
+              const IconComponent = type.icon
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setSelectedType(type.value)}
+                  className={`p-3 border-2 rounded-lg text-left transition-all hover:border-teal-300 hover:bg-teal-50 ${
+                    selectedType === type.value
+                      ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-200'
+                      : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      selectedType === type.value
+                        ? 'bg-teal-600 text-white'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className="font-medium text-gray-900">{type.label}</span>
+                  </div>
+                </button>
+              )
+            })}
           </div>
-          <span className="font-medium text-gray-900">{type.label}</span>
-        </div>
-      </button>
-    )
-  })}
-</div>
         </div>
 
         {/* Currency Selection */}
@@ -144,7 +217,7 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={!selectedType || !selectedCurrency || loading}
+            disabled={!selectedType || !selectedCurrency || !selectedLanguage || loading}
             className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Continue...' : 'Continue'}

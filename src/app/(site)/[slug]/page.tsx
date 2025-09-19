@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ lang?: string }>
 }
 
 async function getStoreData(slug: string) {
@@ -25,51 +26,96 @@ async function getStoreData(slug: string) {
   }
 }
 
-function getBusinessTypeDefaults(businessType: string) {
-  switch (businessType) {
-    case 'RESTAURANT':
-      return {
+function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
+  const defaults = {
+    RESTAURANT: {
+      en: {
         titleSuffix: 'Order Food Online',
         description: 'Fresh food delivered to your door',
         keywords: 'restaurant, food delivery, takeout, dining'
+      },
+      al: {
+        titleSuffix: 'Porosit Ushqim Online',
+        description: 'Ushqim i freskët dërguar në shtëpinë tuaj',
+        keywords: 'restorant, dërgim ushqimi, marrje në vend, ngrënie'
       }
-    case 'CAFE':
-      return {
+    },
+    CAFE: {
+      en: {
         titleSuffix: 'Order Coffee & Food Online',
         description: 'Fresh coffee and food delivered to your door',
         keywords: 'cafe, coffee, food delivery, breakfast, lunch'
+      },
+      al: {
+        titleSuffix: 'Porosit Kafe dhe Ushqim Online',
+        description: 'Kafe dhe ushqim i freskët dërguar në shtëpinë tuaj',
+        keywords: 'kafe, kafe, dërgim ushqimi, mëngjes, drekë'
       }
-    case 'RETAIL':
-      return {
+    },
+    RETAIL: {
+      en: {
         titleSuffix: 'Shop Online',
         description: 'Quality products delivered to your door',
         keywords: 'shopping, retail, products, delivery'
+      },
+      al: {
+        titleSuffix: 'Blej Online',
+        description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
+        keywords: 'blerje, shitje me pakicë, produkte, dërgim'
       }
-    case 'GROCERY':
-      return {
+    },
+    GROCERY: {
+      en: {
         titleSuffix: 'Grocery Delivery',
         description: 'Fresh groceries delivered to your door',
         keywords: 'grocery, food delivery, fresh produce, groceries'
+      },
+      al: {
+        titleSuffix: 'Dërgim Ushqimesh',
+        description: 'Ushqime të freskëta të dërguara në shtëpinë tuaj',
+        keywords: 'ushqimore, dërgim ushqimi, prodhime të freskëta, ushqimore'
       }
-    case 'JEWELRY':
-      return {
+    },
+    JEWELRY: {
+      en: {
         titleSuffix: 'Jewelry Store',
         description: 'Beautiful jewelry and accessories',
         keywords: 'jewelry, rings, necklaces, accessories'
+      },
+      al: {
+        titleSuffix: 'Dyqan Bizhuterish',
+        description: 'Bizhuteri të bukura dhe aksesorë',
+        keywords: 'bizhuteri, unaza, gjerdan, aksesorë'
       }
-    case 'FLORIST':
-      return {
+    },
+    FLORIST: {
+      en: {
         titleSuffix: 'Fresh Flowers',
         description: 'Beautiful fresh flowers delivered',
         keywords: 'flowers, florist, bouquets, delivery'
+      },
+      al: {
+        titleSuffix: 'Lule të Freskëta',
+        description: 'Lule të bukura të freskëta të dërguara',
+        keywords: 'lule, lulëtar, buketa, dërgim'
       }
-    default:
-      return {
-        titleSuffix: 'Order Online',
-        description: 'Quality products delivered to your door',
-        keywords: 'business, products, services, delivery'
-      }
+    }
   }
+
+  const businessDefaults = defaults[businessType as keyof typeof defaults] || {
+    en: {
+      titleSuffix: 'Order Online',
+      description: 'Quality products delivered to your door',
+      keywords: 'business, products, services, delivery'
+    },
+    al: {
+      titleSuffix: 'Porosit Online',
+      description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
+      keywords: 'biznes, produkte, shërbime, dërgim'
+    }
+  }
+
+  return isAlbanian ? businessDefaults.al : businessDefaults.en
 }
 
 function getPriceRange(categories: any[], currency: string): string {
@@ -94,22 +140,30 @@ function getPriceRange(categories: any[], currency: string): string {
   return '$$$$'
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
+  const { lang } = await searchParams
+  const isAlbanian = lang === 'al'
   const storeData = await getStoreData(slug)
   
   if (!storeData) {
     return {
-      title: 'Store Not Found',
-      description: 'The requested store could not be found.'
+      title: isAlbanian ? 'Dyqani Nuk u Gjet' : 'Store Not Found',
+      description: isAlbanian ? 'Dyqani i kërkuar nuk mund të gjindej.' : 'The requested store could not be found.'
     }
   }
 
-  const businessDefaults = getBusinessTypeDefaults(storeData.businessType)
+  const businessDefaults = getBusinessTypeDefaults(storeData.businessType, isAlbanian)
   
-  const title = storeData.seoTitle || `${storeData.name} - ${businessDefaults.titleSuffix}`
-  const description = storeData.seoDescription || `Order from ${storeData.name}. ${storeData.description || businessDefaults.description}`
-  const keywords = storeData.seoKeywords || `${storeData.name}, ${businessDefaults.keywords}, ${storeData.address?.split(',')[0] || ''}`
+  // Use Albanian SEO fields if available and language is Albanian, otherwise fall back to default
+  const businessDescription = isAlbanian && storeData.descriptionAl ? storeData.descriptionAl : storeData.description
+  const seoTitle = isAlbanian && storeData.seoTitleAl ? storeData.seoTitleAl : storeData.seoTitle
+  const seoDescription = isAlbanian && storeData.seoDescriptionAl ? storeData.seoDescriptionAl : storeData.seoDescription
+  const seoKeywords = isAlbanian && storeData.seoKeywordsAl ? storeData.seoKeywordsAl : storeData.seoKeywords
+  
+  const title = seoTitle || `${storeData.name} - ${businessDefaults.titleSuffix}`
+  const description = seoDescription || `${isAlbanian ? 'Porosit nga' : 'Order from'} ${storeData.name}. ${businessDescription || businessDefaults.description}`
+  const keywords = seoKeywords || `${storeData.name}, ${businessDefaults.keywords}, ${storeData.address?.split(',')[0] || ''}`
   
   const primaryImage = storeData.coverImage || storeData.logo || storeData.ogImage
   const images = primaryImage ? [{ url: primaryImage, width: 1200, height: 630 }] : []
@@ -125,7 +179,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images,
       type: 'website',
       siteName: storeData.name,
-      locale: storeData.language || 'en_US',
+      locale: isAlbanian ? 'sq_AL' : (storeData.language || 'en_US'),
     },
     twitter: {
       card: 'summary_large_image',
@@ -134,7 +188,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: primaryImage ? [primaryImage] : [],
     },
     alternates: {
-      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}`,
+      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}${isAlbanian ? '?lang=al' : ''}`,
+      languages: {
+        'en': `https://waveorder.app/${slug}`,
+        'sq': `https://waveorder.app/${slug}?lang=al`
+      }
     },
     other: {
       'business:contact_data:street_address': storeData.address || '',
@@ -145,8 +203,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function StorePage({ params }: PageProps) {
+export default async function StorePage({ params, searchParams }: PageProps) {
   const { slug } = await params
+  const { lang } = await searchParams
+  const isAlbanian = lang === 'al'
   const storeData = await getStoreData(slug)
 
   if (!storeData) {
@@ -155,6 +215,7 @@ export default async function StorePage({ params }: PageProps) {
 
   const priceRange = getPriceRange(storeData.categories, storeData.currency)
   const primaryImage = storeData.coverImage || storeData.logo
+  const businessDescription = isAlbanian && storeData.descriptionAl ? storeData.descriptionAl : storeData.description
 
   return (
     <>
@@ -165,15 +226,15 @@ export default async function StorePage({ params }: PageProps) {
             "@context": "https://schema.org",
             "@type": storeData.schemaType || "LocalBusiness",
             "name": storeData.name,
-            "description": storeData.description,
+            "description": businessDescription,
             "image": primaryImage,
             "logo": storeData.logo,
-            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}`,
+            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}${isAlbanian ? '?lang=al' : ''}`,
             "telephone": storeData.phone,
             "email": storeData.email,
             "priceRange": priceRange,
             "currenciesAccepted": storeData.currency,
-            "paymentAccepted": storeData.paymentMethods?.join(', ') || 'Cash',
+            "paymentAccepted": storeData.paymentMethods?.join(', ') || (isAlbanian ? 'Para në dorë' : 'Cash'),
             "address": storeData.address ? {
               "@type": "PostalAddress",
               "streetAddress": storeData.address
@@ -186,8 +247,9 @@ export default async function StorePage({ params }: PageProps) {
               "@type": "ContactPoint",
               "telephone": storeData.whatsappNumber,
               "contactType": "customer service",
-              "availableLanguage": storeData.language || "en"
+              "availableLanguage": isAlbanian ? "sq" : (storeData.language || "en")
             },
+            "inLanguage": isAlbanian ? "sq" : (storeData.language || "en"),
             ...(storeData.schemaData || {})
           })
         }}

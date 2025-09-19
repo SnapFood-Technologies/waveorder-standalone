@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { 
   Search, 
   ShoppingCart, 
@@ -9,18 +9,441 @@ import {
   X, 
   MapPin, 
   Clock, 
-  Heart,
   Share2,
   Truck,
   Store,
   UtensilsCrossed,
-  Phone,
   Info,
   Package,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  CalendarClock,
+  AlertTriangle,
+  ChevronDown
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
+
+// Google Places API hook for address autocomplete
+const useGooglePlaces = () => {
+  const [isLoaded, setIsLoaded] = useState(false)
+  const autocompleteRef = useRef(null)
+  
+  useEffect(() => {
+     // @ts-ignore
+    if (typeof window !== 'undefined' && window.google) {
+      setIsLoaded(true)
+      return
+    }
+    
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script')
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+      script.onload = () => setIsLoaded(true)
+      document.head.appendChild(script)
+    }
+  }, [])
+
+  // @ts-ignore
+  const initAutocomplete = (inputRef, onSelect) => {
+     // @ts-ignore
+    if (isLoaded && typeof window !== 'undefined' && window.google && inputRef.current) {
+         // @ts-ignore
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['address'],
+        componentRestrictions: { country: 'al' } // Adjust based on your service area
+      })
+      
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace()
+        if (place.formatted_address) {
+          onSelect(place.formatted_address)
+        }
+      })
+      
+      autocompleteRef.current = autocomplete
+    }
+  }
+
+  return { isLoaded, initAutocomplete }
+}
+
+// Time slot generator for scheduling
+ // @ts-ignore
+const generateTimeSlots = (businessHours, currentDate, orderType) => {
+     // @ts-ignore
+  const slots = []
+  const now = new Date()
+  const today = new Date().toDateString()
+  const selectedDate = currentDate.toDateString()
+  
+   // @ts-ignore
+  if (!businessHours) return slots
+  
+  // Get business hours for the selected day
+  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'lowercase' })
+  const dayHours = businessHours[dayOfWeek]
+  
+   // @ts-ignore
+  if (!dayHours || dayHours.closed) return slots
+  
+  const [openHour, openMinute] = dayHours.open.split(':').map(Number)
+  const [closeHour, closeMinute] = dayHours.close.split(':').map(Number)
+  
+  let currentTime = new Date(currentDate)
+  currentTime.setHours(openHour, openMinute, 0, 0)
+  
+  const closeTime = new Date(currentDate)
+  closeTime.setHours(closeHour, closeMinute, 0, 0)
+  
+  // If it's today, start from current time + buffer
+  if (selectedDate === today) {
+    const buffer = orderType === 'delivery' ? 45 : 20 // minutes
+    const minTime = new Date(now.getTime() + buffer * 60000)
+    if (currentTime < minTime) {
+      currentTime = minTime
+      // Round up to next 30-minute slot
+      const minutes = currentTime.getMinutes()
+      const roundedMinutes = Math.ceil(minutes / 30) * 30
+      currentTime.setMinutes(roundedMinutes, 0, 0)
+    }
+  }
+  
+  while (currentTime < closeTime) {
+    slots.push({
+      value: currentTime.toTimeString().slice(0, 5),
+      label: currentTime.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    })
+    currentTime.setMinutes(currentTime.getMinutes() + 30)
+  }
+  
+  return slots
+}
+
+// Store Closure Banner Component
+ // @ts-ignore
+function StoreClosure({ storeData, primaryColor, translations }) {
+  if (!storeData.isTemporarilyClosed) return null
+  
+   // @ts-ignore
+  const formatReopeningDate = (date) => {
+    if (!date) return null
+    const reopening = new Date(date)
+    const now = new Date()
+    const diffTime = reopening.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 0) {
+      return `Today at ${reopening.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })}`
+    } else if (diffDays === 1) {
+      return `Tomorrow at ${reopening.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })}`
+    } else if (diffDays <= 7) {
+      return reopening.toLocaleDateString('en-US', { 
+        weekday: 'long',
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    } else {
+      return reopening.toLocaleDateString('en-US', { 
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      })
+    }
+  }
+
+  const reopeningText = formatReopeningDate(storeData.closureEndDate)
+
+  return (
+    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-center">
+          <AlertTriangle className="w-6 h-6 mr-3 flex-shrink-0" />
+          <div className="text-center">
+            <h3 className="font-semibold text-lg">
+              {translations.temporarilyClosed || 'Temporarily Closed'}
+            </h3>
+            {storeData.closureMessage && (
+              <p className="mt-1 opacity-90">{storeData.closureMessage}</p>
+            )}
+            {reopeningText && (
+              <p className="mt-1 text-sm opacity-80">
+                {translations.expectedReopen || 'Expected to reopen:'} {reopeningText}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Enhanced Address Input with Autocomplete
+ // @ts-ignore
+function AddressAutocomplete({ value, onChange, placeholder, required, primaryColor }) {
+  const inputRef = useRef(null)
+  const { isLoaded, initAutocomplete } = useGooglePlaces()
+  
+  useEffect(() => {
+    if (isLoaded) {
+         // @ts-ignore
+      initAutocomplete(inputRef, (address) => {
+        onChange(address)
+      })
+    }
+  }, [isLoaded, initAutocomplete, onChange])
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      required={required}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+      onFocus={(e) => e.target.style.borderColor = primaryColor}
+      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+      placeholder={placeholder}
+    />
+  )
+}
+
+// Time Selection Component
+function TimeSelection({ 
+     // @ts-ignore
+  deliveryType, 
+   // @ts-ignore
+  selectedTime, 
+   // @ts-ignore
+  onTimeChange, 
+   // @ts-ignore
+  storeData, 
+   // @ts-ignore
+  primaryColor, 
+   // @ts-ignore
+  translations 
+}) {
+  const [timeMode, setTimeMode] = useState('now') // 'now' or 'schedule'
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [showTimeDropdown, setShowTimeDropdown] = useState(false)
+  
+  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType)
+  
+  // Get next 7 days for date selection
+  const availableDates = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() + i)
+    return date
+  })
+ // @ts-ignore
+  const handleTimeSelection = (mode, date = null, time = null) => {
+    setTimeMode(mode)
+    if (mode === 'now') {
+      onTimeChange('asap')
+    } else if (date && time) {
+      const dateTime = new Date(date)
+       // @ts-ignore
+      const [hours, minutes] = time.split(':')
+      dateTime.setHours(parseInt(hours), parseInt(minutes))
+      onTimeChange(dateTime.toISOString())
+    }
+  }
+
+  const estimatedTime = deliveryType === 'delivery' 
+    ? storeData.estimatedDeliveryTime 
+    : storeData.estimatedPickupTime || '15-20 min'
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-3">
+        {deliveryType === 'delivery' ? translations.deliveryTime : 
+         deliveryType === 'pickup' ? translations.pickupTime : 
+         translations.arrivalTime || 'Time'}
+      </label>
+      
+      {/* Time Mode Selection */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <button
+          onClick={() => handleTimeSelection('now')}
+          className={`p-4 border-2 rounded-xl text-center transition-all ${
+            timeMode === 'now'
+              ? 'text-white border-transparent'
+              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+          }`}
+          style={{ 
+            backgroundColor: timeMode === 'now' ? primaryColor : 'white'
+          }}
+        >
+          <Clock className="w-5 h-5 mx-auto mb-2" />
+          <div className="text-sm font-medium">{translations.now || 'Now'}</div>
+          <div className="text-xs opacity-80">{estimatedTime}</div>
+        </button>
+        
+        <button
+          onClick={() => handleTimeSelection('schedule')}
+          className={`p-4 border-2 rounded-xl text-center transition-all ${
+            timeMode === 'schedule'
+              ? 'text-white border-transparent'
+              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+          }`}
+          style={{ 
+            backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
+          }}
+        >
+          <CalendarClock className="w-5 h-5 mx-auto mb-2" />
+          <div className="text-sm font-medium">{translations.schedule || 'Schedule'}</div>
+          <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
+        </button>
+      </div>
+
+      {/* Scheduled Time Selection */}
+      {timeMode === 'schedule' && (
+        <div className="space-y-4">
+          {/* Date Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {translations.selectDate || 'Select Date'}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {availableDates.slice(0, 4).map((date, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedDate(date)}
+                  className={`p-3 border-2 rounded-xl text-center transition-all ${
+                    selectedDate.toDateString() === date.toDateString()
+                      ? 'border-transparent text-white'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }`}
+                  style={{ 
+                    backgroundColor: selectedDate.toDateString() === date.toDateString() 
+                      ? primaryColor : 'white'
+                  }}
+                >
+                  <div className="text-sm font-medium">
+                    {index === 0 ? translations.today || 'Today' : 
+                     index === 1 ? translations.tomorrow || 'Tomorrow' :
+                     date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div className="text-xs opacity-80">
+                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {translations.selectTime || 'Select Time'}
+            </label>
+            <div className="relative">
+              <button
+                onClick={() => setShowTimeDropdown(!showTimeDropdown)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-left flex items-center justify-between"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              >
+                <span>{selectedTime && timeMode === 'schedule' ? 
+                  new Date(selectedTime).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  }) : 
+                  translations.selectTime || 'Select Time'
+                }</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              
+              {showTimeDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                  {timeSlots.length > 0 ? timeSlots.map((slot, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                         // @ts-ignore
+                        handleTimeSelection('schedule', selectedDate, slot.value)
+                        setShowTimeDropdown(false)
+                      }}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      {slot.label}
+                    </button>
+                  )) : (
+                    <div className="px-4 py-3 text-gray-500 text-center">
+                      {translations.noTimeSlots || 'No available time slots for this date'}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Delivery Type Switcher Component
+function DeliveryTypeSwitcher({
+     // @ts-ignore
+  deliveryType,
+   // @ts-ignore
+  setDeliveryType,
+   // @ts-ignore
+  deliveryOptions,
+   // @ts-ignore
+  primaryColor,
+  disabled = false
+}) {
+  if (deliveryOptions.length <= 1) return null
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm p-4">
+      <h3 className="font-semibold text-lg mb-4">Order Type</h3>
+      <div className="grid grid-cols-2 gap-3">
+      {/* @ts-ignore */}
+        {deliveryOptions.map(option => {
+          const IconComponent = option.icon
+          return (
+            <button
+              key={option.key}
+              onClick={() => !disabled && setDeliveryType(option.key as any)}
+              disabled={disabled}
+              className={`p-4 border-2 rounded-xl text-center transition-all ${
+                deliveryType === option.key
+                  ? 'text-white'
+                  : 'text-gray-700 border-gray-200 hover:border-gray-300'
+              } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              style={{ 
+                backgroundColor: deliveryType === option.key ? primaryColor : 'white',
+                borderColor: deliveryType === option.key ? primaryColor : undefined
+              }}
+            >
+              <IconComponent className="w-5 h-5 mx-auto mb-2" />
+              <span className="text-sm font-medium">{option.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 interface StoreData {
   id: string
@@ -47,10 +470,17 @@ interface StoreData {
   pickupEnabled: boolean
   dineInEnabled: boolean
   estimatedDeliveryTime?: string
+  estimatedPickupTime?: string
   paymentMethods: string[]
   paymentInstructions?: string
   greetingMessage?: string
   orderNumberFormat: string
+  businessHours?: any
+  isTemporarilyClosed: boolean
+  closureReason?: string
+  closureMessage?: string
+  closureStartDate?: string
+  closureEndDate?: string
   categories: Category[]
   isOpen: boolean
   nextOpenTime?: string
@@ -169,6 +599,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   )
 
   const openProductModal = (product: Product) => {
+    if (storeData.isTemporarilyClosed) return
     setSelectedProduct(product)
     setSelectedVariant(product.variants.length > 0 ? product.variants[0] : null)
     setSelectedModifiers([])
@@ -230,6 +661,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   }
 
   const submitOrder = async () => {
+    if (storeData.isTemporarilyClosed) {
+         // @ts-ignore
+      alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
+      return
+    }
+
     if (!customerInfo.name || !customerInfo.phone) {
       alert('Please fill in required customer information')
       return
@@ -301,12 +738,19 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
+      {/* Store Closure Banner */}
+      <StoreClosure 
+        storeData={storeData} 
+        primaryColor={primaryColor} 
+        translations={translations} 
+      />
+
       {/* Header Section */}
       <div className="bg-white">
         <div className="max-w-6xl mx-auto">
           {/* Cover Image Section */}
           <div 
-            className="relative h-[250px] md:rounded-xl overflow-hidden md:rounded-xl"
+            className="relative h-[250px] md:rounded-xl overflow-hidden"
             style={{ 
               background: storeData.coverImage 
                 ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
@@ -318,22 +762,22 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             {/* Icons in top right */}
             <div className="absolute top-5 right-5 flex gap-3">
               <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
-                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
+                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
               >
                 <Share2 className="w-4 h-4" />
               </button>
               <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
-                // @ts-ignore
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
+                 // @ts-ignore
                 onClick={() => document.querySelector('.search-input')?.focus()}
-                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
+                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
               >
                 <Search className="w-4 h-4" />
               </button>
               <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
-                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
+                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
               >
                 <Info className="w-4 h-4" />
               </button>
@@ -341,64 +785,71 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           </div>
 
           <div className="bg-white rounded-b-xl p-6 relative">
-  {/* Logo */}
-  <div 
-    className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
-    style={{ 
-      backgroundColor: 'white',
-      color: primaryColor
-    }}
-  >
-    {storeData.logo ? (
-      <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
-    ) : (
-      storeData.name.charAt(0)
-    )}
-  </div>
+            {/* Logo */}
+            <div 
+              className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
+              style={{ 
+                backgroundColor: 'white',
+                color: primaryColor
+              }}
+            >
+              {storeData.logo ? (
+                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
+              ) : (
+                storeData.name.charAt(0)
+              )}
+            </div>
 
-  <div className="pt-8">
-    <div className="flex items-center gap-3 mb-2">
-      <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-        storeData.isOpen 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-red-100 text-red-800'
-      }`}>
-        {storeData.isOpen ? translations.open : translations.closed}
-      </span>
-    </div>
-    
-    {storeData.description && (
-      <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
-    )}
-    
-    <div className="space-y-2 sm:space-y-0">
-      {/* Address - Full width on mobile */}
-      {storeData.address && (
-        <div className="flex items-center gap-1 text-gray-600">
-          <MapPin className="w-4 h-4 flex-shrink-0" />
-          <span className="text-sm">{storeData.address}</span>
-        </div>
-      )}
-      
-      {/* Time and Fee - Same row on mobile */}
-      <div className="flex items-center gap-5 text-gray-600">
-        {storeData.estimatedDeliveryTime && (
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{storeData.estimatedDeliveryTime}</span>
+            <div className="pt-8">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  storeData.isOpen && !storeData.isTemporarilyClosed
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {storeData.isTemporarilyClosed 
+                   // @ts-ignore
+                    ? translations.temporarilyClosed 
+                    : storeData.isOpen ? translations.open : translations.closed}
+                </span>
+              </div>
+              
+              {storeData.description && (
+                <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
+              )}
+              
+              <div className="space-y-2 sm:space-y-0">
+                {/* Address - Full width on mobile */}
+                {storeData.address && (
+                  <div className="flex items-center gap-1 text-gray-600">
+                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm">{storeData.address}</span>
+                  </div>
+                )}
+                
+                {/* Time and Fee - Dynamic based on delivery type */}
+                <div className="flex items-center gap-5 text-gray-600">
+                  {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">
+                        {deliveryType === 'delivery' 
+                          ? storeData.estimatedDeliveryTime 
+                          : storeData.estimatedPickupTime || '15-20 min'}
+                      </span>
+                    </div>
+                  )}
+                  {deliveryType === 'delivery' && storeData.deliveryFee > 0 && (
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">{currencySymbol}{storeData.deliveryFee.toFixed(2)} delivery</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-        {storeData.deliveryFee > 0 && (
-          <div className="flex items-center gap-1">
-            <DollarSign className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm">{currencySymbol}{storeData.deliveryFee.toFixed(2)} delivery</span>
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-</div>
         </div>
       </div>
 
@@ -406,6 +857,17 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       <div className="max-w-6xl mx-auto px-4 md:px-5 py-6 grid lg:grid-cols-3 gap-8">
         {/* Left Side - Menu */}
         <div className="lg:col-span-2">
+          {/* Mobile Delivery Type Switcher (Above Categories) */}
+          <div className="lg:hidden mb-6">
+            <DeliveryTypeSwitcher
+              deliveryType={deliveryType}
+              setDeliveryType={setDeliveryType}
+              deliveryOptions={getDeliveryOptions()}
+              primaryColor={primaryColor}
+              disabled={storeData.isTemporarilyClosed}
+            />
+          </div>
+
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
             <div className="relative">
@@ -419,6 +881,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                 onFocus={(e) => e.target.style.borderColor = primaryColor}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                disabled={storeData.isTemporarilyClosed}
               />
             </div>
           </div>
@@ -427,11 +890,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           <div className="flex gap-1 mb-6 overflow-x-auto">
             <button
               onClick={() => setSelectedCategory('all')}
+              disabled={storeData.isTemporarilyClosed}
               className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
                 selectedCategory === 'all'
                   ? 'border-b-2'
                   : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              }`}
+              } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{ 
                 color: selectedCategory === 'all' ? primaryColor : undefined,
                 borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
@@ -443,11 +907,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
+                disabled={storeData.isTemporarilyClosed}
                 className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
                   selectedCategory === category.id
                     ? 'border-b-2'
                     : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                }`}
+                } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ 
                   color: selectedCategory === category.id ? primaryColor : undefined,
                   borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
@@ -487,6 +952,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                       primaryColor={primaryColor}
                       currencySymbol={currencySymbol}
                       translations={translations}
+                      disabled={storeData.isTemporarilyClosed}
                     />
                   ))
                 )
@@ -520,6 +986,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     primaryColor={primaryColor}
                     currencySymbol={currencySymbol}
                     translations={translations}
+                    disabled={storeData.isTemporarilyClosed}
                   />
                 ))
               )
@@ -553,7 +1020,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       </div>
 
       {/* Mobile Cart Bar */}
-      {cartItemCount > 0 && (
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl p-4 z-50">
           <button
             onClick={() => setShowCartModal(true)}
@@ -610,7 +1077,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       )}
 
       {/* Product Modal */}
-      {showProductModal && selectedProduct && (
+      {showProductModal && selectedProduct && !storeData.isTemporarilyClosed && (
         <ProductModal
           product={selectedProduct}
           selectedVariant={selectedVariant}
@@ -646,7 +1113,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       </footer>
 
       {/* Floating Cart Badge (Mobile) */}
-      {cartItemCount > 0 && (
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && (
         <div 
           className="lg:hidden fixed bottom-20 right-5 w-15 h-15 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40"
           style={{ backgroundColor: primaryColor }}
@@ -780,18 +1247,20 @@ function ProductCard({
   onOpenModal, 
   primaryColor, 
   currencySymbol,
-  translations
+  translations,
+  disabled = false
 }: { 
   product: Product
   onOpenModal: (product: Product) => void
   primaryColor: string
   currencySymbol: string
   translations: any
+  disabled?: boolean
 }) {
-  const hasVariantsOrModifiers = product.variants.length > 0 || product.modifiers.length > 0
-
   return (
-    <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden">
+    <div className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
+      disabled ? 'opacity-60' : ''
+    }`}>
       <div className="flex items-center min-h-[120px]">
         <div className="flex-1 p-5">
           <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
@@ -812,8 +1281,8 @@ function ProductCard({
             </div>
             
             <button
-              onClick={() => onOpenModal(product)}
-              disabled={product.stock === 0}
+              onClick={() => !disabled && onOpenModal(product)}
+              disabled={disabled || product.stock === 0}
               className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
               style={{ backgroundColor: primaryColor }}
             >
@@ -883,12 +1352,12 @@ function ProductModal({
   const totalPrice = (basePrice + modifierPrice) * quantity
 
   const toggleModifier = (modifier: ProductModifier) => {
-    // @ts-ignore
+     // @ts-ignore
     setSelectedModifiers(prev => {
-           // @ts-ignore
+         // @ts-ignore
       const exists = prev.find(m => m.id === modifier.id)
       if (exists) {
-           // @ts-ignore
+         // @ts-ignore
         return prev.filter(m => m.id !== modifier.id)
       } else {
         return [...prev, modifier]
@@ -1080,8 +1549,8 @@ function OrderPanel({
       <div className="bg-white rounded-2xl shadow-sm p-6">
         <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
-        {/* Delivery Type Toggle */}
-        {deliveryOptions.length > 1 && (
+        {/* Desktop Delivery Type Toggle */}
+        {!isMobile && deliveryOptions.length > 1 && (
           <div className="mb-6">
             <div className="grid grid-cols-2 gap-3">
               {deliveryOptions.map(option => {
@@ -1089,12 +1558,13 @@ function OrderPanel({
                 return (
                   <button
                     key={option.key}
-                    onClick={() => setDeliveryType(option.key as any)}
+                    onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
+                    disabled={storeData.isTemporarilyClosed}
                     className={`p-4 border-2 rounded-xl text-center transition-all ${
                       deliveryType === option.key
                         ? 'text-white'
                         : 'text-gray-700 border-gray-200 hover:border-gray-300'
-                    }`}
+                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
                     style={{ 
                       backgroundColor: deliveryType === option.key ? primaryColor : 'white',
                       borderColor: deliveryType === option.key ? primaryColor : undefined
@@ -1118,9 +1588,10 @@ function OrderPanel({
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              disabled={storeData.isTemporarilyClosed}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="Your full name"
             />
@@ -1133,9 +1604,10 @@ function OrderPanel({
               required
               value={customerInfo.phone}
               onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              disabled={storeData.isTemporarilyClosed}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="+1234567890"
             />
@@ -1147,9 +1619,10 @@ function OrderPanel({
               type="email"
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              disabled={storeData.isTemporarilyClosed}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="your.email@example.com"
             />
@@ -1159,16 +1632,13 @@ function OrderPanel({
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
-                <input
-                  type="text"
-                  required
+                <AddressAutocomplete
                   value={customerInfo.address}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
-                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => e.target.style.borderColor = primaryColor}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                   // @ts-ignore
+                  onChange={(address) => setCustomerInfo({ ...customerInfo, address })}
                   placeholder={translations.streetAddress || 'Street address'}
+                  required
+                  primaryColor={primaryColor}
                 />
               </div>
               
@@ -1178,9 +1648,10 @@ function OrderPanel({
                   type="text"
                   value={customerInfo.address2}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                  disabled={storeData.isTemporarilyClosed}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => e.target.style.borderColor = primaryColor}
+                  onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   placeholder={translations.apartment || 'Apartment, suite, etc.'}
                 />
@@ -1188,26 +1659,16 @@ function OrderPanel({
             </>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {deliveryType === 'delivery' ? translations.deliveryTime : deliveryType === 'pickup' ? translations.pickupTime : translations.arrivalTime || 'Time'}
-            </label>
-            <select
-              value={customerInfo.deliveryTime}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, deliveryTime: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
-              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => e.target.style.borderColor = primaryColor}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-            >
-              <option value="asap">{translations.asap || 'ASAP'} ({storeData.estimatedDeliveryTime || '30-45 min'})</option>
-              <option value="1:00 PM">1:00 PM</option>
-              <option value="1:30 PM">1:30 PM</option>
-              <option value="2:00 PM">2:00 PM</option>
-              <option value="2:30 PM">2:30 PM</option>
-              <option value="3:00 PM">3:00 PM</option>
-            </select>
-          </div>
+          {/* Enhanced Time Selection */}
+          <TimeSelection
+            deliveryType={deliveryType}
+            selectedTime={customerInfo.deliveryTime}
+             // @ts-ignore
+            onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
+            storeData={storeData}
+            primaryColor={primaryColor}
+            translations={translations}
+          />
         </div>
 
         {/* Cart Items */}
@@ -1229,20 +1690,23 @@ function OrderPanel({
                   <div className="flex items-center space-x-2 ml-3">
                     <button
                       onClick={() => updateCartItemQuantity(item.id, -1)}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                      disabled={storeData.isTemporarilyClosed}
+                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateCartItemQuantity(item.id, 1)}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                      disabled={storeData.isTemporarilyClosed}
+                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors"
+                      disabled={storeData.isTemporarilyClosed}
+                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1276,7 +1740,7 @@ function OrderPanel({
         )}
 
         {/* Minimum Order Warning */}
-        {!meetsMinimumOrder && deliveryType === 'delivery' && (
+        {!meetsMinimumOrder && deliveryType === 'delivery' && !storeData.isTemporarilyClosed && (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
             <p className="text-yellow-800 text-sm">
               {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
@@ -1291,9 +1755,10 @@ function OrderPanel({
           <textarea
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none"
+            disabled={storeData.isTemporarilyClosed}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-            onFocus={(e) => e.target.style.borderColor = primaryColor}
+            onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             rows={3}
             placeholder={translations.anySpecialRequests || 'Any special requests...'}
@@ -1301,7 +1766,7 @@ function OrderPanel({
         </div>
 
         {/* Payment Info */}
-        {storeData.paymentInstructions && (
+        {storeData.paymentInstructions && !storeData.isTemporarilyClosed && (
           <div className="bg-gray-50 p-4 rounded-xl mb-6">
             <div className="flex items-start">
               <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
@@ -1313,18 +1778,30 @@ function OrderPanel({
         {/* Order Button */}
         <button
           onClick={submitOrder}
-          disabled={isOrderLoading || cart.length === 0 || !meetsMinimumOrder || !customerInfo.name || !customerInfo.phone}
+          disabled={
+            isOrderLoading || 
+            cart.length === 0 || 
+            !meetsMinimumOrder || 
+            !customerInfo.name || 
+            !customerInfo.phone ||
+            storeData.isTemporarilyClosed
+          }
           className="w-full py-4 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:opacity-90"
           style={{ backgroundColor: primaryColor }}
         >
-          {isOrderLoading 
-            ? (translations.placingOrder || 'Placing Order...') 
-            : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+          {storeData.isTemporarilyClosed
+            ? (translations.storeTemporarilyClosed || 'Store Temporarily Closed')
+            : isOrderLoading 
+              ? (translations.placingOrder || 'Placing Order...') 
+              : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
           }
         </button>
 
         <p className="text-xs text-gray-500 text-center mt-3">
-          {translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.'}
+          {storeData.isTemporarilyClosed
+            ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
+            : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
+          }
         </p>
       </div>
     </div>
