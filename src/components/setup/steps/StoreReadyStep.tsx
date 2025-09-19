@@ -13,7 +13,23 @@ import {
   Share2,
   Smartphone,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  Search,
+  ShoppingCart,
+  Plus,
+  Minus,
+  X,
+  MapPin,
+  Clock,
+  Truck,
+  Store,
+  UtensilsCrossed,
+  Info,
+  Package,
+  DollarSign,
+  CalendarClock,
+  ChevronDown,
+  AlertCircle
 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 
@@ -22,6 +38,17 @@ interface StoreReadyStepProps {
   onComplete: (data: Partial<SetupData>) => void
   onBack: () => void
   setupToken?: string | null
+}
+
+// Currency symbol helper
+const getCurrencySymbol = (currency: string) => {
+  switch (currency) {
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'ALL': return 'L'
+    case 'GBP': return '£'
+    default: return '$'
+  }
 }
 
 // Language-specific content
@@ -43,7 +70,8 @@ const storeContent = {
     twitterDesc: "Tweet your store link",
     nextSteps: "Next Steps",
     storePreview: "Store Preview",
-    previewDesc: "This is how customers will see your store",
+    previewDesc: "Interactive demo with sample data",
+    mockDataDisclaimer: "This preview uses sample data. Click 'View Live Store' to see your actual store.",
     welcomeMessage: "Welcome to our online store! Browse our menu and order directly through WhatsApp.",
     categories: "Categories",
     sampleCategories: "Main Dishes, Beverages, Desserts",
@@ -52,6 +80,14 @@ const storeContent = {
     back: "Back",
     enterDashboard: "Enter Dashboard",
     loading: "Loading...",
+    all: "All",
+    delivery: "Delivery",
+    pickup: "Pickup",
+    dineIn: "Dine-in",
+    search: "Search dishes...",
+    open: "Open",
+    addToCart: "Add to Cart",
+    viewLiveStore: "View Live Store",
     setupTips: [
       'Add high-quality photos to your products',
       'Set up delivery zones if you offer delivery',
@@ -77,7 +113,8 @@ const storeContent = {
     twitterDesc: "Tweet linkun e dyqanit tënd",
     nextSteps: "Hapat e Ardhshëm",
     storePreview: "Pamja e Dyqanit",
-    previewDesc: "Kështu do ta shohin klientët dyqanin tuaj",
+    previewDesc: "Demo interaktive me të dhëna shembull",
+    mockDataDisclaimer: "Kjo pamje përdor të dhëna shembull. Kliko 'Shiko Dyqanin Live' për të parë dyqanin tuaj aktual.",
     welcomeMessage: "Mirë se vini në dyqanin tonë online! Shfletoni menunë tonë dhe porosisni direkt nëpërmjet WhatsApp.",
     categories: "Kategoritë",
     sampleCategories: "Pjatat Kryesore, Pijet, Ëmbëlsirat",
@@ -86,6 +123,14 @@ const storeContent = {
     back: "Prapa",
     enterDashboard: "Hyr në Dashboard",
     loading: "Duke u ngarkuar...",
+    all: "Të gjitha",
+    delivery: "Dorëzim",
+    pickup: "Marrje",
+    dineIn: "Në vend",
+    search: "Kërko pjata...",
+    open: "Hapur",
+    addToCart: "Shto në Shportë",
+    viewLiveStore: "Shiko Dyqanin Live",
     setupTips: [
       'Shtoni foto me cilësi të lartë në produktet tuaja',
       'Krijoni zona dorëzimi nëse ofroni dorëzim',
@@ -118,6 +163,365 @@ const businessTypeTranslations = {
   }
 }
 
+// Enhanced Mobile Store Preview Component
+function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: { 
+  data: SetupData, 
+  primaryColor: string, 
+  content: any,
+  currencySymbol: string 
+}) {
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [cartCount, setCartCount] = useState(0)
+  const [showProductModal, setShowProductModal] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+
+  // Mock categories based on business type
+  const mockCategories = [
+    { id: 'all', name: content.all },
+    { id: 'mains', name: content.sampleCategories?.split(', ')[0] || 'Main Dishes' },
+    { id: 'drinks', name: content.sampleCategories?.split(', ')[1] || 'Beverages' },
+    { id: 'desserts', name: content.sampleCategories?.split(', ')[2] || 'Desserts' }
+  ]
+
+  // Mock products based on business type with appropriate pricing
+  const getMockProducts = () => {
+    switch (data.businessType) {
+      case 'RESTAURANT':
+        return [
+          { id: 1, name: 'Signature Pasta', description: 'Fresh homemade pasta with rich tomato sauce', price: 12.99, featured: true, category: 'mains' },
+          { id: 2, name: 'House Wine', description: 'Premium selection from local vineyard', price: 8.50, category: 'drinks' },
+          { id: 3, name: 'Tiramisu', description: 'Classic Italian dessert with coffee flavor', price: 6.99, category: 'desserts' }
+        ]
+      case 'CAFE':
+        return [
+          { id: 1, name: 'Artisan Coffee', description: 'Premium blend with perfect aroma', price: 4.50, featured: true, category: 'drinks' },
+          { id: 2, name: 'Croissant', description: 'Freshly baked buttery pastry', price: 3.99, category: 'mains' },
+          { id: 3, name: 'Cheesecake', description: 'Creamy New York style cheesecake', price: 5.99, category: 'desserts' }
+        ]
+      case 'RETAIL':
+        return [
+          { id: 1, name: 'Featured Item', description: 'Our most popular product this season', price: 29.99, featured: true, category: 'mains' },
+          { id: 2, name: 'Gift Card', description: 'Perfect gift for any occasion', price: 25.00, category: 'drinks' },
+          { id: 3, name: 'Accessories', description: 'Complete your look with our accessories', price: 15.99, category: 'desserts' }
+        ]
+      default:
+        return [
+          { id: 1, name: 'Popular Item', description: 'Customer favorite with great reviews', price: 19.99, featured: true, category: 'mains' },
+          { id: 2, name: 'Daily Special', description: 'Today\'s special offer', price: 12.50, category: 'drinks' },
+          { id: 3, name: 'Premium Option', description: 'High-quality premium choice', price: 24.99, category: 'desserts' }
+        ]
+    }
+  }
+
+  const mockProducts = getMockProducts()
+
+  const getBusinessTypeDisplay = () => {
+    const businessTypes = businessTypeTranslations[data.language || 'en' as keyof typeof businessTypeTranslations]
+    const businessType = data.businessType || 'OTHER'
+    return businessTypes[businessType as keyof typeof businessTypes] || businessTypes.OTHER
+  }
+
+  const addToCart = (product: any) => {
+    setCartCount(prev => prev + 1)
+    setShowProductModal(false)
+  }
+
+  const openProductModal = (product: any) => {
+    setSelectedProduct(product)
+    setShowProductModal(true)
+  }
+
+  // Calculate total with proper currency
+  const calculateCartTotal = () => {
+    const baseTotal = mockProducts.slice(0, cartCount).reduce((sum, product) => sum + product.price, 0)
+    return baseTotal.toFixed(2)
+  }
+
+  return (
+    <div className="bg-gray-100 rounded-xl p-6 max-w-md mx-auto">
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          {content.storePreview}
+        </h3>
+        <p className="text-sm text-gray-600 mb-2">
+          {content.previewDesc}
+        </p>
+        
+        {/* Mock Data Disclaimer */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="flex items-start">
+            <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+            <p className="text-xs text-blue-800">
+              {content.mockDataDisclaimer}
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Mobile Phone Frame */}
+      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '300px' }}>
+        <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative">
+          
+          {/* Cover Image Header */}
+          <div 
+            className="relative h-32"
+            style={{ 
+              background: `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Header Icons */}
+            <div className="absolute top-3 right-3 flex gap-2">
+              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+                <Share2 className="w-3 h-3 text-white" />
+              </div>
+              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+                <Search className="w-3 h-3 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Store Info Section */}
+          <div className="bg-white p-4 relative">
+            {/* Logo */}
+            <div 
+              className="absolute -top-6 left-4 w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg bg-white"
+              style={{ color: primaryColor }}
+            >
+              {data.businessName?.charAt(0) || 'S'}
+            </div>
+
+            <div className="pt-4">
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-lg font-bold text-gray-900 truncate">
+                  {data.businessName}
+                </h1>
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                  {content.open}
+                </span>
+              </div>
+              
+              <div className="text-xs text-gray-600 mb-2">
+                {getBusinessTypeDisplay()}
+              </div>
+              
+              <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                <MapPin className="w-3 h-3" />
+                <span className="truncate">123 Sample Street</span>
+              </div>
+              
+              <div className="flex items-center gap-3 text-xs text-gray-600">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>20-30 min</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" />
+                  <span>Free delivery</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Type Switcher */}
+          <div className="px-4 py-2">
+            <div className="inline-flex bg-gray-100 p-1 rounded-full">
+              <button 
+                className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Package className="w-3 h-3 mr-1 inline" />
+                {content.delivery}
+              </button>
+              <button className="px-3 py-1 rounded-full text-xs font-medium text-gray-600">
+                <Store className="w-3 h-3 mr-1 inline" />
+                {content.pickup}
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="px-4 py-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+              <input
+                type="text"
+                placeholder={content.search}
+                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs outline-none"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              />
+            </div>
+          </div>
+
+          {/* Category Tabs */}
+          <div className="px-4 py-2">
+            <div className="flex gap-1 overflow-x-auto">
+              {mockCategories.slice(0, 3).map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-3 py-1 text-xs font-medium whitespace-nowrap border-b-2 ${
+                    selectedCategory === category.id
+                      ? 'border-b-2'
+                      : 'text-gray-600 border-transparent'
+                  }`}
+                  style={{ 
+                    color: selectedCategory === category.id ? primaryColor : undefined,
+                    borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                  }}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Products List */}
+          <div className="flex-1 overflow-y-auto px-4 pb-16">
+            <div className="space-y-3">
+              {mockProducts.slice(0, 3).map(product => (
+                <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="flex items-center p-3">
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="font-semibold text-sm text-gray-900 truncate mr-2">
+                          {product.name}
+                        </h3>
+                        {product.featured && (
+                          <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-xs font-medium whitespace-nowrap">
+                            Popular
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                        {product.description}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-sm" style={{ color: primaryColor }}>
+                          {currencySymbol}{product.price.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() => openProductModal(product)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform"
+                          style={{ backgroundColor: primaryColor }}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="w-16 h-16 ml-3 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                      <Package className="w-6 h-6" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cart Button */}
+          {cartCount > 0 && (
+            <div className="absolute bottom-4 left-4 right-4">
+              <button
+                className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-between shadow-lg"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <div className="flex items-center">
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  <span>{cartCount} item{cartCount !== 1 ? 's' : ''}</span>
+                </div>
+                <span>{currencySymbol}{calculateCartTotal()}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Floating Cart Badge */}
+          {cartCount > 0 && (
+            <div 
+              className="absolute bottom-20 right-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <ShoppingCart className="w-5 h-5 text-white" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                {cartCount}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Interactive Actions */}
+      <div className="mt-4 space-y-3">
+        <button
+          onClick={() => window.open(`https://waveorder.app/${data.storeSlug || 'demo'}`, '_blank')}
+          className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          {content.viewLiveStore}
+        </button>
+        
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setCartCount(prev => prev + 1)}
+            className="flex items-center justify-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+          >
+            <Plus className="w-4 h-4 mr-1" />
+            Add Item
+          </button>
+          <button
+            onClick={() => setCartCount(0)}
+            className="flex items-center justify-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Clear Cart
+          </button>
+        </div>
+      </div>
+
+      {/* Product Modal */}
+      {showProductModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full max-h-[80vh] overflow-hidden shadow-2xl">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h2 className="text-lg font-semibold">{selectedProduct.name}</h2>
+              <button
+                onClick={() => setShowProductModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className="w-full h-32 bg-gray-100 rounded-lg mb-4 flex items-center justify-center">
+                <Package className="w-8 h-8 text-gray-400" />
+              </div>
+              
+              <p className="text-gray-600 mb-4 text-sm">{selectedProduct.description}</p>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-2xl font-bold" style={{ color: primaryColor }}>
+                  {currencySymbol}{selectedProduct.price.toFixed(2)}
+                </span>
+              </div>
+              
+              <button
+                onClick={() => addToCart(selectedProduct)}
+                className="w-full py-3 rounded-xl text-white font-semibold hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {content.addToCart}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function StoreReadyStep({ data, onComplete, onBack, setupToken }: StoreReadyStepProps) {
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -125,6 +529,8 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
   const selectedLanguage = data.language || 'en'
   const content = storeContent[selectedLanguage as keyof typeof storeContent]
   const businessTypes = businessTypeTranslations[selectedLanguage as keyof typeof businessTypeTranslations]
+  const primaryColor = data.primaryColor || '#0D9488'
+  const currencySymbol = getCurrencySymbol(data.currency || 'USD')
 
   const storeUrl = `https://waveorder.app/${data.storeSlug}`
 
@@ -236,183 +642,134 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 mb-6 sm:mb-8">
-        {/* Store Information */}
-        <div className="space-y-4 sm:space-y-6 order-2 lg:order-1">
-          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{content.storeInfo}</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-2">{content.storeUrl}</label>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <div className="flex-1 px-3 py-3 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-xs sm:text-sm break-all">
-                    {storeUrl}
+          {/* Store Information */}
+          <div className="space-y-4 sm:space-y-6 order-2 lg:order-1">
+            <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{content.storeInfo}</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-2">{content.storeUrl}</label>
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <div className="flex-1 px-3 py-3 sm:py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-xs sm:text-sm break-all">
+                      {storeUrl}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={copyToClipboard}
+                      className="px-4 py-3 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center sm:justify-start min-w-0"
+                    >
+                      <Copy className="w-4 h-4 mr-2 sm:mr-0" />
+                      <span className="sm:hidden">{content.copyUrl}</span>
+                    </button>
                   </div>
+                  {copied && (
+                    <p className="text-sm text-green-600 mt-2">{content.copied}</p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
                   <button
                     type="button"
-                    onClick={copyToClipboard}
-                    className="px-4 py-3 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center sm:justify-start min-w-0"
+                    onClick={handleViewStore}
+                    className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
-                    <Copy className="w-4 h-4 mr-2 sm:mr-0" />
-                    <span className="sm:hidden">{content.copyUrl}</span>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    {content.viewStore}
                   </button>
                 </div>
-                {copied && (
-                  <p className="text-sm text-green-600 mt-2">{content.copied}</p>
-                )}
               </div>
+            </div>
 
+            <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Share2 className="w-5 h-5 mr-2 text-teal-600" />
+                {content.shareStore}
+              </h3>
+              
               <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={handleViewStore}
-                  className="w-full flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  onClick={() => shareOnSocial('instagram')}
+                  className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  {content.viewStore}
+                  <Instagram className="w-5 h-5 mr-3 text-pink-600 flex-shrink-0" />
+                  <div className="text-left min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{content.addToInstagram}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{content.instagramDesc}</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => shareOnSocial('facebook')}
+                  className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Facebook className="w-5 h-5 mr-3 text-blue-600 flex-shrink-0" />
+                  <div className="text-left min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{content.shareOnFacebook}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{content.facebookDesc}</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => shareOnSocial('twitter')}
+                  className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Twitter className="w-5 h-5 mr-3 text-blue-400 flex-shrink-0" />
+                  <div className="text-left min-w-0 flex-1">
+                    <div className="font-medium text-gray-900 text-sm sm:text-base">{content.shareOnTwitter}</div>
+                    <div className="text-xs sm:text-sm text-gray-500">{content.twitterDesc}</div>
+                  </div>
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-              <Share2 className="w-5 h-5 mr-2 text-teal-600" />
-              {content.shareStore}
-            </h3>
-            
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => shareOnSocial('instagram')}
-                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Instagram className="w-5 h-5 mr-3 text-pink-600 flex-shrink-0" />
-                <div className="text-left min-w-0 flex-1">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{content.addToInstagram}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{content.instagramDesc}</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => shareOnSocial('facebook')}
-                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Facebook className="w-5 h-5 mr-3 text-blue-600 flex-shrink-0" />
-                <div className="text-left min-w-0 flex-1">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{content.shareOnFacebook}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{content.facebookDesc}</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => shareOnSocial('twitter')}
-                className="w-full flex items-center p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <Twitter className="w-5 h-5 mr-3 text-blue-400 flex-shrink-0" />
-                <div className="text-left min-w-0 flex-1">
-                  <div className="font-medium text-gray-900 text-sm sm:text-base">{content.shareOnTwitter}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">{content.twitterDesc}</div>
-                </div>
-              </button>
+            <div className="bg-gray-50 p-4 sm:p-6 rounded-xl">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{content.nextSteps}</h3>
+              <ul className="space-y-2 sm:space-y-3">
+                {content.setupTips.map((tip, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
+                    <span className="text-sm sm:text-base text-gray-600">{tip}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
 
-          <div className="bg-gray-50 p-4 sm:p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{content.nextSteps}</h3>
-            <ul className="space-y-2 sm:space-y-3">
-              {content.setupTips.map((tip, index) => (
-                <li key={index} className="flex items-start">
-                  <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-600">{tip}</span>
-                </li>
-              ))}
-            </ul>
+          {/* Enhanced Live Preview */}
+          <div className="order-1 lg:order-2 lg:sticky lg:top-8">
+            <EnhancedMobilePreview 
+              data={data}
+              primaryColor={primaryColor}
+              content={content}
+              currencySymbol={currencySymbol}
+            />
           </div>
         </div>
 
-        {/* Live Preview */}
-        <div className="order-1 lg:order-2 lg:sticky lg:top-8">
-          <div className="bg-gray-100 rounded-xl p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
-              {content.storePreview}
-            </h3>
-            
-            <div className="bg-white rounded-lg border border-gray-200 max-w-sm mx-auto overflow-hidden">
-              {/* Mobile Header */}
-              <div className="bg-teal-600 text-white p-3 sm:p-4">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-sm sm:text-lg truncate">{data.businessName}</div>
-                    <div className="text-xs sm:text-sm text-teal-100 truncate">
-                      {getBusinessTypeDisplay()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Content */}
-              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-                <div className="text-center">
-                  <p className="text-xs sm:text-sm text-gray-600 mb-3">
-                    {content.welcomeMessage}
-                  </p>
-                </div>
-
-                {/* Sample Categories */}
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="font-medium text-gray-900 text-sm">{content.categories}</div>
-                    <div className="text-xs sm:text-sm text-gray-500 mt-1">{content.sampleCategories}</div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
-                    <div className="font-medium text-gray-900 text-sm">{content.orderOptions}</div>
-                    <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                      {getDeliveryMethodsDisplay()}
-                    </div>
-                  </div>
-
-                  <button className="w-full bg-green-600 text-white py-2 sm:py-3 rounded-lg font-medium text-sm">
-                    {content.orderWhatsApp}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center mt-4">
-              <p className="text-sm text-gray-600">{content.storePreview}</p>
-              <p className="text-xs text-gray-500">{content.previewDesc}</p>
-            </div>
-          </div>
+        {/* Navigation */}
+        <div className="flex flex-col sm:flex-row gap-4 sm:justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            {content.back}
+          </button>
+          
+          <button
+            onClick={handleEnterDashboard}
+            disabled={loading}
+            className="flex items-center justify-center px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
+          >
+            {loading ? content.loading : content.enterDashboard}
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </button>
         </div>
       </div>
-
-      {/* Navigation */}
-      <div className="flex flex-col sm:flex-row gap-4 sm:justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors order-2 sm:order-1"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          {content.back}
-        </button>
-        
-        <button
-          onClick={handleEnterDashboard}
-          disabled={loading}
-          className="flex items-center justify-center px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
-        >
-          {loading ? content.loading : content.enterDashboard}
-          <ArrowRight className="w-5 h-5 ml-2" />
-        </button>
-      </div>
-    </div>
-  )
-}
+    )
+  }

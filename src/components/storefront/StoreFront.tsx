@@ -406,28 +406,30 @@ function TimeSelection({
 
 // Simple Delivery Switcher Component
 function DeliveryTypeSwitcher({
-      // @ts-ignore
-    deliveryType,
-      // @ts-ignore
-    setDeliveryType,
-      // @ts-ignore
-    deliveryOptions,
-      // @ts-ignore
-    primaryColor,
-      // @ts-ignore
-    disabled = false
-  }) {
-    if (deliveryOptions.length <= 1) return null
-  
-    return (
-      <div className="inline-flex bg-gray-100 p-1 rounded-full">
-          {/* @ts-ignore */}
-        {deliveryOptions.slice(0, 2).map(option => (
+    // @ts-ignore
+  deliveryType,
+    // @ts-ignore
+  setDeliveryType,
+    // @ts-ignore
+  deliveryOptions,
+    // @ts-ignore
+  primaryColor,
+    // @ts-ignore
+  disabled = false
+}) {
+  if (deliveryOptions.length <= 1) return null
+
+  return (
+    <div className="inline-flex bg-gray-100 p-1 rounded-full">
+        {/* @ts-ignore */}
+      {deliveryOptions.slice(0, 2).map(option => {
+        const IconComponent = option.icon
+        return (
           <button
             key={option.key}
             onClick={() => !disabled && setDeliveryType(option.key)}
             disabled={disabled}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 min-w-[80px] ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 min-w-[80px] flex items-center justify-center ${
               deliveryType === option.key
                 ? 'text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -436,12 +438,14 @@ function DeliveryTypeSwitcher({
               backgroundColor: deliveryType === option.key ? primaryColor : 'transparent'
             }}
           >
+            <IconComponent className="w-4 h-4 mr-1" />
             {option.label}
           </button>
-        ))}
-      </div>
-    )
-  }
+        )
+      })}
+    </div>
+  )
+}
 
 
 interface StoreData {
@@ -729,7 +733,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const getDeliveryOptions = () => {
     const options = []
-    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: translations.delivery, icon: Truck })
+    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: translations.delivery, icon: Package })
     if (storeData.pickupEnabled) options.push({ key: 'pickup', label: translations.pickup, icon: Store })
     if (storeData.dineInEnabled) options.push({ key: 'dineIn', label: translations.dineIn, icon: UtensilsCrossed })
     return options
