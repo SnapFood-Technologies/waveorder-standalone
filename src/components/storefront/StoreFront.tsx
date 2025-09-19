@@ -10,7 +10,6 @@ import {
   MapPin, 
   Clock, 
   Share2,
-  Truck,
   Store,
   UtensilsCrossed,
   Info,
@@ -484,7 +483,7 @@ function StoreLocationMap({
                   <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                        <Truck className="w-4 h-4 text-green-600" />
+                        <Package className="w-4 h-4 text-green-600" />
                       </div>
                       <span className="font-medium text-gray-800">{translations.delivery || 'Delivery'}</span>
                     </div>
@@ -1159,6 +1158,60 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     setShowProductModal(true)
   }
 
+
+  const getFilteredProducts = () => {
+     // @ts-ignore
+    let products = []
+  
+    if (selectedCategory === 'all') {
+      // Get all products from all categories
+      products = storeData.categories.flatMap(category => 
+        category.products.map(product => ({ 
+          ...product, 
+          categoryName: category.name,
+          categoryId: category.id 
+        }))
+      )
+    } else {
+      // Get products from selected category only
+      const category = storeData.categories.find(cat => cat.id === selectedCategory)
+      if (category) {
+        products = category.products.map(product => ({ 
+          ...product, 
+          categoryName: category.name,
+          categoryId: category.id 
+        }))
+      }
+    }
+  
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchTermLower = searchTerm.toLowerCase().trim()
+       // @ts-ignore
+      products = products.filter(product => {
+        // Search in product name, description, and category name
+        const nameMatch = product.name.toLowerCase().includes(searchTermLower)
+        const descriptionMatch = product.description?.toLowerCase().includes(searchTermLower) || false
+        const categoryMatch = product.categoryName.toLowerCase().includes(searchTermLower)
+        
+        // Also search in modifiers and variants
+         // @ts-ignore
+        const modifierMatch = product.modifiers?.some(modifier => 
+          modifier.name.toLowerCase().includes(searchTermLower)
+        ) || false
+        
+         // @ts-ignore
+        const variantMatch = product.variants?.some(variant => 
+          variant.name.toLowerCase().includes(searchTermLower)
+        ) || false
+  
+        return nameMatch || descriptionMatch || categoryMatch || modifierMatch || variantMatch
+      })
+    }
+  
+    return products
+  }
+
   const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = []) => {
     const basePrice = variant?.price || product.price
     const modifierPrice = modifiers.reduce((sum, mod) => sum + mod.price, 0)
@@ -1292,7 +1345,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const getDeliveryOptions = () => {
     const options = []
     if (storeData.deliveryEnabled) {
-      options.push({ key: 'delivery', label: translations.delivery || 'Delivery', icon: Truck })
+      options.push({ key: 'delivery', label: translations.delivery || 'Delivery', icon: Package })
     }
     if (storeData.pickupEnabled) {
       options.push({ key: 'pickup', label: translations.pickup || 'Pickup', icon: Store })
@@ -1422,8 +1475,8 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                   )}
                   {deliveryType === 'delivery' && calculatedDeliveryFee > 0 && (
                     <div className="flex items-center gap-1">
-                      <DollarSign className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">{currencySymbol}{calculatedDeliveryFee.toFixed(2)} delivery</span>
+                      <Package className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm">{currencySymbol}{calculatedDeliveryFee.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -1450,116 +1503,177 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={translations.search || "Search for dishes, ingredients..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="search-input w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
-                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                onFocus={(e) => e.target.style.borderColor = primaryColor}
-                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                disabled={storeData.isTemporarilyClosed}
-              />
-            </div>
-          </div>
+  <div className="relative">
+    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+    <input
+      type="text"
+      placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (translations.search || "Search for dishes, ingredients...")}
+      value={searchTerm}
+      onChange={(e) => {
+        setSearchTerm(e.target.value)
+        // Auto-switch to "All" category when searching to show all results
+        if (e.target.value.trim() && selectedCategory !== 'all') {
+          setSelectedCategory('all')
+        }
+      }}
+      className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
+      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+      onFocus={(e) => e.target.style.borderColor = primaryColor}
+      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+      disabled={storeData.isTemporarilyClosed}
+    />
+    {/* Clear search button */}
+    {searchTerm && (
+      <button
+        onClick={() => setSearchTerm('')}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+      >
+        <X className="w-3 h-3 text-gray-600" />
+      </button>
+    )}
+  </div>
+  
+  {/* Search suggestions/results count */}
+  {searchTerm && (
+    <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+      <p className="text-sm text-gray-600">
+        {getFilteredProducts().length === 0 
+          ? `No results for "${searchTerm}"`
+          : `${getFilteredProducts().length} result${getFilteredProducts().length !== 1 ? 's' : ''} for "${searchTerm}"`
+        }
+      </p>
+    </div>
+  )}
+</div>
 
           {/* Category Tabs */}
           <div className="flex gap-1 mb-6 overflow-x-auto">
             <button
-              onClick={() => setSelectedCategory('all')}
-              disabled={storeData.isTemporarilyClosed}
-              className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
-                selectedCategory === 'all'
-                  ? 'border-b-2'
-                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={{ 
-                color: selectedCategory === 'all' ? primaryColor : undefined,
-                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
-              }}
-            >
-              {translations.all || 'All'}
-            </button>
-            {storeData.categories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => {
+                setSelectedCategory('all')
+                // Keep search term when switching to "All"
+                }}
                 disabled={storeData.isTemporarilyClosed}
-                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
-                  selectedCategory === category.id
+                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                selectedCategory === 'all'
                     ? 'border-b-2'
                     : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
                 } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
                 style={{ 
-                  color: selectedCategory === category.id ? primaryColor : undefined,
-                  borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                color: selectedCategory === 'all' ? primaryColor : undefined,
+                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
                 }}
-              >
-                {category.name}
-              </button>
-            ))}
+            >
+                {translations.all || 'All'}
+                {searchTerm && selectedCategory === 'all' && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {getFilteredProducts().length}
+                </span>
+                )}
+            </button>
+            {storeData.categories.map(category => {
+                // Count products in this category that match search
+                const categoryProductCount = searchTerm 
+                ? category.products.filter(product => {
+                    const searchTermLower = searchTerm.toLowerCase().trim()
+                    return product.name.toLowerCase().includes(searchTermLower) ||
+                            product.description?.toLowerCase().includes(searchTermLower) ||
+                            category.name.toLowerCase().includes(searchTermLower)
+                    }).length
+                : category.products.length
+                
+                return (
+                <button
+                    key={category.id}
+                    onClick={() => {
+                    setSelectedCategory(category.id)
+                    // Clear search when switching to specific category
+                    if (searchTerm) {
+                        setSearchTerm('')
+                    }
+                    }}
+                    disabled={storeData.isTemporarilyClosed}
+                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                    selectedCategory === category.id
+                        ? 'border-b-2'
+                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{ 
+                    color: selectedCategory === category.id ? primaryColor : undefined,
+                    borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                    }}
+                >
+                    {category.name}
+                    {searchTerm && selectedCategory !== 'all' && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        {categoryProductCount}
+                    </span>
+                    )}
+                </button>
+                )
+            })}
           </div>
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {selectedCategory === 'all' ? (
-              storeData.categories.length === 0 ? (
-                <div className="col-span-full">
-                  <EmptyState 
-                    type="no-categories"
-                    primaryColor={primaryColor}
-                    translations={translations}
-                  />
-                </div>
-              ) : storeData.categories.every(category => category.products.length === 0) ? (
-                <div className="col-span-full">
-                  <EmptyState 
-                    type="no-products"
-                    primaryColor={primaryColor}
-                    translations={translations}
-                  />
-                </div>
-              ) : (
-                storeData.categories.flatMap(category => 
-                  category.products.map(product => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      onOpenModal={openProductModal}
-                      primaryColor={primaryColor}
-                      currencySymbol={currencySymbol}
-                      translations={translations}
-                      disabled={storeData.isTemporarilyClosed}
+            {(() => {
+                const filteredProducts = getFilteredProducts()
+                
+                if (storeData.categories.length === 0) {
+                return (
+                    <div className="col-span-full">
+                    <EmptyState 
+                        type="no-categories"
+                        primaryColor={primaryColor}
+                        translations={translations}
                     />
-                  ))
+                    </div>
                 )
-              )
-            ) : (
-              filteredProducts.length === 0 ? (
-                <div className="col-span-full">
-                  {searchTerm ? (
-                    <EmptyState 
-                      type="search-empty"
-                      primaryColor={primaryColor}
-                      translations={translations}
-                      onClearSearch={() => setSearchTerm('')}
-                      onShowAll={() => setSelectedCategory('all')}
-                    />
-                  ) : (
-                    <EmptyState 
-                      type="category-empty"
-                      primaryColor={primaryColor}
-                      translations={translations}
-                      onShowAll={() => setSelectedCategory('all')}
-                    />
-                  )}
-                </div>
-              ) : (
-                filteredProducts.map(product => (
-                  <ProductCard 
+                }
+                
+                if (filteredProducts.length === 0) {
+                if (searchTerm) {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="search-empty"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        searchTerm={searchTerm}
+                        onClearSearch={() => setSearchTerm('')}
+                        onShowAll={() => {
+                            setSearchTerm('')
+                            setSelectedCategory('all')
+                        }}
+                        />
+                    </div>
+                    )
+                } else if (selectedCategory !== 'all') {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="category-empty"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        onShowAll={() => setSelectedCategory('all')}
+                        />
+                    </div>
+                    )
+                } else {
+                    return (
+                    <div className="col-span-full">
+                        <EmptyState 
+                        type="no-products"
+                        primaryColor={primaryColor}
+                        translations={translations}
+                        />
+                    </div>
+                    )
+                }
+                }
+                
+                return filteredProducts.map(product => (
+                <ProductCard 
                     key={product.id} 
                     product={product} 
                     onOpenModal={openProductModal}
@@ -1567,11 +1681,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     currencySymbol={currencySymbol}
                     translations={translations}
                     disabled={storeData.isTemporarilyClosed}
-                  />
+                    // searchTerm={searchTerm} // Pass search term for highlighting
+                />
                 ))
-              )
-            )}
-          </div>
+            })()}
+            </div>
         </div>
 
         {/* Right Side - Order Panel (Desktop) */}
@@ -1735,13 +1849,15 @@ function EmptyState({
   primaryColor, 
   translations,
   onClearSearch,
-  onShowAll
+  onShowAll,
+  searchTerm
 }: { 
   type: 'no-categories' | 'no-products' | 'category-empty' | 'search-empty'
   primaryColor: string
   translations: any
   onClearSearch?: () => void
   onShowAll?: () => void
+  searchTerm?: string
 }) {
   const getEmptyStateContent = () => {
     switch (type) {
@@ -1768,16 +1884,16 @@ function EmptyState({
           actionText: translations.browseAllProducts || 'Browse All Products',
           actionCallback: onShowAll
         }
-      case 'search-empty':
+        case 'search-empty':
         return {
-          icon: AlertCircle,
-          title: translations.noProductsFound || 'No products found',
-          description: translations.noProductsFoundDescription || 'Try adjusting your search or browse our full menu.',
-          showActions: true,
-          actionText: translations.tryDifferentSearch || 'Clear Search',
-          actionCallback: onClearSearch,
-          secondaryActionText: translations.browseAllProducts || 'Browse All Products',
-          secondaryActionCallback: onShowAll
+            icon: Search,
+            title: `${translations.noProductsFound || 'No results found'} "${searchTerm}"`,
+            description: translations.noProductsFoundDescription || 'Try a different search term or browse all products',
+            showActions: true,
+            actionText: translations.tryDifferentSearch || 'Clear Search',
+            actionCallback: onClearSearch,
+            secondaryActionText: translations.browseAllProducts || 'Browse All Products',
+            secondaryActionCallback: onShowAll
         }
       default:
         return {
@@ -1841,266 +1957,305 @@ function EmptyState({
   )
 }
 
-// Product Card Component
+// Fixed Product Card Component
 function ProductCard({ 
-  product, 
-  onOpenModal, 
-  primaryColor, 
-  currencySymbol,
-  translations,
-  disabled = false
-}: { 
-  product: Product
-  onOpenModal: (product: Product) => void
-  primaryColor: string
-  currencySymbol: string
-  translations: any
-  disabled?: boolean
-}) {
-  return (
-    <div className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
-      disabled ? 'opacity-60' : ''
-    }`}>
-      <div className="flex items-center min-h-[120px]">
-        <div className="flex-1 p-5">
-          <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
-          {product.description && (
-            <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2">{product.description}</p>
-          )}
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-xl" style={{ color: primaryColor }}>
-                {currencySymbol}{product.price.toFixed(2)}
-              </span>
-              {product.originalPrice && product.originalPrice > product.price && (
-                <span className="text-gray-500 line-through text-sm">
-                  {currencySymbol}{product.originalPrice.toFixed(2)}
-                </span>
-              )}
+    product, 
+    onOpenModal, 
+    primaryColor, 
+    currencySymbol,
+    translations,
+    disabled = false
+  }: { 
+    product: Product & { categoryName?: string }
+    onOpenModal: (product: Product) => void
+    primaryColor: string
+    currencySymbol: string
+    translations: any
+    disabled?: boolean
+    // searchTerm?: string
+  }) {
+    const hasImage = product.images.length > 0
+  
+    return (
+      <div className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
+        disabled ? 'opacity-60' : ''
+      }`}>
+        <div className="flex items-center min-h-[120px]">
+          <div className={`p-5 ${hasImage ? 'flex-1' : 'w-full'} flex flex-col justify-between h-full min-h-[120px]`}>
+            <div>
+              <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
+              
+              {/* Reserve space for description even if empty */}
+              <div className="h-10 mb-1">
+                {product.description && (
+                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{product.description}</p>
+                )}
+              </div>
             </div>
             
+            <div>
+              <div className={`flex items-center ${hasImage ? 'justify-between' : 'justify-between'}`}>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-xl" style={{ color: primaryColor }}>
+                    {currencySymbol}{product.price.toFixed(2)}
+                  </span>
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="text-gray-500 line-through text-sm">
+                      {currencySymbol}{product.originalPrice.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                
+                <button
+                  onClick={() => !disabled && onOpenModal(product)}
+                  disabled={disabled || product.stock === 0}
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+  
+              {/* Stock info */}
+              <div className="h-4 mt-2">
+                {product.stock <= 5 && product.stock > 0 && (
+                  <p className="text-orange-600 text-xs">
+                    {translations.onlyLeft || 'Only'} {product.stock} {translations.left || 'left'}
+                  </p>
+                )}
+                {product.stock === 0 && (
+                  <p className="text-red-600 text-xs">{translations.outOfStock || 'Out of stock'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {hasImage && (
+            <div className="w-30 h-30 flex-shrink-0">
+              <div className="relative w-30 h-30">
+                <img 
+                  src={product.images[0]} 
+                  alt={product.name}
+                  className="w-full h-full object-cover rounded-r-2xl"
+                />
+                {product.featured && (
+                  <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                    {translations.popular || 'Popular'}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+  
+
+  // Improved Product Modal Component
+  function ProductModal({
+    product,
+    selectedVariant,
+    setSelectedVariant,
+    selectedModifiers,
+    setSelectedModifiers,
+    onAddToCart,
+    onClose,
+    currencySymbol,
+    primaryColor,
+    translations
+  }: {
+    product: Product
+    selectedVariant: ProductVariant | null
+    setSelectedVariant: (variant: ProductVariant | null) => void
+    selectedModifiers: ProductModifier[]
+    setSelectedModifiers: (modifiers: ProductModifier[]) => void
+    onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
+    onClose: () => void
+    currencySymbol: string
+    primaryColor: string
+    translations: any
+  }) {
+    const [quantity, setQuantity] = useState(1)
+  
+    const basePrice = selectedVariant?.price || product.price
+    const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
+    const totalPrice = (basePrice + modifierPrice) * quantity
+  
+    const toggleModifier = (modifier: ProductModifier) => {
+        // @ts-ignore
+      setSelectedModifiers(prev => {
+         // @ts-ignore
+        const exists = prev.find(m => m.id === modifier.id)
+        if (exists) {
+             // @ts-ignore
+          return prev.filter(m => m.id !== modifier.id)
+        } else {
+          return [...prev, modifier]
+        }
+      })
+    }
+  
+    const handleAddToCart = () => {
+      for (let i = 0; i < quantity; i++) {
+        onAddToCart(product, selectedVariant || undefined, selectedModifiers)
+      }
+    }
+  
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-xl">
+          {/* Header */}
+          <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+              <button 
+                onClick={onClose} 
+                className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-y-auto max-h-[calc(90vh-180px)]">
+            <div className="p-6 space-y-6">
+              {product.images.length > 0 && (
+                <div className="relative">
+                  <img 
+                    src={product.images[0]} 
+                    alt={product.name}
+                    className="w-full h-48 object-cover rounded-2xl"
+                  />
+                  {product.featured && (
+                    <span className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold">
+                      {translations.popular || 'Popular'}
+                    </span>
+                  )}
+                </div>
+              )}
+              
+              {product.description && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                </div>
+              )}
+  
+              {/* Variants */}
+              {product.variants.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                    {translations.chooseSize || 'Choose Size'}
+                  </h3>
+                  <div className="space-y-3">
+                    {product.variants.map(variant => (
+                      <button
+                        key={variant.id}
+                        onClick={() => setSelectedVariant(variant)}
+                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                          selectedVariant?.id === variant.id
+                            ? 'bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                        style={{
+                          borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                        }}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium text-gray-800">{variant.name}</span>
+                          <span className="font-bold" style={{ color: primaryColor }}>
+                            {currencySymbol}{variant.price.toFixed(2)}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+  
+              {/* Modifiers */}
+              {product.modifiers.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                    {translations.addExtras || 'Add Extras'}
+                  </h3>
+                  <div className="space-y-3">
+                    {product.modifiers.map(modifier => (
+                      <button
+                        key={modifier.id}
+                        onClick={() => toggleModifier(modifier)}
+                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                          selectedModifiers.find(m => m.id === modifier.id)
+                            ? 'bg-green-50 border-green-400'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <span className="font-medium text-gray-800">{modifier.name}</span>
+                            {modifier.required && (
+                              <span className="text-red-500 text-sm ml-2">({translations.required || 'Required'})</span>
+                            )}
+                          </div>
+                          <span className="font-bold text-green-600">
+                            +{currencySymbol}{modifier.price.toFixed(2)}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+  
+              {/* Quantity */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.quantity || 'Quantity'}
+                </h3>
+                <div className="flex items-center justify-center space-x-6">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  >
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          {/* Footer */}
+          <div className="p-6 bg-gray-50 border-t">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
+              <span className="text-2xl font-bold" style={{ color: primaryColor }}>
+                {currencySymbol}{totalPrice.toFixed(2)}
+              </span>
+            </div>
             <button
-              onClick={() => !disabled && onOpenModal(product)}
-              disabled={disabled || product.stock === 0}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
+              onClick={handleAddToCart}
+              className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
               style={{ backgroundColor: primaryColor }}
             >
-              <Plus className="w-4 h-4" />
+              {translations.addToCart || 'Add to Cart'}
             </button>
           </div>
-
-          {product.stock <= 5 && product.stock > 0 && (
-            <p className="text-orange-600 text-xs mt-2">
-              {translations.onlyLeft || 'Only'} {product.stock} {translations.left || 'left'}
-            </p>
-          )}
-          {product.stock === 0 && (
-            <p className="text-red-600 text-xs mt-2">{translations.outOfStock || 'Out of stock'}</p>
-          )}
-        </div>
-        
-        <div className="w-30 h-30">
-          {product.images.length > 0 && (
-            <div className="relative w-30 h-30">
-              <img 
-                src={product.images[0]} 
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {product.featured && (
-                <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
-                  {translations.popular || 'Popular'}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// Product Modal Component
-function ProductModal({
-  product,
-  selectedVariant,
-  setSelectedVariant,
-  selectedModifiers,
-  setSelectedModifiers,
-  onAddToCart,
-  onClose,
-  currencySymbol,
-  primaryColor,
-  translations
-}: {
-  product: Product
-  selectedVariant: ProductVariant | null
-  setSelectedVariant: (variant: ProductVariant | null) => void
-  selectedModifiers: ProductModifier[]
-  setSelectedModifiers: (modifiers: ProductModifier[]) => void
-  onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
-  onClose: () => void
-  currencySymbol: string
-  primaryColor: string
-  translations: any
-}) {
-  const [quantity, setQuantity] = useState(1)
-
-  const basePrice = selectedVariant?.price || product.price
-  const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
-  const totalPrice = (basePrice + modifierPrice) * quantity
-
-  const toggleModifier = (modifier: ProductModifier) => {
-    // @ts-ignore
-    setSelectedModifiers(prev => {
-      // @ts-ignore
-      const exists = prev.find(m => m.id === modifier.id)
-      if (exists) {
-        // @ts-ignore
-        return prev.filter(m => m.id !== modifier.id)
-      } else {
-        return [...prev, modifier]
-      }
-    })
+    )
   }
-
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      onAddToCart(product, selectedVariant || undefined, selectedModifiers)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-        <div className="p-6 border-b flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{product.name}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
-          <div className="p-6">
-            {product.images.length > 0 && (
-              <img 
-                src={product.images[0]} 
-                alt={product.name}
-                className="w-full h-48 object-cover rounded-2xl mb-4"
-              />
-            )}
-            
-            {product.description && (
-              <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
-            )}
-
-            {/* Variants */}
-            {product.variants.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-lg mb-3">{translations.chooseSize || 'Choose Size'}</h3>
-                <div className="space-y-3">
-                  {product.variants.map(variant => (
-                    <button
-                      key={variant.id}
-                      onClick={() => setSelectedVariant(variant)}
-                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                        selectedVariant?.id === variant.id
-                          ? 'border-2 bg-gray-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      style={{
-                        borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
-                      }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{variant.name}</span>
-                        <span className="font-semibold" style={{ color: primaryColor }}>
-                          {currencySymbol}{variant.price.toFixed(2)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Modifiers */}
-            {product.modifiers.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-lg mb-3">{translations.addExtras || 'Add Extras'}</h3>
-                <div className="space-y-3">
-                  {product.modifiers.map(modifier => (
-                    <button
-                      key={modifier.id}
-                      onClick={() => toggleModifier(modifier)}
-                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                        selectedModifiers.find(m => m.id === modifier.id)
-                          ? 'border-2 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                      style={{
-                        borderColor: selectedModifiers.find(m => m.id === modifier.id) ? '#10b981' : undefined
-                      }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">{modifier.name}</span>
-                          {modifier.required && (
-                            <span className="text-red-500 text-sm ml-1">({translations.required || 'Required'})</span>
-                          )}
-                        </div>
-                        <span className="font-semibold text-green-600">
-                          +{currencySymbol}{modifier.price.toFixed(2)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quantity */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-3">{translations.quantity || 'Quantity'}</h3>
-              <div className="flex items-center justify-center space-x-6">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                >
-                  <Minus className="w-5 h-5" />
-                </button>
-                <span className="text-2xl font-semibold w-12 text-center">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 border-t bg-gray-50">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold">{translations.total || 'Total'}</span>
-            <span className="text-2xl font-bold" style={{ color: primaryColor }}>
-              {currencySymbol}{totalPrice.toFixed(2)}
-            </span>
-          </div>
-          <button
-            onClick={handleAddToCart}
-            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: primaryColor }}
-          >
-            {translations.addToCart || 'Add to Cart'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function OrderPanel({
   storeData,
@@ -2151,34 +2306,34 @@ function OrderPanel({
         <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
         {/* Desktop Delivery Type Toggle */}
-        {!isMobile && deliveryOptions.length > 1 && (
-          <div className="mb-6">
-            <div className={`grid gap-3 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
-              {deliveryOptions.map(option => {
-                const IconComponent = option.icon
-                return (
-                  <button
-                    key={option.key}
-                    onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
-                    disabled={storeData.isTemporarilyClosed}
-                    className={`p-4 border-2 rounded-xl text-center transition-all ${
-                      deliveryType === option.key
-                        ? 'text-white'
-                        : 'text-gray-700 border-gray-200 hover:border-gray-300'
-                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    style={{ 
-                      backgroundColor: deliveryType === option.key ? primaryColor : 'white',
-                      borderColor: deliveryType === option.key ? primaryColor : undefined
-                    }}
-                  >
-                    <IconComponent className="w-5 h-5 mx-auto mb-2" />
-                    <span className="text-sm font-medium">{option.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
+{!isMobile && deliveryOptions.length > 1 && (
+  <div className="mb-6">
+    <div className={`grid gap-2 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+      {deliveryOptions.map(option => {
+        const IconComponent = option.icon
+        return (
+          <button
+            key={option.key}
+            onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
+            disabled={storeData.isTemporarilyClosed}
+            className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
+              deliveryType === option.key
+                ? 'text-white'
+                : 'text-gray-700 border-gray-200 hover:border-gray-300'
+            } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+            style={{ 
+              backgroundColor: deliveryType === option.key ? primaryColor : 'white',
+              borderColor: deliveryType === option.key ? primaryColor : undefined
+            }}
+          >
+            <IconComponent className="w-4 h-4 mr-2" />
+            <span className="text-sm font-medium">{option.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  </div>
+)}
 
         {/* Customer Information */}
         <div className="space-y-4 mb-6">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { SetupData } from '../Setup'
-import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, DollarSign, X } from 'lucide-react'
+import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, DollarSign, X, Search, MapPin, Globe, Phone, Share2, Clock, Store, Info } from 'lucide-react'
 
 interface ProductSetupStepProps {
   data: SetupData
@@ -88,6 +88,7 @@ const getCurrencySymbol = (currency: string) => {
     case 'USD': return '$'
     case 'EUR': return '€'
     case 'ALL': return 'L'
+    case 'GBP': return '£'
     default: return '$'
   }
 }
@@ -573,7 +574,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
           </div>
         </div>
 
-        {/* Right Side - Live Preview */}
+       {/* Right Side - Enhanced Live Preview */}
         <div className="order-1 lg:order-2 lg:sticky lg:top-8">
           <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -581,63 +582,173 @@ Sample Item 3,8.99,Category 1,Third sample description`
               Catalog Preview
             </h3>
             
-            <div className="bg-gray-100 rounded-xl p-3 sm:p-4">
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-4 py-3 sm:py-4 text-white text-center">
-                  <h2 className="text-base sm:text-lg font-bold">{data.businessName || 'Your Business'}</h2>
+            {/* Mobile Phone Frame */}
+            <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '300px' }}>
+              <div className="bg-white rounded-2xl overflow-hidden h-[500px] relative">
+                
+                {/* Cover Header */}
+                <div 
+                  className="relative h-24"
+                  style={{ 
+                    background: `linear-gradient(135deg, ${data.primaryColor || '#0D9488'}CC, ${data.primaryColor || '#0D9488'}99)`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                >
+                  {/* Header Icons */}
+                  <div className="absolute top-2 right-2 flex gap-2">
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Share2 className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Search className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Info className="w-3 h-3 text-white" />
+        </div>
+      </div>
                 </div>
 
-                {/* Products */}
-                <div className="p-3 sm:p-4">
+                {/* Store Info */}
+                <div className="bg-white p-3 relative">
+                  {/* Logo */}
+                  <div 
+                    className="absolute -top-5 left-3 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg bg-white"
+                    style={{ color: data.primaryColor || '#0D9488' }}
+                  >
+                    {data.businessName?.charAt(0) || 'S'}
+                  </div>
+
+                  <div className="pt-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h1 className="text-sm font-bold text-gray-900 truncate">
+                        {data.businessName || 'Your Business'}
+                      </h1>
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                        Open
+                      </span>
+                      </div>
+                    
+                    <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+                      <Store className="w-3 h-3" />
+                      <span className="truncate">123 Sample Street</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>20-30 min</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Globe className="w-3 h-3" />
+                        <span>Free delivery</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="px-3 py-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search dishes..."
+                      className="w-full pl-7 pr-2 py-2 border border-gray-200 rounded-lg text-xs outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Categories & Products */}
+                <div className="flex-1 overflow-y-auto px-3 pb-4">
                   {products.length === 0 ? (
-                    <div className="text-center py-6 sm:py-8 text-gray-500">
-                      <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-gray-300" />
-                      <p className="text-xs sm:text-sm">No {config.itemName.toLowerCase()}s added yet</p>
+                    <div className="text-center py-8 text-gray-500">
+                      <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-xs">No {config.itemName.toLowerCase()}s added yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Add items to see preview</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 sm:space-y-3">
-                      {/* Show categories */}
-                      {categories.slice(0, 3).map(category => {
-                        const categoryProducts = products.filter(p => p.category === category.name)
-                        if (categoryProducts.length === 0) return null
-                        
-                        return (
-                          <div key={category.id} className="mb-3">
-                            <h4 className="font-semibold text-gray-800 text-xs sm:text-sm mb-2 px-1">
+                    <div className="space-y-3">
+                      {/* Category Tabs */}
+                      {categories.length > 0 && (
+                        <div className="flex gap-1 overflow-x-auto pb-2">
+                          <button className="px-3 py-1 text-xs font-medium border-b-2 whitespace-nowrap" style={{ color: data.primaryColor || '#0D9488', borderBottomColor: data.primaryColor || '#0D9488' }}>
+                            All
+                          </button>
+                          {categories.slice(0, 2).map(category => (
+                            <button key={category.id} className="px-3 py-1 text-xs font-medium text-gray-600 border-b-2 border-transparent whitespace-nowrap">
                               {category.name}
-                            </h4>
-                            {categoryProducts.slice(0, 2).map(product => (
-                              <div key={product.id} className="flex justify-between items-start p-2 sm:p-3 border border-gray-200 rounded-lg mb-2">
-                                <div className="flex-1 min-w-0 pr-2">
-                                  <h5 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{product.name}</h5>
-                                  {product.description && (
-                                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{product.description}</p>
-                                  )}
-                                </div>
-                                <div className="text-xs sm:text-sm font-semibold text-teal-600 flex-shrink-0">
-                                  {currencySymbol}{product.price.toFixed(2)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Products List */}
+                      <div className="space-y-2">
+                        {products.slice(0, 4).map(product => (
+                          <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="flex items-center p-3">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-xs text-gray-900 truncate mb-1">
+                                  {product.name}
+                                </h3>
+                                {product.description && (
+                                  <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                                    {product.description}
+                                  </p>
+                                )}
+                                
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-xs" style={{ color: data.primaryColor || '#0D9488' }}>
+                                    {currencySymbol}{product.price.toFixed(2)}
+                                  </span>
+                                  <button
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-white"
+                                    style={{ backgroundColor: data.primaryColor || '#0D9488' }}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
                                 </div>
                               </div>
-                            ))}
+                              
+                              <div className="w-12 h-12 ml-2 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                                <Package className="w-4 h-4" />
+                              </div>
+                            </div>
                           </div>
-                        )
-                      })}
-                      
-                      {products.length > 6 && (
-                        <div className="text-center py-2 text-xs sm:text-sm text-gray-500">
-                          +{products.length - 6} more {config.itemName.toLowerCase()}s
+                        ))}
+                        
+                        {products.length > 4 && (
+                          <div className="text-center py-2 text-xs text-gray-500">
+                            +{products.length - 4} more items
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Order Button */}
+                      {products.length > 0 && (
+                        <div className="pt-2">
+                          <button
+                            className="w-full py-3 rounded-xl font-semibold text-white text-xs shadow-lg"
+                            style={{ backgroundColor: data.primaryColor || '#0D9488' }}
+                          >
+                            Order via WhatsApp
+                          </button>
                         </div>
                       )}
                     </div>
                   )}
-                  
-                  {products.length > 0 && (
-                    <button className="w-full mt-3 sm:mt-4 bg-green-500 text-white rounded-lg p-2 sm:p-3 text-xs sm:text-sm font-medium">
-                      Order via WhatsApp
-                    </button>
-                  )}
                 </div>
+              </div>
+            </div>
+
+            {/* Tips */}
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start">
+                <Smartphone className="w-4 h-4 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-xs text-blue-800">
+                  This preview shows how your {config.itemName.toLowerCase()}s will appear to customers on mobile devices.
+                </p>
               </div>
             </div>
           </div>

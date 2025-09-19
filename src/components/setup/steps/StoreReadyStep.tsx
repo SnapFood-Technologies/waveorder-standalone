@@ -260,7 +260,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
       </div>
       
       {/* Mobile Phone Frame */}
-      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '300px' }}>
+      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '310px' }}>
         <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative">
           
           {/* Cover Image Header */}
@@ -273,14 +273,17 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
             }}
           >
             {/* Header Icons */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
-                <Share2 className="w-3 h-3 text-white" />
-              </div>
-              <div className="w-7 h-7 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
-                <Search className="w-3 h-3 text-white" />
-              </div>
-            </div>
+            <div className="absolute top-2 right-2 flex gap-2">
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Share2 className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Search className="w-3 h-3 text-white" />
+        </div>
+        <div className="w-6 h-6 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
+          <Info className="w-3 h-3 text-white" />
+        </div>
+      </div>
           </div>
 
           {/* Store Info Section */}
@@ -426,7 +429,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
           {cartCount > 0 && (
             <div className="absolute bottom-4 left-4 right-4">
               <button
-                className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-between shadow-lg"
+                className="w-full py-3 px-6 rounded-xl font-semibold text-white text-sm flex items-center justify-between shadow-lg"
                 style={{ backgroundColor: primaryColor }}
               >
                 <div className="flex items-center">
@@ -593,6 +596,14 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
           
           if (result?.error) {
             console.error('Auto-login failed:', result.error)
+          }
+
+          if (result?.ok) {
+            // Now clear the token
+            await fetch('/api/setup/clear-token', {
+              method: 'POST',
+              body: JSON.stringify({ setupToken })
+            })
           }
         }
         

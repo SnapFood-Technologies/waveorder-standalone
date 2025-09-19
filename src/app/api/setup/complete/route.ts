@@ -71,16 +71,16 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Clear setup token if used
-    if (setupToken) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          setupToken: null,
-          setupExpiry: null
-        }
-      })
-    }
+    // // Clear setup token if used
+    // if (setupToken) {
+    //   await prisma.user.update({
+    //     where: { id: user.id },
+    //     data: {
+    //       setupToken: null,
+    //       setupExpiry: null
+    //     }
+    //   })
+    // }
 
     // Send team invitations if any exist
     for (const invitation of business.TeamInvitation) {
