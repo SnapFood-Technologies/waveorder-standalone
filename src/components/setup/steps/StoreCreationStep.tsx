@@ -102,7 +102,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
+        // .replace(/^-|-$/g, '')
       
       setFormData(prev => ({ ...prev, [name]: cleanSlug }))
       
@@ -127,10 +127,12 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    const finalSlug = formData.storeSlug.replace(/^-|-$/g, '') // Clean edges only on submit
+
     onComplete({
       businessName: formData.businessName,
       whatsappNumber: `${formData.countryCode}${formData.whatsappNumber}`,
-      storeSlug: formData.storeSlug
+      storeSlug: finalSlug
     })
     setLoading(false)
   }
