@@ -75,8 +75,8 @@ export default function SetupComponent() {
     products: [],
     categories: [], // Add this
     deliveryMethods: {
-      delivery: false,
-      pickup: true,
+      delivery: true,
+      pickup: false,
       dineIn: false
     },
     paymentMethods: ['CASH'],
@@ -173,6 +173,7 @@ export default function SetupComponent() {
 
   const handleStepComplete = async (stepData: Partial<SetupData>) => {
     const updatedData = { ...setupData, ...stepData }
+    
     setSetupData(updatedData)
     
     // Save progress to backend

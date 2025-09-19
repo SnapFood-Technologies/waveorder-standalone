@@ -26,7 +26,6 @@ export default function Cookies() {
 
   const savePreferences = () => {
     // In a real implementation, this would save to localStorage or send to server
-    console.log('Saving cookie preferences:', preferences)
     setShowPreferences(false)
     alert('Cookie preferences saved successfully!')
   }

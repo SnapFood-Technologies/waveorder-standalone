@@ -129,7 +129,6 @@ export async function POST(request: NextRequest) {
 
       // Auto-reject high-confidence spam
       if (isSpam && spamScore > 0.8) {
-        console.log(`High-confidence spam blocked from ${email} (${ip})`)
         
         // Return success to avoid revealing spam detection
         return NextResponse.json({ 
