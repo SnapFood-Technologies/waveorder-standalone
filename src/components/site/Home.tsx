@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowRight, MessageSquare, Upload, ShoppingCart, BarChart, Smartphone, Zap, Check, Clock, CreditCard } from 'lucide-react'
 import Pricing from './Pricing'
 import FAQ from './FAQ'
+import DemoPreview from './DemoPreview'
 
 export default function Home() {
   return (
@@ -12,8 +13,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="pt-16 pb-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center mb-12">
-            <div>
+          <div className="grid lg:grid-cols-3 gap-16 items-center mb-12">
+            <div className="lg:col-span-2">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
                 WhatsApp Ordering for Restaurants
               </h1>
@@ -23,7 +24,7 @@ export default function Home() {
                 Perfect for restaurants, cafes, and food businesses. No expensive API required.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link 
                   href="/auth/register"
                   className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
@@ -39,18 +40,27 @@ export default function Home() {
                   View Demo
                 </Link>
               </div>
-            </div>
 
-            <div className="relative">
-              <div className="bg-gray-200 rounded-2xl h-96 flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <div className="w-16 h-16 bg-gray-300 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                    <Smartphone className="w-8 h-8" />
-                  </div>
-                  <p className="text-lg font-medium">Restaurant Catalog Demo</p>
-                  <p className="text-sm">Mobile-optimized ordering interface</p>
+              {/* Key Features List */}
+              <div className="space-y-3">
+                <div className="flex items-center text-gray-700">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 flex-shrink-0" />
+                  <span>No WhatsApp API fees - use your existing number</span>
+                </div>
+                <div className="flex items-center text-gray-700">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 flex-shrink-0" />
+                  <span>Beautiful mobile catalogs that convert</span>
+                </div>
+                <div className="flex items-center text-gray-700">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 flex-shrink-0" />
+                  <span>Orders arrive formatted and ready to fulfill</span>
                 </div>
               </div>
+            </div>
+
+            {/* Interactive Demo Preview */}
+            <div className="relative flex justify-center lg:justify-end">
+              <DemoPreview />
             </div>
           </div>
 

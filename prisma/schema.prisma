@@ -85,9 +85,10 @@ model Business {
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
 
   // Branding
-  primaryColor   String @default("#0D9488")
-  secondaryColor String @default("#1F2937")
-  fontFamily     String @default("Inter")
+  primaryColor        String  @default("#0D9488")
+  secondaryColor      String  @default("#1F2937")
+  fontFamily          String  @default("Inter")
+  whatsappButtonColor String? // Add this optional field
 
   // Settings
   currency       String @default("USD")
