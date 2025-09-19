@@ -11,22 +11,65 @@ interface StoreCreationStepProps {
   setupToken?: string | null
 }
 
-const COUNTRY_CODES = [
-  { code: '+355', country: 'AL', flag: '🇦🇱' },
-  { code: '+1', country: 'US', flag: '🇺🇸' }
-]
+// Function to detect if user is from Albania
+function detectAlbanianUser(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  // Check browser language
+  const browserLanguage = navigator.language.toLowerCase()
+  if (browserLanguage.startsWith('sq') || browserLanguage.includes('al')) {
+    return true
+  }
+  
+  // Check timezone (Albania uses Europe/Tirane)
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (timezone === 'Europe/Tirane') {
+      return true
+    }
+  } catch (error) {
+    // Timezone detection failed, ignore
+  }
+  
+  return false
+}
 
 export default function StoreCreationStep({ data, onComplete, onBack, setupToken }: StoreCreationStepProps) {
   const [formData, setFormData] = useState({
     businessName: data.businessName || '',
-    countryCode: '+355',
+    countryCode: '+1', // Default to US
     whatsappNumber: data.whatsappNumber?.replace(/^\+\d+/, '') || '',
     storeSlug: data.storeSlug || ''
   })
+  const [showAlbanianCode, setShowAlbanianCode] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
   const [hasUserChangedSlug, setHasUserChangedSlug] = useState(false)
+
+  // Detect Albanian user and set defaults
+  useEffect(() => {
+    const isAlbanianUser = detectAlbanianUser()
+    setShowAlbanianCode(isAlbanianUser)
+    
+    // Auto-select Albanian country code if detected and not already set
+    if (isAlbanianUser && !data.whatsappNumber) {
+      setFormData(prev => ({ ...prev, countryCode: '+355' }))
+    }
+  }, [data.whatsappNumber])
+
+  // Get visible country codes based on detection
+  const getVisibleCountryCodes = () => {
+    if (showAlbanianCode) {
+      return [
+        { code: '+355', country: 'AL', flag: '🇦🇱' },
+        { code: '+1', country: 'US', flag: '🇺🇸' }
+      ]
+    }
+    return [
+      { code: '+1', country: 'US', flag: '🇺🇸' }
+    ]
+  }
 
   // Generate slug from business name
   useEffect(() => {
@@ -97,12 +140,11 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     
     if (name === 'storeSlug') {
       setHasUserChangedSlug(true)
-      // Clean slug input
+      // Clean slug input - allow dashes while typing
       const cleanSlug = value
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, '')
         .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
       
       setFormData(prev => ({ ...prev, [name]: cleanSlug }))
       
@@ -127,10 +169,12 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
     
+    const finalSlug = formData.storeSlug.replace(/^-|-$/g, '') // Clean edges only on submit
+
     onComplete({
       businessName: formData.businessName,
       whatsappNumber: `${formData.countryCode}${formData.whatsappNumber}`,
-      storeSlug: formData.storeSlug
+      storeSlug: finalSlug
     })
     setLoading(false)
   }
@@ -145,9 +189,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
         <div className="order-2 lg:order-1">
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
-            <h1>
-  {data.businessName ? 'Update your store' : 'Create your store'}
-</h1>
+              {data.businessName ? 'Update your store' : 'Create your store'}
             </h1>
             <p className="text-base sm:text-lg text-gray-600">
               Set up your basic store information to get started
@@ -187,7 +229,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                   onChange={handleInputChange}
                   className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base sm:min-w-[100px]"
                 >
-                  {COUNTRY_CODES.map(country => (
+                  {getVisibleCountryCodes().map(country => (
                     <option key={country.code} value={country.code}>
                       {country.flag} {country.code}
                     </option>
@@ -255,16 +297,16 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
               </button>
               
               <button
-  type="button"
-  disabled={loading || !formData.businessName || !formData.whatsappNumber || !formData.storeSlug || slugAvailable === false}
-  onClick={handleSubmit}
-  className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
->
-  {loading 
-    ? (data.businessName ? 'Updating...' : 'Creating...') 
-    : (data.businessName ? 'Update Store' : 'Create Store')
-  }
-</button>
+                type="button"
+                disabled={loading || !formData.businessName || !formData.whatsappNumber || !formData.storeSlug || slugAvailable === false}
+                onClick={handleSubmit}
+                className="px-8 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors order-1 sm:order-2"
+              >
+                {loading 
+                  ? (data.businessName ? 'Updating...' : 'Creating...') 
+                  : (data.businessName ? 'Update Store' : 'Create Store')
+                }
+              </button>
             </div>
           </div>
         </div>

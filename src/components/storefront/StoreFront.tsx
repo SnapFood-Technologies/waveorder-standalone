@@ -195,255 +195,337 @@ function StoreClosure({ storeData, primaryColor, translations }) {
 
 // Enhanced Address Input with Autocomplete
  // @ts-ignore
-function AddressAutocomplete({ value, onChange, placeholder, required, primaryColor }) {
-  const inputRef = useRef(null)
-  const { isLoaded, initAutocomplete } = useGooglePlaces()
+ function AddressAutocomplete({ 
+    value, 
+    onChange, 
+    placeholder, 
+    required, 
+    primaryColor,
+    onLocationChange 
+  }: {
+    value: string
+    onChange: (address: string) => void
+    placeholder: string
+    required: boolean
+    primaryColor: string
+    onLocationChange?: (lat: number, lng: number) => void
+  }) {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const { isLoaded, initAutocomplete } = useGooglePlaces()
+    
+    useEffect(() => {
+      if (isLoaded) {
+        initAutocomplete(inputRef, (address: string, placeData: any) => {
+          onChange(address)
+          // Extract coordinates if available
+          if (placeData?.geometry?.location && onLocationChange) {
+            const lat = placeData.geometry.location.lat()
+            const lng = placeData.geometry.location.lng()
+            onLocationChange(lat, lng)
+          }
+        })
+      }
+    }, [isLoaded, onChange, onLocationChange])
   
-  useEffect(() => {
-    if (isLoaded) {
-         // @ts-ignore
-      initAutocomplete(inputRef, (address) => {
-        onChange(address)
-      })
-    }
-  }, [isLoaded, initAutocomplete, onChange])
-
-  return (
-    <input
-      ref={inputRef}
-      type="text"
-      required={required}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
-      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-      onFocus={(e) => e.target.style.borderColor = primaryColor}
-      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-      placeholder={placeholder}
-    />
-  )
-}
-
-// Time Selection Component
-function TimeSelection({ 
-     // @ts-ignore
-  deliveryType, 
-   // @ts-ignore
-  selectedTime, 
-   // @ts-ignore
-  onTimeChange, 
-   // @ts-ignore
-  storeData, 
-   // @ts-ignore
-  primaryColor, 
-   // @ts-ignore
-  translations 
-}) {
-  const [timeMode, setTimeMode] = useState('now') // 'now' or 'schedule'
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [showTimeDropdown, setShowTimeDropdown] = useState(false)
-  
-  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType)
-  
-  // Get next 7 days for date selection
-  const availableDates = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() + i)
-    return date
-  })
- // @ts-ignore
-  const handleTimeSelection = (mode, date = null, time = null) => {
-    setTimeMode(mode)
-    if (mode === 'now') {
-      onTimeChange('asap')
-    } else if (date && time) {
-      const dateTime = new Date(date)
-       // @ts-ignore
-      const [hours, minutes] = time.split(':')
-      dateTime.setHours(parseInt(hours), parseInt(minutes))
-      onTimeChange(dateTime.toISOString())
-    }
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        required={required}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+        onFocus={(e) => e.target.style.borderColor = primaryColor}
+        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+        placeholder={placeholder}
+      />
+    )
   }
 
-  const estimatedTime = deliveryType === 'delivery' 
-    ? storeData.estimatedDeliveryTime 
-    : storeData.estimatedPickupTime || '15-20 min'
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-3">
-        {deliveryType === 'delivery' ? translations.deliveryTime : 
-         deliveryType === 'pickup' ? translations.pickupTime : 
-         translations.arrivalTime || 'Time'}
-      </label>
-      
-      {/* Time Mode Selection */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <button
-          onClick={() => handleTimeSelection('now')}
-          className={`p-4 border-2 rounded-xl text-center transition-all ${
-            timeMode === 'now'
-              ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
-          }`}
-          style={{ 
-            backgroundColor: timeMode === 'now' ? primaryColor : 'white'
-          }}
-        >
-          <Clock className="w-5 h-5 mx-auto mb-2" />
-          <div className="text-sm font-medium">{translations.now || 'Now'}</div>
-          <div className="text-xs opacity-80">{estimatedTime}</div>
-        </button>
-        
-        <button
-          onClick={() => handleTimeSelection('schedule')}
-          className={`p-4 border-2 rounded-xl text-center transition-all ${
-            timeMode === 'schedule'
-              ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
-          }`}
-          style={{ 
-            backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
-          }}
-        >
-          <CalendarClock className="w-5 h-5 mx-auto mb-2" />
-          <div className="text-sm font-medium">{translations.schedule || 'Schedule'}</div>
-          <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
-        </button>
-      </div>
-
-      {/* Scheduled Time Selection */}
-      {timeMode === 'schedule' && (
-        <div className="space-y-4">
-          {/* Date Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translations.selectDate || 'Select Date'}
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {availableDates.slice(0, 4).map((date, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedDate(date)}
-                  className={`p-3 border-2 rounded-xl text-center transition-all ${
-                    selectedDate.toDateString() === date.toDateString()
-                      ? 'border-transparent text-white'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                  }`}
-                  style={{ 
-                    backgroundColor: selectedDate.toDateString() === date.toDateString() 
-                      ? primaryColor : 'white'
-                  }}
-                >
-                  <div className="text-sm font-medium">
-                    {index === 0 ? translations.today || 'Today' : 
-                     index === 1 ? translations.tomorrow || 'Tomorrow' :
-                     date.toLocaleDateString('en-US', { weekday: 'short' })}
-                  </div>
-                  <div className="text-xs opacity-80">
-                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </div>
-                </button>
-              ))}
+function StoreLocationMap({ storeData, primaryColor, translations }: { 
+    storeData: any, 
+    primaryColor: string, 
+    translations: any 
+  }) {
+    return (
+      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <div className="flex items-start">
+          <MapPin className="w-5 h-5 mt-1 mr-3 flex-shrink-0" style={{ color: primaryColor }} />
+          <div className="flex-1">
+            <h4 className="font-medium text-gray-900 mb-2">
+              {translations.pickupLocation || 'Pickup Location'}
+            </h4>
+            <p className="text-sm text-gray-600 mb-3">
+              {storeData.address}
+            </p>
+            
+            {/* Mini map placeholder */}
+            <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center mb-3">
+              <div className="text-center">
+                <MapPin className="w-6 h-6 mx-auto mb-1 text-gray-400" />
+                <p className="text-xs text-gray-500">{translations.mapView || 'Map View'}</p>
+              </div>
             </div>
-          </div>
-
-          {/* Time Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {translations.selectTime || 'Select Time'}
-            </label>
-            <div className="relative">
-              <button
-                onClick={() => setShowTimeDropdown(!showTimeDropdown)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-left flex items-center justify-between"
-                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              >
-                <span>{selectedTime && timeMode === 'schedule' ? 
-                  new Date(selectedTime).toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit', 
-                    hour12: true 
-                  }) : 
-                  translations.selectTime || 'Select Time'
-                }</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              
-              {showTimeDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                  {timeSlots.length > 0 ? timeSlots.map((slot, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                         // @ts-ignore
-                        handleTimeSelection('schedule', selectedDate, slot.value)
-                        setShowTimeDropdown(false)
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                    >
-                      {slot.label}
-                    </button>
-                  )) : (
-                    <div className="px-4 py-3 text-gray-500 text-center">
-                      {translations.noTimeSlots || 'No available time slots for this date'}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            
+            <p className="text-xs text-gray-500">
+              {translations.pickupInstructions || 'Please come to this location to collect your order.'}
+            </p>
           </div>
         </div>
-      )}
-    </div>
-  )
-}
+      </div>
+    )
+  }
 
-// Delivery Type Switcher Component
+  
+
+// Enhanced Time Selection Component with Dynamic Labels
+function TimeSelection({ 
+    deliveryType, 
+    selectedTime, 
+    onTimeChange, 
+    storeData, 
+    primaryColor, 
+    translations 
+  }: {
+    deliveryType: 'delivery' | 'pickup' | 'dineIn'
+    selectedTime: string
+    onTimeChange: (time: string) => void
+    storeData: any
+    primaryColor: string
+    translations: any
+  }) {
+    const [timeMode, setTimeMode] = useState('now')
+    const [selectedDate, setSelectedDate] = useState(new Date())
+    const [showTimeDropdown, setShowTimeDropdown] = useState(false)
+    
+    // Generate time slots (same as before)
+    const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType)
+    
+    const availableDates = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() + i)
+      return date
+    })
+  
+    const handleTimeSelection = (mode: string, date: Date | null = null, time: string | null = null) => {
+      setTimeMode(mode)
+      if (mode === 'now') {
+        onTimeChange('asap')
+      } else if (date && time) {
+        const dateTime = new Date(date)
+        const [hours, minutes] = time.split(':')
+        dateTime.setHours(parseInt(hours), parseInt(minutes))
+        onTimeChange(dateTime.toISOString())
+      }
+    }
+  
+    // Dynamic labels and estimated times based on delivery type
+    const getTimeLabels = () => {
+      switch (deliveryType) {
+        case 'delivery':
+          return {
+            timeLabel: translations.deliveryTime || 'Delivery Time',
+            nowLabel: translations.now || 'Now',
+            estimatedTime: storeData.estimatedDeliveryTime || '30-45 min'
+          }
+        case 'pickup':
+          return {
+            timeLabel: translations.pickupTime || 'Pickup Time',
+            nowLabel: translations.now || 'Now',
+            estimatedTime: storeData.estimatedPickupTime || '15-20 min'
+          }
+        case 'dineIn':
+          return {
+            timeLabel: translations.arrivalTime || 'Arrival Time',
+            nowLabel: translations.now || 'Now',
+            estimatedTime: '15-20 min'
+          }
+        default:
+          return {
+            timeLabel: translations.time || 'Time',
+            nowLabel: translations.now || 'Now',
+            estimatedTime: '15-20 min'
+          }
+      }
+    }
+  
+    const { timeLabel, nowLabel, estimatedTime } = getTimeLabels()
+  
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          {timeLabel}
+        </label>
+        
+        {/* Compact Time Mode Selection */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => handleTimeSelection('now')}
+            className={`p-3 border-2 rounded-xl text-center transition-all ${
+              timeMode === 'now'
+                ? 'text-white border-transparent'
+                : 'text-gray-700 border-gray-200 hover:border-gray-300'
+            }`}
+            style={{ 
+              backgroundColor: timeMode === 'now' ? primaryColor : 'white'
+            }}
+          >
+            <div className="flex items-center justify-center mb-1">
+              <Clock className="w-4 h-4 mr-1" />
+              <span className="text-sm font-medium">{nowLabel}</span>
+            </div>
+            <div className="text-xs opacity-80">{estimatedTime}</div>
+          </button>
+          
+          <button
+            onClick={() => handleTimeSelection('schedule')}
+            className={`p-3 border-2 rounded-xl text-center transition-all ${
+              timeMode === 'schedule'
+                ? 'text-white border-transparent'
+                : 'text-gray-700 border-gray-200 hover:border-gray-300'
+            }`}
+            style={{ 
+              backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
+            }}
+          >
+            <div className="flex items-center justify-center mb-1">
+              <CalendarClock className="w-4 h-4 mr-1" />
+              <span className="text-sm font-medium">{translations.schedule || 'Schedule'}</span>
+            </div>
+            <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
+          </button>
+        </div>
+  
+        {/* Scheduled Time Selection */}
+        {timeMode === 'schedule' && (
+          <div className="space-y-4">
+            {/* Date Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {translations.selectDate || 'Select Date'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {availableDates.slice(0, 4).map((date, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedDate(date)}
+                    className={`p-3 border-2 rounded-xl text-center transition-all ${
+                      selectedDate.toDateString() === date.toDateString()
+                        ? 'border-transparent text-white'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    }`}
+                    style={{ 
+                      backgroundColor: selectedDate.toDateString() === date.toDateString() 
+                        ? primaryColor : 'white'
+                    }}
+                  >
+                    <div className="text-sm font-medium">
+                      {index === 0 ? translations.today || 'Today' : 
+                       index === 1 ? translations.tomorrow || 'Tomorrow' :
+                       date.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </div>
+                    <div className="text-xs opacity-80">
+                      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+  
+            {/* Time Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {translations.selectTime || 'Select Time'}
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowTimeDropdown(!showTimeDropdown)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-left flex items-center justify-between"
+                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                >
+                  <span>{selectedTime && timeMode === 'schedule' ? 
+                    new Date(selectedTime).toLocaleTimeString('en-US', { 
+                      hour: 'numeric', 
+                      minute: '2-digit', 
+                      hour12: true 
+                    }) : 
+                    translations.selectTime || 'Select Time'
+                  }</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                
+                {showTimeDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {timeSlots.length > 0 ? timeSlots.map((slot, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          handleTimeSelection('schedule', selectedDate, slot.value)
+                          setShowTimeDropdown(false)
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        {slot.label}
+                      </button>
+                    )) : (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        {translations.noTimeSlots || 'No available time slots for this date'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+// Simple Delivery Switcher Component
 function DeliveryTypeSwitcher({
-     // @ts-ignore
+    // @ts-ignore
   deliveryType,
-   // @ts-ignore
+    // @ts-ignore
   setDeliveryType,
-   // @ts-ignore
+    // @ts-ignore
   deliveryOptions,
-   // @ts-ignore
+    // @ts-ignore
   primaryColor,
+    // @ts-ignore
   disabled = false
 }) {
   if (deliveryOptions.length <= 1) return null
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-4">
-      <h3 className="font-semibold text-lg mb-4">Order Type</h3>
-      <div className="grid grid-cols-2 gap-3">
-      {/* @ts-ignore */}
-        {deliveryOptions.map(option => {
-          const IconComponent = option.icon
-          return (
-            <button
-              key={option.key}
-              onClick={() => !disabled && setDeliveryType(option.key as any)}
-              disabled={disabled}
-              className={`p-4 border-2 rounded-xl text-center transition-all ${
-                deliveryType === option.key
-                  ? 'text-white'
-                  : 'text-gray-700 border-gray-200 hover:border-gray-300'
-              } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={{ 
-                backgroundColor: deliveryType === option.key ? primaryColor : 'white',
-                borderColor: deliveryType === option.key ? primaryColor : undefined
-              }}
-            >
-              <IconComponent className="w-5 h-5 mx-auto mb-2" />
-              <span className="text-sm font-medium">{option.label}</span>
-            </button>
-          )
-        })}
-      </div>
+    <div className="inline-flex bg-gray-100 p-1 rounded-full">
+        {/* @ts-ignore */}
+      {deliveryOptions.slice(0, 2).map(option => {
+        const IconComponent = option.icon
+        return (
+          <button
+            key={option.key}
+            onClick={() => !disabled && setDeliveryType(option.key)}
+            disabled={disabled}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 min-w-[80px] flex items-center justify-center ${
+              deliveryType === option.key
+                ? 'text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            style={{ 
+              backgroundColor: deliveryType === option.key ? primaryColor : 'transparent'
+            }}
+          >
+            <IconComponent className="w-4 h-4 mr-1" />
+            {option.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
+
 
 interface StoreData {
   id: string
@@ -730,10 +812,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const getDeliveryOptions = () => {
     const options = []
-    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: translations.delivery, icon: Truck })
+    if (storeData.deliveryEnabled) options.push({ key: 'delivery', label: translations.delivery, icon: Package })
     if (storeData.pickupEnabled) options.push({ key: 'pickup', label: translations.pickup, icon: Store })
     if (storeData.dineInEnabled) options.push({ key: 'dineIn', label: translations.dineIn, icon: UtensilsCrossed })
-    return options
+    console.log('getDeliveryOptions', options);
+        return options
   }
 
   return (
@@ -745,113 +828,127 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
         translations={translations} 
       />
 
-      {/* Header Section */}
-      <div className="bg-white">
-        <div className="max-w-6xl mx-auto">
-          {/* Cover Image Section */}
-          <div 
-            className="relative h-[250px] md:rounded-xl overflow-hidden"
-            style={{ 
-              background: storeData.coverImage 
-                ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
-                : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
-          >
-            {/* Icons in top right */}
-            <div className="absolute top-5 right-5 flex gap-3">
-              <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
-                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
-                 // @ts-ignore
-                onClick={() => document.querySelector('.search-input')?.focus()}
-                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
-              >
-                <Search className="w-4 h-4" />
-              </button>
-              <button 
-                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 bg-gray-600 bg-opacity-50 text-white md:text-current"
-                style={{ color: typeof window !== 'undefined' && window.innerWidth >= 768 ? primaryColor : 'white' }}
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
 
-          <div className="bg-white rounded-b-xl p-6 relative">
-            {/* Logo */}
-            <div 
-              className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
-              style={{ 
-                backgroundColor: 'white',
-                color: primaryColor
-              }}
-            >
-              {storeData.logo ? (
-                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
-              ) : (
-                storeData.name.charAt(0)
-              )}
-            </div>
+{/* Header Section */}
+<div className="bg-white">
+  <div className="max-w-6xl mx-auto">
+    {/* Cover Image Section */}
+    <div 
+      className="relative h-[250px] md:rounded-xl overflow-hidden"
+      style={{ 
+        background: storeData.coverImage 
+          ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
+          : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
+     {/* Icons in top right */}
+     
+{/* Icons in top right */}
+<div className="absolute top-5 right-5 flex gap-3">
+  <button 
+    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+  >
+    <Share2 className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
+  </button>
+  <button 
+    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+      // @ts-ignore
+    onClick={() => document.querySelector('.search-input')?.focus()}
+  >
+    <Search className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
+  </button>
+  <button 
+    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
+    style={{ backgroundColor: window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+  >
+    <Info className="w-4 h-4 text-white md:text-[var(--primary-color)]" style={{'--primary-color': 'white'} as React.CSSProperties} />
+  </button>
+</div>
+    </div>
 
-            <div className="pt-8">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  storeData.isOpen && !storeData.isTemporarilyClosed
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {storeData.isTemporarilyClosed 
-                   // @ts-ignore
-                    ? translations.temporarilyClosed 
-                    : storeData.isOpen ? translations.open : translations.closed}
+    <div className="bg-white rounded-b-xl p-6 relative">
+      {/* Logo */}
+      <div 
+        className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
+        style={{ 
+          backgroundColor: 'white',
+          color: primaryColor
+        }}
+      >
+        {storeData.logo ? (
+          <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
+        ) : (
+          storeData.name.charAt(0)
+        )}
+      </div>
+
+      <div className="pt-8">
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            storeData.isOpen && !storeData.isTemporarilyClosed
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {storeData.isTemporarilyClosed 
+              // @ts-ignore
+              ? translations.temporarilyClosed 
+              : storeData.isOpen ? translations.open : translations.closed}
+          </span>
+          
+          {/* ADD THE COMPACT SWITCHER HERE - Right side of title */}
+           <div className="ml-auto hidden lg:block">
+    <DeliveryTypeSwitcher
+      deliveryType={deliveryType}
+      setDeliveryType={setDeliveryType}
+      deliveryOptions={getDeliveryOptions()}
+      primaryColor={primaryColor}
+      disabled={storeData.isTemporarilyClosed}
+    />
+  </div>
+        </div>
+        
+        {storeData.description && (
+          <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
+        )}
+        
+        <div className="space-y-2 sm:space-y-0">
+          {/* Address - Full width on mobile */}
+          {storeData.address && (
+            <div className="flex items-center gap-1 text-gray-600">
+              <MapPin className="w-4 h-4 flex-shrink-0" />
+              <span className="text-sm">{storeData.address}</span>
+            </div>
+          )}
+          
+          {/* Time and Fee - Dynamic based on delivery type */}
+          <div className="flex items-center gap-5 text-gray-600">
+            {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">
+                  {deliveryType === 'delivery' 
+                    ? storeData.estimatedDeliveryTime 
+                    : storeData.estimatedPickupTime || '15-20 min'}
                 </span>
               </div>
-              
-              {storeData.description && (
-                <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
-              )}
-              
-              <div className="space-y-2 sm:space-y-0">
-                {/* Address - Full width on mobile */}
-                {storeData.address && (
-                  <div className="flex items-center gap-1 text-gray-600">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{storeData.address}</span>
-                  </div>
-                )}
-                
-                {/* Time and Fee - Dynamic based on delivery type */}
-                <div className="flex items-center gap-5 text-gray-600">
-                  {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">
-                        {deliveryType === 'delivery' 
-                          ? storeData.estimatedDeliveryTime 
-                          : storeData.estimatedPickupTime || '15-20 min'}
-                      </span>
-                    </div>
-                  )}
-                  {deliveryType === 'delivery' && storeData.deliveryFee > 0 && (
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">{currencySymbol}{storeData.deliveryFee.toFixed(2)} delivery</span>
-                    </div>
-                  )}
-                </div>
+            )}
+            {deliveryType === 'delivery' && storeData.deliveryFee > 0 && (
+              <div className="flex items-center gap-1">
+                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                <span className="text-sm">{currencySymbol}{storeData.deliveryFee.toFixed(2)} delivery</span>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 md:px-5 py-6 grid lg:grid-cols-3 gap-8">
@@ -1502,308 +1599,322 @@ function ProductModal({
   )
 }
 
-// Order Panel Component
 function OrderPanel({
-  storeData,
-  cart,
-  deliveryType,
-  setDeliveryType,
-  customerInfo,
-  setCustomerInfo,
-  cartSubtotal,
-  cartDeliveryFee,
-  cartTotal,
-  meetsMinimumOrder,
-  currencySymbol,
-  updateCartItemQuantity,
-  removeFromCart,
-  submitOrder,
-  isOrderLoading,
-  deliveryOptions,
-  primaryColor,
-  translations,
-  isMobile = false
-}: {
-  storeData: StoreData
-  cart: CartItem[]
-  deliveryType: 'delivery' | 'pickup' | 'dineIn'
-  setDeliveryType: (type: 'delivery' | 'pickup' | 'dineIn') => void
-  customerInfo: CustomerInfo
-  setCustomerInfo: (info: CustomerInfo) => void
-  cartSubtotal: number
-  cartDeliveryFee: number
-  cartTotal: number
-  meetsMinimumOrder: boolean
-  currencySymbol: string
-  updateCartItemQuantity: (itemId: string, change: number) => void
-  removeFromCart: (itemId: string) => void
-  submitOrder: () => void
-  isOrderLoading: boolean
-  deliveryOptions: Array<{ key: string; label: string; icon: any }>
-  primaryColor: string
-  translations: any
-  isMobile?: boolean
-}) {
-  return (
-    <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
-        
-        {/* Desktop Delivery Type Toggle */}
-        {!isMobile && deliveryOptions.length > 1 && (
-          <div className="mb-6">
-            <div className="grid grid-cols-2 gap-3">
-              {deliveryOptions.map(option => {
-                const IconComponent = option.icon
-                return (
-                  <button
-                    key={option.key}
-                    onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
-                    disabled={storeData.isTemporarilyClosed}
-                    className={`p-4 border-2 rounded-xl text-center transition-all ${
-                      deliveryType === option.key
-                        ? 'text-white'
-                        : 'text-gray-700 border-gray-200 hover:border-gray-300'
-                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    style={{ 
-                      backgroundColor: deliveryType === option.key ? primaryColor : 'white',
-                      borderColor: deliveryType === option.key ? primaryColor : undefined
-                    }}
-                  >
-                    <IconComponent className="w-5 h-5 mx-auto mb-2" />
-                    <span className="text-sm font-medium">{option.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Customer Information */}
-        <div className="space-y-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.name || 'Name'} *</label>
-            <input
-              type="text"
-              required
-              value={customerInfo.name}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              placeholder="Your full name"
-            />
-          </div>
+    storeData,
+    cart,
+    deliveryType,
+    setDeliveryType,
+    customerInfo,
+    setCustomerInfo,
+    cartSubtotal,
+    cartDeliveryFee,
+    cartTotal,
+    meetsMinimumOrder,
+    currencySymbol,
+    updateCartItemQuantity,
+    removeFromCart,
+    submitOrder,
+    isOrderLoading,
+    deliveryOptions,
+    primaryColor,
+    translations,
+    isMobile = false
+  }: {
+    storeData: any
+    cart: any[]
+    deliveryType: 'delivery' | 'pickup' | 'dineIn'
+    setDeliveryType: (type: 'delivery' | 'pickup' | 'dineIn') => void
+    customerInfo: any
+    setCustomerInfo: (info: any) => void
+    cartSubtotal: number
+    cartDeliveryFee: number
+    cartTotal: number
+    meetsMinimumOrder: boolean
+    currencySymbol: string
+    updateCartItemQuantity: (itemId: string, change: number) => void
+    removeFromCart: (itemId: string) => void
+    submitOrder: () => void
+    isOrderLoading: boolean
+    deliveryOptions: Array<{ key: string; label: string; icon: any }>
+    primaryColor: string
+    translations: any
+    isMobile?: boolean
+  }) {
+    const [customerLocation, setCustomerLocation] = useState<{lat: number, lng: number} | null>(null)
+  
+    const handleLocationChange = (lat: number, lng: number) => {
+      setCustomerLocation({ lat, lng })
+      // Here you could also calculate delivery fee based on distance/zones
+    }
+  
+    return (
+      <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.whatsappNumber || 'WhatsApp Number'} *</label>
-            <input
-              type="tel"
-              required
-              value={customerInfo.phone}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              placeholder="+1234567890"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.email || 'Email'}</label>
-            <input
-              type="email"
-              value={customerInfo.email}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              placeholder="your.email@example.com"
-            />
-          </div>
-
-          {deliveryType === 'delivery' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
-                <AddressAutocomplete
-                  value={customerInfo.address}
-                   // @ts-ignore
-                  onChange={(address) => setCustomerInfo({ ...customerInfo, address })}
-                  placeholder={translations.streetAddress || 'Street address'}
-                  required
-                  primaryColor={primaryColor}
-                />
+          {/* Desktop Delivery Type Toggle */}
+          {!isMobile && deliveryOptions.length > 1 && (
+            <div className="mb-6">
+              <div className={`grid gap-3 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                {deliveryOptions.map(option => {
+                  const IconComponent = option.icon
+                  return (
+                    <button
+                      key={option.key}
+                      onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
+                      disabled={storeData.isTemporarilyClosed}
+                      className={`p-4 border-2 rounded-xl text-center transition-all ${
+                        deliveryType === option.key
+                          ? 'text-white'
+                          : 'text-gray-700 border-gray-200 hover:border-gray-300'
+                      } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{ 
+                        backgroundColor: deliveryType === option.key ? primaryColor : 'white',
+                        borderColor: deliveryType === option.key ? primaryColor : undefined
+                      }}
+                    >
+                      <IconComponent className="w-5 h-5 mx-auto mb-2" />
+                      <span className="text-sm font-medium">{option.label}</span>
+                    </button>
+                  )
+                })}
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
-                <input
-                  type="text"
-                  value={customerInfo.address2}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  disabled={storeData.isTemporarilyClosed}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  placeholder={translations.apartment || 'Apartment, suite, etc.'}
-                />
-              </div>
-            </>
+            </div>
           )}
-
-          {/* Enhanced Time Selection */}
-          <TimeSelection
-            deliveryType={deliveryType}
-            selectedTime={customerInfo.deliveryTime}
-             // @ts-ignore
-            onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
-            storeData={storeData}
-            primaryColor={primaryColor}
-            translations={translations}
-          />
-        </div>
-
-        {/* Cart Items */}
-        {cart.length > 0 && (
-          <div className="border-t pt-6 mb-6">
-            <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm">{item.name}</h4>
-                    {item.modifiers.length > 0 && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        + {item.modifiers.map(m => m.name).join(', ')}
-                      </p>
-                    )}
-                    <p className="text-sm font-semibold mt-1">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
-                  </div>
-                  <div className="flex items-center space-x-2 ml-3">
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, -1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, 1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+  
+          {/* Customer Information */}
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{translations.name || 'Name'} *</label>
+              <input
+                type="text"
+                required
+                value={customerInfo.name}
+                onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                disabled={storeData.isTemporarilyClosed}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                placeholder="Your full name"
+              />
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{translations.whatsappNumber || 'WhatsApp Number'} *</label>
+              <input
+                type="tel"
+                required
+                value={customerInfo.phone}
+                onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                disabled={storeData.isTemporarilyClosed}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                placeholder="+1234567890"
+              />
+            </div>
+  
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{translations.email || 'Email'}</label>
+              <input
+                type="email"
+                value={customerInfo.email}
+                onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                disabled={storeData.isTemporarilyClosed}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                placeholder="your.email@example.com"
+              />
+            </div>
+  
+            {/* Conditional Address Fields - Only show for delivery */}
+            {deliveryType === 'delivery' ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
+                  <AddressAutocomplete
+                    value={customerInfo.address}
+                    onChange={(address) => setCustomerInfo({ ...customerInfo, address })}
+                    placeholder={translations.streetAddress || 'Street address'}
+                    required
+                    primaryColor={primaryColor}
+                    onLocationChange={handleLocationChange}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
+                  <input
+                    type="text"
+                    value={customerInfo.address2}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
+                    disabled={storeData.isTemporarilyClosed}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                    onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    placeholder={translations.apartment || 'Apartment, suite, etc.'}
+                  />
+                </div>
+              </>
+            ) : (
+              /* Show store location for pickup */
+              <StoreLocationMap 
+                storeData={storeData}
+                primaryColor={primaryColor}
+                translations={translations}
+              />
+            )}
+  
+            {/* Enhanced Time Selection with Dynamic Labels */}
+            <TimeSelection
+              deliveryType={deliveryType}
+              selectedTime={customerInfo.deliveryTime}
+              onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
+              storeData={storeData}
+              primaryColor={primaryColor}
+              translations={translations}
+            />
           </div>
-        )}
-
-        {/* Order Summary */}
-        {cart.length > 0 && (
-          <div className="border-t pt-6 mb-6">
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span>{translations.subtotal || 'Subtotal'}</span>
-                <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
+  
+          {/* Rest of the component remains the same - cart items, order summary, etc. */}
+          {cart.length > 0 && (
+            <div className="border-t pt-6 mb-6">
+              <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {cart.map(item => (
+                  <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      {item.modifiers.length > 0 && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          + {item.modifiers.map((m: any) => m.name).join(', ')}
+                        </p>
+                      )}
+                      <p className="text-sm font-semibold mt-1">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-3">
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, -1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, 1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => removeFromCart(item.id)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              {cartDeliveryFee > 0 && (
+            </div>
+          )}
+  
+          {/* Order Summary */}
+          {cart.length > 0 && (
+            <div className="border-t pt-6 mb-6">
+              <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span>{translations.deliveryFee || 'Delivery Fee'}</span>
-                  <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
+                  <span>{translations.subtotal || 'Subtotal'}</span>
+                  <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
                 </div>
-              )}
-              <div className="flex justify-between font-semibold text-lg border-t pt-3">
-                <span>{translations.total || 'Total'}</span>
-                <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
+                {cartDeliveryFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span>{deliveryType === 'delivery' ? (translations.deliveryFee || 'Delivery Fee') : (translations.serviceFee || 'Service Fee')}</span>
+                    <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold text-lg border-t pt-3">
+                  <span>{translations.total || 'Total'}</span>
+                  <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Minimum Order Warning */}
-        {!meetsMinimumOrder && deliveryType === 'delivery' && !storeData.isTemporarilyClosed && (
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
-            <p className="text-yellow-800 text-sm">
-              {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
-              Add {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} more to proceed.
-            </p>
-          </div>
-        )}
-
-        {/* Special Instructions */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">{translations.specialInstructions || 'Special Instructions'}</label>
-          <textarea
-            value={customerInfo.specialInstructions}
-            onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
-            disabled={storeData.isTemporarilyClosed}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-            onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-            rows={3}
-            placeholder={translations.anySpecialRequests || 'Any special requests...'}
-          />
-        </div>
-
-        {/* Payment Info */}
-        {storeData.paymentInstructions && !storeData.isTemporarilyClosed && (
-          <div className="bg-gray-50 p-4 rounded-xl mb-6">
-            <div className="flex items-start">
-              <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
-              <p className="text-sm text-gray-600">{storeData.paymentInstructions}</p>
+          )}
+  
+          {/* Minimum Order Warning - Only for delivery */}
+          {!meetsMinimumOrder && deliveryType === 'delivery' && !storeData.isTemporarilyClosed && (
+            <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
+              <p className="text-yellow-800 text-sm">
+                {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
+                Add {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} more to proceed.
+              </p>
             </div>
+          )}
+  
+          {/* Special Instructions */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.specialInstructions || 'Special Instructions'}</label>
+            <textarea
+              value={customerInfo.specialInstructions}
+              onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
+              disabled={storeData.isTemporarilyClosed}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              rows={3}
+              placeholder={translations.anySpecialRequests || 'Any special requests...'}
+            />
           </div>
-        )}
-
-        {/* Order Button */}
-        <button
-          onClick={submitOrder}
-          disabled={
-            isOrderLoading || 
-            cart.length === 0 || 
-            !meetsMinimumOrder || 
-            !customerInfo.name || 
-            !customerInfo.phone ||
-            storeData.isTemporarilyClosed
-          }
-          className="w-full py-4 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:opacity-90"
-          style={{ backgroundColor: primaryColor }}
-        >
-          {storeData.isTemporarilyClosed
-            ? (translations.storeTemporarilyClosed || 'Store Temporarily Closed')
-            : isOrderLoading 
-              ? (translations.placingOrder || 'Placing Order...') 
-              : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
-          }
-        </button>
-
-        <p className="text-xs text-gray-500 text-center mt-3">
-          {storeData.isTemporarilyClosed
-            ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
-            : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
-          }
-        </p>
+  
+          {/* Payment Info */}
+          {storeData.paymentInstructions && !storeData.isTemporarilyClosed && (
+            <div className="bg-gray-50 p-4 rounded-xl mb-6">
+              <div className="flex items-start">
+                <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-sm text-gray-600">{storeData.paymentInstructions}</p>
+              </div>
+            </div>
+          )}
+  
+          {/* Order Button */}
+          <button
+          // @ts-ignore
+            onClick={() => submitOrder(customerLocation)}
+            disabled={
+              isOrderLoading || 
+              cart.length === 0 || 
+              (deliveryType === 'delivery' && !meetsMinimumOrder) || 
+              !customerInfo.name || 
+              !customerInfo.phone ||
+              storeData.isTemporarilyClosed
+            }
+            className="w-full py-4 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:opacity-90"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {storeData.isTemporarilyClosed
+              ? (translations.storeTemporarilyClosed || 'Store Temporarily Closed')
+              : isOrderLoading 
+                ? (translations.placingOrder || 'Placing Order...') 
+                : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+            }
+          </button>
+  
+          <p className="text-xs text-gray-500 text-center mt-3">
+            {storeData.isTemporarilyClosed
+              ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
+              : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
+            }
+          </p>
+        </div>
       </div>
-    </div>
-  )
+    )
 }

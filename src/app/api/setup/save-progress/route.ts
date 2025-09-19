@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
           slug: data.storeSlug || `business-${Date.now()}`,
           businessType: data.businessType || 'OTHER',
           currency: data.currency || 'USD',
-          language: data.language || 'en', // NEW FIELD
+          language: data.language || 'en',
           whatsappNumber: data.whatsappNumber || '',
           onboardingStep: step,
           users: {
@@ -77,21 +77,30 @@ export async function POST(request: NextRequest) {
       if (data.storeSlug) updateData.slug = data.storeSlug
       if (data.businessType) updateData.businessType = data.businessType
       if (data.currency) updateData.currency = data.currency
-      if (data.language) updateData.language = data.language // NEW FIELD
+      if (data.language) updateData.language = data.language
       if (data.whatsappNumber) updateData.whatsappNumber = data.whatsappNumber
       if (data.businessGoals) updateData.businessGoals = data.businessGoals
       if (data.subscriptionPlan) updateData.subscriptionPlan = data.subscriptionPlan
       if (data.paymentMethods) updateData.paymentMethods = data.paymentMethods
       if (data.paymentInstructions !== undefined) updateData.paymentInstructions = data.paymentInstructions
 
-      // Handle delivery methods
+      // Handle delivery methods - Now properly dynamic for both delivery AND pickup
       if (data.deliveryMethods) {
-        updateData.deliveryEnabled = data.deliveryMethods.delivery || false
-        updateData.pickupEnabled = data.deliveryMethods.pickup || false
-        updateData.dineInEnabled = data.deliveryMethods.dineIn || false
-        updateData.deliveryFee = data.deliveryMethods.deliveryFee || 0
-        updateData.deliveryRadius = data.deliveryMethods.deliveryRadius || 10
-        updateData.estimatedDeliveryTime = data.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
+        updateData.deliveryEnabled = Boolean(data.deliveryMethods.delivery)
+        updateData.pickupEnabled = Boolean(data.deliveryMethods.pickup)
+        updateData.dineInEnabled = false // Disabled for v2
+        
+        // Only update delivery settings if delivery is enabled
+        if (data.deliveryMethods.delivery) {
+          updateData.deliveryFee = data.deliveryMethods.deliveryFee || 0
+          updateData.deliveryRadius = data.deliveryMethods.deliveryRadius || 10
+          updateData.estimatedDeliveryTime = data.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
+        }
+        
+        // Only update pickup settings if pickup is enabled
+        if (data.deliveryMethods.pickup) {
+          updateData.estimatedPickupTime = data.deliveryMethods.estimatedPickupTime || '15-20 minutes'
+        }
       }
 
       // Handle WhatsApp settings

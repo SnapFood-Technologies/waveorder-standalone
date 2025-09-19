@@ -216,7 +216,7 @@ export default async function StorePage({ params, searchParams }: PageProps) {
   const priceRange = getPriceRange(storeData.categories, storeData.currency)
   const primaryImage = storeData.coverImage || storeData.logo
   const businessDescription = isAlbanian && storeData.descriptionAl ? storeData.descriptionAl : storeData.description
-
+  console.log('s', storeData);
   return (
     <>
       <script
@@ -258,7 +258,7 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       {storeData.favicon && (
         <link rel="icon" href={storeData.favicon} />
       )}
-      
+    
       <StoreFront storeData={storeData} />
     </>
   )
