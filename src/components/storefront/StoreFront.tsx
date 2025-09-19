@@ -17,7 +17,8 @@ import {
   Phone,
   Info,
   Package,
-  AlertCircle
+  AlertCircle,
+  DollarSign
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 
@@ -146,10 +147,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const currencySymbol = getCurrencySymbol(storeData.currency)
   const translations = getStorefrontTranslations(storeData.language)
-  
-  // Use WaveOrder default color if no primary color is set
-//   const primaryColor = storeData.primaryColor || '#0D9488' // teal-600
-  const primaryColor = '#0D9488' // teal-600
+  const primaryColor = storeData.primaryColor || '#0D9488'
 
   // Calculate cart totals
   const cartSubtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -302,192 +300,201 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: storeData.fontFamily }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            {storeData.logo ? (
-              <img src={storeData.logo} alt={storeData.name} className="w-16 h-16 rounded-lg object-cover" />
-            ) : (
-              <div 
-                className="w-16 h-16 rounded-lg flex items-center justify-center text-white text-2xl font-bold"
-                style={{ backgroundColor: primaryColor }}
+    <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
+      {/* Header Section */}
+      <div className="bg-white">
+        <div className="max-w-6xl mx-auto">
+          {/* Cover Image Section */}
+          <div 
+            className="relative h-[250px] md:rounded-xl overflow-hidden md:rounded-xl"
+            style={{ 
+              background: storeData.coverImage 
+                ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
+                : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Icons in top right */}
+            <div className="absolute top-5 right-5 flex gap-3">
+              <button 
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
+                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
               >
-                {storeData.name.charAt(0)}
-              </div>
-            )}
-            
-            <div className="flex-1">
-              <div className="flex items-center space-x-3">
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900">{storeData.name}</h1>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  storeData.isOpen 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {storeData.isOpen ? translations.open : translations.closed}
-                </span>
-              </div>
-              {storeData.description && (
-                <p className="text-gray-600 mt-1 hidden sm:block">{storeData.description}</p>
-              )}
-              <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                {storeData.address && (
-                  <span className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {storeData.address}
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {/* Action buttons */}
-            <div className="hidden md:flex items-center space-x-2">
-              {storeData.phone && (
-                <a href={`tel:${storeData.phone}`} className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100">
-                  <Phone className="w-5 h-5" />
-                </a>
-              )}
-              <button className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100">
-                <Heart className="w-5 h-5" />
+                <Share2 className="w-4 h-4" />
               </button>
-              <button className="p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100">
-                <Share2 className="w-5 h-5" />
+              <button 
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
+                // @ts-ignore
+                onClick={() => document.querySelector('.search-input')?.focus()}
+                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
+              >
+                <Search className="w-4 h-4" />
+              </button>
+              <button 
+                className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20 md:text-current bg-gray-600 bg-opacity-50 text-white"
+                style={{ color: window.innerWidth >= 768 ? primaryColor : 'white' }}
+              >
+                <Info className="w-4 h-4" />
               </button>
             </div>
           </div>
-        </div>
-      </header>
 
-      {/* Banner */}
-      {storeData.coverImage && (
-        <div className="h-32 md:h-48 bg-cover bg-center relative" style={{ backgroundImage: `url(${storeData.coverImage})` }}>
-          <div className="h-full bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="text-center text-white">
-              <h2 className="text-xl md:text-3xl font-bold">{storeData.greetingMessage || translations.welcome}</h2>
-              {storeData.estimatedDeliveryTime && (
-                <p className="text-sm md:text-base mt-2 flex items-center justify-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  {translations.deliveryIn} {storeData.estimatedDeliveryTime}
-                </p>
-              )}
-            </div>
-          </div>
+          <div className="bg-white rounded-b-xl p-6 relative">
+  {/* Logo */}
+  <div 
+    className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
+    style={{ 
+      backgroundColor: 'white',
+      color: primaryColor
+    }}
+  >
+    {storeData.logo ? (
+      <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
+    ) : (
+      storeData.name.charAt(0)
+    )}
+  </div>
+
+  <div className="pt-8">
+    <div className="flex items-center gap-3 mb-2">
+      <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+        storeData.isOpen 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-red-100 text-red-800'
+      }`}>
+        {storeData.isOpen ? translations.open : translations.closed}
+      </span>
+    </div>
+    
+    {storeData.description && (
+      <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
+    )}
+    
+    <div className="space-y-2 sm:space-y-0">
+      {/* Address - Full width on mobile */}
+      {storeData.address && (
+        <div className="flex items-center gap-1 text-gray-600">
+          <MapPin className="w-4 h-4 flex-shrink-0" />
+          <span className="text-sm">{storeData.address}</span>
         </div>
       )}
+      
+      {/* Time and Fee - Same row on mobile */}
+      <div className="flex items-center gap-5 text-gray-600">
+        {storeData.estimatedDeliveryTime && (
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{storeData.estimatedDeliveryTime}</span>
+          </div>
+        )}
+        {storeData.deliveryFee > 0 && (
+          <div className="flex items-center gap-1">
+            <DollarSign className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{currencySymbol}{storeData.deliveryFee.toFixed(2)} delivery</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
+        </div>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Side - Menu */}
-          <div className="lg:col-span-2">
-            {/* Search & Filter */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={translations.search}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                  />
-                </div>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                >
-                  <option value="all">{translations.allCategories}</option>
-                  {storeData.categories.map(category => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 md:px-5 py-6 grid lg:grid-cols-3 gap-8">
+        {/* Left Side - Menu */}
+        <div className="lg:col-span-2">
+          {/* Search Section */}
+          <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder={translations.search || "Search for dishes, ingredients..."}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                onFocus={(e) => e.target.style.borderColor = primaryColor}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              />
             </div>
+          </div>
 
-            {/* Category Tabs */}
-            <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg overflow-x-auto">
+          {/* Category Tabs */}
+          <div className="flex gap-1 mb-6 overflow-x-auto">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
+                selectedCategory === 'all'
+                  ? 'border-b-2'
+                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+              }`}
+              style={{ 
+                color: selectedCategory === 'all' ? primaryColor : undefined,
+                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
+              }}
+            >
+              {translations.all || 'All'}
+            </button>
+            {storeData.categories.map(category => (
               <button
-                onClick={() => setSelectedCategory('all')}
-                className={`flex-shrink-0 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-                  selectedCategory === 'all'
-                    ? 'text-white shadow-sm'
-                    : 'text-gray-700 hover:bg-white'
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 ${
+                  selectedCategory === category.id
+                    ? 'border-b-2'
+                    : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
                 }`}
                 style={{ 
-                  backgroundColor: selectedCategory === 'all' ? primaryColor : 'transparent'
+                  color: selectedCategory === category.id ? primaryColor : undefined,
+                  borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
                 }}
               >
-                {translations.all}
+                {category.name}
               </button>
-              {storeData.categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`flex-shrink-0 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
-                    selectedCategory === category.id
-                      ? 'text-white shadow-sm'
-                      : 'text-gray-700 hover:bg-white'
-                  }`}
-                  style={{ 
-                    backgroundColor: selectedCategory === category.id ? primaryColor : 'transparent'
-                  }}
-                >
-                  {category.name}
-                </button>
-              ))}
-            </div>
+            ))}
+          </div>
 
-            {/* Products */}
-            <div className="space-y-8">
-              {selectedCategory === 'all' ? (
-                storeData.categories.length === 0 ? (
+          {/* Products Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {selectedCategory === 'all' ? (
+              storeData.categories.length === 0 ? (
+                <div className="col-span-full">
                   <EmptyState 
                     type="no-categories"
                     primaryColor={primaryColor}
                     translations={translations}
                   />
-                ) : storeData.categories.every(category => category.products.length === 0) ? (
+                </div>
+              ) : storeData.categories.every(category => category.products.length === 0) ? (
+                <div className="col-span-full">
                   <EmptyState 
                     type="no-products"
                     primaryColor={primaryColor}
                     translations={translations}
                   />
-                ) : (
-                  storeData.categories.map(category => (
-                    <div key={category.id}>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">{category.name}</h2>
-                      {category.products.length === 0 ? (
-                        <EmptyState 
-                          type="category-empty"
-                          primaryColor={primaryColor}
-                          translations={translations}
-                          onShowAll={() => setSelectedCategory('all')}
-                        />
-                      ) : (
-                        <div className="space-y-4">
-                          {category.products.map(product => (
-                            <ProductCard 
-                              key={product.id} 
-                              product={product} 
-                              onOpenModal={openProductModal}
-                              primaryColor={primaryColor}
-                              currencySymbol={currencySymbol}
-                              translations={translations}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                </div>
+              ) : (
+                storeData.categories.flatMap(category => 
+                  category.products.map(product => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      onOpenModal={openProductModal}
+                      primaryColor={primaryColor}
+                      currencySymbol={currencySymbol}
+                      translations={translations}
+                    />
                   ))
                 )
-              ) : (
-                filteredProducts.length === 0 ? (
-                  searchTerm ? (
+              )
+            ) : (
+              filteredProducts.length === 0 ? (
+                <div className="col-span-full">
+                  {searchTerm ? (
                     <EmptyState 
                       type="search-empty"
                       primaryColor={primaryColor}
@@ -502,57 +509,55 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                       translations={translations}
                       onShowAll={() => setSelectedCategory('all')}
                     />
-                  )
-                ) : (
-                  <div className="space-y-4">
-                    {filteredProducts.map(product => (
-                      <ProductCard 
-                        key={product.id} 
-                        product={product} 
-                        onOpenModal={openProductModal}
-                        primaryColor={primaryColor}
-                        currencySymbol={currencySymbol}
-                        translations={translations}
-                      />
-                    ))}
-                  </div>
-                )
-              )}
-            </div>
+                  )}
+                </div>
+              ) : (
+                filteredProducts.map(product => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onOpenModal={openProductModal}
+                    primaryColor={primaryColor}
+                    currencySymbol={currencySymbol}
+                    translations={translations}
+                  />
+                ))
+              )
+            )}
           </div>
+        </div>
 
-          {/* Right Side - Order Panel (Desktop) */}
-          <div className="hidden lg:block">
-            <OrderPanel 
-              storeData={storeData}
-              cart={cart}
-              deliveryType={deliveryType}
-              setDeliveryType={setDeliveryType}
-              customerInfo={customerInfo}
-              setCustomerInfo={setCustomerInfo}
-              cartSubtotal={cartSubtotal}
-              cartDeliveryFee={cartDeliveryFee}
-              cartTotal={cartTotal}
-              meetsMinimumOrder={meetsMinimumOrder}
-              currencySymbol={currencySymbol}
-              updateCartItemQuantity={updateCartItemQuantity}
-              removeFromCart={removeFromCart}
-              submitOrder={submitOrder}
-              isOrderLoading={isOrderLoading}
-              deliveryOptions={getDeliveryOptions()}
-              primaryColor={primaryColor}
-              translations={translations}
-            />
-          </div>
+        {/* Right Side - Order Panel (Desktop) */}
+        <div className="hidden lg:block">
+          <OrderPanel 
+            storeData={storeData}
+            cart={cart}
+            deliveryType={deliveryType}
+            setDeliveryType={setDeliveryType}
+            customerInfo={customerInfo}
+            setCustomerInfo={setCustomerInfo}
+            cartSubtotal={cartSubtotal}
+            cartDeliveryFee={cartDeliveryFee}
+            cartTotal={cartTotal}
+            meetsMinimumOrder={meetsMinimumOrder}
+            currencySymbol={currencySymbol}
+            updateCartItemQuantity={updateCartItemQuantity}
+            removeFromCart={removeFromCart}
+            submitOrder={submitOrder}
+            isOrderLoading={isOrderLoading}
+            deliveryOptions={getDeliveryOptions()}
+            primaryColor={primaryColor}
+            translations={translations}
+          />
         </div>
       </div>
 
       {/* Mobile Cart Bar */}
       {cartItemCount > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg p-4 z-50">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl p-4 z-50">
           <button
             onClick={() => setShowCartModal(true)}
-            className="w-full py-3 rounded-lg font-semibold text-white flex items-center justify-between"
+            className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-between shadow-lg"
             style={{ backgroundColor: primaryColor }}
           >
             <div className="flex items-center">
@@ -567,7 +572,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       {/* Mobile Cart Modal */}
       {showCartModal && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
-          <div className="bg-white w-full max-h-[80vh] rounded-t-2xl overflow-hidden">
+          <div className="bg-white w-full max-h-[85vh] rounded-t-3xl overflow-hidden">
             <div className="p-4 border-b flex items-center justify-between">
               <h2 className="text-lg font-semibold">{translations.yourOrder}</h2>
               <button
@@ -577,7 +582,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[calc(80vh-200px)]">
+            <div className="overflow-y-auto max-h-[calc(85vh-180px)]">
               <OrderPanel 
                 storeData={storeData}
                 cart={cart}
@@ -621,11 +626,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       )}
 
       {/* Powered by WaveOrder Footer */}
-      <footer className="bg-white border-t mt-12">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <footer className="bg-white mt-8">
+        <div className="max-w-6xl mx-auto px-5 py-6">
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              {translations.poweredBy}{' '}
+              {translations.poweredBy || 'Powered by'}{' '}
               <a 
                 href="https://waveorder.app" 
                 target="_blank" 
@@ -639,6 +644,20 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           </div>
         </div>
       </footer>
+
+      {/* Floating Cart Badge (Mobile) */}
+      {cartItemCount > 0 && (
+        <div 
+          className="lg:hidden fixed bottom-20 right-5 w-15 h-15 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40"
+          style={{ backgroundColor: primaryColor }}
+          onClick={() => setShowCartModal(true)}
+        >
+          <ShoppingCart className="w-6 h-6 text-white" />
+          <span className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+            {cartItemCount}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -662,42 +681,42 @@ function EmptyState({
       case 'no-categories':
         return {
           icon: Package,
-          title: translations.comingSoon,
-          description: translations.checkBackLater,
+          title: translations.comingSoon || 'Coming Soon',
+          description: translations.checkBackLater || 'Check back later for amazing products!',
           showActions: false
         }
       case 'no-products':
         return {
           icon: Package,
-          title: translations.comingSoon,
-          description: translations.checkBackLater,
+          title: translations.comingSoon || 'Coming Soon',
+          description: translations.checkBackLater || 'Check back later for amazing products!',
           showActions: false
         }
       case 'category-empty':
         return {
           icon: Package,
-          title: translations.noProductsInCategory,
-          description: translations.noProductsInCategoryDescription,
+          title: translations.noProductsInCategory || 'No products in this category',
+          description: translations.noProductsInCategoryDescription || 'This category is currently empty. Browse other categories or check back later.',
           showActions: true,
-          actionText: translations.browseAllProducts,
+          actionText: translations.browseAllProducts || 'Browse All Products',
           actionCallback: onShowAll
         }
       case 'search-empty':
         return {
           icon: AlertCircle,
-          title: translations.noProductsFound,
-          description: translations.noProductsFoundDescription,
+          title: translations.noProductsFound || 'No products found',
+          description: translations.noProductsFoundDescription || 'Try adjusting your search or browse our full menu.',
           showActions: true,
-          actionText: translations.tryDifferentSearch,
+          actionText: translations.tryDifferentSearch || 'Clear Search',
           actionCallback: onClearSearch,
-          secondaryActionText: translations.browseAllProducts,
+          secondaryActionText: translations.browseAllProducts || 'Browse All Products',
           secondaryActionCallback: onShowAll
         }
       default:
         return {
           icon: Package,
-          title: translations.comingSoon,
-          description: translations.checkBackLater,
+          title: translations.comingSoon || 'Coming Soon',
+          description: translations.checkBackLater || 'Check back later for amazing products!',
           showActions: false
         }
     }
@@ -732,7 +751,7 @@ function EmptyState({
             {content.actionCallback && (
               <button
                 onClick={content.actionCallback}
-                className="w-full sm:w-auto px-6 py-3 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
                 style={{ backgroundColor: primaryColor }}
               >
                 {content.actionText}
@@ -742,7 +761,7 @@ function EmptyState({
             {content.secondaryActionCallback && (
               <button
                 onClick={content.secondaryActionCallback}
-                className="block w-full sm:w-auto px-6 py-3 border-2 rounded-lg font-medium hover:bg-gray-50 transition-colors mx-auto"
+                className="block w-full sm:w-auto px-6 py-3 border-2 rounded-xl font-medium hover:bg-gray-50 transition-colors mx-auto"
                 style={{ borderColor: primaryColor, color: primaryColor }}
               >
                 {content.secondaryActionText}
@@ -772,52 +791,61 @@ function ProductCard({
   const hasVariantsOrModifiers = product.variants.length > 0 || product.modifiers.length > 0
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start space-x-4">
-        {product.images.length > 0 && (
-          <img 
-            src={product.images[0]} 
-            alt={product.name}
-            className="w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover flex-shrink-0"
-          />
-        )}
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 text-base md:text-lg">{product.name}</h3>
-              {product.description && (
-                <p className="text-gray-600 text-sm mt-1 line-clamp-2">{product.description}</p>
-              )}
-              
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="font-semibold text-lg" style={{ color: primaryColor }}>
-                  {currencySymbol}{product.price.toFixed(2)}
+    <div className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden">
+      <div className="flex items-center min-h-[120px]">
+        <div className="flex-1 p-5">
+          <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
+          {product.description && (
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-2">{product.description}</p>
+          )}
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-xl" style={{ color: primaryColor }}>
+                {currencySymbol}{product.price.toFixed(2)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-gray-500 line-through text-sm">
+                  {currencySymbol}{product.originalPrice.toFixed(2)}
                 </span>
-                {product.originalPrice && product.originalPrice > product.price && (
-                  <span className="text-gray-500 line-through text-sm">
-                    {currencySymbol}{product.originalPrice.toFixed(2)}
-                  </span>
-                )}
-              </div>
-              
-              {product.stock <= 5 && product.stock > 0 && (
-                <p className="text-orange-600 text-xs mt-1">{translations.onlyLeft} {product.stock} {translations.left}</p>
-              )}
-              {product.stock === 0 && (
-                <p className="text-red-600 text-xs mt-1">{translations.outOfStock}</p>
               )}
             </div>
             
             <button
               onClick={() => onOpenModal(product)}
               disabled={product.stock === 0}
-              className="ml-4 px-4 py-2 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
               style={{ backgroundColor: primaryColor }}
             >
-              {hasVariantsOrModifiers ? translations.customize : translations.add}
+              <Plus className="w-4 h-4" />
             </button>
           </div>
+
+          {product.stock <= 5 && product.stock > 0 && (
+            <p className="text-orange-600 text-xs mt-2">
+              {translations.onlyLeft || 'Only'} {product.stock} {translations.left || 'left'}
+            </p>
+          )}
+          {product.stock === 0 && (
+            <p className="text-red-600 text-xs mt-2">{translations.outOfStock || 'Out of stock'}</p>
+          )}
+        </div>
+        
+        <div className="w-30 h-30">
+          {product.images.length > 0 && (
+            <div className="relative w-30 h-30">
+              <img 
+                src={product.images[0]} 
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              {product.featured && (
+                <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                  {translations.popular || 'Popular'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -857,10 +885,10 @@ function ProductModal({
   const toggleModifier = (modifier: ProductModifier) => {
     // @ts-ignore
     setSelectedModifiers(prev => {
-        // @ts-ignore
+           // @ts-ignore
       const exists = prev.find(m => m.id === modifier.id)
       if (exists) {
-        // @ts-ignore
+           // @ts-ignore
         return prev.filter(m => m.id !== modifier.id)
       } else {
         return [...prev, modifier]
@@ -876,10 +904,10 @@ function ProductModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
         <div className="p-6 border-b flex items-center justify-between">
           <h2 className="text-xl font-semibold">{product.name}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -890,32 +918,35 @@ function ProductModal({
               <img 
                 src={product.images[0]} 
                 alt={product.name}
-                className="w-full h-48 object-cover rounded-lg mb-4"
+                className="w-full h-48 object-cover rounded-2xl mb-4"
               />
             )}
             
             {product.description && (
-              <p className="text-gray-600 mb-4">{product.description}</p>
+              <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
             )}
 
             {/* Variants */}
             {product.variants.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold mb-3">{translations.chooseSize}</h3>
-                <div className="space-y-2">
+                <h3 className="font-semibold text-lg mb-3">{translations.chooseSize || 'Choose Size'}</h3>
+                <div className="space-y-3">
                   {product.variants.map(variant => (
                     <button
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant)}
-                      className={`w-full p-3 border-2 rounded-lg text-left transition-colors ${
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
                         selectedVariant?.id === variant.id
-                          ? 'border-blue-500 bg-blue-50'
+                          ? 'border-2 bg-gray-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
+                      style={{
+                        borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                      }}
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{variant.name}</span>
-                        <span className="font-semibold">
+                        <span className="font-semibold" style={{ color: primaryColor }}>
                           {currencySymbol}{variant.price.toFixed(2)}
                         </span>
                       </div>
@@ -928,26 +959,29 @@ function ProductModal({
             {/* Modifiers */}
             {product.modifiers.length > 0 && (
               <div className="mb-6">
-                <h3 className="font-semibold mb-3">{translations.addExtras}</h3>
-                <div className="space-y-2">
+                <h3 className="font-semibold text-lg mb-3">{translations.addExtras || 'Add Extras'}</h3>
+                <div className="space-y-3">
                   {product.modifiers.map(modifier => (
                     <button
                       key={modifier.id}
                       onClick={() => toggleModifier(modifier)}
-                      className={`w-full p-3 border-2 rounded-lg text-left transition-colors ${
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
                         selectedModifiers.find(m => m.id === modifier.id)
-                          ? 'border-green-500 bg-green-50'
+                          ? 'border-2 bg-green-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
+                      style={{
+                        borderColor: selectedModifiers.find(m => m.id === modifier.id) ? '#10b981' : undefined
+                      }}
                     >
                       <div className="flex justify-between items-center">
                         <div>
                           <span className="font-medium">{modifier.name}</span>
                           {modifier.required && (
-                            <span className="text-red-500 text-sm ml-1">{translations.required}</span>
+                            <span className="text-red-500 text-sm ml-1">({translations.required || 'Required'})</span>
                           )}
                         </div>
-                        <span className="font-semibold">
+                        <span className="font-semibold text-green-600">
                           +{currencySymbol}{modifier.price.toFixed(2)}
                         </span>
                       </div>
@@ -959,20 +993,20 @@ function ProductModal({
 
             {/* Quantity */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-3">{translations.quantity}</h3>
-              <div className="flex items-center space-x-4">
+              <h3 className="font-semibold text-lg mb-3">{translations.quantity || 'Quantity'}</h3>
+              <div className="flex items-center justify-center space-x-6">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                 >
-                  <Minus className="w-4 h-4" />
+                  <Minus className="w-5 h-5" />
                 </button>
-                <span className="text-xl font-semibold">{quantity}</span>
+                <span className="text-2xl font-semibold w-12 text-center">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
+                  className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -981,17 +1015,17 @@ function ProductModal({
 
         <div className="p-6 border-t bg-gray-50">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-semibold">{translations.total}</span>
-            <span className="text-xl font-bold" style={{ color: primaryColor }}>
+            <span className="text-lg font-semibold">{translations.total || 'Total'}</span>
+            <span className="text-2xl font-bold" style={{ color: primaryColor }}>
               {currencySymbol}{totalPrice.toFixed(2)}
             </span>
           </div>
           <button
             onClick={handleAddToCart}
-            className="w-full py-3 rounded-lg text-white font-semibold"
+            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity"
             style={{ backgroundColor: primaryColor }}
           >
-            {translations.addToCart}
+            {translations.addToCart || 'Add to Cart'}
           </button>
         </div>
       </div>
@@ -1042,31 +1076,32 @@ function OrderPanel({
   isMobile?: boolean
 }) {
   return (
-    <div className={`${isMobile ? 'p-4' : 'sticky top-6'}`}>
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">{translations.orderDetails}</h2>
+    <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
+      <div className="bg-white rounded-2xl shadow-sm p-6">
+        <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
         {/* Delivery Type Toggle */}
         {deliveryOptions.length > 1 && (
           <div className="mb-6">
-            <div className="flex bg-gray-100 p-1 rounded-lg">
+            <div className="grid grid-cols-2 gap-3">
               {deliveryOptions.map(option => {
                 const IconComponent = option.icon
                 return (
                   <button
                     key={option.key}
                     onClick={() => setDeliveryType(option.key as any)}
-                    className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center ${
+                    className={`p-4 border-2 rounded-xl text-center transition-all ${
                       deliveryType === option.key
-                        ? 'text-white shadow-sm'
-                        : 'text-gray-700 hover:bg-white'
+                        ? 'text-white'
+                        : 'text-gray-700 border-gray-200 hover:border-gray-300'
                     }`}
                     style={{ 
-                      backgroundColor: deliveryType === option.key ? primaryColor : 'transparent'
+                      backgroundColor: deliveryType === option.key ? primaryColor : 'white',
+                      borderColor: deliveryType === option.key ? primaryColor : undefined
                     }}
                   >
-                    <IconComponent className="w-4 h-4 mr-1" />
-                    {option.label}
+                    <IconComponent className="w-5 h-5 mx-auto mb-2" />
+                    <span className="text-sm font-medium">{option.label}</span>
                   </button>
                 )
               })}
@@ -1077,39 +1112,45 @@ function OrderPanel({
         {/* Customer Information */}
         <div className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.name} *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.name || 'Name'} *</label>
             <input
               type="text"
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="Your full name"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.whatsappNumber} *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.whatsappNumber || 'WhatsApp Number'} *</label>
             <input
               type="tel"
               required
               value={customerInfo.phone}
               onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="+1234567890"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{translations.email}</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.email || 'Email'}</label>
             <input
               type="email"
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="your.email@example.com"
             />
           </div>
@@ -1117,43 +1158,49 @@ function OrderPanel({
           {deliveryType === 'delivery' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{translations.addressLine1} *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
                 <input
                   type="text"
                   required
                   value={customerInfo.address}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                  placeholder={translations.streetAddress}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                  onFocus={(e) => e.target.style.borderColor = primaryColor}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  placeholder={translations.streetAddress || 'Street address'}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{translations.addressLine2}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
                 <input
                   type="text"
                   value={customerInfo.address2}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
-                  placeholder={translations.apartment}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                  onFocus={(e) => e.target.style.borderColor = primaryColor}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  placeholder={translations.apartment || 'Apartment, suite, etc.'}
                 />
               </div>
             </>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {deliveryType === 'delivery' ? translations.deliveryTime : deliveryType === 'pickup' ? translations.pickupTime : translations.arrivalTime}
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {deliveryType === 'delivery' ? translations.deliveryTime : deliveryType === 'pickup' ? translations.pickupTime : translations.arrivalTime || 'Time'}
             </label>
             <select
               value={customerInfo.deliveryTime}
               onChange={(e) => setCustomerInfo({ ...customerInfo, deliveryTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             >
-              <option value="asap">{translations.asap} ({storeData.estimatedDeliveryTime || '30-45 ' + translations.mins})</option>
+              <option value="asap">{translations.asap || 'ASAP'} ({storeData.estimatedDeliveryTime || '30-45 min'})</option>
               <option value="1:00 PM">1:00 PM</option>
               <option value="1:30 PM">1:30 PM</option>
               <option value="2:00 PM">2:00 PM</option>
@@ -1165,39 +1212,39 @@ function OrderPanel({
 
         {/* Cart Items */}
         {cart.length > 0 && (
-          <div className="border-t pt-4 mb-6">
-            <h3 className="font-semibold mb-3">{translations.cartItems}</h3>
+          <div className="border-t pt-6 mb-6">
+            <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-sm">{item.name}</h4>
                     {item.modifiers.length > 0 && (
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 mt-1">
                         + {item.modifiers.map(m => m.name).join(', ')}
                       </p>
                     )}
-                    <p className="text-sm font-semibold">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+                    <p className="text-sm font-semibold mt-1">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center space-x-2 ml-3">
                     <button
                       onClick={() => updateCartItemQuantity(item.id, -1)}
-                      className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-4 h-4" />
                     </button>
-                    <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
+                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateCartItemQuantity(item.id, 1)}
-                      className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2"
+                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -1208,21 +1255,21 @@ function OrderPanel({
 
         {/* Order Summary */}
         {cart.length > 0 && (
-          <div className="border-t pt-4 mb-6">
-            <div className="space-y-2">
+          <div className="border-t pt-6 mb-6">
+            <div className="space-y-3">
               <div className="flex justify-between text-sm">
-                <span>{translations.subtotal}</span>
+                <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
               {cartDeliveryFee > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span>{translations.deliveryFee}</span>
+                  <span>{translations.deliveryFee || 'Delivery Fee'}</span>
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-lg border-t pt-2">
-                <span>{translations.total}</span>
-                <span>{currencySymbol}{cartTotal.toFixed(2)}</span>
+              <div className="flex justify-between font-semibold text-lg border-t pt-3">
+                <span>{translations.total || 'Total'}</span>
+                <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -1230,32 +1277,34 @@ function OrderPanel({
 
         {/* Minimum Order Warning */}
         {!meetsMinimumOrder && deliveryType === 'delivery' && (
-          <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mb-4">
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
             <p className="text-yellow-800 text-sm">
-              {translations.minimumOrder} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery} 
-              {translations.moreTo.replace('Add', '').replace('more', '')} {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} {translations.moreTo.split('Add')[1]}
+              {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
+              Add {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} more to proceed.
             </p>
           </div>
         )}
 
         {/* Special Instructions */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{translations.specialInstructions}</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{translations.specialInstructions || 'Special Instructions'}</label>
           <textarea
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
-            style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none"
+            style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+            onFocus={(e) => e.target.style.borderColor = primaryColor}
+            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             rows={3}
-            placeholder={translations.anySpecialRequests}
+            placeholder={translations.anySpecialRequests || 'Any special requests...'}
           />
         </div>
 
         {/* Payment Info */}
         {storeData.paymentInstructions && (
-          <div className="bg-gray-50 p-3 rounded-lg mb-4">
+          <div className="bg-gray-50 p-4 rounded-xl mb-6">
             <div className="flex items-start">
-              <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2" />
+              <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
               <p className="text-sm text-gray-600">{storeData.paymentInstructions}</p>
             </div>
           </div>
@@ -1265,14 +1314,17 @@ function OrderPanel({
         <button
           onClick={submitOrder}
           disabled={isOrderLoading || cart.length === 0 || !meetsMinimumOrder || !customerInfo.name || !customerInfo.phone}
-          className="w-full py-3 rounded-lg text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="w-full py-4 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:opacity-90"
           style={{ backgroundColor: primaryColor }}
         >
-          {isOrderLoading ? translations.placingOrder : `${translations.orderViaWhatsapp} - ${currencySymbol}${cartTotal.toFixed(2)}`}
+          {isOrderLoading 
+            ? (translations.placingOrder || 'Placing Order...') 
+            : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+          }
         </button>
 
-        <p className="text-xs text-gray-500 text-center mt-2">
-          {translations.clickingButton}
+        <p className="text-xs text-gray-500 text-center mt-3">
+          {translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.'}
         </p>
       </div>
     </div>
