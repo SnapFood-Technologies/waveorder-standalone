@@ -4,6 +4,82 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// Helper function to calculate distance between two points
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLng = deg2rad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
+function deg2rad(deg: number): number {
+  return deg * (Math.PI / 180);
+}
+
+// Zone-based delivery fee calculation
+async function calculateDeliveryFee(
+  storeId: string, 
+  customerLat: number, 
+  customerLng: number
+): Promise<number> {
+  try {
+    // Get store location and delivery zones
+    const business = await prisma.business.findUnique({
+      where: { id: storeId },
+      select: {
+        deliveryFee: true,
+        deliveryRadius: true,
+        address: true,
+        storeLatitude: true,
+        storeLongitude: true,
+      }
+    });
+
+    if (!business) {
+      throw new Error('Business not found');
+    }
+
+    // Use actual store coordinates from database with fallback
+    const storeLatitude = business.storeLatitude || 41.3275; // Default to Tirana coordinates
+    const storeLongitude = business.storeLongitude || 19.8187;
+
+    const distanceKm = calculateDistance(
+      storeLatitude,
+      storeLongitude,
+      customerLat,
+      customerLng
+    );
+
+    // Check if within delivery radius
+    if (distanceKm > business.deliveryRadius) {
+      throw new Error('Address is outside delivery area');
+    }
+
+    // Simple zone-based pricing
+    if (distanceKm <= 2) {
+      return business.deliveryFee; // Base fee for close deliveries
+    } else if (distanceKm <= 5) {
+      return business.deliveryFee * 1.5; // 1.5x for medium distance
+    } else {
+      return business.deliveryFee * 2; // 2x for far deliveries
+    }
+  } catch (error) {
+    console.error('Error calculating delivery fee:', error);
+    // Return default fee if calculation fails
+    const business = await prisma.business.findUnique({
+      where: { id: storeId },
+      select: { deliveryFee: true }
+    });
+    return business?.deliveryFee || 0;
+  }
+}
+
 const messageTerms = {
   en: {
     RESTAURANT: {
@@ -14,11 +90,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
       deliveryTime: 'Delivery Time',
       pickupTime: 'Pickup Time',
+      arrivalTime: 'Arrival Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Dine In'
     },
     CAFE: {
       order: 'Order',
@@ -28,11 +110,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
       deliveryTime: 'Delivery Time',
       pickupTime: 'Pickup Time',
+      arrivalTime: 'Arrival Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Dine In'
     },
     RETAIL: {
       order: 'Order',
@@ -42,11 +130,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Shipping Address',
+      pickupLocation: 'Pickup Location',
       deliveryTime: 'Shipping Time',
       pickupTime: 'Pickup Time',
+      arrivalTime: 'Visit Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Shipping',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Visit'
     },
     GROCERY: {
       order: 'Order',
@@ -56,11 +150,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
       deliveryTime: 'Delivery Time',
       pickupTime: 'Pickup Time',
+      arrivalTime: 'Visit Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Visit'
     },
     JEWELRY: {
       order: 'Order',
@@ -70,11 +170,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Shipping Address',
+      pickupLocation: 'Store Location',
       deliveryTime: 'Shipping Time',
       pickupTime: 'Appointment Time',
+      arrivalTime: 'Appointment Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Service Type',
+      delivery_type: 'Shipping',
+      pickup_type: 'Store Visit',
+      dineIn_type: 'Consultation'
     },
     FLORIST: {
       order: 'Order',
@@ -84,11 +190,17 @@ const messageTerms = {
       customer: 'Customer',
       phone: 'Phone',
       deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
       deliveryTime: 'Delivery Time',
       pickupTime: 'Pickup Time',
+      arrivalTime: 'Visit Time',
       payment: 'Payment',
       notes: 'Notes',
-      asap: 'ASAP'
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Visit'
     }
   },
   sq: {
@@ -100,11 +212,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
       deliveryTime: 'Koha e Dorëzimit',
       pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Arritjes',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Në Lokal'
     },
     CAFE: {
       order: 'Porosia',
@@ -114,11 +232,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
       deliveryTime: 'Koha e Dorëzimit',
       pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Arritjes',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Në Lokal'
     },
     RETAIL: {
       order: 'Porosia',
@@ -128,11 +252,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dërgimit',
+      pickupLocation: 'Vendi i Marrjes',
       deliveryTime: 'Koha e Dërgimit',
       pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Vizitës',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dërgim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Vizitë'
     },
     GROCERY: {
       order: 'Porosia',
@@ -142,11 +272,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
       deliveryTime: 'Koha e Dorëzimit',
       pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Vizitës',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Vizitë'
     },
     JEWELRY: {
       order: 'Porosia',
@@ -156,11 +292,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dërgimit',
+      pickupLocation: 'Vendndodhja e Dyqanit',
       deliveryTime: 'Koha e Dërgimit',
       pickupTime: 'Koha e Takimit',
+      arrivalTime: 'Koha e Takimit',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Shërbimit',
+      delivery_type: 'Dërgim',
+      pickup_type: 'Vizitë në Dyqan',
+      dineIn_type: 'Konsultim'
     },
     FLORIST: {
       order: 'Porosia',
@@ -170,11 +312,17 @@ const messageTerms = {
       customer: 'Klienti',
       phone: 'Telefoni',
       deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
       deliveryTime: 'Koha e Dorëzimit',
       pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Vizitës',
       payment: 'Pagesa',
       notes: 'Shënime',
-      asap: 'SA MË SHPEJT'
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Vizitë'
     }
   }
 }
@@ -206,6 +354,8 @@ export async function POST(
       deliveryTime,
       paymentMethod,
       specialInstructions,
+      latitude,
+      longitude,
       items,
       subtotal,
       deliveryFee,
@@ -213,6 +363,44 @@ export async function POST(
       discount,
       total
     } = orderData
+
+    // Validate delivery type is enabled
+    if (deliveryType === 'delivery' && !business.deliveryEnabled) {
+      return NextResponse.json({ error: 'Delivery not available' }, { status: 400 })
+    }
+    if (deliveryType === 'pickup' && !business.pickupEnabled) {
+      return NextResponse.json({ error: 'Pickup not available' }, { status: 400 })
+    }
+    if (deliveryType === 'dineIn' && !business.dineInEnabled) {
+      return NextResponse.json({ error: 'Dine-in not available' }, { status: 400 })
+    }
+
+    // Validate required fields based on delivery type
+    if (deliveryType === 'delivery' && (!deliveryAddress || !latitude || !longitude)) {
+      return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
+    }
+
+    // Calculate and validate delivery fee for delivery orders
+    let finalDeliveryFee = deliveryFee || 0
+    if (deliveryType === 'delivery' && latitude && longitude) {
+      try {
+        finalDeliveryFee = await calculateDeliveryFee(business.id, latitude, longitude)
+        
+        // Validate the calculated fee matches what client sent (within small tolerance)
+        if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
+          return NextResponse.json({ 
+            error: 'Delivery fee mismatch',
+            calculatedFee: finalDeliveryFee 
+          }, { status: 400 })
+        }
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Address is outside delivery area') {
+          return NextResponse.json({ error: 'Address is outside our delivery area' }, { status: 400 })
+        }
+        // Use provided fee if calculation fails
+        finalDeliveryFee = deliveryFee || business.deliveryFee
+      }
+    }
 
     // Find or create customer
     let customer = await prisma.customer.findFirst({
@@ -228,8 +416,18 @@ export async function POST(
           name: customerName,
           phone: customerPhone,
           email: customerEmail,
-          address: deliveryAddress,
+          address: deliveryType === 'delivery' ? deliveryAddress : null,
           businessId: business.id
+        }
+      })
+    } else {
+      // Update customer info if changed
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          name: customerName,
+          email: customerEmail || customer.email,
+          address: deliveryType === 'delivery' ? deliveryAddress : customer.address
         }
       })
     }
@@ -240,7 +438,7 @@ export async function POST(
     })
     const orderNumber = business.orderNumberFormat.replace('{number}', (orderCount + 1).toString())
 
-    // Create order
+    // Create order with enhanced data
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -249,15 +447,18 @@ export async function POST(
         customerId: customer.id,
         businessId: business.id,
         subtotal,
-        deliveryFee: deliveryFee || 0,
+        deliveryFee: finalDeliveryFee,
         tax: tax || 0,
         discount: discount || 0,
         total,
-        deliveryAddress,
+        deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
         deliveryTime: deliveryTime ? new Date(deliveryTime) : null,
         notes: specialInstructions,
         paymentMethod,
-        paymentStatus: 'PENDING'
+        paymentStatus: 'PENDING',
+        // Store coordinates for delivery orders
+        customerLatitude: deliveryType === 'delivery' && latitude ? latitude : null,
+        customerLongitude: deliveryType === 'delivery' && longitude ? longitude : null,
       }
     })
 
@@ -275,19 +476,25 @@ export async function POST(
       })
     }
 
-    // Format WhatsApp message
+    // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({
       business,
       order,
       customer,
       items,
-      orderData
+      orderData: {
+        ...orderData,
+        deliveryFee: finalDeliveryFee,
+        latitude,
+        longitude
+      }
     })
 
     return NextResponse.json({
       success: true,
       orderId: order.id,
       orderNumber: order.orderNumber,
+      calculatedDeliveryFee: finalDeliveryFee,
       whatsappUrl: `https://wa.me/${business.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
     })
 
@@ -310,6 +517,10 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
   
   let message = `*${terms.order} ${order.orderNumber}*\n\n`
+  
+  // Add order type prominently
+  const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
+  message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
   
   // Items
   items.forEach((item: any) => {
@@ -337,29 +548,48 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
   
   message += `---\n`
-  message += `${terms.customer}: ${customer.name}\n`
-  message += `${terms.phone}: ${customer.phone}\n`
+  message += `👤 ${terms.customer}: ${customer.name}\n`
+  message += `📞 ${terms.phone}: ${customer.phone}\n`
   
+  // Enhanced location/time handling based on delivery type
   if (orderData.deliveryType === 'delivery') {
-    message += `${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
-    message += `${terms.deliveryTime}: ${orderData.deliveryTime || terms.asap}\n`
-  } else {
-    const timeLabel = businessType === 'JEWELRY' && orderData.deliveryType === 'pickup' 
-      ? terms.pickupTime 
-      : terms.pickupTime
-    message += `${timeLabel}: ${orderData.deliveryTime || terms.asap}\n`
+    message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
+    
+    // Add coordinates for delivery (helpful for delivery tracking)
+    if (orderData.latitude && orderData.longitude) {
+      message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
+    }
+    
+    const timeLabel = terms.deliveryTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
+  } else if (orderData.deliveryType === 'pickup') {
+    message += `🏪 ${terms.pickupLocation}: ${business.address}\n`
+    
+    const timeLabel = terms.pickupTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
+  } else if (orderData.deliveryType === 'dineIn') {
+    message += `🍽️ ${business.address}\n`
+    
+    const timeLabel = terms.arrivalTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
   }
   
-  message += `${terms.payment}: ${orderData.paymentMethod}\n`
+  message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
   
   if (orderData.specialInstructions) {
-    message += `${terms.notes}: ${orderData.specialInstructions}\n`
+    message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
   }
   
   message += `\n---\n`
-  message += `${business.name}\n`
+  message += `🏪 ${business.name}\n`
   if (business.website) {
-    message += `${business.website}\n`
+    message += `🌐 ${business.website}\n`
   }
   
   return message
@@ -371,5 +601,47 @@ function getCurrencySymbol(currency: string) {
     case 'EUR': return '€'
     case 'ALL': return 'L'
     default: return '$'
+  }
+}
+
+// Delivery Fee Calculation API Route
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const { slug } = await context.params
+    const { customerLat, customerLng } = await request.json()
+
+    // Find business
+    const business = await prisma.business.findUnique({
+      where: { slug, isActive: true },
+      select: { id: true }
+    })
+
+    if (!business) {
+      return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
+
+    const deliveryFee = await calculateDeliveryFee(business.id, customerLat, customerLng)
+
+    return NextResponse.json({
+      success: true,
+      deliveryFee
+    })
+
+  } catch (error) {
+    console.error('Delivery fee calculation error:', error)
+    
+    if (error instanceof Error && error.message === 'Address is outside delivery area') {
+      return NextResponse.json({ 
+        error: 'Address is outside our delivery area' 
+      }, { status: 400 })
+    }
+    
+    return NextResponse.json(
+      { error: 'Failed to calculate delivery fee' },
+      { status: 500 }
+    )
   }
 }
