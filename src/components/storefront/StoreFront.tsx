@@ -1884,15 +1884,15 @@ function EmptyState({
           actionText: translations.browseAllProducts || 'Browse All Products',
           actionCallback: onShowAll
         }
-      case 'search-empty':
+        case 'search-empty':
         return {
             icon: Search,
-            title: `No results for "${searchTerm}"`,
-            description: 'Try a different search term or browse all products',
+            title: `${translations.noProductsFound || 'No results found'} "${searchTerm}"`,
+            description: translations.noProductsFoundDescription || 'Try a different search term or browse all products',
             showActions: true,
-            actionText: 'Clear Search',
+            actionText: translations.tryDifferentSearch || 'Clear Search',
             actionCallback: onClearSearch,
-            secondaryActionText: 'Browse All Products',
+            secondaryActionText: translations.browseAllProducts || 'Browse All Products',
             secondaryActionCallback: onShowAll
         }
       default:
