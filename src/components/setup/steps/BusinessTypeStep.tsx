@@ -33,7 +33,7 @@ const businessTypes = [
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 
-const currencies = [
+const allCurrencies = [
   { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
   { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro },
   { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote }
@@ -74,6 +74,24 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
   const [showAlbanian, setShowAlbanian] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // Get available currencies based on location
+  const getAvailableCurrencies = () => {
+    if (showAlbanian) {
+      // Show Albanian Lek first for Albanian users, then USD and EUR
+      return [
+        { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote },
+        { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
+        { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro }
+      ]
+    } else {
+      // Show only USD and EUR for non-Albanian users
+      return [
+        { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
+        { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro }
+      ]
+    }
+  }
+
   useEffect(() => {
     // Detect if user should see Albanian option
     const isAlbanianUser = detectAlbanianUser()
@@ -99,6 +117,8 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
     })
     setLoading(false)
   }
+
+  const availableCurrencies = getAvailableCurrencies()
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -174,11 +194,13 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
           </div>
         </div>
 
-        {/* Currency Selection */}
+        {/* Currency Selection - Location-based filtering */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Currency</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            {currencies.map((currency) => {
+          <div className={`grid grid-cols-1 gap-3 sm:gap-4 ${
+            availableCurrencies.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+          }`}>
+            {availableCurrencies.map((currency) => {
               const IconComponent = currency.icon
               return (
                 <button
@@ -212,6 +234,14 @@ export default function BusinessTypeStep({ data, onComplete }: BusinessTypeStepP
               )
             })}
           </div>
+          
+          {/* Location indicator for Albanian users */}
+          {showAlbanian && (
+            <div className="mt-3 text-sm text-gray-500 flex items-center">
+              <Globe className="w-4 h-4 mr-1" />
+              <span>Showing currencies for your region</span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end">

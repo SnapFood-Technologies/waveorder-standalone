@@ -94,7 +94,6 @@ export async function POST(request: NextRequest) {
           inviteUrl
         })
         
-        console.log(`Invitation sent to ${invitation.email}`)
       } catch (emailError) {
         console.error(`Failed to send invitation to ${invitation.email}:`, emailError)
       }
