@@ -313,17 +313,17 @@ model Customer {
 
   // Enhanced address structure
   addressJson Json? // {
-    // "street": "123 Main St",
-    // "additional": "Apt 4B", 
-    // "zipCode": "12345",
-    // "city": "New York",
-    // "country": "USA",
-    // "latitude": 40.7128,
-    // "longitude": -74.0060
+  // "street": "123 Main St",
+  // "additional": "Apt 4B", 
+  // "zipCode": "12345",
+  // "city": "New York",
+  // "country": "USA",
+  // "latitude": 40.7128,
+  // "longitude": -74.0060
   // }
 
   // Admin and management fields
-  addedByAdmin Boolean @default(false)
+  addedByAdmin Boolean  @default(false)
   tags         String[] // ["vip", "frequent", "wholesale", etc.]
   notes        String?
 
