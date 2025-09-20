@@ -2027,7 +2027,7 @@ function ProductCard({
                 
                 <button
                   onClick={() => !disabled && onOpenModal(product)}
-                //   disabled={disabled || product.stock === 0}
+                  disabled={disabled || product.stock === 0}
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
                   style={{ backgroundColor: primaryColor }}
                 >
