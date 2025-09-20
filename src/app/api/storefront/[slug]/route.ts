@@ -180,7 +180,8 @@ export async function GET(
       primaryColor: business.primaryColor,
       secondaryColor: business.secondaryColor,
       fontFamily: business.fontFamily,
-      whatsappButtonColor: business.whatsappButtonColor, // Add this line
+      whatsappButtonColor: business.whatsappButtonColor,
+      mobileCartStyle: business.mobileCartStyle,
       // Settings
       currency: business.currency,
       timezone: business.timezone,
