@@ -46,10 +46,32 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
       case 'confirmed': return 'text-blue-600 bg-blue-100'
       case 'preparing': return 'text-orange-600 bg-orange-100'
       case 'ready': return 'text-green-600 bg-green-100'
+      case 'out_for_delivery': return 'text-cyan-600 bg-cyan-100'
       case 'delivered': return 'text-emerald-600 bg-emerald-100'
       case 'cancelled': return 'text-red-600 bg-red-100'
+      case 'refunded': return 'text-gray-600 bg-gray-100'
       default: return 'text-gray-600 bg-gray-100'
     }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`
+    
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `${diffInDays}d ago`
+    
+    return date.toLocaleDateString()
+  }
+
+  const formatStatus = (status: string) => {
+    return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   if (loading) {
@@ -88,31 +110,50 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/admin/stores/${businessId}/orders/${order.id}`}
-              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5 text-teal-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{order.orderNumber}</p>
-                  <p className="text-sm text-gray-600">{order.customerName}</p>
-                </div>
-              </div>
-              
-              <div className="text-right">
-                <p className="font-medium text-gray-900">${order.total.toFixed(2)}</p>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                  {order.status}
-                </span>
-              </div>
-            </Link>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Order</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Customer</th>
+                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Status</th>
+                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Total</th>
+                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {orders.map((order) => (
+                <tr key={order.id} className="hover:bg-gray-50 cursor-pointer">
+                  <td className="py-3 px-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="w-4 h-4 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-3">
+                    <p className="text-sm text-gray-900 truncate">{order.customerName}</p>
+                  </td>
+                  <td className="py-3 px-3 text-center">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      {formatStatus(order.status)}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <p className="font-medium text-gray-900">${order.total.toFixed(2)}</p>
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <span className="text-sm text-gray-600">
+                      {formatDate(order.createdAt)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           
           <div className="pt-4 border-t border-gray-200 space-y-2">
             <Link
