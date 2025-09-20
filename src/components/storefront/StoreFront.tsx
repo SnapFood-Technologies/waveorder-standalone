@@ -30,52 +30,41 @@ import {
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
+import { PhoneInput } from '../site/PhoneInput'
 
-// Google Places API hook for address autocomplete
+// Google Places API hook
 const useGooglePlaces = () => {
-  const [isLoaded, setIsLoaded] = useState(false)
-  const autocompleteRef = useRef(null)
-  
-  useEffect(() => {
-    // @ts-ignore
-    if (typeof window !== 'undefined' && window.google) {
-      setIsLoaded(true)
-      return
-    }
+    const [isLoaded, setIsLoaded] = useState(false)
     
-    if (typeof window !== 'undefined') {
-      const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
-      script.onload = () => setIsLoaded(true)
-      document.head.appendChild(script)
-    }
-  }, [])
-
-  // @ts-ignore
-  const initAutocomplete = (inputRef, onSelect) => {
-    // @ts-ignore
-    if (isLoaded && typeof window !== 'undefined' && window.google && inputRef.current) {
+    useEffect(() => {
+      // Check if Google Maps is already loaded
       // @ts-ignore
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { country: 'al' } // Adjust based on your service area
-      })
+      if (typeof window !== 'undefined' && window.google?.maps?.places) {
+        setIsLoaded(true)
+        return
+      }
       
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace()
-        if (place.formatted_address && place.geometry?.location) {
-          const lat = place.geometry.location.lat()
-          const lng = place.geometry.location.lng()
-          onSelect(place.formatted_address, { lat, lng })
-        }
-      })
+      // Check if script is already being loaded
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
+      if (existingScript) {
+        existingScript.addEventListener('load', () => setIsLoaded(true))
+        return
+      }
       
-      autocompleteRef.current = autocomplete
-    }
+      // Load the script
+      if (typeof window !== 'undefined') {
+        const script = document.createElement('script')
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+        script.async = true
+        script.defer = true
+        script.onload = () => setIsLoaded(true)
+        script.onerror = () => console.error('Failed to load Google Maps API')
+        document.head.appendChild(script)
+      }
+    }, [])
+  
+    return { isLoaded }
   }
-
-  return { isLoaded, initAutocomplete }
-}
 
 // Time slot generator for scheduling
 // @ts-ignore
@@ -205,69 +194,182 @@ function StoreClosure({ storeData, primaryColor, translations }) {
 
 // Enhanced Address Input with Autocomplete and Fee Calculation
 function AddressAutocomplete({ 
-  value, 
-  onChange, 
-  placeholder, 
-  required, 
-  primaryColor,
-  onLocationChange,
-  storeData
-}: {
-  value: string
-  onChange: (address: string) => void
-  placeholder: string
-  required: boolean
-  primaryColor: string
-  onLocationChange?: (lat: number, lng: number, address: string) => void
-  storeData?: any
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { isLoaded, initAutocomplete } = useGooglePlaces()
-  const [isCalculatingFee, setIsCalculatingFee] = useState(false)
-  
-  useEffect(() => {
-    if (isLoaded) {
-      initAutocomplete(inputRef, async (address: string, location: { lat: number, lng: number }) => {
-        onChange(address)
-        if (onLocationChange) {
-          setIsCalculatingFee(true)
-          try {
-            // Calculate delivery fee based on distance
-            if (storeData?.address) {
-              // Here you would call your fee calculation API
-              await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-              onLocationChange(location.lat, location.lng, address)
-            }
-          } finally {
-            setIsCalculatingFee(false)
-          }
-        }
-      })
+    value, 
+    onChange, 
+    placeholder, 
+    required, 
+    primaryColor,
+    onLocationChange,
+    storeData
+  }: {
+    value: string
+    onChange: (address: string) => void
+    placeholder: string
+    required: boolean
+    primaryColor: string
+    onLocationChange?: (lat: number, lng: number, address: string) => void
+    storeData?: any
+  }) {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const { isLoaded } = useGooglePlaces()
+    const [isCalculatingFee, setIsCalculatingFee] = useState(false)
+    
+    // Get allowed countries based on business detection
+    const getAllowedCountries = () => {
+      const detectedCountry = detectCountryFromBusiness(storeData)
+      
+      switch (detectedCountry) {
+        case 'AL':
+          return ['al'] // Albania business - only Albania addresses
+        case 'US':
+          return ['us'] // US business - only US addresses
+        case 'GR':
+          return ['gr', 'al', 'it', 'us'] // Greece business - 4 country addresses -- test purpose
+        case 'IT':
+          return ['it'] // Italy business - only Italy addresses
+        default:
+          return ['us'] // Default fallback
+      }
     }
-  }, [isLoaded, onChange, onLocationChange, storeData])
+    
+    useEffect(() => {
+      if (isLoaded && inputRef.current) {
+        const allowedCountries = getAllowedCountries()
+        
+        // @ts-ignore
+        const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+          types: ['address'],
+          componentRestrictions: { 
+            country: allowedCountries
+          }
+        })
+        
+        autocomplete.addListener('place_changed', async () => {
+          const place = autocomplete.getPlace()
+          
+          if (place.formatted_address && place.geometry?.location) {
+            const lat = place.geometry.location.lat()
+            const lng = place.geometry.location.lng()
+            
+            // Update the input value first
+            onChange(place.formatted_address)
+            
+            // Then trigger location change if callback provided
+            if (onLocationChange) {
+              setIsCalculatingFee(true)
+              try {
+                await new Promise(resolve => setTimeout(resolve, 500))
+                onLocationChange(lat, lng, place.formatted_address)
+              } finally {
+                setIsCalculatingFee(false)
+              }
+            }
+          }
+        })
+      }
+    }, [isLoaded, onChange, onLocationChange, storeData])
+  
+    return (
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+          style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+          onFocus={(e) => e.target.style.borderColor = primaryColor}
+          onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+          placeholder={placeholder}
+        />
+        {isCalculatingFee && (
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-blue-500"></div>
+          </div>
+        )}
+      </div>
+    )
+  }
+  
 
-  return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        required={required}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
-        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-        onFocus={(e) => e.target.style.borderColor = primaryColor}
-        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-        placeholder={placeholder}
-      />
-      {isCalculatingFee && (
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-blue-500"></div>
-        </div>
-      )}
-    </div>
-  )
-}
+// Detect country from user's location and business data
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'DEFAULT' {
+    // TESTING OVERRIDE: Check user's location first for Greece testing
+    if (typeof window !== 'undefined') {
+      const browserLanguage = navigator.language.toLowerCase()
+      if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
+        return 'GR'
+      }
+      
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (timezone === 'Europe/Athens') {
+          return 'GR'
+        }
+      } catch (error) {
+        // Timezone detection failed
+      }
+    }
+    
+    // PRIMARY: Check business latitude/longitude coordinates
+    if (storeData.storeLatitude && storeData.storeLongitude) {
+      const lat = storeData.storeLatitude
+      const lng = storeData.storeLongitude
+      
+      // Albania boundaries: approximately 39.6-42.7°N, 19.3-21.1°E
+      if (lat >= 39.6 && lat <= 42.7 && lng >= 19.3 && lng <= 21.1) {
+        return 'AL'
+      }
+      
+      // Greece boundaries: approximately 34.8-41.8°N, 19.3-28.2°E
+      if (lat >= 34.8 && lat <= 41.8 && lng >= 19.3 && lng <= 28.2) {
+        return 'GR'
+      }
+      
+      // Italy boundaries: approximately 35.5-47.1°N, 6.6-18.5°E
+      if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) {
+        return 'IT'
+      }
+      
+      // United States boundaries: approximately 24-71°N, -180 to -66°W
+      if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
+        return 'US'
+      }
+    }
+    
+    // SECONDARY: Check whatsapp number prefix
+    if (storeData.whatsappNumber?.startsWith('+355')) return 'AL'
+    if (storeData.whatsappNumber?.startsWith('+30')) return 'GR'
+    if (storeData.whatsappNumber?.startsWith('+39')) return 'IT'
+    if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
+    
+    // TERTIARY: Check other user location indicators
+    if (typeof window !== 'undefined') {
+      const browserLanguage = navigator.language.toLowerCase()
+      if (browserLanguage.startsWith('sq') || browserLanguage.includes('al')) {
+        return 'AL'
+      }
+      if (browserLanguage.startsWith('it')) {
+        return 'IT'
+      }
+      
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        if (timezone === 'Europe/Tirane') return 'AL'
+        if (timezone === 'Europe/Rome') return 'IT'
+      } catch (error) {
+        // Timezone detection failed
+      }
+    }
+    
+    // FALLBACK: Check business indicators
+    if (storeData.currency === 'ALL' || storeData.language === 'sq') return 'AL'
+    if (storeData.currency === 'EUR' && storeData.language === 'el') return 'GR'
+    if (storeData.currency === 'EUR' && storeData.language === 'it') return 'IT'
+    
+    return 'US'
+  }
 
 function StoreLocationMap({ 
     storeData, 
@@ -2027,7 +2129,7 @@ function ProductCard({
                 
                 <button
                   onClick={() => !disabled && onOpenModal(product)}
-                  disabled={disabled || product.stock === 0}
+                //   disabled={disabled || product.stock === 0}
                   className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
                   style={{ backgroundColor: primaryColor }}
                 >
@@ -2372,21 +2474,15 @@ function OrderPanel({
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">{translations.whatsappNumber || 'WhatsApp Number'} *</label>
-            <input
-              type="tel"
-              required
-              value={customerInfo.phone}
-              onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-              placeholder="+1234567890"
-            />
-          </div>
+          <PhoneInput
+            value={customerInfo.phone}
+            onChange={(phone) => setCustomerInfo({ ...customerInfo, phone })}
+            storeData={storeData}
+            primaryColor={primaryColor}
+            disabled={storeData.isTemporarilyClosed}
+            required={true}
+            translations={translations}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">{translations.email || 'Email'}</label>

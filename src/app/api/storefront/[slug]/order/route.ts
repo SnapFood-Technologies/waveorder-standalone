@@ -476,6 +476,8 @@ export async function POST(
       })
     }
 
+
+    
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({
       business,
@@ -495,7 +497,7 @@ export async function POST(
       orderId: order.id,
       orderNumber: order.orderNumber,
       calculatedDeliveryFee: finalDeliveryFee,
-      whatsappUrl: `https://wa.me/${business.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`
+      whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
     })
 
   } catch (error) {
@@ -508,91 +510,119 @@ export async function POST(
 }
 
 function formatWhatsAppOrder({ business, order, customer, items, orderData }: any) {
-  const currencySymbol = getCurrencySymbol(business.currency)
-  const language = business.language || 'en'
-  const businessType = business.businessType || 'RESTAURANT'
-  
-  // Get appropriate terms for business type and language
-  // @ts-ignore
-  const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
-  
-  let message = `*${terms.order} ${order.orderNumber}*\n\n`
-  
-  // Add order type prominently
-  const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
-  message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
-  
-  // Items
-  items.forEach((item: any) => {
-    message += `${item.quantity}x ${item.name}`
-    if (item.variant) message += ` (${item.variant})`
-    message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
-    if (item.modifiers?.length) {
-      item.modifiers.forEach((mod: any) => {
-        message += `  + ${mod.name} (+${currencySymbol}${mod.price.toFixed(2)})\n`
-      })
-    }
-  })
-  
-  message += `\n---\n`
-  message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
-  
-  if (orderData.discount > 0) {
-    message += `${language === 'sq' ? 'Zbritje' : 'Discount'}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
-  }
-  
-  if (orderData.deliveryFee > 0) {
-    message += `${terms.delivery}: ${currencySymbol}${orderData.deliveryFee.toFixed(2)}\n`
-  }
-  
-  message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
-  
-  message += `---\n`
-  message += `👤 ${terms.customer}: ${customer.name}\n`
-  message += `📞 ${terms.phone}: ${customer.phone}\n`
-  
-  // Enhanced location/time handling based on delivery type
-  if (orderData.deliveryType === 'delivery') {
-    message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
+    const currencySymbol = getCurrencySymbol(business.currency)
+    const language = business.language || 'en'
+    const businessType = business.businessType || 'RESTAURANT'
     
-    // Add coordinates for delivery (helpful for delivery tracking)
-    if (orderData.latitude && orderData.longitude) {
-      message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
+    // Get appropriate terms for business type and language
+    // @ts-ignore
+    const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
+    
+    let message = `*${terms.order} ${order.orderNumber}*\n\n`
+    
+    // Add order type prominently
+    const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
+    message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
+    
+    // Items
+    items.forEach((item: any) => {
+      message += `${item.quantity}x ${item.name}`
+      if (item.variant) message += ` (${item.variant})`
+      message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
+      if (item.modifiers?.length) {
+        item.modifiers.forEach((mod: any) => {
+          message += `  + ${mod.name} (+${currencySymbol}${mod.price.toFixed(2)})\n`
+        })
+      }
+    })
+    
+    message += `\n---\n`
+    message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
+    
+    if (orderData.discount > 0) {
+      message += `${language === 'sq' ? 'Zbritje' : 'Discount'}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
     }
     
-    const timeLabel = terms.deliveryTime
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-      : terms.asap}\n`
-  } else if (orderData.deliveryType === 'pickup') {
-    message += `🏪 ${terms.pickupLocation}: ${business.address}\n`
+    if (orderData.deliveryFee > 0) {
+      message += `${terms.delivery}: ${currencySymbol}${orderData.deliveryFee.toFixed(2)}\n`
+    }
     
-    const timeLabel = terms.pickupTime
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-      : terms.asap}\n`
-  } else if (orderData.deliveryType === 'dineIn') {
-    message += `🍽️ ${business.address}\n`
+    message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
     
-    const timeLabel = terms.arrivalTime
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-      : terms.asap}\n`
+    message += `---\n`
+    message += `👤 ${terms.customer}: ${customer.name}\n`
+    message += `📞 ${terms.phone}: ${customer.phone}\n`
+    
+    // Enhanced location/time handling based on delivery type
+    if (orderData.deliveryType === 'delivery') {
+      message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
+      
+      // Add coordinates for delivery (helpful for delivery tracking)
+      if (orderData.latitude && orderData.longitude) {
+        message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
+      }
+      
+      const timeLabel = terms.deliveryTime
+      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+        : terms.asap}\n`
+    } else if (orderData.deliveryType === 'pickup') {
+      // Use business address instead of null
+      const pickupAddress = business.address || 'Store location'
+      message += `🏪 ${terms.pickupLocation}: ${pickupAddress}\n`
+      
+      const timeLabel = terms.pickupTime
+      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+        : terms.asap}\n`
+    } else if (orderData.deliveryType === 'dineIn') {
+      const dineInAddress = business.address || 'Restaurant location'
+      message += `🍽️ ${dineInAddress}\n`
+      
+      const timeLabel = terms.arrivalTime
+      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+        : terms.asap}\n`
+    }
+    
+    message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
+    
+    if (orderData.specialInstructions) {
+      message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
+    }
+    
+    message += `\n---\n`
+    message += `🏪 ${business.name}\n`
+    if (business.website) {
+      message += `🌐 ${business.website}\n`
+    }
+    
+    return message
   }
-  
-  message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
-  
-  if (orderData.specialInstructions) {
-    message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
-  }
-  
-  message += `\n---\n`
-  message += `🏪 ${business.name}\n`
-  if (business.website) {
-    message += `🌐 ${business.website}\n`
-  }
-  
-  return message
+
+
+  function formatWhatsAppNumber(phoneNumber: string): string {
+    // Remove all non-numeric characters
+    const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
+    
+    // WhatsApp API expects numbers without + prefix
+    // But we need to ensure it's a valid international format
+    if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
+      // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
+      return cleanNumber
+    } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
+      // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
+      return cleanNumber
+    } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
+      // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
+      return cleanNumber
+    } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
+      // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
+      return cleanNumber
+    }
+    
+    // For other countries, just return the clean number
+    return cleanNumber
 }
 
 function getCurrencySymbol(currency: string) {
