@@ -181,7 +181,7 @@ function StoreClosure({ storeData, primaryColor, translations }) {
 
   return (
     <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-4">
+      <div className="max-w-[75rem] mx-auto px-4 py-4">
         <div className="flex items-center justify-center">
           <AlertTriangle className="w-6 h-6 mr-3 flex-shrink-0" />
           <div className="text-center">
@@ -983,6 +983,7 @@ interface StoreData {
   isOpen: boolean
   nextOpenTime?: string
   whatsappButtonColor? :string
+  mobileCartStyle?: 'bar' | 'badge'
 }
 
 interface Category {
@@ -1058,7 +1059,13 @@ const getCurrencySymbol = (currency: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('cart')
+      return savedCart ? JSON.parse(savedCart) : []
+    }
+    return []
+  })
   const [showCartModal, setShowCartModal] = useState(false)
   const [showProductModal, setShowProductModal] = useState(false)
   const [showBusinessInfoModal, setShowBusinessInfoModal] = useState(false)
@@ -1093,6 +1100,13 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     specialInstructions: ''
   })
   const [isOrderLoading, setIsOrderLoading] = useState(false)
+
+  // Save cart to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+        localStorage.setItem('cart', JSON.stringify(cart))
+        }
+    }, [cart])
 
   const currencySymbol = getCurrencySymbol(storeData.currency)
   const translations = getStorefrontTranslations(storeData.language)
@@ -1251,7 +1265,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       return prev.map(item => {
         if (item.id === itemId) {
           const newQuantity = Math.max(0, item.quantity + change)
-          if (newQuantity === 0) return null
+          if (newQuantity === 0) return null  // This removes the item
           return {
             ...item,
             quantity: newQuantity,
@@ -1259,7 +1273,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           }
         }
         return item
-      }).filter(Boolean) as CartItem[]
+      }).filter(Boolean) as CartItem[]  // This filters out null values
     })
   }
 
@@ -1368,7 +1382,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
       {/* Header Section */}
       <div className="bg-white">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-[75rem] mx-auto">
           {/* Cover Image Section */}
           <div 
             className="relative h-[250px] md:rounded-xl overflow-hidden"
@@ -1407,7 +1421,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 </div>
           </div>
 
-          <div className="bg-white rounded-b-xl p-6 relative">
+          <div className="bg-white rounded-b-xl px-4 p-6 relative">
             {/* Logo */}
             <div 
               className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
@@ -1488,7 +1502,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 md:px-5 py-6 grid lg:grid-cols-3 gap-8">
+      <div className="max-w-[75rem] mx-auto px-4 md:px-0 py-6 grid lg:grid-cols-3 gap-8">
         {/* Left Side - Menu */}
         <div className="lg:col-span-2">
           {/* Mobile Delivery Type Switcher */}
@@ -1716,11 +1730,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       </div>
 
       {/* Mobile Cart Bar */}
-      {cartItemCount > 0 && !storeData.isTemporarilyClosed && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-xl p-4 z-50">
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0  px-3  bg-white shadow-xl p-4 z-50">
             <button
             onClick={() => setShowCartModal(true)}
-            className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-between shadow-lg"
+            className="w-full py-4 rounded-xl px-6 font-semibold text-white flex items-center justify-between shadow-lg"
             style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
             >
             <div className="flex items-center">
@@ -1738,7 +1752,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       {showCartModal && (
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
           <div className="bg-white w-full max-h-[85vh] rounded-t-3xl overflow-hidden">
-            <div className="p-4 border-b flex items-center justify-between">
+            <div className="p-4  flex items-center justify-between">
               <h2 className="text-lg font-semibold">{translations.yourOrder}</h2>
               <button
                 onClick={() => setShowCartModal(false)}
@@ -1811,7 +1825,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
       {/* Powered by WaveOrder Footer */}
       <footer className="bg-white mt-8">
-        <div className="max-w-6xl mx-auto px-5 py-6">
+        <div className="max-w-[75rem] mx-auto px-5 py-6">
           <div className="text-center">
             <p className="text-sm text-gray-500">
               {translations.poweredBy || 'Powered by'}{' '}
@@ -1830,9 +1844,9 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       </footer>
 
       {/* Floating Cart Badge (Mobile) */}
-        {cartItemCount > 0 && !storeData.isTemporarilyClosed && (
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle === 'badge' && (
         <div 
-            className="lg:hidden fixed bottom-20 right-5 w-15 h-15 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40"
+            className="lg:hidden fixed bottom-10 right-5 w-15 h-15 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40"
             style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
             onClick={() => setShowCartModal(true)}
         >
@@ -2307,11 +2321,11 @@ function OrderPanel({
 }) {
   return (
     <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div>
         <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
         {/* Desktop Delivery Type Toggle */}
-{!isMobile && deliveryOptions.length > 1 && (
+{deliveryOptions.length > 1 && (
   <div className="mb-6">
     <div className={`grid gap-2 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
       {deliveryOptions.map(option => {
@@ -2442,7 +2456,7 @@ function OrderPanel({
 
         {/* Cart Items */}
         {cart.length > 0 && (
-          <div className="border-t pt-6 mb-6">
+          <div className="border-t-2 border-gray-300 pt-6 mb-6">
             <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => (
@@ -2472,13 +2486,13 @@ function OrderPanel({
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => removeFromCart(item.id)}
                       disabled={storeData.isTemporarilyClosed}
                       className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <X className="w-4 h-4" />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               ))}
@@ -2488,7 +2502,7 @@ function OrderPanel({
 
         {/* Order Summary */}
         {cart.length > 0 && (
-          <div className="border-t pt-6 mb-6">
+          <div className="border-t-2 border-gray-300 pt-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span>{translations.subtotal || 'Subtotal'}</span>
@@ -2500,7 +2514,7 @@ function OrderPanel({
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-lg border-t pt-3">
+              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-300 pt-3">
                 <span>{translations.total || 'Total'}</span>
                 <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
