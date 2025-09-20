@@ -311,6 +311,22 @@ model Customer {
   // Customer tier for wholesale pricing
   tier CustomerTier @default(REGULAR)
 
+  // Enhanced address structure
+  addressJson Json? // {
+  // "street": "123 Main St",
+  // "additional": "Apt 4B", 
+  // "zipCode": "12345",
+  // "city": "New York",
+  // "country": "USA",
+  // "latitude": 40.7128,
+  // "longitude": -74.0060
+  // }
+
+  // Admin and management fields
+  addedByAdmin Boolean  @default(false)
+  tags         String[] // ["vip", "frequent", "wholesale", etc.]
+  notes        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
