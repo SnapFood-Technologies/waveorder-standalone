@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,10 +17,13 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    // Await params before using
+    const { businessId } = await params
+
     // Verify user has access to this business
     const businessUser = await prisma.businessUser.findFirst({
       where: {
-        businessId: params.businessId,
+        businessId: businessId,
         userId: session.user.id
       }
     })
@@ -32,7 +35,7 @@ export async function GET(
     // Get recent orders (last 30 days, limit 10)
     const orders = await prisma.order.findMany({
       where: {
-        businessId: params.businessId,
+        businessId: businessId,
         createdAt: {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
         }

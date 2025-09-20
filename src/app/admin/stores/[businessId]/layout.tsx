@@ -2,7 +2,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, MessageCircle } from 'lucide-react'
 import { AdminSidebar } from '@/components/admin/layout/AdminSidebar'
 import { AdminHeader } from '@/components/admin/layout/AdminHeader'
 
@@ -11,22 +10,40 @@ export default function AdminLayout({
   params,
 }: {
   children: React.ReactNode
-  params: { businessId: string }
+  params: Promise<{ businessId: string }>
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [businessId, setBusinessId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params
+      setBusinessId(resolvedParams.businessId)
+    }
+    getParams()
+  }, [params])
+
+  // Show loading while businessId is being resolved
+  if (businessId === null) {
+    return (
+      <div className="flex h-screen bg-gray-50 items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
       <AdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
-        businessId={params.businessId}
+        businessId={businessId}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader 
           onMenuClick={() => setSidebarOpen(true)}
-          businessId={params.businessId}
+          businessId={businessId}
         />
         
         <main className="flex-1 overflow-auto p-4 lg:p-6">

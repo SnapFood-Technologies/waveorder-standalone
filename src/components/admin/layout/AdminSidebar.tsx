@@ -205,6 +205,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     const available = isFeatureAvailable(item.requiredPlan)
     const hasChildren = item.children && item.children.length > 0
     const isExpanded = expandedItems.includes(item.name)
+    // @ts-ignore
     const parentActive = hasChildren && isParentActive(item.children)
 
     if (hasChildren) {
@@ -235,6 +236,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           
           {isExpanded && (
             <div className="ml-8 mt-1 space-y-1">
+                  {/* @ts-ignore */}
               {item.children.map(child => (
                 <Link
                   key={child.name}
