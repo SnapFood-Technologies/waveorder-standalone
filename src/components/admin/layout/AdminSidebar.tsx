@@ -22,7 +22,9 @@ import {
   Percent,
   User,
   Cog,
-  CreditCard
+  CreditCard,
+  List,
+  Upload
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -94,9 +96,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     },
     { 
       name: 'Products', 
-      href: `${baseUrl}/products`, 
       icon: Package, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'FREE',
+      children: [
+        { 
+          name: 'List', 
+          href: `${baseUrl}/products`, 
+          icon: List, 
+          requiredPlan: 'FREE'
+        },
+        { 
+          name: 'Categories', 
+          href: `${baseUrl}/product-categories`, 
+          icon: Boxes, 
+          requiredPlan: 'FREE'
+        },
+        { 
+          name: 'Import', 
+          href: `${baseUrl}/products/import`, 
+          icon: Upload, 
+          requiredPlan: 'FREE'
+        },
+      ]
     },
     { 
       name: 'Customers', 

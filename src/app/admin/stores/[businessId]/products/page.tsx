@@ -1,5 +1,5 @@
 // app/admin/stores/[businessId]/products/page.tsx
-import { ProductsManagement } from '@/components/admin/products/ProductsManagement'
+import ProductsManagement  from '@/components/admin/products/ProductsManagement'
 
 interface ProductsPageProps {
   params: Promise<{ businessId: string }>
