@@ -421,7 +421,7 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
       </div>
       
       {/* Mobile Phone Frame */}
-      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '310px' }}>
+      <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '330px' }}>
         <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative" style={previewStyles}>
           
           {/* Cover Image Header */}
