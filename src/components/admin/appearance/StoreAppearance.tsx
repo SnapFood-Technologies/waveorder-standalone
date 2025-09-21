@@ -197,7 +197,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
         </div>
         <div className="mt-4 lg:mt-0 flex items-center space-x-3">
           <a
-            href={`/site/${businessData.slug}`}
+            href={`/${businessData.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -459,7 +459,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   <p className="text-xs mt-1">
                     Want to see your real store? {' '}
                     <a 
-                      href={`/site/${businessData.slug}`}
+                      href={`/${businessData.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline hover:no-underline font-medium"

@@ -248,7 +248,7 @@ export default function MarketingComponent({ businessId }: MarketingComponentPro
             <button
               onClick={downloadQRCode}
               disabled={!qrCodeUrl}
-              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4 mr-2" />
               Download QR Code
@@ -274,7 +274,7 @@ export default function MarketingComponent({ businessId }: MarketingComponentPro
             </div>
             <button
               onClick={() => copyToClipboard(embedCode, 'embed')}
-              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               {copiedEmbed ? (
                 <Check className="w-4 h-4 mr-2" />
