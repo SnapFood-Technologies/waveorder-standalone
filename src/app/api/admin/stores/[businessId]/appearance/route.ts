@@ -90,6 +90,7 @@ export async function PUT(
       return NextResponse.json(
         { 
           error: 'Validation error',
+          // @ts-ignore
           details: error.errors.map(err => ({
             field: err.path.join('.'),
             message: err.message
