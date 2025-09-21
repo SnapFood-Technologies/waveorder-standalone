@@ -10,7 +10,6 @@ import {
   Store, 
   Share2,
   Info,
-  DollarSign,
   X,
   Minus
 } from 'lucide-react'
@@ -143,7 +142,8 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
 
   const filteredProducts = getFilteredProducts()
 
-  if (device === 'desktop') {
+  // Desktop version of StorePreview with fixed layout issues
+if (device === 'desktop') {
     return (
       <div className="bg-gray-100 rounded-xl p-4 max-w-6xl mx-auto" style={{ fontFamily: settings.fontFamily }}>
         <div className="text-center mb-4">
@@ -175,7 +175,7 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
               </div>
             </div>
           </div>
-
+  
           <div className="p-8">
             {/* Store Info Section */}
             <div className="flex items-start justify-between mb-8 relative">
@@ -187,10 +187,10 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                 {businessData.logo ? (
                   <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-2xl object-cover" />
                 ) : (
-                  businessData.name?.charAt(0) || 'S'
+                  businessData.name?.charAt(0).toUpperCase() || 'S'
                 )}
               </div>
-
+  
               <div className="pt-6 flex-1">
                 <div className="flex items-center gap-4 mb-3">
                   <h1 className="text-3xl font-bold text-gray-900">{businessData.name}</h1>
@@ -218,23 +218,29 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                   <p className="text-gray-600 text-lg mb-4">{businessData.description}</p>
                 )}
                 
-                <div className="flex items-center gap-6 text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">123 Sample Street</span>
+                {/* FIXED: Address on separate line from delivery info */}
+                <div className="space-y-2">
+                  {/* Address line */}
+                  <div className="flex items-center text-gray-600">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    <span className="text-sm">123 Sample Street, Downtown</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">20-30 min</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="text-sm">Free delivery</span>
+                  
+                  {/* Time and delivery fee on same line */}
+                  <div className="flex items-center gap-6 text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      <span className="text-sm">20-30 min</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      <span className="text-sm">Free delivery</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
+  
             {/* Search Section */}
             <div className="bg-white rounded-2xl p-0 mb-6">
               <div className="relative">
@@ -245,7 +251,6 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value)
-                    // Auto-switch to "All" category when searching
                     if (e.target.value.trim() && selectedCategory !== 'all') {
                       setSelectedCategory('all')
                     }
@@ -255,7 +260,6 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                   onFocus={(e) => e.target.style.borderColor = settings.primaryColor}
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                 />
-                {/* Clear search button */}
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
@@ -266,7 +270,6 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                 )}
               </div>
               
-              {/* Search results count */}
               {searchTerm && (
                 <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
                   <p className="text-sm text-gray-600">
@@ -278,13 +281,12 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                 </div>
               )}
             </div>
-
+  
             {/* Category Tabs */}
             <div className="flex gap-1 mb-6 overflow-x-auto">
               <button
                 onClick={() => {
                   setSelectedCategory('all')
-                  // Keep search term when switching to "All"
                 }}
                 className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                   selectedCategory === 'all'
@@ -308,7 +310,6 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                   key={category.id}
                   onClick={() => {
                     setSelectedCategory(category.id)
-                    // Clear search when switching to specific category
                     if (searchTerm) {
                       setSearchTerm('')
                     }
@@ -332,48 +333,153 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                 </button>
               ))}
             </div>
-
-            {/* Products Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(selectedCategory === 'all' ? filteredProducts : demoProducts.filter(p => p.featured && selectedCategory === 'popular')).map(product => (
-                <div key={product.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                  {/* Product Image Placeholder */}
-                  <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center relative">
-                    <Package className="w-12 h-12 text-gray-400" />
-                    {product.featured && (
-                      <span className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
-                        Popular
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="p-5">
-                    <div className="mb-2">
-                      <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{product.description}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xl" style={{ color: settings.primaryColor }}>
-                        {currencySymbol}{product.price.toFixed(2)}
-                      </span>
-                      <button
-                        onClick={addToCart}
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-lg"
-                        style={{ backgroundColor: settings.primaryColor }}
+  
+            {/* Check if there are products to show */}
+            {(() => {
+              const productsToShow = selectedCategory === 'all' ? filteredProducts : demoProducts.filter(p => p.featured && selectedCategory === 'popular')
+              
+              if (productsToShow.length === 0 && searchTerm) {
+                return (
+                  /* Empty state for no search results */
+                  <div className="text-center py-16 px-4">
+                    <div className="max-w-md mx-auto">
+                      <div 
+                        className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                        style={{ backgroundColor: `${settings.primaryColor}15` }}
                       >
-                        <Plus className="w-5 h-5" />
-                      </button>
+                        <Search 
+                          className="w-10 h-10"
+                          style={{ color: settings.primaryColor }}
+                        />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                        No results found for "{searchTerm}"
+                      </h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        Try a different search term or browse all products
+                      </p>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: settings.primaryColor }}
+                        >
+                          Clear Search
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSearchTerm('')
+                            setSelectedCategory('all')
+                          }}
+                          className="block w-full sm:w-auto px-6 py-3 border-2 rounded-xl font-medium hover:bg-gray-50 transition-colors mx-auto"
+                          style={{ borderColor: settings.primaryColor, color: settings.primaryColor }}
+                        >
+                          Browse All Products
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Cart Summary (Desktop) - Matches storefront mobile cart styles */}
+                )
+              } else if (productsToShow.length === 0) {
+                return (
+                  /* Empty state for no products in category */
+                  <div className="text-center py-16 px-4">
+                    <div className="max-w-md mx-auto">
+                      <div 
+                        className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+                        style={{ backgroundColor: `${settings.primaryColor}15` }}
+                      >
+                        <Package 
+                          className="w-10 h-10"
+                          style={{ color: settings.primaryColor }}
+                        />
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                        {selectedCategory === 'all' ? 'No Products Yet' : `No products in ${categories.find(c => c.id === selectedCategory)?.name || 'this category'}`}
+                      </h3>
+                      <p className="text-gray-600 mb-6 leading-relaxed">
+                        {selectedCategory === 'all' 
+                          ? 'Your desktop store preview will show here once you add products to your categories.'
+                          : 'This category is currently empty. Browse other categories or check back later.'
+                        }
+                      </p>
+                      {selectedCategory !== 'all' && (
+                        <button
+                          onClick={() => setSelectedCategory('all')}
+                          className="px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
+                          style={{ backgroundColor: settings.primaryColor }}
+                        >
+                          Browse All Products
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              } else {
+                return (
+                  /* FIXED: Products Grid - 1 product per row instead of 2 */
+                  <div className="grid grid-cols-1 gap-5">
+                    {productsToShow.map(product => (
+                      <div key={product.id} className="bg-white rounded-xl pr-5 shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden">
+                        <div className="flex items-center min-h-[120px]">
+                          <div className="p-5 flex-1 flex flex-col justify-between h-full min-h-[120px]">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold text-gray-900 text-lg">{product.name}</h3>
+                                {product.featured && (
+                                  <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-medium whitespace-nowrap">
+                                    Popular
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Reserve space for description */}
+                              <div className="h-10 mb-1">
+                                <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{product.description}</p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-bold text-xl" style={{ color: settings.primaryColor }}>
+                                    {currencySymbol}{product.price.toFixed(2)}
+                                  </span>
+                                </div>
+                                
+                                <button
+                                  onClick={addToCart}
+                                  className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform"
+                                  style={{ backgroundColor: settings.primaryColor }}
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+  
+                              {/* Stock info space */}
+                              <div className="h-4 mt-2">
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* FIXED: Square product image */}
+                          <div className="w-30 h-30 flex-shrink-0">
+                            <div className="w-30 h-30 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center">
+                              <Package className="w-8 h-8 text-gray-400" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+            })()}
+  
+            {/* Cart Summary (Desktop) */}
             {cartCount > 0 && (
               <div className="mt-8">
                 {settings.mobileCartStyle === 'badge' ? (
-                  /* Floating Cart Badge Style */
                   <div className="flex justify-end">
                     <div 
                       className="relative w-14 h-14 rounded-full flex items-center justify-center shadow-xl cursor-pointer"
@@ -388,10 +494,9 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                     </div>
                   </div>
                 ) : (
-                  /* Cart Bar Style */
-                  <div className="bg-gray-50 rounded-xl p-6">
+                  <div className="">
                     <button
-                      className="w-full py-4 rounded-xl font-semibold text-white text-lg flex items-center justify-between shadow-lg hover:opacity-90 transition-opacity"
+                      className="w-full py-4 px-6 rounded-xl font-semibold text-white text-lg flex items-center justify-between shadow-lg hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: settings.whatsappButtonColor || settings.primaryColor }}
                     >
                       <div className="flex items-center">
@@ -469,7 +574,7 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
               {businessData.logo ? (
                 <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-xl object-cover" />
               ) : (
-                businessData.name?.charAt(0) || 'S'
+                businessData.name?.charAt(0).toUpperCase() || 'S'
               )}
             </div>
 
@@ -498,7 +603,7 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
                   <span>20-30 min</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
+                  <Package className="w-3 h-3" />
                   <span>Free delivery</span>
                 </div>
               </div>

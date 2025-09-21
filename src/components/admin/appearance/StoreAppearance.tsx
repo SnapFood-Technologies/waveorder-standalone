@@ -340,7 +340,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
 
           {/* Typography Section */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center mb-2">
               <Type className="w-5 h-5 text-teal-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Typography</h3>
             </div>
@@ -363,7 +363,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
 
           {/* Mobile Settings */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center mb-2">
               <Smartphone className="w-5 h-5 text-teal-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Mobile Experience</h3>
             </div>
@@ -425,7 +425,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
         {/* Preview Panel */}
         <div className="lg:sticky lg:top-8">
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
                 <Eye className="w-5 h-5 text-teal-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">Live Preview</h3>
