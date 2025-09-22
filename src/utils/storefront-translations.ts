@@ -113,6 +113,16 @@ export interface StorefrontTranslations {
     staffShortageMessage: string
     supplyIssuesMessage: string
     temporaryClosureMessage: string
+
+
+     // Delivery Zone Errors
+    outsideDeliveryArea: string
+    outsideDeliveryAreaDesc: string
+    deliveryNotAvailable: string
+    deliveryCalculationFailed: string
+    tryDifferentAddress: string
+    selectDifferentArea: string
+    maxDeliveryDistance: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -228,7 +238,16 @@ export interface StorefrontTranslations {
     emergencyMessage: "We are temporarily closed due to unforeseen circumstances.",
     staffShortageMessage: "We are temporarily closed due to staffing issues.",
     supplyIssuesMessage: "We are temporarily closed due to supply issues.",
-    temporaryClosureMessage: "We are temporarily closed and will reopen soon."
+    temporaryClosureMessage: "We are temporarily closed and will reopen soon.",
+
+     // Delivery Zone Errors
+  outsideDeliveryArea: "Address is outside delivery area",
+  outsideDeliveryAreaDesc: "Unfortunately, we don't deliver to this address. Maximum delivery distance is",
+  deliveryNotAvailable: "Delivery not available",
+  deliveryCalculationFailed: "Unable to calculate delivery fee",
+  tryDifferentAddress: "Try a different address",
+  selectDifferentArea: "Please select an address within our delivery area",
+  maxDeliveryDistance: "Maximum delivery distance",
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -343,7 +362,16 @@ export interface StorefrontTranslations {
       emergencyMessage: "Jemi të mbyllur përkohësisht për shkak të rrethanave të paparashikuara.",
       staffShortageMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me stafin.",
       supplyIssuesMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me furnizimet.",
-      temporaryClosureMessage: "Jemi të mbyllur përkohësisht dhe do të rihapemi së shpejti."
+      temporaryClosureMessage: "Jemi të mbyllur përkohësisht dhe do të rihapemi së shpejti.",
+
+       // Delivery Zone Errors
+  outsideDeliveryArea: "Adresa është jashtë zonës së dërgesës",
+  outsideDeliveryAreaDesc: "Na vjen keq, nuk dërgojmë në këtë adresë. Distanca maksimale e dërgesës është",
+  deliveryNotAvailable: "Dërgesa nuk është e disponueshme",
+  deliveryCalculationFailed: "Nuk mund të llogarisim tarifën e dërgesës",
+  tryDifferentAddress: "Provoni një adresë tjetër",
+  selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
+  maxDeliveryDistance: "Distanca maksimale e dërgesës",
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {
