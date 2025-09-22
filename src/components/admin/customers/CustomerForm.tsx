@@ -845,7 +845,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -868,7 +868,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-8xl mx-auto">
       {/* Success Message */}
       {successMessage && (
         <div className="fixed top-4 right-4 z-50 max-w-md">
