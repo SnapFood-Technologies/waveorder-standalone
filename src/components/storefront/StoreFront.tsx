@@ -1552,7 +1552,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     setDeliveryType={setDeliveryType}
                     deliveryOptions={getDeliveryOptions()}
                     primaryColor={primaryColor}
-                    disabled={storeData.isTemporarilyClosed}
+                    disabled={false}
                   />
                 </div>
               </div>
@@ -1615,7 +1615,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               setDeliveryType={setDeliveryType}
               deliveryOptions={getDeliveryOptions()}
               primaryColor={primaryColor}
-              disabled={storeData.isTemporarilyClosed}
+              disabled={false}
             />
           </div>
 
@@ -1638,7 +1638,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
       onFocus={(e) => e.target.style.borderColor = primaryColor}
       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-      disabled={storeData.isTemporarilyClosed}
+      disabled={false}
     />
     {/* Clear search button */}
     {searchTerm && (
@@ -1671,12 +1671,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 setSelectedCategory('all')
                 // Keep search term when switching to "All"
                 }}
-                disabled={storeData.isTemporarilyClosed}
+                disabled={false}
                 className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                 selectedCategory === 'all'
                     ? 'border-b-2'
                     : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                }`}
                 style={{ 
                 color: selectedCategory === 'all' ? primaryColor : undefined,
                 borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
@@ -1710,12 +1710,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                         setSearchTerm('')
                     }
                     }}
-                    disabled={storeData.isTemporarilyClosed}
+                    disabled={false}
                     className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                     selectedCategory === category.id
                         ? 'border-b-2'
                         : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                     style={{ 
                     color: selectedCategory === category.id ? primaryColor : undefined,
                     borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
@@ -2433,12 +2433,12 @@ function OrderPanel({
           <button
             key={option.key}
             onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
-            disabled={storeData.isTemporarilyClosed}
+            disabled={false}
             className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
               deliveryType === option.key
                 ? 'text-white'
                 : 'text-gray-700 border-gray-200 hover:border-gray-300'
-            } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+            }`}
             style={{ 
               backgroundColor: deliveryType === option.key ? primaryColor : 'white',
               borderColor: deliveryType === option.key ? primaryColor : undefined
@@ -2462,10 +2462,9 @@ function OrderPanel({
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+              onFocus={(e) =>  e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="Your full name"
             />
@@ -2476,7 +2475,7 @@ function OrderPanel({
             onChange={(phone) => setCustomerInfo({ ...customerInfo, phone })}
             storeData={storeData}
             primaryColor={primaryColor}
-            disabled={storeData.isTemporarilyClosed}
+            disabled={false}
             required={true}
             translations={translations}
           />
@@ -2487,10 +2486,10 @@ function OrderPanel({
               type="email"
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
+              disabled={false}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="your.email@example.com"
             />
@@ -2518,10 +2517,10 @@ function OrderPanel({
                   type="text"
                   value={customerInfo.address2}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  disabled={storeData.isTemporarilyClosed}
+                  disabled={false}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                  onFocus={(e) => e.target.style.borderColor = primaryColor}
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   placeholder={translations.apartment || 'Apartment, suite, etc.'}
                 />
@@ -2579,13 +2578,6 @@ function OrderPanel({
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                    {/* <button
-                      onClick={() => removeFromCart(item.id)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <X className="w-4 h-4" />
-                    </button> */}
                   </div>
                 </div>
               ))}
@@ -2631,10 +2623,10 @@ function OrderPanel({
           <textarea
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
-            disabled={storeData.isTemporarilyClosed}
+            disabled={false}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-            onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+            onFocus={(e) => e.target.style.borderColor = primaryColor}
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             rows={3}
             placeholder={translations.anySpecialRequests || 'Any special requests...'}
@@ -2642,7 +2634,7 @@ function OrderPanel({
         </div>
 
         {/* Payment Info */}
-        {storeData.paymentInstructions && !storeData.isTemporarilyClosed && (
+        {storeData.paymentInstructions && (
           <div className="bg-gray-50 p-4 rounded-xl mb-6">
             <div className="flex items-start">
               <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
