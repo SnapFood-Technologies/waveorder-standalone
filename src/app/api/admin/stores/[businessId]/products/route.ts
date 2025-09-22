@@ -17,6 +17,15 @@ export async function GET(
     }
 
     const { businessId } = await params
+    const { searchParams } = new URL(request.url)
+    
+    // Get query parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '12')
+    const search = searchParams.get('search') || ''
+    const category = searchParams.get('category') || ''
+    const status = searchParams.get('status') || 'all'
+    const skip = (page - 1) * limit
 
     // Verify user has access to business
     const business = await prisma.business.findFirst({
@@ -36,22 +45,162 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    const products = await prisma.product.findMany({
-      where: { businessId },
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true
+    // Build where clause for filtering
+    const whereClause: any = {
+      businessId
+    }
+
+    // Add search filter
+    if (search) {
+      whereClause.OR = [
+        {
+          name: {
+            contains: search,
+            mode: 'insensitive'
           }
         },
-        variants: true,
-        modifiers: true
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+        {
+          description: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        },
+        {
+          sku: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
 
-    return NextResponse.json({ products })
+    // Add category filter
+    if (category) {
+      whereClause.categoryId = category
+    }
+
+    // Add status filter
+    if (status === 'active') {
+      whereClause.isActive = true
+    } else if (status === 'inactive') {
+      whereClause.isActive = false
+    } else if (status === 'low-stock') {
+      whereClause.AND = [
+        { trackInventory: true },
+        { lowStockAlert: { not: null } },
+        {
+          OR: [
+            { stock: { lte: { lowStockAlert: true } } }
+          ]
+        }
+      ]
+      // For low stock, we need a more complex query
+      whereClause.trackInventory = true
+      whereClause.lowStockAlert = { not: null }
+    }
+
+    // Get total count for pagination
+    let total = 0
+    
+    if (status === 'low-stock') {
+      // Special handling for low stock filter
+      const lowStockProducts = await prisma.product.findMany({
+        where: {
+          businessId,
+          trackInventory: true,
+          lowStockAlert: { not: null },
+          ...(search && {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { sku: { contains: search, mode: 'insensitive' } }
+            ]
+          }),
+          ...(category && { categoryId: category })
+        },
+        select: { id: true, stock: true, lowStockAlert: true }
+      })
+      
+      // Filter where stock <= lowStockAlert
+      const filteredProducts = lowStockProducts.filter(p => 
+        p.lowStockAlert && p.stock <= p.lowStockAlert
+      )
+      total = filteredProducts.length
+    } else {
+      total = await prisma.product.count({
+        where: whereClause
+      })
+    }
+
+    // Get products with pagination
+    let products = []
+    
+    if (status === 'low-stock') {
+      // For low stock, get all matching products first, then filter and paginate
+      const allProducts = await prisma.product.findMany({
+        where: {
+          businessId,
+          trackInventory: true,
+          lowStockAlert: { not: null },
+          ...(search && {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { sku: { contains: search, mode: 'insensitive' } }
+            ]
+          }),
+          ...(category && { categoryId: category })
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          variants: true,
+          modifiers: true
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      
+      // Filter where stock <= lowStockAlert and apply pagination
+      const filteredProducts = allProducts.filter(p => 
+        p.lowStockAlert && p.stock <= p.lowStockAlert
+      )
+      
+      products = filteredProducts.slice(skip, skip + limit)
+    } else {
+      products = await prisma.product.findMany({
+        where: whereClause,
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          variants: true,
+          modifiers: true
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit
+      })
+    }
+
+    // Calculate pagination info
+    const pages = Math.ceil(total / limit)
+
+    return NextResponse.json({
+      products,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages
+      }
+    })
 
   } catch (error) {
     console.error('Error fetching products:', error)

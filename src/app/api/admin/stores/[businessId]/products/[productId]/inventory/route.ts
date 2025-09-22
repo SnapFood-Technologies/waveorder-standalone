@@ -58,6 +58,11 @@ export async function POST(
       data: { stock: newStock }
     })
 
+    const user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      })
+      
+
     // Create inventory activity
     await prisma.inventoryActivity.create({
       data: {
@@ -67,7 +72,8 @@ export async function POST(
         quantity: quantityChange,
         oldStock,
         newStock,
-        reason: reason || 'Manual stock adjustment'
+        reason: reason || 'Manual stock adjustment',
+        changedBy: user?.name // Add this line
       }
     })
 

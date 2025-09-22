@@ -11,7 +11,8 @@ import {
   EyeOff,
   Image as ImageIcon,
   Save,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 
 interface Category {
@@ -36,6 +37,8 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [draggedCategory, setDraggedCategory] = useState<string | null>(null)
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -127,28 +130,32 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
     }
   }
 
-  const deleteCategory = async (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId)
-    
-    if (category && category._count.products > 0) {
-      if (!confirm(`This category has ${category._count.products} product(s). Are you sure you want to delete it? This will also delete all products in this category.`)) {
-        return
-      }
-    } else if (!confirm('Are you sure you want to delete this category?')) {
-      return
-    }
+  const handleDeleteClick = (category: Category) => {
+    setCategoryToDelete(category)
+  }
 
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return
+
+    setIsDeleting(true)
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/categories/${categoryId}`, {
+      const response = await fetch(`/api/admin/stores/${businessId}/categories/${categoryToDelete.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
-        setCategories(prev => prev.filter(c => c.id !== categoryId))
+        setCategories(prev => prev.filter(c => c.id !== categoryToDelete.id))
+        setCategoryToDelete(null)
       }
     } catch (error) {
       console.error('Error deleting category:', error)
+    } finally {
+      setIsDeleting(false)
     }
+  }
+
+  const cancelDelete = () => {
+    setCategoryToDelete(null)
   }
 
   if (loading) {
@@ -330,7 +337,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
                     </button>
 
                     <button
-                      onClick={() => deleteCategory(category.id)}
+                      onClick={() => handleDeleteClick(category)}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -365,6 +372,95 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
           }}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      {categoryToDelete && (
+        <DeleteConfirmationModal
+          category={categoryToDelete}
+          isDeleting={isDeleting}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+      )}
+    </div>
+  )
+}
+
+// Delete Confirmation Modal Component
+interface DeleteConfirmationModalProps {
+  category: Category
+  isDeleting: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: DeleteConfirmationModalProps) {
+  const hasProducts = category._count.products > 0
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Category
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete the category "{category.name}"?
+            </p>
+            
+            {hasProducts && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">
+                      Warning: This category contains {category._count.products} product(s)
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Deleting this category will also permanently delete all products within it. This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-500">
+              This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3">
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            {isDeleting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Deleting...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Category
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

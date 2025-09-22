@@ -94,8 +94,8 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
           <div className="lg:col-span-3 space-y-6">
             {/* Download Sample */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Download Sample CSV</h3>
-              <p className="text-gray-600 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 1: Download Sample CSV</h3>
+              <p className="text-gray-600 mb-2">
                 Download our template to see the required format for your product data.
               </p>
               <button

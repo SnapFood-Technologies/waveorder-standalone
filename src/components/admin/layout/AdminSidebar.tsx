@@ -24,7 +24,9 @@ import {
   Cog,
   CreditCard,
   List,
-  Upload
+  Upload,
+  Activity,
+  TrendingUp
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -142,9 +144,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     ...(subscription.plan === 'PRO' ? [
       { 
         name: 'Inventory', 
-        href: `${baseUrl}/inventory`, 
-        icon: Boxes, 
-        requiredPlan: 'PRO' as Plan
+        icon: Boxes,
+        requiredPlan: 'PRO' as Plan,
+        children: [
+          { 
+            name: 'Dashboard', 
+            href: `${baseUrl}/inventory`, 
+            icon: LayoutDashboard, 
+            requiredPlan: 'PRO' as Plan
+          },
+          { 
+            name: 'Activities', 
+            href: `${baseUrl}/inventory/activities`, 
+            icon: Activity, 
+            requiredPlan: 'PRO' as Plan
+          },
+          { 
+            name: 'Stock Adjustment', 
+            href: `${baseUrl}/inventory/adjustments`, 
+            icon: TrendingUp, 
+            requiredPlan: 'PRO' as Plan
+          },
+        ]
       },
       { 
         name: 'Discounts', 
