@@ -525,7 +525,7 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
                 </button>
                 <button
                   onClick={() => confirmDeleteZone(index, zone.name)}
-                  disabled={zones.length <= 1}
+                  // disabled={zones.length <= 1}
                   className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-4 h-4" />
