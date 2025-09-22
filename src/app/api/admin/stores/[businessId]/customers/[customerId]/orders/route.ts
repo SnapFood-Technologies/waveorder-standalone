@@ -43,44 +43,88 @@ export async function GET(
       return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
     }
 
-    // Get customer orders with items
-    const orders = await prisma.order.findMany({
-      where: {
-        customerId: customerId,
-        businessId: businessId
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                name: true
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const skip = (page - 1) * limit
+
+    // Get customer orders with item count
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          customerId: customerId,
+          businessId: businessId
+        },
+        include: {
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              product: {
+                select: {
+                  name: true
+                }
+              },
+              variant: {
+                select: {
+                  name: true
+                }
               }
             }
+          },
+          _count: {
+            select: {
+              items: true
+            }
           }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip,
+        take: limit
+      }),
+      prisma.order.count({
+        where: {
+          customerId: customerId,
+          businessId: businessId
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+      })
+    ])
+
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      type: order.type,
+      total: order.total,
+      subtotal: order.subtotal,
+      deliveryFee: order.deliveryFee,
+      tax: order.tax,
+      discount: order.discount,
+      itemCount: order._count.items,
+      deliveryAddress: order.deliveryAddress,
+      notes: order.notes,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      items: order.items.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+        productName: item.product.name,
+        variantName: item.variant?.name
+      }))
+    }))
 
     return NextResponse.json({
-      orders: orders.map(order => ({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        total: order.total,
-        createdAt: order.createdAt,
-        items: order.items.map(item => ({
-          id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          product: {
-            name: item.product.name
-          }
-        }))
-      }))
+      orders: formattedOrders,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
     })
 
   } catch (error) {

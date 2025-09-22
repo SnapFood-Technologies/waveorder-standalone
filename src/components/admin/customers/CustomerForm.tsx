@@ -3,6 +3,7 @@ import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertC
 
 interface CustomerFormProps {
   businessId: string
+  customerId?: string // For edit mode
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -35,15 +36,22 @@ interface ValidationErrors {
   zipCode?: string
 }
 
-// Country configurations
+// Fixed Country configurations with correct patterns
 const COUNTRY_CONFIGS = {
   AL: {
     prefix: '+355',
     placeholder: '68 123 4567',
-    pattern: /^(\+355|355)0?[6-9]\d{7}$/,
+    pattern: /^(\+355|355)0?[6-9]\d{8}$/,
     flag: '🇦🇱',
     name: 'Albania',
-    allowedAddressCountries: ['al']
+    allowedAddressCountries: ['al'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   },
   US: {
     prefix: '+1',
@@ -51,15 +59,29 @@ const COUNTRY_CONFIGS = {
     pattern: /^(\+1|1)[2-9]\d{9}$/,
     flag: '🇺🇸',
     name: 'United States',
-    allowedAddressCountries: ['us']
+    allowedAddressCountries: ['us'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+      }
+      return clean
+    }
   },
   GR: {
     prefix: '+30',
-    placeholder: '69 0865 4153',
-    pattern: /^(\+30|30)0?[6-9]\d{8}$/,
+    placeholder: '694 123 4567',
+    pattern: /^(\+30|30)0?[2-9]\d{9}$/,
     flag: '🇬🇷',
     name: 'Greece',
-    allowedAddressCountries: ['gr', 'al', 'it', 'us']
+    allowedAddressCountries: ['gr', 'al', 'it', 'us'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   },
   IT: {
     prefix: '+39',
@@ -67,7 +89,14 @@ const COUNTRY_CONFIGS = {
     pattern: /^(\+39|39)0?[3]\d{8,9}$/,
     flag: '🇮🇹',
     name: 'Italy',
-    allowedAddressCountries: ['it']
+    allowedAddressCountries: ['it'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   }
 }
 
@@ -79,16 +108,24 @@ const OTHER_COUNTRIES = [
   { code: 'CA', prefix: '+1', flag: '🇨🇦', name: 'Canada', placeholder: '(555) 123-4567' },
 ]
 
-// Detect country from business data
+// Fixed country detection
 function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS | 'OTHER' {
-  if (typeof window !== 'undefined') {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (timezone === 'Europe/Athens') return 'GR'
-    if (timezone === 'Europe/Tirane') return 'AL'
-    if (timezone === 'Europe/Rome') return 'IT'
-    if (timezone.includes('America/')) return 'US'
+  // PRIMARY: Check business coordinates
+  if (storeData?.storeLatitude && storeData?.storeLongitude) {
+    const lat = storeData.storeLatitude
+    const lng = storeData.storeLongitude
+    
+    // Albania boundaries
+    if (lat >= 39.6 && lat <= 42.7 && lng >= 19.3 && lng <= 21.1) return 'AL'
+    // Greece boundaries 
+    if (lat >= 34.8 && lat <= 41.8 && lng >= 19.3 && lng <= 28.2) return 'GR'
+    // Italy boundaries
+    if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) return 'IT'
+    // US boundaries
+    if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) return 'US'
   }
   
+  // SECONDARY: Check WhatsApp number
   if (storeData?.whatsappNumber) {
     if (storeData.whatsappNumber.startsWith('+355')) return 'AL'
     if (storeData.whatsappNumber.startsWith('+30')) return 'GR'
@@ -96,35 +133,77 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (storeData.whatsappNumber.startsWith('+1')) return 'US'
   }
   
+  // TERTIARY: Browser/timezone detection
+  if (typeof window !== 'undefined') {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (timezone === 'Europe/Tirane') return 'AL'
+      if (timezone === 'Europe/Athens') return 'GR'
+      if (timezone === 'Europe/Rome') return 'IT'
+      if (timezone.includes('America/')) return 'US'
+    } catch (error) {
+      // Continue with other detection methods
+    }
+  }
+  
   return 'US'
 }
 
-// Phone Input Component
+// Detect country from phone number prefix
+function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFIGS | 'OTHER' {
+  if (phoneValue.startsWith('+355')) return 'AL'
+  if (phoneValue.startsWith('+30')) return 'GR'
+  if (phoneValue.startsWith('+39')) return 'IT'
+  if (phoneValue.startsWith('+1')) return 'US'
+  
+  // Without + prefix
+  if (phoneValue.startsWith('355')) return 'AL'
+  if (phoneValue.startsWith('30')) return 'GR'
+  if (phoneValue.startsWith('39')) return 'IT'
+  if (phoneValue.startsWith('1')) return 'US'
+  
+  return 'OTHER'
+}
+
+// Fixed Phone Input Component
 function PhoneInput({ value, onChange, storeData, error }: {
   value: string
   onChange: (phone: string) => void
   storeData: any
   error?: string
 }) {
-  const [selectedCountry, setSelectedCountry] = useState<string>('US')
+  const [selectedCountry, setSelectedCountry] = useState<keyof typeof COUNTRY_CONFIGS | 'OTHER'>('US')
   const [showDropdown, setShowDropdown] = useState(false)
   const [isValid, setIsValid] = useState(true)
+  const [hasUserInput, setHasUserInput] = useState(false)
 
+  // Initial setup
   useEffect(() => {
-    const detected = detectCountryFromBusiness(storeData)
-    if (detected !== 'OTHER') {
+    if (!value || value.trim() === '') {
+      const detected = detectCountryFromBusiness(storeData)
       setSelectedCountry(detected)
-      if (!value) {
+      if (detected !== 'OTHER' && detected in COUNTRY_CONFIGS) {
         onChange(COUNTRY_CONFIGS[detected].prefix + ' ')
       }
     }
-  }, [storeData])
+  }, [storeData, onChange])
 
+  // Dynamic country detection based on user input
   useEffect(() => {
-    if (value && selectedCountry in COUNTRY_CONFIGS) {
-      const config = COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS]
+    if (value && hasUserInput) {
+      const detectedCountry = detectCountryFromPrefix(value)
+      if (detectedCountry !== 'OTHER') {
+        setSelectedCountry(detectedCountry)
+      }
+    }
+  }, [value, hasUserInput])
+
+  // Fixed validation
+  useEffect(() => {
+    if (value && selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      const config = COUNTRY_CONFIGS[selectedCountry]
       
-      // Only validate if user has input beyond the prefix
+      // Check if user has actual input beyond prefix
       const hasActualInput = value.length > config.prefix.length + 1
       
       if (hasActualInput) {
@@ -134,29 +213,44 @@ function PhoneInput({ value, onChange, storeData, error }: {
       } else {
         setIsValid(true)
       }
+    } else {
+      setIsValid(true)
     }
   }, [value, selectedCountry])
 
   const handleCountrySelect = (countryCode: string, prefix: string) => {
-    setSelectedCountry(countryCode)
+    setSelectedCountry(countryCode as any)
+    setHasUserInput(true)
     onChange(prefix + ' ')
     setShowDropdown(false)
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHasUserInput(true)
+    onChange(e.target.value)
+  }
+
   const getPlaceholder = () => {
-    if (selectedCountry in COUNTRY_CONFIGS) {
-      return COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS].placeholder
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return COUNTRY_CONFIGS[selectedCountry].placeholder
     }
     const otherCountry = OTHER_COUNTRIES.find(c => c.code === selectedCountry)
     return otherCountry?.placeholder || 'Enter phone number'
   }
 
   const getFlag = () => {
-    if (selectedCountry in COUNTRY_CONFIGS) {
-      return COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS].flag
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return COUNTRY_CONFIGS[selectedCountry].flag
     }
     const otherCountry = OTHER_COUNTRIES.find(c => c.code === selectedCountry)
     return otherCountry?.flag || '🌍'
+  }
+
+  const getValidationMessage = () => {
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return `Please enter a valid ${COUNTRY_CONFIGS[selectedCountry].name} phone number`
+    }
+    return 'Please enter a valid phone number'
   }
 
   return (
@@ -177,7 +271,7 @@ function PhoneInput({ value, onChange, storeData, error }: {
         <input
           type="tel"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           className={`w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
             error || (!isValid && value.length > 5) ? 'border-red-300' : 'border-gray-300'
           }`}
@@ -222,9 +316,9 @@ function PhoneInput({ value, onChange, storeData, error }: {
       </div>
       
       {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
-      {!isValid && value.length > 5 && !error && (
+      {!error && !isValid && value.length > 5 && (
         <p className="text-red-600 text-sm mt-1">
-          Please enter a valid phone number for {COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS]?.name || 'this country'}
+          {getValidationMessage()}
         </p>
       )}
       
@@ -240,13 +334,11 @@ function useGooglePlaces() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    // Check if Google Maps is already loaded
     if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
       setIsLoaded(true)
       return
     }
 
-    // Load Google Maps API if not already loaded
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
     script.async = true
@@ -265,13 +357,14 @@ function useGooglePlaces() {
   return { isLoaded }
 }
 
-// Enhanced Address Input with Google Places Autocomplete
+// Enhanced Address Input with auto-parsing
 function AddressAutocomplete({ 
   value, 
   onChange, 
   placeholder, 
   required, 
   onLocationChange,
+  onAddressParsed,
   storeData,
   error
 }: {
@@ -280,6 +373,7 @@ function AddressAutocomplete({
   placeholder: string
   required: boolean
   onLocationChange?: (lat: number, lng: number, address: string) => void
+  onAddressParsed?: (parsedAddress: any) => void
   storeData?: any
   error?: string
 }) {
@@ -287,21 +381,20 @@ function AddressAutocomplete({
   const { isLoaded } = useGooglePlaces()
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
   
-  // Get allowed countries based on business detection
   const getAllowedCountries = () => {
     const detectedCountry = detectCountryFromBusiness(storeData)
     
     switch (detectedCountry) {
       case 'AL':
-        return ['al'] // Albania business - only Albania addresses
+        return ['al']
       case 'US':
-        return ['us'] // US business - only US addresses
+        return ['us']
       case 'GR':
-        return ['gr', 'al', 'it', 'us'] // Greece business - 4 countries
+        return ['gr', 'al', 'it', 'us']
       case 'IT':
-        return ['it'] // Italy business - only Italy addresses
+        return ['it']
       default:
-        return ['us'] // Default fallback
+        return ['us']
     }
   }
   
@@ -324,10 +417,58 @@ function AddressAutocomplete({
           const lat = place.geometry.location.lat()
           const lng = place.geometry.location.lng()
           
-          // Update the input value first
+          // Parse address components
+          const addressComponents = place.address_components || []
+          const parsedAddress = {
+            street: '',
+            city: '',
+            zipCode: '',
+            country: ''
+          }
+
+          // Extract components
+          addressComponents.forEach((component: any) => {
+            const types = component.types
+            
+            if (types.includes('street_number') || types.includes('route')) {
+              if (types.includes('street_number')) {
+                parsedAddress.street = component.long_name + ' ' + parsedAddress.street
+              } else if (types.includes('route')) {
+                parsedAddress.street = parsedAddress.street + component.long_name
+              }
+            }
+            
+            if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+              parsedAddress.city = component.long_name
+            }
+            
+            if (types.includes('postal_code')) {
+              parsedAddress.zipCode = component.long_name
+            }
+            
+            if (types.includes('country')) {
+              parsedAddress.country = component.long_name
+            }
+          })
+
+          // Fallback for street if not found in components
+          if (!parsedAddress.street.trim()) {
+            // Extract street from formatted address
+            const addressParts = place.formatted_address.split(',')
+            if (addressParts.length > 0) {
+              parsedAddress.street = addressParts[0].trim()
+            }
+          }
+
+          // Update the input value
           onChange(place.formatted_address)
           
-          // Then trigger location change if callback provided
+          // Call parsing callback
+          if (onAddressParsed) {
+            onAddressParsed(parsedAddress)
+          }
+          
+          // Call location change callback
           if (onLocationChange) {
             setIsCalculatingFee(true)
             try {
@@ -340,7 +481,7 @@ function AddressAutocomplete({
         }
       })
     }
-  }, [isLoaded, onChange, onLocationChange, storeData])
+  }, [isLoaded, onChange, onLocationChange, onAddressParsed, storeData])
 
   return (
     <div>
@@ -378,7 +519,7 @@ function AddressAutocomplete({
   )
 }
 
-export default function CustomerForm({ businessId, onSuccess, onCancel }: CustomerFormProps) {
+export default function CustomerForm({ businessId, customerId, onSuccess, onCancel }: CustomerFormProps) {
   const [formData, setFormData] = useState<CustomerFormData>({
     name: '',
     phone: '',
@@ -398,11 +539,54 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!customerId)
   const [currentTag, setCurrentTag] = useState('')
   const [storeData, setStoreData] = useState<any>({})
 
+  const isEditMode = !!customerId
+
+  // Load existing customer data for edit mode
   useEffect(() => {
-    // Fetch store data for country detection
+    const fetchCustomerData = async () => {
+      if (!customerId) return
+      
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const customer = data.customer
+          
+          setFormData({
+            name: customer.name || '',
+            phone: customer.phone || '',
+            email: customer.email || '',
+            tier: customer.tier || 'REGULAR',
+            addressJson: customer.addressJson || {
+              street: '',
+              additional: '',
+              zipCode: '',
+              city: '',
+              country: 'USA'
+            },
+            tags: customer.tags || [],
+            notes: customer.notes || '',
+            addedByAdmin: customer.addedByAdmin || true
+          })
+        } else {
+          setErrors({ name: 'Failed to load customer data' })
+        }
+      } catch (error) {
+        setErrors({ name: 'Network error loading customer data' })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchCustomerData()
+  }, [businessId, customerId])
+
+  useEffect(() => {
     const fetchStoreData = async () => {
       try {
         const response = await fetch(`/api/admin/stores/${businessId}`)
@@ -429,6 +613,16 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required'
+    } else {
+      // Validate phone based on detected country
+      const detectedCountry = detectCountryFromPrefix(formData.phone)
+      if (detectedCountry !== 'OTHER' && detectedCountry in COUNTRY_CONFIGS) {
+        const config = COUNTRY_CONFIGS[detectedCountry]
+        const cleanPhone = formData.phone.replace(/[^\d+]/g, '')
+        if (!config.pattern.test(cleanPhone)) {
+          newErrors.phone = `Please enter a valid ${config.name} phone number`
+        }
+      }
     }
 
     if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -454,10 +648,17 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
     if (!validateForm()) return
     
     setIsSubmitting(true)
+    setErrors({})
     
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/customers`, {
-        method: 'POST',
+      const url = isEditMode 
+        ? `/api/admin/stores/${businessId}/customers/${customerId}`
+        : `/api/admin/stores/${businessId}/customers`
+      
+      const method = isEditMode ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -476,7 +677,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
         if (data.message?.includes('phone')) {
           setErrors({ phone: 'A customer with this phone number already exists' })
         } else {
-          setErrors({ name: data.message || 'Failed to create customer' })
+          setErrors({ name: data.message || `Failed to ${isEditMode ? 'update' : 'create'} customer` })
         }
       }
     } catch (error) {
@@ -510,7 +711,41 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
     }
   }
 
-  const detectedCountry = detectCountryFromBusiness(storeData)
+  const handleAddressParsed = (parsedAddress: any) => {
+    setFormData(prev => ({
+      ...prev,
+      addressJson: {
+        ...prev.addressJson,
+        city: parsedAddress.city || prev.addressJson.city,
+        zipCode: parsedAddress.zipCode || prev.addressJson.zipCode,
+        country: parsedAddress.country || prev.addressJson.country
+      }
+    }))
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="animate-pulse space-y-6">
+                <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -530,16 +765,21 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   </button>
                 )}
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Add New Customer</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+                  </h1>
                   <p className="text-sm text-gray-600 mt-1">
-                    Create a new customer profile for your store
+                    {isEditMode 
+                      ? 'Update customer profile information'
+                      : 'Create a new customer profile for your store'
+                    }
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Form */}
-            <div className="p-6 space-y-8">
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
               {/* Basic Information */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
@@ -641,7 +881,6 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                       storeData={storeData}
                       error={errors.street}
                       onLocationChange={(lat, lng, address) => {
-                        // Update coordinates when address is selected
                         setFormData(prev => ({
                           ...prev,
                           addressJson: {
@@ -651,6 +890,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                           }
                         }))
                       }}
+                      onAddressParsed={handleAddressParsed}
                     />
                   </div>
 
@@ -788,11 +1028,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   </button>
                 )}
                 <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleSubmit(e as any)
-                  }}
+                  type="submit"
                   disabled={isSubmitting}
                   className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -801,10 +1037,13 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  {isSubmitting ? 'Creating...' : 'Create Customer'}
+                  {isSubmitting 
+                    ? (isEditMode ? 'Updating...' : 'Creating...') 
+                    : (isEditMode ? 'Update Customer' : 'Create Customer')
+                  }
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
 
@@ -917,11 +1156,11 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
               {/* Action Items */}
               <div className="bg-teal-50 p-3 rounded-lg">
                 <h4 className="text-xs font-semibold text-teal-800 mb-2">
-                  After Creating Customer:
+                  {isEditMode ? 'After Updating Customer:' : 'After Creating Customer:'}
                 </h4>
                 <ul className="space-y-1 text-xs text-teal-700">
-                  <li>• Send welcome message via WhatsApp</li>
-                  <li>• Create their first order if needed</li>
+                  <li>• {isEditMode ? 'Notify team of changes' : 'Send welcome message via WhatsApp'}</li>
+                  <li>• {isEditMode ? 'Update any pending orders' : 'Create their first order if needed'}</li>
                   <li>• Add relevant tags based on preferences</li>
                   <li>• Set up any special pricing if VIP</li>
                 </ul>
