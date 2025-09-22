@@ -78,7 +78,7 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
   if (!businessHours) return slots
   
   // Get business hours for the selected day
-  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' })
+  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
   const dayHours = businessHours[dayOfWeek]
   
   // @ts-ignore
@@ -420,7 +420,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     return 'US'
   }
 
-function StoreLocationMap({ 
+  function StoreLocationMap({ 
     storeData, 
     primaryColor, 
     translations 
@@ -429,8 +429,16 @@ function StoreLocationMap({
     primaryColor: string, 
     translations: any 
   }) {
+
+
     const openDirections = () => {
-      if (storeData.address) {
+      // Use coordinates if available for more accurate directions
+      if (storeData.storeLatitude && storeData.storeLongitude) {
+        const lat = storeData.storeLatitude
+        const lng = storeData.storeLongitude
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank')
+      } else if (storeData.address) {
+        // Fallback to address if coordinates not available
         const encodedAddress = encodeURIComponent(storeData.address)
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank')
       }
@@ -459,7 +467,10 @@ function StoreLocationMap({
         </p>
         
         {/* Full Width Map Area */}
-        <div className="relative w-full h-32 sm:h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden mb-4 border border-gray-200">
+        <div 
+          className="relative w-full h-32 sm:h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden mb-4 border border-gray-200 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={openDirections}
+        >
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100/50 to-purple-100/50"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
@@ -475,7 +486,10 @@ function StoreLocationMap({
           </div>
           <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
             <button
-              onClick={openDirections}
+              onClick={(e) => {
+                e.stopPropagation()
+                openDirections()
+              }}
               className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
             >
               <Navigation className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
@@ -484,19 +498,19 @@ function StoreLocationMap({
         </div>
         
         {/* Bottom Section - Stacked */}
-<div className="space-y-3">
-  <p className="text-xs sm:text-sm text-gray-600">
-    {translations.pickupInstructions || 'Please come to this location to collect your order.'}
-  </p>
-  <button
-    onClick={openDirections}
-    className="w-full px-4 py-2 rounded-lg text-sm font-medium text-white hover:opacity-90 transition-opacity flex items-center justify-center"
-    style={{ backgroundColor: primaryColor }}
-  >
-    <Navigation className="w-4 h-4 mr-1" />
-    {translations.directions || 'Directions'}
-  </button>
-</div>
+        <div className="space-y-3">
+          <p className="text-xs sm:text-sm text-gray-600">
+            {translations.pickupInstructions || 'Please come to this location to collect your order.'}
+          </p>
+          <button
+            onClick={openDirections}
+            className="w-full px-4 py-2 rounded-lg text-sm font-medium text-white hover:opacity-90 transition-opacity flex items-center justify-center"
+            style={{ backgroundColor: primaryColor }}
+          >
+            <Navigation className="w-4 h-4 mr-1" />
+            {translations.directions || 'Directions'}
+          </button>
+        </div>
       </div>
     )
   }
@@ -1012,14 +1026,14 @@ function TimeSelection({
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-left flex items-center justify-between"
                 style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
               >
-                <span>{selectedTime && timeMode === 'schedule' ? 
-                  new Date(selectedTime).toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit', 
-                    hour12: true 
-                  }) : 
-                  translations.selectTime || 'Select Time'
-                }</span>
+               <span>{selectedTime && timeMode === 'schedule' && selectedTime !== 'asap' ? 
+  new Date(selectedTime).toLocaleTimeString('en-US', { 
+    hour: 'numeric', 
+    minute: '2-digit', 
+    hour12: true 
+  }) : 
+  translations.selectTime || 'Select Time'
+}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
@@ -1052,6 +1066,7 @@ function TimeSelection({
 }
 
 // Simple Delivery Switcher Component
+// Fixed Delivery Switcher Component with proper TypeScript types
 function DeliveryTypeSwitcher({
   // @ts-ignore
   deliveryType,
@@ -1062,18 +1077,23 @@ function DeliveryTypeSwitcher({
   // @ts-ignore
   primaryColor,
   disabled = false
+}: {
+  deliveryType: 'delivery' | 'pickup' | 'dineIn'
+  setDeliveryType: (type: 'delivery' | 'pickup' | 'dineIn') => void
+  deliveryOptions: Array<{ key: string; label: string; icon: any }>
+  primaryColor: string
+  disabled?: boolean
 }) {
   if (deliveryOptions.length <= 1) return null
 
   return (
     <div className="inline-flex bg-gray-100 p-1 rounded-full">
-      {/* @ts-ignore */}
       {deliveryOptions.map(option => {
         const IconComponent = option.icon
         return (
           <button
             key={option.key}
-            onClick={() => !disabled && setDeliveryType(option.key)}
+            onClick={() => !disabled && setDeliveryType(option.key as 'delivery' | 'pickup' | 'dineIn')}
             disabled={disabled}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 min-w-[80px] flex items-center justify-center ${
               deliveryType === option.key
@@ -1304,13 +1324,22 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   // Create a helper function to check if the order can be submitted:
   const canSubmitOrder = () => {
+    // First check - store must be open
+    if (!storeData.isOpen) return false
     if (storeData.isTemporarilyClosed) return false
+    
+    // Basic requirements
     if (cart.length === 0) return false
     if (!customerInfo.name || !customerInfo.phone) return false
-    if (deliveryType === 'delivery' && !customerInfo.address) return false
-    if (deliveryType === 'delivery' && !meetsMinimumOrder && !deliveryError) return false
-    if (deliveryType === 'delivery' && deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
     if (isOrderLoading) return false
+    
+    // Delivery specific checks
+    if (deliveryType === 'delivery') {
+      if (!customerInfo.address) return false
+      if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
+      if (!meetsMinimumOrder && !deliveryError) return false
+    }
+    
     return true
   }
 
@@ -1400,7 +1429,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   }
 
   const openProductModal = (product: Product) => {
+    // Don't open modal if store is temporarily closed
+    if (!storeData.isOpen) return
     if (storeData.isTemporarilyClosed) return
+    
     setSelectedProduct(product)
     setSelectedVariant(product.variants.length > 0 ? product.variants[0] : null)
     setSelectedModifiers([])
@@ -1674,7 +1706,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               <div className="hidden lg:block flex-shrink-0">
                 <DeliveryTypeSwitcher
                   deliveryType={deliveryType}
-                  setDeliveryType={setDeliveryType}
+                  setDeliveryType={handleDeliveryTypeChange} // Use the function, not setDeliveryType
                   deliveryOptions={getDeliveryOptions()}
                   primaryColor={primaryColor}
                   disabled={false}
@@ -1735,13 +1767,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         <div className="lg:col-span-2">
           {/* Mobile Delivery Type Switcher */}
           <div className="lg:hidden mb-6">
-            <DeliveryTypeSwitcher
-              deliveryType={deliveryType}
-              setDeliveryType={setDeliveryType}
-              deliveryOptions={getDeliveryOptions()}
-              primaryColor={primaryColor}
-              disabled={false}
-            />
+          <DeliveryTypeSwitcher
+            deliveryType={deliveryType}
+            setDeliveryType={handleDeliveryTypeChange} // Use the function, not setDeliveryType
+            deliveryOptions={getDeliveryOptions()}
+            primaryColor={primaryColor}
+            disabled={false} // Disable when store closed
+          />
           </div>
 
           {/* Search Section */}
@@ -1928,7 +1960,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     primaryColor={primaryColor}
                     currencySymbol={currencySymbol}
                     translations={translations}
-                    disabled={storeData.isTemporarilyClosed}
+                    disabled={!storeData.isOpen || storeData.isTemporarilyClosed}
                     // searchTerm={searchTerm} // Pass search term for highlighting
                 />
                 ))
@@ -1938,31 +1970,32 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
         {/* Right Side - Order Panel (Desktop) */}
         <div className="hidden lg:block">
-          <OrderPanel 
-            storeData={storeData}
-            cart={cart}
-            deliveryType={deliveryType}
-            setDeliveryType={handleDeliveryTypeChange} // Use the updated handler
-            customerInfo={customerInfo}
-            setCustomerInfo={setCustomerInfo}
-            cartSubtotal={cartSubtotal}
-            cartDeliveryFee={cartDeliveryFee}
-            cartTotal={cartTotal}
-            meetsMinimumOrder={meetsMinimumOrder}
-            currencySymbol={currencySymbol}
-            updateCartItemQuantity={updateCartItemQuantity}
-            removeFromCart={removeFromCart}
-            submitOrder={submitOrder}
-            isOrderLoading={isOrderLoading}
-            deliveryOptions={getDeliveryOptions()}
-            primaryColor={primaryColor}
-            translations={translations}
-            onLocationChange={handleLocationChange}
-            // @ts-ignore
-            deliveryError={deliveryError} // ADD THIS
-            onClearDeliveryError={handleClearDeliveryError} // ADD THIS  
-            canSubmitOrder={canSubmitOrder} // ADD THIS
-          />
+          
+        <OrderPanel 
+          storeData={storeData}
+          cart={cart}
+          deliveryType={deliveryType}
+          setDeliveryType={handleDeliveryTypeChange} // Fixed function call
+          customerInfo={customerInfo}
+          setCustomerInfo={setCustomerInfo}
+          cartSubtotal={cartSubtotal}
+          cartDeliveryFee={cartDeliveryFee}
+          cartTotal={cartTotal}
+          meetsMinimumOrder={meetsMinimumOrder}
+          currencySymbol={currencySymbol}
+          updateCartItemQuantity={updateCartItemQuantity}
+          removeFromCart={removeFromCart}
+          submitOrder={submitOrder}
+          isOrderLoading={isOrderLoading}
+          deliveryOptions={getDeliveryOptions()}
+          primaryColor={primaryColor}
+          translations={translations}
+          onLocationChange={handleLocationChange}
+          // @ts-ignore
+          deliveryError={deliveryError}
+          onClearDeliveryError={handleClearDeliveryError}
+          canSubmitOrder={canSubmitOrder}
+        />
         </div>
       </div>
 
@@ -2003,7 +2036,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               storeData={storeData}
               cart={cart}
               deliveryType={deliveryType}
-              setDeliveryType={handleDeliveryTypeChange} // Use the updated handler
+              setDeliveryType={handleDeliveryTypeChange} // Fixed function call
               customerInfo={customerInfo}
               setCustomerInfo={setCustomerInfo}
               cartSubtotal={cartSubtotal}
@@ -2020,10 +2053,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               translations={translations}
               onLocationChange={handleLocationChange}
               isMobile={true}
-                // @ts-ignore
-              deliveryError={deliveryError} // ADD THIS
-              onClearDeliveryError={handleClearDeliveryError} // ADD THIS
-              canSubmitOrder={canSubmitOrder} // ADD THIS
+              // @ts-ignore
+              deliveryError={deliveryError}
+              onClearDeliveryError={handleClearDeliveryError}
+              canSubmitOrder={canSubmitOrder}
             />
             </div>
           </div>
@@ -2367,7 +2400,7 @@ function EmptyState({
   )
 }
 
-// Fixed Product Card Component - Better badge positioning
+// Fixed Product Card Component - Properly disabled when store is closed
 function ProductCard({ 
   product, 
   onOpenModal, 
@@ -2386,10 +2419,13 @@ function ProductCard({
   const hasImage = product.images.length > 0
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
-      disabled ? 'opacity-60' : ''
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow ${
+      disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'
     }`}>
-      <div className="flex items-start p-5">
+      <div 
+        className="flex items-start p-5"
+        onClick={() => !disabled && onOpenModal(product)}
+      >
         <div className="flex-1 flex flex-col justify-between">
           <div>
             <div className="mb-2">
@@ -2429,10 +2465,15 @@ function ProductCard({
               </div>
               
               <button
-                onClick={() => !disabled && onOpenModal(product)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (!disabled && product.stock > 0) {
+                    onOpenModal(product)
+                  }
+                }}
                 disabled={disabled || product.stock === 0}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform flex-shrink-0"
-                style={{ backgroundColor: primaryColor }}
+                style={{ backgroundColor: disabled ? '#9ca3af' : primaryColor }}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -2449,13 +2490,15 @@ function ProductCard({
             <img 
               src={product.images[0]} 
               alt={product.name}
-              className="w-full h-full object-cover rounded-lg"
+              className={`w-full h-full object-cover rounded-lg ${disabled ? 'filter grayscale' : ''}`}
             />
           </div>
         )}
         
         {!hasImage && (
-          <div className="w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
+          <div className={`w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0 ${
+            disabled ? 'filter grayscale' : ''
+          }`}>
             <Package className="w-7 h-7" />
           </div>
         )}
@@ -2995,17 +3038,19 @@ function OrderPanel({
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.382"/>
           </svg>
           {(() => {
-            if (storeData.isTemporarilyClosed) {
-              return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
-            } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
-              return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
-            } else if (deliveryError) {
-              return translations.deliveryNotAvailable || 'Delivery Not Available'
-            } else if (isOrderLoading) {
-              return translations.placingOrder || 'Placing Order...'
-            } else {
-              return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
-            }
+           if (!storeData.isOpen) {
+            return translations.closed || 'Store Closed'
+          } else if (storeData.isTemporarilyClosed) {
+            return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
+          } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
+            return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
+          } else if (deliveryError) {
+            return translations.deliveryNotAvailable || 'Delivery Not Available'
+          } else if (isOrderLoading) {
+            return translations.placingOrder || 'Placing Order...'
+          } else {
+            return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+          }
           })()}
         </button>
 

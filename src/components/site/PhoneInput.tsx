@@ -83,7 +83,7 @@ const COUNTRY_CONFIGS = {
 // Detect country from user's location and business data
 function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS {
   // PRIMARY: Check business latitude/longitude coordinates (most reliable for business location)
-  if (storeData.storeLatitude && storeData.storeLongitude) {
+  if (storeData?.storeLatitude && storeData?.storeLongitude) {
     const lat = storeData.storeLatitude
     const lng = storeData.storeLongitude
     
@@ -109,40 +109,15 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
   }
   
   // SECONDARY: Check whatsapp number prefix
-  if (storeData.whatsappNumber?.startsWith('+355')) return 'AL'
-  if (storeData.whatsappNumber?.startsWith('+30')) return 'GR'
-  if (storeData.whatsappNumber?.startsWith('+39')) return 'IT'
-  if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
+  if (storeData?.whatsappNumber?.startsWith('+355')) return 'AL'
+  if (storeData?.whatsappNumber?.startsWith('+30')) return 'GR'
+  if (storeData?.whatsappNumber?.startsWith('+39')) return 'IT'
+  if (storeData?.whatsappNumber?.startsWith('+1')) return 'US'
   
-  // TERTIARY: Detect user's location from platform usage
-  if (typeof window !== 'undefined') {
-    // Check browser language
-    const browserLanguage = navigator.language.toLowerCase()
-    if (browserLanguage.startsWith('sq') || browserLanguage.includes('al')) {
-      return 'AL'
-    }
-    if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
-      return 'GR'
-    }
-    if (browserLanguage.startsWith('it')) {
-      return 'IT'
-    }
-    
-    // Check timezone
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      if (timezone === 'Europe/Tirane') return 'AL'
-      if (timezone === 'Europe/Athens') return 'GR'
-      if (timezone === 'Europe/Rome') return 'IT'
-    } catch (error) {
-      // Timezone detection failed, continue
-    }
-  }
-  
-  // FALLBACK: Check business indicators
-  if (storeData.currency === 'ALL' || storeData.language === 'sq') return 'AL'
-  if (storeData.currency === 'EUR' && storeData.language === 'el') return 'GR'
-  if (storeData.currency === 'EUR' && storeData.language === 'it') return 'IT'
+  // TERTIARY: Check business indicators
+  if (storeData?.currency === 'ALL' || storeData?.language === 'sq') return 'AL'
+  if (storeData?.currency === 'EUR' && storeData?.language === 'el') return 'GR'
+  if (storeData?.currency === 'EUR' && storeData?.language === 'it') return 'IT'
   
   // DEFAULT: Use US if all detection methods fail
   return 'US'
@@ -177,34 +152,46 @@ export function PhoneInput({
   const [isValid, setIsValid] = useState(true)
   const [hasUserInput, setHasUserInput] = useState(false)
   const [isTouched, setIsTouched] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  // Initial setup - detect country from business data only once
+  // FIXED: Only initialize once when component mounts and there's no existing value
   useEffect(() => {
-    if (!value) {
+    if (!isInitialized && !value && storeData) {
       const detectedCountry = detectCountryFromBusiness(storeData)
       setCountry(detectedCountry)
+      setIsInitialized(true)
       
-      // Initialize with prefix
+      // Initialize with prefix only if no value exists
       if (detectedCountry !== 'DEFAULT') {
         const config = COUNTRY_CONFIGS[detectedCountry]
         onChange(config.prefix + ' ')
       }
+    } else if (!isInitialized && value) {
+      // If there's already a value, detect country from it
+      const detectedFromValue = detectCountryFromPrefix(value)
+      if (detectedFromValue !== 'DEFAULT') {
+        setCountry(detectedFromValue)
+      } else {
+        const detectedFromBusiness = detectCountryFromBusiness(storeData)
+        setCountry(detectedFromBusiness)
+      }
+      setIsInitialized(true)
     }
-  }, [storeData, onChange])
+  }, [storeData, value, onChange, isInitialized])
 
-  // Dynamic country detection based on user input
+  // Dynamic country detection based on user input (only after initialization)
   useEffect(() => {
-    if (value && hasUserInput) {
+    if (value && hasUserInput && isInitialized) {
       const detectedCountry = detectCountryFromPrefix(value)
-      if (detectedCountry !== 'DEFAULT') {
+      if (detectedCountry !== 'DEFAULT' && detectedCountry !== country) {
         setCountry(detectedCountry)
       }
     }
-  }, [value, hasUserInput])
+  }, [value, hasUserInput, isInitialized, country])
 
   // Validation effect
   useEffect(() => {
-    if (value && country !== 'DEFAULT') {
+    if (value && country !== 'DEFAULT' && isInitialized) {
       const config = COUNTRY_CONFIGS[country]
       
       // Check if user has input beyond just the prefix
@@ -221,7 +208,7 @@ export function PhoneInput({
     } else {
       setIsValid(true)
     }
-  }, [value, country])
+  }, [value, country, isInitialized])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
@@ -292,11 +279,6 @@ export function PhoneInput({
             borderColor: !isValid && value && (hasUserInput || isTouched) ? '#fca5a5' : undefined
           } as React.CSSProperties}
           onFocus={(e) => !disabled && (e.target.style.borderColor = primaryColor)}
-          // @ts-ignore
-          onBlur={(e) => {
-            e.target.style.borderColor = !isValid && value && (hasUserInput || isTouched) ? '#fca5a5' : '#e5e7eb'
-            handleBlur()
-          }}
           placeholder={config.placeholder}
         />
       </div>
@@ -309,7 +291,6 @@ export function PhoneInput({
       
       <p className="text-gray-500 text-xs mt-1">
         {getFormatExample()}
-        
       </p>
     </div>
   )
