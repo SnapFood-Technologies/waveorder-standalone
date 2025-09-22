@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Eye, ShoppingBag, DollarSign, TrendingUp, Calendar, Info } from 'lucide-react'
+import { Eye, ShoppingBag, TrendingUp, Calendar, Info, Wallet } from 'lucide-react'
 
 import { DateRangeFilter } from './DateRangeFilter'
 
@@ -141,7 +141,7 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
     {
       name: 'Revenue',
       value: formatCurrency(metrics.revenue),
-      icon: DollarSign,
+      icon: Wallet,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
       hasTooltip: true,
@@ -328,7 +328,7 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <DollarSign className="w-5 h-5 text-emerald-600 mr-2" />
+                <Wallet className="w-5 h-5 text-emerald-600 mr-2" />
                 Revenue Calculation
               </h3>
               <button

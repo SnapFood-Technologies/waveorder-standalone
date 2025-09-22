@@ -197,7 +197,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
         </div>
         <div className="mt-4 lg:mt-0 flex items-center space-x-3">
           <a
-            href={`/site/${businessData.slug}`}
+            href={`/${businessData.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -340,7 +340,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
 
           {/* Typography Section */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center mb-2">
               <Type className="w-5 h-5 text-teal-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Typography</h3>
             </div>
@@ -363,7 +363,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
 
           {/* Mobile Settings */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center mb-4">
+            <div className="flex items-center mb-2">
               <Smartphone className="w-5 h-5 text-teal-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Mobile Experience</h3>
             </div>
@@ -425,7 +425,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
         {/* Preview Panel */}
         <div className="lg:sticky lg:top-8">
           <div className="bg-white p-6 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
                 <Eye className="w-5 h-5 text-teal-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">Live Preview</h3>
@@ -459,7 +459,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   <p className="text-xs mt-1">
                     Want to see your real store? {' '}
                     <a 
-                      href={`/site/${businessData.slug}`}
+                      href={`/${businessData.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline hover:no-underline font-medium"

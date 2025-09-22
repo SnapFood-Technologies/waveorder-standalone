@@ -22,7 +22,11 @@ import {
   Percent,
   User,
   Cog,
-  CreditCard
+  CreditCard,
+  List,
+  Upload,
+  Activity,
+  TrendingUp
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -94,9 +98,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     },
     { 
       name: 'Products', 
-      href: `${baseUrl}/products`, 
       icon: Package, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'FREE',
+      children: [
+        { 
+          name: 'List', 
+          href: `${baseUrl}/products`, 
+          icon: List, 
+          requiredPlan: 'FREE'
+        },
+        { 
+          name: 'Categories', 
+          href: `${baseUrl}/product-categories`, 
+          icon: Boxes, 
+          requiredPlan: 'FREE'
+        },
+        { 
+          name: 'Import', 
+          href: `${baseUrl}/products/import`, 
+          icon: Upload, 
+          requiredPlan: 'FREE'
+        },
+      ]
     },
     { 
       name: 'Customers', 
@@ -121,9 +144,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     ...(subscription.plan === 'PRO' ? [
       { 
         name: 'Inventory', 
-        href: `${baseUrl}/inventory`, 
-        icon: Boxes, 
-        requiredPlan: 'PRO' as Plan
+        icon: Boxes,
+        requiredPlan: 'PRO' as Plan,
+        children: [
+          { 
+            name: 'Dashboard', 
+            href: `${baseUrl}/inventory`, 
+            icon: LayoutDashboard, 
+            requiredPlan: 'PRO' as Plan
+          },
+          { 
+            name: 'Activities', 
+            href: `${baseUrl}/inventory/activities`, 
+            icon: Activity, 
+            requiredPlan: 'PRO' as Plan
+          },
+          { 
+            name: 'Stock Adjustment', 
+            href: `${baseUrl}/inventory/adjustments`, 
+            icon: TrendingUp, 
+            requiredPlan: 'PRO' as Plan
+          },
+        ]
       },
       { 
         name: 'Discounts', 
