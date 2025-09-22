@@ -1003,22 +1003,16 @@ function TimeSelection({
 
 // Simple Delivery Switcher Component
 function DeliveryTypeSwitcher({
-  // @ts-ignore
   deliveryType,
-  // @ts-ignore
   setDeliveryType,
-  // @ts-ignore
   deliveryOptions,
-  // @ts-ignore
   primaryColor,
-  // @ts-ignore
   disabled = false
 }) {
   if (deliveryOptions.length <= 1) return null
 
   return (
     <div className="inline-flex bg-gray-100 p-1 rounded-full">
-      {/* @ts-ignore */}
       {deliveryOptions.map(option => {
         const IconComponent = option.icon
         return (
@@ -1157,6 +1151,21 @@ const getCurrencySymbol = (currency: string) => {
   }
 }
 
+// Fixed cover image style function
+const getCoverImageStyle = (storeData: any, primaryColor: string) => {
+  if (storeData.coverImage) {
+    return {
+      backgroundImage: `url(${storeData.coverImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }
+  } else {
+    return {
+      background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`
+    }
+  }
+}
+
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -1276,7 +1285,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
 
   const getFilteredProducts = () => {
-     // @ts-ignore
     let products = []
   
     if (selectedCategory === 'all') {
@@ -1303,7 +1311,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     // Apply search filter
     if (searchTerm.trim()) {
       const searchTermLower = searchTerm.toLowerCase().trim()
-       // @ts-ignore
       products = products.filter(product => {
         // Search in product name, description, and category name
         const nameMatch = product.name.toLowerCase().includes(searchTermLower)
@@ -1311,12 +1318,10 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
         const categoryMatch = product.categoryName.toLowerCase().includes(searchTermLower)
         
         // Also search in modifiers and variants
-         // @ts-ignore
         const modifierMatch = product.modifiers?.some(modifier => 
           modifier.name.toLowerCase().includes(searchTermLower)
         ) || false
         
-         // @ts-ignore
         const variantMatch = product.variants?.some(variant => 
           variant.name.toLowerCase().includes(searchTermLower)
         ) || false
@@ -1384,7 +1389,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const submitOrder = async () => {
     if (storeData.isTemporarilyClosed) {
-      // @ts-ignore
       alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
       return
     }
@@ -1481,73 +1485,62 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
         translations={translations} 
       />
 
-      {/* Header Section */}
+      {/* Header Section - FIXED COVER IMAGE */}
       <div className="bg-white">
         <div className="max-w-[75rem] mx-auto">
-          {/* Cover Image Section */}
+          {/* Cover Image Section - FIXED: No gradient overlay when cover image exists */}
           <div 
-            className="relative h-[250px] md:rounded-xl overflow-hidden"
-            style={{ 
-              background: storeData.coverImage 
-                ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
-                : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            className="relative h-[200px] sm:h-[250px] md:h-[280px] md:rounded-xl overflow-hidden"
+            style={getCoverImageStyle(storeData, primaryColor)}
           >
          {/* Icons in top right */}
-<div className="absolute top-5 right-5 flex gap-3">
+<div className="absolute top-4 sm:top-5 right-4 sm:right-5 flex gap-2 sm:gap-3">
   <button 
     onClick={() => setShowShareModal(true)}
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
   >
-    <Share2 className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
   <button 
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
-    // @ts-ignore
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
     onClick={() => document.querySelector('.search-input')?.focus()}
   >
-    <Search className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Search className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
   <button 
     onClick={() => setShowBusinessInfoModal(true)}
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
   >
-    <Info className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
 </div>
           </div>
 
-          <div className="bg-white rounded-b-xl px-4 p-6 relative">
+          <div className="bg-white rounded-b-xl px-4 md:px-0 pb-0 pt-4 relative">
             {/* Logo */}
             <div 
-              className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
+              className="absolute -top-8 sm:-top-10 left-6 sm:left-6 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-xl"
               style={{ 
                 backgroundColor: 'white',
                 color: primaryColor
               }}
             >
               {storeData.logo ? (
-                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
+                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-full object-cover" />
               ) : (
                 storeData.name.charAt(0)
               )}
             </div>
 
-            <div className="pt-8">
+            <div className="pt-6 sm:pt-8">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{storeData.name}</h1>
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
                   storeData.isOpen && !storeData.isTemporarilyClosed
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
                   {storeData.isTemporarilyClosed 
-                    // @ts-ignore
                     ? translations.temporarilyClosed 
                     : storeData.isOpen ? translations.open : translations.closed}
                 </span>
@@ -1565,37 +1558,46 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               </div>
               
               {storeData.description && (
-                <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
+                <p className="text-gray-500 text-md sm:text-md mb-3">{storeData.description}</p>
               )}
               
               <div className="space-y-2 sm:space-y-0">
-                {/* Address */}
-                {storeData.address && (
-                  <div className="flex items-center gap-1 mb-1 text-gray-600">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{storeData.address}</span>
+              {/* Address */}
+              {storeData.address && (
+                <div className="flex items-center gap-1 mb-2 text-gray-500">
+                  <MapPin className="w-4 h-4" style={{ color: storeData.primaryColor }} />
+                  <span className="text-md">{storeData.address}</span>
+                </div>
+              )}
+              
+              {/* Time and Fee - Dynamic based on delivery type */}
+              <div className="flex items-center gap-4 sm:gap-5 text-gray-500">
+                {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                    <span className="text-md">
+                      {deliveryType === 'delivery' 
+                        ? storeData.estimatedDeliveryTime 
+                        : storeData.estimatedPickupTime || '15-20 min'}
+                    </span>
                   </div>
                 )}
-                
-                {/* Time and Fee - Dynamic based on delivery type */}
-                <div className="flex items-center gap-5 text-gray-600">
-                  {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">
-                        {deliveryType === 'delivery' 
-                          ? storeData.estimatedDeliveryTime 
-                          : storeData.estimatedPickupTime || '15-20 min'}
-                      </span>
-                    </div>
-                  )}
-                  {deliveryType === 'delivery' && calculatedDeliveryFee > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Package className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">{currencySymbol}{calculatedDeliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
+                {deliveryType === 'delivery' ? (
+              <div className="flex items-center gap-1">
+                <Package className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                <span className="text-md">
+                  {calculatedDeliveryFee > 0 
+                    ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
+                    : 'Free delivery'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Store className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                <span className="text-md">Pickup available</span>
+              </div>
+            )}
+          </div>
               </div>
             </div>
           </div>
