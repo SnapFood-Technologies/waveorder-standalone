@@ -259,7 +259,6 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
           {/* Activity Type Filter */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as any)}
