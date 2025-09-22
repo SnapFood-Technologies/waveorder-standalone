@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Plus, Users, Phone, Mail, Filter, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Search, Plus, Users, Phone, Mail, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import Link from 'next/link'
 
 interface CustomersListProps {
@@ -31,6 +31,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<Pagination>({
@@ -40,13 +41,25 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     pages: 0
   })
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+      if (searchQuery !== debouncedSearchQuery) {
+        setCurrentPage(1)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const fetchCustomers = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        search: searchQuery
+        search: debouncedSearchQuery
       })
 
       const response = await fetch(`/api/admin/stores/${businessId}/customers?${params}`)
@@ -64,11 +77,10 @@ export default function CustomersList({ businessId }: CustomersListProps) {
 
   useEffect(() => {
     fetchCustomers()
-  }, [businessId, currentPage, searchQuery])
+  }, [businessId, currentPage, debouncedSearchQuery])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    setCurrentPage(1) // Reset to first page when searching
   }
 
   const filteredCustomers = customers.filter(customer => {
@@ -95,7 +107,8 @@ export default function CustomersList({ businessId }: CustomersListProps) {
   }
 
   const getCustomerTypeLabel = (totalOrders: number) => {
-    if (totalOrders === 0) return { label: 'New', color: 'text-blue-600' }
+    if (totalOrders === 0) return { label: 'No Order Customer', color: 'text-blue-600' }
+    if (totalOrders === 1) return { label: 'New Customer Customer', color: 'text-teal-600' }
     if (totalOrders < 5) return { label: 'Regular', color: 'text-green-600' }
     return { label: 'Frequent', color: 'text-purple-600' }
   }
@@ -118,17 +131,17 @@ export default function CustomersList({ businessId }: CustomersListProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-gray-600 mt-1">
             Manage your customer database and relationships
           </p>
         </div>
-        <div className="mt-4 sm:mt-0">
+        <div className="w-full sm:w-auto">
           <Link
             href={`/admin/stores/${businessId}/customers/create`}
-            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Customer
@@ -151,21 +164,18 @@ export default function CustomersList({ businessId }: CustomersListProps) {
             />
           </div>
 
-          {/* Tier Filter */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select
-                value={filterTier}
-                onChange={(e) => setFilterTier(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                <option value="all">All Tiers</option>
-                <option value="regular">Regular</option>
-                <option value="vip">VIP</option>
-                <option value="wholesale">Wholesale</option>
-              </select>
-            </div>
+          {/* Tier Filter and Count */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <select
+              value={filterTier}
+              onChange={(e) => setFilterTier(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="all">All Tiers</option>
+              <option value="regular">Regular</option>
+              <option value="vip">VIP</option>
+              <option value="wholesale">Wholesale</option>
+            </select>
 
             <div className="text-sm text-gray-600">
               {pagination.total} customers
@@ -178,17 +188,19 @@ export default function CustomersList({ businessId }: CustomersListProps) {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {filteredCustomers.length === 0 ? (
           <div className="text-center py-12">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-10 h-10 text-gray-400" />
+            </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {searchQuery ? 'No customers found' : 'No customers yet'}
+              {debouncedSearchQuery ? 'No customers found' : 'No customers yet'}
             </h3>
-            <p className="text-gray-600 mb-6">
-              {searchQuery 
-                ? 'Try adjusting your search terms or filters'
-                : 'Start building your customer base by adding your first customer'
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              {debouncedSearchQuery 
+                ? 'Try adjusting your search terms or filters to find the customers you\'re looking for.'
+                : 'Start building your customer base by adding your first customer. You can manually add customers or they can register through orders.'
               }
             </p>
-            {!searchQuery && (
+            {!debouncedSearchQuery && (
               <Link
                 href={`/admin/stores/${businessId}/customers/create`}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -322,8 +334,8 @@ export default function CustomersList({ businessId }: CustomersListProps) {
             {/* Pagination */}
             {pagination.pages > 1 && (
               <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm text-gray-700">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-sm text-gray-700">
                     Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
                     {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
                     {pagination.total} customers
