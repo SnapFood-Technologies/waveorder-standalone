@@ -886,10 +886,9 @@ export async function POST(
     }
 
     // Generate order number
-    const orderCount = await prisma.order.count({
-      where: { businessId: business.id }
-    })
-    const orderNumber = business.orderNumberFormat.replace('{number}', (orderCount + 1).toString())
+    const timestamp = Date.now().toString().slice(-6)
+const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
 
     // Create order with enhanced data
     const order = await prisma.order.create({
