@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet, Trash2, AlertCircle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface CustomerDetailsProps {
@@ -76,6 +76,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
   const [activeTab, setActiveTab] = useState<'details' | 'orders'>('details')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -218,17 +219,22 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       })
 
       if (response.ok) {
-        // Redirect back to customers list
-        window.location.href = `/admin/stores/${businessId}/customers`
+        // Show success message
+        setDeleteSuccess(true)
+        setIsDeleting(false)
+        
+        // Redirect after showing success for 2 seconds
+        setTimeout(() => {
+          window.location.href = `/admin/stores/${businessId}/customers`
+        }, 2000)
       } else {
         const data = await response.json()
         setError(data.message || 'Failed to delete customer')
+        setIsDeleting(false)
       }
     } catch (error) {
       setError('Network error deleting customer')
-    } finally {
       setIsDeleting(false)
-      setShowDeleteModal(false)
     }
   }
 
@@ -742,71 +748,91 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-                Delete Customer
-              </h3>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                disabled={isDeleting}
-              >
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Are you sure you want to permanently delete <strong>{customer.name}</strong>?
-              </p>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="flex">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <div className="ml-3">
-                    <p className="text-red-800 text-sm">
-                      <strong>This action cannot be undone.</strong> All customer data will be permanently removed.
-                    </p>
-                  </div>
+            {!deleteSuccess ? (
+              // Delete Confirmation Content
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                    Delete Customer
+                  </h3>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    disabled={isDeleting}
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
                 </div>
-              </div>
-              {stats.totalOrders > 0 && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex">
-                    <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
-                    <div className="ml-3">
-                      <p className="text-yellow-800 text-sm">
-                        <strong>Warning:</strong> This customer has {stats.totalOrders} orders. Deletion may not be allowed if there are existing orders.
-                      </p>
+                
+                <div className="mb-6">
+                  <p className="text-gray-600 mb-4">
+                    Are you sure you want to permanently delete <strong>{customer.name}</strong>?
+                  </p>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex">
+                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                      <div className="ml-3">
+                        <p className="text-red-800 text-sm">
+                          <strong>This action cannot be undone.</strong> All customer data will be permanently removed.
+                        </p>
+                      </div>
                     </div>
                   </div>
+                  {stats.totalOrders > 0 && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex">
+                        <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                        <div className="ml-3">
+                          <p className="text-yellow-800 text-sm">
+                            <strong>Warning:</strong> This customer has {stats.totalOrders} orders. Deletion may not be allowed if there are existing orders.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            <div className="flex items-center justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isDeleting ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <Trash2 className="w-4 h-4 mr-2" />
-                )}
-                {isDeleting ? 'Deleting...' : 'Delete Customer'}
-              </button>
-            </div>
+                
+                <div className="flex items-center justify-end space-x-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isDeleting ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-2" />
+                    )}
+                    {isDeleting ? 'Deleting...' : 'Delete Customer'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Success Content
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Customer Deleted Successfully</h3>
+                <p className="text-gray-600 mb-6">
+                  <strong>{customer.name}</strong> has been permanently removed from your system.
+                </p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-green-800 text-sm">
+                    Redirecting you back to the customers list...
+                  </p>
+                </div>
+                <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            )}
           </div>
         </div>
       )}
