@@ -711,6 +711,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const businessType = business.businessType || 'RESTAURANT'
   
   // Get appropriate terms for business type and language
+  // @ts-ignore
   const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
   
   let message = `*${terms.order} ${order.orderNumber}*\n\n`
@@ -827,11 +828,11 @@ function formatWhatsAppNumber(phoneNumber: string): string {
 
 function getCurrencySymbol(currency: string) {
   switch (currency) {
-    case 'USD': return '
+    case 'USD': return '$'
     case 'EUR': return '€'
     case 'ALL': return 'L'
     case 'GBP': return '£'
-    default: return '
+    default: return '$'
   }
 }
 

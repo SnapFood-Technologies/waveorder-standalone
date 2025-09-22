@@ -45,6 +45,7 @@ export function DeliverySettings({ businessId }: DeliverySettingsProps) {
 
       {/* Content */}
       {activeSection === 'methods' && (
+        // @ts-ignore
         <BusinessConfiguration businessId={businessId} initialTab="delivery" />
       )}
 

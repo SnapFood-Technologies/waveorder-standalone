@@ -91,7 +91,6 @@ model Business {
   whatsappButtonColor String?
   mobileCartStyle     String  @default("bar")
 
-
   deliveryZones DeliveryZone[]
 
   // Settings
@@ -373,8 +372,8 @@ model DeliveryZone {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  maxDistance Float   // Maximum distance in km for this zone
-  fee         Float   // Delivery fee for this zone
+  maxDistance Float // Maximum distance in km for this zone
+  fee         Float // Delivery fee for this zone
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)
   businessId  String  @db.ObjectId

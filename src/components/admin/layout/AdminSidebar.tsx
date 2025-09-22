@@ -26,7 +26,9 @@ import {
   List,
   Upload,
   Activity,
-  TrendingUp
+  TrendingUp,
+  UserPlus,
+  Globe
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -179,6 +181,18 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: BarChart3, 
         requiredPlan: 'PRO' as Plan
       },
+      { 
+        name: 'Team Management', 
+        href: `${baseUrl}/team`, 
+        icon: UserPlus, 
+        requiredPlan: 'PRO' as Plan
+      },
+      { 
+        name: 'Domain Management', 
+        href: `${baseUrl}/domains`, 
+        icon: Globe, 
+        requiredPlan: 'PRO' as Plan
+      },
     ] : []),
     
     // Settings with submenu
@@ -188,8 +202,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'FREE',
       children: [
         { 
-          name: 'General', 
-          href: `${baseUrl}/settings/general`, 
+          name: 'Business', 
+          href: `${baseUrl}/settings/business`, 
           icon: User, 
           requiredPlan: 'FREE'
         },
@@ -369,7 +383,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
               </h3>
               <p className="text-xs text-teal-100 mb-3">
                 {subscription.plan === 'FREE' 
-                  ? 'Unlock inventory, discounts, analytics, and more' 
+                  ? 'Unlock inventory, discounts, analytics, team & domain management' 
                   : 'Enjoying advanced features and analytics'}
               </p>
               {subscription.plan === 'FREE' ? (
