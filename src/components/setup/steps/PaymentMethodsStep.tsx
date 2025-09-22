@@ -135,7 +135,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
     futurePaymentMethods.push({
       id: 'BKT',
       name: 'BKT Payment',
-      description: 'Accept payments via Bank of Tirana',
+      description: 'Accept payments via BKT Payment Provider',
       icon: Building2,
       available: false,
       color: 'purple'

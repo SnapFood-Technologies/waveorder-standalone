@@ -26,7 +26,9 @@ import {
   List,
   Upload,
   Activity,
-  TrendingUp
+  TrendingUp,
+  UserPlus,
+  Globe
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -179,6 +181,18 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: BarChart3, 
         requiredPlan: 'PRO' as Plan
       },
+      { 
+        name: 'Team Management', 
+        href: `${baseUrl}/team`, 
+        icon: UserPlus, 
+        requiredPlan: 'PRO' as Plan
+      },
+      { 
+        name: 'Domain Management', 
+        href: `${baseUrl}/domains`, 
+        icon: Globe, 
+        requiredPlan: 'PRO' as Plan
+      },
     ] : []),
     
     // Settings with submenu
@@ -188,8 +202,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'FREE',
       children: [
         { 
-          name: 'General', 
-          href: `${baseUrl}/settings/general`, 
+          name: 'Business', 
+          href: `${baseUrl}/settings/business`, 
           icon: User, 
           requiredPlan: 'FREE'
         },
@@ -199,12 +213,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'FREE'
         },
-        { 
-          name: 'Billing', 
-          href: `${baseUrl}/settings/billing`, 
-          icon: CreditCard, 
-          requiredPlan: 'FREE'
-        },
+        // { 
+        //   name: 'Billing', 
+        //   href: `${baseUrl}/settings/billing`, 
+        //   icon: CreditCard, 
+        //   requiredPlan: 'FREE'
+        // },
       ]
     },
   ]
@@ -369,17 +383,18 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
               </h3>
               <p className="text-xs text-teal-100 mb-3">
                 {subscription.plan === 'FREE' 
-                  ? 'Unlock inventory, discounts, analytics, and more' 
+                  ? 'Unlock inventory, discounts, analytics, team & domain management' 
                   : 'Enjoying advanced features and analytics'}
               </p>
               {subscription.plan === 'FREE' ? (
-                <Link
-                  href={`${baseUrl}/settings/billing`}
-                  onClick={onClose}
-                  className="inline-block bg-white text-teal-600 px-3 py-1 rounded text-xs font-medium hover:bg-teal-50 transition-colors"
-                >
-                  Learn More
-                </Link>
+                <></>
+                // <Link
+                //   href={`${baseUrl}/settings/billing`}
+                //   onClick={onClose}
+                //   className="inline-block bg-white text-teal-600 px-3 py-1 rounded text-xs font-medium hover:bg-teal-50 transition-colors"
+                // >
+                //   Learn More
+                // </Link>
               ) : (
                 <div className="text-xs text-teal-100">
                   Thanks for being a Pro user!

@@ -269,12 +269,12 @@
 - Social media share buttons
 - Embed code for website
 
-**Promotional Tools:**
+**Promotional Tools:** (v2)
 - Social media post templates
 - Email marketing integration
 - WhatsApp broadcast lists
 
-### 7.2 QR Code Generator
+### 7.2 QR Code Generator  (v2 <--> or integrate with our platform)
 **Component:** `components/admin/QRCodeGenerator.tsx`
 **Features:**
 - Generate QR code for store URL

@@ -1,0 +1,636 @@
+// src/components/admin/delivery/DeliveryZonesManagement.tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+import { MapPin, Plus, Edit2, Trash2, Save, X, Info, AlertCircle } from 'lucide-react'
+
+interface DeliveryZone {
+  id?: string
+  name: string
+  description?: string
+  maxDistance: number
+  fee: number
+  isActive: boolean
+  sortOrder: number
+}
+
+interface Business {
+  id: string
+  name: string
+  deliveryFee: number
+  deliveryRadius: number
+  storeLatitude?: number
+  storeLongitude?: number
+  address?: string
+  currency: string
+}
+
+interface DeliveryZonesManagementProps {
+  businessId: string
+}
+
+export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementProps) {
+  const [business, setBusiness] = useState<Business | null>(null)
+  const [zones, setZones] = useState<DeliveryZone[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchData()
+  }, [businessId])
+
+  const fetchData = async () => {
+    try {
+      const [businessRes, zonesRes] = await Promise.all([
+        fetch(`/api/admin/stores/${businessId}`),
+        fetch(`/api/admin/stores/${businessId}/delivery/zones`)
+      ])
+
+      if (businessRes.ok) {
+        const data = await businessRes.json()
+        setBusiness(data.business)
+      }
+
+      if (zonesRes.ok) {
+        const data = await zonesRes.json()
+        setZones(data.zones || [])
+      } else {
+        // Initialize with smart default zones based on delivery radius
+        initializeDefaultZones()
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setError('Failed to load delivery zones')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const initializeDefaultZones = () => {
+    if (!business) return
+
+    const baseFee = business.deliveryFee || 0
+    const maxRadius = business.deliveryRadius || 10
+
+    const defaultZones: DeliveryZone[] = []
+
+    // Zone 1: 0-2km (or 0-20% of max radius, whichever is smaller)
+    const zone1Distance = Math.min(2, maxRadius * 0.2)
+    if (zone1Distance > 0) {
+      defaultZones.push({
+        name: 'Zone 1 (Close)',
+        description: 'Close delivery area',
+        maxDistance: zone1Distance,
+        fee: baseFee,
+        isActive: true,
+        sortOrder: 1
+      })
+    }
+
+    // Zone 2: Zone1-50% of max radius
+    const zone2Distance = Math.min(maxRadius * 0.5, 5)
+    if (zone2Distance > zone1Distance) {
+      defaultZones.push({
+        name: 'Zone 2 (Medium)',
+        description: 'Medium distance delivery',
+        maxDistance: zone2Distance,
+        fee: Math.round(baseFee * 1.5 * 100) / 100,
+        isActive: true,
+        sortOrder: 2
+      })
+    }
+
+    // Zone 3: Zone2-80% of max radius
+    const zone3Distance = Math.min(maxRadius * 0.8, 8)
+    if (zone3Distance > zone2Distance) {
+      defaultZones.push({
+        name: 'Zone 3 (Far)',
+        description: 'Far delivery area',
+        maxDistance: zone3Distance,
+        fee: Math.round(baseFee * 2 * 100) / 100,
+        isActive: true,
+        sortOrder: 3
+      })
+    }
+
+    // Zone 4: 80%-100% of max radius (if radius > 8km)
+    if (maxRadius > 8) {
+      defaultZones.push({
+        name: 'Zone 4 (Very Far)',
+        description: 'Extended delivery area',
+        maxDistance: maxRadius,
+        fee: Math.round(baseFee * 2.5 * 100) / 100,
+        isActive: true,
+        sortOrder: 4
+      })
+    }
+
+    setZones(defaultZones)
+  }
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+    }
+    
+    const symbol = currencySymbols[business?.currency || 'USD'] || business?.currency || 'USD'
+    return `${symbol}${amount.toLocaleString()}`
+  }
+
+  const saveZones = async () => {
+    if (!validateZones()) return
+
+    setSaving(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/delivery/zones`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ zones: zones.map((zone, index) => ({ ...zone, sortOrder: index + 1 })) })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to save zones')
+      }
+
+      const data = await response.json()
+      setZones(data.zones)
+      setError(null)
+    } catch (error) {
+      console.error('Error saving zones:', error)
+      setError(error instanceof Error ? error.message : 'Failed to save zones')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const validateZones = () => {
+    if (zones.length === 0) {
+      setError('At least one delivery zone is required')
+      return false
+    }
+
+    // Sort zones by distance
+    const sortedZones = [...zones].sort((a, b) => a.maxDistance - b.maxDistance)
+    
+    // Check for gaps or overlaps
+    for (let i = 0; i < sortedZones.length; i++) {
+      const zone = sortedZones[i]
+      
+      if (zone.maxDistance <= 0) {
+        setError(`Zone "${zone.name}" must have a distance greater than 0`)
+        return false
+      }
+
+      if (zone.maxDistance > (business?.deliveryRadius || 10)) {
+        setError(`Zone "${zone.name}" distance exceeds delivery radius`)
+        return false
+      }
+
+      if (zone.fee < 0) {
+        setError(`Zone "${zone.name}" fee cannot be negative`)
+        return false
+      }
+
+      // Check if there's a gap between zones
+      if (i > 0 && zone.maxDistance > sortedZones[i - 1].maxDistance) {
+        // This is expected - zones should have increasing distances
+      }
+    }
+
+    setError(null)
+    return true
+  }
+
+  const addZone = () => {
+    const nextZoneNumber = zones.length + 1
+    const lastZoneDistance = zones.length > 0 ? Math.max(...zones.map(z => z.maxDistance)) : 0
+    const suggestedDistance = Math.min(lastZoneDistance + 2, business?.deliveryRadius || 10)
+
+    const newZone: DeliveryZone = {
+      name: `Zone ${nextZoneNumber}`,
+      description: `Zone ${nextZoneNumber} delivery area`,
+      maxDistance: suggestedDistance,
+      fee: business?.deliveryFee || 0,
+      isActive: true,
+      sortOrder: nextZoneNumber
+    }
+    setEditingZone(newZone)
+    setShowAddForm(true)
+  }
+
+  const editZone = (zone: DeliveryZone) => {
+    setEditingZone({ ...zone })
+    setShowAddForm(true)
+  }
+
+  const deleteZone = (index: number) => {
+    if (zones.length <= 1) {
+      setError('Cannot delete the last zone. At least one zone is required.')
+      return
+    }
+    setZones(zones.filter((_, i) => i !== index))
+  }
+
+  const saveEditingZone = () => {
+    if (!editingZone) return
+
+    // Validate the zone
+    if (!editingZone.name.trim()) {
+      setError('Zone name is required')
+      return
+    }
+
+    if (editingZone.maxDistance <= 0) {
+      setError('Zone distance must be greater than 0')
+      return
+    }
+
+    if (editingZone.maxDistance > (business?.deliveryRadius || 10)) {
+      setError(`Zone distance cannot exceed delivery radius (${business?.deliveryRadius}km)`)
+      return
+    }
+
+    if (editingZone.fee < 0) {
+      setError('Zone fee cannot be negative')
+      return
+    }
+
+    if (editingZone.id) {
+      // Update existing zone
+      setZones(zones.map(zone => 
+        zone.id === editingZone.id ? editingZone : zone
+      ))
+    } else {
+      // Add new zone
+      setZones([...zones, { ...editingZone, id: Date.now().toString() }])
+    }
+
+    setEditingZone(null)
+    setShowAddForm(false)
+    setError(null)
+  }
+
+  const cancelEditing = () => {
+    setEditingZone(null)
+    setShowAddForm(false)
+    setError(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!business?.address) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <div className="flex items-start">
+          <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="text-sm font-medium text-yellow-900 mb-1">Store Address Required</h3>
+            <p className="text-sm text-yellow-700 mb-3">
+              To set up delivery zones, please first add your store address in Business Settings.
+            </p>
+            <button className="text-sm bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded">
+              Go to Business Settings
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Header - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <MapPin className="w-5 h-5 text-teal-600 mr-2" />
+            Delivery Zones
+          </h3>
+          <p className="text-sm text-gray-600">
+            Configure delivery fees based on distance from your store
+          </p>
+        </div>
+        <button
+          onClick={addZone}
+          disabled={zones.length >= 10} // Reasonable limit
+          className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium whitespace-nowrap disabled:opacity-50"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Zone
+        </button>
+      </div>
+
+      {/* Store Info - Mobile Responsive */}
+      {business && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h4 className="text-sm font-medium text-blue-900">Store Information</h4>
+              <p className="text-sm text-blue-700 break-words">
+                📍 {business.address}
+              </p>
+              <div className="text-xs text-blue-600 mt-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <span>Maximum delivery radius: {business.deliveryRadius}km</span>
+                <span className="hidden sm:inline">|</span>
+                <span>Base delivery fee: {formatCurrency(business.deliveryFee)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zones List */}
+      <div className="space-y-3">
+        {zones
+          .sort((a, b) => a.maxDistance - b.maxDistance)
+          .map((zone, index) => (
+          <div
+            key={zone.id || index}
+            className="bg-white border border-gray-200 rounded-lg p-4"
+          >
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-4">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-medium text-gray-900">{zone.name}</h4>
+                    <p className="text-sm text-gray-600">{zone.description}</p>
+                  </div>
+                  <div className="text-sm text-gray-500 whitespace-nowrap">
+                    <span className="font-medium">
+                      {index === 0 ? '0' : zones
+                        .sort((a, b) => a.maxDistance - b.maxDistance)
+                        .slice(0, index)
+                        .pop()?.maxDistance || 0
+                      }-{zone.maxDistance}km
+                    </span>
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900 whitespace-nowrap">
+                    {formatCurrency(zone.fee)}
+                  </div>
+                  <div className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
+                    zone.isActive 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {zone.isActive ? 'Active' : 'Inactive'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2 ml-4">
+                <button
+                  onClick={() => editZone(zone)}
+                  className="p-2 text-gray-400 hover:text-teal-600 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => deleteZone(index)}
+                  disabled={zones.length <= 1}
+                  className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Layout */}
+            <div className="sm:hidden space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-medium text-gray-900">{zone.name}</h4>
+                  <p className="text-sm text-gray-600">{zone.description}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => editZone(zone)}
+                    className="p-2 text-gray-400 hover:text-teal-600 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteZone(index)}
+                    disabled={zones.length <= 1}
+                    className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-500">
+                    <span className="font-medium">
+                      {index === 0 ? '0' : zones
+                        .sort((a, b) => a.maxDistance - b.maxDistance)
+                        .slice(0, index)
+                        .pop()?.maxDistance || 0
+                      }-{zone.maxDistance}km
+                    </span>
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {formatCurrency(zone.fee)}
+                  </div>
+                </div>
+                <div className={`px-2 py-1 rounded-full text-xs ${
+                  zone.isActive 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {zone.isActive ? 'Active' : 'Inactive'}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {zones.length === 0 && (
+          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No delivery zones configured</h3>
+            <p className="text-gray-600 mb-4 px-4">
+              Create delivery zones to set different fees based on distance from your store
+            </p>
+            <button
+              onClick={addZone}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add First Zone
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Zone Modal */}
+      {showAddForm && editingZone && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {editingZone.id ? 'Edit Zone' : 'Add New Zone'}
+                </h3>
+                <button
+                  onClick={cancelEditing}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Zone Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingZone.name}
+                  onChange={(e) => setEditingZone({
+                    ...editingZone,
+                    name: e.target.value
+                  })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  placeholder="e.g., Zone 1 (Close)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={editingZone.description || ''}
+                  onChange={(e) => setEditingZone({
+                    ...editingZone,
+                    description: e.target.value
+                  })}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  placeholder="e.g., Close delivery area"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Maximum Distance (km) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={editingZone.maxDistance}
+                  onChange={(e) => setEditingZone({
+                    ...editingZone,
+                    maxDistance: parseFloat(e.target.value) || 0
+                  })}
+                  min="0.1"
+                  max={business?.deliveryRadius || 10}
+                  step="0.1"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum: {business?.deliveryRadius || 10}km (your delivery radius)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Fee ({business?.currency || 'USD'}) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={editingZone.fee}
+                  onChange={(e) => setEditingZone({
+                    ...editingZone,
+                    fee: parseFloat(e.target.value) || 0
+                  })}
+                  min="0"
+                  step="0.01"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                />
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={editingZone.isActive}
+                  onChange={(e) => setEditingZone({
+                    ...editingZone,
+                    isActive: e.target.checked
+                  })}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <label className="ml-2 text-sm text-gray-700">
+                  Active zone
+                </label>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-white p-6 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row items-center justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                <button
+                  onClick={cancelEditing}
+                  className="w-full sm:w-auto px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEditingZone}
+                  className="w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
+                >
+                  {editingZone.id ? 'Update Zone' : 'Add Zone'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Button */}
+      {zones.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={saveZones}
+            disabled={saving}
+            className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 text-sm font-medium"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Zones'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
