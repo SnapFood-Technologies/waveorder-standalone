@@ -106,6 +106,13 @@ export interface StorefrontTranslations {
     popular: string
     freeDelivery: string
     pickupAvailable: string
+
+    maintenanceMessage: string
+    holidayMessage: string
+    emergencyMessage: string
+    staffShortageMessage: string
+    supplyIssuesMessage: string
+    temporaryClosureMessage: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -214,7 +221,14 @@ export interface StorefrontTranslations {
     comingSoon: "Coming soon!",
     checkBackLater: "We're working on adding products to this section. Please check back later.",
     freeDelivery: "Free Delivery",
-    pickupAvailable: "Pickup available"
+    pickupAvailable: "Pickup available",
+    // Closure Messages
+    maintenanceMessage: "We are currently performing maintenance and will be back soon.",
+    holidayMessage: "We are closed for the holiday.",
+    emergencyMessage: "We are temporarily closed due to unforeseen circumstances.",
+    staffShortageMessage: "We are temporarily closed due to staffing issues.",
+    supplyIssuesMessage: "We are temporarily closed due to supply issues.",
+    temporaryClosureMessage: "We are temporarily closed and will reopen soon."
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -322,7 +336,14 @@ export interface StorefrontTranslations {
     comingSoon: "Së shpejti!",
     checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë.",
     freeDelivery: "Transport Falas",
-    pickupAvailable: "Pickup Gati"
+    pickupAvailable: "Pickup Gati",
+      // Closure Messages
+      maintenanceMessage: "Aktualisht po kryejmë mirëmbajtje dhe do të jemi përsëri të hapur së shpejti.",
+      holidayMessage: "Jemi të mbyllur për festën.",
+      emergencyMessage: "Jemi të mbyllur përkohësisht për shkak të rrethanave të paparashikuara.",
+      staffShortageMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me stafin.",
+      supplyIssuesMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me furnizimet.",
+      temporaryClosureMessage: "Jemi të mbyllur përkohësisht dhe do të rihapemi së shpejti."
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {

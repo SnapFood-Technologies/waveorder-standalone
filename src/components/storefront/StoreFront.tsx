@@ -121,12 +121,9 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
   return slots
 }
 
-// Store Closure Banner Component
-// @ts-ignore
 function StoreClosure({ storeData, primaryColor, translations }) {
   if (!storeData.isTemporarilyClosed) return null
   
-  // @ts-ignore
   const formatReopeningDate = (date) => {
     if (!date) return null
     const reopening = new Date(date)
@@ -166,27 +163,78 @@ function StoreClosure({ storeData, primaryColor, translations }) {
   }
 
   const reopeningText = formatReopeningDate(storeData.closureEndDate)
+  
+  // Determine what message to show
+  const getDisplayMessage = () => {
+    if (storeData.closureMessage) {
+      return storeData.closureMessage
+    }
+    
+    // Fallback based on closure reason if no customer message
+    if (storeData.closureReason) {
+      switch (storeData.closureReason.toLowerCase()) {
+        case 'maintenance':
+          return translations.maintenanceMessage || 'We are currently performing maintenance and will be back soon.'
+        case 'holiday':
+          return translations.holidayMessage || 'We are closed for the holiday.'
+        case 'emergency':
+          return translations.emergencyMessage || 'We are temporarily closed due to unforeseen circumstances.'
+        case 'staff_shortage':
+          return translations.staffShortageMessage || 'We are temporarily closed due to staffing issues.'
+        case 'supply_issues':
+          return translations.supplyIssuesMessage || 'We are temporarily closed due to supply issues.'
+        default:
+          return translations.temporaryClosureMessage || 'We are temporarily closed and will reopen soon.'
+      }
+    }
+    
+    // Ultimate fallback
+    return translations.temporaryClosureMessage || 'We are temporarily closed and will reopen soon.'
+  }
+
+  const displayMessage = getDisplayMessage()
 
   return (
-    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-      <div className="max-w-[75rem] mx-auto px-4 py-4">
-        <div className="flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6 mr-3 flex-shrink-0" />
-          <div className="text-center">
-            <h3 className="font-semibold text-lg">
-              {translations.temporarilyClosed || 'Temporarily Closed'}
-            </h3>
-            {storeData.closureMessage && (
-              <p className="mt-1 opacity-90">{storeData.closureMessage}</p>
-            )}
-            {reopeningText && (
-              <p className="mt-1 text-sm opacity-80">
-                {translations.expectedReopen || 'Expected to reopen:'} {reopeningText}
-              </p>
-            )}
-          </div>
+    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-100 mb-4 md:mb-6">
+      {/* Main closure info */}
+      <div className="flex items-start">
+        <div 
+          className="w-10 h-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0"
+          style={{ backgroundColor: `${primaryColor}15` }}
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 mb-1">
+            {translations.temporarilyClosed || 'Temporarily Closed'}
+          </h3>
+          <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+            {displayMessage}
+          </p>
         </div>
       </div>
+      
+      {/* Reopening time - separate row */}
+      {reopeningText && (
+        <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <div 
+              className="w-6 h-6 rounded-full flex items-center justify-center mr-2 flex-shrink-0"
+              style={{ backgroundColor: `${primaryColor}10` }}
+            >
+              <Clock className="w-3 h-3" style={{ color: primaryColor }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">
+                {translations.expectedReopen || 'Expected to reopen'}
+              </p>
+              <p className="text-sm font-semibold text-gray-900">
+                {reopeningText}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1478,12 +1526,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {/* Store Closure Banner */}
-      <StoreClosure 
-        storeData={storeData} 
-        primaryColor={primaryColor} 
-        translations={translations} 
-      />
 
       {/* Header Section - FIXED COVER IMAGE */}
       <div className="bg-white">
@@ -1734,6 +1776,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             })}
           </div>
 
+          <StoreClosure 
+  storeData={storeData} 
+  primaryColor={primaryColor} 
+  translations={translations} 
+/>
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(() => {
@@ -2445,7 +2492,7 @@ function OrderPanel({
         return (
           <button
             key={option.key}
-            onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
+            onClick={() => setDeliveryType(option.key as any)}
             disabled={false}
             className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
               deliveryType === option.key
