@@ -66,8 +66,8 @@ export async function GET(
         noIndex: true,
         noFollow: true,
         whatsappNumber: true,
-        storeLatitude: true,
-        storeLongitude: true
+        storeLatitude: true,     // ADD THIS
+        storeLongitude: true     // ADD THIS
       }
     })
 
@@ -75,10 +75,19 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Add computed fields for backward compatibility
+    // Add computed fields and format dates for frontend
     const businessWithComputed = {
       ...business,
-      noIndex: !business.isIndexable // Compute noIndex from isIndexable
+      noIndex: !business.isIndexable,
+      // Format dates for datetime-local input
+      closureStartDate: business.closureStartDate 
+        ? new Date(business.closureStartDate.getTime() - business.closureStartDate.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16)
+        : null,
+      closureEndDate: business.closureEndDate 
+        ? new Date(business.closureEndDate.getTime() - business.closureEndDate.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16)
+        : null
     }
 
     return NextResponse.json({ business: businessWithComputed })
@@ -212,6 +221,9 @@ export async function PUT(
         isIndexable: isIndexable !== undefined ? isIndexable : true,
         noIndex: noIndex !== undefined ? noIndex : false,
         noFollow: noFollow,
+        // ADD COORDINATE HANDLING
+        storeLatitude: data.storeLatitude ? parseFloat(data.storeLatitude) : null,
+        storeLongitude: data.storeLongitude ? parseFloat(data.storeLongitude) : null,
         updatedAt: new Date()
       },
       select: {
@@ -248,11 +260,26 @@ export async function PUT(
         closureEndDate: true,
         isIndexable: true,
         noIndex: true,
-        noFollow: true
+        noFollow: true,
+        storeLatitude: true,     // ADD THIS
+        storeLongitude: true     // ADD THIS
       }
     })
 
-    return NextResponse.json({ business: updatedBusiness })
+    // Format dates for frontend response
+    const formattedBusiness = {
+      ...updatedBusiness,
+      closureStartDate: updatedBusiness.closureStartDate 
+        ? new Date(updatedBusiness.closureStartDate.getTime() - updatedBusiness.closureStartDate.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16)
+        : null,
+      closureEndDate: updatedBusiness.closureEndDate 
+        ? new Date(updatedBusiness.closureEndDate.getTime() - updatedBusiness.closureEndDate.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16)
+        : null
+    }
+
+    return NextResponse.json({ business: formattedBusiness })
 
   } catch (error) {
     console.error('Error updating business settings:', error)

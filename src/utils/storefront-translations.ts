@@ -104,6 +104,25 @@ export interface StorefrontTranslations {
     time: string
     serviceFee: string
     popular: string
+    freeDelivery: string
+    pickupAvailable: string
+
+    maintenanceMessage: string
+    holidayMessage: string
+    emergencyMessage: string
+    staffShortageMessage: string
+    supplyIssuesMessage: string
+    temporaryClosureMessage: string
+
+
+     // Delivery Zone Errors
+    outsideDeliveryArea: string
+    outsideDeliveryAreaDesc: string
+    deliveryNotAvailable: string
+    deliveryCalculationFailed: string
+    tryDifferentAddress: string
+    selectDifferentArea: string
+    maxDeliveryDistance: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -210,7 +229,25 @@ export interface StorefrontTranslations {
     tryDifferentSearch: "Try a different search",
     browseAllProducts: "Browse all products",
     comingSoon: "Coming soon!",
-    checkBackLater: "We're working on adding products to this section. Please check back later."
+    checkBackLater: "We're working on adding products to this section. Please check back later.",
+    freeDelivery: "Free Delivery",
+    pickupAvailable: "Pickup available",
+    // Closure Messages
+    maintenanceMessage: "We are currently performing maintenance and will be back soon.",
+    holidayMessage: "We are closed for the holiday.",
+    emergencyMessage: "We are temporarily closed due to unforeseen circumstances.",
+    staffShortageMessage: "We are temporarily closed due to staffing issues.",
+    supplyIssuesMessage: "We are temporarily closed due to supply issues.",
+    temporaryClosureMessage: "We are temporarily closed and will reopen soon.",
+
+     // Delivery Zone Errors
+  outsideDeliveryArea: "Address is outside delivery area",
+  outsideDeliveryAreaDesc: "Unfortunately, we don't deliver to this address. Maximum delivery distance is",
+  deliveryNotAvailable: "Delivery not available",
+  deliveryCalculationFailed: "Unable to calculate delivery fee",
+  tryDifferentAddress: "Try a different address",
+  selectDifferentArea: "Please select an address within our delivery area",
+  maxDeliveryDistance: "Maximum delivery distance",
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -316,7 +353,25 @@ export interface StorefrontTranslations {
     tryDifferentSearch: "Provoni një kërkim tjetër",
     browseAllProducts: "Shfletoni të gjitha produktet",
     comingSoon: "Së shpejti!",
-    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë."
+    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë.",
+    freeDelivery: "Transport Falas",
+    pickupAvailable: "Pickup Gati",
+      // Closure Messages
+      maintenanceMessage: "Aktualisht po kryejmë mirëmbajtje dhe do të jemi përsëri të hapur së shpejti.",
+      holidayMessage: "Jemi të mbyllur për festën.",
+      emergencyMessage: "Jemi të mbyllur përkohësisht për shkak të rrethanave të paparashikuara.",
+      staffShortageMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me stafin.",
+      supplyIssuesMessage: "Jemi të mbyllur përkohësisht për shkak të problemeve me furnizimet.",
+      temporaryClosureMessage: "Jemi të mbyllur përkohësisht dhe do të rihapemi së shpejti.",
+
+       // Delivery Zone Errors
+  outsideDeliveryArea: "Adresa është jashtë zonës së dërgesës",
+  outsideDeliveryAreaDesc: "Na vjen keq, nuk dërgojmë në këtë adresë. Distanca maksimale e dërgesës është",
+  deliveryNotAvailable: "Dërgesa nuk është e disponueshme",
+  deliveryCalculationFailed: "Nuk mund të llogarisim tarifën e dërgesës",
+  tryDifferentAddress: "Provoni një adresë tjetër",
+  selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
+  maxDeliveryDistance: "Distanca maksimale e dërgesës",
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {

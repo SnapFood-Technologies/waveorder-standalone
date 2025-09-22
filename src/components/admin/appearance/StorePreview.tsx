@@ -11,7 +11,9 @@ import {
   Share2,
   Info,
   X,
-  Minus
+  Minus,
+  Monitor,
+  ExternalLink
 } from 'lucide-react'
 
 interface StorePreviewProps {
@@ -73,11 +75,26 @@ const getDemoProducts = (businessType: string) => {
   }
 }
 
+// Check if device is mobile
+const isMobileDevice = () => {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth < 1024 // lg breakpoint
+}
+
 export function StorePreview({ businessData, settings, device }: StorePreviewProps) {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [cartCount, setCartCount] = useState(2)
   const [searchTerm, setSearchTerm] = useState('')
   const [fontsLoaded, setFontsLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(isMobileDevice())
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Load Google Fonts for preview
   useEffect(() => {
@@ -142,8 +159,83 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
 
   const filteredProducts = getFilteredProducts()
 
+  // Mobile responsive message
+  if (isMobile && device === 'desktop') {
+    return (
+      <div className="bg-gray-50 rounded-xl p-6 text-center">
+        <div className="max-w-sm mx-auto">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Monitor className="w-8 h-8 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Desktop Preview Unavailable
+          </h3>
+          <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+            Due to responsive design constraints, live previews work best on laptop or desktop computers. 
+            For the best preview experience, please use a larger screen.
+          </p>
+          <a
+            href={`/${businessData.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            View Live Store Instead
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  // Mobile responsive messages - ADD THIS AFTER THE EXISTING DESKTOP CHECK
+if (isMobile && device === 'mobile') {
+  return (
+    <div className="bg-gray-50 rounded-xl p-6 text-center">
+      <div className="max-w-sm mx-auto">
+        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 1C5.9 1 5 1.9 5 3v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H7zm0 2h10v16H7V3z"/>
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Mobile Preview Unavailable
+        </h3>
+        <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+          Mobile preview requires a larger screen to display properly. 
+          For the best mobile preview experience, please use a tablet or desktop computer.
+        </p>
+        <a
+          href={`/${businessData.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          View Live Store Instead
+        </a>
+      </div>
+    </div>
+  )
+}
+
+  // Fixed cover image background - removed double background
+  const getCoverImageStyle = () => {
+    if (businessData.coverImage) {
+      return {
+        backgroundImage: `url(${businessData.coverImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }
+    } else {
+      return {
+        background: `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}CC)`
+      }
+    }
+  }
+
   // Desktop version of StorePreview with fixed layout issues
-if (device === 'desktop') {
+  if (device === 'desktop') {
     return (
       <div className="bg-gray-100 rounded-xl p-4 max-w-6xl mx-auto" style={{ fontFamily: settings.fontFamily }}>
         <div className="text-center mb-4">
@@ -152,16 +244,10 @@ if (device === 'desktop') {
         </div>
         
         <div className="bg-white rounded-xl overflow-hidden shadow-sm" style={{ fontFamily: `${settings.fontFamily} !important` }}>
-          {/* Header with Cover Image */}
+          {/* Header with Cover Image - FIXED: No double background */}
           <div 
             className="relative h-48"
-            style={{ 
-              background: businessData.coverImage 
-                ? `linear-gradient(135deg, ${settings.primaryColor}CC, ${settings.primaryColor}99), url(${businessData.coverImage})` 
-                : `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}CC)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            style={getCoverImageStyle()}
           >
             <div className="absolute top-4 right-4 flex gap-3">
               <div className="w-8 h-8 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
@@ -181,11 +267,11 @@ if (device === 'desktop') {
             <div className="flex items-start justify-between mb-8 relative">
               {/* Logo positioned over cover image */}
               <div 
-                className="absolute -top-16 left-0 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl bg-white"
+                className="absolute -top-16 left-0 w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl bg-white"
                 style={{ color: settings.primaryColor }}
               >
                 {businessData.logo ? (
-                  <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-2xl object-cover" />
+                  <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
                   businessData.name?.charAt(0).toUpperCase() || 'S'
                 )}
@@ -529,16 +615,10 @@ if (device === 'desktop') {
       <div className="bg-black rounded-3xl p-2 mx-auto" style={{ width: '330px' }}>
         <div className="bg-white rounded-2xl overflow-hidden h-[600px] relative" style={previewStyles}>
           
-          {/* Cover Image Header */}
+          {/* Cover Image Header - FIXED: No double background */}
           <div 
             className="relative h-32"
-            style={{ 
-              background: businessData.coverImage 
-                ? `linear-gradient(135deg, ${settings.primaryColor}CC, ${settings.primaryColor}99), url(${businessData.coverImage})` 
-                : `linear-gradient(135deg, ${settings.primaryColor}, ${settings.primaryColor}CC)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            style={getCoverImageStyle()}
           >
             {/* Status Bar */}
             <div className="absolute top-2 left-4 right-4 flex justify-between items-center text-white text-xs">
@@ -568,11 +648,11 @@ if (device === 'desktop') {
           <div className="bg-white p-4 relative">
             {/* Logo */}
             <div 
-              className="absolute -top-6 left-4 w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg bg-white"
+              className="absolute -top-6 left-4 w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-lg bg-white"
               style={{ color: settings.primaryColor }}
             >
               {businessData.logo ? (
-                <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-xl object-cover" />
+                <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
               ) : (
                 businessData.name?.charAt(0).toUpperCase() || 'S'
               )}

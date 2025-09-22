@@ -121,7 +121,6 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
   return slots
 }
 
-// Store Closure Banner Component
 // @ts-ignore
 function StoreClosure({ storeData, primaryColor, translations }) {
   if (!storeData.isTemporarilyClosed) return null
@@ -166,27 +165,78 @@ function StoreClosure({ storeData, primaryColor, translations }) {
   }
 
   const reopeningText = formatReopeningDate(storeData.closureEndDate)
+  
+  // Determine what message to show
+  const getDisplayMessage = () => {
+    if (storeData.closureMessage) {
+      return storeData.closureMessage
+    }
+    
+    // Fallback based on closure reason if no customer message
+    if (storeData.closureReason) {
+      switch (storeData.closureReason.toLowerCase()) {
+        case 'maintenance':
+          return translations.maintenanceMessage || 'We are currently performing maintenance and will be back soon.'
+        case 'holiday':
+          return translations.holidayMessage || 'We are closed for the holiday.'
+        case 'emergency':
+          return translations.emergencyMessage || 'We are temporarily closed due to unforeseen circumstances.'
+        case 'staff_shortage':
+          return translations.staffShortageMessage || 'We are temporarily closed due to staffing issues.'
+        case 'supply_issues':
+          return translations.supplyIssuesMessage || 'We are temporarily closed due to supply issues.'
+        default:
+          return translations.temporaryClosureMessage || 'We are temporarily closed and will reopen soon.'
+      }
+    }
+    
+    // Ultimate fallback
+    return translations.temporaryClosureMessage || 'We are temporarily closed and will reopen soon.'
+  }
+
+  const displayMessage = getDisplayMessage()
 
   return (
-    <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-      <div className="max-w-[75rem] mx-auto px-4 py-4">
-        <div className="flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6 mr-3 flex-shrink-0" />
-          <div className="text-center">
-            <h3 className="font-semibold text-lg">
-              {translations.temporarilyClosed || 'Temporarily Closed'}
-            </h3>
-            {storeData.closureMessage && (
-              <p className="mt-1 opacity-90">{storeData.closureMessage}</p>
-            )}
-            {reopeningText && (
-              <p className="mt-1 text-sm opacity-80">
-                {translations.expectedReopen || 'Expected to reopen:'} {reopeningText}
-              </p>
-            )}
-          </div>
+    <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-100 mb-4 md:mb-6">
+      {/* Main closure info */}
+      <div className="flex items-start">
+        <div 
+          className="w-10 h-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0"
+          style={{ backgroundColor: `${primaryColor}15` }}
+        >
+          <AlertTriangle className="w-5 h-5 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 mb-1">
+            {translations.temporarilyClosed || 'Temporarily Closed'}
+          </h3>
+          <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
+            {displayMessage}
+          </p>
         </div>
       </div>
+      
+      {/* Reopening time - separate row */}
+      {reopeningText && (
+        <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <div 
+              className="w-6 h-6 rounded-full flex items-center justify-center mr-2 flex-shrink-0"
+              style={{ backgroundColor: `${primaryColor}10` }}
+            >
+              <Clock className="w-3 h-3" style={{ color: primaryColor }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">
+                {translations.expectedReopen || 'Expected to reopen'}
+              </p>
+              <p className="text-sm font-semibold text-gray-900">
+                {reopeningText}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -284,7 +334,7 @@ function AddressAutocomplete({
         />
         {isCalculatingFee && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-blue-500"></div>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 border-t-blue-500"></div>
           </div>
         )}
       </div>
@@ -883,7 +933,7 @@ function TimeSelection({
           className={`p-3 border-2 rounded-xl text-center transition-all ${
             timeMode === 'now'
               ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+              : 'text-gray-700 border-gray-200 hover:border-gray-200'
           }`}
           style={{ 
             backgroundColor: timeMode === 'now' ? primaryColor : 'white'
@@ -901,7 +951,7 @@ function TimeSelection({
           className={`p-3 border-2 rounded-xl text-center transition-all ${
             timeMode === 'schedule'
               ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+              : 'text-gray-700 border-gray-200 hover:border-gray-200'
           }`}
           style={{ 
             backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
@@ -931,7 +981,7 @@ function TimeSelection({
                   className={`p-3 border-2 rounded-xl text-center transition-all ${
                     selectedDate.toDateString() === date.toDateString()
                       ? 'border-transparent text-white'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      : 'border-gray-200 hover:border-gray-200 text-gray-700'
                   }`}
                   style={{ 
                     backgroundColor: selectedDate.toDateString() === date.toDateString() 
@@ -1011,7 +1061,6 @@ function DeliveryTypeSwitcher({
   deliveryOptions,
   // @ts-ignore
   primaryColor,
-  // @ts-ignore
   disabled = false
 }) {
   if (deliveryOptions.length <= 1) return null
@@ -1157,6 +1206,21 @@ const getCurrencySymbol = (currency: string) => {
   }
 }
 
+// Fixed cover image style function
+const getCoverImageStyle = (storeData: any, primaryColor: string) => {
+  if (storeData.coverImage) {
+    return {
+      backgroundImage: `url(${storeData.coverImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }
+  } else {
+    return {
+      background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`
+    }
+  }
+}
+
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -1189,6 +1253,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     }
     return 'pickup' // Fallback
   }
+
+  const [deliveryError, setDeliveryError] = useState<{
+    type: 'OUTSIDE_DELIVERY_AREA' | 'DELIVERY_NOT_AVAILABLE' | 'CALCULATION_FAILED' | null
+    message: string
+    maxDistance?: number
+  } | null>(null)
 
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dineIn'>(getDefaultDeliveryType())
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -1232,7 +1302,37 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     }).map(product => ({ ...product, categoryName: category.name }))
   )
 
-  // Handle location change and fee calculation
+  // Create a helper function to check if the order can be submitted:
+  const canSubmitOrder = () => {
+    if (storeData.isTemporarilyClosed) return false
+    if (cart.length === 0) return false
+    if (!customerInfo.name || !customerInfo.phone) return false
+    if (deliveryType === 'delivery' && !customerInfo.address) return false
+    if (deliveryType === 'delivery' && !meetsMinimumOrder && !deliveryError) return false
+    if (deliveryType === 'delivery' && deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
+    if (isOrderLoading) return false
+    return true
+  }
+
+ // ADD FUNCTION TO CLEAR DELIVERY ERROR:
+ const handleClearDeliveryError = () => {
+  setDeliveryError(null)
+  setCalculatedDeliveryFee(storeData.deliveryFee)
+}
+
+
+// Update your delivery type change handler to clear errors:
+const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => {
+  setDeliveryType(newType)
+  setDeliveryError(null) // Clear delivery errors when switching types
+  
+  // Reset delivery fee when switching away from delivery
+  if (newType !== 'delivery') {
+    setCalculatedDeliveryFee(storeData.deliveryFee)
+  }
+}
+
+  // Update the handleLocationChange function:
   const handleLocationChange = async (lat: number, lng: number, address: string) => {
     setCustomerInfo(prev => ({ 
       ...prev, 
@@ -1240,6 +1340,9 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       longitude: lng,
       address 
     }))
+
+    // Clear any previous delivery errors
+    setDeliveryError(null)
 
     if (deliveryType === 'delivery') {
       try {
@@ -1254,13 +1357,43 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
           })
         })
         
-        if (response.ok) {
-          const { deliveryFee } = await response.json()
-          setCalculatedDeliveryFee(deliveryFee)
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          setCalculatedDeliveryFee(result.deliveryFee)
+        } else {
+          // Handle different types of delivery errors
+          if (result.code === 'OUTSIDE_DELIVERY_AREA') {
+            // Extract max distance from error message if available
+            const maxDistanceMatch = result.error.match(/(\d+(?:\.\d+)?)km/)
+            const maxDistance = maxDistanceMatch ? parseFloat(maxDistanceMatch[1]) : null
+            
+            setDeliveryError({
+              type: 'OUTSIDE_DELIVERY_AREA',
+              message: result.error,
+              maxDistance: maxDistance || undefined
+            })
+          } else if (result.code === 'DELIVERY_NOT_AVAILABLE') {
+            setDeliveryError({
+              type: 'DELIVERY_NOT_AVAILABLE',
+              message: result.error
+            })
+          } else {
+            setDeliveryError({
+              type: 'CALCULATION_FAILED',
+              message: result.error || 'Unable to calculate delivery fee'
+            })
+          }
+          
+          // Set delivery fee to 0 when there's an error to prevent confusion
+          setCalculatedDeliveryFee(0)
         }
       } catch (error) {
         console.error('Error calculating delivery fee:', error)
-        // Keep default fee if calculation fails
+        setDeliveryError({
+          type: 'CALCULATION_FAILED',
+          message: 'Network error while calculating delivery fee'
+        })
         setCalculatedDeliveryFee(storeData.deliveryFee)
       }
     }
@@ -1276,7 +1409,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
 
   const getFilteredProducts = () => {
-     // @ts-ignore
+    // @ts-ignore
     let products = []
   
     if (selectedCategory === 'all') {
@@ -1384,7 +1517,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   const submitOrder = async () => {
     if (storeData.isTemporarilyClosed) {
-      // @ts-ignore
       alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
       return
     }
@@ -1474,128 +1606,123 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {/* Store Closure Banner */}
-      <StoreClosure 
-        storeData={storeData} 
-        primaryColor={primaryColor} 
-        translations={translations} 
-      />
 
-      {/* Header Section */}
+      {/* Header Section - FIXED COVER IMAGE */}
       <div className="bg-white">
         <div className="max-w-[75rem] mx-auto">
-          {/* Cover Image Section */}
+          {/* Cover Image Section - FIXED: No gradient overlay when cover image exists */}
           <div 
-            className="relative h-[250px] md:rounded-xl overflow-hidden"
-            style={{ 
-              background: storeData.coverImage 
-                ? `linear-gradient(135deg, ${primaryColor}CC, ${primaryColor}99), url(${storeData.coverImage})` 
-                : `linear-gradient(135deg, ${primaryColor}, ${primaryColor}CC)`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            className="relative h-[200px] sm:h-[250px] md:h-[280px] md:rounded-xl overflow-hidden"
+            style={getCoverImageStyle(storeData, primaryColor)}
           >
          {/* Icons in top right */}
-<div className="absolute top-5 right-5 flex gap-3">
+<div className="absolute top-4 sm:top-5 right-4 sm:right-5 flex gap-2 sm:gap-3">
   <button 
     onClick={() => setShowShareModal(true)}
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
   >
-    <Share2 className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Share2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
   <button 
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
     // @ts-ignore
     onClick={() => document.querySelector('.search-input')?.focus()}
   >
-    <Search className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Search className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
   <button 
     onClick={() => setShowBusinessInfoModal(true)}
-    className="w-10 h-10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all md:bg-white md:bg-opacity-20"
-    style={{ backgroundColor: typeof window !== 'undefined' && window.innerWidth < 768 ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.25)' }}
+    className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
   >
-    <Info className="w-4 h-4 text-white md:text-gray-700" style={{'color': 'white'} as React.CSSProperties} />
+    <Info className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
 </div>
           </div>
 
-          <div className="bg-white rounded-b-xl px-4 p-6 relative">
+          <div className="bg-white rounded-b-xl px-4 md:px-0 pb-0 pt-4 relative">
             {/* Logo */}
             <div 
-              className="absolute -top-10 left-8 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl"
+              className="absolute -top-8 sm:-top-10 left-6 sm:left-6 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-xl"
               style={{ 
                 backgroundColor: 'white',
                 color: primaryColor
               }}
             >
               {storeData.logo ? (
-                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-2xl object-cover" />
+                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-full object-cover" />
               ) : (
                 storeData.name.charAt(0)
               )}
             </div>
 
-            <div className="pt-8">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{storeData.name}</h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            <div className="pt-6 sm:pt-8">
+            <div className="flex items-start gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-2 flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{storeData.name}</h1>
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
                   storeData.isOpen && !storeData.isTemporarilyClosed
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
                   {storeData.isTemporarilyClosed 
-                    // @ts-ignore
                     ? translations.temporarilyClosed 
                     : storeData.isOpen ? translations.open : translations.closed}
                 </span>
-                
-                {/* Desktop Delivery Switcher - Right side of title */}
-                <div className="ml-auto hidden lg:block">
-                  <DeliveryTypeSwitcher
-                    deliveryType={deliveryType}
-                    setDeliveryType={setDeliveryType}
-                    deliveryOptions={getDeliveryOptions()}
-                    primaryColor={primaryColor}
-                    disabled={storeData.isTemporarilyClosed}
-                  />
-                </div>
               </div>
               
+              {/* Desktop Delivery Switcher - Right side */}
+              <div className="hidden lg:block flex-shrink-0">
+                <DeliveryTypeSwitcher
+                  deliveryType={deliveryType}
+                  setDeliveryType={setDeliveryType}
+                  deliveryOptions={getDeliveryOptions()}
+                  primaryColor={primaryColor}
+                  disabled={false}
+                />
+              </div>
+          </div>
+                        
               {storeData.description && (
-                <p className="text-gray-600 text-lg mb-3">{storeData.description}</p>
+                <p className="text-gray-500 text-md sm:text-md mb-3">{storeData.description}</p>
               )}
               
               <div className="space-y-2 sm:space-y-0">
-                {/* Address */}
-                {storeData.address && (
-                  <div className="flex items-center gap-1 mb-1 text-gray-600">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm">{storeData.address}</span>
+              {/* Address */}
+              {storeData.address && (
+                <div className="flex items-center gap-1 mb-2 text-gray-500">
+                  <MapPin className="w-4 h-4" style={{ color: storeData.primaryColor }} />
+                  <span className="text-md">{storeData.address}</span>
+                </div>
+              )}
+              
+              {/* Time and Fee - Dynamic based on delivery type */}
+              <div className="flex items-center gap-4 sm:gap-5 text-gray-500">
+                {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                    <span className="text-md">
+                      {deliveryType === 'delivery' 
+                        ? storeData.estimatedDeliveryTime 
+                        : storeData.estimatedPickupTime || '15-20 min'}
+                    </span>
                   </div>
                 )}
-                
-                {/* Time and Fee - Dynamic based on delivery type */}
-                <div className="flex items-center gap-5 text-gray-600">
-                  {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">
-                        {deliveryType === 'delivery' 
-                          ? storeData.estimatedDeliveryTime 
-                          : storeData.estimatedPickupTime || '15-20 min'}
-                      </span>
-                    </div>
-                  )}
-                  {deliveryType === 'delivery' && calculatedDeliveryFee > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Package className="w-4 h-4 flex-shrink-0" />
-                      <span className="text-sm">{currencySymbol}{calculatedDeliveryFee.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
+                {deliveryType === 'delivery' ? (
+              <div className="flex items-center gap-1">
+                <Package className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                <span className="text-md">
+                  {calculatedDeliveryFee > 0 
+                    ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
+                    : translations.freeDelivery || 'Free Delivery'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Store className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                <span className="text-md">{translations.pickupAvailable || 'Pickup available'}</span>
+              </div>
+            )}
+          </div>
               </div>
             </div>
           </div>
@@ -1613,7 +1740,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               setDeliveryType={setDeliveryType}
               deliveryOptions={getDeliveryOptions()}
               primaryColor={primaryColor}
-              disabled={storeData.isTemporarilyClosed}
+              disabled={false}
             />
           </div>
 
@@ -1636,7 +1763,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
       onFocus={(e) => e.target.style.borderColor = primaryColor}
       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-      disabled={storeData.isTemporarilyClosed}
+      disabled={false}
     />
     {/* Clear search button */}
     {searchTerm && (
@@ -1669,12 +1796,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 setSelectedCategory('all')
                 // Keep search term when switching to "All"
                 }}
-                disabled={storeData.isTemporarilyClosed}
+                disabled={false}
                 className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                 selectedCategory === 'all'
                     ? 'border-b-2'
                     : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                }`}
                 style={{ 
                 color: selectedCategory === 'all' ? primaryColor : undefined,
                 borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
@@ -1708,12 +1835,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                         setSearchTerm('')
                     }
                     }}
-                    disabled={storeData.isTemporarilyClosed}
+                    disabled={false}
                     className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                     selectedCategory === category.id
                         ? 'border-b-2'
                         : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                    } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    }`}
                     style={{ 
                     color: selectedCategory === category.id ? primaryColor : undefined,
                     borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
@@ -1730,6 +1857,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             })}
           </div>
 
+          <StoreClosure 
+  storeData={storeData} 
+  primaryColor={primaryColor} 
+  translations={translations} 
+/>
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(() => {
@@ -1810,7 +1942,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             storeData={storeData}
             cart={cart}
             deliveryType={deliveryType}
-            setDeliveryType={setDeliveryType}
+            setDeliveryType={handleDeliveryTypeChange} // Use the updated handler
             customerInfo={customerInfo}
             setCustomerInfo={setCustomerInfo}
             cartSubtotal={cartSubtotal}
@@ -1826,6 +1958,10 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             primaryColor={primaryColor}
             translations={translations}
             onLocationChange={handleLocationChange}
+            // @ts-ignore
+            deliveryError={deliveryError} // ADD THIS
+            onClearDeliveryError={handleClearDeliveryError} // ADD THIS  
+            canSubmitOrder={canSubmitOrder} // ADD THIS
           />
         </div>
       </div>
@@ -1863,28 +1999,32 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               </button>
             </div>
             <div className="overflow-y-auto max-h-[calc(85vh-180px)]">
-              <OrderPanel 
-                storeData={storeData}
-                cart={cart}
-                deliveryType={deliveryType}
-                setDeliveryType={setDeliveryType}
-                customerInfo={customerInfo}
-                setCustomerInfo={setCustomerInfo}
-                cartSubtotal={cartSubtotal}
-                cartDeliveryFee={cartDeliveryFee}
-                cartTotal={cartTotal}
-                meetsMinimumOrder={meetsMinimumOrder}
-                currencySymbol={currencySymbol}
-                updateCartItemQuantity={updateCartItemQuantity}
-                removeFromCart={removeFromCart}
-                submitOrder={submitOrder}
-                isOrderLoading={isOrderLoading}
-                deliveryOptions={getDeliveryOptions()}
-                primaryColor={primaryColor}
-                translations={translations}
-                onLocationChange={handleLocationChange}
-                isMobile={true}
-              />
+            <OrderPanel 
+              storeData={storeData}
+              cart={cart}
+              deliveryType={deliveryType}
+              setDeliveryType={handleDeliveryTypeChange} // Use the updated handler
+              customerInfo={customerInfo}
+              setCustomerInfo={setCustomerInfo}
+              cartSubtotal={cartSubtotal}
+              cartDeliveryFee={cartDeliveryFee}
+              cartTotal={cartTotal}
+              meetsMinimumOrder={meetsMinimumOrder}
+              currencySymbol={currencySymbol}
+              updateCartItemQuantity={updateCartItemQuantity}
+              removeFromCart={removeFromCart}
+              submitOrder={submitOrder}
+              isOrderLoading={isOrderLoading}
+              deliveryOptions={getDeliveryOptions()}
+              primaryColor={primaryColor}
+              translations={translations}
+              onLocationChange={handleLocationChange}
+              isMobile={true}
+                // @ts-ignore
+              deliveryError={deliveryError} // ADD THIS
+              onClearDeliveryError={handleClearDeliveryError} // ADD THIS
+              canSubmitOrder={canSubmitOrder} // ADD THIS
+            />
             </div>
           </div>
         </div>
@@ -1959,6 +2099,156 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             </span>
         </div>
         )}
+    </div>
+  )
+}
+
+// Add this component before your main StoreFront component
+
+function DeliveryErrorMessage({ 
+  error, 
+  primaryColor, 
+  translations,
+  onClearAddress,
+  currencySymbol 
+}: {
+  error: {
+    type: 'OUTSIDE_DELIVERY_AREA' | 'DELIVERY_NOT_AVAILABLE' | 'CALCULATION_FAILED'
+    message: string
+    maxDistance?: number
+  }
+  primaryColor: string
+  translations: any
+  onClearAddress: () => void
+  currencySymbol: string
+}) {
+  const getErrorContent = () => {
+    switch (error.type) {
+      case 'OUTSIDE_DELIVERY_AREA':
+        return {
+          icon: MapPin,
+          title: translations.outsideDeliveryArea,
+          description: error.maxDistance 
+            ? `${translations.outsideDeliveryAreaDesc} ${error.maxDistance}km`
+            : translations.selectDifferentArea,
+          actionText: translations.tryDifferentAddress,
+          showAction: true,
+          color: 'red'
+        }
+      case 'DELIVERY_NOT_AVAILABLE':
+        return {
+          icon: AlertCircle,
+          title: translations.deliveryNotAvailable,
+          description: error.message,
+          actionText: null,
+          showAction: false,
+          color: 'orange'
+        }
+      case 'CALCULATION_FAILED':
+        return {
+          icon: AlertTriangle,
+          title: translations.deliveryCalculationFailed,
+          description: error.message,
+          actionText: translations.tryDifferentAddress,
+          showAction: true,
+          color: 'yellow'
+        }
+      default:
+        return {
+          icon: AlertCircle,
+          title: translations.deliveryNotAvailable,
+          description: error.message,
+          actionText: null,
+          showAction: false,
+          color: 'red'
+        }
+    }
+  }
+
+  const content = getErrorContent()
+  const IconComponent = content.icon
+
+  const getColorClasses = (color: string) => {
+    switch (color) {
+      case 'red':
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          title: 'text-red-900',
+          description: 'text-red-700',
+          button: 'bg-red-600 hover:bg-red-700'
+        }
+      case 'orange':
+        return {
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          title: 'text-orange-900',
+          description: 'text-orange-700',
+          button: 'bg-orange-600 hover:bg-orange-700'
+        }
+      case 'yellow':
+        return {
+          bg: 'bg-yellow-50',
+          border: 'border-yellow-200',
+          iconBg: 'bg-yellow-100',
+          iconColor: 'text-yellow-600',
+          title: 'text-yellow-900',
+          description: 'text-yellow-700',
+          button: 'bg-yellow-600 hover:bg-yellow-700'
+        }
+      default:
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          title: 'text-red-900',
+          description: 'text-red-700',
+          button: 'bg-red-600 hover:bg-red-700'
+        }
+    }
+  }
+
+  const colorClasses = getColorClasses(content.color)
+
+  return (
+    <div className={`${colorClasses.bg} ${colorClasses.border} border rounded-xl p-4 mb-4`}>
+      <div className="flex items-start">
+        <div className={`w-10 h-10 ${colorClasses.iconBg} rounded-full flex items-center justify-center mr-3 flex-shrink-0`}>
+          <IconComponent className={`w-5 h-5 ${colorClasses.iconColor}`} />
+        </div>
+        <div className="flex-1">
+          <h3 className={`font-semibold ${colorClasses.title} mb-1`}>
+            {content.title}
+          </h3>
+          <p className={`${colorClasses.description} text-sm leading-relaxed mb-3`}>
+            {content.description}
+          </p>
+          
+          {content.showAction && content.actionText && (
+            <button
+              onClick={onClearAddress}
+              className={`inline-flex items-center px-4 py-2 ${colorClasses.button} text-white rounded-lg text-sm font-medium transition-colors`}
+            >
+              <Search className="w-4 h-4 mr-2" />
+              {content.actionText}
+            </button>
+          )}
+          
+          {/* Additional info for outside delivery area */}
+          {error.type === 'OUTSIDE_DELIVERY_AREA' && error.maxDistance && (
+            <div className="mt-3 p-3 bg-white bg-opacity-60 rounded-lg">
+              <p className="text-sm text-gray-700">
+                <span className="font-medium">{translations.maxDeliveryDistance}:</span> {error.maxDistance}km
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -2077,302 +2367,314 @@ function EmptyState({
   )
 }
 
-// Fixed Product Card Component
+// Fixed Product Card Component - Better badge positioning
 function ProductCard({ 
-    product, 
-    onOpenModal, 
-    primaryColor, 
-    currencySymbol,
-    translations,
-    disabled = false
-  }: { 
-    product: Product & { categoryName?: string }
-    onOpenModal: (product: Product) => void
-    primaryColor: string
-    currencySymbol: string
-    translations: any
-    disabled?: boolean
-    // searchTerm?: string
-  }) {
-    const hasImage = product.images.length > 0
-  
-    return (
-      <div className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
-        disabled ? 'opacity-60' : ''
-      }`}>
-        <div className="flex items-center min-h-[120px]">
-          <div className={`p-5 ${hasImage ? 'flex-1' : 'w-full'} flex flex-col justify-between h-full min-h-[120px]`}>
-            <div>
-              <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
-              
-              {/* Reserve space for description even if empty */}
-              <div className="h-10 mb-1">
-                {product.description && (
-                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{product.description}</p>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <div className={`flex items-center ${hasImage ? 'justify-between' : 'justify-between'}`}>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-xl" style={{ color: primaryColor }}>
-                    {currencySymbol}{product.price.toFixed(2)}
-                  </span>
-                  {product.originalPrice && product.originalPrice > product.price && (
-                    <span className="text-gray-500 line-through text-sm">
-                      {currencySymbol}{product.originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                
-                <button
-                  onClick={() => !disabled && onOpenModal(product)}
-                  disabled={disabled || product.stock === 0}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-  
-              {/* Stock info */}
-                {product.stock === 0 && (
-                  <div className="h-4 mt-2">
-                  <p className="text-red-600 text-xs">{translations.outOfStock || 'Out of stock'}</p>
-                  </div>
-                )}
-              
-            </div>
-          </div>
-          
-          {hasImage && (
-            <div className="w-30 h-30 flex-shrink-0">
-              <div className="relative w-30 h-30">
-                <img 
-                  src={product.images[0]} 
-                  alt={product.name}
-                  className="w-full h-full object-cover rounded-r-2xl"
-                />
+  product, 
+  onOpenModal, 
+  primaryColor, 
+  currencySymbol,
+  translations,
+  disabled = false
+}: { 
+  product: Product & { categoryName?: string }
+  onOpenModal: (product: Product) => void
+  primaryColor: string
+  currencySymbol: string
+  translations: any
+  disabled?: boolean
+}) {
+  const hasImage = product.images.length > 0
+
+  return (
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
+      disabled ? 'opacity-60' : ''
+    }`}>
+      <div className="flex items-start p-5">
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="mb-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold text-base text-gray-900 leading-tight">
+                  {product.name}
+                </h3>
                 {product.featured && (
-                  <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                  <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-medium whitespace-nowrap">
                     {translations.popular || 'Popular'}
                   </span>
                 )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-  
-
-  // Improved Product Modal Component
-  function ProductModal({
-    product,
-    selectedVariant,
-    setSelectedVariant,
-    selectedModifiers,
-    setSelectedModifiers,
-    onAddToCart,
-    onClose,
-    currencySymbol,
-    primaryColor,
-    translations
-  }: {
-    product: Product
-    selectedVariant: ProductVariant | null
-    setSelectedVariant: (variant: ProductVariant | null) => void
-    selectedModifiers: ProductModifier[]
-    setSelectedModifiers: (modifiers: ProductModifier[]) => void
-    onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
-    onClose: () => void
-    currencySymbol: string
-    primaryColor: string
-    translations: any
-  }) {
-    const [quantity, setQuantity] = useState(1)
-  
-    const basePrice = selectedVariant?.price || product.price
-    const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
-    const totalPrice = (basePrice + modifierPrice) * quantity
-  
-    const toggleModifier = (modifier: ProductModifier) => {
-        // @ts-ignore
-      setSelectedModifiers(prev => {
-         // @ts-ignore
-        const exists = prev.find(m => m.id === modifier.id)
-        if (exists) {
-             // @ts-ignore
-          return prev.filter(m => m.id !== modifier.id)
-        } else {
-          return [...prev, modifier]
-        }
-      })
-    }
-  
-    const handleAddToCart = () => {
-      for (let i = 0; i < quantity; i++) {
-        onAddToCart(product, selectedVariant || undefined, selectedModifiers)
-      }
-    }
-  
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-xl">
-          {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
-              <button 
-                onClick={onClose} 
-                className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
+            
+            {/* Reserve space for description with proper line clamping */}
+            <div className="mb-1">
+              {product.description && (
+                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                  {product.description}
+                </p>
+              )}
             </div>
           </div>
           
-          <div className="overflow-y-auto max-h-[calc(90vh-180px)]">
-            <div className="p-6 space-y-6">
-              {product.images.length > 0 && (
-                <div className="relative">
-                  <img 
-                    src={product.images[0]} 
-                    alt={product.name}
-                    className="w-full h-48 object-cover rounded-2xl"
-                  />
-                  {product.featured && (
-                    <span className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold">
-                      {translations.popular || 'Popular'}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              {product.description && (
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-gray-700 leading-relaxed">{product.description}</p>
-                </div>
-              )}
-  
-              {/* Variants */}
-              {product.variants.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                    {translations.chooseSize || 'Choose Size'}
-                  </h3>
-                  <div className="space-y-3">
-                    {product.variants.map(variant => (
-                      <button
-                        key={variant.id}
-                        onClick={() => setSelectedVariant(variant)}
-                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                          selectedVariant?.id === variant.id
-                            ? 'bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                        style={{
-                          borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
-                        }}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-800">{variant.name}</span>
-                          <span className="font-bold" style={{ color: primaryColor }}>
-                            {currencySymbol}{variant.price.toFixed(2)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-  
-              {/* Modifiers */}
-              {product.modifiers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                    {translations.addExtras || 'Add Extras'}
-                  </h3>
-                  <div className="space-y-3">
-                    {product.modifiers.map(modifier => (
-                      <button
-                        key={modifier.id}
-                        onClick={() => toggleModifier(modifier)}
-                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                          selectedModifiers.find(m => m.id === modifier.id)
-                            ? 'bg-green-50 border-green-400'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <span className="font-medium text-gray-800">{modifier.name}</span>
-                            {modifier.required && (
-                              <span className="text-red-500 text-sm ml-2">({translations.required || 'Required'})</span>
-                            )}
-                          </div>
-                          <span className="font-bold text-green-600">
-                            +{currencySymbol}{modifier.price.toFixed(2)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-  
-              {/* Quantity */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                  {translations.quantity || 'Quantity'}
-                </h3>
-                <div className="flex items-center justify-center space-x-6">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
-                    {quantity}
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <span className="font-bold text-lg" style={{ color: primaryColor }}>
+                  {currencySymbol}{product.price.toFixed(2)}
+                </span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <span className="text-gray-500 line-through text-sm">
+                    {currencySymbol}{product.originalPrice.toFixed(2)}
                   </span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
+                )}
               </div>
+              
+              <button
+                onClick={() => !disabled && onOpenModal(product)}
+                disabled={disabled || product.stock === 0}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform flex-shrink-0"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
+            {/* Stock info */}
+            {product.stock === 0 && (
+              <p className="text-red-600 text-sm mt-2">{translations.outOfStock || 'Out of stock'}</p>
+            )}
           </div>
+        </div>
+        
+        {hasImage && (
+          <div className="w-20 h-20 ml-4 flex-shrink-0">
+            <img 
+              src={product.images[0]} 
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+        )}
+        
+        {!hasImage && (
+          <div className="w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
+            <Package className="w-7 h-7" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
   
-          {/* Footer */}
-          <div className="p-6 bg-gray-50 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
-              <span className="text-2xl font-bold" style={{ color: primaryColor }}>
-                {currencySymbol}{totalPrice.toFixed(2)}
-              </span>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
-              style={{ backgroundColor: primaryColor }}
+
+// Improved Product Modal Component - Fixed footer visibility and scrolling
+function ProductModal({
+  product,
+  selectedVariant,
+  setSelectedVariant,
+  selectedModifiers,
+  setSelectedModifiers,
+  onAddToCart,
+  onClose,
+  currencySymbol,
+  primaryColor,
+  translations
+}: {
+  product: Product
+  selectedVariant: ProductVariant | null
+  setSelectedVariant: (variant: ProductVariant | null) => void
+  selectedModifiers: ProductModifier[]
+  setSelectedModifiers: (modifiers: ProductModifier[]) => void
+  onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
+  onClose: () => void
+  currencySymbol: string
+  primaryColor: string
+  translations: any
+}) {
+  const [quantity, setQuantity] = useState(1)
+
+  const basePrice = selectedVariant?.price || product.price
+  const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
+  const totalPrice = (basePrice + modifierPrice) * quantity
+
+  const toggleModifier = (modifier: ProductModifier) => {
+      // @ts-ignore
+    setSelectedModifiers(prev => {
+       // @ts-ignore
+      const exists = prev.find(m => m.id === modifier.id)
+      if (exists) {
+           // @ts-ignore
+        return prev.filter(m => m.id !== modifier.id)
+      } else {
+        return [...prev, modifier]
+      }
+    })
+  }
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      onAddToCart(product, selectedVariant || undefined, selectedModifiers)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
+        {/* Header - Fixed */}
+        <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
             >
-              {translations.addToCart || 'Add to Cart'}
+              <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
-      </div>
-    )
-  }
+        
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {/* Conditional Image Section */}
+            {product.images.length > 0 && (
+              <div className="relative">
+                <div className="w-full max-w-sm mx-auto aspect-square">
+                  <img 
+                    src={product.images[0]} 
+                    alt={product.name}
+                    className="w-full h-full object-contain rounded-2xl"
+                  />
+                </div>
+                {product.featured && (
+                  <span className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold">
+                    {translations.popular || 'Popular'}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {product.description && (
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+              </div>
+            )}
 
+            {/* Variants */}
+            {product.variants.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.chooseSize || 'Choose Size'}
+                </h3>
+                <div className="space-y-3">
+                  {product.variants.map(variant => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariant(variant)}
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                        selectedVariant?.id === variant.id
+                          ? 'bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                      }`}
+                      style={{
+                        borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                      }}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-800">{variant.name}</span>
+                        <span className="font-bold" style={{ color: primaryColor }}>
+                          {currencySymbol}{variant.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modifiers */}
+            {product.modifiers.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.addExtras || 'Add Extras'}
+                </h3>
+                <div className="space-y-3">
+                  {product.modifiers.map(modifier => (
+                    <button
+                      key={modifier.id}
+                      onClick={() => toggleModifier(modifier)}
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                        selectedModifiers.find(m => m.id === modifier.id)
+                          ? 'bg-green-50 border-green-400'
+                          : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-gray-800">{modifier.name}</span>
+                          {modifier.required && (
+                            <span className="text-red-500 text-sm ml-2">({translations.required || 'Required'})</span>
+                          )}
+                        </div>
+                        <span className="font-bold text-green-600">
+                          +{currencySymbol}{modifier.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quantity */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.quantity || 'Quantity'}
+              </h3>
+              <div className="flex items-center justify-center space-x-6">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  <Minus className="w-5 h-5 text-gray-600" />
+                </button>
+                <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer - Fixed at bottom */}
+        <div className="p-6 bg-gray-50 flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
+            <span className="text-2xl font-bold" style={{ color: primaryColor }}>
+              {currencySymbol}{totalPrice.toFixed(2)}
+            </span>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {translations.addToCart || 'Add to Cart'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Update the OrderPanel component props to include delivery error handling:
 function OrderPanel({
   storeData,
   cart,
@@ -2393,14 +2695,17 @@ function OrderPanel({
   primaryColor,
   translations,
   onLocationChange,
-  isMobile = false
+  isMobile = false,
+  deliveryError = null,
+  onClearDeliveryError,
+  canSubmitOrder
 }: {
   storeData: any
-  cart: any[]
+  cart: CartItem[]
   deliveryType: 'delivery' | 'pickup' | 'dineIn'
   setDeliveryType: (type: 'delivery' | 'pickup' | 'dineIn') => void
-  customerInfo: any
-  setCustomerInfo: (info: any) => void
+  customerInfo: CustomerInfo
+  setCustomerInfo: (info: CustomerInfo) => void
   cartSubtotal: number
   cartDeliveryFee: number
   cartTotal: number
@@ -2415,41 +2720,66 @@ function OrderPanel({
   translations: any
   onLocationChange?: (lat: number, lng: number, address: string) => void
   isMobile?: boolean
+  deliveryError?: {
+    type: 'OUTSIDE_DELIVERY_AREA' | 'DELIVERY_NOT_AVAILABLE' | 'CALCULATION_FAILED'
+    message: string
+    maxDistance?: number
+  } | null
+  onClearDeliveryError?: () => void
+  canSubmitOrder: () => boolean
 }) {
+  
+  // Helper function to clear address and delivery error
+  const handleClearAddress = () => {
+     // @ts-ignore
+    setCustomerInfo(prev => ({ 
+      ...prev, 
+      // @ts-ignore
+      address: '', 
+       // @ts-ignore
+      latitude: undefined, 
+       // @ts-ignore
+      longitude: undefined 
+    }))
+    if (onClearDeliveryError) {
+      onClearDeliveryError()
+    }
+  }
+
   return (
     <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
       <div>
         <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
         {/* Desktop Delivery Type Toggle */}
-{deliveryOptions.length > 1 && (
-  <div className="mb-6">
-    <div className={`grid gap-2 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
-      {deliveryOptions.map(option => {
-        const IconComponent = option.icon
-        return (
-          <button
-            key={option.key}
-            onClick={() => !storeData.isTemporarilyClosed && setDeliveryType(option.key as any)}
-            disabled={storeData.isTemporarilyClosed}
-            className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
-              deliveryType === option.key
-                ? 'text-white'
-                : 'text-gray-700 border-gray-200 hover:border-gray-300'
-            } ${storeData.isTemporarilyClosed ? 'opacity-50 cursor-not-allowed' : ''}`}
-            style={{ 
-              backgroundColor: deliveryType === option.key ? primaryColor : 'white',
-              borderColor: deliveryType === option.key ? primaryColor : undefined
-            }}
-          >
-            <IconComponent className="w-4 h-4 mr-2" />
-            <span className="text-sm font-medium">{option.label}</span>
-          </button>
-        )
-      })}
-    </div>
-  </div>
-)}
+        {deliveryOptions.length > 1 && (
+          <div className="mb-6">
+            <div className={`grid gap-2 ${deliveryOptions.length === 2 ? 'grid-cols-2' : deliveryOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-1'}`}>
+              {deliveryOptions.map(option => {
+                const IconComponent = option.icon
+                return (
+                  <button
+                    key={option.key}
+                    onClick={() => setDeliveryType(option.key as any)}
+                    disabled={false}
+                    className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
+                      deliveryType === option.key
+                        ? 'text-white'
+                        : 'text-gray-700 border-gray-200 hover:border-gray-200'
+                    }`}
+                    style={{ 
+                      backgroundColor: deliveryType === option.key ? primaryColor : 'white',
+                      borderColor: deliveryType === option.key ? primaryColor : undefined
+                    }}
+                  >
+                    <IconComponent className="w-4 h-4 mr-2" />
+                    <span className="text-sm font-medium">{option.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Customer Information */}
         <div className="space-y-4 mb-6">
@@ -2460,10 +2790,9 @@ function OrderPanel({
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+              onFocus={(e) =>  e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="Your full name"
             />
@@ -2474,7 +2803,7 @@ function OrderPanel({
             onChange={(phone) => setCustomerInfo({ ...customerInfo, phone })}
             storeData={storeData}
             primaryColor={primaryColor}
-            disabled={storeData.isTemporarilyClosed}
+            disabled={false}
             required={true}
             translations={translations}
           />
@@ -2485,10 +2814,10 @@ function OrderPanel({
               type="email"
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-              disabled={storeData.isTemporarilyClosed}
+              disabled={false}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-              onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+              onFocus={(e) => e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               placeholder="your.email@example.com"
             />
@@ -2509,6 +2838,17 @@ function OrderPanel({
                   storeData={storeData}
                 />
               </div>
+
+              {/* SHOW DELIVERY ERROR MESSAGE HERE */}
+              {deliveryError && (
+                <DeliveryErrorMessage
+                  error={deliveryError}
+                  primaryColor={primaryColor}
+                  translations={translations}
+                  onClearAddress={handleClearAddress}
+                  currencySymbol={currencySymbol}
+                />
+              )}
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
@@ -2516,10 +2856,10 @@ function OrderPanel({
                   type="text"
                   value={customerInfo.address2}
                   onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  disabled={storeData.isTemporarilyClosed}
+                  disabled={false}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+                  onFocus={(e) => e.target.style.borderColor = primaryColor}
                   onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   placeholder={translations.apartment || 'Apartment, suite, etc.'}
                 />
@@ -2547,7 +2887,7 @@ function OrderPanel({
 
         {/* Cart Items */}
         {cart.length > 0 && (
-          <div className="border-t-2 border-gray-300 pt-6 mb-6">
+          <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => (
@@ -2577,13 +2917,6 @@ function OrderPanel({
                     >
                       <Plus className="w-4 h-4" />
                     </button>
-                    {/* <button
-                      onClick={() => removeFromCart(item.id)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center hover:bg-red-200 text-red-600 ml-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <X className="w-4 h-4" />
-                    </button> */}
                   </div>
                 </div>
               ))}
@@ -2593,19 +2926,19 @@ function OrderPanel({
 
         {/* Order Summary */}
         {cart.length > 0 && (
-          <div className="border-t-2 border-gray-300 pt-6 mb-6">
+          <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
-              {cartDeliveryFee > 0 && (
+              {cartDeliveryFee > 0 && !deliveryError && (
                 <div className="flex justify-between text-sm">
                   <span>{deliveryType === 'delivery' ? (translations.deliveryFee || 'Delivery Fee') : (translations.serviceFee || 'Service Fee')}</span>
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-300 pt-3">
+              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-200 pt-3">
                 <span>{translations.total || 'Total'}</span>
                 <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
@@ -2613,8 +2946,8 @@ function OrderPanel({
           </div>
         )}
 
-        {/* Minimum Order Warning - Only for delivery */}
-        {!meetsMinimumOrder && deliveryType === 'delivery' && !storeData.isTemporarilyClosed && (
+        {/* Minimum Order Warning - Only for delivery and when no delivery error */}
+        {!meetsMinimumOrder && deliveryType === 'delivery' && !deliveryError && !storeData.isTemporarilyClosed && (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
             <p className="text-yellow-800 text-sm">
               {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
@@ -2629,10 +2962,10 @@ function OrderPanel({
           <textarea
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
-            disabled={storeData.isTemporarilyClosed}
+            disabled={false}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-            onFocus={(e) => !storeData.isTemporarilyClosed && (e.target.style.borderColor = primaryColor)}
+            onFocus={(e) => e.target.style.borderColor = primaryColor}
             onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             rows={3}
             placeholder={translations.anySpecialRequests || 'Any special requests...'}
@@ -2640,7 +2973,7 @@ function OrderPanel({
         </div>
 
         {/* Payment Info */}
-        {storeData.paymentInstructions && !storeData.isTemporarilyClosed && (
+        {storeData.paymentInstructions && (
           <div className="bg-gray-50 p-4 rounded-xl mb-6">
             <div className="flex items-start">
               <Info className="w-4 h-4 text-gray-500 mt-0.5 mr-2 flex-shrink-0" />
@@ -2651,33 +2984,36 @@ function OrderPanel({
 
         {/* Order Button */}
         <button
-        onClick={submitOrder}
-        disabled={
-            isOrderLoading || 
-            cart.length === 0 || 
-            (deliveryType === 'delivery' && !meetsMinimumOrder) || 
-            !customerInfo.name || 
-            !customerInfo.phone ||
-            (deliveryType === 'delivery' && !customerInfo.address) ||
-            storeData.isTemporarilyClosed
-        }
-        className="w-full py-4 rounded-xl text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:opacity-90 flex items-center justify-center"
-        style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
+          onClick={submitOrder}
+          disabled={!canSubmitOrder()}
+          className={`w-full py-4 rounded-xl text-white font-semibold transition-all hover:opacity-90 flex items-center justify-center ${
+            !canSubmitOrder() ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
         >
-        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.382"/>
-        </svg>
-        {storeData.isTemporarilyClosed
-            ? (translations.storeTemporarilyClosed || 'Store Temporarily Closed')
-            : isOrderLoading 
-            ? (translations.placingOrder || 'Placing Order...') 
-            : `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
-        }
+          </svg>
+          {(() => {
+            if (storeData.isTemporarilyClosed) {
+              return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
+            } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
+              return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
+            } else if (deliveryError) {
+              return translations.deliveryNotAvailable || 'Delivery Not Available'
+            } else if (isOrderLoading) {
+              return translations.placingOrder || 'Placing Order...'
+            } else {
+              return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+            }
+          })()}
         </button>
 
         <p className="text-xs text-gray-500 text-center mt-3">
           {storeData.isTemporarilyClosed
             ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
+            : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
+            ? (translations.selectDifferentArea || 'Please select an address within our delivery area')
             : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
           }
         </p>
