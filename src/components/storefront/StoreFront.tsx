@@ -24,7 +24,8 @@ import {
   Copy,
   Check,
   Navigation,
-  ExternalLink
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -120,6 +121,67 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
   
   return slots
 }
+
+// Add this component before your main StoreFront component
+function OrderSuccessMessage({ 
+  isVisible, 
+  onClose, 
+  orderNumber, 
+  primaryColor, 
+  translations,
+  storeData 
+}: {
+  isVisible: boolean
+  onClose: () => void
+  orderNumber: string
+  primaryColor: string
+  translations: any
+  storeData: any
+}) {
+  if (!isVisible) return null
+
+  return (
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+      <div className="bg-white border border-green-200 rounded-xl shadow-xl p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-gray-900 text-base sm:text-lg mb-2">
+              {translations.orderPrepared || 'Order Prepared!'}
+            </h4>
+            <div className="space-y-2 sm:space-y-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <span className="font-medium">{translations.orderNumber || 'Order Number'}:</span> {orderNumber}
+              </p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {translations.orderOpenedWhatsApp || 'Your order details have been prepared and WhatsApp should now be open. Please send the message to complete your order (if you haven\'t already sent it).'}
+              </p>
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800 font-medium mb-1">
+                  {translations.nextSteps || 'Next Steps'}:
+                </p>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <div>1. {translations.sendWhatsAppMessage || 'Send the WhatsApp message (if not sent yet)'}</div>
+                  <div>2. {translations.awaitConfirmation || 'Wait for our confirmation'}</div>
+                  <div>3. {translations.weWillPrepareOrder || 'We\'ll prepare your order once confirmed'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 // @ts-ignore
 function StoreClosure({ storeData, primaryColor, translations }) {
@@ -1259,6 +1321,14 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedModifiers, setSelectedModifiers] = useState<ProductModifier[]>([])
   const [calculatedDeliveryFee, setCalculatedDeliveryFee] = useState(storeData.deliveryFee)
+
+  const [orderSuccessMessage, setOrderSuccessMessage] = useState<{
+    visible: boolean
+    orderNumber: string
+  } | null>({
+    visible: true,
+    orderNumber: '124'
+  })
   
   // Fixed delivery type initialization
   const getDefaultDeliveryType = () => {
@@ -1547,39 +1617,45 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   }
 
   const submitOrder = async () => {
+    // Validation for temporarily closed store
     if (storeData.isTemporarilyClosed) {
       alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
       return
     }
   
-    // Add this check for "now" orders when store is closed
+    // NEW LOGIC: If store is closed and user selected "now", suggest scheduling
     if (customerInfo.deliveryTime === 'asap' && !storeData.isOpen) {
-      alert(translations.closed || 'Store is closed')
+      const shouldSchedule = confirm(
+        `${translations.storeCurrentlyClosed || 'Store is currently closed'}. ${translations.wouldYouLikeToSchedule || 'Would you like to schedule your order for later instead?'}`
+      )
+      
+      if (shouldSchedule) {
+        // You could scroll to time selection or highlight it
+        document.querySelector('[data-time-selection]')?.scrollIntoView({ behavior: 'smooth' })
+        return
+      } else {
+        return
+      }
+    }
+  
+    // Rest of existing validations
+    if (!customerInfo.name || !customerInfo.phone) {
+      alert('Please fill in required customer information')
       return
     }
   
-    if (!customerInfo.name || !customerInfo.phone) {
-      alert('Please fill in required customer information')
-      return
-    }
-
-    if (!customerInfo.name || !customerInfo.phone) {
-      alert('Please fill in required customer information')
-      return
-    }
-
     if (deliveryType === 'delivery' && !customerInfo.address) {
       alert('Please provide delivery address')
       return
     }
-
+  
     if (!meetsMinimumOrder) {
       alert(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`)
       return
     }
-
+  
     setIsOrderLoading(true)
-
+  
     try {
       const orderData = {
         customerName: customerInfo.name,
@@ -1606,20 +1682,50 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         discount: 0,
         total: cartTotal
       }
-
+  
       const response = await fetch(`/api/storefront/${storeData.slug}/order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(orderData)
       })
-
+  
       const result = await response.json()
-
+  
       if (result.success) {
+        // Open WhatsApp
         window.open(result.whatsappUrl, '_blank')
+        
+        // Clear cart and close modal
         setCart([])
         setShowCartModal(false)
-        alert('Order sent to WhatsApp!')
+        
+        // RESET CUSTOMER INFO FORM
+      setCustomerInfo({
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
+        address2: '',
+        deliveryTime: 'asap',
+        specialInstructions: '',
+        latitude: undefined,
+        longitude: undefined
+      })
+      
+      // Clear any delivery errors
+      setDeliveryError(null)
+      setCalculatedDeliveryFee(storeData.deliveryFee)
+      
+        // Show enhanced success message
+        setOrderSuccessMessage({
+          visible: true,
+          orderNumber: result.orderNumber
+        })
+        
+        // Hide success message after 10 seconds
+        setTimeout(() => {
+          setOrderSuccessMessage(null)
+        }, 10000)
       } else {
         alert('Failed to create order. Please try again.')
       }
@@ -2142,6 +2248,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             </span>
         </div>
         )}
+
+         {/* Add this before the closing div */}
+    <OrderSuccessMessage
+      isVisible={orderSuccessMessage?.visible || false}
+      onClose={() => setOrderSuccessMessage(null)}
+      orderNumber={orderSuccessMessage?.orderNumber || ''}
+      primaryColor={primaryColor}
+      translations={translations}
+      storeData={storeData}
+    />
     </div>
   )
 }
