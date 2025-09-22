@@ -180,6 +180,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     return currencySymbols[business.currency] || business.currency
   }
 
+  // Fixed handleImageUpload function in ProductForm component
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -188,7 +189,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     try {
       for (const file of Array.from(files)) {
         const formData = new FormData()
-        formData.append('image', file)
+        formData.append('image', file) // Keep existing field name
+        formData.append('folder', 'products') // Specify products folder
 
         const response = await fetch(`/api/admin/stores/${businessId}/upload`, {
           method: 'POST',
@@ -199,8 +201,11 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           const data = await response.json()
           setForm(prev => ({
             ...prev,
-            images: [...prev.images, data.imageUrl]
+            images: [...prev.images, data.imageUrl] // Use imageUrl field
           }))
+        } else {
+          const errorData = await response.json()
+          console.error('Upload failed:', errorData.message)
         }
       }
     } catch (error) {
