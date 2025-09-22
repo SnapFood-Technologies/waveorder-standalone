@@ -104,6 +104,8 @@ export interface StorefrontTranslations {
     time: string
     serviceFee: string
     popular: string
+    freeDelivery: string
+    pickupAvailable: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -210,7 +212,9 @@ export interface StorefrontTranslations {
     tryDifferentSearch: "Try a different search",
     browseAllProducts: "Browse all products",
     comingSoon: "Coming soon!",
-    checkBackLater: "We're working on adding products to this section. Please check back later."
+    checkBackLater: "We're working on adding products to this section. Please check back later.",
+    freeDelivery: "Free Delivery",
+    pickupAvailable: "Pickup available"
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -316,7 +320,9 @@ export interface StorefrontTranslations {
     tryDifferentSearch: "Provoni një kërkim tjetër",
     browseAllProducts: "Shfletoni të gjitha produktet",
     comingSoon: "Së shpejti!",
-    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë."
+    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë.",
+    freeDelivery: "Transport Falas",
+    pickupAvailable: "Pickup Gati"
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {

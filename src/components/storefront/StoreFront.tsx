@@ -284,7 +284,7 @@ function AddressAutocomplete({
         />
         {isCalculatingFee && (
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-300 border-t-blue-500"></div>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-200 border-t-blue-500"></div>
           </div>
         )}
       </div>
@@ -883,7 +883,7 @@ function TimeSelection({
           className={`p-3 border-2 rounded-xl text-center transition-all ${
             timeMode === 'now'
               ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+              : 'text-gray-700 border-gray-200 hover:border-gray-200'
           }`}
           style={{ 
             backgroundColor: timeMode === 'now' ? primaryColor : 'white'
@@ -901,7 +901,7 @@ function TimeSelection({
           className={`p-3 border-2 rounded-xl text-center transition-all ${
             timeMode === 'schedule'
               ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-300'
+              : 'text-gray-700 border-gray-200 hover:border-gray-200'
           }`}
           style={{ 
             backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
@@ -931,7 +931,7 @@ function TimeSelection({
                   className={`p-3 border-2 rounded-xl text-center transition-all ${
                     selectedDate.toDateString() === date.toDateString()
                       ? 'border-transparent text-white'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      : 'border-gray-200 hover:border-gray-200 text-gray-700'
                   }`}
                   style={{ 
                     backgroundColor: selectedDate.toDateString() === date.toDateString() 
@@ -1533,9 +1533,10 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
             </div>
 
             <div className="pt-6 sm:pt-8">
-              <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-start gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-2 flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{storeData.name}</h1>
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
                   storeData.isOpen && !storeData.isTemporarilyClosed
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
@@ -1544,19 +1545,20 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                     ? translations.temporarilyClosed 
                     : storeData.isOpen ? translations.open : translations.closed}
                 </span>
-                
-                {/* Desktop Delivery Switcher - Right side of title */}
-                <div className="ml-auto hidden lg:block">
-                  <DeliveryTypeSwitcher
-                    deliveryType={deliveryType}
-                    setDeliveryType={setDeliveryType}
-                    deliveryOptions={getDeliveryOptions()}
-                    primaryColor={primaryColor}
-                    disabled={false}
-                  />
-                </div>
               </div>
               
+              {/* Desktop Delivery Switcher - Right side */}
+              <div className="hidden lg:block flex-shrink-0">
+                <DeliveryTypeSwitcher
+                  deliveryType={deliveryType}
+                  setDeliveryType={setDeliveryType}
+                  deliveryOptions={getDeliveryOptions()}
+                  primaryColor={primaryColor}
+                  disabled={false}
+                />
+              </div>
+          </div>
+                        
               {storeData.description && (
                 <p className="text-gray-500 text-md sm:text-md mb-3">{storeData.description}</p>
               )}
@@ -1588,13 +1590,13 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
                 <span className="text-md">
                   {calculatedDeliveryFee > 0 
                     ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
-                    : 'Free delivery'}
+                    : translations.freeDelivery || 'Free Delivery'}
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-1">
                 <Store className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
-                <span className="text-md">Pickup available</span>
+                <span className="text-md">{translations.pickupAvailable || 'Pickup available'}</span>
               </div>
             )}
           </div>
@@ -2079,301 +2081,312 @@ function EmptyState({
   )
 }
 
-// Fixed Product Card Component
+// Fixed Product Card Component - Better badge positioning
 function ProductCard({ 
-    product, 
-    onOpenModal, 
-    primaryColor, 
-    currencySymbol,
-    translations,
-    disabled = false
-  }: { 
-    product: Product & { categoryName?: string }
-    onOpenModal: (product: Product) => void
-    primaryColor: string
-    currencySymbol: string
-    translations: any
-    disabled?: boolean
-    // searchTerm?: string
-  }) {
-    const hasImage = product.images.length > 0
-  
-    return (
-      <div className={`bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden ${
-        disabled ? 'opacity-60' : ''
-      }`}>
-        <div className="flex items-center min-h-[120px]">
-          <div className={`p-5 ${hasImage ? 'flex-1' : 'w-full'} flex flex-col justify-between h-full min-h-[120px]`}>
-            <div>
-              <h3 className="font-semibold text-gray-900 text-lg mb-2">{product.name}</h3>
-              
-              {/* Reserve space for description even if empty */}
-              <div className="h-10 mb-1">
-                {product.description && (
-                  <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">{product.description}</p>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <div className={`flex items-center ${hasImage ? 'justify-between' : 'justify-between'}`}>
-                <div className="flex items-center space-x-2">
-                  <span className="font-bold text-xl" style={{ color: primaryColor }}>
-                    {currencySymbol}{product.price.toFixed(2)}
-                  </span>
-                  {product.originalPrice && product.originalPrice > product.price && (
-                    <span className="text-gray-500 line-through text-sm">
-                      {currencySymbol}{product.originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                
-                <button
-                  onClick={() => !disabled && onOpenModal(product)}
-                  disabled={disabled || product.stock === 0}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-  
-              {/* Stock info */}
-                {product.stock === 0 && (
-                  <div className="h-4 mt-2">
-                  <p className="text-red-600 text-xs">{translations.outOfStock || 'Out of stock'}</p>
-                  </div>
-                )}
-              
-            </div>
-          </div>
-          
-          {hasImage && (
-            <div className="w-30 h-30 flex-shrink-0">
-              <div className="relative w-30 h-30">
-                <img 
-                  src={product.images[0]} 
-                  alt={product.name}
-                  className="w-full h-full object-cover rounded-r-2xl"
-                />
+  product, 
+  onOpenModal, 
+  primaryColor, 
+  currencySymbol,
+  translations,
+  disabled = false
+}: { 
+  product: Product & { categoryName?: string }
+  onOpenModal: (product: Product) => void
+  primaryColor: string
+  currencySymbol: string
+  translations: any
+  disabled?: boolean
+}) {
+  const hasImage = product.images.length > 0
+
+  return (
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow ${
+      disabled ? 'opacity-60' : ''
+    }`}>
+      <div className="flex items-start p-5">
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="mb-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold text-base text-gray-900 leading-tight">
+                  {product.name}
+                </h3>
                 {product.featured && (
-                  <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-semibold">
+                  <span className="px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-medium whitespace-nowrap">
                     {translations.popular || 'Popular'}
                   </span>
                 )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-  
-
-  // Improved Product Modal Component
-  function ProductModal({
-    product,
-    selectedVariant,
-    setSelectedVariant,
-    selectedModifiers,
-    setSelectedModifiers,
-    onAddToCart,
-    onClose,
-    currencySymbol,
-    primaryColor,
-    translations
-  }: {
-    product: Product
-    selectedVariant: ProductVariant | null
-    setSelectedVariant: (variant: ProductVariant | null) => void
-    selectedModifiers: ProductModifier[]
-    setSelectedModifiers: (modifiers: ProductModifier[]) => void
-    onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
-    onClose: () => void
-    currencySymbol: string
-    primaryColor: string
-    translations: any
-  }) {
-    const [quantity, setQuantity] = useState(1)
-  
-    const basePrice = selectedVariant?.price || product.price
-    const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
-    const totalPrice = (basePrice + modifierPrice) * quantity
-  
-    const toggleModifier = (modifier: ProductModifier) => {
-        // @ts-ignore
-      setSelectedModifiers(prev => {
-         // @ts-ignore
-        const exists = prev.find(m => m.id === modifier.id)
-        if (exists) {
-             // @ts-ignore
-          return prev.filter(m => m.id !== modifier.id)
-        } else {
-          return [...prev, modifier]
-        }
-      })
-    }
-  
-    const handleAddToCart = () => {
-      for (let i = 0; i < quantity; i++) {
-        onAddToCart(product, selectedVariant || undefined, selectedModifiers)
-      }
-    }
-  
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-xl">
-          {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
-              <button 
-                onClick={onClose} 
-                className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
+            
+            {/* Reserve space for description with proper line clamping */}
+            <div className="mb-1">
+              {product.description && (
+                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                  {product.description}
+                </p>
+              )}
             </div>
           </div>
           
-          <div className="overflow-y-auto max-h-[calc(90vh-180px)]">
-            <div className="p-6 space-y-6">
-              {product.images.length > 0 && (
-                <div className="relative">
-                  <img 
-                    src={product.images[0]} 
-                    alt={product.name}
-                    className="w-full h-48 object-cover rounded-2xl"
-                  />
-                  {product.featured && (
-                    <span className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold">
-                      {translations.popular || 'Popular'}
-                    </span>
-                  )}
-                </div>
-              )}
-              
-              {product.description && (
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <p className="text-gray-700 leading-relaxed">{product.description}</p>
-                </div>
-              )}
-  
-              {/* Variants */}
-              {product.variants.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                    {translations.chooseSize || 'Choose Size'}
-                  </h3>
-                  <div className="space-y-3">
-                    {product.variants.map(variant => (
-                      <button
-                        key={variant.id}
-                        onClick={() => setSelectedVariant(variant)}
-                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                          selectedVariant?.id === variant.id
-                            ? 'bg-blue-50'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                        style={{
-                          borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
-                        }}
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-medium text-gray-800">{variant.name}</span>
-                          <span className="font-bold" style={{ color: primaryColor }}>
-                            {currencySymbol}{variant.price.toFixed(2)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-  
-              {/* Modifiers */}
-              {product.modifiers.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                    <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                    {translations.addExtras || 'Add Extras'}
-                  </h3>
-                  <div className="space-y-3">
-                    {product.modifiers.map(modifier => (
-                      <button
-                        key={modifier.id}
-                        onClick={() => toggleModifier(modifier)}
-                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                          selectedModifiers.find(m => m.id === modifier.id)
-                            ? 'bg-green-50 border-green-400'
-                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <span className="font-medium text-gray-800">{modifier.name}</span>
-                            {modifier.required && (
-                              <span className="text-red-500 text-sm ml-2">({translations.required || 'Required'})</span>
-                            )}
-                          </div>
-                          <span className="font-bold text-green-600">
-                            +{currencySymbol}{modifier.price.toFixed(2)}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-  
-              {/* Quantity */}
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                  {translations.quantity || 'Quantity'}
-                </h3>
-                <div className="flex items-center justify-center space-x-6">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  >
-                    <Minus className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
-                    {quantity}
+          <div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 flex-1 min-w-0">
+                <span className="font-bold text-lg" style={{ color: primaryColor }}>
+                  {currencySymbol}{product.price.toFixed(2)}
+                </span>
+                {product.originalPrice && product.originalPrice > product.price && (
+                  <span className="text-gray-500 line-through text-sm">
+                    {currencySymbol}{product.originalPrice.toFixed(2)}
                   </span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                  >
-                    <Plus className="w-5 h-5 text-gray-600" />
-                  </button>
-                </div>
+                )}
               </div>
+              
+              <button
+                onClick={() => !disabled && onOpenModal(product)}
+                disabled={disabled || product.stock === 0}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform flex-shrink-0"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
+            {/* Stock info */}
+            {product.stock === 0 && (
+              <p className="text-red-600 text-sm mt-2">{translations.outOfStock || 'Out of stock'}</p>
+            )}
           </div>
+        </div>
+        
+        {hasImage && (
+          <div className="w-20 h-20 ml-4 flex-shrink-0">
+            <img 
+              src={product.images[0]} 
+              alt={product.name}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+        )}
+        
+        {!hasImage && (
+          <div className="w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
+            <Package className="w-7 h-7" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
   
-          {/* Footer */}
-          <div className="p-6 bg-gray-50 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
-              <span className="text-2xl font-bold" style={{ color: primaryColor }}>
-                {currencySymbol}{totalPrice.toFixed(2)}
-              </span>
-            </div>
-            <button
-              onClick={handleAddToCart}
-              className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
-              style={{ backgroundColor: primaryColor }}
+
+// Improved Product Modal Component - Fixed footer visibility and scrolling
+function ProductModal({
+  product,
+  selectedVariant,
+  setSelectedVariant,
+  selectedModifiers,
+  setSelectedModifiers,
+  onAddToCart,
+  onClose,
+  currencySymbol,
+  primaryColor,
+  translations
+}: {
+  product: Product
+  selectedVariant: ProductVariant | null
+  setSelectedVariant: (variant: ProductVariant | null) => void
+  selectedModifiers: ProductModifier[]
+  setSelectedModifiers: (modifiers: ProductModifier[]) => void
+  onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
+  onClose: () => void
+  currencySymbol: string
+  primaryColor: string
+  translations: any
+}) {
+  const [quantity, setQuantity] = useState(1)
+
+  const basePrice = selectedVariant?.price || product.price
+  const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
+  const totalPrice = (basePrice + modifierPrice) * quantity
+
+  const toggleModifier = (modifier: ProductModifier) => {
+      // @ts-ignore
+    setSelectedModifiers(prev => {
+       // @ts-ignore
+      const exists = prev.find(m => m.id === modifier.id)
+      if (exists) {
+           // @ts-ignore
+        return prev.filter(m => m.id !== modifier.id)
+      } else {
+        return [...prev, modifier]
+      }
+    })
+  }
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      onAddToCart(product, selectedVariant || undefined, selectedModifiers)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
+        {/* Header - Fixed */}
+        <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
             >
-              {translations.addToCart || 'Add to Cart'}
+              <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
         </div>
+        
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            {/* Conditional Image Section */}
+            {product.images.length > 0 && (
+              <div className="relative">
+                <div className="w-full max-w-sm mx-auto aspect-square">
+                  <img 
+                    src={product.images[0]} 
+                    alt={product.name}
+                    className="w-full h-full object-contain rounded-2xl"
+                  />
+                </div>
+                {product.featured && (
+                  <span className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-semibold">
+                    {translations.popular || 'Popular'}
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {product.description && (
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+              </div>
+            )}
+
+            {/* Variants */}
+            {product.variants.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.chooseSize || 'Choose Size'}
+                </h3>
+                <div className="space-y-3">
+                  {product.variants.map(variant => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariant(variant)}
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                        selectedVariant?.id === variant.id
+                          ? 'bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                      }`}
+                      style={{
+                        borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                      }}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-800">{variant.name}</span>
+                        <span className="font-bold" style={{ color: primaryColor }}>
+                          {currencySymbol}{variant.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modifiers */}
+            {product.modifiers.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.addExtras || 'Add Extras'}
+                </h3>
+                <div className="space-y-3">
+                  {product.modifiers.map(modifier => (
+                    <button
+                      key={modifier.id}
+                      onClick={() => toggleModifier(modifier)}
+                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                        selectedModifiers.find(m => m.id === modifier.id)
+                          ? 'bg-green-50 border-green-400'
+                          : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-gray-800">{modifier.name}</span>
+                          {modifier.required && (
+                            <span className="text-red-500 text-sm ml-2">({translations.required || 'Required'})</span>
+                          )}
+                        </div>
+                        <span className="font-bold text-green-600">
+                          +{currencySymbol}{modifier.price.toFixed(2)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quantity */}
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.quantity || 'Quantity'}
+              </h3>
+              <div className="flex items-center justify-center space-x-6">
+                <button
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  <Minus className="w-5 h-5 text-gray-600" />
+                </button>
+                <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                >
+                  <Plus className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer - Fixed at bottom */}
+        <div className="p-6 bg-gray-50 flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
+            <span className="text-2xl font-bold" style={{ color: primaryColor }}>
+              {currencySymbol}{totalPrice.toFixed(2)}
+            </span>
+          </div>
+          <button
+            onClick={handleAddToCart}
+            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {translations.addToCart || 'Add to Cart'}
+          </button>
+        </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
 function OrderPanel({
   storeData,
@@ -2437,7 +2450,7 @@ function OrderPanel({
             className={`px-4 py-3 border-2 rounded-xl text-center transition-all flex items-center justify-center ${
               deliveryType === option.key
                 ? 'text-white'
-                : 'text-gray-700 border-gray-200 hover:border-gray-300'
+                : 'text-gray-700 border-gray-200 hover:border-gray-200'
             }`}
             style={{ 
               backgroundColor: deliveryType === option.key ? primaryColor : 'white',
@@ -2548,7 +2561,7 @@ function OrderPanel({
 
         {/* Cart Items */}
         {cart.length > 0 && (
-          <div className="border-t-2 border-gray-300 pt-6 mb-6">
+          <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => (
@@ -2587,7 +2600,7 @@ function OrderPanel({
 
         {/* Order Summary */}
         {cart.length > 0 && (
-          <div className="border-t-2 border-gray-300 pt-6 mb-6">
+          <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span>{translations.subtotal || 'Subtotal'}</span>
@@ -2599,7 +2612,7 @@ function OrderPanel({
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-300 pt-3">
+              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-200 pt-3">
                 <span>{translations.total || 'Total'}</span>
                 <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
