@@ -1,4 +1,4 @@
-// lib/businessStorage.ts
+// lib/businessStorage.ts - Updated to handle category images
 import { supabase } from './supabase';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
@@ -14,7 +14,7 @@ export interface BusinessImageUploadResult {
 export async function uploadBusinessImage(
   file: File, 
   businessId: string,
-  folder: 'logo' | 'cover' | 'favicon' | 'ogImage',
+  folder: 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products',
   oldImageUrl?: string
 ): Promise<BusinessImageUploadResult> {
   try {
@@ -77,6 +77,30 @@ export async function uploadBusinessImage(
             height: 630,
             fit: 'cover',
             position: 'center'
+          })
+          .jpeg({ quality: 90, progressive: true })
+          .toBuffer();
+        break;
+
+      case 'categories':
+        processedBuffer = await sharp(buffer)
+          .resize({
+            width: 800,
+            height: 600,
+            fit: 'cover',
+            position: 'center'
+          })
+          .jpeg({ quality: 85, progressive: true })
+          .toBuffer();
+        break;
+
+      case 'products':
+        processedBuffer = await sharp(buffer)
+          .resize({
+            width: 1000,
+            height: 1000,
+            fit: 'inside',
+            withoutEnlargement: true
           })
           .jpeg({ quality: 90, progressive: true })
           .toBuffer();

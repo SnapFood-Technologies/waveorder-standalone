@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, Wallet } from 'lucide-react'
+import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, Wallet, X } from 'lucide-react'
 
 interface CustomerFormProps {
   businessId: string
+  customerId?: string // For edit mode
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -33,17 +34,30 @@ interface ValidationErrors {
   street?: string
   city?: string
   zipCode?: string
+  country?: string
 }
 
-// Country configurations
+interface SuccessMessage {
+  type: 'create' | 'update'
+  customerName: string
+}
+
+// Fixed Country configurations with correct patterns
 const COUNTRY_CONFIGS = {
   AL: {
     prefix: '+355',
     placeholder: '68 123 4567',
-    pattern: /^(\+355|355)0?[6-9]\d{7}$/,
+    pattern: /^(\+355|355)0?[6-9]\d{8}$/,
     flag: '🇦🇱',
     name: 'Albania',
-    allowedAddressCountries: ['al']
+    allowedAddressCountries: ['al'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   },
   US: {
     prefix: '+1',
@@ -51,15 +65,29 @@ const COUNTRY_CONFIGS = {
     pattern: /^(\+1|1)[2-9]\d{9}$/,
     flag: '🇺🇸',
     name: 'United States',
-    allowedAddressCountries: ['us']
+    allowedAddressCountries: ['us'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
+      }
+      return clean
+    }
   },
   GR: {
     prefix: '+30',
-    placeholder: '69 0865 4153',
-    pattern: /^(\+30|30)0?[6-9]\d{8}$/,
+    placeholder: '694 123 4567',
+    pattern: /^(\+30|30)0?[2-9]\d{9}$/,
     flag: '🇬🇷',
     name: 'Greece',
-    allowedAddressCountries: ['gr', 'al', 'it', 'us']
+    allowedAddressCountries: ['gr', 'al', 'it', 'us'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   },
   IT: {
     prefix: '+39',
@@ -67,7 +95,14 @@ const COUNTRY_CONFIGS = {
     pattern: /^(\+39|39)0?[3]\d{8,9}$/,
     flag: '🇮🇹',
     name: 'Italy',
-    allowedAddressCountries: ['it']
+    allowedAddressCountries: ['it'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')
+      }
+      return clean
+    }
   }
 }
 
@@ -79,16 +114,37 @@ const OTHER_COUNTRIES = [
   { code: 'CA', prefix: '+1', flag: '🇨🇦', name: 'Canada', placeholder: '(555) 123-4567' },
 ]
 
-// Detect country from business data
+// Country options for address
+const ADDRESS_COUNTRIES = [
+  { code: 'AL', name: 'Albania', flag: '🇦🇱' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' },
+  { code: 'GR', name: 'Greece', flag: '🇬🇷' },
+  { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+  { code: 'FR', name: 'France', flag: '🇫🇷' },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+  { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  { code: 'UK', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' }
+]
+
+// Fixed country detection
 function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS | 'OTHER' {
-  if (typeof window !== 'undefined') {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (timezone === 'Europe/Athens') return 'GR'
-    if (timezone === 'Europe/Tirane') return 'AL'
-    if (timezone === 'Europe/Rome') return 'IT'
-    if (timezone.includes('America/')) return 'US'
+  // PRIMARY: Check business coordinates
+  if (storeData?.storeLatitude && storeData?.storeLongitude) {
+    const lat = storeData.storeLatitude
+    const lng = storeData.storeLongitude
+    
+    // Albania boundaries
+    if (lat >= 39.6 && lat <= 42.7 && lng >= 19.3 && lng <= 21.1) return 'AL'
+    // Greece boundaries 
+    if (lat >= 34.8 && lat <= 41.8 && lng >= 19.3 && lng <= 28.2) return 'GR'
+    // Italy boundaries
+    if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) return 'IT'
+    // US boundaries
+    if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) return 'US'
   }
   
+  // SECONDARY: Check WhatsApp number
   if (storeData?.whatsappNumber) {
     if (storeData.whatsappNumber.startsWith('+355')) return 'AL'
     if (storeData.whatsappNumber.startsWith('+30')) return 'GR'
@@ -96,35 +152,181 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (storeData.whatsappNumber.startsWith('+1')) return 'US'
   }
   
+  // TERTIARY: Browser/timezone detection
+  if (typeof window !== 'undefined') {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (timezone === 'Europe/Tirane') return 'AL'
+      if (timezone === 'Europe/Athens') return 'GR'
+      if (timezone === 'Europe/Rome') return 'IT'
+      if (timezone.includes('America/')) return 'US'
+    } catch (error) {
+      // Continue with other detection methods
+    }
+  }
+  
   return 'US'
 }
 
-// Phone Input Component
-function PhoneInput({ value, onChange, storeData, error }: {
+// Detect country from phone number prefix
+function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFIGS | 'OTHER' {
+  if (phoneValue.startsWith('+355')) return 'AL'
+  if (phoneValue.startsWith('+30')) return 'GR'
+  if (phoneValue.startsWith('+39')) return 'IT'
+  if (phoneValue.startsWith('+1')) return 'US'
+  
+  // Without + prefix
+  if (phoneValue.startsWith('355')) return 'AL'
+  if (phoneValue.startsWith('30')) return 'GR'
+  if (phoneValue.startsWith('39')) return 'IT'
+  if (phoneValue.startsWith('1')) return 'US'
+  
+  return 'OTHER'
+}
+
+// Enhanced address parsing for Albanian and Greek formats
+function parseAddressComponents(place: any): any {
+  const addressComponents = place.address_components || []
+  const parsedAddress = {
+    street: '',
+    city: '',
+    zipCode: '',
+    country: '',
+    cleanStreet: '' // Clean street without city/country/zip
+  }
+
+  // Extract components
+  addressComponents.forEach((component: any) => {
+    const types = component.types
+    
+    if (types.includes('street_number') || types.includes('route')) {
+      if (types.includes('street_number')) {
+        parsedAddress.street = component.long_name + ' ' + parsedAddress.street
+      } else if (types.includes('route')) {
+        parsedAddress.street = parsedAddress.street + component.long_name
+      }
+    }
+    
+    if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+      parsedAddress.city = component.long_name
+    }
+    
+    if (types.includes('postal_code')) {
+      parsedAddress.zipCode = component.long_name
+    }
+    
+    if (types.includes('country')) {
+      parsedAddress.country = component.short_name?.toLowerCase() || component.long_name
+    }
+  })
+
+  // Enhanced parsing for Albanian/Greek addresses
+  const formattedAddress = place.formatted_address
+  
+  // If no street found in components, extract from formatted address
+  if (!parsedAddress.street.trim() && formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    if (addressParts.length > 0) {
+      parsedAddress.street = addressParts[0]
+    }
+  }
+
+  // Enhanced ZIP code extraction for Albanian/Greek formats
+  if (!parsedAddress.zipCode && formattedAddress) {
+    // Albanian format: "Rruga Sami Frashëri 1001, Tiranë, Albania"
+    // Greek format: "Aggeletopoulou, Dafni 172 34, Greece"
+    
+    const zipMatches = formattedAddress.match(/\b\d{3,5}\s?\d{0,2}\b/g)
+    if (zipMatches) {
+      // Get the last numeric sequence (most likely to be postal code)
+      const lastMatch = zipMatches[zipMatches.length - 1]
+      parsedAddress.zipCode = lastMatch.replace(/\s+/g, ' ').trim()
+    }
+  }
+
+  // Enhanced city extraction
+  if (!parsedAddress.city && formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    
+    // For Albanian: Usually second part contains city
+    // For Greek: City is often before the postal code
+    if (addressParts.length >= 2) {
+      let cityPart = addressParts[1]
+      
+      // Remove postal code from city part if present
+      cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+      
+      if (cityPart) {
+        parsedAddress.city = cityPart
+      }
+    }
+  }
+
+  // Create clean street address (just the street part, no city/zip/country)
+  if (formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    // First part is usually just the street
+    parsedAddress.cleanStreet = addressParts[0] || parsedAddress.street
+    
+    // Remove any postal codes that might be in the street part
+    parsedAddress.cleanStreet = parsedAddress.cleanStreet.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+  } else {
+    parsedAddress.cleanStreet = parsedAddress.street
+  }
+
+  return parsedAddress
+}
+
+// Fixed Phone Input Component
+function PhoneInput({ value, onChange, storeData, error, onErrorChange }: {
   value: string
   onChange: (phone: string) => void
   storeData: any
   error?: string
+  onErrorChange?: (field: string, error: string | undefined) => void
 }) {
-  const [selectedCountry, setSelectedCountry] = useState<string>('US')
+  const [selectedCountry, setSelectedCountry] = useState<keyof typeof COUNTRY_CONFIGS | 'OTHER'>('US')
   const [showDropdown, setShowDropdown] = useState(false)
   const [isValid, setIsValid] = useState(true)
+  const [hasUserInput, setHasUserInput] = useState(false)
 
+  // Initial setup
   useEffect(() => {
-    const detected = detectCountryFromBusiness(storeData)
-    if (detected !== 'OTHER') {
+    if (!value || value.trim() === '') {
+      const detected = detectCountryFromBusiness(storeData)
       setSelectedCountry(detected)
-      if (!value) {
+      if (detected !== 'OTHER' && detected in COUNTRY_CONFIGS) {
         onChange(COUNTRY_CONFIGS[detected].prefix + ' ')
       }
+    } else {
+      // If value exists (edit mode), detect country from the phone number
+      const detectedFromPhone = detectCountryFromPrefix(value)
+      if (detectedFromPhone !== 'OTHER') {
+        setSelectedCountry(detectedFromPhone)
+      } else {
+        // Fallback to business detection if phone detection fails
+        const detectedFromBusiness = detectCountryFromBusiness(storeData)
+        setSelectedCountry(detectedFromBusiness)
+      }
     }
-  }, [storeData])
+  }, [storeData, onChange, value])
 
+  // Dynamic country detection based on user input
   useEffect(() => {
-    if (value && selectedCountry in COUNTRY_CONFIGS) {
-      const config = COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS]
+    if (value && hasUserInput) {
+      const detectedCountry = detectCountryFromPrefix(value)
+      if (detectedCountry !== 'OTHER') {
+        setSelectedCountry(detectedCountry)
+      }
+    }
+  }, [value, hasUserInput])
+
+  // Fixed validation
+  useEffect(() => {
+    if (value && selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      const config = COUNTRY_CONFIGS[selectedCountry]
       
-      // Only validate if user has input beyond the prefix
+      // Check if user has actual input beyond prefix
       const hasActualInput = value.length > config.prefix.length + 1
       
       if (hasActualInput) {
@@ -134,29 +336,48 @@ function PhoneInput({ value, onChange, storeData, error }: {
       } else {
         setIsValid(true)
       }
+    } else {
+      setIsValid(true)
     }
   }, [value, selectedCountry])
 
   const handleCountrySelect = (countryCode: string, prefix: string) => {
-    setSelectedCountry(countryCode)
+    setSelectedCountry(countryCode as any)
+    setHasUserInput(true)
     onChange(prefix + ' ')
     setShowDropdown(false)
+    // Clear error when user starts interacting
+    if (onErrorChange) onErrorChange('phone', undefined)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHasUserInput(true)
+    onChange(e.target.value)
+    // Clear error when user starts typing
+    if (onErrorChange) onErrorChange('phone', undefined)
   }
 
   const getPlaceholder = () => {
-    if (selectedCountry in COUNTRY_CONFIGS) {
-      return COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS].placeholder
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return COUNTRY_CONFIGS[selectedCountry].placeholder
     }
     const otherCountry = OTHER_COUNTRIES.find(c => c.code === selectedCountry)
     return otherCountry?.placeholder || 'Enter phone number'
   }
 
   const getFlag = () => {
-    if (selectedCountry in COUNTRY_CONFIGS) {
-      return COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS].flag
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return COUNTRY_CONFIGS[selectedCountry].flag
     }
     const otherCountry = OTHER_COUNTRIES.find(c => c.code === selectedCountry)
     return otherCountry?.flag || '🌍'
+  }
+
+  const getValidationMessage = () => {
+    if (selectedCountry !== 'OTHER' && selectedCountry in COUNTRY_CONFIGS) {
+      return `Please enter a valid ${COUNTRY_CONFIGS[selectedCountry].name} phone number`
+    }
+    return 'Please enter a valid phone number'
   }
 
   return (
@@ -177,7 +398,7 @@ function PhoneInput({ value, onChange, storeData, error }: {
         <input
           type="tel"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           className={`w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
             error || (!isValid && value.length > 5) ? 'border-red-300' : 'border-gray-300'
           }`}
@@ -222,9 +443,9 @@ function PhoneInput({ value, onChange, storeData, error }: {
       </div>
       
       {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
-      {!isValid && value.length > 5 && !error && (
+      {!error && !isValid && value.length > 5 && (
         <p className="text-red-600 text-sm mt-1">
-          Please enter a valid phone number for {COUNTRY_CONFIGS[selectedCountry as keyof typeof COUNTRY_CONFIGS]?.name || 'this country'}
+          {getValidationMessage()}
         </p>
       )}
       
@@ -240,13 +461,11 @@ function useGooglePlaces() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    // Check if Google Maps is already loaded
     if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
       setIsLoaded(true)
       return
     }
 
-    // Load Google Maps API if not already loaded
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
     script.async = true
@@ -265,43 +484,46 @@ function useGooglePlaces() {
   return { isLoaded }
 }
 
-// Enhanced Address Input with Google Places Autocomplete
+// Enhanced Address Input with auto-parsing
 function AddressAutocomplete({ 
   value, 
   onChange, 
   placeholder, 
   required, 
   onLocationChange,
+  onAddressParsed,
   storeData,
-  error
+  error,
+  onErrorChange
 }: {
   value: string
   onChange: (address: string) => void
   placeholder: string
   required: boolean
   onLocationChange?: (lat: number, lng: number, address: string) => void
+  onAddressParsed?: (parsedAddress: any) => void
   storeData?: any
   error?: string
+  onErrorChange?: (field: string, error: string | undefined) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const { isLoaded } = useGooglePlaces()
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
   
-  // Get allowed countries based on business detection
   const getAllowedCountries = () => {
     const detectedCountry = detectCountryFromBusiness(storeData)
     
     switch (detectedCountry) {
       case 'AL':
-        return ['al'] // Albania business - only Albania addresses
+        return ['al']
       case 'US':
-        return ['us'] // US business - only US addresses
+        return ['us']
       case 'GR':
-        return ['gr', 'al', 'it', 'us'] // Greece business - 4 countries
+        return ['gr', 'al', 'it', 'us']
       case 'IT':
-        return ['it'] // Italy business - only Italy addresses
+        return ['it']
       default:
-        return ['us'] // Default fallback
+        return ['us']
     }
   }
   
@@ -324,10 +546,18 @@ function AddressAutocomplete({
           const lat = place.geometry.location.lat()
           const lng = place.geometry.location.lng()
           
-          // Update the input value first
+          // Enhanced address parsing
+          const parsedAddress = parseAddressComponents(place)
+
+          // Update the input value
           onChange(place.formatted_address)
           
-          // Then trigger location change if callback provided
+          // Call parsing callback
+          if (onAddressParsed) {
+            onAddressParsed(parsedAddress)
+          }
+          
+          // Call location change callback
           if (onLocationChange) {
             setIsCalculatingFee(true)
             try {
@@ -340,7 +570,13 @@ function AddressAutocomplete({
         }
       })
     }
-  }, [isLoaded, onChange, onLocationChange, storeData])
+  }, [isLoaded, onChange, onLocationChange, onAddressParsed, storeData])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value)
+    // Clear error when user starts typing
+    if (onErrorChange) onErrorChange('street', undefined)
+  }
 
   return (
     <div>
@@ -353,7 +589,7 @@ function AddressAutocomplete({
           type="text"
           required={required}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
             error ? 'border-red-300' : 'border-gray-300'
           }`}
@@ -378,7 +614,7 @@ function AddressAutocomplete({
   )
 }
 
-export default function CustomerForm({ businessId, onSuccess, onCancel }: CustomerFormProps) {
+export default function CustomerForm({ businessId, customerId, onSuccess, onCancel }: CustomerFormProps) {
   const [formData, setFormData] = useState<CustomerFormData>({
     name: '',
     phone: '',
@@ -389,7 +625,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
       additional: '',
       zipCode: '',
       city: '',
-      country: 'USA'
+      country: 'US'
     },
     tags: [],
     notes: '',
@@ -398,11 +634,66 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
 
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!customerId)
   const [currentTag, setCurrentTag] = useState('')
   const [storeData, setStoreData] = useState<any>({})
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
+
+  const isEditMode = !!customerId
+
+  // Function to clear specific field errors
+  const clearFieldError = (field: string, error: string | undefined) => {
+    if (!error) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field as keyof ValidationErrors]
+        return newErrors
+      })
+    }
+  }
+
+  // Load existing customer data for edit mode
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (!customerId) return
+      
+      try {
+        setIsLoading(true)
+        const response = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const customer = data.customer
+          
+          setFormData({
+            name: customer.name || '',
+            phone: customer.phone || '',
+            email: customer.email || '',
+            tier: customer.tier || 'REGULAR',
+            addressJson: customer.addressJson || {
+              street: '',
+              additional: '',
+              zipCode: '',
+              city: '',
+              country: 'US'
+            },
+            tags: customer.tags || [],
+            notes: customer.notes || '',
+            addedByAdmin: customer.addedByAdmin || true
+          })
+        } else {
+          setErrors({ name: 'Failed to load customer data' })
+        }
+      } catch (error) {
+        setErrors({ name: 'Network error loading customer data' })
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    fetchCustomerData()
+  }, [businessId, customerId])
 
   useEffect(() => {
-    // Fetch store data for country detection
     const fetchStoreData = async () => {
       try {
         const response = await fetch(`/api/admin/stores/${businessId}`)
@@ -429,6 +720,16 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required'
+    } else {
+      // Validate phone based on detected country
+      const detectedCountry = detectCountryFromPrefix(formData.phone)
+      if (detectedCountry !== 'OTHER' && detectedCountry in COUNTRY_CONFIGS) {
+        const config = COUNTRY_CONFIGS[detectedCountry]
+        const cleanPhone = formData.phone.replace(/[^\d+]/g, '')
+        if (!config.pattern.test(cleanPhone)) {
+          newErrors.phone = `Please enter a valid ${config.name} phone number`
+        }
+      }
     }
 
     if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
@@ -442,6 +743,9 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
       if (!formData.addressJson.zipCode.trim()) {
         newErrors.zipCode = 'ZIP code is required when address is provided'
       }
+      if (!formData.addressJson.country.trim()) {
+        newErrors.country = 'Country is required when address is provided'
+      }
     }
 
     setErrors(newErrors)
@@ -454,10 +758,17 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
     if (!validateForm()) return
     
     setIsSubmitting(true)
+    setErrors({})
     
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/customers`, {
-        method: 'POST',
+      const url = isEditMode 
+        ? `/api/admin/stores/${businessId}/customers/${customerId}`
+        : `/api/admin/stores/${businessId}/customers`
+      
+      const method = isEditMode ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -470,13 +781,23 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
       })
 
       if (response.ok) {
-        onSuccess?.()
+        // Show success message
+        setSuccessMessage({
+          type: isEditMode ? 'update' : 'create',
+          customerName: formData.name.trim()
+        })
+
+        // Hide success message after 5 seconds and call onSuccess
+        setTimeout(() => {
+          setSuccessMessage(null)
+          onSuccess?.()
+        }, 3000)
       } else {
         const data = await response.json()
         if (data.message?.includes('phone')) {
           setErrors({ phone: 'A customer with this phone number already exists' })
         } else {
-          setErrors({ name: data.message || 'Failed to create customer' })
+          setErrors({ name: data.message || `Failed to ${isEditMode ? 'update' : 'create'} customer` })
         }
       }
     } catch (error) {
@@ -510,10 +831,71 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
     }
   }
 
-  const detectedCountry = detectCountryFromBusiness(storeData)
+  const handleAddressParsed = (parsedAddress: any) => {
+    setFormData(prev => ({
+      ...prev,
+      addressJson: {
+        ...prev.addressJson,
+        city: parsedAddress.city || prev.addressJson.city,
+        zipCode: parsedAddress.zipCode || prev.addressJson.zipCode,
+        country: parsedAddress.country ? parsedAddress.country.toUpperCase() : prev.addressJson.country
+      }
+    }))
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="animate-pulse space-y-6">
+                <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-10 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">
+                  Customer {successMessage.type === 'create' ? 'Created' : 'Updated'} Successfully
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  {successMessage.customerName} has been {successMessage.type === 'create' ? 'added to' : 'updated in'} your customer database
+                </p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Form - 3/4 width */}
         <div className="lg:col-span-3">
@@ -530,16 +912,21 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   </button>
                 )}
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Add New Customer</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">
+                    {isEditMode ? 'Edit Customer' : 'Add New Customer'}
+                  </h1>
                   <p className="text-sm text-gray-600 mt-1">
-                    Create a new customer profile for your store
+                    {isEditMode 
+                      ? 'Update customer profile information'
+                      : 'Create a new customer profile for your store'
+                    }
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Form */}
-            <div className="p-6 space-y-8">
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
               {/* Basic Information */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
@@ -555,7 +942,10 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, name: e.target.value }))
+                        clearFieldError('name', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.name ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -570,6 +960,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                       onChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
                       storeData={storeData}
                       error={errors.phone}
+                      onErrorChange={clearFieldError}
                     />
                   </div>
 
@@ -582,7 +973,10 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                       <input
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => {
+                          setFormData(prev => ({ ...prev, email: e.target.value }))
+                          clearFieldError('email', undefined)
+                        }}
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                           errors.email ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -640,8 +1034,8 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                       required={false}
                       storeData={storeData}
                       error={errors.street}
+                      onErrorChange={clearFieldError}
                       onLocationChange={(lat, lng, address) => {
-                        // Update coordinates when address is selected
                         setFormData(prev => ({
                           ...prev,
                           addressJson: {
@@ -651,6 +1045,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                           }
                         }))
                       }}
+                      onAddressParsed={handleAddressParsed}
                     />
                   </div>
 
@@ -677,10 +1072,13 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                     <input
                       type="text"
                       value={formData.addressJson.city}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        addressJson: { ...prev.addressJson, city: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, city: e.target.value }
+                        }))
+                        clearFieldError('city', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.city ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -696,16 +1094,45 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                     <input
                       type="text"
                       value={formData.addressJson.zipCode}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        addressJson: { ...prev.addressJson, zipCode: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, zipCode: e.target.value }
+                        }))
+                        clearFieldError('zipCode', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.zipCode ? 'border-red-300' : 'border-gray-300'
                       }`}
                       placeholder="12345"
                     />
                     {errors.zipCode && <p className="text-red-600 text-sm mt-1">{errors.zipCode}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <select
+                      value={formData.addressJson.country}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, country: e.target.value }
+                        }))
+                        clearFieldError('country', undefined)
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                        errors.country ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    >
+                      {ADDRESS_COUNTRIES.map(country => (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.country && <p className="text-red-600 text-sm mt-1">{errors.country}</p>}
                   </div>
                 </div>
               </div>
@@ -788,11 +1215,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   </button>
                 )}
                 <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleSubmit(e as any)
-                  }}
+                  type="submit"
                   disabled={isSubmitting}
                   className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -801,10 +1224,13 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
                   ) : (
                     <Save className="w-4 h-4 mr-2" />
                   )}
-                  {isSubmitting ? 'Creating...' : 'Create Customer'}
+                  {isSubmitting 
+                    ? (isEditMode ? 'Updating...' : 'Creating...') 
+                    : (isEditMode ? 'Update Customer' : 'Create Customer')
+                  }
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
 
@@ -917,11 +1343,11 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
               {/* Action Items */}
               <div className="bg-teal-50 p-3 rounded-lg">
                 <h4 className="text-xs font-semibold text-teal-800 mb-2">
-                  After Creating Customer:
+                  {isEditMode ? 'After Updating Customer:' : 'After Creating Customer:'}
                 </h4>
                 <ul className="space-y-1 text-xs text-teal-700">
-                  <li>• Send welcome message via WhatsApp</li>
-                  <li>• Create their first order if needed</li>
+                  <li>• {isEditMode ? 'Notify team of changes' : 'Send welcome message via WhatsApp'}</li>
+                  <li>• {isEditMode ? 'Update any pending orders' : 'Create their first order if needed'}</li>
                   <li>• Add relevant tags based on preferences</li>
                   <li>• Set up any special pricing if VIP</li>
                 </ul>

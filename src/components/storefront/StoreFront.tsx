@@ -78,7 +78,7 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
   if (!businessHours) return slots
   
   // Get business hours for the selected day
-  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'lowercase' })
+  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' })
   const dayHours = businessHours[dayOfWeek]
   
   // @ts-ignore

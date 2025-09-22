@@ -6,6 +6,57 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// Server-side address parsing function
+function parseAndCleanAddress(addressJson: any): any {
+  if (!addressJson?.street) return addressJson
+
+  const street = addressJson.street.trim()
+  
+  // If street contains commas, it's likely the full formatted address
+  if (street.includes(',')) {
+    const parts = street.split(',').map((part: string) => part.trim())
+    
+    // First part is usually the actual street
+    const cleanStreet = parts[0]
+    
+    // Try to extract city from parts if not already provided
+    if (!addressJson.city && parts.length >= 2) {
+      let cityPart = parts[1]
+      // Remove postal codes from city part
+      cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+      if (cityPart) {
+        addressJson.city = cityPart
+      }
+    }
+    
+    // Try to extract postal code if not already provided
+    if (!addressJson.zipCode) {
+      const fullAddress = street
+      const zipMatches = fullAddress.match(/\b\d{3,5}\s?\d{0,2}\b/g)
+      if (zipMatches) {
+        addressJson.zipCode = zipMatches[zipMatches.length - 1].replace(/\s+/g, ' ').trim()
+      }
+    }
+    
+    // Try to extract country if not already provided
+    if (!addressJson.country || addressJson.country === 'US') {
+      const lastPart = parts[parts.length - 1].toLowerCase()
+      if (lastPart.includes('albania') || lastPart.includes('al')) {
+        addressJson.country = 'AL'
+      } else if (lastPart.includes('greece') || lastPart.includes('gr')) {
+        addressJson.country = 'GR'
+      } else if (lastPart.includes('italy') || lastPart.includes('it')) {
+        addressJson.country = 'IT'
+      }
+    }
+    
+    // Update street to clean version
+    addressJson.street = cleanStreet
+  }
+  
+  return addressJson
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string }> }
@@ -83,17 +134,20 @@ export async function POST(
       address: null as string | null // Keep for backward compatibility
     }
 
-    // Handle address data
+    // Handle address data with parsing and cleaning
     if (body.addressJson && body.addressJson.street?.trim()) {
-      customerData.addressJson = {
+      // Parse and clean the address on the server side
+      const cleanedAddress = parseAndCleanAddress({
         street: body.addressJson.street.trim(),
         additional: body.addressJson.additional?.trim() || '',
         zipCode: body.addressJson.zipCode?.trim() || '',
         city: body.addressJson.city?.trim() || '',
-        country: body.addressJson.country || 'USA',
+        country: body.addressJson.country || 'US',
         latitude: body.addressJson.latitude || null,
         longitude: body.addressJson.longitude || null
-      }
+      })
+
+      customerData.addressJson = cleanedAddress
 
       // Create backward-compatible address string
       const addressParts = [

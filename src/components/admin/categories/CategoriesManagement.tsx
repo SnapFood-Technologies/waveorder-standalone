@@ -483,6 +483,7 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
 
+ // Fixed handleImageUpload function in CategoryForm component
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -490,7 +491,11 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
     setUploadingImage(true)
     try {
       const formData = new FormData()
-      formData.append('image', file)
+      formData.append('image', file) // Keep existing field name
+      formData.append('folder', 'categories') // Specify category folder
+      if (form.image) {
+        formData.append('oldImageUrl', form.image) // Pass old image for cleanup
+      }
 
       const response = await fetch(`/api/admin/stores/${businessId}/upload`, {
         method: 'POST',
@@ -499,7 +504,10 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
 
       if (response.ok) {
         const data = await response.json()
-        setForm(prev => ({ ...prev, image: data.imageUrl }))
+        setForm(prev => ({ ...prev, image: data.imageUrl })) // Use imageUrl (your existing field name)
+      } else {
+        const errorData = await response.json()
+        console.error('Upload failed:', errorData.message)
       }
     } catch (error) {
       console.error('Error uploading image:', error)

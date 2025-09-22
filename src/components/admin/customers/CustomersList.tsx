@@ -106,13 +106,6 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     })
   }
 
-  const getCustomerTypeLabel = (totalOrders: number) => {
-    if (totalOrders === 0) return { label: 'No Order Customer', color: 'text-blue-600' }
-    if (totalOrders === 1) return { label: 'New Customer Customer', color: 'text-teal-600' }
-    if (totalOrders < 5) return { label: 'Regular', color: 'text-green-600' }
-    return { label: 'Frequent', color: 'text-purple-600' }
-  }
-
   if (loading && customers.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -241,7 +234,6 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredCustomers.map((customer) => {
-                    const customerType = getCustomerTypeLabel(customer.totalOrders)
                     
                     return (
                       <tr key={customer.id} className="hover:bg-gray-50">
@@ -287,9 +279,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                             <div className="font-medium text-gray-900">
                               {customer.totalOrders}
                             </div>
-                            <div className={`text-xs ${customerType.color}`}>
-                              {customerType.label}
-                            </div>
+                        
                           </div>
                         </td>
                         

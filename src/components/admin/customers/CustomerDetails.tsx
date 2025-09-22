@@ -1,5 +1,7 @@
+'use client'
+
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet } from 'lucide-react'
+import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface CustomerDetailsProps {
@@ -33,15 +35,17 @@ interface Order {
   id: string
   orderNumber: string
   status: string
+  type: string
   total: number
+  subtotal: number
+  deliveryFee: number
   createdAt: string
+  itemCount: number
   items: {
     id: string
     quantity: number
-    price: number
-    product: {
-      name: string
-    }
+    productName: string
+    variantName?: string
   }[]
 }
 
@@ -50,6 +54,11 @@ interface CustomerStats {
   totalSpent: number
   averageOrderValue: number
   lastOrderDate: string | null
+}
+
+interface Business {
+  currency: string
+  name: string
 }
 
 export default function CustomerDetails({ businessId, customerId }: CustomerDetailsProps) {
@@ -61,37 +70,98 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
     averageOrderValue: 0,
     lastOrderDate: null
   })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', name: '' })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'details' | 'orders'>('details')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
 
   useEffect(() => {
-    const fetchCustomerData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
+        setError(null)
         
+        // Fetch business data for currency
+        const businessResponse = await fetch(`/api/admin/stores/${businessId}`)
+        if (businessResponse.ok) {
+          const businessData = await businessResponse.json()
+          setBusiness({
+            currency: businessData.business.currency || 'USD',
+            name: businessData.business.name || ''
+          })
+        }
+
         // Fetch customer details
         const customerResponse = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}`)
         if (customerResponse.ok) {
           const customerData = await customerResponse.json()
           setCustomer(customerData.customer)
-          setStats(customerData.stats)
+          
+          // Calculate stats from customer data
+          const totalOrders = customerData.customer.totalOrders || 0
+          setStats({
+            totalOrders,
+            totalSpent: 0, // Will be calculated from orders
+            averageOrderValue: 0,
+            lastOrderDate: null
+          })
+        } else if (customerResponse.status === 404) {
+          setError('Customer not found')
+        } else {
+          setError('Failed to load customer data')
         }
 
         // Fetch customer orders
         const ordersResponse = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}/orders`)
         if (ordersResponse.ok) {
           const ordersData = await ordersResponse.json()
-          setOrders(ordersData.orders || [])
+          const fetchedOrders = ordersData.orders || []
+          setOrders(fetchedOrders)
+          
+          // Calculate real stats from orders
+          const completedOrders = fetchedOrders.filter((order: Order) => 
+            order.status === 'DELIVERED' || order.status === 'READY'
+          )
+          const totalSpent = completedOrders.reduce((sum: number, order: Order) => sum + order.total, 0)
+          const avgOrderValue = completedOrders.length > 0 ? totalSpent / completedOrders.length : 0
+          const lastOrder = fetchedOrders.length > 0 ? fetchedOrders[0] : null
+          
+          setStats(prev => ({
+            ...prev,
+            totalSpent,
+            averageOrderValue: avgOrderValue,
+            lastOrderDate: lastOrder ? lastOrder.createdAt : null
+          }))
         }
       } catch (error) {
         console.error('Error fetching customer data:', error)
+        setError('Network error loading customer data')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchCustomerData()
+    fetchData()
   }, [businessId, customerId])
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L', // Albanian Lek
+      GEL: '₾', // Georgian Lari
+    }
+    
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toLocaleString(undefined, { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`
+  }
 
   const getTierBadge = (tier: string) => {
     const styles = {
@@ -127,16 +197,58 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`
+  const formatDateShort = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const handleEdit = () => {
+    // Navigate to edit page
+    window.location.href = `/admin/stores/${businessId}/customers/${customerId}/edit`
+  }
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true)
+      const response = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Show success message
+        setDeleteSuccess(true)
+        setIsDeleting(false)
+        
+        // Redirect after showing success for 2 seconds
+        setTimeout(() => {
+          window.location.href = `/admin/stores/${businessId}/customers`
+        }, 2000)
+      } else {
+        const data = await response.json()
+        setError(data.message || 'Failed to delete customer')
+        setIsDeleting(false)
+      }
+    } catch (error) {
+      setError('Network error deleting customer')
+      setIsDeleting(false)
+    }
   }
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-4">
                 <div className="h-32 bg-gray-200 rounded"></div>
@@ -153,9 +265,28 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
     )
   }
 
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Customer</h3>
+          <p className="text-red-600 mb-6">{error}</p>
+          <Link
+            href={`/admin/stores/${businessId}/customers`}
+            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Customers
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   if (!customer) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Customer not found</h3>
@@ -186,19 +317,31 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
+            <div className="flex items-center space-x-3">
+              <h1 className="text-2xl font-bold text-gray-900">{customer.name}</h1>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadge(customer.tier)}`}>
+                {customer.tier}
+              </span>
+            </div>
             <p className="text-gray-600">Customer details and order history</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-3">
-          <Link
-            href={`/admin/stores/${businessId}/customers/${customerId}/edit`}
+          <button
+            onClick={handleEdit}
             className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit Customer
-          </Link>
+          </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </button>
           <Link
             href={`/admin/stores/${businessId}/orders/create?customerId=${customerId}`}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -225,12 +368,12 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Wallet className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <Wallet className="w-5 h-5 text-emerald-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Spent</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
+              <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent)}</p>
             </div>
           </div>
         </div>
@@ -256,7 +399,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <p className="text-sm font-medium text-gray-500">Last Order</p>
               <p className="text-sm font-bold text-gray-900">
                 {stats.lastOrderDate 
-                  ? new Date(stats.lastOrderDate).toLocaleDateString()
+                  ? formatDateShort(stats.lastOrderDate)
                   : 'Never'
                 }
               </p>
@@ -271,7 +414,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
           <nav className="flex space-x-8 px-6">
             <button
               onClick={() => setActiveTab('details')}
-              className={`py-4 border-b-2 font-medium text-sm ${
+              className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'details'
                   ? 'border-teal-500 text-teal-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -281,7 +424,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             </button>
             <button
               onClick={() => setActiveTab('orders')}
-              className={`py-4 border-b-2 font-medium text-sm ${
+              className={`py-4 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'orders'
                   ? 'border-teal-500 text-teal-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -306,14 +449,19 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   <div className="space-y-4">
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <span className="text-sm font-medium text-gray-500">Name</span>
-                      <span className="text-sm text-gray-900">{customer.name}</span>
+                      <span className="text-sm text-gray-900 font-medium">{customer.name}</span>
                     </div>
                     
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <span className="text-sm font-medium text-gray-500">Phone</span>
                       <div className="flex items-center text-sm text-gray-900">
                         <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                        {customer.phone}
+                        <a href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           className="hover:text-teal-600 transition-colors">
+                          {customer.phone}
+                        </a>
                       </div>
                     </div>
                     
@@ -322,13 +470,16 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         <span className="text-sm font-medium text-gray-500">Email</span>
                         <div className="flex items-center text-sm text-gray-900">
                           <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                          {customer.email}
+                          <a href={`mailto:${customer.email}`}
+                             className="hover:text-teal-600 transition-colors">
+                            {customer.email}
+                          </a>
                         </div>
                       </div>
                     )}
                     
                     <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                      <span className="text-sm font-medium text-gray-500">Tier</span>
+                      <span className="text-sm font-medium text-gray-500">Customer Type</span>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadge(customer.tier)}`}>
                         {customer.tier}
                       </span>
@@ -341,10 +492,17 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       </span>
                     </div>
                     
-                    <div className="flex items-center justify-between py-3">
+                    <div className="flex items-center justify-between py-3 border-b border-gray-100">
                       <span className="text-sm font-medium text-gray-500">Member since</span>
                       <span className="text-sm text-gray-900">
-                        {formatDate(customer.createdAt)}
+                        {formatDateShort(customer.createdAt)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between py-3">
+                      <span className="text-sm font-medium text-gray-500">Last updated</span>
+                      <span className="text-sm text-gray-900">
+                        {formatDateShort(customer.updatedAt)}
                       </span>
                     </div>
                   </div>
@@ -355,7 +513,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                       <MapPin className="w-5 h-5 mr-2 text-teal-600" />
-                      Address
+                      Delivery Address
                     </h3>
                     
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -374,13 +532,18 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         <div className="text-gray-600">
                           {customer.addressJson.country}
                         </div>
+                        {/* {(customer.addressJson.latitude && customer.addressJson.longitude) && (
+                          <div className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                            Coordinates: {customer.addressJson.latitude.toFixed(6)}, {customer.addressJson.longitude.toFixed(6)}
+                          </div>
+                        )} */}
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Tags and Notes */}
+              {/* Tags, Notes, and Quick Actions */}
               <div className="space-y-6">
                 {/* Tags */}
                 {customer.tags.length > 0 && (
@@ -408,7 +571,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   <div>
                     <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                       <FileText className="w-5 h-5 mr-2 text-teal-600" />
-                      Notes
+                      Internal Notes
                     </h3>
                     
                     <div className="bg-gray-50 p-4 rounded-lg">
@@ -430,23 +593,36 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       href={`/admin/stores/${businessId}/orders/create?customerId=${customerId}`}
                       className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <ShoppingBag className="w-5 h-5 mr-3 text-gray-400" />
+                      <ShoppingBag className="w-5 h-5 mr-3 text-teal-600" />
                       <div>
                         <div className="text-sm font-medium text-gray-900">Create New Order</div>
                         <div className="text-xs text-gray-600">Place an order for this customer</div>
                       </div>
                     </Link>
                     
-                    <Link
-                      href={`/admin/stores/${businessId}/customers/${customerId}/edit`}
+                    <a
+                      href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <Phone className="w-5 h-5 mr-3 text-green-600" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">Send WhatsApp Message</div>
+                        <div className="text-xs text-gray-600">Contact customer directly</div>
+                      </div>
+                    </a>
+                    
+                    <button
+                      onClick={handleEdit}
                       className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <Edit className="w-5 h-5 mr-3 text-gray-400" />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">Edit Customer</div>
+                        <div className="text-sm font-medium text-gray-900">Edit Customer Information</div>
                         <div className="text-xs text-gray-600">Update customer information</div>
                       </div>
-                    </Link>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -472,7 +648,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50">
+                    <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
@@ -480,10 +656,10 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                           </div>
                           <div>
                             <h4 className="font-medium text-gray-900">
-                              Order {order.orderNumber}
+                              #{order.orderNumber}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              {formatDate(order.createdAt)}
+                              {formatDate(order.createdAt)} • {order.type} • {order.itemCount} items
                             </p>
                           </div>
                         </div>
@@ -498,37 +674,168 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         </div>
                       </div>
                       
-                      {/* Order Items */}
-                      <div className="space-y-2">
+                      {/* Order Items Preview */}
+                      <div className="space-y-2 mb-4">
                         <h5 className="text-sm font-medium text-gray-700">Items:</h5>
-                        {order.items.map((item) => (
+                        {order.items.slice(0, 3).map((item) => (
                           <div key={item.id} className="flex justify-between items-center text-sm">
                             <span className="text-gray-600">
-                              {item.quantity}x {item.product.name}
-                            </span>
-                            <span className="font-medium text-gray-900">
-                              {formatCurrency(item.price * item.quantity)}
+                              {item.quantity}x {item.productName}
+                              {item.variantName && ` (${item.variantName})`}
                             </span>
                           </div>
                         ))}
+                        {order.items.length > 3 && (
+                          <p className="text-xs text-gray-500">
+                            +{order.items.length - 3} more items
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Order Summary */}
+                      <div className="bg-gray-50 p-3 rounded text-sm space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="text-gray-900">{formatCurrency(order.subtotal)}</span>
+                        </div>
+                        {order.deliveryFee > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Delivery:</span>
+                            <span className="text-gray-900">{formatCurrency(order.deliveryFee)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-medium pt-1 border-t border-gray-200">
+                          <span className="text-gray-900">Total:</span>
+                          <span className="text-gray-900">{formatCurrency(order.total)}</span>
+                        </div>
                       </div>
                       
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Link
                           href={`/admin/stores/${businessId}/orders/${order.id}`}
-                          className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                          className="text-teal-600 hover:text-teal-700 text-sm font-medium inline-flex items-center"
                         >
-                          View Order Details →
+                          View Order Details 
+                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
                         </Link>
                       </div>
                     </div>
                   ))}
+                  
+                  {orders.length > 10 && (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-gray-600">
+                        Showing recent {Math.min(orders.length, 10)} orders
+                      </p>
+                      <Link
+                        href={`/admin/stores/${businessId}/orders?customer=${customerId}`}
+                        className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                      >
+                        View All Orders →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            {!deleteSuccess ? (
+              // Delete Confirmation Content
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                    Delete Customer
+                  </h3>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    disabled={isDeleting}
+                  >
+                    <X className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                
+                <div className="mb-6">
+                  <p className="text-gray-600 mb-4">
+                    Are you sure you want to permanently delete <strong>{customer.name}</strong>?
+                  </p>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex">
+                      <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                      <div className="ml-3">
+                        <p className="text-red-800 text-sm">
+                          <strong>This action cannot be undone.</strong> All customer data will be permanently removed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {stats.totalOrders > 0 && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex">
+                        <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+                        <div className="ml-3">
+                          <p className="text-yellow-800 text-sm">
+                            <strong>Warning:</strong> This customer has {stats.totalOrders} orders. Deletion may not be allowed if there are existing orders.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-end space-x-3">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isDeleting ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-2" />
+                    )}
+                    {isDeleting ? 'Deleting...' : 'Delete Customer'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              // Success Content
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Customer Deleted Successfully</h3>
+                <p className="text-gray-600 mb-6">
+                  <strong>{customer.name}</strong> has been permanently removed from your system.
+                </p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                  <p className="text-green-800 text-sm">
+                    Redirecting you back to the customers list...
+                  </p>
+                </div>
+                <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -33,19 +33,19 @@ export async function GET(
     }
 
     // Get recent customers (customers who have placed orders in the last 30 days, limit 10)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    
     const customers = await prisma.customer.findMany({
       where: {
-        businessId: businessId,
-        orders: {
-          some: {
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-            }
-          }
-        }
+        businessId: businessId
       },
       include: {
         orders: {
+          where: {
+            createdAt: {
+              gte: thirtyDaysAgo
+            }
+          },
           orderBy: {
             createdAt: 'desc'
           },
@@ -53,7 +53,7 @@ export async function GET(
           select: {
             createdAt: true,
             total: true,
-            status: true
+            status: true,
           }
         },
         _count: {
@@ -73,11 +73,12 @@ export async function GET(
       name: customer.name,
       phone: customer.phone,
       email: customer.email,
+      tier: customer.tier,
       totalOrders: customer._count.orders,
-      lastOrderDate: customer.orders[0]?.createdAt?.toISOString() || null,
+      lastOrderDate: customer.orders[0]?.createdAt || null,
       lastOrderTotal: customer.orders[0]?.total || 0,
       lastOrderStatus: customer.orders[0]?.status || null,
-      createdAt: customer.createdAt.toISOString()
+      createdAt: customer.createdAt
     }))
 
     return NextResponse.json({ customers: formattedCustomers })

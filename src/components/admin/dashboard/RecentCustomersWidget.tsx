@@ -14,6 +14,7 @@ interface Customer {
   name: string
   phone: string
   email: string | null
+  tier: 'REGULAR' | 'VIP' | 'WHOLESALE'
   totalOrders: number
   lastOrderDate: string | null
   lastOrderTotal: number
@@ -56,10 +57,13 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
     return date.toLocaleDateString()
   }
 
-  const getCustomerTypeInfo = (totalOrders: number) => {
-    if (totalOrders === 1) return { label: 'New', color: 'text-blue-600 bg-blue-100' }
-    if (totalOrders < 5) return { label: 'Regular', color: 'text-green-600 bg-green-100' }
-    return { label: 'VIP', color: 'text-purple-600 bg-purple-100' }
+  const getTierBadge = (tier: string) => {
+    const styles = {
+      REGULAR: 'bg-gray-100 text-gray-700',
+      VIP: 'bg-purple-100 text-purple-700',
+      WHOLESALE: 'bg-blue-100 text-blue-700'
+    }
+    return styles[tier as keyof typeof styles] || styles.REGULAR
   }
 
   if (loading) {
@@ -77,10 +81,28 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
 
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Customers</h3>
-        <span className="text-sm text-gray-500">Active in last 30 days</span>
+      <div className="flex sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+  <h3 className="text-lg font-semibold text-gray-900">Recent Customers</h3>
+  <div className="flex space-y-2 sm:space-y-0 sm:space-x-2">
+    {customers.length > 0 && (
+      <div className="flex items-center space-x-2">
+        <Link
+          href={`/admin/stores/${businessId}/customers/create`}
+          className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add
+        </Link>
+        <Link
+          href={`/admin/stores/${businessId}/customers`}
+          className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+        >
+          View All
+        </Link>
       </div>
+    )}
+  </div>
+</div>
 
       {customers.length === 0 ? (
         <div className="text-center py-12">
@@ -111,7 +133,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
             </thead>
             <tbody className="divide-y divide-gray-100">
               {customers.map((customer) => {
-                const customerType = getCustomerTypeInfo(customer.totalOrders)
+              
                 
                 return (
                   <tr key={customer.id} className="hover:bg-gray-50 cursor-pointer">
@@ -145,9 +167,9 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
                       </span>
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${customerType.color}`}>
-                        {customerType.label}
-                      </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadge(customer.tier)}`}>
+                {customer.tier}
+              </span>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <span className="text-sm text-gray-600">
@@ -159,21 +181,6 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
               })}
             </tbody>
           </table>
-          
-          <div className="pt-4 border-t border-gray-200 space-y-2">
-            <Link
-              href={`/admin/stores/${businessId}/customers`}
-              className="block text-center py-2 text-teal-600 hover:text-teal-700 font-medium"
-            >
-              View All Customers
-            </Link>
-            <Link
-              href={`/admin/stores/${businessId}/customers/create`}
-              className="block text-center py-2 px-4 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
-            >
-              Add Customer
-            </Link>
-          </div>
         </div>
       )}
     </div>
