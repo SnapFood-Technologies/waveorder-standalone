@@ -26,7 +26,6 @@ import {
   UtensilsCrossed,
   Info,
   Package,
-  DollarSign,
   CalendarClock,
   ChevronDown,
   AlertCircle
@@ -321,7 +320,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
                   <span>20-30 min</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
+                  <Package className="w-3 h-3" />
                   <span>Free delivery</span>
                 </div>
               </div>

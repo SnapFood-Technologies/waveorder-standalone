@@ -101,8 +101,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const publishedBusinesses = await prisma.business.findMany({
       where: {
         isActive: true,
-        isIndexable: true,
+        isIndexable: true, // Must be indexable
+        noIndex: false, // Must not have noIndex set
         slug: {
+          // not: null,
           not: undefined
         }
       },
@@ -111,6 +113,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         updatedAt: true,
         createdAt: true,
         subscriptionPlan: true,
+        canonicalUrl: true,
+        language: true,
         users: {
           select: {
             role: true
@@ -123,7 +127,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
 
     // Generate business catalog URLs
-    businessPages = publishedBusinesses.map((business) => {
+    businessPages = publishedBusinesses.flatMap((business) => {
       // Higher priority for premium businesses
       let priority = 0.6
       
@@ -145,12 +149,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFreq = 'weekly'
       }
 
-      return {
-        url: `${baseUrl}/${business.slug}`,
-        lastModified: formatDate(business.updatedAt),
-        changeFrequency: changeFreq,
-        priority,
-      }
+      const baseUrl = business.canonicalUrl ? 
+        new URL(business.canonicalUrl).origin : 
+        'https://waveorder.app'
+
+      const entries: MetadataRoute.Sitemap = [
+        {
+          url: `${baseUrl}/${business.slug}`,
+          lastModified: formatDate(business.updatedAt),
+          changeFrequency: changeFreq,
+          priority,
+        }
+      ]
+
+      return entries
     })
 
   } catch (error) {

@@ -148,11 +148,6 @@ export async function GET(
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
-    // Check if indexable
-    if (!business.isIndexable && business.noIndex) {
-      return NextResponse.json({ error: 'Store not available' }, { status: 404 })
-    }
-
     // Calculate business hours status
     // @ts-ignore
     const isOpen = calculateIsOpen(business.businessHours, business.timezone)

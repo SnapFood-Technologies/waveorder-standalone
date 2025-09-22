@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { SetupData } from '../Setup'
-import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, DollarSign, X, Search, MapPin, Globe, Phone, Share2, Clock, Store, Info } from 'lucide-react'
+import { ArrowLeft, Plus, Upload, Download, Package, Smartphone, X, Search, MapPin, Globe, Phone, Share2, Clock, Store, Info } from 'lucide-react'
 
 interface ProductSetupStepProps {
   data: SetupData

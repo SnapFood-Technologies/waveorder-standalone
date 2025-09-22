@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, DollarSign } from 'lucide-react'
+import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, Wallet } from 'lucide-react'
 
 interface CustomerFormProps {
   businessId: string
@@ -845,7 +845,7 @@ export default function CustomerForm({ businessId, onSuccess, onCancel }: Custom
               {/* Revenue Impact */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                  <DollarSign className="w-4 h-4 mr-2 text-emerald-600" />
+                  <Wallet className="w-4 h-4 mr-2 text-emerald-600" />
                   Revenue Impact
                 </h4>
                 <div className="bg-emerald-50 p-3 rounded text-sm">

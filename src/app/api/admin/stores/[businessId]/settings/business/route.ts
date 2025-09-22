@@ -35,6 +35,7 @@ export async function GET(
         name: true,
         slug: true,
         description: true,
+        descriptionAl: true,
         businessType: true,
         address: true,
         phone: true,
@@ -42,6 +43,8 @@ export async function GET(
         website: true,
         logo: true,
         coverImage: true,
+        favicon: true,
+        ogImage: true,
         currency: true,
         timezone: true,
         language: true,
@@ -51,12 +54,20 @@ export async function GET(
         seoTitleAl: true,
         seoDescriptionAl: true,
         seoKeywordsAl: true,
+        schemaType: true,
+        schemaData: true,
+        canonicalUrl: true,
         isTemporarilyClosed: true,
         closureReason: true,
         closureMessage: true,
         closureStartDate: true,
         closureEndDate: true,
-        isIndexable: true
+        isIndexable: true,
+        noIndex: true,
+        noFollow: true,
+        whatsappNumber: true,
+        storeLatitude: true,
+        storeLongitude: true
       }
     })
 
@@ -64,7 +75,13 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ business })
+    // Add computed fields for backward compatibility
+    const businessWithComputed = {
+      ...business,
+      noIndex: !business.isIndexable // Compute noIndex from isIndexable
+    }
+
+    return NextResponse.json({ business: businessWithComputed })
 
   } catch (error) {
     console.error('Error fetching business settings:', error)
@@ -130,6 +147,32 @@ export async function PUT(
       }
     }
 
+    // Validate schema data if provided
+    let parsedSchemaData = null
+    if (data.schemaData) {
+      try {
+        parsedSchemaData = typeof data.schemaData === 'string' 
+          ? JSON.parse(data.schemaData) 
+          : data.schemaData
+      } catch (error) {
+        return NextResponse.json({ message: 'Invalid JSON in schema data' }, { status: 400 })
+      }
+    }
+
+    // Handle noIndex/isIndexable relationship
+    let isIndexable = data.isIndexable
+    let noIndex = data.noIndex
+    let noFollow = data.noFollow || false
+
+    // If noIndex is set, override isIndexable
+    if (typeof data.noIndex === 'boolean') {
+      isIndexable = !data.noIndex
+      noIndex = data.noIndex
+    } else if (typeof data.isIndexable === 'boolean') {
+      noIndex = !data.isIndexable
+      isIndexable = data.isIndexable
+    }
+
     // Update business
     const updatedBusiness = await prisma.business.update({
       where: { id: businessId },
@@ -137,6 +180,7 @@ export async function PUT(
         name: data.name.trim(),
         slug: data.slug.trim().toLowerCase(),
         description: data.description?.trim() || null,
+        descriptionAl: data.descriptionAl?.trim() || null,
         businessType: data.businessType,
         address: data.address?.trim() || null,
         phone: data.phone?.trim() || null,
@@ -144,6 +188,8 @@ export async function PUT(
         website: data.website?.trim() || null,
         logo: data.logo || null,
         coverImage: data.coverImage || null,
+        favicon: data.favicon || null,
+        ogImage: data.ogImage || null,
         currency: data.currency,
         timezone: data.timezone,
         language: data.language,
@@ -153,6 +199,9 @@ export async function PUT(
         seoTitleAl: data.seoTitleAl?.trim() || null,
         seoDescriptionAl: data.seoDescriptionAl?.trim() || null,
         seoKeywordsAl: data.seoKeywordsAl?.trim() || null,
+        schemaType: data.schemaType || 'LocalBusiness',
+        schemaData: parsedSchemaData,
+        canonicalUrl: data.canonicalUrl?.trim() || null,
         isTemporarilyClosed: data.isTemporarilyClosed || false,
         closureReason: data.isTemporarilyClosed ? (data.closureReason?.trim() || null) : null,
         closureMessage: data.isTemporarilyClosed ? (data.closureMessage?.trim() || null) : null,
@@ -160,7 +209,9 @@ export async function PUT(
           ? new Date(data.closureStartDate) : null,
         closureEndDate: data.isTemporarilyClosed && data.closureEndDate 
           ? new Date(data.closureEndDate) : null,
-        isIndexable: data.isIndexable !== undefined ? data.isIndexable : true,
+        isIndexable: isIndexable !== undefined ? isIndexable : true,
+        noIndex: noIndex !== undefined ? noIndex : false,
+        noFollow: noFollow,
         updatedAt: new Date()
       },
       select: {
@@ -168,6 +219,7 @@ export async function PUT(
         name: true,
         slug: true,
         description: true,
+        descriptionAl: true,
         businessType: true,
         address: true,
         phone: true,
@@ -175,6 +227,8 @@ export async function PUT(
         website: true,
         logo: true,
         coverImage: true,
+        favicon: true,
+        ogImage: true,
         currency: true,
         timezone: true,
         language: true,
@@ -184,12 +238,17 @@ export async function PUT(
         seoTitleAl: true,
         seoDescriptionAl: true,
         seoKeywordsAl: true,
+        schemaType: true,
+        schemaData: true,
+        canonicalUrl: true,
         isTemporarilyClosed: true,
         closureReason: true,
         closureMessage: true,
         closureStartDate: true,
         closureEndDate: true,
-        isIndexable: true
+        isIndexable: true,
+        noIndex: true,
+        noFollow: true
       }
     })
 
