@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MapPin, Plus, Edit2, Trash2, Save, X, Info, AlertCircle } from 'lucide-react'
+import { MapPin, Plus, Edit2, Trash2, Save, X, Info, AlertCircle, CheckCircle } from 'lucide-react'
 
 interface DeliveryZone {
   id?: string
@@ -29,6 +29,18 @@ interface DeliveryZonesManagementProps {
   businessId: string
 }
 
+interface SuccessMessage {
+  title: string
+  description?: string
+}
+
+interface ConfirmationModal {
+  isOpen: boolean
+  title: string
+  message: string
+  onConfirm: () => void
+}
+
 export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementProps) {
   const [business, setBusiness] = useState<Business | null>(null)
   const [zones, setZones] = useState<DeliveryZone[]>([])
@@ -37,6 +49,13 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
   const [editingZone, setEditingZone] = useState<DeliveryZone | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
+  const [confirmationModal, setConfirmationModal] = useState<ConfirmationModal>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  })
 
   useEffect(() => {
     fetchData()
@@ -131,6 +150,11 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
     setZones(defaultZones)
   }
 
+  const showSuccessMessage = (title: string, description?: string) => {
+    setSuccessMessage({ title, description })
+    setTimeout(() => setSuccessMessage(null), 5000)
+  }
+
   const formatCurrency = (amount: number) => {
     const currencySymbols: Record<string, string> = {
       USD: '$',
@@ -163,6 +187,12 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
       const data = await response.json()
       setZones(data.zones)
       setError(null)
+      
+      // Show success message
+      showSuccessMessage(
+        'Delivery Zones Saved',
+        'All delivery zones have been updated successfully'
+      )
     } catch (error) {
       console.error('Error saving zones:', error)
       setError(error instanceof Error ? error.message : 'Failed to save zones')
@@ -198,11 +228,6 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
         setError(`Zone "${zone.name}" fee cannot be negative`)
         return false
       }
-
-      // Check if there's a gap between zones
-      if (i > 0 && zone.maxDistance > sortedZones[i - 1].maxDistance) {
-        // This is expected - zones should have increasing distances
-      }
     }
 
     setError(null)
@@ -231,12 +256,32 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
     setShowAddForm(true)
   }
 
-  const deleteZone = (index: number) => {
+  const confirmDeleteZone = (index: number, zoneName: string) => {
     if (zones.length <= 1) {
       setError('Cannot delete the last zone. At least one zone is required.')
       return
     }
+
+    setConfirmationModal({
+      isOpen: true,
+      title: 'Delete Delivery Zone',
+      message: `Are you sure you want to delete "${zoneName}"? This action cannot be undone.`,
+      onConfirm: () => {
+        deleteZone(index)
+        setConfirmationModal(prev => ({ ...prev, isOpen: false }))
+      }
+    })
+  }
+
+  const deleteZone = (index: number) => {
+    const deletedZone = zones[index]
     setZones(zones.filter((_, i) => i !== index))
+    
+    // Show success message
+    showSuccessMessage(
+      'Zone Deleted',
+      `"${deletedZone.name}" has been removed from your delivery zones`
+    )
   }
 
   const saveEditingZone = () => {
@@ -268,9 +313,19 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
       setZones(zones.map(zone => 
         zone.id === editingZone.id ? editingZone : zone
       ))
+      
+      showSuccessMessage(
+        'Zone Updated',
+        `"${editingZone.name}" has been updated successfully`
+      )
     } else {
       // Add new zone
       setZones([...zones, { ...editingZone, id: Date.now().toString() }])
+      
+      showSuccessMessage(
+        'Zone Added',
+        `"${editingZone.name}" has been created successfully`
+      )
     }
 
     setEditingZone(null)
@@ -318,6 +373,60 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
 
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">{successMessage.title}</h4>
+                {successMessage.description && (
+                  <p className="text-sm text-gray-600 mt-1">{successMessage.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmationModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {confirmationModal.title}
+              </h3>
+              <p className="text-gray-600 mb-6">{confirmationModal.message}</p>
+              
+              <div className="flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmationModal.onConfirm}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  Delete Zone
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -341,7 +450,7 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
         </div>
         <button
           onClick={addZone}
-          disabled={zones.length >= 10} // Reasonable limit
+          disabled={zones.length >= 10}
           className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium whitespace-nowrap disabled:opacity-50"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -415,7 +524,7 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => deleteZone(index)}
+                  onClick={() => confirmDeleteZone(index, zone.name)}
                   disabled={zones.length <= 1}
                   className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -439,7 +548,7 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => deleteZone(index)}
+                    onClick={() => confirmDeleteZone(index, zone.name)}
                     disabled={zones.length <= 1}
                     className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
                   >

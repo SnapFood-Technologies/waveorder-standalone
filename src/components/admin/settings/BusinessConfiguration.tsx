@@ -11,9 +11,12 @@ import {
   Save,
   CheckCircle,
   MapPin,
-  Phone
+  Phone,
+  Calendar,
+  X
 } from 'lucide-react'
 import { DeliveryZonesManagement } from '../delivery/DeliveryZonesManagement'
+import { BusinessHoursManagement } from './BusinessHoursManagement'
 
 interface BusinessConfigurationProps {
   businessId: string
@@ -57,6 +60,11 @@ interface Business {
   currency: string
 }
 
+interface SuccessMessage {
+  title: string
+  description?: string
+}
+
 export function BusinessConfiguration({ businessId }: BusinessConfigurationProps) {
   const [config, setConfig] = useState<BusinessConfig>({
     deliveryMethods: {
@@ -84,6 +92,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('delivery')
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
 
   useEffect(() => {
     fetchConfiguration()
@@ -122,8 +131,14 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       })
 
       if (response.ok) {
-        // Show success notification
-        console.log('Configuration saved successfully')
+        // Show success message
+        setSuccessMessage({
+          title: 'Configuration Updated',
+          description: 'Your business configuration has been saved successfully'
+        })
+        
+        // Hide success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000)
       }
     } catch (error) {
       console.error('Error saving configuration:', error)
@@ -243,7 +258,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     { id: 'delivery', name: 'Delivery Methods', icon: Truck },
     { id: 'payment', name: 'Payment Methods', icon: CreditCard },
     { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
-    { id: 'zones', name: 'Delivery Zones', icon: MapPin }
+    { id: 'zones', name: 'Delivery Zones', icon: MapPin },
+    { id: 'hours', name: 'Business Hours', icon: Calendar }
   ]
 
   if (loading) {
@@ -251,7 +267,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       <div className="animate-pulse space-y-6">
         <div className="h-8 bg-gray-200 rounded w-1/4"></div>
         <div className="grid grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(5)].map((_, i) => (
             <div key={i} className="h-12 bg-gray-200 rounded"></div>
           ))}
         </div>
@@ -262,6 +278,31 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   return (
     <div className="space-y-6">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">{successMessage.title}</h4>
+                {successMessage.description && (
+                  <p className="text-sm text-gray-600 mt-1">{successMessage.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header - Mobile Responsive */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0 flex-1">
@@ -590,6 +631,10 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
         {activeSection === 'zones' && (
           <DeliveryZonesManagement businessId={businessId} />
+        )}
+
+        {activeSection === 'hours' && (
+          <BusinessHoursManagement businessId={businessId} />
         )}
       </div>
 

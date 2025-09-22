@@ -212,8 +212,6 @@ function AddressAutocomplete({
   useEffect(() => {
     if (isLoaded && inputRef.current) {
       const detectedCountry = detectBusinessCountry(businessData)
-
-      console.log('detectedCountry', detectedCountry);
       
       const getAllowedCountries = () => {
         switch (detectedCountry) {
