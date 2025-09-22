@@ -1,7 +1,7 @@
 // src/components/admin/settings/BusinessSettingsForm.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { 
   Building2, 
   MapPin, 
@@ -14,17 +14,27 @@ import {
   Eye,
   EyeOff,
   Calendar,
-  Info
+  Info,
+  Search,
+  Link as LinkIcon,
+  Code,
+  CheckCircle
 } from 'lucide-react'
 
 interface BusinessSettingsProps {
   businessId: string
 }
 
+interface SuccessMessage {
+  title: string
+  description?: string
+}
+
 interface BusinessSettings {
   name: string
   slug: string
   description?: string
+  descriptionAl?: string
   businessType: string
   address?: string
   phone?: string
@@ -32,6 +42,8 @@ interface BusinessSettings {
   website?: string
   logo?: string
   coverImage?: string
+  favicon?: string
+  ogImage?: string
   currency: string
   timezone: string
   language: string
@@ -44,6 +56,11 @@ interface BusinessSettings {
   seoDescriptionAl?: string
   seoKeywordsAl?: string
   
+  // Structured data
+  schemaType?: string
+  schemaData?: any
+  canonicalUrl?: string
+  
   // Store status
   isTemporarilyClosed: boolean
   closureReason?: string
@@ -53,6 +70,203 @@ interface BusinessSettings {
   
   // Other settings
   isIndexable: boolean
+  noIndex: boolean
+  noFollow: boolean
+}
+
+// Country detection utility
+// Updated Country detection utility
+function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'DEFAULT' {
+  // TESTING OVERRIDE: Check user's location first for Greece testing ONLY
+  if (typeof window !== 'undefined') {
+    const browserLanguage = navigator.language.toLowerCase()
+    if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
+      return 'GR'
+    }
+    
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (timezone === 'Europe/Athens') {
+        return 'GR'
+      }
+    } catch (error) {
+      // Timezone detection failed
+    }
+  }
+  
+  // PRIMARY: Check business latitude/longitude coordinates
+  if (business.storeLatitude && business.storeLongitude) {
+    const lat = business.storeLatitude
+    const lng = business.storeLongitude
+    
+    // Albania boundaries: approximately 39.6-42.7°N, 19.3-21.1°E
+    if (lat >= 39.6 && lat <= 42.7 && lng >= 19.3 && lng <= 21.1) {
+      return 'AL'
+    }
+    
+    // Greece boundaries: approximately 34.8-41.8°N, 19.3-28.2°E
+    if (lat >= 34.8 && lat <= 41.8 && lng >= 19.3 && lng <= 28.2) {
+      return 'GR'
+    }
+    
+    // Italy boundaries: approximately 35.5-47.1°N, 6.6-18.5°E
+    if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) {
+      return 'IT'
+    }
+    
+    // United States boundaries: approximately 24-71°N, -180 to -66°W
+    if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
+      return 'US'
+    }
+  }
+  
+  // SECONDARY: Check whatsapp number prefix
+  if (business.whatsappNumber?.startsWith('+355') || business.phone?.startsWith('+355')) return 'AL'
+  if (business.whatsappNumber?.startsWith('+30') || business.phone?.startsWith('+30')) return 'GR'
+  if (business.whatsappNumber?.startsWith('+39') || business.phone?.startsWith('+39')) return 'IT'
+  if (business.whatsappNumber?.startsWith('+1') || business.phone?.startsWith('+1')) return 'US'
+  
+  // TERTIARY: Check other user location indicators (for non-Greece countries only)
+  if (typeof window !== 'undefined') {
+    const browserLanguage = navigator.language.toLowerCase()
+    if (browserLanguage.startsWith('sq') || browserLanguage.includes('al')) {
+      return 'AL'
+    }
+    if (browserLanguage.startsWith('it')) {
+      return 'IT'
+    }
+    
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (timezone === 'Europe/Tirane') return 'AL'
+      if (timezone === 'Europe/Rome') return 'IT'
+    } catch (error) {
+      // Timezone detection failed
+    }
+  }
+  
+  // FALLBACK: Check business language and currency
+  if (business.currency === 'ALL' || business.language === 'sq') return 'AL'
+  if (business.currency === 'EUR' && business.language === 'el') return 'GR'
+  if (business.currency === 'EUR' && business.language === 'it') return 'IT'
+  
+  return 'US'
+}
+
+// Address Autocomplete Component
+// Fixed AddressAutocomplete Component
+function AddressAutocomplete({ 
+  value, 
+  onChange, 
+  placeholder, 
+  required, 
+  businessData
+}: {
+  value: string
+  onChange: (address: string) => void
+  placeholder: string
+  required: boolean
+  businessData?: any
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+  
+  // Load Google Places API - Fixed version
+  useEffect(() => {
+    // Check if Google Maps is already loaded
+    // @ts-ignore
+    if (window.google?.maps?.places) {
+      setIsLoaded(true)
+      return
+    }
+    
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
+    if (existingScript) {
+      // Script exists, wait for Google to be available
+      const checkGoogle = () => {
+        // @ts-ignore
+        if (window.google?.maps?.places) {
+          setIsLoaded(true)
+        } else {
+          // Keep checking every 100ms until Google is available
+          setTimeout(checkGoogle, 100)
+        }
+      }
+      checkGoogle()
+      return
+    }
+    
+    // Only create script if none exists
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = () => setIsLoaded(true)
+    script.onerror = () => console.error('Failed to load Google Maps API')
+    document.head.appendChild(script)
+    
+    // Don't remove the script in cleanup - let it stay for other components
+  }, [])
+  
+  useEffect(() => {
+    if (isLoaded && inputRef.current) {
+      const detectedCountry = detectBusinessCountry(businessData)
+      
+      const getAllowedCountries = () => {
+        switch (detectedCountry) {
+          case 'AL':
+            return ['al']
+          case 'GR':
+            return ['gr', 'al', 'it', 'us'] // Extended for Greece
+          case 'IT':
+            return ['it']
+          case 'US':
+            return ['us']
+          default:
+            return ['us']
+        }
+      }
+      
+      const allowedCountries = getAllowedCountries()
+      
+      // @ts-ignore
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['address'],
+        componentRestrictions: { 
+          country: allowedCountries
+        }
+      })
+      
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace()
+        if (place.formatted_address) {
+          onChange(place.formatted_address)
+        }
+      })
+
+      // Cleanup function to remove listeners
+      return () => {
+        // @ts-ignore
+        if (window.google?.maps?.event) {
+          // @ts-ignore
+          window.google.maps.event.clearInstanceListeners(autocomplete)
+        }
+      }
+    }
+  }, [isLoaded, onChange, businessData])
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      required={required}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+      placeholder={placeholder}
+    />
+  )
 }
 
 export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
@@ -63,8 +277,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     currency: 'USD',
     timezone: 'UTC',
     language: 'en',
+    schemaType: 'LocalBusiness',
     isTemporarilyClosed: false,
-    isIndexable: true
+    isIndexable: true,
+    noIndex: false,
+    noFollow: false
   })
   
   const [loading, setLoading] = useState(true)
@@ -76,6 +293,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
   const [showSeoAdvanced, setShowSeoAdvanced] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
   const [coverUploading, setCoverUploading] = useState(false)
+  const [faviconUploading, setFaviconUploading] = useState(false)
+  const [ogImageUploading, setOgImageUploading] = useState(false)
+  const [detectedCountry, setDetectedCountry] = useState<string>('US')
+  // const [showAlbanianFields, setShowAlbanianFields] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
 
   useEffect(() => {
     if (businessId) {
@@ -90,6 +312,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
         const data = await response.json()
         setSettings(data.business)
         setOriginalSlug(data.business.slug)
+        
+        // Detect country and show appropriate fields
+        const country = detectBusinessCountry(data.business)
+        setDetectedCountry(country)
+        
+        // Show Albanian fields for AL and GR (Greece gets all languages)
+        // setShowAlbanianFields(country === 'AL' || country === 'GR')
       } else {
         setError('Failed to load business settings')
       }
@@ -101,7 +330,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     }
   }
 
-  // Check slug availability when changed
+  // Check slug availability
   useEffect(() => {
     if (settings.slug && settings.slug !== originalSlug && settings.slug.length >= 3) {
       const timeoutId = setTimeout(checkSlugAvailability, 500)
@@ -137,7 +366,6 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     const { name, value, type } = e.target
     
     if (name === 'slug') {
-      // Clean slug input
       const cleanSlug = value
         .toLowerCase()
         .replace(/[^a-z0-9-]/g, '')
@@ -146,7 +374,23 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       setSettings(prev => ({ ...prev, [name]: cleanSlug }))
     } else if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
-      setSettings(prev => ({ ...prev, [name]: checked }))
+      
+      // Handle noIndex/isIndexable inverse relationship
+      if (name === 'noIndex') {
+        setSettings(prev => ({ 
+          ...prev, 
+          noIndex: checked,
+          isIndexable: !checked
+        }))
+      } else if (name === 'isIndexable') {
+        setSettings(prev => ({ 
+          ...prev, 
+          isIndexable: checked,
+          noIndex: !checked
+        }))
+      } else {
+        setSettings(prev => ({ ...prev, [name]: checked }))
+      }
     } else {
       setSettings(prev => ({ ...prev, [name]: value }))
     }
@@ -168,35 +412,54 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     }
   }, [settings.name, originalSlug, settings.slug])
 
-  const handleImageUpload = async (file: File, type: 'logo' | 'cover') => {
-    if (type === 'logo') setLogoUploading(true)
-    if (type === 'cover') setCoverUploading(true)
+  const uploadImageToSupabase = async (file: File, folder: string): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', folder)
+    formData.append('businessId', businessId)
+
+    const response = await fetch('/api/admin/upload', {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!response.ok) {
+      throw new Error('Upload failed')
+    }
+
+    const { publicUrl } = await response.json()
+    return publicUrl
+  }
+
+  const handleImageUpload = async (file: File, type: 'logo' | 'cover' | 'favicon' | 'ogImage') => {
+    const setUploading = {
+      logo: setLogoUploading,
+      cover: setCoverUploading,
+      favicon: setFaviconUploading,
+      ogImage: setOgImageUploading
+    }[type]
+    
+    setUploading(true)
     
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', type)
-
-      const response = await fetch(`/api/admin/stores/${businessId}/upload`, {
-        method: 'POST',
-        body: formData
-      })
-
-      if (response.ok) {
-        const { url } = await response.json()
-        setSettings(prev => ({ 
-          ...prev, 
-          [type === 'logo' ? 'logo' : 'coverImage']: url 
-        }))
-      } else {
-        throw new Error('Upload failed')
+      const url = await uploadImageToSupabase(file, type)
+      
+      const fieldMap = {
+        logo: 'logo',
+        cover: 'coverImage',
+        favicon: 'favicon',
+        ogImage: 'ogImage'
       }
+      
+      setSettings(prev => ({ 
+        ...prev, 
+        [fieldMap[type]]: url 
+      }))
     } catch (error) {
       console.error('Upload error:', error)
       setError('Failed to upload image')
     } finally {
-      if (type === 'logo') setLogoUploading(false)
-      if (type === 'cover') setCoverUploading(false)
+      setUploading(false)
     }
   }
 
@@ -205,7 +468,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       setError('Please choose a different store URL - this one is already taken')
       return
     }
-
+  
     setSaving(true)
     setError(null)
     
@@ -215,13 +478,21 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings)
       })
-
+  
       if (response.ok) {
         const data = await response.json()
         setSettings(data.business)
         setOriginalSlug(data.business.slug)
         setSlugAvailable(null)
+        
         // Show success message
+        setSuccessMessage({
+          title: 'Business Settings Updated',
+          description: 'Your business information has been saved successfully'
+        })
+  
+        // Hide success message after 5 seconds
+        setTimeout(() => setSuccessMessage(null), 5000)
       } else {
         const errorData = await response.json()
         throw new Error(errorData.message || 'Failed to save settings')
@@ -241,7 +512,6 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'GROCERY', label: 'Grocery Store' },
     { value: 'JEWELRY', label: 'Jewelry Store' },
     { value: 'FLORIST', label: 'Florist' },
-    { value: 'HEALTH_BEAUTY', label: 'Health & Beauty' },
     { value: 'OTHER', label: 'Other' }
   ]
 
@@ -250,6 +520,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'EUR', label: 'Euro (€)', symbol: '€' },
     { value: 'ALL', label: 'Albanian Lek (L)', symbol: 'L' },
     { value: 'GBP', label: 'British Pound (£)', symbol: '£' }
+  ]
+
+  const schemaTypes = [
+    { value: 'LocalBusiness', label: 'Local Business' },
+    { value: 'Restaurant', label: 'Restaurant' },
+    { value: 'Store', label: 'Store' },
+    { value: 'Organization', label: 'Organization' }
   ]
 
   const closureReasons = [
@@ -269,7 +546,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       <div className="animate-pulse space-y-6 p-6">
         <div className="h-8 bg-gray-200 rounded w-1/4"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-2">
               <div className="h-4 bg-gray-200 rounded w-1/3"></div>
               <div className="h-10 bg-gray-200 rounded"></div>
@@ -282,6 +559,31 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
 
   return (
     <div className="space-y-8">
+      {/* Success Message */}
+{successMessage && (
+  <div className="fixed top-4 right-4 z-50 max-w-md">
+    <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <CheckCircle className="w-4 h-4 text-green-600" />
+        </div>
+        <div className="flex-1">
+          <h4 className="font-medium text-gray-900">{successMessage.title}</h4>
+          {successMessage.description && (
+            <p className="text-sm text-gray-600 mt-1">{successMessage.description}</p>
+          )}
+        </div>
+        <button
+          onClick={() => setSuccessMessage(null)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -381,6 +683,23 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 />
               </div>
 
+              {/* Albanian Description - Show for AL, GR, IT */}
+              {settings.language === 'sq' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description (Albanian)
+                  </label>
+                  <textarea
+                    name="descriptionAl"
+                    value={settings.descriptionAl || ''}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    placeholder="Përshkrini biznesin tuaj në shqip..."
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Business Type
@@ -416,6 +735,27 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   ))}
                 </select>
               </div>
+
+              <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Language
+  </label>
+  <select
+    name="language"
+    value={settings.language}
+    onChange={handleInputChange}
+    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+  >
+    <option value="en">English</option>
+    {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
+      <option value="sq">Albanian (Shqip)</option>
+    )}
+    {detectedCountry === 'GR' && <option value="el">Greek (Ελληνικά)</option>}
+    {(detectedCountry === 'IT' || detectedCountry === 'GR') && (
+      <option value="it">Italian (Italiano)</option>
+    )}
+  </select>
+</div>
             </div>
           </div>
 
@@ -431,14 +771,12 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Business Address <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  name="address"
+                <AddressAutocomplete
                   value={settings.address || ''}
-                  onChange={handleInputChange}
-                  rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                  placeholder="Full business address including city, state/province, and postal code"
-                  required
+                  onChange={(address) => setSettings(prev => ({ ...prev, address }))}
+                  placeholder="Enter your full business address"
+                  required={true}
+                  businessData={settings}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Required for delivery zones and customer directions
@@ -446,19 +784,21 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={settings.phone || ''}
-                  onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                  placeholder="+1234567890"
-                />
-              </div>
-
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Phone Number
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={settings.phone || ''}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                placeholder="Enter your business phone number"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This phone number is for general business communication and customer inquiries. It doesn't need to be a WhatsApp number - you can use the same number as your WhatsApp if you prefer, or use a different regular phone number.
+              </p>
+            </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email Address
@@ -491,10 +831,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
 
           {/* Store Closure Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
               <Calendar className="w-5 h-5 text-teal-600 mr-2" />
               Store Status & Closure
             </h2>
+            <p className="text-sm text-gray-600 mb-3">
+              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new orders.
+            </p>
 
             <div className="space-y-6">
               <div className="flex items-center">
@@ -604,9 +947,10 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                   placeholder="Custom page title for search engines"
+                  maxLength={60}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to use "{settings.name} - Order Online"
+                  Leave empty to use "{settings.name} - Order Online" ({settings.seoTitle?.length || 0}/60 characters)
                 </p>
               </div>
 
@@ -621,7 +965,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   rows={2}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                   placeholder="Brief description for search engines (150-160 characters)"
+                  maxLength={160}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {settings.seoDescription?.length || 0}/160 characters
+                </p>
               </div>
 
               <div>
@@ -638,20 +986,8 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 />
               </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="isIndexable"
-                  checked={settings.isIndexable}
-                  onChange={handleInputChange}
-                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                />
-                <label className="ml-2 text-sm text-gray-700">
-                  Allow search engines to index this store
-                </label>
-              </div>
-
-              {showSeoAdvanced && (
+              {/* Albanian SEO Fields */}
+              {settings.language === 'sq' && (
                 <div className="space-y-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <h3 className="text-sm font-medium text-gray-900">Albanian SEO (Optional)</h3>
                   
@@ -666,7 +1002,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                       placeholder="Titulli për motorët e kërkimit në shqip"
+                      maxLength={60}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {settings.seoTitleAl?.length || 0}/60 characters
+                    </p>
                   </div>
 
                   <div>
@@ -680,7 +1020,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       rows={2}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                       placeholder="Përshkrimi i shkurtër për motorët e kërkimit"
+                      maxLength={160}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {settings.seoDescriptionAl?.length || 0}/160 characters
+                    </p>
                   </div>
 
                   <div>
@@ -698,12 +1042,124 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   </div>
                 </div>
               )}
+
+              {/* Search Engine Visibility */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-900">Search Engine Visibility</h3>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="isIndexable"
+                    checked={settings.isIndexable}
+                    onChange={handleInputChange}
+                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Allow search engines to index this store
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="noIndex"
+                    checked={settings.noIndex}
+                    onChange={handleInputChange}
+                    className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Hide from search engines (noindex)
+                  </label>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="noFollow"
+                    checked={settings.noFollow}
+                    onChange={handleInputChange}
+                    className="rounded border-gray-300 text-gray-600 focus:ring-gray-500"
+                  />
+                  <label className="ml-2 text-sm text-gray-700">
+                    Don't follow links (nofollow)
+                  </label>
+                </div>
+              </div>
+
+              {showSeoAdvanced && (
+                <div className="space-y-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-900 flex items-center">
+                    <Code className="w-4 h-4 mr-2" />
+                    Advanced SEO Settings
+                  </h3>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Canonical URL
+                    </label>
+                    <input
+                      type="url"
+                      name="canonicalUrl"
+                      value={settings.canonicalUrl || ''}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      placeholder="https://waveorder.app/your-store"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave empty to use default URL
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Schema.org Type
+                    </label>
+                    <select
+                      name="schemaType"
+                      value={settings.schemaType || 'LocalBusiness'}
+                      onChange={handleInputChange}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    >
+                      {schemaTypes.map(type => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Additional Schema Data (JSON)
+                    </label>
+                    <textarea
+                      name="schemaData"
+                      value={settings.schemaData ? JSON.stringify(settings.schemaData, null, 2) : ''}
+                      onChange={(e) => {
+                        try {
+                          const data = e.target.value ? JSON.parse(e.target.value) : null
+                          setSettings(prev => ({ ...prev, schemaData: data }))
+                        } catch {
+                          // Invalid JSON, keep the text value for user to fix
+                        }
+                      }}
+                      rows={4}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm font-mono"
+                      placeholder='{"additionalType": "Restaurant", "cuisine": "Italian"}'
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Valid JSON format for additional structured data
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-       {/* Sidebar - Images */}
-       <div className="space-y-6">
+        {/* Sidebar - Images */}
+        <div className="space-y-6">
           {/* Logo Upload */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -793,6 +1249,107 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             )}
           </div>
 
+          {/* Favicon Upload */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+              <LinkIcon className="w-5 h-5 text-teal-600 mr-2" />
+              Favicon
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+  A favicon is the small icon that appears in browser tabs, bookmarks, and search results. It helps customers recognize your store across different platforms.
+</p>
+
+
+           
+            
+            {settings.favicon ? (
+              <div className="relative">
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={settings.favicon}
+                    alt="Favicon"
+                    className="w-8 h-8 object-contain bg-gray-50 rounded border border-gray-200"
+                  />
+                  <span className="text-sm text-gray-600">favicon.ico</span>
+                  <button
+                    onClick={() => setSettings(prev => ({ ...prev, favicon: undefined }))}
+                    className="p-1 bg-red-600 text-white rounded-full hover:bg-red-700 ml-auto"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <LinkIcon className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-600 mb-2">Upload favicon (16x16 or 32x32)</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageUpload(file, 'favicon')
+                  }}
+                  className="hidden"
+                  id="favicon-upload"
+                />
+                <label
+                  htmlFor="favicon-upload"
+                  className="inline-flex items-center px-2 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700 cursor-pointer"
+                >
+                  <Upload className="w-3 h-3 mr-1" />
+                  {faviconUploading ? 'Uploading...' : 'Choose'}
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* OG Image Upload */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Social Share Image (OG)</h3>
+            
+            {settings.ogImage ? (
+              <div className="relative">
+                <img
+                  src={settings.ogImage}
+                  alt="Open Graph image"
+                  className="w-full h-24 object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => setSettings(prev => ({ ...prev, ogImage: undefined }))}
+                  className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                <ImageIcon className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-xs text-gray-600 mb-2">1200x630 recommended</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleImageUpload(file, 'ogImage')
+                  }}
+                  className="hidden"
+                  id="og-upload"
+                />
+                <label
+                  htmlFor="og-upload"
+                  className="inline-flex items-center px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 cursor-pointer"
+                >
+                  <Upload className="w-3 h-3 mr-1" />
+                  {ogImageUploading ? 'Uploading...' : 'Choose'}
+                </label>
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Used when your store is shared on social media
+            </p>
+          </div>
+
           {/* Store Preview */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Store Preview</h3>
@@ -808,6 +1365,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               <div className="text-xs text-gray-500">
                 Store URL: waveorder.app/{settings.slug || 'your-store'}
               </div>
+              {settings.canonicalUrl && (
+                <div className="text-xs text-blue-600">
+                  Canonical: {settings.canonicalUrl}
+                </div>
+              )}
             </div>
           </div>
 
@@ -816,12 +1378,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             <div className="flex items-start">
               <Info className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-blue-700">
-                <p className="font-medium mb-1">Important Notes:</p>
+                <p className="font-medium mb-1">SEO Tips:</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• Address is required for delivery zones</li>
-                  <li>• URL changes affect existing links</li>
-                  <li>• SEO changes may take time to reflect</li>
-                  <li>• Store closure affects all customer access</li>
+                  <li>• Use descriptive titles (50-60 characters)</li>
+                  <li>• Write compelling meta descriptions</li>
+                  <li>• Include location-based keywords</li>
+                  <li>• Upload high-quality images</li>
+                  <li>• Keep your address accurate and complete</li>
                 </ul>
               </div>
             </div>

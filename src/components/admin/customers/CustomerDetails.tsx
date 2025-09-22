@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, DollarSign } from 'lucide-react'
+import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet } from 'lucide-react'
 import Link from 'next/link'
 
 interface CustomerDetailsProps {
@@ -226,7 +226,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-green-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-green-600" />
+              <Wallet className="w-5 h-5 text-green-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Spent</p>
@@ -238,7 +238,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-purple-600" />
+              <Wallet className="w-5 h-5 text-purple-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Avg Order Value</p>

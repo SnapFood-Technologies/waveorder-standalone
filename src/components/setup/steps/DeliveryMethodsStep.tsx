@@ -7,7 +7,6 @@ import {
   Truck, 
   Store, 
   UtensilsCrossed, 
-  DollarSign, 
   Clock, 
   MapPin,
   Package,

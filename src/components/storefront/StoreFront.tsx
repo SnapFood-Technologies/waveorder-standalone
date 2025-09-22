@@ -15,7 +15,6 @@ import {
   Info,
   Package,
   AlertCircle,
-  DollarSign,
   CalendarClock,
   AlertTriangle,
   ChevronDown,
@@ -1572,7 +1571,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
               <div className="space-y-2 sm:space-y-0">
                 {/* Address */}
                 {storeData.address && (
-                  <div className="flex items-center gap-1 text-gray-600">
+                  <div className="flex items-center gap-1 mb-1 text-gray-600">
                     <MapPin className="w-4 h-4 flex-shrink-0" />
                     <span className="text-sm">{storeData.address}</span>
                   </div>
@@ -2138,16 +2137,12 @@ function ProductCard({
               </div>
   
               {/* Stock info */}
-              <div className="h-4 mt-2">
-                {product.stock <= 5 && product.stock > 0 && (
-                  <p className="text-orange-600 text-xs">
-                    {translations.onlyLeft || 'Only'} {product.stock} {translations.left || 'left'}
-                  </p>
-                )}
                 {product.stock === 0 && (
+                  <div className="h-4 mt-2">
                   <p className="text-red-600 text-xs">{translations.outOfStock || 'Out of stock'}</p>
+                  </div>
                 )}
-              </div>
+              
             </div>
           </div>
           

@@ -15,7 +15,6 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  DollarSign,
   Hash,
   Settings,
   BarChart3,

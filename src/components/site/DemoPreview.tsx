@@ -5,7 +5,6 @@ import {
   MapPin,
   Clock,
   Package,
-  DollarSign,
   Store,
   Share2,
   Info
@@ -146,7 +145,7 @@ export default function DemoPreview() {
                   <span>20-30 min</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3" />
+                  <Package className="w-3 h-3" />
                   <span>Free delivery</span>
                 </div>
               </div>
