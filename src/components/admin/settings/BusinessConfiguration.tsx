@@ -30,12 +30,11 @@ interface DeliveryMethod {
 }
 
 interface PaymentMethod {
-  cash: boolean
-  bankTransfer: boolean
-  stripe: boolean
-  paypal: boolean
-  bkt: boolean
-  mobileWallet: boolean
+  id: string
+  name: string
+  description: string
+  available: boolean
+  comingSoon?: boolean
 }
 
 interface WhatsAppSettings {
@@ -48,10 +47,14 @@ interface WhatsAppSettings {
 
 interface BusinessConfig {
   deliveryMethods: DeliveryMethod
-  paymentMethods: PaymentMethod
+  paymentMethods: string[]
   paymentInstructions: string
   whatsappSettings: WhatsAppSettings
   whatsappNumber: string
+}
+
+interface Business {
+  currency: string
 }
 
 export function BusinessConfiguration({ businessId }: BusinessConfigurationProps) {
@@ -65,7 +68,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       estimatedDeliveryTime: '30-45 minutes',
       estimatedPickupTime: '15-20 minutes'
     },
-    paymentMethods: ['CASH'], // Array like onboarding
+    paymentMethods: ['CASH'],
     paymentInstructions: '',
     whatsappSettings: {
       orderNumberFormat: 'WO-{number}',
@@ -76,7 +79,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     },
     whatsappNumber: ''
   })
-
+  
+  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('delivery')
@@ -87,10 +91,19 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   const fetchConfiguration = async () => {
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/configuration`)
-      if (response.ok) {
-        const data = await response.json()
+      const [configResponse, businessResponse] = await Promise.all([
+        fetch(`/api/admin/stores/${businessId}/configuration`),
+        fetch(`/api/admin/stores/${businessId}`)
+      ])
+
+      if (configResponse.ok) {
+        const data = await configResponse.json()
         setConfig(data.configuration)
+      }
+
+      if (businessResponse.ok) {
+        const data = await businessResponse.json()
+        setBusiness({ currency: data.business.currency })
       }
     } catch (error) {
       console.error('Error fetching configuration:', error)
@@ -142,55 +155,89 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     }))
   }
 
-  // Available payment methods (like onboarding)
-  const availablePaymentMethods: PaymentMethod[] = [
-    {
-      id: 'CASH',
-      name: 'Cash',
-      description: 'Customer pays with cash when order is delivered/picked up',
-      available: true
+  // Get currency-specific payment methods
+  const getCurrencyPaymentMethods = () => {
+    const currencyNames = {
+      USD: 'US Dollars',
+      EUR: 'Euros', 
+      ALL: 'Albanian Lek'
     }
-  ]
 
-  // Coming soon payment methods (like onboarding)
-  const comingSoonPaymentMethods: PaymentMethod[] = [
-    {
-      id: 'STRIPE',
-      name: 'Credit/Debit Cards',
-      description: 'Accept card payments via Stripe',
-      available: false,
-      comingSoon: true
-    },
-    {
-      id: 'PAYPAL',
-      name: 'PayPal',
-      description: 'Accept PayPal payments',
-      available: false,
-      comingSoon: true
-    },
-    {
-      id: 'BANK_TRANSFER',
-      name: 'Bank Transfer',
-      description: 'Direct bank transfers',
-      available: false,
-      comingSoon: true
-    },
-    {
-      id: 'BKT',
-      name: 'BKT Payment',
-      description: 'Accept payments via Bank of Tirana',
-      available: false,
-      comingSoon: true
-    },
-    {
-      id: 'MOBILE_WALLET',
-      name: 'Mobile Wallets',
-      description: 'Apple Pay, Google Pay, and other mobile wallets',
-      available: false,
-      comingSoon: true
+    const availablePaymentMethods: PaymentMethod[] = [
+      {
+        id: 'CASH',
+        name: 'Cash',
+        description: `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
+        available: true
+      }
+    ]
+
+    const comingSoonPaymentMethods: PaymentMethod[] = [
+      {
+        id: 'STRIPE',
+        name: 'Credit/Debit Cards',
+        description: `Accept card payments in ${business.currency} via Stripe`,
+        available: false,
+        comingSoon: true
+      },
+      {
+        id: 'PAYPAL',
+        name: 'PayPal',
+        description: `Accept PayPal payments in ${business.currency}`,
+        available: false,
+        comingSoon: true
+      },
+      {
+        id: 'BANK_TRANSFER',
+        name: 'Bank Transfer',
+        description: `Direct bank transfers in ${business.currency}`,
+        available: false,
+        comingSoon: true
+      }
+    ]
+
+    // Add Albania-specific payment methods only for ALL currency
+    if (business.currency === 'ALL') {
+      comingSoonPaymentMethods.push({
+        id: 'BKT',
+        name: 'BKT Payment',
+        description: 'Accept payments via Bank of Tirana',
+        available: false,
+        comingSoon: true
+      })
     }
-  ]
 
+    // Add mobile wallet based on currency
+    if (business.currency === 'USD') {
+      comingSoonPaymentMethods.push({
+        id: 'MOBILE_WALLET',
+        name: 'Mobile Wallets',
+        description: 'Apple Pay, Google Pay, and other mobile wallets',
+        available: false,
+        comingSoon: true
+      })
+    } else if (business.currency === 'EUR') {
+      comingSoonPaymentMethods.push({
+        id: 'MOBILE_WALLET',
+        name: 'Mobile Wallets', 
+        description: 'Apple Pay, Google Pay, and European mobile wallets',
+        available: false,
+        comingSoon: true
+      })
+    } else if (business.currency === 'ALL') {
+      comingSoonPaymentMethods.push({
+        id: 'MOBILE_WALLET',
+        name: 'Mobile Wallets',
+        description: 'Local Albanian mobile payment solutions',
+        available: false,
+        comingSoon: true
+      })
+    }
+
+    return { availablePaymentMethods, comingSoonPaymentMethods }
+  }
+
+  const { availablePaymentMethods, comingSoonPaymentMethods } = getCurrencyPaymentMethods()
 
   const sections = [
     { id: 'delivery', name: 'Delivery Methods', icon: Truck },
@@ -215,44 +262,51 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Business Configuration</h2>
-          <p className="text-gray-600 mt-1">
+      {/* Header - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+            Business Configuration
+          </h2>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
             Manage your delivery methods, payment options, and communication settings
           </p>
         </div>
         <button
           onClick={saveConfiguration}
           disabled={saving}
-          className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 text-sm font-medium whitespace-nowrap"
         >
           <Save className="w-4 h-4 mr-2" />
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        {sections.map((section) => (
-          <button
-            key={section.id}
-            onClick={() => setActiveSection(section.id)}
-            className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeSection === section.id
-                ? 'bg-white text-teal-700 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <section.icon className="w-4 h-4 mr-2" />
-            {section.name}
-          </button>
-        ))}
+      {/* Navigation Tabs - Mobile Responsive with Horizontal Scroll */}
+      <div className="bg-gray-100 p-1 rounded-lg">
+        <div className="flex space-x-1 overflow-x-auto pb-1 scrollbar-hide">
+          {sections.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              className={`flex items-center px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+                activeSection === section.id
+                  ? 'bg-white text-teal-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <section.icon className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">{section.name}</span>
+              <span className="sm:hidden">
+                {section.name.split(' ')[0]}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content Sections */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         {activeSection === 'delivery' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -260,8 +314,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               Delivery Methods
             </h3>
 
-            {/* Service Types */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Service Types - Mobile Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-medium text-gray-900">Delivery</h4>
@@ -287,19 +341,6 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                 </div>
                 <p className="text-sm text-gray-600">Customers collect orders from store</p>
               </div>
-
-              <div className="border border-gray-200 rounded-lg p-4 opacity-50">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Dine-In</h4>
-                  <input
-                    type="checkbox"
-                    checked={false}
-                    disabled
-                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
-                </div>
-                <p className="text-sm text-gray-600">Coming in v2.0</p>
-              </div>
             </div>
 
             {/* Delivery Settings */}
@@ -307,10 +348,10 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900">Delivery Settings</h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Delivery Fee ($)
+                      Delivery Fee ({business.currency})
                     </label>
                     <input
                       type="number"
@@ -320,7 +361,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       })}
                       min="0"
                       step="0.01"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     />
                   </div>
 
@@ -336,11 +377,11 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       })}
                       min="1"
                       max="50"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     />
                   </div>
 
-                  <div>
+                  <div className="sm:col-span-2 lg:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Estimated Delivery Time
                     </label>
@@ -351,7 +392,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         estimatedDeliveryTime: e.target.value 
                       })}
                       placeholder="e.g., 30-45 minutes"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     />
                   </div>
                 </div>
@@ -375,7 +416,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         estimatedPickupTime: e.target.value 
                       })}
                       placeholder="e.g., 15-20 minutes"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     />
                   </div>
                 </div>
@@ -396,16 +437,16 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               <h4 className="text-base font-semibold text-gray-900">Available Now</h4>
               {availablePaymentMethods.map((method) => (
                 <div key={method.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start sm:items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                       <h4 className="font-medium text-gray-900">{method.name}</h4>
-                      <p className="text-sm text-gray-600">{method.description}</p>
+                      <p className="text-sm text-gray-600 mt-1">{method.description}</p>
                     </div>
                     <input
                       type="checkbox"
                       checked={config.paymentMethods.includes(method.id)}
                       onChange={(e) => updatePaymentMethods(method.id, e.target.checked)}
-                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 flex-shrink-0"
                     />
                   </div>
                 </div>
@@ -414,20 +455,20 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
             {/* Coming Soon */}
             <div className="space-y-4">
-              <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <h4 className="text-base font-semibold text-gray-900 flex flex-wrap items-center gap-2">
                 <span>Coming Soon</span>
-                <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full whitespace-nowrap">
                   Future Updates
                 </span>
               </h4>
               {comingSoonPaymentMethods.map((method) => (
                 <div key={method.id} className="border border-gray-200 rounded-lg p-4 opacity-60">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-start sm:items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                       <h4 className="font-medium text-gray-700">{method.name}</h4>
-                      <p className="text-sm text-gray-500">{method.description}</p>
+                      <p className="text-sm text-gray-500 mt-1">{method.description}</p>
                     </div>
-                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                    <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
                       Coming Soon
                     </span>
                   </div>
@@ -447,7 +488,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                 }))}
                 rows={4}
                 placeholder="Enter special payment instructions for customers..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
               />
             </div>
           </div>
@@ -460,13 +501,13 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               WhatsApp Settings
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   WhatsApp Number
                 </label>
                 <div className="flex items-center">
-                  <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                  <Phone className="w-4 h-4 text-gray-400 mr-2 flex-shrink-0" />
                   <input
                     type="text"
                     value={config.whatsappNumber}
@@ -475,7 +516,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       whatsappNumber: e.target.value 
                     }))}
                     placeholder="+1234567890"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>
@@ -489,7 +530,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                   onChange={(e) => updateWhatsAppSettings({ 
                     orderNumberFormat: e.target.value 
                   })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                 >
                   <option value="WO-{number}">WO-001, WO-002, ...</option>
                   <option value="ORD-{number}">ORD-001, ORD-002, ...</option>
@@ -510,20 +551,20 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                 })}
                 rows={3}
                 placeholder="Welcome! How can I help you today?"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
               />
             </div>
 
-            <div className="flex items-center">
+            <div className="flex items-start sm:items-center gap-3">
               <input
                 type="checkbox"
                 checked={config.whatsappSettings.autoReply}
                 onChange={(e) => updateWhatsAppSettings({ 
                   autoReply: e.target.checked 
                 })}
-                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5 sm:mt-0 flex-shrink-0"
               />
-              <label className="ml-2 text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-gray-700">
                 Enable auto-reply messages
               </label>
             </div>
@@ -540,7 +581,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                   })}
                   rows={3}
                   placeholder="Thanks for your message! We'll get back to you soon."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                 />
               </div>
             )}
@@ -551,6 +592,17 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           <DeliveryZonesManagement businessId={businessId} />
         )}
       </div>
+
+      {/* Custom CSS for hiding scrollbar */}
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   )
 }
