@@ -3,17 +3,18 @@
 
 import CustomerForm from '@/components/admin/customers/CustomerForm'
 import { useRouter } from 'next/navigation'
+import { use } from 'react'
 
 interface EditCustomerPageProps {
-  params: {
+  params: Promise<{
     businessId: string
     customerId: string
-  }
+  }>
 }
 
 export default function EditCustomerPage({ params }: EditCustomerPageProps) {
   const router = useRouter()
-  const { businessId, customerId } = params
+  const { businessId, customerId } = use(params)
 
   const handleSuccess = () => {
     // Redirect back to customer details after successful edit
