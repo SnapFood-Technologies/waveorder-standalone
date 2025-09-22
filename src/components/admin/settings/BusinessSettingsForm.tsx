@@ -345,7 +345,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     
     setCheckingSlug(true)
     try {
-      const response = await fetch('/api/admin/check-slug', {
+      const response = await fetch('/api/setup/check-slug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

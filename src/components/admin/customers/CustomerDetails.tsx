@@ -532,11 +532,11 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         <div className="text-gray-600">
                           {customer.addressJson.country}
                         </div>
-                        {(customer.addressJson.latitude && customer.addressJson.longitude) && (
+                        {/* {(customer.addressJson.latitude && customer.addressJson.longitude) && (
                           <div className="text-xs text-gray-500 pt-2 border-t border-gray-200">
                             Coordinates: {customer.addressJson.latitude.toFixed(6)}, {customer.addressJson.longitude.toFixed(6)}
                           </div>
-                        )}
+                        )} */}
                       </div>
                     </div>
                   </div>

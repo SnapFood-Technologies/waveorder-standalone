@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, Wallet } from 'lucide-react'
+import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertCircle, CheckCircle, Globe, Wallet, X } from 'lucide-react'
 
 interface CustomerFormProps {
   businessId: string
@@ -34,6 +34,12 @@ interface ValidationErrors {
   street?: string
   city?: string
   zipCode?: string
+  country?: string
+}
+
+interface SuccessMessage {
+  type: 'create' | 'update'
+  customerName: string
 }
 
 // Fixed Country configurations with correct patterns
@@ -108,6 +114,19 @@ const OTHER_COUNTRIES = [
   { code: 'CA', prefix: '+1', flag: '🇨🇦', name: 'Canada', placeholder: '(555) 123-4567' },
 ]
 
+// Country options for address
+const ADDRESS_COUNTRIES = [
+  { code: 'AL', name: 'Albania', flag: '🇦🇱' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' },
+  { code: 'GR', name: 'Greece', flag: '🇬🇷' },
+  { code: 'IT', name: 'Italy', flag: '🇮🇹' },
+  { code: 'FR', name: 'France', flag: '🇫🇷' },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+  { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  { code: 'UK', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'CA', name: 'Canada', flag: '🇨🇦' }
+]
+
 // Fixed country detection
 function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS | 'OTHER' {
   // PRIMARY: Check business coordinates
@@ -165,12 +184,106 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   return 'OTHER'
 }
 
+// Enhanced address parsing for Albanian and Greek formats
+function parseAddressComponents(place: any): any {
+  const addressComponents = place.address_components || []
+  const parsedAddress = {
+    street: '',
+    city: '',
+    zipCode: '',
+    country: '',
+    cleanStreet: '' // Clean street without city/country/zip
+  }
+
+  // Extract components
+  addressComponents.forEach((component: any) => {
+    const types = component.types
+    
+    if (types.includes('street_number') || types.includes('route')) {
+      if (types.includes('street_number')) {
+        parsedAddress.street = component.long_name + ' ' + parsedAddress.street
+      } else if (types.includes('route')) {
+        parsedAddress.street = parsedAddress.street + component.long_name
+      }
+    }
+    
+    if (types.includes('locality') || types.includes('administrative_area_level_2')) {
+      parsedAddress.city = component.long_name
+    }
+    
+    if (types.includes('postal_code')) {
+      parsedAddress.zipCode = component.long_name
+    }
+    
+    if (types.includes('country')) {
+      parsedAddress.country = component.short_name?.toLowerCase() || component.long_name
+    }
+  })
+
+  // Enhanced parsing for Albanian/Greek addresses
+  const formattedAddress = place.formatted_address
+  
+  // If no street found in components, extract from formatted address
+  if (!parsedAddress.street.trim() && formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    if (addressParts.length > 0) {
+      parsedAddress.street = addressParts[0]
+    }
+  }
+
+  // Enhanced ZIP code extraction for Albanian/Greek formats
+  if (!parsedAddress.zipCode && formattedAddress) {
+    // Albanian format: "Rruga Sami Frashëri 1001, Tiranë, Albania"
+    // Greek format: "Aggeletopoulou, Dafni 172 34, Greece"
+    
+    const zipMatches = formattedAddress.match(/\b\d{3,5}\s?\d{0,2}\b/g)
+    if (zipMatches) {
+      // Get the last numeric sequence (most likely to be postal code)
+      const lastMatch = zipMatches[zipMatches.length - 1]
+      parsedAddress.zipCode = lastMatch.replace(/\s+/g, ' ').trim()
+    }
+  }
+
+  // Enhanced city extraction
+  if (!parsedAddress.city && formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    
+    // For Albanian: Usually second part contains city
+    // For Greek: City is often before the postal code
+    if (addressParts.length >= 2) {
+      let cityPart = addressParts[1]
+      
+      // Remove postal code from city part if present
+      cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+      
+      if (cityPart) {
+        parsedAddress.city = cityPart
+      }
+    }
+  }
+
+  // Create clean street address (just the street part, no city/zip/country)
+  if (formattedAddress) {
+    const addressParts = formattedAddress.split(',').map((part: string) => part.trim())
+    // First part is usually just the street
+    parsedAddress.cleanStreet = addressParts[0] || parsedAddress.street
+    
+    // Remove any postal codes that might be in the street part
+    parsedAddress.cleanStreet = parsedAddress.cleanStreet.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+  } else {
+    parsedAddress.cleanStreet = parsedAddress.street
+  }
+
+  return parsedAddress
+}
+
 // Fixed Phone Input Component
-function PhoneInput({ value, onChange, storeData, error }: {
+function PhoneInput({ value, onChange, storeData, error, onErrorChange }: {
   value: string
   onChange: (phone: string) => void
   storeData: any
   error?: string
+  onErrorChange?: (field: string, error: string | undefined) => void
 }) {
   const [selectedCountry, setSelectedCountry] = useState<keyof typeof COUNTRY_CONFIGS | 'OTHER'>('US')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -223,11 +336,15 @@ function PhoneInput({ value, onChange, storeData, error }: {
     setHasUserInput(true)
     onChange(prefix + ' ')
     setShowDropdown(false)
+    // Clear error when user starts interacting
+    if (onErrorChange) onErrorChange('phone', undefined)
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setHasUserInput(true)
     onChange(e.target.value)
+    // Clear error when user starts typing
+    if (onErrorChange) onErrorChange('phone', undefined)
   }
 
   const getPlaceholder = () => {
@@ -366,7 +483,8 @@ function AddressAutocomplete({
   onLocationChange,
   onAddressParsed,
   storeData,
-  error
+  error,
+  onErrorChange
 }: {
   value: string
   onChange: (address: string) => void
@@ -376,6 +494,7 @@ function AddressAutocomplete({
   onAddressParsed?: (parsedAddress: any) => void
   storeData?: any
   error?: string
+  onErrorChange?: (field: string, error: string | undefined) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const { isLoaded } = useGooglePlaces()
@@ -417,48 +536,8 @@ function AddressAutocomplete({
           const lat = place.geometry.location.lat()
           const lng = place.geometry.location.lng()
           
-          // Parse address components
-          const addressComponents = place.address_components || []
-          const parsedAddress = {
-            street: '',
-            city: '',
-            zipCode: '',
-            country: ''
-          }
-
-          // Extract components
-          addressComponents.forEach((component: any) => {
-            const types = component.types
-            
-            if (types.includes('street_number') || types.includes('route')) {
-              if (types.includes('street_number')) {
-                parsedAddress.street = component.long_name + ' ' + parsedAddress.street
-              } else if (types.includes('route')) {
-                parsedAddress.street = parsedAddress.street + component.long_name
-              }
-            }
-            
-            if (types.includes('locality') || types.includes('administrative_area_level_2')) {
-              parsedAddress.city = component.long_name
-            }
-            
-            if (types.includes('postal_code')) {
-              parsedAddress.zipCode = component.long_name
-            }
-            
-            if (types.includes('country')) {
-              parsedAddress.country = component.long_name
-            }
-          })
-
-          // Fallback for street if not found in components
-          if (!parsedAddress.street.trim()) {
-            // Extract street from formatted address
-            const addressParts = place.formatted_address.split(',')
-            if (addressParts.length > 0) {
-              parsedAddress.street = addressParts[0].trim()
-            }
-          }
+          // Enhanced address parsing
+          const parsedAddress = parseAddressComponents(place)
 
           // Update the input value
           onChange(place.formatted_address)
@@ -483,6 +562,12 @@ function AddressAutocomplete({
     }
   }, [isLoaded, onChange, onLocationChange, onAddressParsed, storeData])
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value)
+    // Clear error when user starts typing
+    if (onErrorChange) onErrorChange('street', undefined)
+  }
+
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -494,7 +579,7 @@ function AddressAutocomplete({
           type="text"
           required={required}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
             error ? 'border-red-300' : 'border-gray-300'
           }`}
@@ -530,7 +615,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
       additional: '',
       zipCode: '',
       city: '',
-      country: 'USA'
+      country: 'US'
     },
     tags: [],
     notes: '',
@@ -542,8 +627,20 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
   const [isLoading, setIsLoading] = useState(!!customerId)
   const [currentTag, setCurrentTag] = useState('')
   const [storeData, setStoreData] = useState<any>({})
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
 
   const isEditMode = !!customerId
+
+  // Function to clear specific field errors
+  const clearFieldError = (field: string, error: string | undefined) => {
+    if (!error) {
+      setErrors(prev => {
+        const newErrors = { ...prev }
+        delete newErrors[field as keyof ValidationErrors]
+        return newErrors
+      })
+    }
+  }
 
   // Load existing customer data for edit mode
   useEffect(() => {
@@ -567,7 +664,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
               additional: '',
               zipCode: '',
               city: '',
-              country: 'USA'
+              country: 'US'
             },
             tags: customer.tags || [],
             notes: customer.notes || '',
@@ -636,6 +733,9 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
       if (!formData.addressJson.zipCode.trim()) {
         newErrors.zipCode = 'ZIP code is required when address is provided'
       }
+      if (!formData.addressJson.country.trim()) {
+        newErrors.country = 'Country is required when address is provided'
+      }
     }
 
     setErrors(newErrors)
@@ -671,7 +771,17 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
       })
 
       if (response.ok) {
-        onSuccess?.()
+        // Show success message
+        setSuccessMessage({
+          type: isEditMode ? 'update' : 'create',
+          customerName: formData.name.trim()
+        })
+
+        // Hide success message after 5 seconds and call onSuccess
+        setTimeout(() => {
+          setSuccessMessage(null)
+          onSuccess?.()
+        }, 3000)
       } else {
         const data = await response.json()
         if (data.message?.includes('phone')) {
@@ -718,7 +828,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
         ...prev.addressJson,
         city: parsedAddress.city || prev.addressJson.city,
         zipCode: parsedAddress.zipCode || prev.addressJson.zipCode,
-        country: parsedAddress.country || prev.addressJson.country
+        country: parsedAddress.country ? parsedAddress.country.toUpperCase() : prev.addressJson.country
       }
     }))
   }
@@ -749,6 +859,33 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">
+                  Customer {successMessage.type === 'create' ? 'Created' : 'Updated'} Successfully
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  {successMessage.customerName} has been {successMessage.type === 'create' ? 'added to' : 'updated in'} your customer database
+                </p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Form - 3/4 width */}
         <div className="lg:col-span-3">
@@ -795,7 +932,10 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, name: e.target.value }))
+                        clearFieldError('name', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.name ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -810,6 +950,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                       onChange={(phone) => setFormData(prev => ({ ...prev, phone }))}
                       storeData={storeData}
                       error={errors.phone}
+                      onErrorChange={clearFieldError}
                     />
                   </div>
 
@@ -822,7 +963,10 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                       <input
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) => {
+                          setFormData(prev => ({ ...prev, email: e.target.value }))
+                          clearFieldError('email', undefined)
+                        }}
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                           errors.email ? 'border-red-300' : 'border-gray-300'
                         }`}
@@ -880,6 +1024,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                       required={false}
                       storeData={storeData}
                       error={errors.street}
+                      onErrorChange={clearFieldError}
                       onLocationChange={(lat, lng, address) => {
                         setFormData(prev => ({
                           ...prev,
@@ -917,10 +1062,13 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     <input
                       type="text"
                       value={formData.addressJson.city}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        addressJson: { ...prev.addressJson, city: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, city: e.target.value }
+                        }))
+                        clearFieldError('city', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.city ? 'border-red-300' : 'border-gray-300'
                       }`}
@@ -936,16 +1084,45 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     <input
                       type="text"
                       value={formData.addressJson.zipCode}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        addressJson: { ...prev.addressJson, zipCode: e.target.value }
-                      }))}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, zipCode: e.target.value }
+                        }))
+                        clearFieldError('zipCode', undefined)
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
                         errors.zipCode ? 'border-red-300' : 'border-gray-300'
                       }`}
                       placeholder="12345"
                     />
                     {errors.zipCode && <p className="text-red-600 text-sm mt-1">{errors.zipCode}</p>}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <select
+                      value={formData.addressJson.country}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          addressJson: { ...prev.addressJson, country: e.target.value }
+                        }))
+                        clearFieldError('country', undefined)
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                        errors.country ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    >
+                      {ADDRESS_COUNTRIES.map(country => (
+                        <option key={country.code} value={country.code}>
+                          {country.flag} {country.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.country && <p className="text-red-600 text-sm mt-1">{errors.country}</p>}
                   </div>
                 </div>
               </div>
