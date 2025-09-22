@@ -212,6 +212,10 @@ export async function GET(
       closureStartDate: business.closureStartDate?.toISOString(),
       // @ts-ignore
       closureEndDate: business.closureEndDate?.toISOString(),
+
+      storeLatitude: business.storeLatitude,
+      storeLongitude: business.storeLongitude,
+      
       
       // SEO
       seoTitle: business.seoTitle,

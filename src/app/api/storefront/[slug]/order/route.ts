@@ -22,6 +22,71 @@ function deg2rad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
+// Server-side address parsing function (same as customer creation)
+function parseAndCleanAddress(addressString: string, latitude?: number, longitude?: number): any {
+  if (!addressString?.trim()) return null;
+
+  const address = addressString.trim();
+  
+  // If address contains commas, it's likely a formatted address
+  if (address.includes(',')) {
+    const parts = address.split(',').map((part: string) => part.trim());
+    
+    // First part is usually the actual street
+    const street = parts[0];
+    
+    // Try to extract city from parts
+    let city = '';
+    if (parts.length >= 2) {
+      let cityPart = parts[1];
+      // Remove postal codes from city part
+      cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim();
+      if (cityPart) {
+        city = cityPart;
+      }
+    }
+    
+    // Try to extract postal code
+    let zipCode = '';
+    const zipMatches = address.match(/\b\d{3,5}\s?\d{0,2}\b/g);
+    if (zipMatches) {
+      zipCode = zipMatches[zipMatches.length - 1].replace(/\s+/g, ' ').trim();
+    }
+    
+    // Try to extract country
+    let country = 'US';
+    const lastPart = parts[parts.length - 1].toLowerCase();
+    if (lastPart.includes('albania') || lastPart.includes('al')) {
+      country = 'AL';
+    } else if (lastPart.includes('greece') || lastPart.includes('gr')) {
+      country = 'GR';
+    } else if (lastPart.includes('italy') || lastPart.includes('it')) {
+      country = 'IT';
+    }
+    
+    return {
+      street,
+      additional: '',
+      zipCode,
+      city,
+      country,
+      latitude: latitude || null,
+      longitude: longitude || null
+    };
+  } else {
+    // Simple address without commas
+    return {
+      street: address,
+      additional: '',
+      zipCode: '',
+      city: '',
+      country: 'US',
+      latitude: latitude || null,
+      longitude: longitude || null
+    };
+  }
+}
+
 // Updated zone-based delivery fee calculation with proper validation
 async function calculateDeliveryFee(
   storeId: string, 
@@ -144,6 +209,115 @@ async function calculateDeliveryFee(
   } catch (error) {
     console.error('Error calculating delivery fee:', error);
     throw error;
+  }
+}
+
+// Function to create inventory activities for order items
+async function createInventoryActivities(orderId: string, businessId: string, items: any[]) {
+  try {
+    for (const item of items) {
+      // Get current product to check if inventory tracking is enabled
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { 
+          id: true, 
+          name: true, 
+          stock: true, 
+          trackInventory: true 
+        }
+      });
+
+      if (!product || !product.trackInventory) {
+        console.log(`Skipping inventory tracking for product ${item.productId} - tracking disabled`);
+        continue;
+      }
+
+      // Handle product inventory
+      if (product.stock >= item.quantity) {
+        const newStock = product.stock - item.quantity;
+        
+        // Update product stock
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: newStock }
+        });
+
+        // Create inventory activity for product
+        await prisma.inventoryActivity.create({
+          data: {
+            productId: item.productId,
+            businessId,
+            type: 'ORDER_SALE',
+            quantity: -item.quantity, // Negative because it's a sale
+            oldStock: product.stock,
+            newStock,
+            reason: `Order sale - Order ID: ${orderId}`,
+            changedBy: 'Customer Order'
+          }
+        });
+      } else {
+        console.warn(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Ordered: ${item.quantity}`);
+        // Still create the activity to track the attempt
+        await prisma.inventoryActivity.create({
+          data: {
+            productId: item.productId,
+            businessId,
+            type: 'ORDER_SALE',
+            quantity: -item.quantity,
+            oldStock: product.stock,
+            newStock: Math.max(0, product.stock - item.quantity), // Don't go below 0
+            reason: `Order sale - Order ID: ${orderId} (Oversold)`,
+            changedBy: 'Customer Order'
+          }
+        });
+        
+        // Update to 0 if oversold
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: Math.max(0, product.stock - item.quantity) }
+        });
+      }
+
+      // Handle variant inventory if applicable
+      if (item.variantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { 
+            id: true, 
+            name: true, 
+            stock: true 
+          }
+        });
+
+        if (variant) {
+          const newVariantStock = Math.max(0, variant.stock - item.quantity);
+          
+          // Update variant stock
+          await prisma.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: newVariantStock }
+          });
+
+          // Create inventory activity for variant
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              variantId: item.variantId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity,
+              oldStock: variant.stock,
+              newStock: newVariantStock,
+              reason: `Order sale - Order ID: ${orderId} (Variant: ${variant.name})`,
+              changedBy: 'Customer Order'
+            }
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error creating inventory activities:', error);
+    // Don't throw error here to avoid breaking order creation
   }
 }
 
@@ -562,6 +736,56 @@ export async function POST(
       return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
     }
 
+    // STOCK VALIDATION - Check product availability before proceeding
+    for (const item of items) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { 
+          id: true, 
+          name: true, 
+          stock: true, 
+          trackInventory: true 
+        }
+      });
+
+      if (!product) {
+        return NextResponse.json({ 
+          error: `Product not found: ${item.productId}` 
+        }, { status: 400 });
+      }
+
+      // Check stock if inventory tracking is enabled
+      if (product.trackInventory && product.stock < item.quantity) {
+        return NextResponse.json({ 
+          error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+        }, { status: 400 });
+      }
+
+      // Check variant stock if applicable
+      if (item.variantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { 
+            id: true, 
+            name: true, 
+            stock: true 
+          }
+        });
+
+        if (!variant) {
+          return NextResponse.json({ 
+            error: `Product variant not found: ${item.variantId}` 
+          }, { status: 400 });
+        }
+
+        if (variant.stock < item.quantity) {
+          return NextResponse.json({ 
+            error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+          }, { status: 400 });
+        }
+      }
+    }
+
     // Calculate and validate delivery fee for delivery orders
     let finalDeliveryFee = deliveryFee || 0
     let deliveryZone = 'Default Zone'
@@ -596,7 +820,7 @@ export async function POST(
       }
     }
 
-    // Find or create customer
+    // Enhanced customer creation/retrieval logic
     let customer = await prisma.customer.findFirst({
       where: {
         phone: customerPhone,
@@ -605,25 +829,60 @@ export async function POST(
     })
 
     if (!customer) {
+      // Customer doesn't exist, create new one with address from order
+      let addressJson = null;
+      let backwardCompatibleAddress = null;
+
+      // Only set address for delivery orders
+      if (deliveryType === 'delivery' && deliveryAddress) {
+        addressJson = parseAndCleanAddress(deliveryAddress, latitude, longitude);
+        
+        // Create backward-compatible address string
+        if (addressJson) {
+          const addressParts = [
+            addressJson.street,
+            addressJson.additional,
+            addressJson.city,
+            addressJson.zipCode
+          ].filter(Boolean);
+          backwardCompatibleAddress = addressParts.join(', ');
+        } else {
+          backwardCompatibleAddress = deliveryAddress;
+        }
+      }
+
       customer = await prisma.customer.create({
         data: {
           name: customerName,
           phone: customerPhone,
           email: customerEmail,
-          address: deliveryType === 'delivery' ? deliveryAddress : null,
-          businessId: business.id
+          address: backwardCompatibleAddress,
+          addressJson: addressJson,
+          businessId: business.id,
+          addedByAdmin: false, // Customer created from storefront order
+          tier: 'REGULAR'
         }
       })
     } else {
-      // Update customer info if changed
-      await prisma.customer.update({
-        where: { id: customer.id },
-        data: {
-          name: customerName,
-          email: customerEmail || customer.email,
-          address: deliveryType === 'delivery' ? deliveryAddress : customer.address
-        }
-      })
+      // Customer exists - DO NOT update address even if different
+      // Only update name and email if they've changed
+      let updateData: any = {};
+      
+      if (customer.name !== customerName) {
+        updateData.name = customerName;
+      }
+      
+      if (customerEmail && customer.email !== customerEmail) {
+        updateData.email = customerEmail;
+      }
+      
+      // Only update if there's something to update
+      if (Object.keys(updateData).length > 0) {
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: updateData
+        });
+      }
     }
 
     // Generate order number
@@ -669,6 +928,9 @@ export async function POST(
         }
       })
     }
+
+    // Create inventory activities for the order (after order creation)
+    await createInventoryActivities(order.id, business.id, items);
 
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({
