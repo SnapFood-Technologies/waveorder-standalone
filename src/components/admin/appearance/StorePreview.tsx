@@ -188,6 +188,37 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
     )
   }
 
+  // Mobile responsive messages - ADD THIS AFTER THE EXISTING DESKTOP CHECK
+if (isMobile && device === 'mobile') {
+  return (
+    <div className="bg-gray-50 rounded-xl p-6 text-center">
+      <div className="max-w-sm mx-auto">
+        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7 1C5.9 1 5 1.9 5 3v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H7zm0 2h10v16H7V3z"/>
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Mobile Preview Unavailable
+        </h3>
+        <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+          Mobile preview requires a larger screen to display properly. 
+          For the best mobile preview experience, please use a tablet or desktop computer.
+        </p>
+        <a
+          href={`/${businessData.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          View Live Store Instead
+        </a>
+      </div>
+    </div>
+  )
+}
+
   // Fixed cover image background - removed double background
   const getCoverImageStyle = () => {
     if (businessData.coverImage) {
@@ -236,11 +267,11 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
             <div className="flex items-start justify-between mb-8 relative">
               {/* Logo positioned over cover image */}
               <div 
-                className="absolute -top-16 left-0 w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl bg-white"
+                className="absolute -top-16 left-0 w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl bg-white"
                 style={{ color: settings.primaryColor }}
               >
                 {businessData.logo ? (
-                  <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-2xl object-cover" />
+                  <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
                   businessData.name?.charAt(0).toUpperCase() || 'S'
                 )}
@@ -617,11 +648,11 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
           <div className="bg-white p-4 relative">
             {/* Logo */}
             <div 
-              className="absolute -top-6 left-4 w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg bg-white"
+              className="absolute -top-6 left-4 w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-lg bg-white"
               style={{ color: settings.primaryColor }}
             >
               {businessData.logo ? (
-                <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-xl object-cover" />
+                <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
               ) : (
                 businessData.name?.charAt(0).toUpperCase() || 'S'
               )}
