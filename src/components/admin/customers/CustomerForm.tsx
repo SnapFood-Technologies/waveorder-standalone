@@ -298,8 +298,18 @@ function PhoneInput({ value, onChange, storeData, error, onErrorChange }: {
       if (detected !== 'OTHER' && detected in COUNTRY_CONFIGS) {
         onChange(COUNTRY_CONFIGS[detected].prefix + ' ')
       }
+    } else {
+      // If value exists (edit mode), detect country from the phone number
+      const detectedFromPhone = detectCountryFromPrefix(value)
+      if (detectedFromPhone !== 'OTHER') {
+        setSelectedCountry(detectedFromPhone)
+      } else {
+        // Fallback to business detection if phone detection fails
+        const detectedFromBusiness = detectCountryFromBusiness(storeData)
+        setSelectedCountry(detectedFromBusiness)
+      }
     }
-  }, [storeData, onChange])
+  }, [storeData, onChange, value])
 
   // Dynamic country detection based on user input
   useEffect(() => {
