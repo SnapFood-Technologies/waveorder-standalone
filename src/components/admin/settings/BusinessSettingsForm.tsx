@@ -60,6 +60,10 @@ interface BusinessSettings {
   schemaType?: string
   schemaData?: any
   canonicalUrl?: string
+
+  // Add these coordinate fields
+  storeLatitude?: number
+  storeLongitude?: number
   
   // Store status
   isTemporarilyClosed: boolean
@@ -153,20 +157,21 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'DEFA
   return 'US'
 }
 
-// Address Autocomplete Component
-// Fixed AddressAutocomplete Component
+// Updated AddressAutocomplete Component
 function AddressAutocomplete({ 
   value, 
   onChange, 
   placeholder, 
   required, 
-  businessData
+  businessData,
+  onCoordinatesChange // ADD THIS PROP
 }: {
   value: string
   onChange: (address: string) => void
   placeholder: string
   required: boolean
   businessData?: any
+  onCoordinatesChange?: (lat: number, lng: number) => void // ADD THIS TYPE
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -242,6 +247,13 @@ function AddressAutocomplete({
         const place = autocomplete.getPlace()
         if (place.formatted_address) {
           onChange(place.formatted_address)
+          
+          // CAPTURE AND SAVE COORDINATES
+          if (place.geometry?.location && onCoordinatesChange) {
+            const lat = place.geometry.location.lat()
+            const lng = place.geometry.location.lng()
+            onCoordinatesChange(lat, lng)
+          }
         }
       })
 
@@ -254,7 +266,7 @@ function AddressAutocomplete({
         }
       }
     }
-  }, [isLoaded, onChange, businessData])
+  }, [isLoaded, onChange, businessData, onCoordinatesChange])
 
   return (
     <input
@@ -767,21 +779,34 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Business Address <span className="text-red-500">*</span>
-                </label>
-                <AddressAutocomplete
-                  value={settings.address || ''}
-                  onChange={(address) => setSettings(prev => ({ ...prev, address }))}
-                  placeholder="Enter your full business address"
-                  required={true}
-                  businessData={settings}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Required for delivery zones and customer directions
-                </p>
-              </div>
+            <div className="md:col-span-2">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Business Address <span className="text-red-500">*</span>
+  </label>
+  <AddressAutocomplete
+    value={settings.address || ''}
+    onChange={(address) => setSettings(prev => ({ ...prev, address }))}
+    onCoordinatesChange={(lat, lng) => {
+      setSettings(prev => ({ 
+        ...prev, 
+        storeLatitude: lat,
+        storeLongitude: lng 
+      }))
+    }}
+    placeholder="Enter your full business address"
+    required={true}
+    businessData={settings}
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    Required for delivery zones and customer directions
+  </p>
+  {/* Optional: Show coordinates for debugging */}
+  {settings.storeLatitude && settings.storeLongitude && (
+    <p className="text-xs text-gray-400 mt-1">
+      Coordinates: {settings.storeLatitude.toFixed(6)}, {settings.storeLongitude.toFixed(6)}
+    </p>
+  )}
+</div>
 
               <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
