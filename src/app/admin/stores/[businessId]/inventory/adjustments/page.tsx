@@ -3,9 +3,20 @@ import StockAdjustmentsComponent from '@/components/admin/inventory/StockAdjustm
 
 interface StockAdjustmentsPageProps {
   params: Promise<{ businessId: string }>
+  searchParams: Promise<{ productId?: string }>
 }
 
-export default async function StockAdjustmentsPage({ params }: StockAdjustmentsPageProps) {
+export default async function StockAdjustmentsPage({ 
+  params, 
+  searchParams 
+}: StockAdjustmentsPageProps) {
   const { businessId } = await params
-  return <StockAdjustmentsComponent businessId={businessId} />
+  const { productId } = await searchParams
+  
+  return (
+    <StockAdjustmentsComponent 
+      businessId={businessId} 
+      initialProductId={productId}
+    />
+  )
 }

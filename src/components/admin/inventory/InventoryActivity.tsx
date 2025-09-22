@@ -190,7 +190,7 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
   if (loading && activities.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="p-6">
+        <div>
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6 animate-pulse"></div>
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
@@ -225,6 +225,21 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
           </div>
         </div>
       </div>
+
+      {productId && (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-center gap-2">
+          <Package className="w-5 h-5 text-blue-600" />
+          <h3 className="font-medium text-blue-900">
+            Viewing activities for specific product
+          </h3>
+        </div>
+        <p className="text-sm text-blue-700 mt-1">
+          Showing inventory activities for this product only
+        </p>
+      </div>
+    )}
+
 
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">

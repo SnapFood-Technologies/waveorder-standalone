@@ -1,4 +1,3 @@
-
 // app/api/admin/stores/[businessId]/products/[productId]/inventory/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
@@ -61,7 +60,6 @@ export async function POST(
     const user = await prisma.user.findUnique({
         where: { email: session.user.email }
       })
-      
 
     // Create inventory activity
     await prisma.inventoryActivity.create({
@@ -73,7 +71,7 @@ export async function POST(
         oldStock,
         newStock,
         reason: reason || 'Manual stock adjustment',
-        changedBy: user?.name // Add this line
+        changedBy: user?.name
       }
     })
 
@@ -101,26 +99,55 @@ export async function GET(
     }
 
     const { businessId, productId } = await params
+    const { searchParams } = new URL(request.url)
+    
+    // Get query parameters
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const search = searchParams.get('search') || ''
+    const skip = (page - 1) * limit
 
-    const activities = await prisma.inventoryActivity.findMany({
-      where: {
-        productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
+    // Build where clause
+    const whereClause: any = {
+      productId,
+      businessId,
+      business: {
+        users: {
+          some: {
+            user: {
+              email: session.user.email
             }
           }
         }
-      },
+      }
+    }
+
+    // Add search filter
+    if (search) {
+      whereClause.OR = [
+        {
+          reason: {
+            contains: search,
+            mode: 'insensitive'
+          }
+        }
+      ]
+    }
+
+    // Get total count for pagination
+    const total = await prisma.inventoryActivity.count({
+      where: whereClause
+    })
+
+    // Get activities with pagination
+    const activities = await prisma.inventoryActivity.findMany({
+      where: whereClause,
       include: {
         product: {
           select: {
             id: true,
-            name: true
+            name: true,
+            images: true
           }
         },
         variant: {
@@ -131,10 +158,22 @@ export async function GET(
         }
       },
       orderBy: { createdAt: 'desc' },
-      take: 50
+      skip,
+      take: limit
     })
 
-    return NextResponse.json({ activities })
+    // Calculate pagination info
+    const pages = Math.ceil(total / limit)
+
+    return NextResponse.json({ 
+      activities,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages
+      }
+    })
 
   } catch (error) {
     console.error('Error fetching inventory activities:', error)

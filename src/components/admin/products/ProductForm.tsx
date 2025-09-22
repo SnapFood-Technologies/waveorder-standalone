@@ -21,7 +21,8 @@ import {
   BarChart3,
   Info,
   Lightbulb,
-  CheckCircle
+  CheckCircle,
+  Tag
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -48,6 +49,10 @@ interface ProductModifier {
 interface Category {
   id: string
   name: string
+}
+
+interface Business {
+  currency: string
 }
 
 interface ProductForm {
@@ -93,17 +98,36 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   })
 
   const [categories, setCategories] = useState<Category[]>([])
+  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
 
+  const [successMessage, setSuccessMessage] = useState<{
+    type: 'create' | 'update'
+    productName: string
+  } | null>(null)
+
   useEffect(() => {
+    fetchBusinessData()
     fetchCategories()
     if (isEditing) {
       fetchProduct()
     }
   }, [businessId, productId])
+
+  const fetchBusinessData = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBusiness({ currency: data.business.currency })
+      }
+    } catch (error) {
+      console.error('Error fetching business data:', error)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -133,6 +157,28 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+    }
+    
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toFixed(2)}`
+  }
+
+  const getCurrencySymbol = () => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+    }
+    return currencySymbols[business.currency] || business.currency
   }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,22 +273,31 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-
+  
     try {
       const url = isEditing 
         ? `/api/admin/stores/${businessId}/products/${productId}`
         : `/api/admin/stores/${businessId}/products`
       
       const method = isEditing ? 'PUT' : 'POST'
-
+  
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       })
-
+  
       if (response.ok) {
-        router.push(`/admin/stores/${businessId}/products`)
+        // Show success toast
+        setSuccessMessage({
+          type: isEditing ? 'update' : 'create',
+          productName: form.name
+        })
+  
+        // Navigate after showing success message
+        setTimeout(() => {
+          router.push(`/admin/stores/${businessId}/products`)
+        }, 2000)
       }
     } catch (error) {
       console.error('Error saving product:', error)
@@ -273,7 +328,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     <li>• Use clear, descriptive product names</li>
                     <li>• Add detailed descriptions to help customers</li>
                     <li>• First image becomes the main product photo</li>
-                    <li>• Original price shows strikethrough when set</li>
+                    <li>• Set regular price for standard pricing</li>
                   </ul>
                 </div>
               </div>
@@ -281,10 +336,25 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-start">
-                <Lightbulb className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
+                <Tag className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
                 <div>
-                  <h4 className="font-medium text-green-900 mb-2">Tips for Better Sales</h4>
+                  <h4 className="font-medium text-green-900 mb-2">Pricing Strategy</h4>
                   <ul className="text-sm text-green-800 space-y-1">
+                    <li>• <strong>Regular Price:</strong> Your standard selling price</li>
+                    <li>• <strong>Sale Price:</strong> Discounted price (optional)</li>
+                    <li>• Sale price will show as strikethrough on regular price</li>
+                    <li>• Leave sale price empty if no discount</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <Lightbulb className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-amber-900 mb-2">Tips for Better Sales</h4>
+                  <ul className="text-sm text-amber-800 space-y-1">
                     <li>• Use high-quality, well-lit photos</li>
                     <li>• Include multiple angles of the product</li>
                     <li>• Write compelling descriptions that highlight benefits</li>
@@ -378,6 +448,15 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     }
   }
 
+  const calculateSavings = () => {
+    if (form.originalPrice && form.originalPrice > form.price && form.price > 0) {
+      const savings = form.originalPrice - form.price
+      const percentage = Math.round((savings / form.originalPrice) * 100)
+      return { amount: savings, percentage }
+    }
+    return null
+  }
+
   if (loading) {
     return (
       <div>
@@ -391,74 +470,103 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/admin/stores/${businessId}/products`}
-            className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isEditing ? 'Edit Product' : 'Add New Product'}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {isEditing ? 'Update product information and settings' : 'Create a new product for your catalog'}
-            </p>
+
+{successMessage && (
+      <div className="fixed top-4 right-4 z-50 max-w-md">
+        <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-900">
+                Product {successMessage.type === 'create' ? 'Created' : 'Updated'} Successfully
+              </h4>
+              <p className="text-sm text-gray-600 mt-1">
+                "{successMessage.productName}" has been {successMessage.type === 'create' ? 'added to' : 'updated in'} your catalog
+              </p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setForm(prev => ({ ...prev, isActive: !prev.isActive }))}
-            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-              form.isActive 
-                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {form.isActive ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
-            {form.isActive ? 'Active' : 'Inactive'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setForm(prev => ({ ...prev, featured: !prev.featured }))}
-            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-              form.featured 
-                ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <Star className="w-4 h-4 mr-2" />
-            {form.featured ? 'Featured' : 'Not Featured'}
-          </button>
-        </div>
       </div>
+    )}
+     {/* Header */}
+    <div className="flex flex-col gap-4 mb-6">
+    <div className="flex items-start gap-4">
+        <Link
+        href={`/admin/stores/${businessId}/products`}
+        className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 mt-1"
+        >
+        <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div className="flex-1 min-w-0">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
+            {isEditing ? 'Edit Product' : 'Add New Product'}
+        </h1>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">
+            {isEditing ? 'Update product information and settings' : 'Create a new product for your catalog'}
+        </p>
+        </div>
+    </div>
+
+    <div className="flex flex-col sm:flex-row gap-3">
+        <button
+        type="button"
+        onClick={() => setForm(prev => ({ ...prev, isActive: !prev.isActive }))}
+        className={`flex items-center justify-center px-4 py-2 rounded-lg transition-colors ${
+            form.isActive 
+            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+        >
+        {form.isActive ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
+        <span className="whitespace-nowrap">{form.isActive ? 'Active' : 'Inactive'}</span>
+        </button>
+
+        <button
+        type="button"
+        onClick={() => setForm(prev => ({ ...prev, featured: !prev.featured }))}
+        className={`flex items-center justify-center px-4 py-2 rounded-lg transition-colors ${
+            form.featured 
+            ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+        }`}
+        >
+        <Star className="w-4 h-4 mr-2" />
+        <span className="whitespace-nowrap">{form.featured ? 'Featured' : 'Not Featured'}</span>
+        </button>
+    </div>
+    </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Form (2/3 width) */}
         <div className="lg:col-span-2">
           {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-white text-teal-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <tab.icon className="w-4 h-4 mr-2" />
-                {tab.name}
-              </button>
-            ))}
-          </div>
+          <div className="bg-gray-100 p-1 rounded-lg mb-6 overflow-hidden">
+  <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+    {tabs.map((tab) => (
+      <button
+        key={tab.id}
+        onClick={() => setActiveTab(tab.id)}
+        className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0 ${
+          activeTab === tab.id
+            ? 'bg-white text-teal-700 shadow-sm'
+            : 'text-gray-600 hover:text-gray-900'
+        }`}
+      >
+        <tab.icon className="w-4 h-4 mr-2" />
+        <span className="hidden sm:inline">{tab.name}</span>
+        <span className="sm:hidden">{tab.name.split(' ')[0]}</span>
+      </button>
+    ))}
+  </div>
+</div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {activeTab === 'basic' && (
@@ -547,40 +655,75 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price *
+                      Regular Price * ({business.currency})
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                        {getCurrencySymbol()}
+                      </span>
                       <input
                         type="number"
                         step="0.01"
                         required
-                        value={form.price || ''}
-                        onChange={(e) => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        value={form.originalPrice || form.price || ''}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0
+                          if (!form.originalPrice) {
+                            setForm(prev => ({ ...prev, price: value }))
+                          } else {
+                            setForm(prev => ({ ...prev, originalPrice: value }))
+                          }
+                        }}
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         placeholder="0.00"
                       />
                     </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Your standard selling price
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Original Price (Optional)
+                      Sale Price (Optional) ({business.currency})
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                        {getCurrencySymbol()}
+                      </span>
                       <input
                         type="number"
                         step="0.01"
-                        value={form.originalPrice || ''}
-                        onChange={(e) => setForm(prev => ({ 
-                          ...prev, 
-                          originalPrice: e.target.value ? parseFloat(e.target.value) : undefined 
-                        }))}
-                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        value={form.originalPrice ? form.price || '' : ''}
+                        onChange={(e) => {
+                          const salePrice = parseFloat(e.target.value) || 0
+                          if (salePrice > 0) {
+                            if (!form.originalPrice) {
+                              // If no original price set, move current price to original and set new sale price
+                              setForm(prev => ({ 
+                                ...prev, 
+                                originalPrice: prev.price || 0, 
+                                price: salePrice 
+                              }))
+                            } else {
+                              setForm(prev => ({ ...prev, price: salePrice }))
+                            }
+                          } else {
+                            // Clear sale price - move original back to price
+                            setForm(prev => ({ 
+                              ...prev, 
+                              price: prev.originalPrice || prev.price, 
+                              originalPrice: undefined 
+                            }))
+                          }
+                        }}
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                         placeholder="0.00"
                       />
                     </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Discounted price (shows strikethrough on regular)
+                    </p>
                   </div>
 
                   <div>
@@ -602,6 +745,30 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     </select>
                   </div>
                 </div>
+
+                {/* Pricing Preview */}
+                {form.originalPrice && form.price < form.originalPrice && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Tag className="w-4 h-4 text-green-600" />
+                      <span className="font-medium text-green-900">Pricing Preview</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg font-bold text-green-900">
+                        {formatCurrency(form.price)}
+                      </span>
+                      <span className="text-gray-500 line-through">
+                        {formatCurrency(form.originalPrice)}
+                      </span>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-sm rounded-full font-medium">
+                        {calculateSavings()?.percentage}% OFF
+                      </span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-2">
+                      Customers save {formatCurrency(calculateSavings()?.amount || 0)}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -703,24 +870,23 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
             {activeTab === 'variants' && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">Product Variants</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Add different variations of this product (e.g., sizes, colors)
+                    Add different variations of this product (e.g., sizes, colors)
                     </p>
-                  </div>
-                  <button
+                </div>
+                <button
                     type="button"
                     onClick={addVariant}
-                    className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                  >
+                    className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
+                >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Variant
-                  </button>
+                </button>
                 </div>
-
-                {form.variants.length === 0 ? (
+                                {form.variants.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <p>No variants added yet</p>
@@ -757,17 +923,22 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Price *
+                              Price * ({business.currency})
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              required
-                              value={variant.price || ''}
-                              onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                              placeholder="0.00"
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                                {getCurrencySymbol()}
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                required
+                                value={variant.price || ''}
+                                onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="0.00"
+                              />
+                            </div>
                           </div>
 
                           <div>
@@ -806,21 +977,21 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
             {activeTab === 'modifiers' && (
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">Product Modifiers</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Add optional extras or required choices (e.g., toppings, sides)
+                    Add optional extras or required choices (e.g., toppings, sides)
                     </p>
-                  </div>
-                  <button
+                </div>
+                <button
                     type="button"
                     onClick={addModifier}
-                    className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                  >
+                    className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
+                >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Modifier
-                  </button>
+                </button>
                 </div>
 
                 {form.modifiers.length === 0 ? (
@@ -860,17 +1031,22 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Price *
+                              Price * ({business.currency})
                             </label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              required
-                              value={modifier.price || ''}
-                              onChange={(e) => updateModifier(index, 'price', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                              placeholder="0.00"
-                            />
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                                {getCurrencySymbol()}
+                              </span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                required
+                                value={modifier.price || ''}
+                                onChange={(e) => updateModifier(index, 'price', parseFloat(e.target.value) || 0)}
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                placeholder="0.00"
+                              />
+                            </div>
                           </div>
 
                           <div className="flex items-center">
@@ -909,7 +1085,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       placeholder={form.name || "Product title for search engines"}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {form.metaTitle.length}/60 characters (recommended)
+                      {form.metaTitle?.length ?? 0}/60 characters (recommended)
                     </p>
                   </div>
 
@@ -925,7 +1101,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       placeholder={form.description || "Product description for search engines"}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      {form.metaDescription.length}/160 characters (recommended)
+                      {form.metaDescription?.length ?? 0}/160 characters (recommended)
                     </p>
                   </div>
                 </div>

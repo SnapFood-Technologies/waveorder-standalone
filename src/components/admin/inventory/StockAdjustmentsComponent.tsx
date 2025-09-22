@@ -15,7 +15,8 @@ import {
 import Link from 'next/link'
 
 interface StockAdjustmentsPageProps {
-  businessId: string
+  businessId: string,
+  initialProductId?: string
 }
 
 interface Product {
@@ -36,7 +37,10 @@ interface SuccessMessage {
   change: number
 }
 
-export default function StockAdjustmentsComponent({ businessId }: StockAdjustmentsPageProps) {
+export default function StockAdjustmentsComponent({ 
+    businessId, 
+    initialProductId 
+  }: StockAdjustmentsPageProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -47,6 +51,7 @@ export default function StockAdjustmentsComponent({ businessId }: StockAdjustmen
     fetchProducts()
   }, [businessId])
 
+  
   const fetchProducts = async () => {
     try {
       const response = await fetch(`/api/admin/stores/${businessId}/products`)
@@ -64,6 +69,15 @@ export default function StockAdjustmentsComponent({ businessId }: StockAdjustmen
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  useEffect(() => {
+    if (initialProductId && products.length > 0) {
+      const product = products.find(p => p.id === initialProductId)
+      if (product) {
+        setSelectedProduct(product)
+      }
+    }
+  }, [initialProductId, products])
 
   const handleStockUpdated = (productId: string, newStock: number, oldStock: number, productName: string) => {
     setProducts(prev => prev.map(p => 

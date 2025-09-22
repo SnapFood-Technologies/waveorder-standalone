@@ -327,40 +327,42 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900">Products</h1>
+            <p className="text-gray-600 mt-1">
             Manage your product catalog and inventory
-          </p>
+            </p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <button
-            onClick={exportProducts}
-            className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export
-          </button>
-          
-          <Link
-            href={`/admin/stores/${businessId}/products/import`}
-            className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Import
-          </Link>
-          
-          <Link
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex flex-1 gap-3">
+            <button
+                onClick={exportProducts}
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+                <Download className="w-4 h-4 mr-2" />
+                Export
+            </button>
+            
+            <Link
+                href={`/admin/stores/${businessId}/products/import`}
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+                <Upload className="w-4 h-4 mr-2" />
+                Import
+            </Link>
+            </div>
+            
+            <Link
             href={`/admin/stores/${businessId}/products/new`}
-            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-          >
+            className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
             <Plus className="w-4 h-4 mr-2" />
             Add Product
-          </Link>
+            </Link>
         </div>
-      </div>
+        </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
