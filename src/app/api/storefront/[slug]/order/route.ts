@@ -22,12 +22,12 @@ function deg2rad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
-// Zone-based delivery fee calculation
+// Updated zone-based delivery fee calculation with proper validation
 async function calculateDeliveryFee(
   storeId: string, 
   customerLat: number, 
   customerLng: number
-): Promise<number> {
+): Promise<{ fee: number; zone: string; distance: number }> {
   try {
     // Get store location and delivery zones
     const business = await prisma.business.findUnique({
@@ -35,9 +35,15 @@ async function calculateDeliveryFee(
       select: {
         deliveryFee: true,
         deliveryRadius: true,
+        deliveryEnabled: true,
         address: true,
         storeLatitude: true,
         storeLongitude: true,
+        isTemporarilyClosed: true,
+        deliveryZones: {
+          where: { isActive: true },
+          orderBy: { maxDistance: 'asc' }
+        }
       }
     });
 
@@ -45,38 +51,99 @@ async function calculateDeliveryFee(
       throw new Error('Business not found');
     }
 
-    // Use actual store coordinates from database with fallback
-    const storeLatitude = business.storeLatitude || 41.3275; // Default to Tirana coordinates
-    const storeLongitude = business.storeLongitude || 19.8187;
+    if (business.isTemporarilyClosed) {
+      throw new Error('Store is temporarily closed');
+    }
+
+    if (!business.deliveryEnabled) {
+      throw new Error('Delivery is not enabled for this store');
+    }
+
+    if (!business.deliveryRadius || business.deliveryRadius <= 0) {
+      throw new Error('Delivery radius not configured - cannot calculate delivery');
+    }
+
+    // If no address configured, use default delivery fee for entire radius
+    if (!business.address) {
+      if (business.deliveryFee === null || business.deliveryFee === undefined) {
+        throw new Error('Delivery fee not configured - please contact store to set up delivery pricing');
+      }
+
+      if (business.deliveryFee < 0) {
+        throw new Error('Invalid delivery fee configuration');
+      }
+
+      return { 
+        fee: business.deliveryFee,
+        zone: business.deliveryFee === 0 ? 'Free Delivery' : 'Standard Delivery',
+        distance: 0 // Cannot calculate distance without store address
+      };
+    }
+
+    // Address is configured, calculate distance-based pricing
+    if (!business.storeLatitude || !business.storeLongitude) {
+      throw new Error('Store coordinates not configured - cannot calculate delivery distance');
+    }
 
     const distanceKm = calculateDistance(
-      storeLatitude,
-      storeLongitude,
+      business.storeLatitude,
+      business.storeLongitude,
       customerLat,
       customerLng
     );
 
     // Check if within delivery radius
     if (distanceKm > business.deliveryRadius) {
-      throw new Error('Address is outside delivery area');
+      throw new Error(`Address is outside delivery area (maximum ${business.deliveryRadius}km)`);
     }
 
-    // Simple zone-based pricing
-    if (distanceKm <= 2) {
-      return business.deliveryFee; // Base fee for close deliveries
-    } else if (distanceKm <= 5) {
-      return business.deliveryFee * 1.5; // 1.5x for medium distance
-    } else {
-      return business.deliveryFee * 2; // 2x for far deliveries
+    // If no custom zones are configured, use the single delivery fee from configuration
+    if (business.deliveryZones.length === 0) {
+      if (business.deliveryFee === null || business.deliveryFee === undefined) {
+        throw new Error('Delivery fee not configured - please contact store to set up delivery pricing');
+      }
+
+      if (business.deliveryFee < 0) {
+        throw new Error('Invalid delivery fee configuration');
+      }
+
+      return { 
+        fee: business.deliveryFee,
+        zone: business.deliveryFee === 0 ? 'Free Delivery' : 'Standard Delivery',
+        distance: Math.round(distanceKm * 100) / 100
+      };
     }
+
+    // Use custom delivery zones
+    let selectedZone = null;
+    for (const zone of business.deliveryZones) {
+      if (distanceKm <= zone.maxDistance) {
+        selectedZone = zone;
+        break;
+      }
+    }
+
+    if (!selectedZone) {
+      selectedZone = business.deliveryZones[business.deliveryZones.length - 1];
+      
+      if (distanceKm > selectedZone.maxDistance) {
+        throw new Error(`Address is outside all configured delivery zones (maximum ${selectedZone.maxDistance}km)`);
+      }
+    }
+
+    if (selectedZone.fee === null || selectedZone.fee === undefined || selectedZone.fee < 0) {
+      throw new Error(`Invalid fee configuration for ${selectedZone.name}`);
+    }
+
+    return {
+      fee: selectedZone.fee,
+      zone: selectedZone.name,
+      distance: Math.round(distanceKm * 100) / 100
+    };
+
   } catch (error) {
     console.error('Error calculating delivery fee:', error);
-    // Return default fee if calculation fails
-    const business = await prisma.business.findUnique({
-      where: { id: storeId },
-      select: { deliveryFee: true }
-    });
-    return business?.deliveryFee || 0;
+    throw error;
   }
 }
 
@@ -183,6 +250,46 @@ const messageTerms = {
       dineIn_type: 'Consultation'
     },
     FLORIST: {
+      order: 'Order',
+      subtotal: 'Subtotal',
+      delivery: 'Delivery',
+      total: 'Total',
+      customer: 'Customer',
+      phone: 'Phone',
+      deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
+      deliveryTime: 'Delivery Time',
+      pickupTime: 'Pickup Time',
+      arrivalTime: 'Visit Time',
+      payment: 'Payment',
+      notes: 'Notes',
+      asap: 'ASAP',
+      orderType: 'Order Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Pickup',
+      dineIn_type: 'Visit'
+    },
+    HEALTH_BEAUTY: {
+      order: 'Order',
+      subtotal: 'Subtotal',
+      delivery: 'Delivery',
+      total: 'Total',
+      customer: 'Customer',
+      phone: 'Phone',
+      deliveryAddress: 'Delivery Address',
+      pickupLocation: 'Pickup Location',
+      deliveryTime: 'Delivery Time',
+      pickupTime: 'Appointment Time',
+      arrivalTime: 'Appointment Time',
+      payment: 'Payment',
+      notes: 'Notes',
+      asap: 'ASAP',
+      orderType: 'Service Type',
+      delivery_type: 'Delivery',
+      pickup_type: 'Store Visit',
+      dineIn_type: 'Consultation'
+    },
+    OTHER: {
       order: 'Order',
       subtotal: 'Subtotal',
       delivery: 'Delivery',
@@ -323,6 +430,46 @@ const messageTerms = {
       delivery_type: 'Dorëzim',
       pickup_type: 'Marrje',
       dineIn_type: 'Vizitë'
+    },
+    HEALTH_BEAUTY: {
+      order: 'Porosia',
+      subtotal: 'Nëntotali',
+      delivery: 'Dorëzimi',
+      total: 'Totali',
+      customer: 'Klienti',
+      phone: 'Telefoni',
+      deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
+      deliveryTime: 'Koha e Dorëzimit',
+      pickupTime: 'Koha e Takimit',
+      arrivalTime: 'Koha e Takimit',
+      payment: 'Pagesa',
+      notes: 'Shënime',
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Shërbimit',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Vizitë në Dyqan',
+      dineIn_type: 'Konsultim'
+    },
+    OTHER: {
+      order: 'Porosia',
+      subtotal: 'Nëntotali',
+      delivery: 'Dorëzimi',
+      total: 'Totali',
+      customer: 'Klienti',
+      phone: 'Telefoni',
+      deliveryAddress: 'Adresa e Dorëzimit',
+      pickupLocation: 'Vendi i Marrjes',
+      deliveryTime: 'Koha e Dorëzimit',
+      pickupTime: 'Koha e Marrjes',
+      arrivalTime: 'Koha e Vizitës',
+      payment: 'Pagesa',
+      notes: 'Shënime',
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Porosisë',
+      delivery_type: 'Dorëzim',
+      pickup_type: 'Marrje',
+      dineIn_type: 'Vizitë'
     }
   }
 }
@@ -335,13 +482,48 @@ export async function POST(
     const { slug } = await context.params
     const orderData = await request.json()
 
-    // Find business
+    // Find business and check if it's closed
     const business = await prisma.business.findUnique({
-      where: { slug, isActive: true }
+      where: { slug, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        currency: true,
+        language: true,
+        businessType: true,
+        address: true,
+        whatsappNumber: true,
+        orderNumberFormat: true,
+        website: true,
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        dineInEnabled: true,
+        deliveryFee: true,
+        deliveryRadius: true,
+        storeLatitude: true,
+        storeLongitude: true,
+        isTemporarilyClosed: true,
+        closureReason: true,
+        closureMessage: true,
+        deliveryZones: {
+          where: { isActive: true },
+          orderBy: { maxDistance: 'asc' }
+        }
+      }
     })
 
     if (!business) {
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
+
+    // Check if store is temporarily closed
+    if (business.isTemporarilyClosed) {
+      return NextResponse.json({ 
+        error: 'Store is temporarily closed',
+        message: business.closureMessage || 'We are temporarily closed. Please check back later.',
+        reason: business.closureReason
+      }, { status: 400 })
     }
 
     // Validate order data
@@ -382,20 +564,32 @@ export async function POST(
 
     // Calculate and validate delivery fee for delivery orders
     let finalDeliveryFee = deliveryFee || 0
+    let deliveryZone = 'Default Zone'
+    let deliveryDistance = 0
+
     if (deliveryType === 'delivery' && latitude && longitude) {
       try {
-        finalDeliveryFee = await calculateDeliveryFee(business.id, latitude, longitude)
+        const deliveryResult = await calculateDeliveryFee(business.id, latitude, longitude)
+        finalDeliveryFee = deliveryResult.fee
+        deliveryZone = deliveryResult.zone
+        deliveryDistance = deliveryResult.distance
         
         // Validate the calculated fee matches what client sent (within small tolerance)
         if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
           return NextResponse.json({ 
             error: 'Delivery fee mismatch',
-            calculatedFee: finalDeliveryFee 
+            calculatedFee: finalDeliveryFee,
+            providedFee: deliveryFee
           }, { status: 400 })
         }
       } catch (error) {
-        if (error instanceof Error && error.message === 'Address is outside delivery area') {
-          return NextResponse.json({ error: 'Address is outside our delivery area' }, { status: 400 })
+        if (error instanceof Error) {
+          if (error.message === 'Address is outside delivery area') {
+            return NextResponse.json({ error: 'Address is outside our delivery area' }, { status: 400 })
+          }
+          if (error.message === 'Store is temporarily closed') {
+            return NextResponse.json({ error: 'Store is temporarily closed' }, { status: 400 })
+          }
         }
         // Use provided fee if calculation fails
         finalDeliveryFee = deliveryFee || business.deliveryFee
@@ -476,8 +670,6 @@ export async function POST(
       })
     }
 
-
-    
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({
       business,
@@ -487,6 +679,8 @@ export async function POST(
       orderData: {
         ...orderData,
         deliveryFee: finalDeliveryFee,
+        deliveryZone,
+        deliveryDistance,
         latitude,
         longitude
       }
@@ -497,6 +691,8 @@ export async function POST(
       orderId: order.id,
       orderNumber: order.orderNumber,
       calculatedDeliveryFee: finalDeliveryFee,
+      deliveryZone,
+      deliveryDistance,
       whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
     })
 
@@ -510,127 +706,132 @@ export async function POST(
 }
 
 function formatWhatsAppOrder({ business, order, customer, items, orderData }: any) {
-    const currencySymbol = getCurrencySymbol(business.currency)
-    const language = business.language || 'en'
-    const businessType = business.businessType || 'RESTAURANT'
-    
-    // Get appropriate terms for business type and language
-    // @ts-ignore
-    const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
-    
-    let message = `*${terms.order} ${order.orderNumber}*\n\n`
-    
-    // Add order type prominently
-    const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
-    message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
-    
-    // Items
-    items.forEach((item: any) => {
-      message += `${item.quantity}x ${item.name}`
-      if (item.variant) message += ` (${item.variant})`
-      message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
-      if (item.modifiers?.length) {
-        item.modifiers.forEach((mod: any) => {
-          message += `  + ${mod.name} (+${currencySymbol}${mod.price.toFixed(2)})\n`
-        })
-      }
-    })
-    
-    message += `\n---\n`
-    message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
-    
-    if (orderData.discount > 0) {
-      message += `${language === 'sq' ? 'Zbritje' : 'Discount'}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
+  const currencySymbol = getCurrencySymbol(business.currency)
+  const language = business.language || 'en'
+  const businessType = business.businessType || 'RESTAURANT'
+  
+  // Get appropriate terms for business type and language
+  const terms = messageTerms[language]?.[businessType] || messageTerms['en']['RESTAURANT']
+  
+  let message = `*${terms.order} ${order.orderNumber}*\n\n`
+  
+  // Add order type prominently
+  const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
+  message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
+  
+  // Items
+  items.forEach((item: any) => {
+    message += `${item.quantity}x ${item.name}`
+    if (item.variant) message += ` (${item.variant})`
+    message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
+    if (item.modifiers?.length) {
+      item.modifiers.forEach((mod: any) => {
+        message += `  + ${mod.name} (+${currencySymbol}${mod.price.toFixed(2)})\n`
+      })
     }
-    
-    if (orderData.deliveryFee > 0) {
-      message += `${terms.delivery}: ${currencySymbol}${orderData.deliveryFee.toFixed(2)}\n`
-    }
-    
-    message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
-    
-    message += `---\n`
-    message += `👤 ${terms.customer}: ${customer.name}\n`
-    message += `📞 ${terms.phone}: ${customer.phone}\n`
-    
-    // Enhanced location/time handling based on delivery type
-    if (orderData.deliveryType === 'delivery') {
-      message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
-      
-      // Add coordinates for delivery (helpful for delivery tracking)
-      if (orderData.latitude && orderData.longitude) {
-        message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
-      }
-      
-      const timeLabel = terms.deliveryTime
-      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-        : terms.asap}\n`
-    } else if (orderData.deliveryType === 'pickup') {
-      // Use business address instead of null
-      const pickupAddress = business.address || 'Store location'
-      message += `🏪 ${terms.pickupLocation}: ${pickupAddress}\n`
-      
-      const timeLabel = terms.pickupTime
-      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-        : terms.asap}\n`
-    } else if (orderData.deliveryType === 'dineIn') {
-      const dineInAddress = business.address || 'Restaurant location'
-      message += `🍽️ ${dineInAddress}\n`
-      
-      const timeLabel = terms.arrivalTime
-      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
-        : terms.asap}\n`
-    }
-    
-    message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
-    
-    if (orderData.specialInstructions) {
-      message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
-    }
-    
-    message += `\n---\n`
-    message += `🏪 ${business.name}\n`
-    if (business.website) {
-      message += `🌐 ${business.website}\n`
-    }
-    
-    return message
+  })
+  
+  message += `\n---\n`
+  message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
+  
+  if (orderData.discount > 0) {
+    message += `${language === 'sq' ? 'Zbritje' : 'Discount'}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
   }
-
-
-  function formatWhatsAppNumber(phoneNumber: string): string {
-    // Remove all non-numeric characters
-    const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
+  
+  if (orderData.deliveryFee > 0) {
+    const deliveryLabel = orderData.deliveryZone ? `${terms.delivery} (${orderData.deliveryZone})` : terms.delivery
+    message += `${deliveryLabel}: ${currencySymbol}${orderData.deliveryFee.toFixed(2)}\n`
+  }
+  
+  message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
+  
+  message += `---\n`
+  message += `👤 ${terms.customer}: ${customer.name}\n`
+  message += `📞 ${terms.phone}: ${customer.phone}\n`
+  
+  // Enhanced location/time handling based on delivery type
+  if (orderData.deliveryType === 'delivery') {
+    message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
     
-    // WhatsApp API expects numbers without + prefix
-    // But we need to ensure it's a valid international format
-    if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
-      // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
-      return cleanNumber
-    } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
-      // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
-      return cleanNumber
-    } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
-      // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
-      return cleanNumber
-    } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
-      // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
-      return cleanNumber
+    // Add coordinates for delivery (helpful for delivery tracking)
+    if (orderData.latitude && orderData.longitude) {
+      message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
     }
     
-    // For other countries, just return the clean number
+    // Add distance if available
+    if (orderData.deliveryDistance) {
+      message += `📏 Distance: ${orderData.deliveryDistance}km\n`
+    }
+    
+    const timeLabel = terms.deliveryTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
+  } else if (orderData.deliveryType === 'pickup') {
+    // Use business address instead of null
+    const pickupAddress = business.address || 'Store location'
+    message += `🏪 ${terms.pickupLocation}: ${pickupAddress}\n`
+    
+    const timeLabel = terms.pickupTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
+  } else if (orderData.deliveryType === 'dineIn') {
+    const dineInAddress = business.address || 'Restaurant location'
+    message += `🍽️ ${dineInAddress}\n`
+    
+    const timeLabel = terms.arrivalTime
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      : terms.asap}\n`
+  }
+  
+  message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
+  
+  if (orderData.specialInstructions) {
+    message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
+  }
+  
+  message += `\n---\n`
+  message += `🏪 ${business.name}\n`
+  if (business.website) {
+    message += `🌐 ${business.website}\n`
+  }
+  
+  return message
+}
+
+function formatWhatsAppNumber(phoneNumber: string): string {
+  // Remove all non-numeric characters
+  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
+  
+  // WhatsApp API expects numbers without + prefix
+  // But we need to ensure it's a valid international format
+  if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
+    // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
     return cleanNumber
+  } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
+    // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
+    return cleanNumber
+  } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
+    // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
+    return cleanNumber
+  } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
+    // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
+    return cleanNumber
+  }
+  
+  // For other countries, just return the clean number
+  return cleanNumber
 }
 
 function getCurrencySymbol(currency: string) {
   switch (currency) {
-    case 'USD': return '$'
+    case 'USD': return '
     case 'EUR': return '€'
     case 'ALL': return 'L'
-    default: return '$'
+    case 'GBP': return '£'
+    default: return '
   }
 }
 
@@ -646,27 +847,40 @@ export async function PATCH(
     // Find business
     const business = await prisma.business.findUnique({
       where: { slug, isActive: true },
-      select: { id: true }
+      select: { id: true, isTemporarilyClosed: true }
     })
 
     if (!business) {
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
-    const deliveryFee = await calculateDeliveryFee(business.id, customerLat, customerLng)
+    if (business.isTemporarilyClosed) {
+      return NextResponse.json({ error: 'Store is temporarily closed' }, { status: 400 })
+    }
+
+    const deliveryResult = await calculateDeliveryFee(business.id, customerLat, customerLng)
 
     return NextResponse.json({
       success: true,
-      deliveryFee
+      deliveryFee: deliveryResult.fee,
+      zone: deliveryResult.zone,
+      distance: deliveryResult.distance
     })
 
   } catch (error) {
     console.error('Delivery fee calculation error:', error)
     
-    if (error instanceof Error && error.message === 'Address is outside delivery area') {
-      return NextResponse.json({ 
-        error: 'Address is outside our delivery area' 
-      }, { status: 400 })
+    if (error instanceof Error) {
+      if (error.message === 'Address is outside delivery area') {
+        return NextResponse.json({ 
+          error: 'Address is outside our delivery area' 
+        }, { status: 400 })
+      }
+      if (error.message === 'Store is temporarily closed') {
+        return NextResponse.json({ 
+          error: 'Store is temporarily closed' 
+        }, { status: 400 })
+      }
     }
     
     return NextResponse.json(

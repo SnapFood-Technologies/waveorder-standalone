@@ -199,12 +199,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'FREE'
         },
-        { 
-          name: 'Billing', 
-          href: `${baseUrl}/settings/billing`, 
-          icon: CreditCard, 
-          requiredPlan: 'FREE'
-        },
+        // { 
+        //   name: 'Billing', 
+        //   href: `${baseUrl}/settings/billing`, 
+        //   icon: CreditCard, 
+        //   requiredPlan: 'FREE'
+        // },
       ]
     },
   ]
@@ -373,13 +373,14 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
                   : 'Enjoying advanced features and analytics'}
               </p>
               {subscription.plan === 'FREE' ? (
-                <Link
-                  href={`${baseUrl}/settings/billing`}
-                  onClick={onClose}
-                  className="inline-block bg-white text-teal-600 px-3 py-1 rounded text-xs font-medium hover:bg-teal-50 transition-colors"
-                >
-                  Learn More
-                </Link>
+                <></>
+                // <Link
+                //   href={`${baseUrl}/settings/billing`}
+                //   onClick={onClose}
+                //   className="inline-block bg-white text-teal-600 px-3 py-1 rounded text-xs font-medium hover:bg-teal-50 transition-colors"
+                // >
+                //   Learn More
+                // </Link>
               ) : (
                 <div className="text-xs text-teal-100">
                   Thanks for being a Pro user!

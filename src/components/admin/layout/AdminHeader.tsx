@@ -230,14 +230,14 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                   <Cog className="w-4 h-4 mr-3" />
                   Configurations
                 </Link>
-                <Link
+                {/* <Link
                   href={`/admin/stores/${businessId}/settings/billing`}
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   <CreditCard className="w-4 h-4 mr-3" />
                   Billing
-                </Link>
+                </Link> */}
               </div>
               
               <div className="border-t border-gray-100">
