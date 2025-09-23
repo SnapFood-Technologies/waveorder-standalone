@@ -123,6 +123,27 @@ export interface StorefrontTranslations {
     tryDifferentAddress: string
     selectDifferentArea: string
     maxDeliveryDistance: string
+
+     // Success Message & Scheduling
+     orderPrepared: string
+     orderNumber: string
+     orderOpenedWhatsApp: string
+     nextSteps: string
+     sendWhatsAppMessage: string
+     awaitConfirmation: string
+     weWillPrepareOrder: string
+     storeCurrentlyClosed: string
+     wouldYouLikeToSchedule: string
+
+     cannotPlaceNowOrder: string
+schedulingBenefits: string
+guaranteedPreparation: string
+noWaitingTime: string
+secureYourOrder: string
+continueAnyway: string
+scheduleOrder: string
+
+close: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -248,6 +269,27 @@ export interface StorefrontTranslations {
   tryDifferentAddress: "Try a different address",
   selectDifferentArea: "Please select an address within our delivery area",
   maxDeliveryDistance: "Maximum delivery distance",
+
+  // Success Message & Scheduling
+  orderPrepared: "Order Prepared!",
+  orderNumber: "Order Number",
+  orderOpenedWhatsApp: "Your order details have been prepared and WhatsApp should now be open. Please send the message to complete your order (if you haven't already sent it).",
+  nextSteps: "Next Steps",
+  sendWhatsAppMessage: "Send the WhatsApp message (if not sent yet)",
+  awaitConfirmation: "Wait for our confirmation",
+  weWillPrepareOrder: "We'll prepare your order once confirmed",
+  storeCurrentlyClosed: "Store is currently closed",
+  wouldYouLikeToSchedule: "Would you like to schedule your order for later instead?",
+
+  cannotPlaceNowOrder: "We're currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we're open!",
+schedulingBenefits: "Why schedule your order?",
+guaranteedPreparation: "Guaranteed preparation when we're open",
+noWaitingTime: "No waiting - ready when you arrive",
+secureYourOrder: "Secure your preferred time slot",
+continueAnyway: "Continue Anyway",
+scheduleOrder: "Schedule Order",
+close: "Close", // English
+
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -372,6 +414,26 @@ export interface StorefrontTranslations {
   tryDifferentAddress: "Provoni një adresë tjetër",
   selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
   maxDeliveryDistance: "Distanca maksimale e dërgesës",
+
+    // Success Message & Scheduling
+    orderPrepared: "Porosia u Përgatit!",
+    orderNumber: "Numri i Porosisë",
+    orderOpenedWhatsApp: "Detajet e porosisë tuaj janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Ju lutemi dërgoni mesazhin për të përfunduar porosinë tuaj (nëse nuk e keni dërguar ende).",
+    nextSteps: "Hapat e Ardhshëm",
+    sendWhatsAppMessage: "Dërgoni mesazhin në WhatsApp (nëse nuk është dërguar ende)",
+    awaitConfirmation: "Prisni konfirmimin tonë",
+    weWillPrepareOrder: "Do ta përgatisim porosinë tuaj pasi të konfirmohet",
+    storeCurrentlyClosed: "Dyqani është aktualisht i mbyllur",
+    wouldYouLikeToSchedule: "A dëshironi të planifikoni porosinë tuaj për më vonë në vend të kësaj?",
+
+    cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikoni porosinë tuaj për kur të jemi të hapur!",
+schedulingBenefits: "Pse të planifikosh porosinë?",
+guaranteedPreparation: "Përgatitje e garantuar kur jemi të hapur",
+noWaitingTime: "Pa pritje - gati kur të arrini",
+secureYourOrder: "Siguroni kohën tuaj të preferuar",
+continueAnyway: "Vazhdo Sidoqoftë",
+scheduleOrder: "Planifiko Porosinë",
+close: "Mbyll", // Albanian
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {

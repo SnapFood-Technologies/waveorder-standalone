@@ -89,9 +89,27 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
 
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
-        <span className="text-sm text-gray-500">Latest 10 orders</span>
+        <div className="flex space-y-2 sm:space-y-0 sm:space-x-2">
+          {orders.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <Link
+                href={`/admin/stores/${businessId}/orders/create`}
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add
+              </Link>
+              <Link
+                href={`/admin/stores/${businessId}/orders`}
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+              >
+                View All
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
 
       {orders.length === 0 ? (
@@ -154,21 +172,6 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
               ))}
             </tbody>
           </table>
-          
-          <div className="pt-4 border-t border-gray-200 space-y-2">
-            <Link
-              href={`/admin/stores/${businessId}/orders`}
-              className="block text-center py-2 text-teal-600 hover:text-teal-700 font-medium"
-            >
-              View All Orders
-            </Link>
-            <Link
-              href={`/admin/stores/${businessId}/orders/create`}
-              className="block text-center py-2 px-4 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium"
-            >
-              Create Order
-            </Link>
-          </div>
         </div>
       )}
     </div>
