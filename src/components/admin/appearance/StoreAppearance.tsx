@@ -13,7 +13,9 @@ import {
   CheckCircle,
   Monitor,
   ShoppingCart,
-  Settings
+  Settings,
+  Star,
+  Badge
 } from 'lucide-react'
 import { StorePreview } from './StorePreview'
 
@@ -39,6 +41,8 @@ interface BusinessData {
   deliveryEnabled: boolean
   pickupEnabled: boolean
   dineInEnabled: boolean
+  cartBadgeColor: string
+  featuredBadgeColor: string
 }
 
 interface AppearanceSettings {
@@ -47,6 +51,8 @@ interface AppearanceSettings {
   fontFamily: string
   whatsappButtonColor: string
   mobileCartStyle: 'bar' | 'badge'
+  cartBadgeColor: string
+  featuredBadgeColor: string
 }
 
 const defaultColors = [
@@ -58,6 +64,17 @@ const defaultColors = [
   '#F59E0B', // Amber
   '#EC4899', // Pink
   '#10B981', // Green
+  '#6366F1', // Indigo
+  '#84CC16', // Lime
+]
+
+const badgeColors = [
+  '#EF4444', // Red (Default)
+  '#F59E0B', // Amber
+  '#10B981', // Green
+  '#3B82F6', // Blue
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
   '#6366F1', // Indigo
   '#84CC16', // Lime
 ]
@@ -81,14 +98,18 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     secondaryColor: '#1F2937',
     fontFamily: 'Inter',
     whatsappButtonColor: '#25D366',
-    mobileCartStyle: 'bar'
+    mobileCartStyle: 'bar',
+    cartBadgeColor: '#EF4444',
+    featuredBadgeColor: '#EF4444'
   })
   const [originalSettings, setOriginalSettings] = useState<AppearanceSettings>({
     primaryColor: '#0D9488',
     secondaryColor: '#1F2937',
     fontFamily: 'Inter',
     whatsappButtonColor: '#25D366',
-    mobileCartStyle: 'bar'
+    mobileCartStyle: 'bar',
+    cartBadgeColor: '#EF4444',
+    featuredBadgeColor: '#EF4444'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -116,7 +137,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           secondaryColor: data.business.secondaryColor,
           fontFamily: data.business.fontFamily,
           whatsappButtonColor: data.business.whatsappButtonColor || data.business.primaryColor,
-          mobileCartStyle: data.business.mobileCartStyle
+          mobileCartStyle: data.business.mobileCartStyle,
+          cartBadgeColor: data.business.cartBadgeColor || '#EF4444',
+          featuredBadgeColor: data.business.featuredBadgeColor || '#EF4444'
         }
         
         setSettings(appearanceSettings)
@@ -154,11 +177,11 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     setSettings({ ...originalSettings })
   }
 
-  const handleColorChange = (type: 'primaryColor' | 'secondaryColor' | 'whatsappButtonColor', color: string) => {
+  const handleColorChange = (type: keyof AppearanceSettings, color: string) => {
     setSettings(prev => ({ ...prev, [type]: color }))
   }
 
-  const handleCustomColorChange = (type: 'primaryColor' | 'secondaryColor' | 'whatsappButtonColor', color: string) => {
+  const handleCustomColorChange = (type: keyof AppearanceSettings, color: string) => {
     // Validate hex color
     if (/^#[0-9A-F]{6}$/i.test(color)) {
       setSettings(prev => ({ ...prev, [type]: color }))
@@ -314,6 +337,76 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
               </div>
             </div>
 
+            {/* NEW: Cart Badge Color */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Cart Badge Color
+                <span className="text-gray-500 text-xs ml-1">(cart item count badge)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                {badgeColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorChange('cartBadgeColor', color)}
+                    className={`w-12 h-12 rounded-lg border-2 transition-all ${
+                      settings.cartBadgeColor === color ? 'border-gray-400 scale-110' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="color"
+                  value={settings.cartBadgeColor}
+                  onChange={(e) => handleColorChange('cartBadgeColor', e.target.value)}
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.cartBadgeColor}
+                  onChange={(e) => handleCustomColorChange('cartBadgeColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  placeholder="#EF4444"
+                />
+              </div>
+            </div>
+
+            {/* NEW: Featured Badge Color */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Featured Badge Color
+                <span className="text-gray-500 text-xs ml-1">("Popular" product badges)</span>
+              </label>
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                {badgeColors.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => handleColorChange('featuredBadgeColor', color)}
+                    className={`w-12 h-12 rounded-lg border-2 transition-all ${
+                      settings.featuredBadgeColor === color ? 'border-gray-400 scale-110' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="color"
+                  value={settings.featuredBadgeColor}
+                  onChange={(e) => handleColorChange('featuredBadgeColor', e.target.value)}
+                  className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={settings.featuredBadgeColor}
+                  onChange={(e) => handleCustomColorChange('featuredBadgeColor', e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  placeholder="#EF4444"
+                />
+              </div>
+            </div>
+
             {/* Secondary Color */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -394,13 +487,46 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
                   />
                   <span className="ml-3 flex items-center">
-                    <div className="w-4 h-4 rounded-full bg-teal-600 mr-2 flex items-center justify-center">
+                    <div 
+                      className="w-4 h-4 rounded-full flex items-center justify-center mr-2"
+                      style={{ backgroundColor: settings.cartBadgeColor }}
+                    >
                       <span className="text-white text-xs">3</span>
                     </div>
                     Floating Badge
                     <span className="text-gray-500 text-xs ml-2">- Small floating cart badge</span>
                   </span>
                 </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Badge Preview Section */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex items-center mb-4">
+              <Badge className="w-5 h-5 text-teal-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Badge Preview</h3>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Cart Badge</span>
+                <div 
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
+                  style={{ backgroundColor: settings.cartBadgeColor }}
+                >
+                  3
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-700">Featured Badge</span>
+                <span 
+                  className="px-2 py-1 rounded text-xs font-medium text-white"
+                  style={{ backgroundColor: settings.featuredBadgeColor }}
+                >
+                  Popular
+                </span>
               </div>
             </div>
           </div>
@@ -415,7 +541,8 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   <li>• Choose colors that match your brand</li>
                   <li>• Use high contrast for better readability</li>
                   <li>• Test on mobile devices for best experience</li>
-                  <li>• Keep WhatsApp button easily recognizable</li>
+                  <li>• Keep badge colors distinct from background</li>
+                  <li>• WhatsApp button should be easily recognizable</li>
                 </ul>
               </div>
             </div>
