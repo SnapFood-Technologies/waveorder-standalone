@@ -1040,13 +1040,20 @@ function TimeSelection({
 
   const handleTimeSelection = (mode: string, date: Date | null = null, time: string | null = null) => {
     setTimeMode(mode)
+    
     if (mode === 'now') {
       onTimeChange('asap')
-    } else if (date && time) {
-      const dateTime = new Date(date)
-      const [hours, minutes] = time.split(':')
-      dateTime.setHours(parseInt(hours), parseInt(minutes))
-      onTimeChange(dateTime.toISOString())
+    } else if (mode === 'schedule') {
+      // If just switching to schedule mode without time, clear it
+      if (!date || !time) {
+        onTimeChange('')
+      } else {
+        // If date and time provided, set the scheduled time
+        const dateTime = new Date(date)
+        const [hours, minutes] = time.split(':')
+        dateTime.setHours(parseInt(hours), parseInt(minutes))
+        onTimeChange(dateTime.toISOString())
+      }
     }
   }
 
@@ -1109,22 +1116,22 @@ function TimeSelection({
         </button>
         
         <button
-          onClick={() => handleTimeSelection('schedule')}
-          className={`p-3 border-2 rounded-xl text-center transition-all ${
-            timeMode === 'schedule'
-              ? 'text-white border-transparent'
-              : 'text-gray-700 border-gray-200 hover:border-gray-200'
-          }`}
-          style={{ 
-            backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
-          }}
-        >
-          <div className="flex items-center justify-center mb-1">
-            <CalendarClock className="w-4 h-4 mr-1" />
-            <span className="text-sm font-medium">{translations.schedule || 'Schedule'}</span>
-          </div>
-          <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
-        </button>
+  onClick={() => handleTimeSelection('schedule')}
+  className={`p-3 border-2 rounded-xl text-center transition-all ${
+    timeMode === 'schedule'
+      ? 'text-white border-transparent'
+      : 'text-gray-700 border-gray-200 hover:border-gray-200'
+  }`}
+  style={{ 
+    backgroundColor: timeMode === 'schedule' ? primaryColor : 'white'
+  }}
+>
+  <div className="flex items-center justify-center mb-1">
+    <CalendarClock className="w-4 h-4 mr-1" />
+    <span className="text-sm font-medium">{translations.schedule || 'Schedule'}</span>
+  </div>
+  <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
+</button>
       </div>
 
       {/* Scheduled Time Selection */}
@@ -1479,6 +1486,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     }).map(product => ({ ...product, categoryName: category.name }))
   )
 
+
   // Create a helper function to check if the order can be submitted:
   const canSubmitOrder = () => {
     if (storeData.isTemporarilyClosed) return false
@@ -1493,6 +1501,14 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       if (!customerInfo.address) return false
       if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
       if (!meetsMinimumOrder && !deliveryError) return false
+    }
+    
+    // Time selection validation for scheduled orders
+    // Check if scheduling mode is active (not 'asap') but no specific time selected
+    if (forceScheduleMode || (customerInfo.deliveryTime !== 'asap' && !storeData.isOpen)) {
+      if (!customerInfo.deliveryTime || customerInfo.deliveryTime === 'asap' || customerInfo.deliveryTime === '') {
+        return false
+      }
     }
     
     return true
@@ -1709,13 +1725,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
   
-    // NEW LOGIC: If store is closed and user selected "now", suggest scheduling
+    // Check if store is closed and user selected "now" - suggest scheduling
     if (customerInfo.deliveryTime === 'asap' && !storeData.isOpen) {
       setShowSchedulingModal(true)
       return
     }
   
-    // Rest of existing validations
+    // Basic validations
     if (!customerInfo.name || !customerInfo.phone) {
       alert('Please fill in required customer information')
       return
@@ -1728,6 +1744,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   
     if (!meetsMinimumOrder) {
       alert(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`)
+      return
+    }
+  
+    // NEW: Check if scheduled time is selected when not ordering "now"
+    if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
+      alert(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
       return
     }
   
@@ -1776,23 +1798,23 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         setCart([])
         setShowCartModal(false)
         
-        // RESET CUSTOMER INFO FORM
-      setCustomerInfo({
-        name: '',
-        phone: '',
-        email: '',
-        address: '',
-        address2: '',
-        deliveryTime: 'asap',
-        specialInstructions: '',
-        latitude: undefined,
-        longitude: undefined
-      })
-      
-      // Clear any delivery errors
-      setDeliveryError(null)
-      setCalculatedDeliveryFee(storeData.deliveryFee)
-
+        // Reset customer info form
+        setCustomerInfo({
+          name: '',
+          phone: '',
+          email: '',
+          address: '',
+          address2: '',
+          deliveryTime: 'asap',
+          specialInstructions: '',
+          latitude: undefined,
+          longitude: undefined
+        })
+        
+        // Clear any delivery errors
+        setDeliveryError(null)
+        setCalculatedDeliveryFee(storeData.deliveryFee)
+  
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
@@ -2153,7 +2175,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     primaryColor={primaryColor}
                     currencySymbol={currencySymbol}
                     translations={translations}
-                    disabled={storeData.isTemporarilyClosed}
+                    disabled={storeData.isTemporarilyClosed || !product.stock }
                     // searchTerm={searchTerm} // Pass search term for highlighting
                 />
                 ))
@@ -3250,39 +3272,65 @@ function OrderPanel({
 
         {/* Order Button */}
         <button
-          onClick={submitOrder}
-          disabled={!canSubmitOrder()}
-          className={`w-full py-4 rounded-xl text-white font-semibold transition-all hover:opacity-90 flex items-center justify-center ${
-            !canSubmitOrder() ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-          style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
-        >
-          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.382"/>
-          </svg>
-          {(() => {
-            if (storeData.isTemporarilyClosed) {
-              return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
-            } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
-              return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
-            } else if (deliveryError) {
-              return translations.deliveryNotAvailable || 'Delivery Not Available'
-            } else if (isOrderLoading) {
-              return translations.placingOrder || 'Placing Order...'
-            } else {
-              return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
-            }
-          })()}
-        </button>
+  onClick={submitOrder}
+  disabled={!canSubmitOrder()}
+  className={`w-full py-4 rounded-xl text-white font-semibold transition-all hover:opacity-90 flex items-center justify-center ${
+    !canSubmitOrder() ? 'opacity-50 cursor-not-allowed' : ''
+  }`}
+  style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
+>
+  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.382"/>
+  </svg>
+  {(() => {
+    // Check blocking conditions first
+    if (storeData.isTemporarilyClosed) {
+      return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
+    } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
+      return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
+    } else if (deliveryError) {
+      return translations.deliveryNotAvailable || 'Delivery Not Available'
+    } else if (isOrderLoading) {
+      return translations.placingOrder || 'Placing Order...'
+    }
+    
+    // Check step-by-step requirements
+    if (cart.length === 0) {
+      return translations.addItemsToCart || 'Add items to cart'
+    }
+    
+    if (!customerInfo.name || !customerInfo.phone) {
+      return translations.fillRequiredInfo || 'Fill required information'
+    }
+    
+    if (deliveryType === 'delivery' && !customerInfo.address) {
+      return translations.addDeliveryAddress || 'Add delivery address'
+    }
+    
+    if (!meetsMinimumOrder && deliveryType === 'delivery') {
+      return `${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)}`
+    }
+    
+    // CHECK TIME SELECTION BEFORE SHOWING FINAL ORDER BUTTON
+    if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
+      return translations.selectTimeForSchedule || 'Select time for schedule'
+    }
+    
+    // All requirements met - show final order button
+    return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
+  })()}
+</button>
 
-        <p className="text-xs text-gray-500 text-center mt-3">
-        {storeData.isTemporarilyClosed
-  ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
-  : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
-  ? (translations.selectDifferentArea || 'Please select an address within our delivery area')
-  : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
-}
-        </p>
+<p className="text-xs text-gray-500 text-center mt-3">
+  {storeData.isTemporarilyClosed
+    ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
+    : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
+    ? (translations.selectDifferentArea || 'Please select an address within our delivery area')
+    : customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')
+    ? (translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
+    : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
+  }
+</p>
       </div>
     </div>
   )
