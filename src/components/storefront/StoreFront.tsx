@@ -200,6 +200,83 @@ function SchedulingModal({
   )
 }
 
+
+function ErrorMessage({ 
+  isVisible, 
+  onClose, 
+  message, 
+  type = 'error', // 'error', 'warning', 'info'
+  primaryColor, 
+  translations 
+}: {
+  isVisible: boolean
+  onClose: () => void
+  message: string
+  type?: 'error' | 'warning' | 'info'
+  primaryColor: string
+  translations: any
+}) {
+  if (!isVisible) return null
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'error':
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          textColor: 'text-red-800',
+          icon: AlertCircle
+        }
+      case 'warning':
+        return {
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          textColor: 'text-orange-800',
+          icon: AlertTriangle
+        }
+      default:
+        return {
+          bg: 'bg-blue-50',
+          border: 'border-blue-200',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          textColor: 'text-blue-800',
+          icon: Info
+        }
+    }
+  }
+
+  const styles = getTypeStyles()
+  const IconComponent = styles.icon
+
+  return (
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+      <div className={`${styles.bg} ${styles.border} border rounded-xl shadow-xl p-4 sm:p-6`}>
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 ${styles.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+            <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${styles.iconColor}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm sm:text-base ${styles.textColor} leading-relaxed`}>
+              {message}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Add this component before your main StoreFront component
 function OrderSuccessMessage({ 
   isVisible, 
@@ -1421,6 +1498,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     orderNumber: string
   } | null>(null)
 
+  const [errorMessage, setErrorMessage] = useState<{
+    visible: boolean
+    message: string
+    type?: 'error' | 'warning' | 'info'
+  } | null>(null)
+
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
 
   
@@ -1443,6 +1526,21 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     message: string
     maxDistance?: number
   } | null>(null)
+
+
+  // Helper function to show errors
+const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  setErrorMessage({
+    visible: true,
+    message,
+    type
+  })
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    setErrorMessage(null)
+  }, 5000)
+}
 
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dineIn'>(getDefaultDeliveryType())
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -1682,9 +1780,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     
     if (currentQuantityInCart >= availableStock) {
       const itemWord = availableStock === 1 ? translations.item : translations.items
-      alert(translations.sorryOnlyStockAvailable
+      showError(translations.sorryOnlyStockAvailable
         .replace('{count}', availableStock.toString())
-        .replace('{itemWord}', itemWord))
+        .replace('{itemWord}', itemWord), 'warning')
       return
     }
   
@@ -1751,15 +1849,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               availableStock = variant?.stock || 0
             }
             
-         // Check if new quantity would exceed stock
-            if (newQuantity > availableStock) {
-              const itemWord = availableStock === 1 ? translations.item : translations.items
-              alert(translations.sorryOnlyStockAvailable
-                .replace('{count}', availableStock.toString())
-                .replace('{itemWord}', itemWord))
-              return item // Don't change quantity
-            }
-            
+          // Check if new quantity would exceed stock
+          if (newQuantity > availableStock) {
+            const itemWord = availableStock === 1 ? translations.item : translations.items
+            showError(translations.sorryOnlyStockAvailable
+              .replace('{count}', availableStock.toString())
+              .replace('{itemWord}', itemWord), 'warning')
+            return item // Don't change quantity
+          }
+              
             return {
               ...item,
               quantity: newQuantity,
@@ -1781,7 +1879,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   const submitOrder = async () => {
     // Validation for temporarily closed store
     if (storeData.isTemporarilyClosed) {
-      alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
+      showError(translations.storeTemporarilyClosed || 'Store is temporarily closed', 'info')
       return
     }
   
@@ -1791,25 +1889,25 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
   
-    // Basic validations
+   // Basic validations
     if (!customerInfo.name || !customerInfo.phone) {
-      alert('Please fill in required customer information')
+      showError(translations.fillRequiredInfo || 'Please fill in required customer information')
       return
     }
-  
+
     if (deliveryType === 'delivery' && !customerInfo.address) {
-      alert('Please provide delivery address')
+      showError(translations.addDeliveryAddress || 'Please provide delivery address')
       return
     }
-  
+
     if (!meetsMinimumOrder) {
-      alert(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`)
+      showError(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`, 'warning')
       return
     }
-  
+
     // NEW: Check if scheduled time is selected when not ordering "now"
     if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
-      alert(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
+      showError(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
       return
     }
   
@@ -1886,11 +1984,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           setOrderSuccessMessage(null)
         }, 10000)
       } else {
-        alert('Failed to create order. Please try again.')
+        showError(translations.failedToCreateOrder || 'Failed to create order. Please try again.', 'error')
       }
     } catch (error) {
       console.error('Order submission error:', error)
-      alert('Failed to submit order. Please try again.')
+      showError(translations.failedToSubmitOrder || 'Failed to submit order. Please try again.', 'error')
     } finally {
       setIsOrderLoading(false)
     }
@@ -2354,6 +2452,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           primaryColor={primaryColor}
           translations={translations}
           cart={cart} // Add this line
+          showError={showError}
         />
       )}
 
@@ -2420,6 +2519,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       translations={translations}
       storeData={storeData}
     />
+
+<ErrorMessage
+  isVisible={errorMessage?.visible || false}
+  onClose={() => setErrorMessage(null)}
+  message={errorMessage?.message || ''}
+  type={errorMessage?.type || 'error'}
+  primaryColor={primaryColor}
+  translations={translations}
+/>
 
 <SchedulingModal
   isOpen={showSchedulingModal}
@@ -2840,7 +2948,8 @@ function ProductModal({
   currencySymbol,
   primaryColor,
   translations,
-  cart = [] // Add cart prop
+  cart = [],
+  showError
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -2853,6 +2962,7 @@ function ProductModal({
   primaryColor: string
   translations: any
   cart?: CartItem[]
+  showError?: (message: string, type?: 'error' | 'warning' | 'info') => void
 }) {
   const [quantity, setQuantity] = useState(1)
 
@@ -2880,9 +2990,12 @@ function ProductModal({
   }, [maxQuantityCanAdd, quantity])
 
   const toggleModifier = (modifier: ProductModifier) => {
+    // @ts-ignore
     setSelectedModifiers(prev => {
+          // @ts-ignore
       const exists = prev.find(m => m.id === modifier.id)
       if (exists) {
+            // @ts-ignore
         return prev.filter(m => m.id !== modifier.id)
       } else {
         return [...prev, modifier]
@@ -2892,7 +3005,7 @@ function ProductModal({
 
   const handleAddToCart = () => {
     if (maxQuantityCanAdd === 0) {
-      alert(translations.itemOutOfStockOrMaxQuantity)
+      showError?.(translations.itemOutOfStockOrMaxQuantity, 'warning')
       return
     }
     

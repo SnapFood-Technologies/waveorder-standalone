@@ -140,6 +140,10 @@ onlyStockAvailable: string
     selectDifferentArea: string
     maxDeliveryDistance: string
 
+    failedToCreateOrder: string
+    failedToSubmitOrder: string
+
+
      // Success Message & Scheduling
      orderPrepared: string
      orderNumber: string
@@ -312,6 +316,9 @@ onlyStockAvailable: "Only {stock} available",
   tryDifferentAddress: "Try a different address",
   selectDifferentArea: "Please select an address within our delivery area",
   maxDeliveryDistance: "Maximum delivery distance",
+  failedToCreateOrder: "Failed to create order. Please try again.",
+  failedToSubmitOrder: "Failed to submit order. Please try again.",
+
 
   // Success Message & Scheduling
   orderPrepared: "Order Prepared!",
@@ -487,6 +494,9 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
   tryDifferentAddress: "Provoni një adresë tjetër",
   selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
   maxDeliveryDistance: "Distanca maksimale e dërgesës",
+  failedToCreateOrder: "Dështoi të krijojë porosinë. Ju lutemi provoni përsëri.",
+  failedToSubmitOrder: "Dështoi të dërgojë porosinë. Ju lutemi provoni përsëri.",
+
 
     // Success Message & Scheduling
     orderPrepared: "Porosia u Përgatit!",
