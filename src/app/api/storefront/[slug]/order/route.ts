@@ -26,49 +26,58 @@ function deg2rad(deg: number): number {
 
 // Server-side address parsing function (same as customer creation)
 function parseAndCleanAddress(addressString: string, latitude?: number, longitude?: number): any {
-  if (!addressString?.trim()) return null;
+   if (!addressString?.trim()) return null;
 
   const address = addressString.trim();
   
-  // If address contains commas, it's likely a formatted address
   if (address.includes(',')) {
     const parts = address.split(',').map((part: string) => part.trim());
     
-    // First part is usually the actual street
     const street = parts[0];
     
-    // Try to extract city from parts
+    // Extract city from parts[1]
     let city = '';
     if (parts.length >= 2) {
       let cityPart = parts[1];
-      // Remove postal codes from city part
       cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim();
-      if (cityPart) {
-        city = cityPart;
-      }
+      if (cityPart) city = cityPart;
     }
     
-    // Try to extract postal code
+    // Extract postal code
     let zipCode = '';
     const zipMatches = address.match(/\b\d{3,5}\s?\d{0,2}\b/g);
     if (zipMatches) {
       zipCode = zipMatches[zipMatches.length - 1].replace(/\s+/g, ' ').trim();
     }
     
-    // Try to extract country
+    // Process the last part for country AND additional
     let country = 'US';
-    const lastPart = parts[parts.length - 1].toLowerCase();
-    if (lastPart.includes('albania') || lastPart.includes('al')) {
-      country = 'AL';
-    } else if (lastPart.includes('greece') || lastPart.includes('gr')) {
-      country = 'GR';
-    } else if (lastPart.includes('italy') || lastPart.includes('it')) {
-      country = 'IT';
+    let additional = '';
+    
+    if (parts.length >= 3) {
+      const lastPart = parts[parts.length - 1];
+      const lastPartLower = lastPart.toLowerCase();
+      
+      // Detect country and extract additional
+      if (lastPartLower.includes('albania') || lastPartLower.includes('al')) {
+        country = 'AL';
+        // Extract everything after "albania"
+        additional = lastPart.replace(/albania/i, '').trim();
+      } else if (lastPartLower.includes('greece') || lastPartLower.includes('gr')) {
+        country = 'GR';
+        additional = lastPart.replace(/greece/i, '').trim();
+      } else if (lastPartLower.includes('italy') || lastPartLower.includes('it')) {
+        country = 'IT';
+        additional = lastPart.replace(/italy/i, '').trim();
+      } else {
+        // No country detected, treat entire last part as additional
+        additional = lastPart;
+      }
     }
     
     return {
       street,
-      additional: '',
+      additional,  // ← Now properly populated
       zipCode,
       city,
       country,
