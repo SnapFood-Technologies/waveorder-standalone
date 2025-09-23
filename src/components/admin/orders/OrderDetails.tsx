@@ -602,118 +602,121 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       </div>
 
       {/* Status Update Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <Edit className="w-5 h-5 mr-2 text-teal-600" />
-          Update Order Status
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Order Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                disabled={updating}
-              >
-                <option value="PENDING">Pending</option>
-                <option value="CONFIRMED">Confirmed</option>
-                <option value="PREPARING">Preparing</option>
-                <option value="READY">Ready</option>
-                <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-                <option value="DELIVERED">Delivered</option>
-                <option value="CANCELLED">Cancelled</option>
-                <option value="REFUNDED">Refunded</option>
-              </select>
-              <button
-                onClick={() => handleStatusChange(selectedStatus)}
-                disabled={updating || selectedStatus === order.status}
-                className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {updating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Update
-              </button>
-            </div>
-          </div>
+<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+  <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+    <Edit className="w-5 h-5 mr-2 text-teal-600" />
+    Update Order Statuses & Delivery
+  </h2>
+  
+  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    {/* Order Status */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
+      <div className="flex flex-col sm:flex-row xl:flex-col items-stretch space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          disabled={updating}
+        >
+          <option value="PENDING">Pending</option>
+          <option value="CONFIRMED">Confirmed</option>
+          <option value="PREPARING">Preparing</option>
+          <option value="READY">Ready</option>
+          <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
+          <option value="DELIVERED">Delivered</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="REFUNDED">Refunded</option>
+        </select>
+        <button
+          onClick={() => handleStatusChange(selectedStatus)}
+          disabled={updating || selectedStatus === order.status}
+          className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {updating ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Update Status
+        </button>
+      </div>
+    </div>
 
-          {/* Payment Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-              <select
-                value={selectedPaymentStatus}
-                onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                disabled={updating}
-              >
-                <option value="PENDING">Pending</option>
-                <option value="PAID">Paid</option>
-                <option value="FAILED">Failed</option>
-                <option value="REFUNDED">Refunded</option>
-              </select>
-              <button
-                onClick={() => updatePaymentStatus(selectedPaymentStatus)}
-                disabled={updating || selectedPaymentStatus === order.paymentStatus}
-                className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {updating ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                ) : (
-                  <CreditCard className="w-4 h-4 mr-2" />
-                )}
-                Update
-              </button>
-            </div>
-          </div>
-        </div>
+    {/* Payment Status */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+      <div className="flex flex-col sm:flex-row xl:flex-col items-stretch space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
+        <select
+          value={selectedPaymentStatus}
+          onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          disabled={updating}
+        >
+          <option value="PENDING">Pending</option>
+          <option value="PAID">Paid</option>
+          <option value="FAILED">Failed</option>
+          <option value="REFUNDED">Refunded</option>
+        </select>
+        <button
+          onClick={() => updatePaymentStatus(selectedPaymentStatus)}
+          disabled={updating || selectedPaymentStatus === order.paymentStatus}
+          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {updating ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+          ) : (
+            <CreditCard className="w-4 h-4 mr-2" />
+          )}
+          Update Payment
+        </button>
+      </div>
+    </div>
 
-        {/* Delivery/Pickup Time */}
-        <div className="mt-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {order.type === 'DELIVERY' ? 'Delivery Time' : order.type === 'PICKUP' ? 'Pickup Time' : 'Arrival Time'}
-          </label>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
-            <input
-              type="datetime-local"
-              value={deliveryTime}
-              onChange={(e) => setDeliveryTime(e.target.value)}
-              className="flex-1 max-w-xs border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              disabled={updating}
-            />
-            <button
-              onClick={updateDeliveryTime}
-              disabled={updating}
-              className="flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {updating ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              ) : (
-                <Clock className="w-4 h-4 mr-2" />
-              )}
-              Update Time
-            </button>
-            {deliveryTime && (
-              <button
-                onClick={() => {
-                  setDeliveryTime('')
-                  updateDeliveryTime()
-                }}
-                disabled={updating}
-                className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+    {/* Delivery/Pickup Time */}
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        {order.type === 'DELIVERY' ? 'Delivery Time' : order.type === 'PICKUP' ? 'Pickup Time' : 'Arrival Time'}
+      </label>
+      <div className="flex flex-col sm:flex-row xl:flex-col items-stretch space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
+        <input
+          type="datetime-local"
+          value={deliveryTime}
+          onChange={(e) => setDeliveryTime(e.target.value)}
+          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          disabled={updating}
+        />
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={updateDeliveryTime}
+            disabled={updating}
+            className="flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {updating ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+            ) : (
+              <Clock className="w-4 h-4 mr-2" />
             )}
-          </div>
+            Update Time
+          </button>
+          {deliveryTime && (
+            <button
+              onClick={() => {
+                setDeliveryTime('')
+                updateDeliveryTime()
+              }}
+              disabled={updating}
+              className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+              title="Clear time"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
       {/* Order Info Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
