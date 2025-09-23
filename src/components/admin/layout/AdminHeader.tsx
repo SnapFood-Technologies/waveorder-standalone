@@ -168,10 +168,13 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center space-x-2 lg:space-x-4">
-        {/* Notifications */}
-        <button className="p-2 text-gray-400 hover:text-gray-600 relative">
+        {/* Notifications - Now redirects to Order Notifications */}
+        <Link
+          href={`/admin/stores/${businessId}/settings/notifications`}
+          className="p-2 text-gray-400 hover:text-gray-600 relative"
+        >
           <Bell className="w-5 h-5" />
-        </button>
+        </Link>
 
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>

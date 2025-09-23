@@ -176,7 +176,11 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50 cursor-pointer">
+                <tr 
+                  key={order.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => window.location.href = `/admin/stores/${businessId}/orders/${order.id}`}
+                >
                   <td className="py-3 px-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">

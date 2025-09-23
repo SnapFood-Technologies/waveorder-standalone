@@ -1,6 +1,7 @@
 // app/api/storefront/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { trackBusinessView } from '@/lib/analytics'
 
 const prisma = new PrismaClient()
 
@@ -148,15 +149,18 @@ export async function GET(
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
+    // Track the view - call this after confirming business exists
+    // Run in background, don't await to avoid slowing down the response
+    trackBusinessView(business.id).catch(error => {
+      console.error('Failed to track view:', error)
+    })
+
     // Calculate business hours status
-    // @ts-ignore
     const isOpen = calculateIsOpen(business.businessHours, business.timezone)
-    // @ts-ignore
     const nextOpenTime = isOpen ? null : getNextOpenTime(business.businessHours, business.timezone)
-    // @ts-ignore
     const openingHoursSchema = formatBusinessHours(business.businessHours)
 
-    // Transform data for frontend
+    // Transform data for frontend (keep all your existing transformation logic)
     const storeData = {
       id: business.id,
       name: business.name,
@@ -177,6 +181,7 @@ export async function GET(
       fontFamily: business.fontFamily,
       whatsappButtonColor: business.whatsappButtonColor,
       mobileCartStyle: business.mobileCartStyle,
+      
       // Settings
       currency: business.currency,
       timezone: business.timezone,
@@ -190,8 +195,7 @@ export async function GET(
       pickupEnabled: business.pickupEnabled,
       dineInEnabled: business.dineInEnabled,
       estimatedDeliveryTime: business.estimatedDeliveryTime,
-      // @ts-ignore
-      estimatedPickupTime: business.estimatedPickupTime, // Added this field
+      estimatedPickupTime: business.estimatedPickupTime,
       
       // Payment
       paymentMethods: business.paymentMethods,
@@ -201,21 +205,15 @@ export async function GET(
       greetingMessage: business.greetingMessage,
       orderNumberFormat: business.orderNumberFormat,
       
-      // Store Closure Fields - NEW
-      // @ts-ignore
+      // Store Closure Fields
       isTemporarilyClosed: business.isTemporarilyClosed || false,
-      // @ts-ignore
       closureReason: business.closureReason,
-      // @ts-ignore
       closureMessage: business.closureMessage,
-      // @ts-ignore
       closureStartDate: business.closureStartDate?.toISOString(),
-      // @ts-ignore
       closureEndDate: business.closureEndDate?.toISOString(),
 
       storeLatitude: business.storeLatitude,
       storeLongitude: business.storeLongitude,
-      
       
       // SEO
       seoTitle: business.seoTitle,
@@ -228,11 +226,9 @@ export async function GET(
       favicon: business.favicon,
       noIndex: business.noIndex,
       
-      // Business Hours - Support both formats
-      // @ts-ignore
+      // Business Hours
       businessHours: business.businessHours,
-      // @ts-ignore
-      isOpen: isOpen && !business.isTemporarilyClosed, // Store is open only if both conditions are met
+      isOpen: isOpen && !business.isTemporarilyClosed,
       nextOpenTime,
       openingHoursSchema,
       
