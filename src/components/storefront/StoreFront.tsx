@@ -123,6 +123,84 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
 }
 
 // Add this component before your main StoreFront component
+function SchedulingModal({
+  isOpen,
+  onClose,
+  onSchedule,
+  primaryColor,
+  translations
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onSchedule: () => void
+  primaryColor: string
+  translations: any
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="p-6 bg-gradient-to-r from-orange-50 to-amber-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <Clock className="w-6 h-6 text-orange-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {translations.storeCurrentlyClosed || 'Store Currently Closed'}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          <p className="text-gray-700 leading-relaxed">
+            {translations.cannotPlaceNowOrder || 'We\'re currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we\'re open!'}
+          </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <h4 className="font-medium text-blue-900 mb-2">
+              {translations.schedulingBenefits || 'Why schedule your order?'}
+            </h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• {translations.guaranteedPreparation || 'Guaranteed preparation when we\'re open'}</li>
+              <li>• {translations.noWaitingTime || 'No waiting - ready when you arrive'}</li>
+              <li>• {translations.secureYourOrder || 'Secure your preferred time slot'}</li>
+            </ul>
+          </div>
+        </div>
+        
+        {/* Actions */}
+        <div className="p-6 bg-gray-50 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            {translations.close || 'Close'}
+          </button>
+          <button
+            onClick={onSchedule}
+            className="flex-1 px-4 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {translations.scheduleOrder || 'Schedule Order'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Add this component before your main StoreFront component
 function OrderSuccessMessage({ 
   isVisible, 
   onClose, 
@@ -930,7 +1008,8 @@ function TimeSelection({
   onTimeChange, 
   storeData, 
   primaryColor, 
-  translations 
+  translations,
+  forceScheduleMode = false // Add this prop
 }: {
   deliveryType: 'delivery' | 'pickup' | 'dineIn'
   selectedTime: string
@@ -938,14 +1017,21 @@ function TimeSelection({
   storeData: any
   primaryColor: string
   translations: any
+  forceScheduleMode?: boolean
 }) {
-  const [timeMode, setTimeMode] = useState('now')
+  const [timeMode, setTimeMode] = useState(forceScheduleMode ? 'schedule' : 'now')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showTimeDropdown, setShowTimeDropdown] = useState(false)
   
   // Generate time slots (same as before)
   const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType)
   
+  useEffect(() => {
+    if (forceScheduleMode) {
+      setTimeMode('schedule')
+    }
+  }, [forceScheduleMode])
+
   const availableDates = Array.from({ length: 7 }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() + i)
@@ -997,7 +1083,7 @@ function TimeSelection({
   const { timeLabel, nowLabel, estimatedTime } = getTimeLabels()
 
   return (
-    <div>
+    <div data-time-selection>
       <label className="block text-sm font-medium text-gray-700 mb-3">
         {timeLabel}
       </label>
@@ -1321,14 +1407,15 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedModifiers, setSelectedModifiers] = useState<ProductModifier[]>([])
   const [calculatedDeliveryFee, setCalculatedDeliveryFee] = useState(storeData.deliveryFee)
+  const [forceScheduleMode, setForceScheduleMode] = useState(false)
 
   const [orderSuccessMessage, setOrderSuccessMessage] = useState<{
     visible: boolean
     orderNumber: string
-  } | null>({
-    visible: true,
-    orderNumber: '124'
-  })
+  } | null>(null)
+
+  const [showSchedulingModal, setShowSchedulingModal] = useState(false)
+
   
   // Fixed delivery type initialization
   const getDefaultDeliveryType = () => {
@@ -1395,7 +1482,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // Create a helper function to check if the order can be submitted:
   const canSubmitOrder = () => {
     if (storeData.isTemporarilyClosed) return false
-    if (customerInfo.deliveryTime === 'asap' && !storeData.isOpen) return false
     
     // Basic requirements
     if (cart.length === 0) return false
@@ -1497,10 +1583,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     }
   }
 
-  const shouldDisableForTiming = customerInfo.deliveryTime === 'asap' && !storeData.isOpen
+  // const shouldDisableForTiming = customerInfo.deliveryTime === 'asap' && !storeData.isOpen
 
   const openProductModal = (product: Product) => {
-    if (storeData.isTemporarilyClosed || shouldDisableForTiming) return
+    if (storeData.isTemporarilyClosed) return
     
     setSelectedProduct(product)
     setSelectedVariant(product.variants.length > 0 ? product.variants[0] : null)
@@ -1625,17 +1711,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   
     // NEW LOGIC: If store is closed and user selected "now", suggest scheduling
     if (customerInfo.deliveryTime === 'asap' && !storeData.isOpen) {
-      const shouldSchedule = confirm(
-        `${translations.storeCurrentlyClosed || 'Store is currently closed'}. ${translations.wouldYouLikeToSchedule || 'Would you like to schedule your order for later instead?'}`
-      )
-      
-      if (shouldSchedule) {
-        // You could scroll to time selection or highlight it
-        document.querySelector('[data-time-selection]')?.scrollIntoView({ behavior: 'smooth' })
-        return
-      } else {
-        return
-      }
+      setShowSchedulingModal(true)
+      return
     }
   
     // Rest of existing validations
@@ -1715,7 +1792,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       // Clear any delivery errors
       setDeliveryError(null)
       setCalculatedDeliveryFee(storeData.deliveryFee)
-      
+
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
@@ -2076,7 +2153,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     primaryColor={primaryColor}
                     currencySymbol={currencySymbol}
                     translations={translations}
-                    disabled={storeData.isTemporarilyClosed || shouldDisableForTiming}
+                    disabled={storeData.isTemporarilyClosed}
                     // searchTerm={searchTerm} // Pass search term for highlighting
                 />
                 ))
@@ -2111,12 +2188,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           deliveryError={deliveryError}
           onClearDeliveryError={handleClearDeliveryError}
           canSubmitOrder={canSubmitOrder}
+          forceScheduleMode={forceScheduleMode}
         />
         </div>
       </div>
 
       {/* Mobile Cart Bar */}
-      {cartItemCount > 0 && !storeData.isTemporarilyClosed && !shouldDisableForTiming && storeData.mobileCartStyle !== 'badge' && (
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0  px-3  bg-white shadow-xl p-4 z-50">
             <button
             onClick={() => setShowCartModal(true)}
@@ -2173,6 +2251,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               deliveryError={deliveryError}
               onClearDeliveryError={handleClearDeliveryError}
               canSubmitOrder={canSubmitOrder}
+              forceScheduleMode={forceScheduleMode}
             />
             </div>
           </div>
@@ -2180,7 +2259,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       )}
 
       {/* Product Modal */}
-      {showProductModal && selectedProduct && !storeData.isTemporarilyClosed && !shouldDisableForTiming && (
+      {showProductModal && selectedProduct && !storeData.isTemporarilyClosed && (
         <ProductModal
           product={selectedProduct}
           selectedVariant={selectedVariant}
@@ -2234,7 +2313,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       </footer>
 
       {/* Floating Cart Badge (Mobile) */}
-      {cartItemCount > 0 && !storeData.isTemporarilyClosed && !shouldDisableForTiming && storeData.mobileCartStyle === 'badge' && (
+      {cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle === 'badge' && (
         <div 
             className="lg:hidden fixed bottom-10 right-5 w-15 h-15 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40"
             style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
@@ -2258,6 +2337,21 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       translations={translations}
       storeData={storeData}
     />
+
+<SchedulingModal
+  isOpen={showSchedulingModal}
+  onClose={() => setShowSchedulingModal(false)}
+  onSchedule={() => {
+    setShowSchedulingModal(false)
+    setForceScheduleMode(true) // This uses the state you just added above
+    setTimeout(() => {
+      document.querySelector('[data-time-selection]')?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }}
+  primaryColor={primaryColor}
+  translations={translations}
+/>
+
     </div>
   )
 }
@@ -2867,7 +2961,8 @@ function OrderPanel({
   isMobile = false,
   deliveryError = null,
   onClearDeliveryError,
-  canSubmitOrder
+  canSubmitOrder,
+  forceScheduleMode = false // ADD THIS LINE
 }: {
   storeData: any
   cart: CartItem[]
@@ -2896,6 +2991,7 @@ function OrderPanel({
   } | null
   onClearDeliveryError?: () => void
   canSubmitOrder: () => boolean
+  forceScheduleMode?: boolean // ADD THIS LINE
 }) {
   
   // Helper function to clear address and delivery error
@@ -3045,13 +3141,14 @@ function OrderPanel({
 
           {/* Enhanced Time Selection */}
           <TimeSelection
-            deliveryType={deliveryType}
-            selectedTime={customerInfo.deliveryTime}
-            onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
-            storeData={storeData}
-            primaryColor={primaryColor}
-            translations={translations}
-          />
+  deliveryType={deliveryType}
+  selectedTime={customerInfo.deliveryTime}
+  onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
+  storeData={storeData}
+  primaryColor={primaryColor}
+  translations={translations}
+  forceScheduleMode={forceScheduleMode}
+/>
         </div>
 
         {/* Cart Items */}
@@ -3073,7 +3170,7 @@ function OrderPanel({
                   <div className="flex items-center space-x-2 ml-3">
                     <button
                       onClick={() => updateCartItemQuantity(item.id, -1)}
-                      disabled={storeData.isTemporarilyClosed || (customerInfo.deliveryTime === 'asap' && !storeData.isOpen)}
+                      disabled={storeData.isTemporarilyClosed}
                       className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Minus className="w-4 h-4" />
@@ -3081,7 +3178,7 @@ function OrderPanel({
                     <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateCartItemQuantity(item.id, 1)}
-                      disabled={storeData.isTemporarilyClosed || (customerInfo.deliveryTime === 'asap' && !storeData.isOpen)}
+                      disabled={storeData.isTemporarilyClosed}
                       className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
@@ -3116,7 +3213,7 @@ function OrderPanel({
         )}
 
         {/* Minimum Order Warning - Only for delivery and when no delivery error */}
-        {!meetsMinimumOrder && deliveryType === 'delivery' && !deliveryError && !storeData.isTemporarilyClosed && !(customerInfo.deliveryTime === 'asap' && !storeData.isOpen) && (
+        {!meetsMinimumOrder && deliveryType === 'delivery' && !deliveryError && !storeData.isTemporarilyClosed && (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
             <p className="text-yellow-800 text-sm">
               {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
@@ -3166,8 +3263,6 @@ function OrderPanel({
           {(() => {
             if (storeData.isTemporarilyClosed) {
               return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
-            } else if (customerInfo.deliveryTime === 'asap' && !storeData.isOpen) {
-              return translations.closed || 'Store Closed'
             } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
               return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
             } else if (deliveryError) {
@@ -3182,8 +3277,6 @@ function OrderPanel({
 
         <p className="text-xs text-gray-500 text-center mt-3">
         {storeData.isTemporarilyClosed
-  ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
-  : (customerInfo.deliveryTime === 'asap' && !storeData.isOpen)
   ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
   : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
   ? (translations.selectDifferentArea || 'Please select an address within our delivery area')

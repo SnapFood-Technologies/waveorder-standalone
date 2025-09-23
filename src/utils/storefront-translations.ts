@@ -134,6 +134,16 @@ export interface StorefrontTranslations {
      weWillPrepareOrder: string
      storeCurrentlyClosed: string
      wouldYouLikeToSchedule: string
+
+     cannotPlaceNowOrder: string
+schedulingBenefits: string
+guaranteedPreparation: string
+noWaitingTime: string
+secureYourOrder: string
+continueAnyway: string
+scheduleOrder: string
+
+close: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -271,6 +281,15 @@ export interface StorefrontTranslations {
   storeCurrentlyClosed: "Store is currently closed",
   wouldYouLikeToSchedule: "Would you like to schedule your order for later instead?",
 
+  cannotPlaceNowOrder: "We're currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we're open!",
+schedulingBenefits: "Why schedule your order?",
+guaranteedPreparation: "Guaranteed preparation when we're open",
+noWaitingTime: "No waiting - ready when you arrive",
+secureYourOrder: "Secure your preferred time slot",
+continueAnyway: "Continue Anyway",
+scheduleOrder: "Schedule Order",
+close: "Close", // English
+
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -406,6 +425,15 @@ export interface StorefrontTranslations {
     weWillPrepareOrder: "Do ta përgatisim porosinë tuaj pasi të konfirmohet",
     storeCurrentlyClosed: "Dyqani është aktualisht i mbyllur",
     wouldYouLikeToSchedule: "A dëshironi të planifikoni porosinë tuaj për më vonë në vend të kësaj?",
+
+    cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikoni porosinë tuaj për kur të jemi të hapur!",
+schedulingBenefits: "Pse të planifikosh porosinë?",
+guaranteedPreparation: "Përgatitje e garantuar kur jemi të hapur",
+noWaitingTime: "Pa pritje - gati kur të arrini",
+secureYourOrder: "Siguroni kohën tuaj të preferuar",
+continueAnyway: "Vazhdo Sidoqoftë",
+scheduleOrder: "Planifiko Porosinë",
+close: "Mbyll", // Albanian
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {
