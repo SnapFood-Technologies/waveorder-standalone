@@ -1,6 +1,8 @@
 // app/api/storefront/[slug]/order/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { sendOrderNotification } from '@/lib/orderNotificationService'
+
 
 const prisma = new PrismaClient()
 
@@ -930,6 +932,59 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
 
     // Create inventory activities for the order (after order creation)
     await createInventoryActivities(order.id, business.id, items);
+
+  // Send order notification email
+try {
+  // First, get business notification settings
+  const businessWithNotifications = await prisma.business.findUnique({
+    where: { id: business.id },
+    select: {
+      orderNotificationsEnabled: true,
+      orderNotificationEmail: true,
+      email: true
+    }
+  })
+
+  if (businessWithNotifications?.orderNotificationsEnabled) {
+    // Get order items with product details for email
+    const orderItemsForEmail = await prisma.orderItem.findMany({
+      where: { orderId: order.id },
+      include: {
+        product: { select: { name: true } },
+        variant: { select: { name: true } }
+      }
+    })
+
+    // Call the order notification service
+    await sendOrderNotification(
+      {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        type: order.type,
+        total: order.total,
+        deliveryAddress: order.deliveryAddress,
+        notes: order.notes,
+        customer: { name: customer.name, phone: customer.phone },
+        items: orderItemsForEmail,
+        businessId: business.id
+      },
+      {
+        name: business.name,
+        orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
+        orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
+        email: businessWithNotifications.email,
+        currency: business.currency,
+        businessType: business.businessType,
+        language: business.language
+      }
+    )
+  }
+} catch (emailError) {
+  // Don't fail order creation if email fails
+  console.error('Order notification email failed:', emailError)
+}
+
 
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({

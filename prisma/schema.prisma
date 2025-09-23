@@ -155,12 +155,18 @@ model Business {
 
   isIndexable Boolean @default(false)
 
-  users      BusinessUser[]
-  categories Category[]
-  products   Product[]
-  orders     Order[]
-  customers  Customer[]
-  analytics  Analytics[]
+  // Order Notification Settings
+  orderNotificationsEnabled   Boolean   @default(false)
+  orderNotificationEmail      String? // Can be different from business email
+  orderNotificationLastUpdate DateTime?
+
+  users              BusinessUser[]
+  categories         Category[]
+  products           Product[]
+  orders             Order[]
+  customers          Customer[]
+  analytics          Analytics[]
+  orderNotifications OrderNotification[]
 
   onboardingCompleted  Boolean @default(false)
   onboardingStep       Int     @default(0)
@@ -171,6 +177,28 @@ model Business {
   updatedAt         DateTime            @updatedAt
   TeamInvitation    TeamInvitation[]
   InventoryActivity InventoryActivity[]
+}
+
+model OrderNotification {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  businessId   String      @db.ObjectId
+  orderId      String      @db.ObjectId
+  orderNumber  String
+  orderStatus  OrderStatus
+  customerName String
+  total        Float
+  notifiedAt   DateTime    @default(now())
+  emailSent    Boolean     @default(false)
+  emailError   String? // Store email delivery errors
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([orderId])
 }
 
 model BusinessUser {
@@ -398,7 +426,8 @@ model Order {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  items OrderItem[]
+  items         OrderItem[]
+  notifications OrderNotification[]
 
   customerLatitude  Float?
   customerLongitude Float?

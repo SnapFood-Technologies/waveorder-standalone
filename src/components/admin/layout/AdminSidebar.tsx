@@ -28,7 +28,8 @@ import {
   Activity,
   TrendingUp,
   UserPlus,
-  Globe
+  Globe,
+  Bell
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -205,6 +206,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Business', 
           href: `${baseUrl}/settings/business`, 
           icon: User, 
+          requiredPlan: 'FREE'
+        },
+        { 
+          name: 'Order Notifications', 
+          href: `${baseUrl}/settings/notifications`, 
+          icon: Bell, 
           requiredPlan: 'FREE'
         },
         { 
