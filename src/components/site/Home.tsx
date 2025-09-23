@@ -16,12 +16,12 @@ export default function Home() {
           <div className="grid lg:grid-cols-3 gap-16 items-center mb-12">
             <div className="lg:col-span-2">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                WhatsApp Ordering for Restaurants
+                WhatsApp Ordering for Any Business
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Create beautiful product catalogs and receive orders directly on WhatsApp. 
-                Perfect for restaurants, cafes, and food businesses. No expensive API required.
+                Create beautiful product catalogs and receive orders directly on WhatsApp. Perfect for restaurants, retail stores, cafes,
+                and any business that wants to sell online. No expensive API required.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
