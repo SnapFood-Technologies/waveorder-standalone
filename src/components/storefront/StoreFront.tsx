@@ -3178,36 +3178,56 @@ function OrderPanel({
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm">{item.name}</h4>
-                    {item.modifiers.length > 0 && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        + {item.modifiers.map((m: any) => m.name).join(', ')}
-                      </p>
-                    )}
-                    <p className="text-sm font-semibold mt-1">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+              {cart.map(item => {
+                // Find the original product to check for discount
+                const originalProduct = storeData.categories
+                  .flatMap((cat: any) => cat.products)
+                  .find((p: any) => p.id === item.productId)
+                
+                // Check if there's a discount (originalPrice exists and is higher than current price)
+                const hasDiscount = originalProduct?.originalPrice && originalProduct.originalPrice > originalProduct.price
+                const originalPricePerItem = originalProduct?.originalPrice || item.price
+                const modifierPrice = item.modifiers.reduce((sum: number, mod: any) => sum + mod.price, 0)
+                const originalTotalPrice = hasDiscount ? (originalPricePerItem + modifierPrice) * item.quantity : null
+
+                return (
+                  <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      {item.modifiers.length > 0 && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          + {item.modifiers.map((m: any) => m.name).join(', ')}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm font-semibold">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+                        {hasDiscount && originalTotalPrice && (
+                          <p className="text-xs text-gray-500 line-through">
+                            {currencySymbol}{originalTotalPrice.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-3">
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, -1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, 1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-3">
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, -1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, 1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
