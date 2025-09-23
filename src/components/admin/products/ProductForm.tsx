@@ -24,6 +24,7 @@ import {
   Tag
 } from 'lucide-react'
 import Link from 'next/link'
+import { useSubscription } from '@/hooks/useSubscription'
 
 interface ProductFormProps {
   businessId: string
@@ -76,6 +77,7 @@ interface ProductForm {
 export function ProductForm({ businessId, productId }: ProductFormProps) {
   const router = useRouter()
   const isEditing = productId !== 'new'
+  const { isPro } = useSubscription()
   
   const [form, setForm] = useState<ProductForm>({
     name: '',
@@ -687,48 +689,49 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sale Price (Optional) ({business.currency})
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                        {getCurrencySymbol()}
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={form.originalPrice ? form.price || '' : ''}
-                        onChange={(e) => {
-                          const salePrice = parseFloat(e.target.value) || 0
-                          if (salePrice > 0) {
-                            if (!form.originalPrice) {
-                              // If no original price set, move current price to original and set new sale price
+                 {/* Only show Sale Price for PRO users */}
+                  {isPro && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sale Price (Optional) ({business.currency})
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                          {getCurrencySymbol()}
+                        </span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={form.originalPrice ? form.price || '' : ''}
+                          onChange={(e) => {
+                            const salePrice = parseFloat(e.target.value) || 0
+                            if (salePrice > 0) {
+                              if (!form.originalPrice) {
+                                setForm(prev => ({ 
+                                  ...prev, 
+                                  originalPrice: prev.price || 0, 
+                                  price: salePrice 
+                                }))
+                              } else {
+                                setForm(prev => ({ ...prev, price: salePrice }))
+                              }
+                            } else {
                               setForm(prev => ({ 
                                 ...prev, 
-                                originalPrice: prev.price || 0, 
-                                price: salePrice 
+                                price: prev.originalPrice || prev.price, 
+                                originalPrice: undefined 
                               }))
-                            } else {
-                              setForm(prev => ({ ...prev, price: salePrice }))
                             }
-                          } else {
-                            // Clear sale price - move original back to price
-                            setForm(prev => ({ 
-                              ...prev, 
-                              price: prev.originalPrice || prev.price, 
-                              originalPrice: undefined 
-                            }))
-                          }
-                        }}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                        placeholder="0.00"
-                      />
+                          }}
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Discounted price (shows strikethrough on regular)
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Discounted price (shows strikethrough on regular)
-                    </p>
-                  </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -751,7 +754,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                 </div>
 
                 {/* Pricing Preview */}
-                {form.originalPrice && form.price < form.originalPrice && (
+                {isPro && form.originalPrice && form.price < form.originalPrice && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Tag className="w-4 h-4 text-green-600" />

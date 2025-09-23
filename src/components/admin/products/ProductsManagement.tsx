@@ -25,6 +25,8 @@ import {
   ChevronRight
 } from 'lucide-react'
 import Link from 'next/link'
+import { useSubscription } from '@/hooks/useSubscription'
+
 
 interface Product {
   id: string
@@ -109,6 +111,8 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     total: 0,
     pages: 0
   })
+
+  const { isPro } = useSubscription()
 
   useEffect(() => {
     fetchBusinessData()
@@ -612,23 +616,27 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                         {openDropdown === product.id && (
                           <div className="absolute right-0 top-8 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                             <div className="py-1">
-                              <Link
-                                href={`/admin/stores/${businessId}/products/${product.id}/inventory/activities`}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                onClick={() => setOpenDropdown(null)}
-                              >
-                                <Activity className="w-4 h-4 mr-3" />
-                                View Activities
-                              </Link>
-                              <Link
-                                href={`/admin/stores/${businessId}/inventory/adjustments?productId=${product.id}`}
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                onClick={() => setOpenDropdown(null)}
-                              >
-                                <Settings className="w-4 h-4 mr-3" />
-                                Stock Adjustment
-                              </Link>
-                              <button
+                               {isPro && (
+                                  <>
+                                    <Link
+                                      href={`/admin/stores/${businessId}/products/${product.id}/inventory/activities`}
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => setOpenDropdown(null)}
+                                    >
+                                      <Activity className="w-4 h-4 mr-3" />
+                                      View Activities
+                                    </Link>
+                                    <Link
+                                      href={`/admin/stores/${businessId}/inventory/adjustments?productId=${product.id}`}
+                                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                      onClick={() => setOpenDropdown(null)}
+                                    >
+                                      <Settings className="w-4 h-4 mr-3" />
+                                      Stock Adjustment
+                                    </Link>
+                                  </>
+                                )}
+                                                      <button
                                 onClick={() => {
                                   setDeleteModalProduct(product)
                                   setOpenDropdown(null)
