@@ -114,6 +114,9 @@ export interface StorefrontTranslations {
     supplyIssuesMessage: string
     temporaryClosureMessage: string
 
+    addItemsToCart: string
+    fillRequiredInfo: string
+    addDeliveryAddress: string
 
      // Delivery Zone Errors
     outsideDeliveryArea: string
@@ -142,6 +145,7 @@ noWaitingTime: string
 secureYourOrder: string
 continueAnyway: string
 scheduleOrder: string
+selectTimeForSchedule: string
 
 close: string
   }
@@ -289,6 +293,11 @@ secureYourOrder: "Secure your preferred time slot",
 continueAnyway: "Continue Anyway",
 scheduleOrder: "Schedule Order",
 close: "Close", // English
+selectTimeForSchedule: "Please select a time for your order",
+
+addItemsToCart: "Add items to cart",
+fillRequiredInfo: "Fill required information", 
+addDeliveryAddress: "Add delivery address",
 
   }
   
@@ -434,6 +443,11 @@ secureYourOrder: "Siguroni kohën tuaj të preferuar",
 continueAnyway: "Vazhdo Sidoqoftë",
 scheduleOrder: "Planifiko Porosinë",
 close: "Mbyll", // Albanian
+selectTimeForSchedule: "Ju lutemi zgjidhni një kohë për porosinë tuaj",
+addItemsToCart: "Shtoni artikuj në shportë",
+fillRequiredInfo: "Plotësoni informacionin e kërkuar",
+addDeliveryAddress: "Shtoni adresën e dërgesës",
+
   }
   
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {
