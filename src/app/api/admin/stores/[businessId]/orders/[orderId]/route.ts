@@ -147,6 +147,22 @@ export async function PUT(
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
     }
 
+
+    const validateStatusTransition = (currentStatus: string, newStatus: string): boolean => {
+        const validTransitions: Record<string, string[]> = {
+          PENDING: ['CONFIRMED', 'CANCELLED'],
+          CONFIRMED: ['PREPARING', 'CANCELLED'],
+          PREPARING: ['READY', 'CANCELLED'],
+          READY: ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'],
+          OUT_FOR_DELIVERY: ['DELIVERED', 'CANCELLED'], // Allow cancellation during delivery
+          DELIVERED: ['REFUNDED'], // Allow refund after delivery
+          CANCELLED: ['REFUNDED'], // Only refund allowed after cancellation
+          REFUNDED: [] // Final state - no changes allowed
+        }
+      
+        return validTransitions[currentStatus]?.includes(newStatus) || currentStatus === newStatus
+      }
+
     const body = await request.json()
 
     // Verify order exists and belongs to business
@@ -170,16 +186,12 @@ export async function PUT(
 
     // Status update with validation
     if (body.status && body.status !== existingOrder.status) {
-      const validStatuses = [
-        'PENDING', 'CONFIRMED', 'PREPARING', 'READY', 
-        'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', 'REFUNDED'
-      ]
-      
-      if (!validStatuses.includes(body.status)) {
-        return NextResponse.json({ message: 'Invalid status' }, { status: 400 })
-      }
-
-      updateData.status = body.status
+        if (!validateStatusTransition(existingOrder.status, body.status)) {
+          return NextResponse.json({ 
+            message: `Cannot change status from ${existingOrder.status} to ${body.status}` 
+          }, { status: 400 })
+        }
+        updateData.status = body.status
     }
 
     // Payment status update

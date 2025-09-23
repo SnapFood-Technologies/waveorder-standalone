@@ -153,6 +153,29 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     setTimeout(() => setSuccessMessage(null), 5000)
   }
 
+  const getValidStatusOptions = (currentStatus: string) => {
+    switch (currentStatus) {
+      case 'PENDING':
+        return ['PENDING', 'CONFIRMED', 'CANCELLED']
+      case 'CONFIRMED':
+        return ['CONFIRMED', 'PREPARING', 'CANCELLED']
+      case 'PREPARING':
+        return ['PREPARING', 'READY', 'CANCELLED']
+      case 'READY':
+        return ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
+      case 'OUT_FOR_DELIVERY':
+        return ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
+      case 'DELIVERED':
+        return ['DELIVERED', 'REFUNDED'] // Allow refund after delivery
+      case 'CANCELLED':
+        return ['CANCELLED', 'REFUNDED']
+      case 'REFUNDED':
+        return ['REFUNDED'] // Final state
+      default:
+        return ['PENDING']
+    }
+  }
+
   const updateOrderStatus = async (newStatus: string, rejectReason?: string) => {
     if (!order) return
 
@@ -180,9 +203,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         const data = await response.json()
         
         // If cancelling, revert stock
-        if (newStatus === 'CANCELLED') {
-          await revertOrderStock()
-        }
+        if (newStatus === 'CANCELLED' && order.status !== 'CANCELLED') {
+            await revertOrderStock()
+          }
         
         // Refresh order data
         await fetchOrder()
@@ -610,38 +633,35 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   
   <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
     {/* Order Status */}
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
-      <div className="flex flex-col sm:flex-row xl:flex-col items-stretch space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          disabled={updating}
-        >
-          <option value="PENDING">Pending</option>
-          <option value="CONFIRMED">Confirmed</option>
-          <option value="PREPARING">Preparing</option>
-          <option value="READY">Ready</option>
-          <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
-          <option value="REFUNDED">Refunded</option>
-        </select>
-        <button
-          onClick={() => handleStatusChange(selectedStatus)}
-          disabled={updating || selectedStatus === order.status}
-          className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {updating ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          Update Status
-        </button>
-      </div>
-    </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">Order Status</label>
+  <div className="flex flex-col sm:flex-row xl:flex-col items-stretch space-y-3 sm:space-y-0 sm:space-x-3 xl:space-x-0 xl:space-y-3">
+    <select 
+      value={selectedStatus} 
+      onChange={(e) => setSelectedStatus(e.target.value)}
+      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+      disabled={updating}
+    >
+      {getValidStatusOptions(order.status).map(status => (
+        <option key={status} value={status}>
+          {status.replace('_', ' ')}
+        </option>
+      ))}
+    </select>
+    <button
+      onClick={() => handleStatusChange(selectedStatus)}
+      disabled={updating || selectedStatus === order.status}
+      className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+    >
+      {updating ? (
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+      ) : (
+        <Save className="w-4 h-4 mr-2" />
+      )}
+      Update Status
+    </button>
+  </div>
+</div>
 
     {/* Payment Status */}
     <div>
