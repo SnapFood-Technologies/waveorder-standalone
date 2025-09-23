@@ -1918,7 +1918,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         customerName: customerInfo.name,
         customerPhone: customerInfo.phone,
         customerEmail: customerInfo.email,
-        deliveryAddress: `${customerInfo.address} ${customerInfo.address2}`.trim(),
+        deliveryAddress: `${customerInfo.address}${customerInfo.address2 ? `, ${customerInfo.address2}` : ''}`.trim(),
         deliveryType,
         deliveryTime: customerInfo.deliveryTime === 'asap' ? null : customerInfo.deliveryTime,
         paymentMethod: storeData.paymentMethods[0] || 'CASH',
