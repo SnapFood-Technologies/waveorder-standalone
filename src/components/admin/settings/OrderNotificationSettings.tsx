@@ -15,8 +15,9 @@ import {
   RefreshCw,
   ExternalLink,
   User,
-  MapPin,
-  DollarSign
+  DollarSign,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 interface OrderNotificationSettingsProps {
@@ -45,6 +46,13 @@ interface Business {
   currency: string
 }
 
+interface Pagination {
+  page: number
+  limit: number
+  total: number
+  pages: number
+}
+
 export function OrderNotificationSettings({ businessId }: OrderNotificationSettingsProps) {
   const router = useRouter()
   const [settings, setSettings] = useState<NotificationSettings>({
@@ -61,13 +69,20 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [loadingNotifications, setLoadingNotifications] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    pages: 0
+  })
 
   useEffect(() => {
     if (businessId) {
       fetchSettings()
       fetchNotifications()
     }
-  }, [businessId])
+  }, [businessId, currentPage])
 
   const fetchSettings = async () => {
     try {
@@ -95,10 +110,15 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   const fetchNotifications = async () => {
     try {
       setLoadingNotifications(true)
-      const response = await fetch(`/api/admin/stores/${businessId}/notifications`)
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10'
+      })
+      const response = await fetch(`/api/admin/stores/${businessId}/notifications?${params}`)
       if (response.ok) {
         const data = await response.json()
-        setNotifications(data.notifications)
+        setNotifications(data.notifications || [])
+        setPagination(data.pagination)
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
@@ -120,7 +140,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const formatStatus = (status: string) => {
-    return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    // return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+    return 'New Order Received'
+
   }
 
   const getStatusColor = (status: string) => {
@@ -210,6 +232,11 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
 
   const handleNotificationClick = (orderNumber: string) => {
     router.push(`/admin/stores/${businessId}/orders?search=${orderNumber}`)
+  }
+
+  const refreshNotifications = () => {
+    setCurrentPage(1)
+    fetchNotifications()
   }
 
   if (loading) {
@@ -317,7 +344,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 {settings.orderNotificationLastUpdate && (
                   <div className="flex items-center text-sm text-gray-600">
                     <Clock className="w-4 h-4 mr-2" />
-                    Last updated: {formatDate(settings.orderNotificationLastUpdate)}
+                    Email last updated: {formatDate(settings.orderNotificationLastUpdate)}
                   </div>
                 )}
                 {settings.lastOrderNotified && (
@@ -335,9 +362,16 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
       {/* Notification History */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Notifications</h2>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Recent Notifications</h2>
+            {pagination.total > 0 && (
+              <p className="text-sm text-gray-600 mt-1">
+                {pagination.total} total notifications
+              </p>
+            )}
+          </div>
           <button
-            onClick={fetchNotifications}
+            onClick={refreshNotifications}
             disabled={loadingNotifications}
             className="flex items-center text-sm text-teal-600 hover:text-teal-700 transition-colors"
           >
@@ -376,87 +410,128 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {notifications.map((notification) => (
-              <div 
-                key={notification.id} 
-                onClick={() => handleNotificationClick(notification.orderNumber)}
-                className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-transparent hover:border-teal-200"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <ShoppingBag className="w-5 h-5 text-teal-600" />
+          <>
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <div 
+                  key={notification.id} 
+                  onClick={() => handleNotificationClick(notification.orderNumber)}
+                  className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-transparent hover:border-teal-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <ShoppingBag className="w-5 h-5 text-teal-600" />
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        {/* Header */}
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="font-semibold text-gray-900 flex items-center">
+                            {notification.orderNumber}
+                            <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />
+                          </h4>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(notification.orderStatus)}`}>
+                            {formatStatus(notification.orderStatus)}
+                          </span>
+                        </div>
+                        
+                        {/* Details */}
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                          <div className="flex items-center">
+                            <User className="w-3 h-3 mr-1" />
+                            <span className="truncate">{notification.customerName}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <DollarSign className="w-3 h-3 mr-1" />
+                            <span className="font-medium">{formatCurrency(notification.total)}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Timestamp */}
+                        <div className="flex items-center text-xs text-gray-500">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>Notified {formatDateTime(notification.notifiedAt)}</span>
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
-                      {/* Header */}
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="font-semibold text-gray-900 flex items-center">
-                          {notification.orderNumber}
-                          <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />
-                        </h4>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(notification.orderStatus)}`}>
-                          {formatStatus(notification.orderStatus)}
-                        </span>
-                      </div>
-                      
-                      {/* Details */}
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                        <div className="flex items-center">
-                          <User className="w-3 h-3 mr-1" />
-                          <span className="truncate">{notification.customerName}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <DollarSign className="w-3 h-3 mr-1" />
-                          <span className="font-medium">{formatCurrency(notification.total)}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Timestamp */}
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>Notified {formatDateTime(notification.notifiedAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Status Badge */}
-                  <div className="flex flex-col items-end space-y-1">
-                    <div className="flex items-center text-sm">
-                      {notification.emailSent ? (
+                    {/* Status Badge */}
+                    <div className="flex flex-col items-end space-y-1">
+                      <div className="flex items-center text-sm">
+                     
                         <div className="flex items-center text-green-600">
                           <CheckCircle className="w-4 h-4 mr-1" />
-                          <span className="text-xs font-medium">Sent</span>
+                          <span className="text-xs font-medium">Admin Received</span>
                         </div>
-                      ) : notification.emailError ? (
-                        <div className="flex items-center text-red-600">
-                          <X className="w-4 h-4 mr-1" />
-                          <span className="text-xs font-medium">Failed</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-gray-500">
-                          <Clock className="w-4 h-4 mr-1" />
-                          <span className="text-xs font-medium">Pending</span>
+                       
+                        {/* {notification.emailSent ? (
+                          <div className="flex items-center text-green-600">
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Sent</span>
+                          </div>
+                        ) : notification.emailError ? (
+                          <div className="flex items-center text-red-600">
+                            <X className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Failed</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-gray-500">
+                            <Clock className="w-4 h-4 mr-1" />
+                            <span className="text-xs font-medium">Pending</span>
+                          </div>
+                        )} */}
+                      </div>
+                      
+                      {/* Error details */}
+                      {notification.emailError && (
+                        <div className="max-w-xs">
+                          <div className="bg-red-50 border border-red-200 rounded p-2">
+                            <p className="text-xs text-red-700 truncate" title={notification.emailError}>
+                              {notification.emailError}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
-                    
-                    {/* Error details */}
-                    {notification.emailError && (
-                      <div className="max-w-xs">
-                        <div className="bg-red-50 border border-red-200 rounded p-2">
-                          <p className="text-xs text-red-700 truncate" title={notification.emailError}>
-                            {notification.emailError}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-sm text-gray-700">
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                  {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                  {pagination.total} notifications
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={pagination.page === 1}
+                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  
+                  <span className="px-3 py-1 text-sm">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.pages))}
+                    disabled={pagination.page === pagination.pages}
+                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
