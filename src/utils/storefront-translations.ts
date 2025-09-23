@@ -9,6 +9,13 @@ export interface StorefrontTranslations {
     // Status
     open: string
     closed: string
+
+
+    itemOutOfStockOrMaxQuantity: string
+
+    onlyMoreCanBeAdded: string
+stockLabel: string
+inCartLabel: string
     
     // General
     welcome: string
@@ -51,6 +58,9 @@ export interface StorefrontTranslations {
     placingOrder: string
     clickingButton: string
     yourOrder: string
+
+    sorryOnlyStockAvailable: string
+
     
     // Product Modal
     chooseSize: string
@@ -59,6 +69,9 @@ export interface StorefrontTranslations {
     quantity: string
     addToCart: string
     
+
+    inCartAvailable: string
+onlyStockAvailable: string
     // Placeholders
     streetAddress: string
     apartment: string
@@ -127,6 +140,10 @@ export interface StorefrontTranslations {
     selectDifferentArea: string
     maxDeliveryDistance: string
 
+    failedToCreateOrder: string
+    failedToSubmitOrder: string
+
+
      // Success Message & Scheduling
      orderPrepared: string
      orderNumber: string
@@ -148,6 +165,17 @@ scheduleOrder: string
 selectTimeForSchedule: string
 
 close: string
+
+ // NEW STOCK-RELATED TRANSLATIONS
+ inCart: string
+ available: string
+ onlyAvailable: string
+ item: string
+ items: string
+ maximumQuantityInCart: string
+ canBeAdded: string
+ stock: string
+ max: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -168,6 +196,13 @@ close: string
     outOfStock: "Out of stock",
     onlyLeft: "Only",
     left: "left!",
+
+    onlyMoreCanBeAdded: "Only {count} more can be added to cart",
+stockLabel: "Stock",
+inCartLabel: "In cart",
+
+itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at maximum quantity in your cart",
+
     
     // Order Details
     orderDetails: "Order Details",
@@ -187,6 +222,7 @@ close: string
     asap: "ASAP",
     mins: "mins",
 
+    
     // English translations:
     now: "Now",
     schedule: "Schedule",
@@ -231,6 +267,9 @@ close: string
     placingOrder: "Placing Order...",
     clickingButton: "Clicking this button will open WhatsApp with your order details",
     yourOrder: "Your Order",
+
+    sorryOnlyStockAvailable: "Sorry, only {count} {itemWord} available in stock",
+
     
     // Product Modal
     chooseSize: "Choose Size",
@@ -242,6 +281,10 @@ close: string
     // Placeholders
     streetAddress: "Street address",
     apartment: "Apartment, suite, etc.",
+
+
+    inCartAvailable: "{inCart} in cart, {available} available",
+onlyStockAvailable: "Only {stock} available",
     
     // Footer
     poweredBy: "Powered by",
@@ -273,6 +316,9 @@ close: string
   tryDifferentAddress: "Try a different address",
   selectDifferentArea: "Please select an address within our delivery area",
   maxDeliveryDistance: "Maximum delivery distance",
+  failedToCreateOrder: "Failed to create order. Please try again.",
+  failedToSubmitOrder: "Failed to submit order. Please try again.",
+
 
   // Success Message & Scheduling
   orderPrepared: "Order Prepared!",
@@ -299,6 +345,17 @@ addItemsToCart: "Add items to cart",
 fillRequiredInfo: "Fill required information", 
 addDeliveryAddress: "Add delivery address",
 
+// NEW STOCK-RELATED TRANSLATIONS
+inCart: "in cart",
+available: "available",
+onlyAvailable: "Only available",
+item: "item",
+items: "items",
+maximumQuantityInCart: "Maximum quantity ({count}) already in cart",
+canBeAdded: "more can be added to cart",
+stock: "Stock",
+max: "Max",
+
   }
   
   const albanianTranslations: StorefrontTranslations = {
@@ -319,6 +376,14 @@ addDeliveryAddress: "Add delivery address",
     outOfStock: "Nuk ka në stok",
     onlyLeft: "Vetëm",
     left: "të mbetur!",
+
+
+    onlyMoreCanBeAdded: "Vetëm {count} më shumë mund të shtohen në shportë",
+stockLabel: "Stoku",
+inCartLabel: "Në shportë",
+
+itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut ose tashmë në sasinë maksimale në shportën tuaj",
+
 
     now: "Tani",
     schedule: "Planifiko",
@@ -381,6 +446,9 @@ addDeliveryAddress: "Add delivery address",
     placingOrder: "Duke vendosur porosinë...",
     clickingButton: "Klikimi i këtij butoni do të hapë WhatsApp me detajet e porosisë tuaj",
     yourOrder: "Porosia Juaj",
+
+    sorryOnlyStockAvailable: "Na vjen keq, vetëm {count} {itemWord} të disponueshme në stok",
+
     
     // Product Modal
     chooseSize: "Zgjidhni Madhësinë",
@@ -392,6 +460,9 @@ addDeliveryAddress: "Add delivery address",
     // Placeholders
     streetAddress: "Adresa e rrugës",
     apartment: "Apartamenti, suitë, etj.",
+
+    inCartAvailable: "{inCart} në shportë, {available} të disponueshme", 
+onlyStockAvailable: "Vetëm {stock} të disponueshme",
     
     // Footer
     poweredBy: "Mundësuar nga",
@@ -423,6 +494,9 @@ addDeliveryAddress: "Add delivery address",
   tryDifferentAddress: "Provoni një adresë tjetër",
   selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
   maxDeliveryDistance: "Distanca maksimale e dërgesës",
+  failedToCreateOrder: "Dështoi të krijojë porosinë. Ju lutemi provoni përsëri.",
+  failedToSubmitOrder: "Dështoi të dërgojë porosinë. Ju lutemi provoni përsëri.",
+
 
     // Success Message & Scheduling
     orderPrepared: "Porosia u Përgatit!",
@@ -447,6 +521,16 @@ selectTimeForSchedule: "Ju lutemi zgjidhni një kohë për porosinë tuaj",
 addItemsToCart: "Shtoni artikuj në shportë",
 fillRequiredInfo: "Plotësoni informacionin e kërkuar",
 addDeliveryAddress: "Shtoni adresën e dërgesës",
+  // NEW STOCK-RELATED TRANSLATIONS
+  inCart: "në shportë",
+  available: "të disponueshme",
+  onlyAvailable: "Vetëm të disponueshme",
+  item: "artikull",
+  items: "artikuj",
+  maximumQuantityInCart: "Sasia maksimale ({count}) tashmë në shportë",
+  canBeAdded: "më shumë mund të shtohen në shportë",
+  stock: "Stoku",
+  max: "Maks",
 
   }
   

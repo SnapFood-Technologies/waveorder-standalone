@@ -200,6 +200,83 @@ function SchedulingModal({
   )
 }
 
+
+function ErrorMessage({ 
+  isVisible, 
+  onClose, 
+  message, 
+  type = 'error', // 'error', 'warning', 'info'
+  primaryColor, 
+  translations 
+}: {
+  isVisible: boolean
+  onClose: () => void
+  message: string
+  type?: 'error' | 'warning' | 'info'
+  primaryColor: string
+  translations: any
+}) {
+  if (!isVisible) return null
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'error':
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          textColor: 'text-red-800',
+          icon: AlertCircle
+        }
+      case 'warning':
+        return {
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          textColor: 'text-orange-800',
+          icon: AlertTriangle
+        }
+      default:
+        return {
+          bg: 'bg-blue-50',
+          border: 'border-blue-200',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          textColor: 'text-blue-800',
+          icon: Info
+        }
+    }
+  }
+
+  const styles = getTypeStyles()
+  const IconComponent = styles.icon
+
+  return (
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+      <div className={`${styles.bg} ${styles.border} border rounded-xl shadow-xl p-4 sm:p-6`}>
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 ${styles.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+            <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${styles.iconColor}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm sm:text-base ${styles.textColor} leading-relaxed`}>
+              {message}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Add this component before your main StoreFront component
 function OrderSuccessMessage({ 
   isVisible, 
@@ -1421,6 +1498,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     orderNumber: string
   } | null>(null)
 
+  const [errorMessage, setErrorMessage] = useState<{
+    visible: boolean
+    message: string
+    type?: 'error' | 'warning' | 'info'
+  } | null>(null)
+
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
 
   
@@ -1443,6 +1526,21 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     message: string
     maxDistance?: number
   } | null>(null)
+
+
+  // Helper function to show errors
+const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+  setErrorMessage({
+    visible: true,
+    message,
+    type
+  })
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    setErrorMessage(null)
+  }, 5000)
+}
 
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dineIn'>(getDefaultDeliveryType())
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -1604,8 +1702,17 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   const openProductModal = (product: Product) => {
     if (storeData.isTemporarilyClosed) return
     
+    // Check if product has any stock available
+    const hasStock = product.variants.length > 0 
+      ? product.variants.some(v => v.stock > 0)
+      : product.stock > 0
+      
+    if (!hasStock) return
+    
     setSelectedProduct(product)
-    setSelectedVariant(product.variants.length > 0 ? product.variants[0] : null)
+    // Set default variant to first available variant with stock
+    const availableVariant = product.variants.find(v => v.stock > 0)
+    setSelectedVariant(availableVariant || (product.variants.length > 0 ? product.variants[0] : null))
     setSelectedModifiers([])
     setShowProductModal(true)
   }
@@ -1665,12 +1772,26 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   }
 
   const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = []) => {
+    // Check stock availability
+    const availableStock = variant?.stock || product.stock
+    const cartItemId = `${product.id}-${variant?.id || 'default'}-${modifiers.map(m => m.id).join(',')}`
+    const existingCartItem = cart.find(item => item.id === cartItemId)
+    const currentQuantityInCart = existingCartItem?.quantity || 0
+    
+    if (currentQuantityInCart >= availableStock) {
+      const itemWord = availableStock === 1 ? translations.item : translations.items
+      showError(translations.sorryOnlyStockAvailable
+        .replace('{count}', availableStock.toString())
+        .replace('{itemWord}', itemWord), 'warning')
+      return
+    }
+  
     const basePrice = variant?.price || product.price
     const modifierPrice = modifiers.reduce((sum, mod) => sum + mod.price, 0)
     const totalPrice = basePrice + modifierPrice
-
+  
     const cartItem: CartItem = {
-      id: `${product.id}-${variant?.id || 'default'}-${modifiers.map(m => m.id).join(',')}`,
+      id: cartItemId,
       productId: product.id,
       variantId: variant?.id,
       name: `${product.name}${variant ? ` (${variant.name})` : ''}`,
@@ -1679,9 +1800,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       modifiers,
       totalPrice
     }
-
+  
     setCart(prev => {
-      const existingIndex = prev.findIndex(item => item.id === cartItem.id)
+      const existingIndex = prev.findIndex(item => item.id === cartItemId)
       if (existingIndex >= 0) {
         const updated = [...prev]
         updated[existingIndex] = {
@@ -1693,7 +1814,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       }
       return [...prev, cartItem]
     })
-
+  
     setShowProductModal(false)
   }
 
@@ -1702,15 +1823,52 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return prev.map(item => {
         if (item.id === itemId) {
           const newQuantity = Math.max(0, item.quantity + change)
-          if (newQuantity === 0) return null  // This removes the item
-          return {
-            ...item,
-            quantity: newQuantity,
-            totalPrice: newQuantity * (item.price + item.modifiers.reduce((sum, mod) => sum + mod.price, 0))
+          
+          // If removing items, allow it
+          if (change < 0) {
+            if (newQuantity === 0) return null  // Remove item
+            return {
+              ...item,
+              quantity: newQuantity,
+              totalPrice: newQuantity * (item.price + item.modifiers.reduce((sum, mod) => sum + mod.price, 0))
+            }
           }
+          
+          // If adding items, check stock limits
+          if (change > 0) {
+            // Find the original product and variant to check stock
+            const originalProduct = storeData.categories
+              .flatMap((cat: any) => cat.products)
+              .find((p: any) => p.id === item.productId)
+            
+            if (!originalProduct) return item // Safety check
+            
+            let availableStock = originalProduct.stock
+            if (item.variantId) {
+              const variant = originalProduct.variants?.find((v: any) => v.id === item.variantId)
+              availableStock = variant?.stock || 0
+            }
+            
+          // Check if new quantity would exceed stock
+          if (newQuantity > availableStock) {
+            const itemWord = availableStock === 1 ? translations.item : translations.items
+            showError(translations.sorryOnlyStockAvailable
+              .replace('{count}', availableStock.toString())
+              .replace('{itemWord}', itemWord), 'warning')
+            return item // Don't change quantity
+          }
+              
+            return {
+              ...item,
+              quantity: newQuantity,
+              totalPrice: newQuantity * (item.price + item.modifiers.reduce((sum, mod) => sum + mod.price, 0))
+            }
+          }
+          
+          return item
         }
         return item
-      }).filter(Boolean) as CartItem[]  // This filters out null values
+      }).filter(Boolean) as CartItem[]
     })
   }
 
@@ -1721,7 +1879,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   const submitOrder = async () => {
     // Validation for temporarily closed store
     if (storeData.isTemporarilyClosed) {
-      alert(translations.storeTemporarilyClosed || 'Store is temporarily closed')
+      showError(translations.storeTemporarilyClosed || 'Store is temporarily closed', 'info')
       return
     }
   
@@ -1731,25 +1889,25 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
   
-    // Basic validations
+   // Basic validations
     if (!customerInfo.name || !customerInfo.phone) {
-      alert('Please fill in required customer information')
+      showError(translations.fillRequiredInfo || 'Please fill in required customer information')
       return
     }
-  
+
     if (deliveryType === 'delivery' && !customerInfo.address) {
-      alert('Please provide delivery address')
+      showError(translations.addDeliveryAddress || 'Please provide delivery address')
       return
     }
-  
+
     if (!meetsMinimumOrder) {
-      alert(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`)
+      showError(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`, 'warning')
       return
     }
-  
+
     // NEW: Check if scheduled time is selected when not ordering "now"
     if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
-      alert(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
+      showError(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
       return
     }
   
@@ -1826,11 +1984,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           setOrderSuccessMessage(null)
         }, 10000)
       } else {
-        alert('Failed to create order. Please try again.')
+        showError(translations.failedToCreateOrder || 'Failed to create order. Please try again.', 'error')
       }
     } catch (error) {
       console.error('Order submission error:', error)
-      alert('Failed to submit order. Please try again.')
+      showError(translations.failedToSubmitOrder || 'Failed to submit order. Please try again.', 'error')
     } finally {
       setIsOrderLoading(false)
     }
@@ -2168,16 +2326,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 }
                 
                 return filteredProducts.map(product => (
-                <ProductCard 
+                  <ProductCard 
                     key={product.id} 
                     product={product} 
                     onOpenModal={openProductModal}
                     primaryColor={primaryColor}
                     currencySymbol={currencySymbol}
                     translations={translations}
-                    disabled={storeData.isTemporarilyClosed || !product.stock }
-                    // searchTerm={searchTerm} // Pass search term for highlighting
-                />
+                    disabled={storeData.isTemporarilyClosed}
+                    cart={cart} // Add this line
+                  />
                 ))
             })()}
             </div>
@@ -2293,6 +2451,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           currencySymbol={currencySymbol}
           primaryColor={primaryColor}
           translations={translations}
+          cart={cart} // Add this line
+          showError={showError}
         />
       )}
 
@@ -2359,6 +2519,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       translations={translations}
       storeData={storeData}
     />
+
+<ErrorMessage
+  isVisible={errorMessage?.visible || false}
+  onClose={() => setErrorMessage(null)}
+  message={errorMessage?.message || ''}
+  type={errorMessage?.type || 'error'}
+  primaryColor={primaryColor}
+  translations={translations}
+/>
 
 <SchedulingModal
   isOpen={showSchedulingModal}
@@ -2642,14 +2811,14 @@ function EmptyState({
   )
 }
 
-// Fixed Product Card Component - Properly disabled when store is closed
 function ProductCard({ 
   product, 
   onOpenModal, 
   primaryColor, 
   currencySymbol,
   translations,
-  disabled = false
+  disabled = false,
+  cart = [] // Add cart prop to check current quantities
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -2657,16 +2826,29 @@ function ProductCard({
   currencySymbol: string
   translations: any
   disabled?: boolean
+  cart?: CartItem[]
 }) {
   const hasImage = product.images.length > 0
+  
+  // Calculate total quantity in cart for this product (all variants)
+  const totalInCart = cart
+    .filter(item => item.productId === product.id)
+    .reduce((sum, item) => sum + item.quantity, 0)
+  
+  // Check if product has any stock available
+  const hasStock = product.variants.length > 0 
+    ? product.variants.some(v => v.stock > 0)
+    : product.stock > 0
+  
+  const isOutOfStock = !hasStock
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow ${
-      disabled ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'
+      disabled || isOutOfStock ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'
     }`}>
       <div 
         className="flex items-start p-5"
-        onClick={() => !disabled && onOpenModal(product)}
+        onClick={() => !disabled && !isOutOfStock && onOpenModal(product)}
       >
         <div className="flex-1 flex flex-col justify-between">
           <div>
@@ -2683,7 +2865,6 @@ function ProductCard({
               </div>
             </div>
             
-            {/* Reserve space for description with proper line clamping */}
             <div className="mb-1">
               {product.description && (
                 <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
@@ -2709,21 +2890,27 @@ function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (!disabled && product.stock > 0) {
+                  if (!disabled && !isOutOfStock) {
                     onOpenModal(product)
                   }
                 }}
-                disabled={disabled || product.stock === 0}
+                disabled={disabled || isOutOfStock}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110 transition-transform flex-shrink-0"
-                style={{ backgroundColor: disabled ? '#9ca3af' : primaryColor }}
+                style={{ backgroundColor: disabled || isOutOfStock ? '#9ca3af' : primaryColor }}
               >
                 <Plus className="w-4 h-4" />
               </button>
             </div>
-            {/* Stock info */}
-            {product.stock === 0 && (
+            
+            {/* Enhanced stock info */}
+            {isOutOfStock && (
               <p className="text-red-600 text-sm mt-2">{translations.outOfStock || 'Out of stock'}</p>
             )}
+           {!isOutOfStock && totalInCart > 0 && (
+  <p className="text-sm mt-2" style={{color: primaryColor}}>
+    {totalInCart} {translations.inCart}
+  </p>
+)}
           </div>
         </div>
         
@@ -2732,14 +2919,14 @@ function ProductCard({
             <img 
               src={product.images[0]} 
               alt={product.name}
-              className={`w-full h-full object-cover rounded-lg ${disabled ? 'filter grayscale' : ''}`}
+              className={`w-full h-full object-cover rounded-lg ${disabled || isOutOfStock ? 'filter grayscale' : ''}`}
             />
           </div>
         )}
         
         {!hasImage && (
           <div className={`w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0 ${
-            disabled ? 'filter grayscale' : ''
+            disabled || isOutOfStock ? 'filter grayscale' : ''
           }`}>
             <Package className="w-7 h-7" />
           </div>
@@ -2750,7 +2937,6 @@ function ProductCard({
 }
   
 
-// Improved Product Modal Component - Fixed footer visibility and scrolling
 function ProductModal({
   product,
   selectedVariant,
@@ -2761,7 +2947,9 @@ function ProductModal({
   onClose,
   currencySymbol,
   primaryColor,
-  translations
+  translations,
+  cart = [],
+  showError
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -2773,20 +2961,41 @@ function ProductModal({
   currencySymbol: string
   primaryColor: string
   translations: any
+  cart?: CartItem[]
+  showError?: (message: string, type?: 'error' | 'warning' | 'info') => void
 }) {
   const [quantity, setQuantity] = useState(1)
+
+  // Calculate available stock and current cart quantity
+  const availableStock = selectedVariant?.stock || product.stock
+  const cartItemId = `${product.id}-${selectedVariant?.id || 'default'}-${selectedModifiers.map(m => m.id).join(',')}`
+  const existingCartItem = cart.find(item => item.id === cartItemId)
+  const currentQuantityInCart = existingCartItem?.quantity || 0
+  const maxQuantityCanAdd = Math.max(0, availableStock - currentQuantityInCart)
 
   const basePrice = selectedVariant?.price || product.price
   const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
   const totalPrice = (basePrice + modifierPrice) * quantity
 
+  // Reset quantity when variant changes or modal opens
+  useEffect(() => {
+    setQuantity(1)
+  }, [selectedVariant, product.id])
+
+  // Adjust quantity if it exceeds available stock
+  useEffect(() => {
+    if (quantity > maxQuantityCanAdd && maxQuantityCanAdd > 0) {
+      setQuantity(maxQuantityCanAdd)
+    }
+  }, [maxQuantityCanAdd, quantity])
+
   const toggleModifier = (modifier: ProductModifier) => {
-      // @ts-ignore
+    // @ts-ignore
     setSelectedModifiers(prev => {
-       // @ts-ignore
+          // @ts-ignore
       const exists = prev.find(m => m.id === modifier.id)
       if (exists) {
-           // @ts-ignore
+            // @ts-ignore
         return prev.filter(m => m.id !== modifier.id)
       } else {
         return [...prev, modifier]
@@ -2795,22 +3004,23 @@ function ProductModal({
   }
 
   const handleAddToCart = () => {
+    if (maxQuantityCanAdd === 0) {
+      showError?.(translations.itemOutOfStockOrMaxQuantity, 'warning')
+      return
+    }
+    
     for (let i = 0; i < quantity; i++) {
       onAddToCart(product, selectedVariant || undefined, selectedModifiers)
     }
   }
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
-        {/* Header - Fixed */}
+        {/* Header */}
         <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
-            <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
-            >
+            <button onClick={onClose} className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors">
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
@@ -2819,7 +3029,27 @@ function ProductModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
-            {/* Conditional Image Section */}
+            {/* Stock Warning */}
+            {maxQuantityCanAdd === 0 && (
+              <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                <p className="text-red-800 text-sm font-medium">
+                {availableStock === 0 
+                    ? (translations.outOfStock || 'This item is out of stock')
+                    : translations.maximumQuantityInCart.replace('{count}', availableStock.toString())
+                  }
+                </p>
+              </div>
+            )}
+            
+            {maxQuantityCanAdd > 0 && maxQuantityCanAdd < 5 && (
+              <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                <p className="text-orange-800 text-sm font-medium">
+                  {translations.onlyMoreCanBeAdded.replace('{count}', maxQuantityCanAdd.toString())} ({translations.stockLabel}: {availableStock}, {translations.inCartLabel}: {currentQuantityInCart})
+                </p>
+              </div>
+            )}
+
+            {/* Image Section */}
             {product.images.length > 0 && (
               <div className="relative">
                 <div className="w-full max-w-sm mx-auto aspect-square">
@@ -2843,7 +3073,7 @@ function ProductModal({
               </div>
             )}
 
-            {/* Variants */}
+            {/* Variants with Stock Info */}
             {product.variants.length > 0 && (
               <div>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
@@ -2851,27 +3081,53 @@ function ProductModal({
                   {translations.chooseSize || 'Choose Size'}
                 </h3>
                 <div className="space-y-3">
-                  {product.variants.map(variant => (
-                    <button
-                      key={variant.id}
-                      onClick={() => setSelectedVariant(variant)}
-                      className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                        selectedVariant?.id === variant.id
-                          ? 'bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
-                      }`}
-                      style={{
-                        borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
-                      }}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-800">{variant.name}</span>
-                        <span className="font-bold" style={{ color: primaryColor }}>
-                          {currencySymbol}{variant.price.toFixed(2)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
+                  {product.variants.map(variant => {
+                    const variantCartItemId = `${product.id}-${variant.id}-${selectedModifiers.map(m => m.id).join(',')}`
+                    const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
+                    const variantAvailable = variant.stock - variantInCart
+                    
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={() => variant.stock > 0 ? setSelectedVariant(variant) : null}
+                        disabled={variant.stock === 0}
+                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                          selectedVariant?.id === variant.id
+                            ? 'bg-blue-50'
+                            : variant.stock === 0
+                            ? 'border-gray-200 opacity-50 cursor-not-allowed bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                        }`}
+                        style={{
+                          borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                        }}
+                      >
+                        <div className="flex justify-between items-center">
+                        <div>
+                          <span className="font-medium text-gray-800">{variant.name}</span>
+                          {variant.stock === 0 && (
+                            <span className="block text-xs text-red-600 mt-1">{translations.outOfStock}</span>
+                          )}
+                          {variant.stock > 0 && variantInCart > 0 && (
+                            <span className="block text-xs text-blue-600 mt-1">
+                              {translations.inCartAvailable
+                                .replace('{inCart}', variantInCart.toString())
+                                .replace('{available}', variantAvailable.toString())}
+                            </span>
+                          )}
+                          {variant.stock > 0 && variantInCart === 0 && variant.stock <= 5 && (
+                            <span className="block text-xs text-orange-600 mt-1">
+                              {translations.onlyStockAvailable.replace('{stock}', variant.stock.toString())}
+                            </span>
+                          )}
+                        </div>
+                          <span className="font-bold" style={{ color: primaryColor }}>
+                            {currencySymbol}{variant.price.toFixed(2)}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -2911,34 +3167,38 @@ function ProductModal({
               </div>
             )}
 
-            {/* Quantity */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                {translations.quantity || 'Quantity'}
-              </h3>
-              <div className="flex items-center justify-center space-x-6">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                >
-                  <Minus className="w-5 h-5 text-gray-600" />
-                </button>
-                <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
-                  {quantity}
-                </span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                >
-                  <Plus className="w-5 h-5 text-gray-600" />
-                </button>
+            {/* Quantity Selection */}
+            {maxQuantityCanAdd > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.quantity || 'Quantity'}
+                </h3>
+                <div className="flex items-center justify-center space-x-6">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                  >
+                    <Minus className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <span className="text-2xl font-bold w-16 text-center" style={{ color: primaryColor }}>
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(Math.min(maxQuantityCanAdd, quantity + 1))}
+                    disabled={quantity >= maxQuantityCanAdd}
+                    className="w-12 h-12 rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+                
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Footer - Fixed at bottom */}
+        {/* Footer */}
         <div className="p-6 bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
             <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
@@ -2948,10 +3208,14 @@ function ProductModal({
           </div>
           <button
             onClick={handleAddToCart}
-            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg"
-            style={{ backgroundColor: primaryColor }}
+            disabled={maxQuantityCanAdd === 0}
+            className="w-full py-4 rounded-xl text-white font-semibold text-lg hover:opacity-90 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: maxQuantityCanAdd === 0 ? '#9ca3af' : primaryColor }}
           >
-            {translations.addToCart || 'Add to Cart'}
+            {maxQuantityCanAdd === 0 
+              ? (translations.outOfStock || 'Out of Stock')
+              : (translations.addToCart || 'Add to Cart')
+            }
           </button>
         </div>
       </div>
@@ -3178,36 +3442,56 @@ function OrderPanel({
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {cart.map(item => (
-                <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm">{item.name}</h4>
-                    {item.modifiers.length > 0 && (
-                      <p className="text-xs text-gray-600 mt-1">
-                        + {item.modifiers.map((m: any) => m.name).join(', ')}
-                      </p>
-                    )}
-                    <p className="text-sm font-semibold mt-1">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+              {cart.map(item => {
+                // Find the original product to check for discount
+                const originalProduct = storeData.categories
+                  .flatMap((cat: any) => cat.products)
+                  .find((p: any) => p.id === item.productId)
+                
+                // Check if there's a discount (originalPrice exists and is higher than current price)
+                const hasDiscount = originalProduct?.originalPrice && originalProduct.originalPrice > originalProduct.price
+                const originalPricePerItem = originalProduct?.originalPrice || item.price
+                const modifierPrice = item.modifiers.reduce((sum: number, mod: any) => sum + mod.price, 0)
+                const originalTotalPrice = hasDiscount ? (originalPricePerItem + modifierPrice) * item.quantity : null
+
+                return (
+                  <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      {item.modifiers.length > 0 && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          + {item.modifiers.map((m: any) => m.name).join(', ')}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm font-semibold">{currencySymbol}{item.totalPrice.toFixed(2)}</p>
+                        {hasDiscount && originalTotalPrice && (
+                          <p className="text-xs text-gray-500 line-through">
+                            {currencySymbol}{originalTotalPrice.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-3">
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, -1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateCartItemQuantity(item.id, 1)}
+                        disabled={storeData.isTemporarilyClosed}
+                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-3">
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, -1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartItemQuantity(item.id, 1)}
-                      disabled={storeData.isTemporarilyClosed}
-                      className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -3220,9 +3504,9 @@ function OrderPanel({
                 <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
-              {cartDeliveryFee > 0 && !deliveryError && (
+              {deliveryType === 'delivery' && !deliveryError && (
                 <div className="flex justify-between text-sm">
-                  <span>{deliveryType === 'delivery' ? (translations.deliveryFee || 'Delivery Fee') : (translations.serviceFee || 'Service Fee')}</span>
+                  <span>{translations.deliveryFee || 'Delivery Fee'}</span>
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}

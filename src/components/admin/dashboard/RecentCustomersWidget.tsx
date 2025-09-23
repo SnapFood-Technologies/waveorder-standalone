@@ -82,27 +82,27 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200">
       <div className="flex sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-  <h3 className="text-lg font-semibold text-gray-900">Recent Customers</h3>
-  <div className="flex space-y-2 sm:space-y-0 sm:space-x-2">
-    {customers.length > 0 && (
-      <div className="flex items-center space-x-2">
-        <Link
-          href={`/admin/stores/${businessId}/customers/create`}
-          className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
-        >
-          <Plus className="w-3 h-3 mr-1" />
-          Add
-        </Link>
-        <Link
-          href={`/admin/stores/${businessId}/customers`}
-          className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
-        >
-          View All
-        </Link>
+        <h3 className="text-lg font-semibold text-gray-900">Recent Customers</h3>
+        <div className="flex space-y-2 sm:space-y-0 sm:space-x-2">
+          {customers.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <Link
+                href={`/admin/stores/${businessId}/customers/create`}
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add
+              </Link>
+              <Link
+                href={`/admin/stores/${businessId}/customers`}
+                className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+              >
+                View All
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-</div>
 
       {customers.length === 0 ? (
         <div className="text-center py-12">
@@ -132,53 +132,53 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {customers.map((customer) => {
-              
-                
-                return (
-                  <tr key={customer.id} className="hover:bg-gray-50 cursor-pointer">
-                    <td className="py-3 px-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Users className="w-4 h-4 text-blue-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{customer.name}</p>
-                        </div>
+              {customers.map((customer) => (
+                <tr 
+                  key={customer.id} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => window.location.href = `/admin/stores/${businessId}/customers/${customer.id}`}
+                >
+                  <td className="py-3 px-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Users className="w-4 h-4 text-blue-600" />
                       </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="text-sm text-gray-600">
-                        <div className="flex items-center space-x-1 mb-1">
-                          <Phone className="w-3 h-3" />
-                          <span className="truncate">{customer.phone}</span>
-                        </div>
-                        {customer.email && (
-                          <div className="flex items-center space-x-1">
-                            <Mail className="w-3 h-3" />
-                            <span className="truncate text-xs">{customer.email}</span>
-                          </div>
-                        )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{customer.name}</p>
                       </div>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="text-sm font-medium text-gray-900">
-                        {customer.totalOrders}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
+                    </div>
+                  </td>
+                  <td className="py-3 px-3">
+                    <div className="text-sm text-gray-600">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <Phone className="w-3 h-3" />
+                        <span className="truncate">{customer.phone}</span>
+                      </div>
+                      {customer.email && (
+                        <div className="flex items-center space-x-1">
+                          <Mail className="w-3 h-3" />
+                          <span className="truncate text-xs">{customer.email}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-3 text-center">
+                    <span className="text-sm font-medium text-gray-900">
+                      {customer.totalOrders}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-center">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadge(customer.tier)}`}>
-                {customer.tier}
-              </span>
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <span className="text-sm text-gray-600">
-                        {formatDate(customer.lastOrderDate)}
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
+                      {customer.tier}
+                    </span>
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    <span className="text-sm text-gray-600">
+                      {formatDate(customer.lastOrderDate)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

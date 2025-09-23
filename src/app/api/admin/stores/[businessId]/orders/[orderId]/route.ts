@@ -232,20 +232,21 @@ export async function PUT(
     })
 
     // Create order notification record for status changes
-    if (updateData.status && updateData.status !== existingOrder.status) {
-      await prisma.orderNotification.create({
-        data: {
-          businessId: businessId,
-          orderId: orderId,
-          orderNumber: existingOrder.orderNumber,
-          orderStatus: updateData.status,
-          customerName: existingOrder.customer.name,
-          total: existingOrder.total,
-          notifiedAt: new Date(),
-          emailSent: false // Will be updated when notification service sends email
-        }
-      })
-    }
+    // TODO: maybe in the future we support self - notifications for admins that change their business order status
+    // if (updateData.status && updateData.status !== existingOrder.status) {
+    //   await prisma.orderNotification.create({
+    //     data: {
+    //       businessId: businessId,
+    //       orderId: orderId,
+    //       orderNumber: existingOrder.orderNumber,
+    //       orderStatus: updateData.status,
+    //       customerName: existingOrder.customer.name,
+    //       total: existingOrder.total,
+    //       notifiedAt: new Date(),
+    //       emailSent: false // Will be updated when notification service sends email
+    //     }
+    //   })
+    // }
 
     return NextResponse.json({
       order: {
