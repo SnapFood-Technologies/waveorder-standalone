@@ -3220,9 +3220,9 @@ function OrderPanel({
                 <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
-              {cartDeliveryFee > 0 && !deliveryError && (
+              {deliveryType === 'delivery' && !deliveryError && (
                 <div className="flex justify-between text-sm">
-                  <span>{deliveryType === 'delivery' ? (translations.deliveryFee || 'Delivery Fee') : (translations.serviceFee || 'Service Fee')}</span>
+                  <span>{translations.deliveryFee || 'Delivery Fee'}</span>
                   <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                 </div>
               )}
