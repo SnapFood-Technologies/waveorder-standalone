@@ -18,9 +18,31 @@ interface Order {
   createdAt: string
 }
 
+interface Business {
+  currency: string
+}
+
 export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
   const [orders, setOrders] = useState<Order[]>([])
+  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
+
+  // Fetch business data to get currency
+  useEffect(() => {
+    const fetchBusinessData = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBusiness({ currency: data.business.currency })
+        }
+      } catch (error) {
+        console.error('Error fetching business data:', error)
+      }
+    }
+
+    fetchBusinessData()
+  }, [businessId])
 
   useEffect(() => {
     const fetchRecentOrders = async () => {
@@ -39,6 +61,19 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
 
     fetchRecentOrders()
   }, [businessId])
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L', // Albanian Lek
+      // Add more currencies as needed
+    }
+    
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toFixed(2)}`
+  }
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -161,7 +196,7 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
                     </span>
                   </td>
                   <td className="py-3 px-3 text-right">
-                    <p className="font-medium text-gray-900">${order.total.toFixed(2)}</p>
+                    <p className="font-medium text-gray-900">{formatCurrency(order.total)}</p>
                   </td>
                   <td className="py-3 px-3 text-right">
                     <span className="text-sm text-gray-600">
