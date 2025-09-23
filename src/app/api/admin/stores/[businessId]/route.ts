@@ -59,6 +59,8 @@ export async function GET(
         fontFamily: true,
         whatsappButtonColor: true,
         mobileCartStyle: true,
+        cartBadgeColor: true,
+        featuredBadgeColor: true,
         
         // Business settings
         currency: true,
@@ -205,6 +207,8 @@ export async function PUT(
         fontFamily: true,
         whatsappButtonColor: true,
         mobileCartStyle: true,
+        cartBadgeColor: true,
+        featuredBadgeColor: true,
         currency: true,
         language: true,
         description: true,

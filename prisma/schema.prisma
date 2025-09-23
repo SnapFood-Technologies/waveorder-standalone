@@ -91,6 +91,9 @@ model Business {
   whatsappButtonColor String?
   mobileCartStyle     String  @default("bar")
 
+  cartBadgeColor     String @default("#EF4444") // Red color for cart badge numbers
+  featuredBadgeColor String @default("#EF4444") // Red color for "Popular" badges
+
   deliveryZones DeliveryZone[]
 
   // Settings

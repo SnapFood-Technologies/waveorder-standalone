@@ -181,6 +181,8 @@ export async function GET(
       fontFamily: business.fontFamily,
       whatsappButtonColor: business.whatsappButtonColor,
       mobileCartStyle: business.mobileCartStyle,
+      cartBadgeColor: business.cartBadgeColor,
+      featuredBadgeColor: business.featuredBadgeColor,
       
       // Settings
       currency: business.currency,

@@ -11,7 +11,9 @@ const appearanceSchema = z.object({
   secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
   fontFamily: z.string().min(1, 'Font family is required'),
   whatsappButtonColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
-  mobileCartStyle: z.enum(['bar', 'badge'])
+  mobileCartStyle: z.enum(['bar', 'badge']),
+  cartBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
+  featuredBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format')
 })
 
 export async function PUT(
@@ -62,6 +64,8 @@ export async function PUT(
         fontFamily: validatedData.fontFamily,
         whatsappButtonColor: validatedData.whatsappButtonColor,
         mobileCartStyle: validatedData.mobileCartStyle,
+        cartBadgeColor: validatedData.cartBadgeColor,
+        featuredBadgeColor: validatedData.featuredBadgeColor,
         updatedAt: new Date()
       },
       select: {
@@ -73,6 +77,8 @@ export async function PUT(
         fontFamily: true,
         whatsappButtonColor: true,
         mobileCartStyle: true,
+        cartBadgeColor: true,
+        featuredBadgeColor: true,
         updatedAt: true
       }
     })
@@ -152,6 +158,8 @@ export async function GET(
         fontFamily: true,
         whatsappButtonColor: true,
         mobileCartStyle: true,
+        cartBadgeColor: true,
+        featuredBadgeColor: true,
         currency: true,
         language: true,
         description: true,
