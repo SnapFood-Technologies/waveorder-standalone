@@ -3,7 +3,7 @@ import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertC
 
 interface AdminOrderFormProps {
   businessId: string
-  preselectedCustomerId?: string | null // Add this line
+  preselectedCustomerId?: string | null
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -519,7 +519,7 @@ function ProductSearch({
 
 export default function AdminOrderForm({ 
     businessId, 
-    preselectedCustomerId, // Add this parameter
+    preselectedCustomerId,
     onSuccess, 
     onCancel 
   }: AdminOrderFormProps) {
@@ -534,10 +534,28 @@ export default function AdminOrderForm({
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [storeData, setStoreData] = useState<any>({})
+  const [business, setBusiness] = useState<{ currency: string }>({ currency: 'USD' })
   const [errors, setErrors] = useState<any>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  // Format currency function
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+    }
+    
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toLocaleString(undefined, { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`
+  }
 
   // Fetch store data
   useEffect(() => {
@@ -547,6 +565,7 @@ export default function AdminOrderForm({
         if (response.ok) {
           const data = await response.json()
           setStoreData(data.business)
+          setBusiness({ currency: data.business.currency || 'USD' })
         }
       } catch (error) {
         console.error('Error fetching store data:', error)
@@ -556,8 +575,8 @@ export default function AdminOrderForm({
     fetchStoreData()
   }, [businessId])
 
-  // Add this useEffect in AdminOrderForm component, after the storeData useEffect
-useEffect(() => {
+  // Fetch preselected customer
+  useEffect(() => {
     const fetchPreselectedCustomer = async () => {
       if (!preselectedCustomerId) return
       
@@ -720,7 +739,14 @@ useEffect(() => {
       })
 
       if (response.ok) {
-        onSuccess?.()
+        const data = await response.json()
+        setSuccessMessage(`Order #${data.order.orderNumber} created successfully!`)
+        
+        // Clear success message after 3 seconds and redirect
+        setTimeout(() => {
+          setSuccessMessage(null)
+          onSuccess?.()
+        }, 3000)
       } else {
         const data = await response.json()
         setErrors({ submit: data.message || 'Failed to create order' })
@@ -736,6 +762,16 @@ useEffect(() => {
 
   return (
     <div className="max-w-8xl mx-auto">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+            <div className="text-sm text-green-700">{successMessage}</div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form - 2/3 width */}
         <div className="lg:col-span-2">
@@ -795,427 +831,426 @@ useEffect(() => {
                   </div>
 
                   {formData.customerType === 'existing' ? (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Search Customer
-                      </label>
-                      <CustomerSearch
-                        businessId={businessId}
-                        onCustomerSelect={setSelectedCustomer}
-                        selectedCustomer={selectedCustomer}
-                      />
-                      {errors.customer && <p className="text-red-600 text-sm mt-1">{errors.customer}</p>}
-                      
-                      {selectedCustomer && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <UserCheck className="w-5 h-5 text-green-600" />
-                            <div>
-                              <h3 className="font-medium">{selectedCustomer.name}</h3>
-                              <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
-                              <p className="text-xs text-gray-500">
-                                {selectedCustomer.tier} Customer • {selectedCustomer.totalOrders} Previous Orders
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Customer Name *
-  </label>
-  <input
-    type="text"
-    value={formData.newCustomer?.name || ''}
-    onChange={(e) => setFormData(prev => ({
-      ...prev,
-      newCustomer: { ...prev.newCustomer, name: e.target.value, phone: prev.newCustomer?.phone || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
-    }))}
-    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
-      errors.newCustomerName ? 'border-red-300' : 'border-gray-300'
-    }`}
-    placeholder="Enter customer name"
-  />
-  {errors.newCustomerName && <p className="text-red-600 text-sm mt-1">{errors.newCustomerName}</p>}
-</div>
-
-
-                      <div>
+  <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">
-      Phone Number *
+      Search Customer
     </label>
-    <input
-      type="tel"
-      value={formData.newCustomer?.phone || ''}
-      onChange={(e) => setFormData(prev => ({
-        ...prev,
-        newCustomer: { ...prev.newCustomer, phone: e.target.value, name: prev.newCustomer?.name || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
-      }))}
-      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
-        errors.newCustomerPhone ? 'border-red-300' : 'border-gray-300'
-      }`}
-      placeholder="Enter phone number"
+    <CustomerSearch
+      businessId={businessId}
+      onCustomerSelect={setSelectedCustomer}
+      selectedCustomer={selectedCustomer}
     />
-    {errors.newCustomerPhone && <p className="text-red-600 text-sm mt-1">{errors.newCustomerPhone}</p>}
-  </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Email (Optional)
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.newCustomer?.email || ''}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            newCustomer: { ...prev.newCustomer, email: e.target.value, name: prev.newCustomer?.name || '', phone: prev.newCustomer?.phone || '', tier: prev.newCustomer?.tier || 'REGULAR' }
-                          }))}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                          placeholder="customer@example.com"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Customer Tier
-                        </label>
-                        <select
-                          value={formData.newCustomer?.tier || 'REGULAR'}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            newCustomer: { ...prev.newCustomer, tier: e.target.value as any, name: prev.newCustomer?.name || '', phone: prev.newCustomer?.phone || '', email: prev.newCustomer?.email || '' }
-                          }))}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                        >
-                          <option value="REGULAR">Regular Customer</option>
-                          <option value="VIP">VIP Customer</option>
-                          <option value="WHOLESALE">Wholesale Customer</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Order Type */}
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <Truck className="w-5 h-5 mr-2 text-teal-600" />
-                  Order Type & Delivery
-                </h2>
-
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    {storeData.deliveryEnabled && (
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="orderType"
-                          value="DELIVERY"
-                          checked={formData.orderType === 'DELIVERY'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
-                          className="text-teal-600 focus:ring-teal-500"
-                        />
-                        <span className="ml-2">Delivery</span>
-                      </label>
-                    )}
-                    {storeData.pickupEnabled && (
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="orderType"
-                          value="PICKUP"
-                          checked={formData.orderType === 'PICKUP'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
-                          className="text-teal-600 focus:ring-teal-500"
-                        />
-                        <span className="ml-2">Pickup</span>
-                      </label>
-                    )}
-                    {storeData.dineInEnabled && (
-                      <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="orderType"
-                          value="DINE_IN"
-                          checked={formData.orderType === 'DINE_IN'}
-                          onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
-                          className="text-teal-600 focus:ring-teal-500"
-                        />
-                        <span className="ml-2">Dine In</span>
-                      </label>
-                    )}
-                  </div>
-
-                  {formData.orderType === 'DELIVERY' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Delivery Address *
-                      </label>
-                      <AddressAutocomplete
-                        value={formData.deliveryAddress}
-                        onChange={(address) => setFormData(prev => ({ ...prev, deliveryAddress: address }))}
-                        placeholder="Enter delivery address..."
-                        onLocationChange={handleLocationChange}
-                        onAddressParsed={(parsed) => setFormData(prev => ({ 
-                          ...prev, 
-                          addressJson: {
-                            street: parsed.street,
-                            additional: '',
-                            city: parsed.city,
-                            zipCode: parsed.zipCode,
-                            country: parsed.country
-                          }
-                        }))}
-                        error={errors.deliveryAddress}
-                      />
-                      {isCalculatingFee && (
-                        <div className="mt-2 text-sm text-gray-600 flex items-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-500 mr-2"></div>
-                          Calculating delivery fee...
-                        </div>
-                      )}
-                      {deliveryFee > 0 && (
-                        <div className="mt-2 text-sm text-green-600">
-                          Delivery fee: ${deliveryFee.toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Scheduled Time (Optional)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={formData.scheduledTime || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <ShoppingCart className="w-5 h-5 mr-2 text-teal-600" />
-                  Order Items
-                </h2>
-
-                <ProductSearch
-                  businessId={businessId}
-                  onAddToCart={handleAddToCart}
-                />
-
-                {errors.items && <p className="text-red-600 text-sm mt-2">{errors.items}</p>}
-              </div>
-
-              {/* Payment & Notes */}
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <Wallet className="w-5 h-5 mr-2 text-teal-600" />
-                  Payment & Notes
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Method
-                    </label>
-                    <select
-                      value={formData.paymentMethod}
-                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    >
-                      <option value="CASH">Cash</option>
-                      <option value="BANK_TRANSFER">Bank Transfer</option>
-                      <option value="STRIPE">Credit Card</option>
-                      <option value="PAYPAL">PayPal</option>
-                      <option value="BKT">BKT</option>
-                      <option value="MOBILE_WALLET">Mobile Wallet</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Order Notes
-                    </label>
-                    <textarea
-                      value={formData.notes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="Special instructions, allergies, preferences..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {errors.submit && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-600 text-sm">{errors.submit}</p>
-                </div>
-              )}
-
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-                {onCancel && (
-                  <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={isSubmitting || formData.items.length === 0}
-                  className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  ) : (
-                    <Save className="w-4 h-4 mr-2" />
-                  )}
-                  {isSubmitting ? 'Creating Order...' : 'Create Order'}
-                </button>
-              </div>
-            </form>
+    {errors.customer && <p className="text-red-600 text-sm mt-1">{errors.customer}</p>}
+    
+    {selectedCustomer && (
+      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-3">
+          <UserCheck className="w-5 h-5 text-green-600" />
+          <div>
+            <h3 className="font-medium">{selectedCustomer.name}</h3>
+            <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
+            <p className="text-xs text-gray-500">
+              {selectedCustomer.tier} Customer • {selectedCustomer.totalOrders} Previous Orders
+            </p>
           </div>
         </div>
+      </div>
+    )}
+  </div>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Customer Name *
+      </label>
+      <input
+        type="text"
+        value={formData.newCustomer?.name || ''}
+        onChange={(e) => setFormData(prev => ({
+          ...prev,
+          newCustomer: { ...prev.newCustomer, name: e.target.value, phone: prev.newCustomer?.phone || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
+        }))}
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+          errors.newCustomerName ? 'border-red-300' : 'border-gray-300'
+        }`}
+        placeholder="Enter customer name"
+      />
+      {errors.newCustomerName && <p className="text-red-600 text-sm mt-1">{errors.newCustomerName}</p>}
+    </div>
 
-        {/* Order Summary - 1/3 width */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-0">
-            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-              <Calculator className="w-5 h-5 mr-2 text-blue-600" />
-              Order Summary
-            </h3>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Phone Number *
+      </label>
+      <input
+        type="tel"
+        value={formData.newCustomer?.phone || ''}
+        onChange={(e) => setFormData(prev => ({
+          ...prev,
+          newCustomer: { ...prev.newCustomer, phone: e.target.value, name: prev.newCustomer?.name || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
+        }))}
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+          errors.newCustomerPhone ? 'border-red-300' : 'border-gray-300'
+        }`}
+        placeholder="Enter phone number"
+      />
+      {errors.newCustomerPhone && <p className="text-red-600 text-sm mt-1">{errors.newCustomerPhone}</p>}
+    </div>
 
-            {formData.items.length > 0 ? (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Email (Optional)
+      </label>
+      <input
+        type="email"
+        value={formData.newCustomer?.email || ''}
+        onChange={(e) => setFormData(prev => ({
+          ...prev,
+          newCustomer: { ...prev.newCustomer, email: e.target.value, name: prev.newCustomer?.name || '', phone: prev.newCustomer?.phone || '', tier: prev.newCustomer?.tier || 'REGULAR' }
+        }))}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        placeholder="customer@example.com"
+      />
+    </div>
+
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Customer Tier
+      </label>
+      <select
+        value={formData.newCustomer?.tier || 'REGULAR'}
+        onChange={(e) => setFormData(prev => ({
+          ...prev,
+          newCustomer: { ...prev.newCustomer, tier: e.target.value as any, name: prev.newCustomer?.name || '', phone: prev.newCustomer?.phone || '', email: prev.newCustomer?.email || '' }
+        }))}
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+      >
+        <option value="REGULAR">Regular Customer</option>
+        <option value="VIP">VIP Customer</option>
+        <option value="WHOLESALE">Wholesale Customer</option>
+      </select>
+    </div>
+  </div>
+)}
+              </div>
+            </div>
+
+            {/* Order Type */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Truck className="w-5 h-5 mr-2 text-teal-600" />
+                Order Type & Delivery
+              </h2>
+
               <div className="space-y-4">
-                <div className="space-y-3">
-                  {formData.items.map((item, index) => (
-                    <div key={index} className="flex items-start justify-between gap-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
-                        <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                        {item.modifiers.length > 0 && (
-                          <p className="text-xs text-gray-500">+ {item.modifiers.length} modifiers</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">${item.price.toFixed(2)}</p>
-                        <button
-                          onClick={() => removeFromCart(index)}
-                          className="text-xs text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-gray-200 pt-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="text-gray-900">${totals.subtotal.toFixed(2)}</span>
-                  </div>
-                  
-                  {formData.orderType === 'DELIVERY' && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Delivery Fee:</span>
-                      <span className="text-gray-900">${totals.deliveryFee.toFixed(2)}</span>
-                    </div>
+                <div className="flex gap-4">
+                  {storeData.deliveryEnabled && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="orderType"
+                        value="DELIVERY"
+                        checked={formData.orderType === 'DELIVERY'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
+                        className="text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="ml-2">Delivery</span>
+                    </label>
                   )}
-                  
-                  <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
-                    <span className="text-gray-900">Total:</span>
-                    <span className="text-teal-600">${totals.total.toFixed(2)}</span>
-                  </div>
+                  {storeData.pickupEnabled && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="orderType"
+                        value="PICKUP"
+                        checked={formData.orderType === 'PICKUP'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
+                        className="text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="ml-2">Pickup</span>
+                    </label>
+                  )}
+                  {storeData.dineInEnabled && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="orderType"
+                        value="DINE_IN"
+                        checked={formData.orderType === 'DINE_IN'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, orderType: e.target.value as any }))}
+                        className="text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="ml-2">Dine In</span>
+                    </label>
+                  )}
                 </div>
 
-                {storeData.minimumOrder && totals.subtotal < storeData.minimumOrder && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-xs text-yellow-800">
-                      Minimum order: ${storeData.minimumOrder.toFixed(2)}
-                      <br />
-                      Add ${(storeData.minimumOrder - totals.subtotal).toFixed(2)} more
-                    </p>
+                {formData.orderType === 'DELIVERY' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Delivery Address *
+                    </label>
+                    <AddressAutocomplete
+                      value={formData.deliveryAddress}
+                      onChange={(address) => setFormData(prev => ({ ...prev, deliveryAddress: address }))}
+                      placeholder="Enter delivery address..."
+                      onLocationChange={handleLocationChange}
+                      onAddressParsed={(parsed) => setFormData(prev => ({ 
+                        ...prev, 
+                        addressJson: {
+                          street: parsed.street,
+                          additional: '',
+                          city: parsed.city,
+                          zipCode: parsed.zipCode,
+                          country: parsed.country
+                        }
+                      }))}
+                      error={errors.deliveryAddress}
+                    />
+                    {isCalculatingFee && (
+                      <div className="mt-2 text-sm text-gray-600 flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-teal-500 mr-2"></div>
+                        Calculating delivery fee...
+                      </div>
+                    )}
+                    {deliveryFee > 0 && (
+                      <div className="mt-2 text-sm text-green-600">
+                        Delivery fee: {formatCurrency(deliveryFee)}
+                      </div>
+                    )}
                   </div>
                 )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Scheduled Time (Optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.scheduledTime || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No items added yet</p>
-                <p className="text-gray-400 text-xs">Search and add products above</p>
+            </div>
+
+            {/* Order Items */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <ShoppingCart className="w-5 h-5 mr-2 text-teal-600" />
+                Order Items
+              </h2>
+
+              <ProductSearch
+                businessId={businessId}
+                onAddToCart={handleAddToCart}
+              />
+
+              {errors.items && <p className="text-red-600 text-sm mt-2">{errors.items}</p>}
+            </div>
+
+            {/* Payment & Notes */}
+            <div>
+              <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Wallet className="w-5 h-5 mr-2 text-teal-600" />
+                Payment & Notes
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method
+                  </label>
+                  <select
+                    value={formData.paymentMethod}
+                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="CASH">Cash</option>
+                    {/* <option value="BANK_TRANSFER">Bank Transfer</option> */}
+                    {/* <option value="STRIPE">Credit Card</option> */}
+                    {/* <option value="PAYPAL">PayPal</option> */}
+                    {/* <option value="BKT">BKT</option> */}
+                    {/* <option value="MOBILE_WALLET">Mobile Wallet</option> */}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Order Notes
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="Special instructions, allergies, preferences..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {errors.submit && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{errors.submit}</p>
               </div>
             )}
 
-            {/* Order Info */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Order Details</h4>
-              
-              <div className="space-y-2 text-xs text-gray-600">
-                <div className="flex justify-between">
-                  <span>Type:</span>
-                  <span className="font-medium">{formData.orderType}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span>Payment:</span>
-                  <span className="font-medium">{formData.paymentMethod}</span>
-                </div>
-                
-                {formData.scheduledTime && (
-                  <div className="flex justify-between">
-                    <span>Scheduled:</span>
-                    <span className="font-medium">
-                      {new Date(formData.scheduledTime).toLocaleString()}
-                    </span>
-                  </div>
+            {/* Submit Buttons */}
+            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={isSubmitting || formData.items.length === 0}
+                className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
                 )}
-                
-                {formData.orderType === 'DELIVERY' && storeData.estimatedDeliveryTime && (
-                  <div className="flex justify-between">
-                    <span>Est. Delivery:</span>
-                    <span className="font-medium">{storeData.estimatedDeliveryTime}</span>
-                  </div>
-                )}
-                
-                {formData.orderType === 'PICKUP' && storeData.estimatedPickupTime && (
-                  <div className="flex justify-between">
-                    <span>Est. Pickup:</span>
-                    <span className="font-medium">{storeData.estimatedPickupTime}</span>
-                  </div>
-                )}
-              </div>
+                {isSubmitting ? 'Creating Order...' : 'Create Order'}
+              </button>
             </div>
+          </form>
+        </div>
+      </div>
 
-            {/* Tips */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-xs font-semibold text-gray-800 mb-2 flex items-center">
-                <Info className="w-3 h-3 mr-1" />
-                Quick Tips
-              </h4>
-              <ul className="space-y-1 text-xs text-gray-600">
-                <li>• Orders are automatically set to PENDING status</li>
-                <li>• WhatsApp notifications will be sent to customer</li>
-                <li>• Stock levels will be updated automatically</li>
-                <li>• Admin orders bypass minimum order requirements</li>
-              </ul>
+      {/* Order Summary - 1/3 width */}
+      <div className="lg:col-span-1">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-0">
+          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <Calculator className="w-5 h-5 mr-2 text-blue-600" />
+            Order Summary
+          </h3>
+
+          {formData.items.length > 0 ? (
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {formData.items.map((item, index) => (
+                  <div key={index} className="flex items-start justify-between gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
+                      <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                      {item.modifiers.length > 0 && (
+                        <p className="text-xs text-gray-500">+ {item.modifiers.length} modifiers</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">{formatCurrency(item.price)}</p>
+                      <button
+                        onClick={() => removeFromCart(index)}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-200 pt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-gray-900">{formatCurrency(totals.subtotal)}</span>
+                </div>
+                
+                {formData.orderType === 'DELIVERY' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Delivery Fee:</span>
+                    <span className="text-gray-900">{formatCurrency(totals.deliveryFee)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
+                  <span className="text-gray-900">Total:</span>
+                  <span className="text-teal-600">{formatCurrency(totals.total)}</span>
+                </div>
+              </div>
+
+              {storeData.minimumOrder && storeData.minimumOrder > 0 && totals.subtotal < storeData.minimumOrder && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-800">
+                    Minimum order: {formatCurrency(storeData.minimumOrder)}
+                    <br />
+                    Add {formatCurrency(storeData.minimumOrder - totals.subtotal)} more
+                  </p>
+                </div>
+              )}
             </div>
+          ) : (
+            <div className="text-center py-8">
+              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">No items added yet</p>
+              <p className="text-gray-400 text-xs">Search and add products above</p>
+            </div>
+          )}
+
+          {/* Order Info */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="text-sm font-medium text-gray-900 mb-3">Order Details</h4>
+            
+            <div className="space-y-2 text-xs text-gray-600">
+              <div className="flex justify-between">
+                <span>Type:</span>
+                <span className="font-medium">{formData.orderType}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span>Payment:</span>
+                <span className="font-medium">{formData.paymentMethod}</span>
+              </div>
+              
+              {formData.scheduledTime && (
+                <div className="flex justify-between">
+                  <span>Scheduled:</span>
+                  <span className="font-medium">
+                    {new Date(formData.scheduledTime).toLocaleString()}
+                  </span>
+                </div>
+              )}
+              
+              {formData.orderType === 'DELIVERY' && storeData.estimatedDeliveryTime && (
+                <div className="flex justify-between">
+                  <span>Est. Delivery:</span>
+                  <span className="font-medium">{storeData.estimatedDeliveryTime}</span>
+                </div>
+              )}
+              
+              {formData.orderType === 'PICKUP' && storeData.estimatedPickupTime && (
+                <div className="flex justify-between">
+                  <span>Est. Pickup:</span>
+                  <span className="font-medium">{storeData.estimatedPickupTime}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tips */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h4 className="text-xs font-semibold text-gray-800 mb-2 flex items-center">
+              <Info className="w-3 h-3 mr-1" />
+              Quick Tips
+            </h4>
+            <ul className="space-y-1 text-xs text-gray-600">
+              <li>• Orders are automatically set to PENDING status</li>
+              <li>• WhatsApp notifications will be sent to customer</li>
+              <li>• Stock levels will be updated automatically</li>
+              <li>• Admin orders bypass minimum order requirements</li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
+  </div>
   )
 }
