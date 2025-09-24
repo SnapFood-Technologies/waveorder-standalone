@@ -300,10 +300,12 @@ function CustomerSearch({
 // Product Search Component
 function ProductSearch({ 
   businessId, 
-  onAddToCart 
+  onAddToCart,
+  formatCurrency 
 }: {
   businessId: string
   onAddToCart: (item: CartItem) => void
+  formatCurrency: (amount: number) => string  // Add this
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [products, setProducts] = useState<Product[]>([])
@@ -402,7 +404,7 @@ function ProductSearch({
               )}
               <div className="flex-1">
                 <div className="font-medium">{product.name}</div>
-                <div className="text-sm text-gray-600">${product.price.toFixed(2)}</div>
+                <div className="text-sm text-gray-600">{formatCurrency(product.price)}</div>
                 <div className="text-xs text-gray-500">Stock: {product.stock}</div>
               </div>
             </button>
@@ -422,8 +424,8 @@ function ProductSearch({
             )}
             <div>
               <h3 className="font-medium">{selectedProduct.name}</h3>
-              <p className="text-sm text-gray-600">${selectedProduct.price.toFixed(2)}</p>
-            </div>
+              <p className="text-sm text-gray-600">{formatCurrency(selectedProduct.price)}</p>
+              </div>
           </div>
 
           {selectedProduct.variants && selectedProduct.variants.length > 0 && (
@@ -442,7 +444,7 @@ function ProductSearch({
                 <option value="">Select variant</option>
                 {selectedProduct.variants.map((variant) => (
                   <option key={variant.id} value={variant.id}>
-                    {variant.name} - ${variant.price.toFixed(2)}
+                    {variant.name} - {formatCurrency(variant.price)}
                   </option>
                 ))}
               </select>
@@ -470,7 +472,7 @@ function ProductSearch({
                       className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                     />
                     <span className="ml-2 text-sm">
-                      {modifier.name} (+${modifier.price.toFixed(2)})
+                    {modifier.name} (+{formatCurrency(modifier.price)})
                     </span>
                   </label>
                 ))}
@@ -1045,6 +1047,7 @@ export default function AdminOrderForm({
               <ProductSearch
                 businessId={businessId}
                 onAddToCart={handleAddToCart}
+                formatCurrency={formatCurrency}  // Add this
               />
 
               {errors.items && <p className="text-red-600 text-sm mt-2">{errors.items}</p>}
@@ -1177,15 +1180,21 @@ export default function AdminOrderForm({
                 </div>
               </div>
 
-              {storeData.minimumOrder && storeData.minimumOrder > 0 && totals.subtotal < storeData.minimumOrder && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-xs text-yellow-800">
-                    Minimum order: {formatCurrency(storeData.minimumOrder)}
-                    <br />
-                    Add {formatCurrency(storeData.minimumOrder - totals.subtotal)} more
-                  </p>
-                </div>
-              )}
+              {(() => {
+  if (storeData.minimumOrder && storeData.minimumOrder > 0 && totals.subtotal < storeData.minimumOrder) {
+    return (
+      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-xs text-yellow-800">
+          Minimum order: {formatCurrency(storeData.minimumOrder)}
+          <br />
+          Add {formatCurrency(storeData.minimumOrder - totals.subtotal)} more
+        </p>
+      </div>
+    );
+  } else {
+    return null;
+  }
+})()}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -1243,7 +1252,7 @@ export default function AdminOrderForm({
             </h4>
             <ul className="space-y-1 text-xs text-gray-600">
               <li>• Orders are automatically set to PENDING status</li>
-              <li>• WhatsApp notifications will be sent to customer</li>
+              {/* <li>• WhatsApp notifications will be sent to customer</li> */}
               <li>• Stock levels will be updated automatically</li>
               <li>• Admin orders bypass minimum order requirements</li>
             </ul>
