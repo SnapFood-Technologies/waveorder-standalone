@@ -1,7 +1,7 @@
 // src/app/admin/stores/[businessId]/orders/create/page.tsx
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { use } from 'react'
 import AdminOrderForm from '@/components/admin/orders/AdminOrderForm'
 
@@ -11,7 +11,10 @@ interface CreateOrderPageProps {
 
 export default function CreateOrderPage({ params }: CreateOrderPageProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { businessId } = use(params)
+  
+  const preselectedCustomerId = searchParams.get('customerId') // Add this line
 
   const handleSuccess = () => {
     router.push(`/admin/stores/${businessId}/orders`)
@@ -24,6 +27,7 @@ export default function CreateOrderPage({ params }: CreateOrderPageProps) {
   return (
     <AdminOrderForm
       businessId={businessId}
+      preselectedCustomerId={preselectedCustomerId} // Add this prop
       onSuccess={handleSuccess}
       onCancel={handleCancel}
     />

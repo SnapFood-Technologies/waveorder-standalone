@@ -3,6 +3,7 @@ import { User, Phone, Mail, MapPin, Tag, FileText, Save, ArrowLeft, Info, AlertC
 
 interface AdminOrderFormProps {
   businessId: string
+  preselectedCustomerId?: string | null // Add this line
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -516,7 +517,12 @@ function ProductSearch({
   )
 }
 
-export default function AdminOrderForm({ businessId, onSuccess, onCancel }: AdminOrderFormProps) {
+export default function AdminOrderForm({ 
+    businessId, 
+    preselectedCustomerId, // Add this parameter
+    onSuccess, 
+    onCancel 
+  }: AdminOrderFormProps) {
   const [formData, setFormData] = useState<OrderFormData>({
     customerType: 'existing',
     orderType: 'DELIVERY',
@@ -549,6 +555,60 @@ export default function AdminOrderForm({ businessId, onSuccess, onCancel }: Admi
     
     fetchStoreData()
   }, [businessId])
+
+  // Add this useEffect in AdminOrderForm component, after the storeData useEffect
+useEffect(() => {
+    const fetchPreselectedCustomer = async () => {
+      if (!preselectedCustomerId) return
+      
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/customers/${preselectedCustomerId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const customer = data.customer
+          
+          // Set the customer as selected
+          setSelectedCustomer({
+            id: customer.id,
+            name: customer.name,
+            phone: customer.phone,
+            email: customer.email,
+            tier: customer.tier,
+            addressJson: customer.addressJson,
+            totalOrders: customer._count?.orders || 0
+          })
+          
+          // Set form to existing customer mode
+          setFormData(prev => ({
+            ...prev,
+            customerType: 'existing',
+            customerId: customer.id
+          }))
+          
+          // If customer has an address, prefill delivery address
+          if (customer.addressJson?.street) {
+            const addressParts = [
+              customer.addressJson.street,
+              customer.addressJson.additional,
+              customer.addressJson.city,
+              customer.addressJson.zipCode,
+              customer.addressJson.country
+            ].filter(Boolean)
+            
+            setFormData(prev => ({
+              ...prev,
+              deliveryAddress: addressParts.join(', '),
+              addressJson: customer.addressJson
+            }))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching preselected customer:', error)
+      }
+    }
+    
+    fetchPreselectedCustomer()
+  }, [preselectedCustomerId, businessId])
 
   const calculateDeliveryFee = async (lat: number, lng: number) => {
     if (!storeData.storeLatitude || !storeData.storeLongitude) return
