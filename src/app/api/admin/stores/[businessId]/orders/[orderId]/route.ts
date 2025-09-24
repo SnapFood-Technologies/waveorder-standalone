@@ -93,6 +93,7 @@ export async function GET(
         deliveryFee: order.deliveryFee,
         tax: order.tax,
         discount: order.discount,
+        createdByAdmin: order.createdByAdmin,  // Add this line
         customer: order.customer,
         items: order.items.map(item => ({
           id: item.id,
@@ -269,56 +270,82 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ businessId: string; orderId: string }> }
+  { params }: { params: Promise<{ businessId: string, orderId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
-
     if (!session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     const { businessId, orderId } = await params
 
-    // Verify user has access to this business
+    // Verify access
     const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
+      where: { businessId, userId: session.user.id }
     })
-
     if (!businessUser) {
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
     }
 
-    // Verify order exists and belongs to business
+    // Get order with items for stock restoration
     const order = await prisma.order.findFirst({
-      where: {
-        id: orderId,
-        businessId: businessId
-      }
+      where: { id: orderId, businessId },
+      include: { items: { include: { product: true, variant: true } } }
     })
 
     if (!order) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 })
     }
 
-    // Check if order can be deleted (business logic)
-    if (['DELIVERED', 'PAID'].includes(order.status) || ['PAID'].includes(order.paymentStatus)) {
-      return NextResponse.json({ 
-        message: 'Cannot delete completed or paid orders. Consider marking as cancelled or refunded instead.' 
-      }, { status: 400 })
+    // Restore stock and create inventory activities
+    for (const item of order.items) {
+      if (item.variantId && item.variant) {
+        await prisma.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { increment: item.quantity } }
+        })
+
+        await prisma.inventoryActivity.create({
+          data: {
+            productId: item.productId,
+            variantId: item.variantId,
+            businessId,
+            type: 'RETURN',
+            quantity: item.quantity,
+            oldStock: item.variant.stock,
+            newStock: item.variant.stock + item.quantity,
+            reason: `Order deleted - ${order.orderNumber}`,
+            changedBy: session.user.id
+          }
+        })
+      } else {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } }
+        })
+
+        await prisma.inventoryActivity.create({
+          data: {
+            productId: item.productId,
+            businessId,
+            type: 'RETURN',
+            quantity: item.quantity,
+            oldStock: item.product.stock,
+            newStock: item.product.stock + item.quantity,
+            reason: `Order deleted - ${order.orderNumber}`,
+            changedBy: session.user.id
+          }
+        })
+      }
     }
 
-    // Delete order (this will cascade delete order items due to schema constraints)
+    // Delete order (cascade will delete items)
     await prisma.order.delete({
       where: { id: orderId }
     })
 
-    return NextResponse.json({ 
-      message: 'Order deleted successfully' 
-    })
+    return NextResponse.json({ success: true })
 
   } catch (error) {
     console.error('Error deleting order:', error)

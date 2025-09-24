@@ -17,6 +17,7 @@ interface Order {
   total: number
   subtotal: number
   deliveryFee: number
+  createdByAdmin: boolean  // Add this line
   customer: {
     id: string
     name: string
@@ -463,6 +464,13 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                                 First Order
                               </span>
                             )}
+
+{order.createdByAdmin && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+          <User className="w-3 h-3 mr-1" />
+          Admin
+        </span>
+      )}
                           </div>
                           <div className="flex items-center text-xs text-gray-600">
                             <Phone className="w-3 h-3 mr-1" />

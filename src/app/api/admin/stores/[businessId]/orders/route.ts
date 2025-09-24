@@ -6,6 +6,62 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+
+// Calculate distance between two coordinates (Haversine formula)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Radius of the Earth in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
+// Server-side address parsing (same as customer creation)
+function parseAndCleanAddress(addressJson: any): any {
+  if (!addressJson?.street) return addressJson
+
+  const street = addressJson.street.trim()
+  
+  if (street.includes(',')) {
+    const parts = street.split(',').map((part: string) => part.trim())
+    const cleanStreet = parts[0]
+    
+    if (!addressJson.city && parts.length >= 2) {
+      let cityPart = parts[1]
+      cityPart = cityPart.replace(/\b\d{3,5}\s?\d{0,2}\b/g, '').trim()
+      if (cityPart) {
+        addressJson.city = cityPart
+      }
+    }
+    
+    if (!addressJson.zipCode) {
+      const fullAddress = street
+      const zipMatches = fullAddress.match(/\b\d{3,5}\s?\d{0,2}\b/g)
+      if (zipMatches) {
+        addressJson.zipCode = zipMatches[zipMatches.length - 1].replace(/\s+/g, ' ').trim()
+      }
+    }
+    
+    if (!addressJson.country || addressJson.country === 'US') {
+      const lastPart = parts[parts.length - 1].toLowerCase()
+      if (lastPart.includes('albania') || lastPart.includes('al')) {
+        addressJson.country = 'AL'
+      } else if (lastPart.includes('greece') || lastPart.includes('gr')) {
+        addressJson.country = 'GR'
+      } else if (lastPart.includes('italy') || lastPart.includes('it')) {
+        addressJson.country = 'IT'
+      }
+    }
+    
+    addressJson.street = cleanStreet
+  }
+  
+  return addressJson
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string }> }
@@ -146,6 +202,7 @@ export async function GET(
           total: order.total,
           subtotal: order.subtotal,
           deliveryFee: order.deliveryFee,
+          createdByAdmin: order.createdByAdmin, // Add this line
           customer: {
             ...order.customer,
             isFirstOrder,
@@ -208,81 +265,167 @@ export async function POST(
     }
 
     const body = await request.json()
-
-    // Validation
-    if (!body.customerId?.trim()) {
-      return NextResponse.json({ message: 'Customer is required' }, { status: 400 })
-    }
-
-    if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json({ message: 'At least one item is required' }, { status: 400 })
-    }
-
-    if (!body.type || !['DELIVERY', 'PICKUP', 'DINE_IN'].includes(body.type)) {
-      return NextResponse.json({ message: 'Valid order type is required' }, { status: 400 })
-    }
-
-    // Verify customer exists and belongs to business
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id: body.customerId,
-        businessId: businessId
-      }
-    })
-
-    if (!customer) {
-      return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
-    }
-
-    // Get business for order number format
+    
+    // Get business data for calculations
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { orderNumberFormat: true, currency: true }
+      include: { deliveryZones: true }
     })
 
     if (!business) {
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Validate items exist and calculate totals
-    let calculatedSubtotal = 0
-    const validatedItems = []
+    // Validation
+    if (!body.items || body.items.length === 0) {
+      return NextResponse.json({ message: 'Order must contain at least one item' }, { status: 400 })
+    }
+
+    if (body.orderType === 'DELIVERY' && !body.deliveryAddress) {
+      return NextResponse.json({ message: 'Delivery address is required for delivery orders' }, { status: 400 })
+    }
+
+    let customerId: string
+
+    // Handle customer creation/selection
+    if (body.customerId) {
+      // Using existing customer
+      customerId = body.customerId
+      
+      // Verify customer belongs to this business
+      const customer = await prisma.customer.findFirst({
+        where: {
+          id: customerId,
+          businessId: businessId
+        }
+      })
+
+      if (!customer) {
+        return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
+      }
+    } else if (body.newCustomer) {
+      // Creating new customer
+      const newCustomerData = body.newCustomer
+
+      if (!newCustomerData.name?.trim() || !newCustomerData.phone?.trim()) {
+        return NextResponse.json({ message: 'Customer name and phone are required' }, { status: 400 })
+      }
+
+      // Check if customer with this phone already exists
+      const existingCustomer = await prisma.customer.findFirst({
+        where: {
+          phone: newCustomerData.phone.trim(),
+          businessId: businessId
+        }
+      })
+
+      if (existingCustomer) {
+        // Use existing customer instead of creating new one
+        customerId = existingCustomer.id
+      } else {
+        // Create new customer
+        let customerAddressJson = null
+        let customerAddress = null
+
+        // Use order address for new customer if provided
+        if (body.addressJson && body.addressJson.street?.trim()) {
+          const cleanedAddress = parseAndCleanAddress({
+            street: body.addressJson.street.trim(),
+            additional: body.addressJson.additional?.trim() || '',
+            zipCode: body.addressJson.zipCode?.trim() || '',
+            city: body.addressJson.city?.trim() || '',
+            country: body.addressJson.country || 'US',
+            latitude: body.addressJson.latitude || null,
+            longitude: body.addressJson.longitude || null
+          })
+
+          customerAddressJson = cleanedAddress
+
+          const addressParts = [
+            customerAddressJson.street,
+            customerAddressJson.additional,
+            customerAddressJson.city,
+            customerAddressJson.zipCode
+          ].filter(Boolean)
+          customerAddress = addressParts.join(', ')
+        }
+
+        const newCustomer = await prisma.customer.create({
+          data: {
+            name: newCustomerData.name.trim(),
+            phone: newCustomerData.phone.trim(),
+            email: newCustomerData.email?.trim() || null,
+            businessId: businessId,
+            tier: newCustomerData.tier || 'REGULAR',
+            addedByAdmin: true,
+            addressJson: customerAddressJson,
+            address: customerAddress
+          }
+        })
+
+        customerId = newCustomer.id
+      }
+    } else {
+      return NextResponse.json({ message: 'Customer information is required' }, { status: 400 })
+    }
+
+    // Validate and process order items
+    const orderItems = []
+    let subtotal = 0
 
     for (const item of body.items) {
+      // Verify product exists and get current price
       const product = await prisma.product.findFirst({
         where: {
           id: item.productId,
-          businessId: businessId
+          businessId: businessId,
+          isActive: true
         },
         include: {
-          variants: true
+          variants: true,
+          modifiers: true
         }
       })
 
       if (!product) {
+        return NextResponse.json({ message: `Product not found: ${item.productId}` }, { status: 404 })
+      }
+
+      // Check stock
+      let availableStock = product.stock
+      if (item.variantId) {
+        const variant = product.variants.find(v => v.id === item.variantId)
+        if (!variant) {
+          return NextResponse.json({ message: `Product variant not found: ${item.variantId}` }, { status: 404 })
+        }
+        availableStock = variant.stock
+      }
+
+      if (product.trackInventory && availableStock < item.quantity) {
         return NextResponse.json({ 
-          message: `Product not found: ${item.productId}` 
+          message: `Insufficient stock for ${product.name}. Available: ${availableStock}, Requested: ${item.quantity}` 
         }, { status: 400 })
       }
 
-      let itemPrice = product.price
-      let variant = null
+      // Calculate item price
+      let itemPrice = item.variantId ? 
+        product.variants.find(v => v.id === item.variantId)?.price || product.price : 
+        product.price
 
-      // If variant is specified, validate and get variant price
-      if (item.variantId) {
-        variant = product.variants.find(v => v.id === item.variantId)
-        if (!variant) {
-          return NextResponse.json({ 
-            message: `Variant not found: ${item.variantId}` 
-          }, { status: 400 })
+      // Add modifier prices
+      if (item.modifiers && item.modifiers.length > 0) {
+        for (const modifierId of item.modifiers) {
+          const modifier = product.modifiers.find(m => m.id === modifierId)
+          if (modifier) {
+            itemPrice += modifier.price
+          }
         }
-        itemPrice = variant.price
       }
 
-      const itemTotal = itemPrice * item.quantity
-      calculatedSubtotal += itemTotal
+      const totalItemPrice = itemPrice * item.quantity
+      subtotal += totalItemPrice
 
-      validatedItems.push({
+      orderItems.push({
         productId: item.productId,
         variantId: item.variantId || null,
         quantity: item.quantity,
@@ -291,62 +434,141 @@ export async function POST(
       })
     }
 
-    // Calculate delivery fee if needed
+    // Calculate delivery fee
     let deliveryFee = 0
-    if (body.type === 'DELIVERY' && body.deliveryFee !== undefined) {
-      deliveryFee = parseFloat(body.deliveryFee) || 0
+    let customerLatitude = null
+    let customerLongitude = null
+
+    if (body.orderType === 'DELIVERY') {
+      deliveryFee = body.deliveryFee || business.deliveryFee || 0
+
+      // Extract coordinates from address if provided
+      if (body.addressJson?.latitude && body.addressJson?.longitude) {
+        customerLatitude = body.addressJson.latitude
+        customerLongitude = body.addressJson.longitude
+
+        // Calculate delivery fee based on distance and zones if store has coordinates
+        if (business.storeLatitude && business.storeLongitude) {
+          const distance = calculateDistance(
+            business.storeLatitude,
+            business.storeLongitude,
+            customerLatitude,
+            customerLongitude
+          )
+
+          // Find applicable delivery zone
+          const applicableZone = business.deliveryZones
+            .filter(zone => zone.isActive)
+            .find(zone => distance <= zone.maxDistance)
+
+          if (applicableZone) {
+            deliveryFee = applicableZone.fee
+          } else if (distance > business.deliveryRadius) {
+            return NextResponse.json({ 
+              message: `Delivery address is outside delivery radius (${business.deliveryRadius}km)` 
+            }, { status: 400 })
+          }
+        }
+      }
     }
 
-    const tax = parseFloat(body.tax) || 0
-    const discount = parseFloat(body.discount) || 0
-    const total = calculatedSubtotal + deliveryFee + tax - discount
+    const total = subtotal + deliveryFee
 
-    // Generate order number
-    const timestamp = Date.now().toString().slice(-6)
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
-
+   // Generate order number (same as storefront)
+const timestamp = Date.now().toString().slice(-6)
+const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
     // Create order
     const order = await prisma.order.create({
       data: {
         orderNumber,
-        status: body.status || 'PENDING',
-        type: body.type,
-        customerId: body.customerId,
-        businessId: businessId,
-        subtotal: calculatedSubtotal,
+        status: 'PENDING',
+        type: body.orderType,
+        customerId,
+        businessId,
+        subtotal,
         deliveryFee,
-        tax,
-        discount,
         total,
-        deliveryAddress: body.deliveryAddress || null,
-        deliveryTime: body.deliveryTime ? new Date(body.deliveryTime) : null,
+        deliveryAddress: body.orderType === 'DELIVERY' ? body.deliveryAddress : null,
+        deliveryTime: body.scheduledTime ? new Date(body.scheduledTime) : null,
         notes: body.notes || null,
         paymentMethod: body.paymentMethod || null,
-        paymentStatus: body.paymentStatus || 'PENDING',
-        customerLatitude: body.customerLatitude || null,
-        customerLongitude: body.customerLongitude || null
+        paymentStatus: 'PENDING',
+        customerLatitude,
+        customerLongitude,
+        createdByAdmin: true,        // Add this line
+        createdBy: session.user.id,  // Add this line
+        items: {
+          create: orderItems
+        }
       },
       include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            email: true
+        customer: true,
+        items: {
+          include: {
+            product: true,
+            variant: true
           }
         }
       }
     })
 
-    // Create order items
-    for (const item of validatedItems) {
-      await prisma.orderItem.create({
-        data: {
-          orderId: order.id,
-          ...item
+    // Update inventory
+    for (const item of orderItems) {
+      if (item.variantId) {
+        // Update variant stock
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId }
+        })
+        
+        if (variant) {
+          await prisma.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } }
+          })
+
+          // Log inventory activity
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              variantId: item.variantId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity,
+              oldStock: variant.stock,
+              newStock: variant.stock - item.quantity,
+              reason: `Order sale - ${orderNumber}`,
+              changedBy: session.user.id
+            }
+          })
         }
-      })
+      } else {
+        // Update product stock
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId }
+        })
+
+        if (product) {
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } }
+          })
+
+          // Log inventory activity
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity,
+              oldStock: product.stock,
+              newStock: product.stock - item.quantity,
+              reason: `Order sale - ${orderNumber}`,
+              changedBy: session.user.id
+            }
+          })
+        }
+      }
     }
 
     return NextResponse.json({
@@ -356,7 +578,12 @@ export async function POST(
         status: order.status,
         type: order.type,
         total: order.total,
-        customer: order.customer,
+        customer: {
+          id: order.customer.id,
+          name: order.customer.name,
+          phone: order.customer.phone,
+          email: order.customer.email
+        },
         createdAt: order.createdAt
       }
     }, { status: 201 })
@@ -364,5 +591,7 @@ export async function POST(
   } catch (error) {
     console.error('Error creating order:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }

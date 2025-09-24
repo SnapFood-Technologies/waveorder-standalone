@@ -23,7 +23,8 @@ import {
   DollarSign,
   Truck,
   Store,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -76,6 +77,7 @@ interface Order {
   deliveryFee: number
   tax: number
   discount: number
+  createdByAdmin: boolean  // Add this line
   customer: Customer
   items: OrderItem[]
   deliveryAddress: string | null
@@ -117,6 +119,10 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteSuccess, setDeleteSuccess] = useState(false)
+
   useEffect(() => {
     fetchOrder()
   }, [businessId, orderId])
@@ -145,6 +151,37 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       setError('Network error loading order data')
     } finally {
       setLoading(false)
+    }
+  }
+
+
+  const handleDeleteOrder = async () => {
+    if (!order) return
+  
+    try {
+      setIsDeleting(true)
+      
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}`, {
+        method: 'DELETE'
+      })
+  
+      if (response.ok) {
+        // Show success message
+        setDeleteSuccess(true)
+        setIsDeleting(false)
+        
+        // Redirect after showing success for 2 seconds
+        setTimeout(() => {
+          window.location.href = `/admin/stores/${businessId}/orders`
+        }, 2000)
+      } else {
+        const data = await response.json()
+        setError(data.message || 'Failed to delete order')
+        setIsDeleting(false)
+      }
+    } catch (error) {
+      setError('Network error deleting order')
+      setIsDeleting(false)
     }
   }
 
@@ -607,6 +644,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+        {order.createdByAdmin && (
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 w-fit">
+      <User className="w-3 h-3 mr-1" />
+      Admin Created
+    </span>
+  )}
           <button
             onClick={() => setEditingNotes(true)}
             className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
@@ -614,6 +657,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <FileText className="w-4 h-4 mr-2" />
             {order.notes ? 'Edit Notes' : 'Add Notes'}
           </button>
+          <button
+    onClick={() => setShowDeleteModal(true)}
+    className="inline-flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+  >
+    <Trash2 className="w-4 h-4 mr-2" />
+    Delete Order
+  </button>
           <Link
             href={`/admin/stores/${businessId}/customers/${order.customer.id}`}
             className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
@@ -1253,6 +1303,87 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           </div>
         </div>
       )}
+
+      {/* Delete Order Modal */}
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg max-w-md w-full p-6">
+      {!deleteSuccess ? (
+        // Delete Confirmation Content
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              Delete Order
+            </h3>
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+              disabled={isDeleting}
+            >
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+          
+          <div className="mb-6">
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to permanently delete order <strong>#{order.orderNumber}</strong>?
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex">
+                <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                <div className="ml-3">
+                  <p className="text-red-800 text-sm">
+                    <strong>This action cannot be undone.</strong> The order will be permanently removed and stock will be restored.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-end space-x-3">
+            <button
+              onClick={() => setShowDeleteModal(false)}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isDeleting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteOrder}
+              disabled={isDeleting}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isDeleting ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              {isDeleting ? 'Deleting...' : 'Delete Order'}
+            </button>
+          </div>
+        </>
+      ) : (
+        // Success Content
+        <div className="text-center py-6">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Order Deleted Successfully</h3>
+          <p className="text-gray-600 mb-6">
+            Order <strong>#{order.orderNumber}</strong> has been permanently removed and stock has been restored.
+          </p>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <p className="text-green-800 text-sm">
+              Redirecting you back to the orders list...
+            </p>
+          </div>
+          <div className="w-6 h-6 border-2 border-teal-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
     </div>
   )
 }
