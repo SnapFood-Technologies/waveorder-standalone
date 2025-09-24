@@ -447,6 +447,9 @@ model Order {
   deliveryTime    DateTime?
   notes           String?
 
+  createdByAdmin Boolean @default(false)
+  createdBy      String? @db.ObjectId // Which admin user created it
+
   // Payment
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
