@@ -4,7 +4,7 @@ import { getToken } from 'next-auth/jwt'
 
 // Define PRO-only routes
 const PRO_ROUTES = [
-  // '/admin/stores/[id]/inventory',
+  '/admin/stores/[id]/inventory',
   '/admin/stores/[id]/discounts', 
   '/admin/stores/[id]/analytics',
   '/admin/stores/[id]/team',
@@ -25,6 +25,33 @@ function requiresProSubscription(pathname: string): boolean {
 function getBusinessIdFromPath(pathname: string): string | null {
   const match = pathname.match(/\/admin\/stores\/([^\/]+)/)
   return match ? match[1] : null
+}
+
+// Helper function to check if user has access to business
+async function checkBusinessAccess(
+  request: NextRequest, 
+  token: any, 
+  businessId: string
+): Promise<{ hasAccess: boolean; userBusinesses?: any[] }> {
+  try {
+    const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
+      headers: {
+        'Authorization': `Bearer ${token.sub}`,
+        'Cookie': request.headers.get('cookie') || ''
+      }
+    })
+    
+    if (businessesResponse.ok) {
+      const data = await businessesResponse.json()
+      const hasAccess = data.businesses?.some((business: any) => business.id === businessId)
+      return { hasAccess, userBusinesses: data.businesses }
+    }
+    
+    return { hasAccess: false }
+  } catch (error) {
+    console.error('Error checking business access:', error)
+    return { hasAccess: false }
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -80,8 +107,13 @@ export async function middleware(request: NextRequest) {
       if (businessesResponse.ok) {
         const data = await businessesResponse.json()
         if (data.businesses?.length > 0) {
+          // Check if setup is already completed
           if (data.businesses[0].setupWizardCompleted) {
             return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
+          }
+          // If onboarding is not completed, stay on setup
+          if (!data.businesses[0].onboardingCompleted) {
+            return NextResponse.next()
           }
         }
       }
@@ -96,11 +128,40 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // Check subscription plan for PRO routes
-    if (requiresProSubscription(pathname)) {
-      const businessId = getBusinessIdFromPath(pathname)
+    const businessId = getBusinessIdFromPath(pathname)
+    
+    if (businessId) {
+      // Check if user has access to this business
+      const { hasAccess, userBusinesses } = await checkBusinessAccess(request, token, businessId)
       
-      if (businessId) {
+      if (!hasAccess) {
+        // Redirect to their actual business or setup if they have none
+        if (userBusinesses && userBusinesses.length > 0) {
+          const userBusiness = userBusinesses[0]
+          
+          // If their business setup is not completed, redirect to setup
+          if (!userBusiness.setupWizardCompleted || !userBusiness.onboardingCompleted) {
+            return NextResponse.redirect(new URL('/setup', request.url))
+          }
+          
+          // Otherwise redirect to their business dashboard
+          return NextResponse.redirect(new URL(`/admin/stores/${userBusiness.id}/dashboard`, request.url))
+        } else {
+          // No businesses found, redirect to setup
+          return NextResponse.redirect(new URL('/setup', request.url))
+        }
+      }
+
+      // User has access to the business, now check if they need to complete setup
+      if (userBusinesses && userBusinesses.length > 0) {
+        const currentBusiness = userBusinesses.find((b: any) => b.id === businessId)
+        if (currentBusiness && (!currentBusiness.setupWizardCompleted || !currentBusiness.onboardingCompleted)) {
+          return NextResponse.redirect(new URL('/setup', request.url))
+        }
+      }
+
+      // Check subscription plan for PRO routes
+      if (requiresProSubscription(pathname)) {
         try {
           // Check business subscription plan
           const businessResponse = await fetch(`${request.nextUrl.origin}/api/businesses/${businessId}/subscription`, {
