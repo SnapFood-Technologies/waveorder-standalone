@@ -91,23 +91,15 @@ export async function middleware(request: NextRequest) {
             const redirectUrl = `/admin/stores/${data.businesses[0].id}/dashboard`
             console.log('🎯 Redirecting to:', redirectUrl)
             return NextResponse.redirect(new URL(redirectUrl, request.url))
-          } else {
-            console.log('🔄 Setup not completed, redirecting to setup')
-            return NextResponse.redirect(new URL('/setup', request.url))
           }
-        } else {
-          console.log('🚫 No businesses found, redirecting to setup')
-          return NextResponse.redirect(new URL('/setup', request.url))
         }
-      } else {
-        console.log('❌ Business API failed, redirecting to setup')
-        return NextResponse.redirect(new URL('/setup', request.url))
       }
     } catch (error) {
       console.error('❌ Error checking businesses:', error)
-      console.log('🔄 Error fallback - redirecting to setup')
-      return NextResponse.redirect(new URL('/setup', request.url))
     }
+    
+    console.log('🔄 Redirecting to setup')
+    // return NextResponse.redirect(new URL('/setup', request.url))
   }
 
   // Protect setup route
@@ -187,7 +179,7 @@ export async function middleware(request: NextRequest) {
           // If their business setup is not completed, redirect to setup
           if (!userBusiness.setupWizardCompleted || !userBusiness.onboardingCompleted) {
             console.log('🛠️ User business setup incomplete, redirecting to setup')
-            return NextResponse.redirect(new URL('/setup', request.url))
+            // return NextResponse.redirect(new URL('/setup', request.url))
           }
           
           // Otherwise redirect to their business dashboard
@@ -197,7 +189,7 @@ export async function middleware(request: NextRequest) {
         } else {
           // No businesses found, redirect to setup
           console.log('🚫 No businesses found, redirecting to setup')
-          return NextResponse.redirect(new URL('/setup', request.url))
+          // return NextResponse.redirect(new URL('/setup', request.url))
         }
       }
 
@@ -218,7 +210,7 @@ export async function middleware(request: NextRequest) {
         
         if (currentBusiness && (!currentBusiness.setupWizardCompleted || !currentBusiness.onboardingCompleted)) {
           console.log('🚨 REDIRECTING TO SETUP')
-          return NextResponse.redirect(new URL('/setup', request.url))
+          // return NextResponse.redirect(new URL('/setup', request.url))
         }
         console.log('✅ NOT REDIRECTING TO SETUP')
       }
