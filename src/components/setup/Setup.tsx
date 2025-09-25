@@ -107,30 +107,43 @@ export default function SetupComponent() {
   }, [session, status, token, router])
 
   const checkUserBusinesses = async () => {
+    console.log('🏢 === SETUP COMPONENT: Checking user businesses ===')
     try {
       const response = await fetch('/api/user/businesses')
       const data = await response.json()
       
+      console.log('📊 Setup component - businesses data:', JSON.stringify(data, null, 2))
+      
       if (data.businesses?.length > 0) {
-        if (data.businesses[0].setupWizardCompleted) {
-        // User already has businesses, redirect to dashboard
-        router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+        const business = data.businesses[0]
+        console.log('✅ Business found:', business.id)
+        console.log('🛠️ Setup wizard completed:', business.setupWizardCompleted)
+        console.log('🎓 Onboarding completed:', business.onboardingCompleted)
+        
+        if (business.setupWizardCompleted) {
+          const dashboardUrl = `/admin/stores/${business.id}/dashboard`
+          console.log('🎯 Setup component trying to redirect to:', dashboardUrl)
+          // User already has businesses, redirect to dashboard
+          router.push(dashboardUrl)
         } else {
-           // Load existing progress
-  const progressResponse = await fetch('/api/setup/progress')
-  if (progressResponse.ok) {
-    const progressData = await progressResponse.json()
-    setCurrentStep(progressData.currentStep)
-    setSetupData(prev => ({ ...prev, ...progressData.setupData }))
-  }
-
-  setLoading(false)
+          console.log('⏳ Setup wizard not completed, loading progress...')
+          // Load existing progress
+          const progressResponse = await fetch('/api/setup/progress')
+          if (progressResponse.ok) {
+            const progressData = await progressResponse.json()
+            console.log('📈 Progress data:', progressData)
+            setCurrentStep(progressData.currentStep)
+            setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+          }
+          setLoading(false)
         }
       } else {
+        console.log('🚫 No businesses found')
         // User can access setup without token (already authenticated)
         setLoading(false)
       }
     } catch (error) {
+      console.error('❌ Error in checkUserBusinesses:', error)
       setError('Failed to check user status')
       setLoading(false)
     }
