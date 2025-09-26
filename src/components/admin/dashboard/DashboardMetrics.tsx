@@ -133,7 +133,7 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
       hasTooltip: true,
-      tooltip: 'Total revenue from completed orders (delivered/ready status) in the selected period. This includes the final order total after discounts, taxes, delivery fees, and other adjustments.'
+      tooltip: 'Total revenue from completed orders with paid status in the selected period. Only orders that are both delivered and have confirmed payment are included. This represents actual money received and includes the final order total after discounts, taxes, delivery fees, and other adjustments.'
     },
     {
       name: 'Growth',

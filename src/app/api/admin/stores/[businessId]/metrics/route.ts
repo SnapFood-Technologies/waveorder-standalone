@@ -54,7 +54,7 @@ export async function GET(
     // Ensure end date includes the full day
     endDate.setHours(23, 59, 59, 999)
 
-    // Get orders count and revenue (only completed orders for revenue)
+    // Get orders count and revenue (only delivered orders with paid status for revenue)
     const allOrders = await prisma.order.findMany({
       where: {
         businessId: businessId,
@@ -66,7 +66,8 @@ export async function GET(
       select: {
         total: true,
         createdAt: true,
-        status: true
+        status: true,
+        paymentStatus: true // Include payment status
       }
     })
 
@@ -97,10 +98,9 @@ export async function GET(
       color: orderStatusConfig[status]?.color || '#6b7280'
     })).sort((a, b) => b.count - a.count) // Sort by count descending
 
-    // Get completed orders for revenue calculation
-    const completedOrderStatuses = ['DELIVERED', 'READY'] // Add other completed statuses as needed
-    const completedOrders = allOrders.filter(order => 
-      completedOrderStatuses.includes(order.status)
+    // Get completed orders for revenue calculation (DELIVERED + PAID only)
+    const revenueOrders = allOrders.filter(order => 
+      order.status === 'DELIVERED' && order.paymentStatus === 'PAID'
     )
 
     // Get analytics data for views
@@ -119,7 +119,7 @@ export async function GET(
 
     // Calculate metrics
     const totalOrders = allOrders.length
-    const totalRevenue = completedOrders.reduce((sum, order) => sum + order.total, 0)
+    const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0)
     const totalViews = analytics.reduce((sum, record) => sum + record.visitors, 0)
 
     // Calculate growth (compare with previous period)
@@ -127,22 +127,20 @@ export async function GET(
     const prevStartDate = new Date(startDate.getTime() - periodDuration)
     const prevEndDate = new Date(startDate.getTime() - 1) // End just before current period starts
     
-    const prevCompletedOrders = await prisma.order.findMany({
+    const prevRevenueOrders = await prisma.order.findMany({
       where: {
         businessId: businessId,
         createdAt: {
           gte: prevStartDate,
           lte: prevEndDate
         },
-        status: {
-            // @ts-expect-error
-          in: completedOrderStatuses
-        }
+        status: 'DELIVERED',
+        paymentStatus: 'PAID'
       },
       select: { total: true }
     })
 
-    const prevRevenue = prevCompletedOrders.reduce((sum, order) => sum + order.total, 0)
+    const prevRevenue = prevRevenueOrders.reduce((sum, order) => sum + order.total, 0)
     const growth = prevRevenue > 0 ? Math.round(((totalRevenue - prevRevenue) / prevRevenue) * 100) : 
                    totalRevenue > 0 ? 100 : 0
 
@@ -152,7 +150,13 @@ export async function GET(
         orders: totalOrders,
         revenue: totalRevenue,
         growth: growth,
-        ordersByStatus: orderStatusData
+        ordersByStatus: orderStatusData,
+        // Additional revenue insights
+        revenueStats: {
+          totalOrdersWithRevenue: revenueOrders.length,
+          averageOrderValue: revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0,
+          revenueConversionRate: totalOrders > 0 ? Math.round((revenueOrders.length / totalOrders) * 100) : 0
+        }
       },
       period: {
         startDate: startDate.toISOString(),

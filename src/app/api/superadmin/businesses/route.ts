@@ -63,7 +63,11 @@ export async function GET(request: NextRequest) {
             }
           },
           orders: {
-            select: { total: true }
+            select: { 
+              total: true,
+              status: true,
+              paymentStatus: true
+            }
           },
           _count: {
             select: { orders: true }
@@ -97,7 +101,12 @@ export async function GET(request: NextRequest) {
       owner: business.users[0]?.user || null,
       stats: {
         totalOrders: business._count.orders,
-        totalRevenue: business.orders.reduce((sum, order) => sum + order.total, 0)
+        totalRevenue: business.orders
+  .filter(order => 
+    order.status === 'DELIVERED' && 
+    order.paymentStatus === 'PAID'
+  )
+  .reduce((sum, order) => sum + order.total, 0)
       }
     }))
 

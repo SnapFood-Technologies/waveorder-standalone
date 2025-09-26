@@ -22,7 +22,14 @@ import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  MapPin
+  MapPin,
+  Eye,
+  UserX,
+  Calendar,
+  Mail,
+  Phone,
+  Globe,
+  Package
 } from 'lucide-react';
 
 interface Business {
@@ -36,6 +43,9 @@ interface Business {
   currency: string;
   whatsappNumber: string;
   address?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
   logo?: string;
   createdAt: string;
   updatedAt: string;
@@ -50,6 +60,8 @@ interface Business {
   stats: {
     totalOrders: number;
     totalRevenue: number;
+    totalCustomers: number;
+    totalProducts: number;
   };
 }
 
@@ -100,7 +112,9 @@ export function SuperAdminBusinesses() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showQuickViewModal, setShowQuickViewModal] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [businessToView, setBusinessToView] = useState<Business | null>(null);
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -202,6 +216,16 @@ export function SuperAdminBusinesses() {
     setShowDeleteModal(false);
   };
 
+  const openQuickViewModal = (business: Business) => {
+    setBusinessToView(business);
+    setShowQuickViewModal(true);
+  };
+
+  const closeQuickViewModal = () => {
+    setBusinessToView(null);
+    setShowQuickViewModal(false);
+  };
+
   const handleDeleteBusiness = async () => {
     if (!businessToDelete) return;
 
@@ -226,6 +250,34 @@ export function SuperAdminBusinesses() {
     } catch (error) {
       console.error('Error deleting business:', error);
       setError('Failed to delete business');
+    }
+  };
+
+  const handleToggleBusinessStatus = async (business: Business) => {
+    const newStatus = !business.isActive; // Toggle the status
+    
+    try {
+      const response = await fetch(`/api/superadmin/businesses/${business.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update business status');
+      }
+  
+      fetchBusinesses();
+      
+      // Show success message
+      setSuccessMessage({
+        title: `Business ${newStatus ? 'Activated' : 'Deactivated'} Successfully`,
+        message: `"${business.name}" has been ${newStatus ? 'activated' : 'deactivated'} successfully.`
+      });
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('Error updating business status:', error);
+      setError('Failed to update business status');
     }
   };
 
@@ -351,32 +403,32 @@ export function SuperAdminBusinesses() {
             />
           </div>
 
-          {/* Filters and Count */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-            
-            <select
-              value={planFilter}
-              onChange={(e) => setPlanFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            >
-              <option value="all">All Plans</option>
-              <option value="free">Free</option>
-              <option value="pro">Pro</option>
-            </select>
+        {/* Filters and Count */}
+<div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+  <select
+    value={statusFilter}
+    onChange={(e) => setStatusFilter(e.target.value)}
+    className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+  >
+    <option value="all">All Status</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+  </select>
+  
+  <select
+    value={planFilter}
+    onChange={(e) => setPlanFilter(e.target.value)}
+    className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+  >
+    <option value="all">All Plans</option>
+    <option value="free">Free</option>
+    <option value="pro">Pro</option>
+  </select>
 
-            <div className="text-sm text-gray-600">
-              {pagination.total} businesses
-            </div>
-          </div>
+  <div className="text-sm text-gray-600 text-center sm:text-left">
+    {pagination.total} businesses
+  </div>
+</div>
         </div>
       </div>
 
@@ -502,6 +554,13 @@ export function SuperAdminBusinesses() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button
+                            onClick={() => openQuickViewModal(business)}
+                            className="text-gray-600 hover:text-gray-700 p-1"
+                            title="Quick View"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
                             onClick={() => handleImpersonate(business.id)}
                             className="text-blue-600 hover:text-blue-700 p-1"
                             title="Impersonate"
@@ -581,60 +640,247 @@ export function SuperAdminBusinesses() {
         business={businessToDelete}
         onClose={closeDeleteModal}
         onConfirm={handleDeleteBusiness}
+        onToggleStatus={handleToggleBusinessStatus}
+      />
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        isOpen={showQuickViewModal}
+        business={businessToView}
+        onClose={closeQuickViewModal}
       />
     </div>
   );
 }
 
-// Delete Confirmation Modal Component
-interface DeleteConfirmationModalProps {
+// Quick View Modal Component
+interface QuickViewModalProps {
   isOpen: boolean;
   business: Business | null;
   onClose: () => void;
-  onConfirm: () => void;
 }
 
-function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm }: DeleteConfirmationModalProps) {
+function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
   if (!isOpen || !business) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getBusinessIcon = (business: Business) => {
+    if (business.logo) {
+      return (
+        <img 
+          src={business.logo} 
+          alt={`${business.name} logo`}
+          className="w-full h-full object-cover rounded-lg"
+        />
+      );
+    }
+    
+    const IconComponent = businessTypeIcons[business.businessType as keyof typeof businessTypeIcons] || Building2;
+    return <IconComponent className="w-8 h-8 text-gray-600" />;
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+              {getBusinessIcon(business)}
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Delete Business</h3>
-              <p className="text-sm text-gray-600">This action cannot be undone</p>
+              <h2 className="text-xl font-semibold text-gray-900">{business.name}</h2>
+              <p className="text-sm text-gray-600 capitalize">
+                {business.businessType.toLowerCase().replace('_', ' ')}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Status and Plan */}
+          <div className="flex items-center gap-4">
+            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+              business.isActive
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {business.isActive ? 'Active' : 'Inactive'}
+            </span>
+            <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+              business.subscriptionPlan === 'PRO'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {business.subscriptionPlan} Plan
+            </span>
+          </div>
+
+          {/* Owner Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <UserCheck className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</p>
+                  <p className="text-xs text-gray-500">Owner</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
+                  <p className="text-xs text-gray-500">Email</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <p className="text-gray-700">
-              Are you sure you want to delete <strong>"{business.name}"</strong>? This will permanently remove:
-            </p>
-            <ul className="mt-3 text-sm text-gray-600 space-y-1">
-              <li>• All business data and settings</li>
-              <li>• All products and categories</li>
-              <li>• All orders and customer data</li>
-              <li>• All team members and permissions</li>
-            </ul>
+          {/* Contact Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Contact Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.whatsappNumber || 'Not provided'}</p>
+                  <p className="text-xs text-gray-500">WhatsApp</p>
+                </div>
+              </div>
+              {business.email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.email}</p>
+                    <p className="text-xs text-gray-500">Business Email</p>
+                  </div>
+                </div>
+              )}
+              {business.address && (
+                <div className="flex items-start gap-3 md:col-span-2">
+                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.address}</p>
+                  <p className="text-xs text-gray-500">Business Address</p>
+                </div>
+              </div>
+              )}
+              {business.website && (
+                <div className="flex items-center gap-3">
+                  <Globe className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.website}</p>
+                    <p className="text-xs text-gray-500">Website</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-end space-x-3">
+        {/* Business Stats */}
+<div>
+  <h3 className="text-lg font-medium text-gray-900 mb-3">Business Statistics</h3>
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="bg-gray-50 rounded-lg p-3 text-center">
+      <Package className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+      <p className="text-xl font-bold text-gray-900">{business.stats.totalOrders}</p>
+      <p className="text-xs text-gray-500">Orders</p>
+    </div>
+    <div className="bg-gray-50 rounded-lg p-3 text-center">
+      <UserCheck className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+      <p className="text-xl font-bold text-gray-900">{business.stats.totalCustomers || 0}</p>
+      <p className="text-xs text-gray-500">Customers</p>
+    </div>
+    <div className="bg-gray-50 rounded-lg p-3 text-center">
+      <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+      <p className="text-xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
+      <p className="text-xs text-gray-500">Products</p>
+    </div>
+    <div className="bg-gray-50 rounded-lg p-3 text-center">
+      <Building2 className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+      <p className="text-xl font-bold text-gray-900">{business.currency} {business.stats.totalRevenue.toFixed(2)}</p>
+      <p className="text-xs text-gray-500">Revenue</p>
+    </div>
+  </div>
+</div>
+
+          {/* Business Details */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Business Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{formatDate(business.createdAt)}</p>
+                  <p className="text-xs text-gray-500">Created</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Globe className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.slug}</p>
+                  <p className="text-xs text-gray-500">Store URL</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Package className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.currency}</p>
+                  <p className="text-xs text-gray-500">Currency</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {business.onboardingCompleted ? 'Completed' : 'Pending'}
+                  </p>
+                  <p className="text-xs text-gray-500">Onboarding</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-lg">
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-3">
+              <button
+                onClick={() => window.open(`/${business.slug}`, '_blank')}
+                className="inline-flex items-center px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Visit Store
+              </button>
+              <button
+                onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true`, '_blank')}
+                className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
+                Impersonate
+              </button>
+            </div>
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Delete Business
+              Close
             </button>
           </div>
         </div>
@@ -643,7 +889,118 @@ function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm }: Delet
   );
 }
 
-// CreateBusinessModal Component (keeping existing implementation)
+// Delete Confirmation Modal Component (Updated with Deactivate option)
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  business: Business | null;
+  onClose: () => void;
+  onConfirm: () => void;
+  onToggleStatus: (business: Business) => void; // Updated
+}
+
+function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm, onToggleStatus }: DeleteConfirmationModalProps) {
+    if (!isOpen || !business) return null;
+  
+    const isActive = business.isActive;
+  
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {isActive ? 'Delete or Deactivate Business' : 'Delete or Activate Business'}
+                </h3>
+                <p className="text-sm text-gray-600">Choose an action for this business</p>
+              </div>
+            </div>
+  
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                What would you like to do with <strong>"{business.name}"</strong>?
+              </p>
+              
+              <div className="space-y-3">
+                {isActive ? (
+                  <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
+                    <h4 className="font-medium text-yellow-800 mb-2">Deactivate Business</h4>
+                    <p className="text-sm text-yellow-700">
+                      Temporarily disable the business. Data is preserved and can be reactivated later.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 border border-green-200 bg-green-50 rounded-lg">
+                    <h4 className="font-medium text-green-800 mb-2">Activate Business</h4>
+                    <p className="text-sm text-green-700">
+                      Reactivate the business and make it accessible again. All data will be restored.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+                  <h4 className="font-medium text-red-800 mb-2">Permanently Delete</h4>
+                  <p className="text-sm text-red-700 mb-2">
+                    Completely remove the business and all associated data:
+                  </p>
+                  <ul className="text-sm text-red-600 space-y-1">
+                    <li>• All business data and settings</li>
+                    <li>• All products and categories</li>
+                    <li>• All orders and customer data</li>
+                    <li>• All team members and permissions</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+  
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                    onToggleStatus(business); // This will now toggle correctly
+                  onClose();
+                }}
+                className={`px-4 py-2 text-white rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-yellow-600 hover:bg-yellow-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {isActive ? (
+                  <>
+                    <UserX className="w-4 h-4 inline mr-2" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <UserCheck className="w-4 h-4 inline mr-2" />
+                    Activate
+                  </>
+                )}
+              </button>
+              <button
+                onClick={onConfirm}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                <Trash2 className="w-4 h-4 inline mr-2" />
+                Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+// CreateBusinessModal Component
 interface CreateBusinessModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -727,6 +1084,35 @@ function CreateBusinessModal({ isOpen, onClose, onSubmit }: CreateBusinessModalP
                 required
                 value={formData.businessName}
                 onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                placeholder="Pizza Palace"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Type *
+              </label>
+              <select
+                value={formData.businessType}
+                onChange={(e) => setFormData(prev => ({ ...prev, businessType: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              >
+                {businessTypes.map(type => (
+                  <option key={type.value} value={type.value}>{type.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Owner Name *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.ownerName}
+                onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 placeholder="John Doe"
               />
