@@ -20,16 +20,19 @@ export async function middleware(request: NextRequest) {
         const data = await businessesResponse.json()
         
         if (data.businesses?.length > 0) {
-          if (data.businesses[0].setupWizardCompleted) {
-            const redirectUrl = `/admin/stores/${data.businesses[0].id}/dashboard`
-            return NextResponse.redirect(new URL(redirectUrl, request.url))
+          const business = data.businesses[0]
+          
+          // If setup is complete, go directly to dashboard
+          if (business.setupWizardCompleted && business.onboardingCompleted) {
+            return NextResponse.redirect(new URL(`/admin/stores/${business.id}/dashboard`, request.url))
           }
         }
       }
     } catch (error) {
-      // Fall through to setup redirect
+      // Only on API failure, fall back to setup
     }
     
+    // Only redirect to setup if setup is actually incomplete or API failed
     return NextResponse.redirect(new URL('/setup', request.url))
   }
 
@@ -56,19 +59,24 @@ export async function middleware(request: NextRequest) {
         const data = await businessesResponse.json()
         
         if (data.businesses?.length > 0) {
-          if (data.businesses[0].setupWizardCompleted) {
-            const redirectUrl = `/admin/stores/${data.businesses[0].id}/dashboard`
-            return NextResponse.redirect(new URL(redirectUrl, request.url))
+          const business = data.businesses[0]
+          
+          // If setup is complete, redirect to dashboard
+          if (business.setupWizardCompleted && business.onboardingCompleted) {
+            return NextResponse.redirect(new URL(`/admin/stores/${business.id}/dashboard`, request.url))
           }
           
-          if (!data.businesses[0].onboardingCompleted) {
+          // If onboarding is not completed, stay on setup
+          if (!business.onboardingCompleted) {
             return NextResponse.next()
           }
         }
       }
     } catch (error) {
-      // Continue to next()
+      // Continue to next() on API failure
     }
+    
+    return NextResponse.next()
   }
 
   // Simple auth protection for admin routes
