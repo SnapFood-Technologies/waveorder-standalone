@@ -37,7 +37,7 @@ async function checkBusinessAccess(
     console.log('🔍 Checking business access for businessId:', businessId)
     const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
       headers: {
-        'Authorization': `Bearer ${token.sub}`,
+        // 'Authorization': `Bearer ${token.sub}`,
         'Cookie': request.headers.get('cookie') || ''
       }
     })
@@ -74,7 +74,7 @@ export async function middleware(request: NextRequest) {
     try {
       const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
         headers: {
-          'Authorization': `Bearer ${token.sub}`,
+          // 'Authorization': `Bearer ${token.sub}`,
           'Cookie': request.headers.get('cookie') || ''
         }
       })
@@ -121,7 +121,7 @@ export async function middleware(request: NextRequest) {
     try {
       const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
         headers: {
-          'Authorization': `Bearer ${token.sub}`,
+          // 'Authorization': `Bearer ${token.sub}`,
           'Cookie': request.headers.get('cookie') || ''
         }
       })
@@ -222,7 +222,7 @@ export async function middleware(request: NextRequest) {
           // Check business subscription plan
           const businessResponse = await fetch(`${request.nextUrl.origin}/api/businesses/${businessId}/subscription`, {
             headers: {
-              'Authorization': `Bearer ${token.sub}`,
+              // 'Authorization': `Bearer ${token.sub}`,
               'Cookie': request.headers.get('cookie') || ''
             }
           })
