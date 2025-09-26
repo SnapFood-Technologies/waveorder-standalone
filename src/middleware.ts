@@ -178,7 +178,7 @@ export async function middleware(request: NextRequest) {
           
           // If their business setup is not completed, redirect to setup
           if (!userBusiness.setupWizardCompleted || !userBusiness.onboardingCompleted) {
-            console.log('🛠️ User business setup incomplete, redirecting to setup -- bugy')
+            console.log('🛠️ User business setup incomplete, redirecting to setup -- working')
             return NextResponse.redirect(new URL('/setup', request.url))
           }
           
@@ -188,8 +188,8 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(new URL(redirectUrl, request.url))
         } else {
           // No businesses found, redirect to setup
-          console.log('🚫 No businesses found, redirecting to setup')
-          // return NextResponse.redirect(new URL('/setup', request.url))
+          console.log('🚫 No businesses found, redirecting to setup -- buggy')
+          return NextResponse.redirect(new URL('/setup', request.url))
         }
       }
 
