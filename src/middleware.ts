@@ -48,6 +48,15 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
     
+    return NextResponse.next()
+  }
+
+  // Protect admin routes - check auth and setup completion
+  if (pathname.startsWith('/admin')) {
+    if (!isAuth) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    
     try {
       const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
         headers: {
@@ -58,31 +67,19 @@ export async function middleware(request: NextRequest) {
       if (businessesResponse.ok) {
         const data = await businessesResponse.json()
         
-        if (data.businesses?.length > 0) {
-          const business = data.businesses[0]
-          
-          // If setup is complete, redirect to dashboard
-          if (business.setupWizardCompleted && business.onboardingCompleted) {
-            return NextResponse.redirect(new URL(`/admin/stores/${business.id}/dashboard`, request.url))
-          }
-          
-          // If onboarding is not completed, stay on setup
-          if (!business.onboardingCompleted) {
-            return NextResponse.next()
-          }
+        if (data.businesses?.length === 0) {
+          return NextResponse.redirect(new URL('/setup', request.url))
         }
+        
+        const business = data.businesses[0]
+        if (!business.setupWizardCompleted || !business.onboardingCompleted) {
+          return NextResponse.redirect(new URL('/setup', request.url))
+        }
+      } else {
+        return NextResponse.redirect(new URL('/setup', request.url))
       }
     } catch (error) {
-      // Continue to next() on API failure
-    }
-    
-    return NextResponse.next()
-  }
-
-  // Simple auth protection for admin routes
-  if (pathname.startsWith('/admin')) {
-    if (!isAuth) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
+      return NextResponse.redirect(new URL('/setup', request.url))
     }
     
     return NextResponse.next()
