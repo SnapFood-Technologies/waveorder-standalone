@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get recent businesses with owner info
+    // Get recent businesses with owner info and whatsapp number
     const businesses = await prisma.business.findMany({
       take: 5, // Limit to 5 most recent
       orderBy: {
@@ -27,6 +27,7 @@ export async function GET() {
         subscriptionPlan: true,
         businessType: true,
         logo: true,
+        whatsappNumber: true, // Add this field
         users: {
           where: {
             role: 'OWNER'
@@ -48,6 +49,8 @@ export async function GET() {
       id: business.id,
       name: business.name,
       owner: business.users[0]?.user?.name || 'Unknown',
+      ownerEmail: business.users[0]?.user?.email || 'No email', // Add this field
+      whatsappNumber: business.whatsappNumber || 'Not provided', // Add this field
       createdAt: business.createdAt.toISOString(),
       subscriptionPlan: business.subscriptionPlan,
       businessType: business.businessType,

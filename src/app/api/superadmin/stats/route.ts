@@ -1,5 +1,4 @@
-
-// API Route: app/api/superadmin/stats/route.ts
+// app/api/superadmin/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
@@ -42,14 +41,15 @@ export async function GET(request: NextRequest) {
 
     // Parallel queries for better performance
     const [
-      totalBusinesses,
+      totalBusinessesAllTime,
       activeBusinesses,
-      totalUsers,
+      totalUsersAllTime,
       businessesInPeriod,
       usersInPeriod,
       currentMonthBusinesses,
       lastMonthBusinesses,
-      recentSignups
+      recentSignups,
+      totalPageViews
     ] = await Promise.all([
       // Total businesses (all time)
       prisma.business.count(),
@@ -60,7 +60,11 @@ export async function GET(request: NextRequest) {
       }),
       
       // Total users (all time)
-      prisma.user.count(),
+      prisma.user.count({
+        where: {
+          role: { not: 'SUPER_ADMIN' }
+        }
+      }),
 
       // Businesses created in selected period
       prisma.business.count({
@@ -72,13 +76,14 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Users created in selected period
+      // Users created in selected period (exclude SUPER_ADMIN)
       prisma.user.count({
         where: {
           createdAt: {
             gte: startDate,
             lte: endDate
-          }
+          },
+          role: { not: 'SUPER_ADMIN' }
         }
       }),
       
@@ -107,11 +112,22 @@ export async function GET(request: NextRequest) {
           createdAt: {
             gte: thisWeek
           },
-          role: {
-            not: 'SUPER_ADMIN'
-          }
+          role: { not: 'SUPER_ADMIN' }
         }
-      })
+      }),
+
+      // Total page views in selected period - MOVE THIS TO THE END
+  prisma.analytics.aggregate({
+    where: {
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
+    _sum: {
+      visitors: true
+    }
+  })
     ])
 
     // Calculate monthly growth
@@ -120,11 +136,17 @@ export async function GET(request: NextRequest) {
       : currentMonthBusinesses > 0 ? 100 : 0
 
     const stats = {
-      totalBusinesses: businessesInPeriod, // Show businesses in selected period
+      // Show businesses created in selected period for "New Businesses"
+      totalBusinesses: businessesInPeriod,
+      // Show all-time active businesses (not affected by date filter)
       activeBusinesses,
-      totalUsers: usersInPeriod, // Show users in selected period  
+      // Show users created in selected period for "New Users"
+      totalUsers: usersInPeriod,
+      // Monthly growth comparison (not affected by date filter)
       monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
-      recentSignups
+      // Recent signups this week (not affected by date filter)
+      recentSignups,
+      totalPageViews: totalPageViews?._sum.visitors || 0 // Add this line
     }
 
     return NextResponse.json(stats)
