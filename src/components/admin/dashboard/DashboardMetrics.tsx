@@ -109,18 +109,6 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
     return `${dateRange.start.toLocaleDateString('en-US', options)} – ${dateRange.end.toLocaleDateString('en-US', options)}`
   }
 
-  // Custom tooltip component for the bar chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-medium text-gray-900">{`${label}: ${payload[0].value} orders`}</p>
-        </div>
-      )
-    }
-    return null
-  }
-
   const metricItems = [
     {
       name: 'Views',
@@ -159,13 +147,15 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
 
   if (loading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Overview</h2>
           <div className="mt-2 lg:mt-0">
             <div className="h-10 bg-gray-200 rounded w-64 animate-pulse"></div>
           </div>
         </div>
+        
+        {/* Metrics Cards Loading */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white p-6 rounded-lg border border-gray-200 animate-pulse">
@@ -174,12 +164,26 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
             </div>
           ))}
         </div>
+        
+        {/* Orders by Status Chart Loading */}
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-6 animate-pulse"></div>
+          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+          <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200 mt-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center animate-pulse">
+                <div className="w-3 h-3 bg-gray-200 rounded mr-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Overview</h2>
