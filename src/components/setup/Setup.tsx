@@ -106,6 +106,42 @@ export default function SetupComponent() {
     checkUserBusinesses()
   }, [session, status, token, router])
 
+
+  const debugBusinessAccess = async (businessId: string) => {
+    console.log('🔍 === DEBUG: Simulating middleware business access check ===')
+    console.log('🆔 Testing businessId:', businessId)
+    
+    try {
+      // This mimics what the middleware does
+      const response = await fetch('/api/user/businesses')
+      console.log('📡 API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📊 API response data:', JSON.stringify(data, null, 2))
+        
+        // This is the exact logic from middleware
+        const hasAccess = data.businesses?.some((business: any) => {
+          console.log(`🔍 Comparing: "${business.id}" === "${businessId}"`)
+          console.log(`🔍 Types: ${typeof business.id} === ${typeof businessId}`)
+          console.log(`🔍 Match: ${business.id === businessId}`)
+          return business.id === businessId
+        })
+        
+        console.log('✅ Final hasAccess result:', hasAccess)
+        console.log('📋 Available business IDs:', data.businesses?.map((b: any) => b.id))
+        
+        return { hasAccess, userBusinesses: data.businesses }
+      } else {
+        console.log('❌ API call failed')
+        return { hasAccess: false }
+      }
+    } catch (error) {
+      console.error('❌ Error in debug check:', error)
+      return { hasAccess: false }
+    }
+  }
+
   const checkUserBusinesses = async () => {
     console.log('🏢 === SETUP COMPONENT: Checking user businesses ===')
     try {
@@ -123,6 +159,8 @@ export default function SetupComponent() {
         if (business.setupWizardCompleted) {
           const dashboardUrl = `/admin/stores/${business.id}/dashboard`
           console.log('🎯 Setup component trying to redirect to:', dashboardUrl)
+          await debugBusinessAccess(business.id)
+
           // User already has businesses, redirect to dashboard
           router.push(dashboardUrl)
         } else {
