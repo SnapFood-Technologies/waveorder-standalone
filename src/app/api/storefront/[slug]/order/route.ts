@@ -239,7 +239,6 @@ async function createInventoryActivities(orderId: string, businessId: string, it
       });
 
       if (!product || !product.trackInventory) {
-        console.log(`Skipping inventory tracking for product ${item.productId} - tracking disabled`);
         continue;
       }
 

@@ -77,7 +77,6 @@ export async function POST(
     for (const item of order.items) {
       // Only revert if inventory tracking is enabled
       if (!item.product.trackInventory) {
-        console.log(`Skipping stock revert for product ${item.product.name} - tracking disabled`)
         continue
       }
 
