@@ -209,8 +209,8 @@ export async function middleware(request: NextRequest) {
         }
         
         if (currentBusiness && (!currentBusiness.setupWizardCompleted || !currentBusiness.onboardingCompleted)) {
-          console.log('🚨 REDIRECTING TO SETUP')
-          // return NextResponse.redirect(new URL('/setup', request.url))
+          console.log('🚨 REDIRECTING TO SETUP -- buggy')
+          return NextResponse.redirect(new URL('/setup', request.url))
         }
         console.log('✅ NOT REDIRECTING TO SETUP')
       }
