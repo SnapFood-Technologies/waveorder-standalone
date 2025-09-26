@@ -32,31 +32,39 @@ export default function LoginComponent() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
+  
     try {
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false
       })
-
+  
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
-        // Check if user has businesses and redirect accordingly
+        // Check if SuperAdmin via session
+        const sessionResponse = await fetch('/api/auth/session')
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json()
+          
+          if (sessionData?.user?.role === 'SUPER_ADMIN') {
+            router.push('/superadmin/dashboard')
+            return
+          }
+        }
+  
+        // EXISTING business logic unchanged
         const response = await fetch('/api/user/businesses')
         const data = await response.json()
         
         if (data.businesses?.length > 0) {
           if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
-          // Redirect to first business dashboard
-          router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+            router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
           } else {
-             // Redirect to setup/onboarding
-          router.push('/setup')
+            router.push('/setup')
           }
         } else {
-          // Redirect to setup/onboarding
           router.push('/setup')
         }
       }
