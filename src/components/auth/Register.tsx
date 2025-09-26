@@ -95,7 +95,7 @@ export default function RegisterComponent() {
       const result = await signIn('email', {
         email: formData.email,
         redirect: false,
-        callbackUrl: '/setup'
+        // callbackUrl: '/setup'
       })
 
       if (result?.ok) {
@@ -110,11 +110,26 @@ export default function RegisterComponent() {
     }
   }
 
-  const handleGoogleRegister = () => {
-    signIn('google', {
-      callbackUrl: '/setup',
-      redirect: true
+  const handleGoogleRegister = async () => {
+    const result = await signIn('google', {
+      redirect: false
     })
+    
+    if (result?.ok) {
+      // Same business check logic
+      const response = await fetch('/api/user/businesses')
+      const data = await response.json()
+      
+      if (data.businesses?.length > 0) {
+        if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
+          router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+        } else {
+          router.push('/setup')
+        }
+      } else {
+        router.push('/setup')
+      }
+    }
   }
 
   if (magicLinkSent) {
