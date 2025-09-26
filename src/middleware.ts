@@ -56,6 +56,7 @@ async function checkBusinessAccess(
       }
     })
 
+    // @ts-ignore
     const businesses = businessUsers.map(bu => ({
       ...bu.business,
       role: bu.role
