@@ -51,35 +51,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protect admin routes - check auth and setup completion
+  // Simple auth protection for admin routes
   if (pathname.startsWith('/admin')) {
     if (!isAuth) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
-    
-    try {
-      const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
-        headers: {
-          'Cookie': request.headers.get('cookie') || ''
-        }
-      })
-      
-      if (businessesResponse.ok) {
-        const data = await businessesResponse.json()
-        
-        if (data.businesses?.length === 0) {
-          return NextResponse.redirect(new URL('/setup', request.url))
-        }
-        
-        const business = data.businesses[0]
-        if (!business.setupWizardCompleted || !business.onboardingCompleted) {
-          return NextResponse.redirect(new URL('/setup', request.url))
-        }
-      } else {
-        return NextResponse.redirect(new URL('/setup', request.url))
-      }
-    } catch (error) {
-      return NextResponse.redirect(new URL('/setup', request.url))
     }
     
     return NextResponse.next()
