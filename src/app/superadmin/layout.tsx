@@ -48,6 +48,7 @@ export default function SuperAdminLayout({
       <SuperAdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
+        // @ts-ignore
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />

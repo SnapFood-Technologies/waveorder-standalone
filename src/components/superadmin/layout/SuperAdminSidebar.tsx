@@ -1,4 +1,8 @@
+'use client'
+
 import React, { useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   BarChart3, 
   Building2, 
@@ -13,18 +17,20 @@ import {
 interface SuperAdminSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
 }
 
-export function SuperAdminSidebar({ isOpen, onClose, activeTab, onTabChange }: SuperAdminSidebarProps) {
+export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
+  const pathname = usePathname();
+  
   const navigation = [
-    { name: 'Dashboard', key: 'dashboard', icon: BarChart3 },
-    { name: 'Businesses', key: 'businesses', icon: Building2 },
-    { name: 'Users', key: 'users', icon: Users },
-    { name: 'Analytics', key: 'analytics', icon: TrendingUp },
-    { name: 'Settings', key: 'settings', icon: Settings },
+    { name: 'Dashboard', href: '/superadmin/dashboard', icon: BarChart3 },
+    { name: 'Businesses', href: '/superadmin/businesses', icon: Building2 },
+    { name: 'Users', href: '/superadmin/users', icon: Users },
+    { name: 'Analytics', href: '/superadmin/analytics', icon: TrendingUp },
+    { name: 'Settings', href: '/superadmin/settings', icon: Settings },
   ];
+
+  const isActive = (href: string) => pathname === href;
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {
@@ -78,23 +84,21 @@ export function SuperAdminSidebar({ isOpen, onClose, activeTab, onTabChange }: S
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => {
-                  onTabChange(item.key);
-                  onClose();
-                }}
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  activeTab === item.key
+                  isActive(item.href)
                     ? 'bg-teal-100 text-teal-700'
                     : 'text-gray-700 hover:bg-teal-50 hover:text-teal-700'
                 }`}
               >
                 <item.icon className={`w-5 h-5 mr-3 flex-shrink-0 ${
-                  activeTab === item.key ? 'text-teal-500' : 'text-gray-400'
+                  isActive(item.href) ? 'text-teal-500' : 'text-gray-400'
                 }`} />
                 <span className="truncate">{item.name}</span>
-              </button>
+              </Link>
             ))}
           </nav>
 

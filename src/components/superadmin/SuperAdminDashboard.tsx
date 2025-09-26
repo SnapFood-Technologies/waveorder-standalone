@@ -2,6 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   Building2, 
   Users, 
@@ -19,22 +20,26 @@ import {
   Flower2,
   MoreHorizontal,
   Eye,
-  Calendar
+  Calendar,
+  ArrowUpRight,
+  Info
 } from 'lucide-react';
 
 interface DashboardStats {
   totalBusinesses: number;
   activeBusinesses: number;
   totalUsers: number;
-  totalOrders: number;
   monthlyGrowth: number;
   recentSignups: number;
+  totalPageViews: number;
 }
 
 interface RecentBusiness {
   id: string;
   name: string;
   owner: string;
+  ownerEmail: string;
+  whatsappNumber: string;
   createdAt: string;
   subscriptionPlan: string;
   businessType: string;
@@ -122,7 +127,6 @@ export function SuperAdminDashboard() {
     if (days === 1) return 'Yesterday';
     if (days <= 7) return `${days} days ago`;
     
-    // More than a week - show actual date
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric',
@@ -220,28 +224,32 @@ export function SuperAdminDashboard() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="flex items-center">
-          <AlertTriangle className="w-5 h-5 text-red-600 mr-3" />
-          <div>
-            <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
+      <div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 text-red-600 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
           </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Retry
+          </button>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-        >
-          Retry
-        </button>
       </div>
     );
   }
 
   if (!stats) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">No dashboard data available</p>
+      <div>
+        <div className="text-center py-12">
+          <p className="text-gray-500">No dashboard data available</p>
+        </div>
       </div>
     );
   }
@@ -274,23 +282,25 @@ export function SuperAdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Businesses</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalBusinesses}</p>
+        <Link href="/superadmin/businesses" className="block">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">New Businesses</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalBusinesses}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                <Building2 className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-blue-600" />
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-green-600 text-sm font-medium">
+                +{stats.monthlyGrowth}% vs last month
+              </span>
+              <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" />
             </div>
           </div>
-          <div className="mt-4 flex items-center">
-            <span className="text-green-600 text-sm font-medium">
-              +{stats.monthlyGrowth}%
-            </span>
-            <span className="text-gray-500 text-sm ml-2">vs last month</span>
-          </div>
-        </div>
+        </Link>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
@@ -304,7 +314,7 @@ export function SuperAdminDashboard() {
           </div>
           <div className="mt-4 flex items-center">
             <span className="text-gray-500 text-sm">
-              {stats.totalBusinesses > 0 ? ((stats.activeBusinesses / stats.totalBusinesses) * 100).toFixed(1) : 0}% active rate
+              All-time active rate
             </span>
           </div>
         </div>
@@ -312,7 +322,7 @@ export function SuperAdminDashboard() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Users</p>
+              <p className="text-sm font-medium text-gray-600">New Users</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -327,21 +337,21 @@ export function SuperAdminDashboard() {
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Platform Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">$0</p>
-            </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center">
-            <span className="text-gray-500 text-sm">
-              No subscription revenue yet
-            </span>
-          </div>
-        </div>
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-sm font-medium text-gray-600">Page Views</p>
+      <p className="text-2xl font-bold text-gray-900">{stats.totalPageViews}</p>
+    </div>
+    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+      <Eye className="w-6 h-6 text-yellow-600" />
+    </div>
+  </div>
+  <div className="mt-4 flex items-center">
+    <span className="text-gray-500 text-sm">
+      Across all storefronts
+    </span>
+  </div>
+</div>
       </div>
 
       {/* Recent Business Registrations */}
@@ -349,11 +359,23 @@ export function SuperAdminDashboard() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Recent Business Registrations</h3>
-            <p className="text-sm text-gray-500 mt-1">Latest businesses that joined the platform</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-gray-500">Latest businesses that joined the platform</p>
+              <div className="group relative">
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  Shows 5 most recent registrations, independent of date filter
+                </div>
+              </div>
+            </div>
           </div>
-          <button className="px-4 py-2 text-sm font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors">
+          <Link 
+            href="/superadmin/businesses"
+            className="px-4 py-2 text-sm font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors inline-flex items-center gap-2"
+          >
             View All
-          </button>
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
         </div>
         {recentBusinesses.length > 0 ? (
           <div className="overflow-x-auto">
@@ -382,10 +404,12 @@ export function SuperAdminDashboard() {
                       </div>
                     </td>
                     <td className="py-3 px-3">
-                      <p className="text-sm text-gray-900">{business.owner}</p>
+                      <div>
+                        <p className="text-sm text-gray-900">{business.owner}</p>
+                        <p className="text-xs text-gray-500">{business.ownerEmail}</p>
+                      </div>
                     </td>
                     <td className="py-3 px-3">
-                        {/* @ts-ignore */}
                       <p className="text-sm text-gray-600">{business.whatsappNumber || 'Not provided'}</p>
                     </td>
                     <td className="py-3 px-3">
