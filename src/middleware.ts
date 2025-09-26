@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (pathname.startsWith('/auth') && isAuth) {
     try {
-      const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
+      const businessesResponse = await fetch(`https://waveorder.app/api/user/businesses`, {
         headers: {
           'Cookie': request.headers.get('cookie') || ''
         }
