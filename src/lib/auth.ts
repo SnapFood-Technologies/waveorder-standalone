@@ -122,6 +122,34 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name
         token.image = user.image
         token.role = user.role
+        
+        // Add business info during initial login
+        try {
+          const business = await prisma.business.findFirst({
+            where: { userId: user.id },
+            select: {
+              id: true,
+              setupWizardCompleted: true,
+              onboardingCompleted: true
+            }
+          })
+          
+          if (business) {
+            token.businessId = business.id
+            token.setupCompleted = business.setupWizardCompleted
+            token.onboardingCompleted = business.onboardingCompleted
+          } else {
+            token.businessId = null
+            token.setupCompleted = false
+            token.onboardingCompleted = false
+          }
+        } catch (error) {
+          console.error('Error fetching business status during login:', error)
+          // Set safe defaults if business query fails
+          token.businessId = null
+          token.setupCompleted = false
+          token.onboardingCompleted = false
+        }
       }
       
       if (token.id) {
@@ -159,6 +187,9 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string
         session.user.image = token.image as string
         session.user.role = token.role as string
+        session.user.businessId = token.businessId as string | null
+        session.user.setupCompleted = token.setupCompleted as boolean
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean
       }
       return session
     },
