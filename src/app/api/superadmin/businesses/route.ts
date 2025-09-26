@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all'
     const plan = searchParams.get('plan') || 'all'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
     // Build where conditions
@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       whereConditions.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } },
         { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
         { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
       ]
@@ -87,6 +88,7 @@ export async function GET(request: NextRequest) {
       currency: business.currency,
       language: business.language,
       whatsappNumber: business.whatsappNumber,
+      address: business.address, // Include address field
       logo: business.logo,
       createdAt: business.createdAt,
       updatedAt: business.updatedAt,

@@ -18,7 +18,11 @@ import {
   Flower2,
   MoreHorizontal,
   ExternalLink,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  MapPin
 } from 'lucide-react';
 
 interface Business {
@@ -31,6 +35,7 @@ interface Business {
   isActive: boolean;
   currency: string;
   whatsappNumber: string;
+  address?: string;
   logo?: string;
   createdAt: string;
   updatedAt: string;
@@ -61,6 +66,18 @@ interface CreateBusinessData {
   sendEmail: boolean;
 }
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+interface SuccessMessage {
+  title: string;
+  message: string;
+}
+
 const businessTypeIcons = {
   RESTAURANT: UtensilsCrossed,
   CAFE: Coffee,
@@ -76,21 +93,38 @@ export function SuperAdminBusinesses() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [pagination, setPagination] = useState({
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     pages: 0
   });
 
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+      if (searchQuery !== debouncedSearchQuery) {
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Fetch businesses
   useEffect(() => {
     fetchBusinesses();
-  }, [searchTerm, statusFilter, planFilter, pagination.page]);
+  }, [debouncedSearchQuery, statusFilter, planFilter, currentPage]);
 
   const fetchBusinesses = async () => {
     try {
@@ -98,10 +132,10 @@ export function SuperAdminBusinesses() {
       setError(null);
 
       const params = new URLSearchParams({
-        search: searchTerm,
+        search: debouncedSearchQuery,
         status: statusFilter,
         plan: planFilter,
-        page: pagination.page.toString(),
+        page: currentPage.toString(),
         limit: pagination.limit.toString()
       });
 
@@ -113,17 +147,17 @@ export function SuperAdminBusinesses() {
 
       const data = await response.json();
       setBusinesses(data.businesses);
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination.total,
-        pages: data.pagination.pages
-      }));
+      setPagination(data.pagination);
     } catch (error) {
       console.error('Error fetching businesses:', error);
       setError(error instanceof Error ? error.message : 'Failed to load businesses');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
 
   const handleImpersonate = (businessId: string) => {
@@ -145,19 +179,34 @@ export function SuperAdminBusinesses() {
 
       setShowCreateModal(false);
       fetchBusinesses();
+      
+      // Show success message
+      setSuccessMessage({
+        title: 'Business Created Successfully',
+        message: `${data.businessName} has been created and the owner has been notified.`
+      });
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error creating business:', error);
-      alert(error instanceof Error ? error.message : 'Failed to create business');
+      setError(error instanceof Error ? error.message : 'Failed to create business');
     }
   };
 
-  const handleDeleteBusiness = async (business: Business) => {
-    if (!confirm(`Are you sure you want to delete "${business.name}"? This action cannot be undone.`)) {
-      return;
-    }
+  const openDeleteModal = (business: Business) => {
+    setBusinessToDelete(business);
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setBusinessToDelete(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleDeleteBusiness = async () => {
+    if (!businessToDelete) return;
 
     try {
-      const response = await fetch(`/api/superadmin/businesses/${business.id}`, {
+      const response = await fetch(`/api/superadmin/businesses/${businessToDelete.id}`, {
         method: 'DELETE'
       });
 
@@ -165,10 +214,18 @@ export function SuperAdminBusinesses() {
         throw new Error('Failed to delete business');
       }
 
+      closeDeleteModal();
       fetchBusinesses();
+      
+      // Show success message
+      setSuccessMessage({
+        title: 'Business Deleted Successfully',
+        message: `"${businessToDelete.name}" has been permanently deleted from the system.`
+      });
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
       console.error('Error deleting business:', error);
-      alert('Failed to delete business');
+      setError('Failed to delete business');
     }
   };
 
@@ -202,10 +259,14 @@ export function SuperAdminBusinesses() {
           <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
           <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
-          ))}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -233,191 +294,277 @@ export function SuperAdminBusinesses() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">{successMessage.title}</h4>
+                <p className="text-sm text-gray-600 mt-1">{successMessage.message}</p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Businesses</h1>
           <p className="text-gray-600 mt-1">
             Manage all businesses on the platform
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Business
-        </button>
+        <div className="w-full sm:w-auto">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Business
+          </button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {/* Filters and Search */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search businesses, owners, emails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             />
           </div>
+
+          {/* Filters and Count */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            
+            <select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="all">All Plans</option>
+              <option value="free">Free</option>
+              <option value="pro">Pro</option>
+            </select>
+
+            <div className="text-sm text-gray-600">
+              {pagination.total} businesses
+            </div>
+          </div>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        <select
-          value={planFilter}
-          onChange={(e) => setPlanFilter(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-        >
-          <option value="all">All Plans</option>
-          <option value="free">Free</option>
-          <option value="pro">Pro</option>
-        </select>
       </div>
 
       {/* Businesses Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Business
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Owner
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  WhatsApp
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Plan
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Orders
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {businesses.map((business) => (
-                <tr key={business.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        {getBusinessIcon(business)}
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{business.name}</div>
-                        <div className="text-sm text-gray-500 capitalize">
-                          {business.businessType.toLowerCase().replace('_', ' ')}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{business.owner?.name || 'Unknown'}</div>
-                    <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{business.whatsappNumber || 'Not provided'}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      business.subscriptionPlan === 'PRO'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {business.subscriptionPlan}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      business.isActive
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {business.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {business.stats.totalOrders}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(business.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleImpersonate(business.id)}
-                        className="text-blue-600 hover:text-blue-700"
-                        title="Impersonate"
-                      >
-                        <UserCheck className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => window.open(`/${business.slug}`, '_blank')}
-                        className="text-green-600 hover:text-green-700"
-                        title="View Store"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </button>
-                      <button
-                        className="text-red-600 hover:text-red-700"
-                        title="Delete"
-                        onClick={() => handleDeleteBusiness(business)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                  disabled={pagination.page === 1}
-                  className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                  disabled={pagination.page === pagination.pages}
-                  className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {businesses.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Building2 className="w-10 h-10 text-gray-400" />
             </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {debouncedSearchQuery ? 'No businesses found' : 'No businesses yet'}
+            </h3>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              {debouncedSearchQuery 
+                ? 'Try adjusting your search terms or filters to find the businesses you\'re looking for.'
+                : 'Get started by creating your first business on the platform.'
+              }
+            </p>
+            {!debouncedSearchQuery && (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create First Business
+              </button>
+            )}
           </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Business
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Owner
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      WhatsApp
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Plan
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Address
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {businesses.map((business) => (
+                    <tr key={business.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {getBusinessIcon(business)}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{business.name}</div>
+                            <div className="text-sm text-gray-500 capitalize">
+                              {business.businessType.toLowerCase().replace('_', ' ')}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{business.owner?.name || 'Unknown'}</div>
+                        <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{business.whatsappNumber || 'Not provided'}</div>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          business.subscriptionPlan === 'PRO'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {business.subscriptionPlan}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          business.isActive
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {business.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        {business.address ? (
+                          <div className="flex items-center text-sm text-gray-900">
+                            <MapPin className="w-3 h-3 mr-2 text-gray-400 flex-shrink-0" />
+                            <span className="truncate max-w-32">{business.address}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">Not set</span>
+                        )}
+                      </td>
+                      
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {formatDate(business.createdAt)}
+                      </td>
+                      
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => handleImpersonate(business.id)}
+                            className="text-blue-600 hover:text-blue-700 p-1"
+                            title="Impersonate"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => window.open(`/${business.slug}`, '_blank')}
+                            className="text-green-600 hover:text-green-700 p-1"
+                            title="View Store"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-700 p-1"
+                            title="Delete"
+                            onClick={() => openDeleteModal(business)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-sm text-gray-700">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                    {pagination.total} businesses
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={pagination.page === 1}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <span className="px-3 py-1 text-sm">
+                      Page {pagination.page} of {pagination.pages}
+                    </span>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.pages))}
+                      disabled={pagination.page === pagination.pages}
+                      className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -427,11 +574,76 @@ export function SuperAdminBusinesses() {
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateBusiness}
       />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        business={businessToDelete}
+        onClose={closeDeleteModal}
+        onConfirm={handleDeleteBusiness}
+      />
     </div>
   );
 }
 
-// CreateBusinessModal Component
+// Delete Confirmation Modal Component
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  business: Business | null;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm }: DeleteConfirmationModalProps) {
+  if (!isOpen || !business) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Business</h3>
+              <p className="text-sm text-gray-600">This action cannot be undone</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700">
+              Are you sure you want to delete <strong>"{business.name}"</strong>? This will permanently remove:
+            </p>
+            <ul className="mt-3 text-sm text-gray-600 space-y-1">
+              <li>• All business data and settings</li>
+              <li>• All products and categories</li>
+              <li>• All orders and customer data</li>
+              <li>• All team members and permissions</li>
+            </ul>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Delete Business
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// CreateBusinessModal Component (keeping existing implementation)
 interface CreateBusinessModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -504,7 +716,7 @@ function CreateBusinessModal({ isOpen, onClose, onSubmit }: CreateBusinessModalP
           </button>
         </div>
 
-        <div onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -515,35 +727,6 @@ function CreateBusinessModal({ isOpen, onClose, onSubmit }: CreateBusinessModalP
                 required
                 value={formData.businessName}
                 onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Pizza Palace"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Type *
-              </label>
-              <select
-                value={formData.businessType}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessType: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                {businessTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Owner Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.ownerName}
-                onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 placeholder="John Doe"
               />
@@ -656,15 +839,14 @@ function CreateBusinessModal({ isOpen, onClose, onSubmit }: CreateBusinessModalP
               Cancel
             </button>
             <button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading}
               className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Creating...' : 'Create Business'}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
