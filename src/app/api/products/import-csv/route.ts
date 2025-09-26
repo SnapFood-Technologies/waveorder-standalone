@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const setupToken = formData.get('setupToken') as string | null
 
     if (!file) {
       return NextResponse.json({ message: 'No file uploaded' }, { status: 400 })
@@ -18,6 +17,26 @@ export async function POST(request: NextRequest) {
 
     if (!file.name.endsWith('.csv')) {
       return NextResponse.json({ message: 'Invalid file type. Please upload a CSV file.' }, { status: 400 })
+    }
+
+    // Check authorization - session or setup token
+    let authorized = false
+    const session = await getServerSession(authOptions)
+    
+    if (session) {
+      authorized = true
+    } else if (setupToken) {
+      const user = await prisma.user.findFirst({
+        where: {
+          setupToken: setupToken,
+          setupExpiry: { gt: new Date() }
+        }
+      })
+      authorized = !!user
+    }
+
+    if (!authorized) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
     const csvText = await file.text()

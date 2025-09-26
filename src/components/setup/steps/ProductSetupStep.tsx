@@ -8,6 +8,7 @@ interface ProductSetupStepProps {
   data: SetupData
   onComplete: (data: Partial<SetupData>) => void
   onBack: () => void
+  setupToken?: string | null // Add this prop
 }
 
 interface Product {
@@ -93,7 +94,7 @@ const getCurrencySymbol = (currency: string) => {
   }
 }
 
-export default function ProductSetupStep({ data, onComplete, onBack }: ProductSetupStepProps) {
+export default function ProductSetupStep({ data, onComplete, onBack, setupToken }: ProductSetupStepProps) {
   const [setupMethod, setSetupMethod] = useState<'manual' | 'csv' | null>(null)
   const [products, setProducts] = useState<Product[]>(data.products || [])
   const [categories, setCategories] = useState<Category[]>(data.categories || [])
@@ -161,6 +162,10 @@ export default function ProductSetupStep({ data, onComplete, onBack }: ProductSe
     try {
       const formData = new FormData()
       formData.append('file', file)
+
+      if (setupToken) {
+        formData.append('setupToken', setupToken)
+      }
 
       const response = await fetch('/api/products/import-csv', {
         method: 'POST',
