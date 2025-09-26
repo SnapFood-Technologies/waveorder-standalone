@@ -50,8 +50,8 @@ export default function LoginComponent() {
         if (data.businesses?.length > 0) {
           if (data.businesses[0].setupWizardCompleted) {
           // Redirect to first business dashboard
-          router.push(`/admin/stores/${data.businesses[0].id}`)
-          } {
+          router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+          } else {
              // Redirect to setup/onboarding
           router.push('/setup')
           }
