@@ -48,7 +48,7 @@ export default function LoginComponent() {
         const data = await response.json()
         
         if (data.businesses?.length > 0) {
-          if (data.businesses[0].setupWizardCompleted) {
+          if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
           // Redirect to first business dashboard
           router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
           } else {
@@ -72,17 +72,16 @@ export default function LoginComponent() {
       setError('Please enter your email address')
       return
     }
-
+  
     setLoading(true)
     setError('')
-
+  
     try {
       const result = await signIn('email', {
         email: formData.email,
-        redirect: false,
-        callbackUrl: '/setup'
+        redirect: false
       })
-
+  
       if (result?.ok) {
         setMagicLinkSent(true)
       } else {
@@ -95,11 +94,26 @@ export default function LoginComponent() {
     }
   }
 
-  const handleGoogleLogin = () => {
-    signIn('google', {
-      callbackUrl: '/setup',
-      redirect: true
+  const handleGoogleLogin = async () => {
+    const result = await signIn('google', {
+      redirect: false  // Don't auto-redirect
     })
+    
+    if (result?.ok) {
+      // Use the same business check logic as credentials login
+      const response = await fetch('/api/user/businesses')
+      const data = await response.json()
+      
+      if (data.businesses?.length > 0) {
+        if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
+          router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+        } else {
+          router.push('/setup')
+        }
+      } else {
+        router.push('/setup')
+      }
+    }
   }
 
   if (magicLinkSent) {
