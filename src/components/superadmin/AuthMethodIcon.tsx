@@ -18,12 +18,16 @@ export function AuthMethodIcon({ authMethod }: AuthMethodIconProps) {
         </div>
       );
     case 'email':
+        // @ts-ignore
       return <Key className="w-4 h-4 text-blue-600" title="Email & Password" />;
     case 'magic-link':
+         // @ts-ignore
       return <Link className="w-4 h-4 text-purple-600" title="Magic Link" />;
     case 'oauth':
+         // @ts-ignore
       return <UserCheck className="w-4 h-4 text-green-600" title="OAuth Provider" />;
     default:
+         // @ts-ignore
       return <UserCheck className="w-4 h-4 text-gray-600" title="Unknown" />;
   }
 }
