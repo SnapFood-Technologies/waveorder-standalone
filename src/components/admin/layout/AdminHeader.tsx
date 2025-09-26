@@ -22,7 +22,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const { data: session } = useSession()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const businessDropdownRef = useRef<HTMLDivElement>(null)
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -191,7 +191,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
               
               <div className="py-1">
                 <Link
-                  href={`/admin/stores/${businessId}/settings`}
+                  href={`/admin/stores/${businessId}/settings/business`}
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsDropdownOpen(false)}
                 >
