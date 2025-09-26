@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +17,7 @@ export async function DELETE(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
 
     if (!businessId) {
       return NextResponse.json({ message: 'Business ID is required' }, { status: 400 })
@@ -177,7 +177,7 @@ export async function DELETE(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -186,7 +186,7 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },

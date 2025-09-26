@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -17,7 +17,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
     const body = await request.json()
     const { isActive } = body
 
@@ -85,7 +85,7 @@ export async function PATCH(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -94,7 +94,7 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
 
     if (!businessId) {
       return NextResponse.json({ message: 'Business ID is required' }, { status: 400 })
