@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
     }
     
     console.log('🔄 Redirecting to setup')
-    // return NextResponse.redirect(new URL('/setup', request.url))
+    return NextResponse.redirect(new URL('/setup', request.url))
   }
 
   // Protect setup route
@@ -189,7 +189,7 @@ export async function middleware(request: NextRequest) {
         } else {
           // No businesses found, redirect to setup
           console.log('🚫 No businesses found, redirecting to setup -- buggy')
-          return NextResponse.redirect(new URL('/setup', request.url))
+          // return NextResponse.redirect(new URL('/setup', request.url))
         }
       }
 
