@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
 // Define PRO-only routes
 const PRO_ROUTES = [
   '/admin/stores/[id]/inventory',
@@ -27,34 +31,40 @@ function getBusinessIdFromPath(pathname: string): string | null {
   return match ? match[1] : null
 }
 
-// Helper function to check if user has access to business
+
 async function checkBusinessAccess(
   request: NextRequest, 
   token: any, 
   businessId: string
 ): Promise<{ hasAccess: boolean; userBusinesses?: any[] }> {
   try {
-    console.log('🔍 Checking business access for businessId:', businessId)
-    const businessesResponse = await fetch(`${request.nextUrl.origin}/api/user/businesses`, {
-      headers: {
-        // 'Authorization': `Bearer ${token.sub}`,
-        'Cookie': request.headers.get('cookie') || ''
+    // Direct database query instead of API call
+    const businessUsers = await prisma.businessUser.findMany({
+      where: {
+        userId: token.sub
+      },
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+            setupWizardCompleted: true,
+            onboardingCompleted: true,
+            subscriptionPlan: true
+          }
+        }
       }
     })
+
+    const businesses = businessUsers.map(bu => ({
+      ...bu.business,
+      role: bu.role
+    }))
+
+    const hasAccess = businesses.some((business: any) => business.id === businessId)
+    return { hasAccess, userBusinesses: businesses }
     
-    console.log('📡 Business access response status:', businessesResponse.status)
-    
-    if (businessesResponse.ok) {
-      const data = await businessesResponse.json()
-      console.log('📊 Business access data:', JSON.stringify(data, null, 2))
-      const hasAccess = data.businesses?.some((business: any) => business.id === businessId)
-      console.log('✅ Has access:', hasAccess)
-      return { hasAccess, userBusinesses: data.businesses }
-    }
-    
-    return { hasAccess: false }
   } catch (error) {
-    console.error('❌ Error checking business access:', error)
     return { hasAccess: false }
   }
 }
