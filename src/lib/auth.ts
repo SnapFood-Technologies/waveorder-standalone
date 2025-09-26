@@ -126,7 +126,13 @@ export const authOptions: NextAuthOptions = {
         // Add business info during initial login
         try {
           const business = await prisma.business.findFirst({
-            where: { userId: user.id },
+            where: {
+              users: {
+                some: {
+                  userId: user.id
+                }
+              }
+            },
             select: {
               id: true,
               setupWizardCompleted: true,
