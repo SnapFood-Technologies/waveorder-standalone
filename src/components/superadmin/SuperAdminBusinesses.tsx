@@ -31,6 +31,7 @@ import {
   Globe,
   Package
 } from 'lucide-react';
+import { AuthMethodIcon } from './AuthMethodIcon';
 
 interface Business {
   id: string;
@@ -56,6 +57,7 @@ interface Business {
     name: string;
     email: string;
     createdAt: string;
+    authMethod: 'google' | 'email' | 'magic-link' | 'oauth';
   } | null;
   stats: {
     totalOrders: number;
@@ -508,9 +510,12 @@ export function SuperAdminBusinesses() {
                       </td>
                       
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{business.owner?.name || 'Unknown'}</div>
-                        <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
-                      </td>
+  <div className="flex items-center gap-2">
+    <div className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</div>
+    {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+  </div>
+  <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
+</td>
                       
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{business.whatsappNumber || 'Not provided'}</div>
@@ -730,26 +735,29 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             </span>
           </div>
 
-          {/* Owner Information */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-3">
-                <UserCheck className="w-4 h-4 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</p>
-                  <p className="text-xs text-gray-500">Owner</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
-                  <p className="text-xs text-gray-500">Email</p>
-                </div>
-              </div>
-            </div>
-          </div>
+         {/* Owner Information */}
+<div>
+  <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="flex items-center gap-3">
+      <UserCheck className="w-4 h-4 text-gray-400" />
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</p>
+        <p className="text-xs text-gray-500">Owner</p>
+      </div>
+      <div className="flex-shrink-0">
+        {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+      </div>
+    </div>
+    <div className="flex items-center gap-3">
+      <Mail className="w-4 h-4 text-gray-400" />
+      <div>
+        <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
+        <p className="text-xs text-gray-500">Email</p>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Contact Information */}
           <div>

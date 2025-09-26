@@ -8,125 +8,158 @@ import { hash } from 'bcryptjs'
 const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
+    try {
+        const session = await getServerSession(authOptions)
+        
+        if (!session || session.user.role !== 'SUPER_ADMIN') {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+        }
 
-    const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search') || ''
-    const status = searchParams.get('status') || 'all'
-    const plan = searchParams.get('plan') || 'all'
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const offset = (page - 1) * limit
+        const { searchParams } = new URL(request.url)
+        const search = searchParams.get('search') || ''
+        const status = searchParams.get('status') || 'all'
+        const plan = searchParams.get('plan') || 'all'
+        const page = parseInt(searchParams.get('page') || '1')
+        const limit = parseInt(searchParams.get('limit') || '10')
+        const offset = (page - 1) * limit
 
-    // Build where conditions
-    const whereConditions: any = {}
+        // Build where conditions
+        const whereConditions: any = {}
 
-    if (search) {
-      whereConditions.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
-        { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
-        { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
-      ]
-    }
+        if (search) {
+        whereConditions.OR = [
+            { name: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+            { address: { contains: search, mode: 'insensitive' } },
+            { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
+            { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
+        ]
+        }
 
-    if (status !== 'all') {
-      whereConditions.isActive = status === 'active'
-    }
+        if (status !== 'all') {
+        whereConditions.isActive = status === 'active'
+        }
 
-    if (plan !== 'all') {
-      whereConditions.subscriptionPlan = plan.toUpperCase()
-    }
+        if (plan !== 'all') {
+        whereConditions.subscriptionPlan = plan.toUpperCase()
+        }
 
-    // Get businesses with pagination
-    const [businesses, totalCount] = await Promise.all([
-      prisma.business.findMany({
-        where: whereConditions,
-        include: {
-          users: {
-            where: { role: 'OWNER' },
+        // Get businesses with pagination
+        const [businesses, totalCount] = await Promise.all([
+        prisma.business.findMany({
+            where: whereConditions,
             include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true,
-                  createdAt: true
+            users: {
+                where: { role: 'OWNER' },
+                include: {
+                user: {
+                    select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    createdAt: true,
+                    password: true,
+                    accounts: {
+                        select: {
+                        provider: true,
+                        type: true
+                        }
+                    }
+                    }
                 }
-              }
+                }
+            },
+            orders: {
+                select: { 
+                total: true,
+                status: true,
+                paymentStatus: true
+                }
+            },
+            _count: {
+                select: { orders: true }
             }
-          },
-          orders: {
-            select: { 
-              total: true,
-              status: true,
-              paymentStatus: true
+            },
+            orderBy: { createdAt: 'desc' },
+            skip: offset,
+            take: limit
+        }),
+        prisma.business.count({ where: whereConditions })
+        ])
+
+        // Format response with auth method detection
+        const formattedBusinesses = businesses.map(business => {
+        const owner = business.users[0]?.user
+        let authMethod = 'email'
+        
+        if (owner?.accounts?.length > 0) {
+            const googleAccount = owner.accounts.find(acc => acc.provider === 'google')
+            if (googleAccount) {
+            authMethod = 'google'
+            } else {
+            authMethod = 'oauth'
             }
-          },
-          _count: {
-            select: { orders: true }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: offset,
-        take: limit
-      }),
-      prisma.business.count({ where: whereConditions })
-    ])
+        } else if (owner?.password) {
+            authMethod = 'email'
+        } else {
+            authMethod = 'magic-link'
+        }
 
-    // Format response
-    const formattedBusinesses = businesses.map(business => ({
-      id: business.id,
-      name: business.name,
-      slug: business.slug,
-      businessType: business.businessType,
-      subscriptionPlan: business.subscriptionPlan,
-      subscriptionStatus: business.subscriptionStatus,
-      isActive: business.isActive,
-      currency: business.currency,
-      language: business.language,
-      whatsappNumber: business.whatsappNumber,
-      address: business.address, // Include address field
-      logo: business.logo,
-      createdAt: business.createdAt,
-      updatedAt: business.updatedAt,
-      onboardingCompleted: business.onboardingCompleted,
-      setupWizardCompleted: business.setupWizardCompleted,
-      owner: business.users[0]?.user || null,
-      stats: {
-        totalOrders: business._count.orders,
-        totalRevenue: business.orders
-  .filter(order => 
-    order.status === 'DELIVERED' && 
-    order.paymentStatus === 'PAID'
-  )
-  .reduce((sum, order) => sum + order.total, 0)
-      }
-    }))
+        return {
+            id: business.id,
+            name: business.name,
+            slug: business.slug,
+            businessType: business.businessType,
+            subscriptionPlan: business.subscriptionPlan,
+            subscriptionStatus: business.subscriptionStatus,
+            isActive: business.isActive,
+            currency: business.currency,
+            language: business.language,
+            whatsappNumber: business.whatsappNumber,
+            address: business.address,
+            logo: business.logo,
+            createdAt: business.createdAt,
+            updatedAt: business.updatedAt,
+            onboardingCompleted: business.onboardingCompleted,
+            setupWizardCompleted: business.setupWizardCompleted,
+            owner: owner ? {
+            id: owner.id,
+            name: owner.name,
+            email: owner.email,
+            createdAt: owner.createdAt,
+            authMethod
+            } : null,
+            stats: {
+            totalOrders: business._count.orders,
+            totalRevenue: business.orders
+                .filter(order => 
+                order.status === 'DELIVERED' && 
+                order.paymentStatus === 'PAID'
+                )
+                .reduce((sum, order) => sum + order.total, 0),
+            totalCustomers: 0,
+            totalProducts: 0
+            }
+        }
+        })
 
-    return NextResponse.json({
-      businesses: formattedBusinesses,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
-    })
+        return NextResponse.json({
+        businesses: formattedBusinesses,
+        pagination: {
+            page,
+            limit,
+            total: totalCount,
+            pages: Math.ceil(totalCount / limit)
+        }
+        })
 
-  } catch (error) {
-    console.error('Error fetching businesses:', error)
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
+    } catch (error) {
+        console.error('Error fetching businesses:', error)
+        return NextResponse.json(
+        { message: 'Internal server error' },
+        { status: 500 }
+        )
+    }
 }
 
 export async function POST(request: NextRequest) {
