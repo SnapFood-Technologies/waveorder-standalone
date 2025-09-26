@@ -1,7 +1,9 @@
-// src/app/admin/stores/[businessId]/layout.tsx
+// src/app/admin/stores/[businessId]/layout.tsx - ONLY business access
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { AdminSidebar } from '@/components/admin/layout/AdminSidebar'
 import { AdminHeader } from '@/components/admin/layout/AdminHeader'
 
@@ -14,6 +16,9 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [businessId, setBusinessId] = useState<string | null>(null)
+  const [accessChecked, setAccessChecked] = useState(false)
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
   useEffect(() => {
     const getParams = async () => {
@@ -23,8 +28,55 @@ export default function AdminLayout({
     getParams()
   }, [params])
 
-  // Show loading while businessId is being resolved
-  if (businessId === null) {
+  useEffect(() => {
+    if (status === 'loading' || !businessId) return
+    
+    if (!session) {
+      router.push('/auth/login')
+      return
+    }
+    
+    checkBusinessAccess()
+  }, [session, status, businessId])
+
+  const checkBusinessAccess = async () => {
+    try {
+      const response = await fetch('/api/user/businesses')
+      if (!response.ok) {
+        router.push('/auth/login')
+        return
+      }
+
+      const data = await response.json()
+      const userBusiness = data.businesses?.find((b: any) => b.id === businessId)
+      
+      if (!userBusiness) {
+        if (data.businesses?.length > 0) {
+          const firstBusiness = data.businesses[0]
+          if (!firstBusiness.setupWizardCompleted || !firstBusiness.onboardingCompleted) {
+            router.push('/setup')
+            return
+          }
+          router.push(`/admin/stores/${firstBusiness.id}/dashboard`)
+          return
+        } else {
+          router.push('/setup')
+          return
+        }
+      }
+
+      if (!userBusiness.setupWizardCompleted || !userBusiness.onboardingCompleted) {
+        router.push('/setup')
+        return
+      }
+
+      setAccessChecked(true)
+    } catch (error) {
+      router.push('/setup')
+    }
+  }
+
+  if (businessId === null || !accessChecked) {
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600"></div>
