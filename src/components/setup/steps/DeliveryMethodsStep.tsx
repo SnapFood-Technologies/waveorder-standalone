@@ -255,15 +255,47 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
     setMethods(prev => ({ ...prev, [field]: value }))
   }
 
+  // Handle number inputs properly to allow deletion
+  const handleNumberChange = (field: string, value: string) => {
+    if (value === '') {
+      // Allow empty string temporarily
+      setMethods(prev => ({ ...prev, [field]: '' }))
+    } else {
+      const numericValue = parseFloat(value)
+      if (!isNaN(numericValue)) {
+        setMethods(prev => ({ ...prev, [field]: numericValue }))
+      }
+    }
+  }
+
+  const handleIntegerChange = (field: string, value: string) => {
+    if (value === '') {
+      // Allow empty string temporarily
+      setMethods(prev => ({ ...prev, [field]: '' }))
+    } else {
+      const numericValue = parseInt(value)
+      if (!isNaN(numericValue)) {
+        setMethods(prev => ({ ...prev, [field]: numericValue }))
+      }
+    }
+  }
+
   const handleSubmit = async () => {
     // Ensure at least one method is selected
     if (!methods.delivery && !methods.pickup) {
       return
     }
 
+    // Convert empty strings back to 0 before submitting
+    const processedMethods = {
+      ...methods,
+      deliveryFee: methods.deliveryFee === '' ? 0 : methods.deliveryFee,
+      deliveryRadius: methods.deliveryRadius === '' ? 10 : methods.deliveryRadius
+    }
+
     setLoading(true)
     await new Promise(resolve => setTimeout(resolve, 500))
-    onComplete({ deliveryMethods: methods })
+    onComplete({ deliveryMethods: processedMethods })
     setLoading(false)
   }
 
@@ -396,7 +428,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                             type="number"
                             step="0.01"
                             value={methods.deliveryFee}
-                            onChange={(e) => updateValue('deliveryFee', parseFloat(e.target.value) || 0)}
+                            onChange={(e) => handleNumberChange('deliveryFee', e.target.value)}
                             className="pl-8 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                             placeholder="0.00"
                           />
@@ -415,7 +447,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                           <input
                             type="number"
                             value={methods.deliveryRadius}
-                            onChange={(e) => updateValue('deliveryRadius', parseInt(e.target.value) || 10)}
+                            onChange={(e) => handleIntegerChange('deliveryRadius', e.target.value)}
                             className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
                             placeholder="10"
                           />
@@ -474,7 +506,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
           <h3 className="font-semibold text-gray-900 mb-3">Order Options Preview:</h3>
           <div className="text-sm text-gray-600 space-y-1">
             {methods.delivery && (
-              <div>✓ <strong>{config.methods[0].title}:</strong> {currencySymbol}{methods.deliveryFee?.toFixed(2) || '0.00'} fee • {methods.estimatedDeliveryTime} • {methods.deliveryRadius}km radius</div>
+              <div>✓ <strong>{config.methods[0].title}:</strong> {currencySymbol}{(typeof methods.deliveryFee === 'number' ? methods.deliveryFee : 0).toFixed(2)} fee • {methods.estimatedDeliveryTime} • {methods.deliveryRadius}km radius</div>
             )}
             {methods.pickup && (
               <div>✓ <strong>{config.methods[1].title}:</strong> Ready in {methods.estimatedPickupTime}</div>

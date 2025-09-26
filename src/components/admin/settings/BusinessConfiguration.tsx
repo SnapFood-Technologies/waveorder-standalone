@@ -26,8 +26,8 @@ interface DeliveryMethod {
   delivery: boolean
   pickup: boolean
   dineIn: boolean
-  deliveryFee: number
-  deliveryRadius: number
+  deliveryFee: number | string
+  deliveryRadius: number | string
   estimatedDeliveryTime: string
   estimatedPickupTime: string
 }
@@ -121,16 +121,54 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     }
   }
 
+  // Handle number inputs properly to allow deletion
+  const handleDeliveryFeeChange = (value: string) => {
+    if (value === '') {
+      // Allow empty string temporarily
+      updateDeliveryMethods({ deliveryFee: '' })
+    } else {
+      const numericValue = parseFloat(value)
+      if (!isNaN(numericValue)) {
+        updateDeliveryMethods({ deliveryFee: numericValue })
+      }
+    }
+  }
+
+  const handleDeliveryRadiusChange = (value: string) => {
+    if (value === '') {
+      // Allow empty string temporarily
+      updateDeliveryMethods({ deliveryRadius: '' })
+    } else {
+      const numericValue = parseFloat(value)
+      if (!isNaN(numericValue)) {
+        updateDeliveryMethods({ deliveryRadius: numericValue })
+      }
+    }
+  }
+
   const saveConfiguration = async () => {
     setSaving(true)
     try {
+      // Convert empty strings back to numbers before saving
+      const processedConfig = {
+        ...config,
+        deliveryMethods: {
+          ...config.deliveryMethods,
+          deliveryFee: config.deliveryMethods.deliveryFee === '' ? 0 : config.deliveryMethods.deliveryFee,
+          deliveryRadius: config.deliveryMethods.deliveryRadius === '' ? 10 : config.deliveryMethods.deliveryRadius
+        }
+      }
+
       const response = await fetch(`/api/admin/stores/${businessId}/configuration`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
+        body: JSON.stringify(processedConfig)
       })
 
       if (response.ok) {
+        // Update state with processed values
+        setConfig(processedConfig)
+        
         // Show success message
         setSuccessMessage({
           title: 'Configuration Updated',
@@ -397,9 +435,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                     <input
                       type="number"
                       value={config.deliveryMethods.deliveryFee}
-                      onChange={(e) => updateDeliveryMethods({ 
-                        deliveryFee: parseFloat(e.target.value) || 0 
-                      })}
+                      onChange={(e) => handleDeliveryFeeChange(e.target.value)}
                       min="0"
                       step="0.01"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
@@ -413,9 +449,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                     <input
                       type="number"
                       value={config.deliveryMethods.deliveryRadius}
-                      onChange={(e) => updateDeliveryMethods({ 
-                        deliveryRadius: parseFloat(e.target.value) || 0 
-                      })}
+                      onChange={(e) => handleDeliveryRadiusChange(e.target.value)}
                       min="1"
                       max="50"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
