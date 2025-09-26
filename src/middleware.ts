@@ -9,7 +9,15 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (pathname.startsWith('/auth') && isAuth) {
+    // PRIORITY 1: Check token data first (instant, no API call needed)
+    if (token.businessId && token.setupCompleted && token.onboardingCompleted) {
+      return NextResponse.redirect(new URL(`/admin/stores/${token.businessId}/dashboard`, request.url))
+    }
+    
+    // PRIORITY 2: Fallback to API call with delay (handles edge cases)
     try {
+      await new Promise(resolve => setTimeout(resolve, 200)) // Small delay for session establishment
+      
       const baseUrl = process.env.NEXTAUTH_URL || request.nextUrl.origin
       const businessesResponse = await fetch(`${baseUrl}/api/user/businesses`, {
         headers: {
@@ -30,10 +38,10 @@ export async function middleware(request: NextRequest) {
         }
       }
     } catch (error) {
-      // Only on API failure, fall back to setup
+      // If API fails, fall back to setup
     }
     
-    // Only redirect to setup if setup is actually incomplete or API failed
+    // PRIORITY 3: Final fallback to setup (safe default)
     return NextResponse.redirect(new URL('/setup', request.url))
   }
 
