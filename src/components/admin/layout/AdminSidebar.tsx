@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -31,6 +30,7 @@ import {
   Globe,
   Bell
 } from 'lucide-react'
+import { useBusiness } from '@/contexts/BusinessContext'
 
 interface AdminSidebarProps {
   isOpen: boolean
@@ -39,11 +39,6 @@ interface AdminSidebarProps {
 }
 
 type Plan = 'FREE' | 'PRO'
-
-interface UserSubscription {
-  plan: Plan
-  isActive: boolean
-}
 
 interface NavigationItem {
   name: string
@@ -55,33 +50,14 @@ interface NavigationItem {
 }
 
 export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps) {
-  const { data: session } = useSession()
   const pathname = usePathname()
-  const [subscription, setSubscription] = useState<UserSubscription>({ plan: 'FREE', isActive: true })
+  
+  // Use context instead of local state and API calls
+  const { subscription } = useBusiness()
+  
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings'])
-  const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchSubscription = async () => {
-      try {
-        const response = await fetch('/api/user/subscription')
-        if (response.ok) {
-          const data = await response.json()
-          setSubscription(data)
-        }
-      } catch (error) {
-        console.error('Error fetching subscription:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (session?.user) {
-      fetchSubscription()
-    } else {
-      setIsLoading(false)
-    }
-  }, [session])
+  // Remove the useEffect that was making API calls to fetch subscription
 
   const baseUrl = `/admin/stores/${businessId}`
 

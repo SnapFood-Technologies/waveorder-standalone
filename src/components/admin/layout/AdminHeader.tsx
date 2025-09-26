@@ -5,51 +5,24 @@ import { useState, useRef, useEffect } from 'react'
 import { Menu, User, Settings, LogOut, ChevronDown, Bell, Store, ExternalLink, Cog, CreditCard } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
+import { useBusiness } from '@/contexts/BusinessContext'
 
 interface AdminHeaderProps {
   onMenuClick: () => void
   businessId: string
 }
 
-interface Business {
-  id: string
-  name: string
-  slug: string
-  subscriptionPlan: 'FREE' | 'PRO'
-}
-
 export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [currentBusiness, setCurrentBusiness] = useState<Business | null>(null)
+  
+  // Use context instead of local state and API calls
+  const { businesses, currentBusiness } = useBusiness()
   
   const { data: session } = useSession()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const businessDropdownRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      try {
-        const response = await fetch('/api/user/businesses')
-        if (response.ok) {
-          const data = await response.json()
-          setBusinesses(data.businesses || [])
-          
-          // Find current business
-          const current = data.businesses?.find((b: Business) => b.id === businessId)
-          setCurrentBusiness(current || null)
-        }
-      } catch (error) {
-        console.error('Error fetching businesses:', error)
-      }
-    }
-
-    if (session?.user) {
-      fetchBusinesses()
-    }
-  }, [session, businessId])
-
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

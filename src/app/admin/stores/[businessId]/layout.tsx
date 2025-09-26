@@ -1,85 +1,28 @@
-// src/app/admin/stores/[businessId]/layout.tsx - ONLY business access
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { AdminSidebar } from '@/components/admin/layout/AdminSidebar'
 import { AdminHeader } from '@/components/admin/layout/AdminHeader'
+import { BusinessProvider, useBusiness } from '@/contexts/BusinessContext'
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
-  params,
+  businessId,
 }: {
   children: React.ReactNode
-  params: Promise<{ businessId: string }>
+  businessId: string
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [businessId, setBusinessId] = useState<string | null>(null)
-  const [accessChecked, setAccessChecked] = useState(false)
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { loading, accessChecked } = useBusiness()
 
-  useEffect(() => {
-    const getParams = async () => {
-      const resolvedParams = await params
-      setBusinessId(resolvedParams.businessId)
-    }
-    getParams()
-  }, [params])
-
-  useEffect(() => {
-    if (status === 'loading' || !businessId) return
-    
-    if (!session) {
-      router.push('/auth/login')
-      return
-    }
-    
-    checkBusinessAccess()
-  }, [session, status, businessId])
-
-  const checkBusinessAccess = async () => {
-    try {
-      const response = await fetch('/api/user/businesses')
-      if (!response.ok) {
-        router.push('/auth/login')
-        return
-      }
-
-      const data = await response.json()
-      const userBusiness = data.businesses?.find((b: any) => b.id === businessId)
-      
-      if (!userBusiness) {
-        if (data.businesses?.length > 0) {
-          const firstBusiness = data.businesses[0]
-          if (!firstBusiness.setupWizardCompleted || !firstBusiness.onboardingCompleted) {
-            router.push('/setup')
-            return
-          }
-          router.push(`/admin/stores/${firstBusiness.id}/dashboard`)
-          return
-        } else {
-          router.push('/setup')
-          return
-        }
-      }
-
-      if (!userBusiness.setupWizardCompleted || !userBusiness.onboardingCompleted) {
-        router.push('/setup')
-        return
-      }
-
-      setAccessChecked(true)
-    } catch (error) {
-      router.push('/setup')
-    }
-  }
-
-  if (businessId === null || !accessChecked) {
+  // Show loading only while checking access
+  if (loading || !accessChecked) {
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-teal-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
       </div>
     )
   }
@@ -114,5 +57,40 @@ export default function AdminLayout({
         </footer>
       </div>
     </div>
+  )
+}
+
+export default function AdminLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ businessId: string }>
+}) {
+  const [businessId, setBusinessId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params
+      setBusinessId(resolvedParams.businessId)
+    }
+    getParams()
+  }, [params])
+
+  // Wait for businessId before rendering provider
+  if (!businessId) {
+    return (
+      <div className="flex h-screen bg-gray-50 items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+      </div>
+    )
+  }
+
+  return (
+    <BusinessProvider currentBusinessId={businessId}>
+      <AdminLayoutContent businessId={businessId}>
+        {children}
+      </AdminLayoutContent>
+    </BusinessProvider>
   )
 }
