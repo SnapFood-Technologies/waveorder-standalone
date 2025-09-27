@@ -41,7 +41,7 @@ export default function Demo() {
       icon: MessageSquare,
       preview: "Complete ordering experience",
       features: ["Browse catalog", "Add to cart", "WhatsApp integration", "Order confirmation"],
-      demoUrl: "#",
+      demoUrl: "https://app.supademo.com/embed/cmg2o5mwe8ahm10k899keti1k?embed_v=2&utm_source=embed",
       color: "emerald"
     },
     {
