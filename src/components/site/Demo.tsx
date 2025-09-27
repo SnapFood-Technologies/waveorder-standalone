@@ -71,7 +71,7 @@ export default function Demo() {
       icon: ShoppingCart,
       preview: "End-to-end order flow",
       features: ["Order reception", "Status updates", "Customer communication", "Order tracking"],
-      demoUrl: "#",
+      demoUrl: "https://app.supademo.com/embed/cmg2v47jq8atm10k8lrueelr3?embed_v=2&utm_source=embed",
       color: "orange"
     }
     // {
