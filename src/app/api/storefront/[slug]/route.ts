@@ -62,9 +62,12 @@ function formatBusinessHours(businessHours: any): string | null {
 function calculateIsOpen(businessHours: any, timezone: string): boolean {
   if (!businessHours) return true // Default open if no hours set
   
+  // FIX: Get current time in business timezone
   const now = new Date()
+  const businessTime = new Date(now.toLocaleString("en-US", { timeZone: timezone }))
+  
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-  const currentDay = dayNames[now.getDay()]
+  const currentDay = dayNames[businessTime.getDay()] // Use businessTime, not now
   
   let todaysHours = null
   
@@ -77,19 +80,23 @@ function calculateIsOpen(businessHours: any, timezone: string): boolean {
   
   if (!todaysHours || todaysHours.closed) return false
   
-  const currentTime = now.toTimeString().slice(0, 5) // HH:MM format
+  // FIX: Use business time, not server time
+  const currentTime = `${businessTime.getHours().toString().padStart(2, '0')}:${businessTime.getMinutes().toString().padStart(2, '0')}`
   return currentTime >= todaysHours.open && currentTime <= todaysHours.close
 }
 
 function getNextOpenTime(businessHours: any, timezone: string): string | null {
   if (!businessHours) return null
   
+  // FIX: Get current time in business timezone
   const now = new Date()
+  const businessTime = new Date(now.toLocaleString("en-US", { timeZone: timezone }))
+  
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   
   // Check next 7 days
   for (let i = 1; i <= 7; i++) {
-    const checkDate = new Date(now)
+    const checkDate = new Date(businessTime) // Use businessTime, not now
     checkDate.setDate(checkDate.getDate() + i)
     const dayName = dayNames[checkDate.getDay()]
     

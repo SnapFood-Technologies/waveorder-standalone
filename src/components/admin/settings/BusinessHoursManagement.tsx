@@ -65,6 +65,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 export function BusinessHoursManagement({ businessId }: BusinessHoursManagementProps) {
   const [businessHours, setBusinessHours] = useState<BusinessHours>(DEFAULT_HOURS)
+  const [businessTimezone, setBusinessTimezone] = useState<string>('UTC')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
@@ -72,6 +73,7 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
 
   useEffect(() => {
     fetchBusinessHours()
+    fetchBusinessTimezone()
   }, [businessId])
 
   const fetchBusinessHours = async () => {
@@ -88,6 +90,18 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
       setError('Failed to load business hours')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBusinessTimezone = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBusinessTimezone(data.business.timezone || 'UTC')
+      }
+    } catch (error) {
+      console.error('Error fetching business timezone:', error)
     }
   }
 
@@ -185,7 +199,11 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
   }
 
   const getCurrentDayStatus = () => {
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+    // Get current time in business timezone
+    const now = new Date()
+    const businessTime = new Date(now.toLocaleString("en-US", { timeZone: businessTimezone }))
+    
+    const today = businessTime.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
     const todayHours = businessHours[today as keyof BusinessHours]
     
     if (!todayHours) {
@@ -200,13 +218,18 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
       return { status: 'unknown', message: 'Hours not set' }
     }
 
-    const now = new Date()
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+    const currentTime = `${businessTime.getHours().toString().padStart(2, '0')}:${businessTime.getMinutes().toString().padStart(2, '0')}`
     
     if (currentTime >= todayHours.open && currentTime < todayHours.close) {
-      return { status: 'open', message: `Open until ${TIME_OPTIONS.find(t => t.value === todayHours.close)?.label}` }
+      return { 
+        status: 'open', 
+        message: `Open until ${TIME_OPTIONS.find(t => t.value === todayHours.close)?.label} (${businessTimezone})`
+      }
     } else if (currentTime < todayHours.open) {
-      return { status: 'closed', message: `Opens at ${TIME_OPTIONS.find(t => t.value === todayHours.open)?.label}` }
+      return { 
+        status: 'closed', 
+        message: `Opens at ${TIME_OPTIONS.find(t => t.value === todayHours.open)?.label} (${businessTimezone})`
+      }
     } else {
       return { status: 'closed', message: 'Closed for today' }
     }
@@ -342,7 +365,10 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
       <div className="space-y-4">
         {DAYS.map(day => {
           const dayHours = businessHours[day.key as keyof BusinessHours]
-          const isToday = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() === day.key
+          const isToday = new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            timeZone: businessTimezone 
+          }).toLowerCase() === day.key
           
           return (
             <div key={day.key} className={`border rounded-lg p-4 ${isToday ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}`}>
@@ -484,7 +510,7 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="text-sm font-medium text-blue-900 mb-2">Tips for Setting Business Hours</h4>
         <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Hours are displayed in your local timezone</li>
+          <li>• Hours are displayed in your business timezone ({businessTimezone})</li>
           <li>• Use "Copy to All" to quickly apply the same hours to every day</li>
           <li>• Customers will see if you're currently open or closed on your storefront</li>
           <li>• Consider your actual operating capacity when setting hours</li>
