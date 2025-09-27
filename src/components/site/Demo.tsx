@@ -25,14 +25,14 @@ export default function Demo() {
 
   const demoCards = [
     {
-      title: "Restaurant Catalog",
-      description: "See how a pizza restaurant showcases their menu with categories, variants, and beautiful product images.",
-      type: "Customer View",
-      icon: Smartphone,
-      preview: "Mobile catalog with 25+ menu items",
-      features: ["Product categories", "Item variants", "Beautiful images", "Mobile optimized"],
+      title: "Catalog Setup",
+      description: "Learn how easy it is to create a professional catalog using manual entry, CSV import, or API integration.",
+      type: "Setup Process",
+      icon: Settings,
+      preview: "Complete setup wizard",
+      features: ["Manual entry", "CSV import", "API integration", "Live preview"],
       demoUrl: "https://app.supademo.com/embed/cmg2kihqg88ri10k8t15kzoiw?embed_v=2&utm_source=embed",
-      color: "teal"
+      color: "indigo"
     },
     {
       title: "WhatsApp Ordering",
@@ -54,16 +54,16 @@ export default function Demo() {
       demoUrl: "#",
       color: "blue"
     },
-    {
-      title: "Team Management",
-      description: "See how restaurants can invite staff members and manage different user roles and permissions.",
-      type: "Business Feature",
-      icon: Users,
-      preview: "Multi-user collaboration",
-      features: ["User invitations", "Role management", "Permission settings", "Team workflow"],
-      demoUrl: "#",
-      color: "purple"
-    },
+    // {
+    //   title: "Team Management",
+    //   description: "See how restaurants can invite staff members and manage different user roles and permissions.",
+    //   type: "Business Feature",
+    //   icon: Users,
+    //   preview: "Multi-user collaboration",
+    //   features: ["User invitations", "Role management", "Permission settings", "Team workflow"],
+    //   demoUrl: "#",
+    //   color: "purple"
+    // },
     {
       title: "Order Processing",
       description: "Watch how orders flow from customer to business owner's WhatsApp with all details formatted perfectly.",
@@ -73,17 +73,17 @@ export default function Demo() {
       features: ["Order reception", "Status updates", "Customer communication", "Order tracking"],
       demoUrl: "#",
       color: "orange"
-    },
-    {
-      title: "Catalog Setup",
-      description: "Learn how easy it is to create a professional catalog using manual entry, CSV import, or API integration.",
-      type: "Setup Process",
-      icon: Settings,
-      preview: "Complete setup wizard",
-      features: ["Manual entry", "CSV import", "API integration", "Live preview"],
-      demoUrl: "#",
-      color: "indigo"
     }
+    // {
+    //   title: "Restaurant Catalog",
+    //   description: "See how a pizza restaurant showcases their menu with categories, variants, and beautiful product images.",
+    //   type: "Customer View",
+    //   icon: Smartphone,
+    //   preview: "Mobile catalog with 25+ menu items",
+    //   features: ["Product categories", "Item variants", "Beautiful images", "Mobile optimized"],
+    //   demoUrl: "https://app.supademo.com/embed/cmg2kihqg88ri10k8t15kzoiw?embed_v=2&utm_source=embed",
+    //   color: "teal"
+    // },
   ]
 
   const getColorClasses = (color: string) => {
@@ -142,7 +142,7 @@ export default function Demo() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
             {demoCards.map((demo, index) => {
               const IconComponent = demo.icon
               const colorClasses = getColorClasses(demo.color)
@@ -280,20 +280,20 @@ export default function Demo() {
           ></div>
           
           {/* Modal Content */}
-          <div className="relative bg-transparent w-full h-full max-w-7xl flex flex-col">
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[80vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 mb-2">
-              <h3 className="text-xl font-bold text-white">{currentDemoTitle}</h3>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-gray-900">{currentDemoTitle}</h3>
               <button
                 onClick={closeModal}
-                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <X className="w-6 h-6 text-white" />
+                <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
             
             {/* Modal Body */}
-            <div className="flex-1">
+            <div className="flex-1 p-4 overflow-hidden">
               <iframe 
                 src={currentDemoUrl}
                 loading="lazy" 
@@ -302,8 +302,7 @@ export default function Demo() {
                 frameBorder="0" 
                 className="w-full h-full rounded-lg"
                 style={{ 
-                  minHeight: '85vh',
-                  height: '85vh'
+                  height: '60vh'
                 }}
               />
             </div>
