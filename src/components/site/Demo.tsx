@@ -1,10 +1,28 @@
-// src/components/site/Demo.tsx
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Play, Smartphone, MessageSquare, ShoppingCart, Eye, Users, BarChart, Settings, ExternalLink } from 'lucide-react'
+import { ArrowRight, Play, Smartphone, MessageSquare, ShoppingCart, Eye, Users, BarChart, Settings, ExternalLink, X } from 'lucide-react'
 
 export default function Demo() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentDemoUrl, setCurrentDemoUrl] = useState('')
+  const [currentDemoTitle, setCurrentDemoTitle] = useState('')
+
+  const openModal = (url: string, title: string) => {
+    setCurrentDemoUrl(url)
+    setCurrentDemoTitle(title)
+    setIsModalOpen(true)
+    document.body.style.overflow = 'hidden' // Prevent background scrolling
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setCurrentDemoUrl('')
+    setCurrentDemoTitle('')
+    document.body.style.overflow = 'unset' // Restore scrolling
+  }
+
   const demoCards = [
     {
       title: "Restaurant Catalog",
@@ -13,7 +31,7 @@ export default function Demo() {
       icon: Smartphone,
       preview: "Mobile catalog with 25+ menu items",
       features: ["Product categories", "Item variants", "Beautiful images", "Mobile optimized"],
-      demoUrl: "#", // Will be replaced with actual SupaDemo links
+      demoUrl: "https://app.supademo.com/embed/cmg2kihqg88ri10k8t15kzoiw?embed_v=2&utm_source=embed",
       color: "teal"
     },
     {
@@ -65,30 +83,6 @@ export default function Demo() {
       features: ["Manual entry", "CSV import", "API integration", "Live preview"],
       demoUrl: "#",
       color: "indigo"
-    }
-  ]
-
-  const businessTypes = [
-    {
-      name: "Mario's Pizza",
-      type: "Restaurant",
-      description: "Full-service Italian restaurant with delivery and pickup options",
-      image: "/images/demo-pizza.jpg",
-      highlights: ["40+ menu items", "Custom modifiers", "Delivery zones"]
-    },
-    {
-      name: "Brew & Beans",
-      type: "Cafe",
-      description: "Specialty coffee shop with pastries and light meals",
-      image: "/images/demo-cafe.jpg",
-      highlights: ["Seasonal menu", "Custom drinks", "Quick ordering"]
-    },
-    {
-      name: "Fresh Market",
-      type: "Grocery",
-      description: "Local grocery store with fresh produce and household items",
-      image: "/images/demo-grocery.jpg",
-      highlights: ["500+ products", "Category organization", "Bulk ordering"]
     }
   ]
 
@@ -179,7 +173,11 @@ export default function Demo() {
                     </ul>
                   </div>
                   
-                  <button className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center group">
+                  <button 
+                    onClick={() => openModal(demo.demoUrl, demo.title)}
+                    className="w-full bg-gray-900 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center group"
+                    disabled={demo.demoUrl === '#'}
+                  >
                     <Play className="w-4 h-4 mr-2" />
                     Play Interactive Demo
                     <ExternalLink className="w-4 h-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -191,7 +189,6 @@ export default function Demo() {
         </div>
       </section>
 
-    
       {/* How It Works Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -272,6 +269,47 @@ export default function Demo() {
           </div>
         </div>
       </section>
+
+      {/* Demo Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-80"
+            onClick={closeModal}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative bg-transparent w-full h-full max-w-7xl flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 mb-2">
+              <h3 className="text-xl font-bold text-white">{currentDemoTitle}</h3>
+              <button
+                onClick={closeModal}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-white" />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="flex-1">
+              <iframe 
+                src={currentDemoUrl}
+                loading="lazy" 
+                title={currentDemoTitle}
+                allow="clipboard-write" 
+                frameBorder="0" 
+                className="w-full h-full rounded-lg"
+                style={{ 
+                  minHeight: '85vh',
+                  height: '85vh'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
