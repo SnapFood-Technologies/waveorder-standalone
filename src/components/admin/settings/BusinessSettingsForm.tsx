@@ -749,24 +749,122 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Language
+                </label>
+                <select
+                  name="language"
+                  value={settings.language}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                >
+                  <option value="en">English</option>
+                  {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
+                    <option value="sq">Albanian (Shqip)</option>
+                  )}
+                  {detectedCountry === 'GR' && <option value="el">Greek (Ελληνικά)</option>}
+                  {(detectedCountry === 'IT' || detectedCountry === 'GR') && (
+                    <option value="it">Italian (Italiano)</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
   <label className="block text-sm font-medium text-gray-700 mb-2">
-    Language
+    Timezone
   </label>
   <select
-    name="language"
-    value={settings.language}
+    name="timezone"
+    value={settings.timezone}
     onChange={handleInputChange}
     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
   >
-    <option value="en">English</option>
-    {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
-      <option value="sq">Albanian (Shqip)</option>
-    )}
-    {detectedCountry === 'GR' && <option value="el">Greek (Ελληνικά)</option>}
-    {(detectedCountry === 'IT' || detectedCountry === 'GR') && (
-      <option value="it">Italian (Italiano)</option>
-    )}
+    {/* Popular/Common Timezones */}
+    <optgroup label="Popular Timezones">
+      <option value="UTC">UTC (Coordinated Universal Time)</option>
+      <option value="America/New_York">Eastern Time (New York)</option>
+      <option value="America/Chicago">Central Time (Chicago)</option>
+      <option value="America/Denver">Mountain Time (Denver)</option>
+      <option value="America/Los_Angeles">Pacific Time (Los Angeles)</option>
+      <option value="Europe/London">London</option>
+      <option value="Europe/Paris">Paris</option>
+      <option value="Europe/Rome">Rome</option>
+      <option value="Europe/Athens">Athens</option>
+      <option value="Europe/Tirane">Tirana</option>
+    </optgroup>
+
+    {/* Europe */}
+    <optgroup label="Europe">
+      <option value="Europe/Amsterdam">Amsterdam</option>
+      <option value="Europe/Berlin">Berlin</option>
+      <option value="Europe/Brussels">Brussels</option>
+      <option value="Europe/Budapest">Budapest</option>
+      <option value="Europe/Copenhagen">Copenhagen</option>
+      <option value="Europe/Dublin">Dublin</option>
+      <option value="Europe/Helsinki">Helsinki</option>
+      <option value="Europe/Istanbul">Istanbul</option>
+      <option value="Europe/Kyiv">Kyiv</option>
+      <option value="Europe/Lisbon">Lisbon</option>
+      <option value="Europe/Madrid">Madrid</option>
+      <option value="Europe/Moscow">Moscow</option>
+      <option value="Europe/Oslo">Oslo</option>
+      <option value="Europe/Prague">Prague</option>
+      <option value="Europe/Stockholm">Stockholm</option>
+      <option value="Europe/Vienna">Vienna</option>
+      <option value="Europe/Warsaw">Warsaw</option>
+      <option value="Europe/Zurich">Zurich</option>
+    </optgroup>
+
+    {/* North America */}
+    <optgroup label="North America">
+      <option value="America/Anchorage">Alaska (Anchorage)</option>
+      <option value="America/Phoenix">Arizona (Phoenix)</option>
+      <option value="America/Toronto">Eastern Canada (Toronto)</option>
+      <option value="America/Vancouver">Pacific Canada (Vancouver)</option>
+      <option value="America/Mexico_City">Mexico City</option>
+      <option value="America/Guadalajara">Guadalajara</option>
+    </optgroup>
+
+    {/* Asia */}
+    <optgroup label="Asia">
+      <option value="Asia/Tokyo">Tokyo</option>
+      <option value="Asia/Shanghai">Shanghai</option>
+      <option value="Asia/Hong_Kong">Hong Kong</option>
+      <option value="Asia/Singapore">Singapore</option>
+      <option value="Asia/Seoul">Seoul</option>
+      <option value="Asia/Bangkok">Bangkok</option>
+      <option value="Asia/Dubai">Dubai</option>
+      <option value="Asia/Kolkata">Kolkata</option>
+      <option value="Asia/Karachi">Karachi</option>
+    </optgroup>
+
+    {/* Australia & Oceania */}
+    <optgroup label="Australia & Oceania">
+      <option value="Australia/Sydney">Sydney</option>
+      <option value="Australia/Melbourne">Melbourne</option>
+      <option value="Australia/Perth">Perth</option>
+      <option value="Pacific/Auckland">Auckland</option>
+    </optgroup>
+
+    {/* Africa */}
+    <optgroup label="Africa">
+      <option value="Africa/Cairo">Cairo</option>
+      <option value="Africa/Johannesburg">Johannesburg</option>
+      <option value="Africa/Lagos">Lagos</option>
+      <option value="Africa/Casablanca">Casablanca</option>
+    </optgroup>
+
+    {/* South America */}
+    <optgroup label="South America">
+      <option value="America/Sao_Paulo">São Paulo</option>
+      <option value="America/Buenos_Aires">Buenos Aires</option>
+      <option value="America/Lima">Lima</option>
+      <option value="America/Bogota">Bogotá</option>
+    </optgroup>
   </select>
+  <p className="text-xs text-gray-500 mt-1">
+    This timezone will be used for business hours and order timestamps
+  </p>
 </div>
             </div>
           </div>
