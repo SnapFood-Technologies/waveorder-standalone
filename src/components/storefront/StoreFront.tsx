@@ -1952,8 +1952,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   
       if (result.success) {
         // Open WhatsApp
-        window.open(result.whatsappUrl, '_blank')
-        
+        // window.open(result.whatsappUrl, '_blank')
+        window.location.href = result.whatsappUrl        
         // Clear cart and close modal
         setCart([])
         setShowCartModal(false)
