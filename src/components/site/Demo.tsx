@@ -51,7 +51,7 @@ export default function Demo() {
       icon: BarChart,
       preview: "Full admin dashboard",
       features: ["Order management", "Product setup", "Team collaboration", "Analytics"],
-      demoUrl: "#",
+      demoUrl: "https://app.supademo.com/embed/cmg3qg0lu8fq010k84dh0r1fg?embed_v=2&utm_source=embed",
       color: "blue"
     },
     // {
