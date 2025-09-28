@@ -54,13 +54,13 @@ export default function PricingPage() {
               "price": "0",
               "priceCurrency": "USD",
               "availability": "https://schema.org/InStock",
-              "validFrom": "2025-01-01",
+              "validFrom": "2025-09-01",
               "priceValidUntil": "2026-12-31"
             },
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": "4.8",
-              "reviewCount": "150"
+              "ratingValue": "5",
+              "reviewCount": "2"
             }
           })
         }}
@@ -86,7 +86,7 @@ export default function PricingPage() {
                 "price": "19",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
-                "validFrom": "2025-01-01",
+                "validFrom": "2025-09-01",
                 "priceValidUntil": "2026-12-31",
                 "eligibleQuantity": {
                   "@type": "QuantitativeValue",
@@ -99,7 +99,7 @@ export default function PricingPage() {
                 "price": "15",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
-                "validFrom": "2025-01-01",
+                "validFrom": "2025-09-01",
                 "priceValidUntil": "2026-12-31",
                 "eligibleQuantity": {
                   "@type": "QuantitativeValue",
@@ -109,8 +109,8 @@ export default function PricingPage() {
             ],
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": "4.9",
-              "reviewCount": "300"
+              "ratingValue": "5",
+              "reviewCount": "2"
             }
           })
         }}
