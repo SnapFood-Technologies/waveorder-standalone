@@ -76,6 +76,7 @@ const businessTypes = [
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 
+// todo: fixes needed
 const phonePrefixes = [
   { code: '+1', country: 'US', flag: '🇺🇸', name: 'United States', pattern: /^[2-9]\d{9}$/, placeholder: '(555) 123-4567' },
   { code: '+30', country: 'GR', flag: '🇬🇷', name: 'Greece', pattern: /^[2-9]\d{9}$/, placeholder: '694 123 4567' },
