@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/products/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,26 +10,18 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
 
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
-            }
-          }
-        }
+        businessId
       },
       include: {
         category: true,
@@ -56,28 +47,20 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId, productId } = await params
     const productData = await request.json()
 
-    // Get current product for inventory tracking
     const currentProduct = await prisma.product.findFirst({
       where: {
         id: productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
-            }
-          }
-        }
+        businessId
       }
     })
 
@@ -85,7 +68,6 @@ export async function PUT(
       return NextResponse.json({ message: 'Product not found' }, { status: 404 })
     }
 
-    // Update product
     const product = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -111,7 +93,6 @@ export async function PUT(
       }
     })
 
-    // Track inventory changes
     if (productData.trackInventory && currentProduct.stock !== productData.stock) {
       const quantityChange = productData.stock - currentProduct.stock
       
@@ -128,7 +109,6 @@ export async function PUT(
       })
     }
 
-    // Update variants (delete existing and recreate)
     await prisma.productVariant.deleteMany({
       where: { productId }
     })
@@ -145,7 +125,6 @@ export async function PUT(
       })
     }
 
-    // Update modifiers (delete existing and recreate)
     await prisma.productModifier.deleteMany({
       where: { productId }
     })
@@ -174,27 +153,20 @@ export async function PATCH(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId, productId } = await params
     const updates = await request.json()
 
     const product = await prisma.product.updateMany({
       where: {
         id: productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
-            }
-          }
-        }
+        businessId
       },
       data: updates
     })
@@ -216,26 +188,18 @@ export async function DELETE(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
 
     const deletedProduct = await prisma.product.deleteMany({
       where: {
         id: productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
-            }
-          }
-        }
+        businessId
       }
     })
 

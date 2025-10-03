@@ -1,15 +1,12 @@
 // src/app/api/admin/stores/[businessId]/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-
-// Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371 // Radius of the Earth in kilometers
+  const R = 6371
   const dLat = (lat2 - lat1) * Math.PI / 180
   const dLon = (lon2 - lon1) * Math.PI / 180
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -19,7 +16,6 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c
 }
 
-// Server-side address parsing (same as customer creation)
 function parseAndCleanAddress(addressJson: any): any {
   if (!addressJson?.street) return addressJson
 
@@ -67,24 +63,12 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     const { searchParams } = new URL(request.url)
@@ -97,7 +81,6 @@ export async function GET(
 
     const skip = (page - 1) * limit
 
-    // Build where clause
     const whereClause: any = {
       businessId: businessId
     }
@@ -122,7 +105,6 @@ export async function GET(
       whereClause.customerId = customerId
     }
 
-    // Get orders with customer info and item counts
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where: whereClause,
@@ -164,7 +146,6 @@ export async function GET(
       prisma.order.count({ where: whereClause })
     ])
 
-    // Get customer order counts for all customers in this result set
     const customerIds = [...new Set(orders.map(order => order.customer.id))]
     const customerOrderCounts = await prisma.order.groupBy({
       by: ['customerId'],
@@ -177,13 +158,11 @@ export async function GET(
       }
     })
 
-    // Create a map for quick lookup
     const orderCountMap = customerOrderCounts.reduce((acc, item) => {
       acc[item.customerId] = item._count.id
       return acc
     }, {} as Record<string, number>)
 
-    // Get business currency for formatting
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: { currency: true }
@@ -202,7 +181,7 @@ export async function GET(
           total: order.total,
           subtotal: order.subtotal,
           deliveryFee: order.deliveryFee,
-          createdByAdmin: order.createdByAdmin, // Add this line
+          createdByAdmin: order.createdByAdmin,
           customer: {
             ...order.customer,
             isFirstOrder,
@@ -244,29 +223,16 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     const body = await request.json()
     
-    // Get business data for calculations
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       include: { deliveryZones: true }
@@ -276,7 +242,6 @@ export async function POST(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Validation
     if (!body.items || body.items.length === 0) {
       return NextResponse.json({ message: 'Order must contain at least one item' }, { status: 400 })
     }
@@ -287,12 +252,9 @@ export async function POST(
 
     let customerId: string
 
-    // Handle customer creation/selection
     if (body.customerId) {
-      // Using existing customer
       customerId = body.customerId
       
-      // Verify customer belongs to this business
       const customer = await prisma.customer.findFirst({
         where: {
           id: customerId,
@@ -304,14 +266,12 @@ export async function POST(
         return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
       }
     } else if (body.newCustomer) {
-      // Creating new customer
       const newCustomerData = body.newCustomer
 
       if (!newCustomerData.name?.trim() || !newCustomerData.phone?.trim()) {
         return NextResponse.json({ message: 'Customer name and phone are required' }, { status: 400 })
       }
 
-      // Check if customer with this phone already exists
       const existingCustomer = await prisma.customer.findFirst({
         where: {
           phone: newCustomerData.phone.trim(),
@@ -320,14 +280,11 @@ export async function POST(
       })
 
       if (existingCustomer) {
-        // Use existing customer instead of creating new one
         customerId = existingCustomer.id
       } else {
-        // Create new customer
         let customerAddressJson = null
         let customerAddress = null
 
-        // Use order address for new customer if provided
         if (body.addressJson && body.addressJson.street?.trim()) {
           const cleanedAddress = parseAndCleanAddress({
             street: body.addressJson.street.trim(),
@@ -369,12 +326,10 @@ export async function POST(
       return NextResponse.json({ message: 'Customer information is required' }, { status: 400 })
     }
 
-    // Validate and process order items
     const orderItems = []
     let subtotal = 0
 
     for (const item of body.items) {
-      // Verify product exists and get current price
       const product = await prisma.product.findFirst({
         where: {
           id: item.productId,
@@ -391,7 +346,6 @@ export async function POST(
         return NextResponse.json({ message: `Product not found: ${item.productId}` }, { status: 404 })
       }
 
-      // Check stock
       let availableStock = product.stock
       if (item.variantId) {
         const variant = product.variants.find(v => v.id === item.variantId)
@@ -407,12 +361,10 @@ export async function POST(
         }, { status: 400 })
       }
 
-      // Calculate item price
       let itemPrice = item.variantId ? 
         product.variants.find(v => v.id === item.variantId)?.price || product.price : 
         product.price
 
-      // Add modifier prices
       if (item.modifiers && item.modifiers.length > 0) {
         for (const modifierId of item.modifiers) {
           const modifier = product.modifiers.find(m => m.id === modifierId)
@@ -434,7 +386,6 @@ export async function POST(
       })
     }
 
-    // Calculate delivery fee
     let deliveryFee = 0
     let customerLatitude = null
     let customerLongitude = null
@@ -442,12 +393,10 @@ export async function POST(
     if (body.orderType === 'DELIVERY') {
       deliveryFee = body.deliveryFee || business.deliveryFee || 0
 
-      // Extract coordinates from address if provided
       if (body.addressJson?.latitude && body.addressJson?.longitude) {
         customerLatitude = body.addressJson.latitude
         customerLongitude = body.addressJson.longitude
 
-        // Calculate delivery fee based on distance and zones if store has coordinates
         if (business.storeLatitude && business.storeLongitude) {
           const distance = calculateDistance(
             business.storeLatitude,
@@ -456,7 +405,6 @@ export async function POST(
             customerLongitude
           )
 
-          // Find applicable delivery zone
           const applicableZone = business.deliveryZones
             .filter(zone => zone.isActive)
             .find(zone => distance <= zone.maxDistance)
@@ -474,11 +422,10 @@ export async function POST(
 
     const total = subtotal + deliveryFee
 
-   // Generate order number (same as storefront)
-const timestamp = Date.now().toString().slice(-6)
-const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
-    // Create order
+    const timestamp = Date.now().toString().slice(-6)
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -496,8 +443,8 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         paymentStatus: 'PENDING',
         customerLatitude,
         customerLongitude,
-        createdByAdmin: true,        // Add this line
-        createdBy: session.user.id,  // Add this line
+        createdByAdmin: true,
+        createdBy: access.session.user.id,
         items: {
           create: orderItems
         }
@@ -513,10 +460,8 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
       }
     })
 
-    // Update inventory
     for (const item of orderItems) {
       if (item.variantId) {
-        // Update variant stock
         const variant = await prisma.productVariant.findUnique({
           where: { id: item.variantId }
         })
@@ -527,7 +472,6 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             data: { stock: { decrement: item.quantity } }
           })
 
-          // Log inventory activity
           await prisma.inventoryActivity.create({
             data: {
               productId: item.productId,
@@ -538,12 +482,11 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
               oldStock: variant.stock,
               newStock: variant.stock - item.quantity,
               reason: `Order sale - ${orderNumber}`,
-              changedBy: session.user.id
+              changedBy: access.session.user.id
             }
           })
         }
       } else {
-        // Update product stock
         const product = await prisma.product.findUnique({
           where: { id: item.productId }
         })
@@ -554,7 +497,6 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             data: { stock: { decrement: item.quantity } }
           })
 
-          // Log inventory activity
           await prisma.inventoryActivity.create({
             data: {
               productId: item.productId,
@@ -564,7 +506,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
               oldStock: product.stock,
               newStock: product.stock - item.quantity,
               reason: `Order sale - ${orderNumber}`,
-              changedBy: session.user.id
+              changedBy: access.session.user.id
             }
           })
         }

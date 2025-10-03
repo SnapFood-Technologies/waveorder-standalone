@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/products/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,15 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const { searchParams } = new URL(request.url)
     
-    // Get query parameters
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
     const search = searchParams.get('search') || ''
@@ -27,83 +27,34 @@ export async function GET(
     const status = searchParams.get('status') || 'all'
     const skip = (page - 1) * limit
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    // Build where clause for filtering
     const whereClause: any = {
       businessId
     }
 
-    // Add search filter
     if (search) {
       whereClause.OR = [
-        {
-          name: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          description: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        },
-        {
-          sku: {
-            contains: search,
-            mode: 'insensitive'
-          }
-        }
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } }
       ]
     }
 
-    // Add category filter
     if (category) {
       whereClause.categoryId = category
     }
 
-    // Add status filter
     if (status === 'active') {
       whereClause.isActive = true
     } else if (status === 'inactive') {
       whereClause.isActive = false
     } else if (status === 'low-stock') {
-      whereClause.AND = [
-        { trackInventory: true },
-        { lowStockAlert: { not: null } },
-        {
-          OR: [
-            { stock: { lte: { lowStockAlert: true } } }
-          ]
-        }
-      ]
-      // For low stock, we need a more complex query
       whereClause.trackInventory = true
       whereClause.lowStockAlert = { not: null }
     }
 
-    // Get total count for pagination
     let total = 0
     
     if (status === 'low-stock') {
-      // Special handling for low stock filter
       const lowStockProducts = await prisma.product.findMany({
         where: {
           businessId,
@@ -121,22 +72,17 @@ export async function GET(
         select: { id: true, stock: true, lowStockAlert: true }
       })
       
-      // Filter where stock <= lowStockAlert
       const filteredProducts = lowStockProducts.filter(p => 
         p.lowStockAlert && p.stock <= p.lowStockAlert
       )
       total = filteredProducts.length
     } else {
-      total = await prisma.product.count({
-        where: whereClause
-      })
+      total = await prisma.product.count({ where: whereClause })
     }
 
-    // Get products with pagination
     let products = []
     
     if (status === 'low-stock') {
-      // For low stock, get all matching products first, then filter and paginate
       const allProducts = await prisma.product.findMany({
         where: {
           businessId,
@@ -152,19 +98,13 @@ export async function GET(
           ...(category && { categoryId: category })
         },
         include: {
-          category: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
+          category: { select: { id: true, name: true } },
           variants: true,
           modifiers: true
         },
         orderBy: { createdAt: 'desc' }
       })
       
-      // Filter where stock <= lowStockAlert and apply pagination
       const filteredProducts = allProducts.filter(p => 
         p.lowStockAlert && p.stock <= p.lowStockAlert
       )
@@ -174,12 +114,7 @@ export async function GET(
       products = await prisma.product.findMany({
         where: whereClause,
         include: {
-          category: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
+          category: { select: { id: true, name: true } },
           variants: true,
           modifiers: true
         },
@@ -189,7 +124,6 @@ export async function GET(
       })
     }
 
-    // Calculate pagination info
     const pages = Math.ceil(total / limit)
 
     return NextResponse.json({
@@ -213,33 +147,16 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const productData = await request.json()
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    // Create product with variants and modifiers
     const product = await prisma.product.create({
       data: {
         name: productData.name,
@@ -280,7 +197,6 @@ export async function POST(
       }
     })
 
-    // Create inventory activity if tracking inventory
     if (productData.trackInventory && productData.stock > 0) {
       await prisma.inventoryActivity.create({
         data: {

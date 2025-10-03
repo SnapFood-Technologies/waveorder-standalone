@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/products/[productId]/inventory/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,28 +10,20 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId, productId } = await params
     const { newStock, reason } = await request.json()
 
-    // Get current product
     const product = await prisma.product.findFirst({
       where: {
         id: productId,
-        businessId,
-        business: {
-          users: {
-            some: {
-              user: {
-                email: session.user.email
-              }
-            }
-          }
-        }
+        businessId
       }
     })
 
@@ -51,17 +42,15 @@ export async function POST(
       return NextResponse.json({ message: 'No stock change needed' }, { status: 400 })
     }
 
-    // Update product stock
     await prisma.product.update({
       where: { id: productId },
       data: { stock: newStock }
     })
 
     const user = await prisma.user.findUnique({
-        where: { email: session.user.email }
-      })
+      where: { id: access.session.user.id }
+    })
 
-    // Create inventory activity
     await prisma.inventoryActivity.create({
       data: {
         productId,
@@ -93,36 +82,26 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string; productId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId, productId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId, productId } = await params
     const { searchParams } = new URL(request.url)
     
-    // Get query parameters
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const skip = (page - 1) * limit
 
-    // Build where clause
     const whereClause: any = {
       productId,
-      businessId,
-      business: {
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
+      businessId
     }
 
-    // Add search filter
     if (search) {
       whereClause.OR = [
         {
@@ -134,12 +113,10 @@ export async function GET(
       ]
     }
 
-    // Get total count for pagination
     const total = await prisma.inventoryActivity.count({
       where: whereClause
     })
 
-    // Get activities with pagination
     const activities = await prisma.inventoryActivity.findMany({
       where: whereClause,
       include: {
@@ -162,7 +139,6 @@ export async function GET(
       take: limit
     })
 
-    // Calculate pagination info
     const pages = Math.ceil(total / limit)
 
     return NextResponse.json({ 

@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/delivery/zones/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,25 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      },
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       select: {
         id: true,
         name: true,
@@ -83,25 +73,20 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const { zones } = await request.json()
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: {
+        deliveryRadius: true
       }
     })
 
@@ -109,12 +94,10 @@ export async function POST(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Validate zones
     if (!Array.isArray(zones) || zones.length === 0) {
       return NextResponse.json({ message: 'At least one delivery zone is required' }, { status: 400 })
     }
 
-    // Validate each zone
     for (const zone of zones) {
       if (!zone.name?.trim()) {
         return NextResponse.json({ message: 'Zone name is required' }, { status: 400 })
@@ -135,13 +118,11 @@ export async function POST(
       }
     }
 
-    // Delete existing zones and create new ones
     await prisma.deliveryZone.deleteMany({
       where: { businessId }
     })
 
-    // Create new zones
-    const createdZones = await prisma.deliveryZone.createMany({
+    await prisma.deliveryZone.createMany({
       data: zones.map((zone: any, index: number) => ({
         businessId,
         name: zone.name.trim(),
@@ -153,7 +134,6 @@ export async function POST(
       }))
     })
 
-    // Fetch the created zones to return
     const savedZones = await prisma.deliveryZone.findMany({
       where: { businessId },
       orderBy: { sortOrder: 'asc' },
