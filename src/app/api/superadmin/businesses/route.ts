@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { sendBusinessCreatedEmail } from '@/lib/email'
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -123,6 +124,7 @@ export async function GET(request: NextRequest) {
         updatedAt: business.updatedAt,
         onboardingCompleted: business.onboardingCompleted,
         setupWizardCompleted: business.setupWizardCompleted,
+        createdByAdmin: business.createdByAdmin,
         owner: owner ? {
           id: owner.id,
           name: owner.name,
@@ -181,6 +183,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate password if not sending email
+    if (!data.sendEmail && (!data.password || data.password.length < 8)) {
+      return NextResponse.json(
+        { message: 'Password must be at least 8 characters when not sending email' },
+        { status: 400 }
+      )
+    }
+
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: data.ownerEmail.toLowerCase() }
@@ -207,21 +217,28 @@ export async function POST(request: NextRequest) {
       counter++
     }
 
-    // Generate setup token for passwordless onboarding
-    const setupToken = crypto.randomBytes(32).toString('hex')
-    const setupExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    // Prepare user data
+    let userData: any = {
+      name: data.ownerName,
+      email: data.ownerEmail.toLowerCase(),
+      role: 'BUSINESS_OWNER',
+      emailVerified: new Date(), // Mark as verified since SuperAdmin creates it
+    }
 
-    // Create user with setup token
-    const user = await prisma.user.create({ 
-      data: {
-        name: data.ownerName,
-        email: data.ownerEmail.toLowerCase(),
-        role: 'BUSINESS_OWNER',
-        emailVerified: new Date(), // Mark as verified since SuperAdmin creates it
-        setupToken,
-        setupExpiry
-      }
-    })
+    if (data.sendEmail) {
+      // Generate setup token for passwordless onboarding
+      const setupToken = crypto.randomBytes(32).toString('hex')
+      const setupExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      userData.setupToken = setupToken
+      userData.setupExpiry = setupExpiry
+    } else {
+      // Hash password for immediate login
+      const hashedPassword = await bcrypt.hash(data.password, 10)
+      userData.password = hashedPassword
+    }
+
+    // Create user
+    const user = await prisma.user.create({ data: userData })
 
     // Get defaults based on business type
     const getDefaults = (businessType: string) => {
@@ -278,6 +295,7 @@ export async function POST(request: NextRequest) {
         setupWizardCompleted: true,
         onboardingStep: 999,
         isActive: true,
+        createdByAdmin: true,
         
         // Delivery settings
         deliveryEnabled: data.deliveryEnabled ?? true,
@@ -309,10 +327,10 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send welcome email with setup instructions
+    // Send welcome email with setup instructions if requested
     if (data.sendEmail) {
       try {
-        const setupUrl = `${process.env.NEXTAUTH_URL}/setup/complete?token=${setupToken}`
+        const setupUrl = `${process.env.NEXTAUTH_URL}/setup/complete?token=${userData.setupToken}`
         const dashboardUrl = `${process.env.NEXTAUTH_URL}/admin/stores/${business.id}/dashboard`
         
         await sendBusinessCreatedEmail({
@@ -335,7 +353,9 @@ export async function POST(request: NextRequest) {
           id: business.id,
           name: business.name,
           slug: business.slug,
-          owner: business.users[0]?.user
+          owner: business.users[0]?.user,
+          createdByAdmin: business.createdByAdmin,
+          setupMethod: data.sendEmail ? 'email' : 'password'
         }
       },
       { status: 201 }

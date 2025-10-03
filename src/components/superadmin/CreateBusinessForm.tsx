@@ -33,7 +33,11 @@ import {
   Zap,
   TrendingUp,
   Clock,
-  Users
+  Users,
+  X,
+  Eye,
+  EyeOff,
+  Key
 } from 'lucide-react'
 
 interface FormData {
@@ -57,6 +61,9 @@ interface FormData {
   estimatedPickupTime: string
   paymentMethods: string[]
   businessGoals: string[]
+  password?: string
+  sendEmail: boolean
+  createdByAdmin: boolean
 }
 
 const businessTypes = [
@@ -112,6 +119,8 @@ function AddressAutocomplete({
   onCoordinatesChange: (lat: number, lng: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const autocompleteRef = useRef<any>(null)
+  const listenerRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
@@ -146,34 +155,60 @@ function AddressAutocomplete({
   }, [])
 
   useEffect(() => {
-    if (isLoaded && inputRef.current) {
+    if (!isLoaded || !inputRef.current) return
+    
+    // Clean up existing instance
+    if (listenerRef.current) {
       // @ts-ignore
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address']
-      })
+      window.google?.maps?.event?.removeListener(listenerRef.current)
+      listenerRef.current = null
+    }
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace()
-        if (place.formatted_address) {
-          onChange(place.formatted_address)
-          
-          if (place.geometry?.location) {
-            const lat = place.geometry.location.lat()
-            const lng = place.geometry.location.lng()
-            onCoordinatesChange(lat, lng)
-          }
-        }
-      })
+    if (autocompleteRef.current) {
+      // @ts-ignore
+      window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
+    }
 
-      return () => {
+    // Create new autocomplete instance
+    // @ts-ignore
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+      types: ['address']
+    })
+
+    // Add single listener
+    listenerRef.current = autocompleteRef.current.addListener('place_changed', () => {
+      const place = autocompleteRef.current.getPlace()
+      
+      if (!place) return
+      
+      const hasGeometry = place.geometry?.location
+      const hasAddress = place.formatted_address
+      
+      if (hasGeometry && hasAddress) {
+        const lat = place.geometry.location.lat()
+        const lng = place.geometry.location.lng()
+        
+        // Batch the updates
+        onChange(hasAddress)
+        setTimeout(() => {
+          onCoordinatesChange(lat, lng)
+        }, 0)
+      } else if (hasAddress) {
+        onChange(hasAddress)
+      }
+    })
+
+    return () => {
+      if (listenerRef.current) {
         // @ts-ignore
-        if (window.google?.maps?.event) {
-          // @ts-ignore
-          window.google.maps.event.clearInstanceListeners(autocomplete)
-        }
+        window.google?.maps?.event?.removeListener(listenerRef.current)
+      }
+      if (autocompleteRef.current) {
+        // @ts-ignore
+        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
       }
     }
-  }, [isLoaded, onChange, onCoordinatesChange])
+  }, [isLoaded]) // Only depend on isLoaded, not on onChange/onCoordinatesChange
 
   return (
     <input
@@ -188,12 +223,18 @@ function AddressAutocomplete({
   )
 }
 
+interface SuccessMessage {
+  businessName: string
+}
+
 export function CreateBusinessForm() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
   
   const [formData, setFormData] = useState<FormData>({
     businessName: '',
@@ -213,7 +254,10 @@ export function CreateBusinessForm() {
     estimatedDeliveryTime: '30-45 minutes',
     estimatedPickupTime: '15-20 minutes',
     paymentMethods: ['CASH'],
-    businessGoals: []
+    businessGoals: [],
+    password: '',
+    sendEmail: true,
+    createdByAdmin: true
   })
 
   const totalSteps = 6
@@ -255,6 +299,13 @@ export function CreateBusinessForm() {
     setLoading(true)
     setError(null)
 
+    // Validate password if not sending email
+    if (!formData.sendEmail && (!formData.password || formData.password.length < 8)) {
+      setError('Password must be at least 8 characters when not sending email')
+      setLoading(false)
+      return
+    }
+
     try {
       const completeWhatsappNumber = `${formData.phonePrefix}${formData.whatsappNumber.replace(/[^\d]/g, '')}`
 
@@ -282,7 +333,9 @@ export function CreateBusinessForm() {
           estimatedPickupTime: formData.estimatedPickupTime,
           paymentMethods: formData.paymentMethods,
           businessGoals: formData.businessGoals,
-          sendEmail: true
+          sendEmail: formData.sendEmail,
+          password: formData.sendEmail ? undefined : formData.password,
+          createdByAdmin: true
         })
       })
 
@@ -291,7 +344,16 @@ export function CreateBusinessForm() {
         throw new Error(errorData.message || 'Failed to create business')
       }
 
-      router.push('/superadmin/businesses?success=created')
+      // Show success message
+      setSuccessMessage({
+        businessName: formData.businessName
+      })
+
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push('/superadmin/businesses?success=created')
+      }, 3000)
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create business')
     } finally {
@@ -332,12 +394,12 @@ export function CreateBusinessForm() {
       case 2:
         return {
           title: 'Contact & Location',
-          description: 'How customers will reach you',
+          description: 'How customers will reach the business',
           tips: [
             'WhatsApp number is used for orders',
             'Address helps with delivery zones',
             'Location enables accurate delivery fees',
-            'Use your primary business contact'
+            'Use the primary business contact'
           ]
         }
       case 3:
@@ -376,10 +438,10 @@ export function CreateBusinessForm() {
       case 6:
         return {
           title: 'Business Goals',
-          description: 'What do you want to achieve?',
+          description: 'What is the purpose of this business?',
           tips: [
-            'Select all that apply',
-            'Helps customize experience',
+            'Select all goals that apply',
+            'Helps customize the dashboard experience',
             'Goals can be updated anytime',
             'Optional but recommended'
           ]
@@ -391,14 +453,32 @@ export function CreateBusinessForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-8xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Business</h1>
-          <p className="text-gray-600">Set up a new business account on WaveOrder</p>
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900">Business Created Successfully</h4>
+                <p className="text-sm text-gray-600 mt-1">
+                  {successMessage.businessName} has been added to the platform. Redirecting...
+                </p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-
+      <div className="max-w-8xl mx-auto">
         {/* Error Display */}
         {error && (
           <div className="mb-6 max-w-4xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4">
@@ -411,6 +491,23 @@ export function CreateBusinessForm() {
           {/* Form Section - 3/4 width */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              {/* Header - Moved inside form */}
+              <div className="mb-4 border-b border-gray-200">
+                <div className="flex items-center space-x-3 mb-4">
+                  <button
+                    onClick={() => router.push('/superadmin/businesses')}
+                    className="hover:bg-gray-100 rounded-lg transition-colors"
+                    type="button"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                  <div>
+                    <h1 className="text-xl font-semibold text-gray-900">Create New Business</h1>
+                    <p className="text-sm text-gray-600 mt-0">Set up a new business account on WaveOrder</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Step Content */}
               {currentStep === 1 && (
                 <div className="space-y-6">
@@ -491,75 +588,140 @@ export function CreateBusinessForm() {
                           />
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact & Location</h2>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          WhatsApp Number *
-                        </label>
-                        <div className="flex gap-2">
-                          <select
-                            value={formData.phonePrefix}
-                            onChange={(e) => setFormData({ ...formData, phonePrefix: e.target.value })}
-                            className="w-40 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                          >
-                            {phonePrefixes.map((prefix) => (
-                              <option key={prefix.code} value={prefix.code}>
-                                {prefix.flag} {prefix.code}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            type="tel"
-                            required
-                            value={formData.whatsappNumber}
-                            onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
-                            className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                              phoneError ? 'border-red-300' : 'border-gray-300'
-                            }`}
-                            placeholder={phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
-                          />
+                      {/* Account Setup Section */}
+                      <div className="border-t border-gray-200 pt-6 mt-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">Account Setup</h3>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              id="sendEmail"
+                              checked={formData.sendEmail}
+                              onChange={(e) => setFormData({ ...formData, sendEmail: e.target.checked })}
+                              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <label htmlFor="sendEmail" className="text-sm font-medium text-gray-700">
+                              Send setup email to owner
+                            </label>
+                          </div>
+
+                          {!formData.sendEmail && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Set Password *
+                              </label>
+                              <div className="relative">
+                                <Key className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                                <input
+                                  type={showPassword ? 'text' : 'password'}
+                                  required={!formData.sendEmail}
+                                  value={formData.password}
+                                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                  placeholder="Minimum 8 characters"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                                >
+                                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Owner can sign in immediately with this password
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <p className="text-sm text-blue-800">
+                              {formData.sendEmail 
+                                ? '📧 Owner will receive an email with a setup link to create their password'
+                                : '🔑 Owner can sign in immediately using the password you set'
+                              }
+                            </p>
+                          </div>
                         </div>
-                        {phoneError && (
-                          <p className="text-red-600 text-sm mt-1">{phoneError}</p>
-                        )}
-                        <p className="text-gray-500 text-xs mt-1">
-                          Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Business Address *
-                        </label>
-                        <AddressAutocomplete
-                          value={formData.address}
-                          onChange={(address) => setFormData({ ...formData, address })}
-                          onCoordinatesChange={(lat, lng) => setFormData({ 
-                            ...formData, 
-                            storeLatitude: lat, 
-                            storeLongitude: lng 
-                          })}
-                        />
-                        {formData.storeLatitude && formData.storeLongitude && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
+
+{currentStep === 2 && (
+  <div className="space-y-6">
+    <div>
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact & Location</h2>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            WhatsApp Number *
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={formData.phonePrefix}
+              onChange={(e) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  phonePrefix: e.target.value,
+                  whatsappNumber: '' // Reset only the phone number when prefix changes
+                }))
+                setPhoneError(null) // Clear error when prefix changes
+              }}
+              className="w-40 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              {phonePrefixes.map((prefix) => (
+                <option key={prefix.code} value={prefix.code}>
+                  {prefix.flag} {prefix.code}
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              required
+              value={formData.whatsappNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+              className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                phoneError ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder={phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+            />
+          </div>
+          {phoneError && (
+            <p className="text-red-600 text-sm mt-1">{phoneError}</p>
+          )}
+          <p className="text-gray-500 text-xs mt-1">
+            Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Business Address *
+          </label>
+          <AddressAutocomplete
+            value={formData.address}
+            onChange={(address) => setFormData(prev => ({ ...prev, address }))}
+            onCoordinatesChange={(lat, lng) => setFormData(prev => ({ 
+              ...prev, 
+              storeLatitude: lat, 
+              storeLongitude: lng 
+            }))}
+          />
+          {formData.storeLatitude && formData.storeLongitude && (
+            <p className="text-xs text-gray-400 mt-1">
+              Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
 
               {currentStep === 3 && (
                 <div className="space-y-6">
@@ -571,7 +733,7 @@ export function CreateBusinessForm() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Currency *
                         </label>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           {currencies.map((currency) => {
                             const IconComponent = currency.icon
                             return (
@@ -586,10 +748,10 @@ export function CreateBusinessForm() {
                                 }`}
                               >
                                 <div className="flex items-center space-x-3">
-                                  <IconComponent className={`w-6 h-6 ${
+                                  <IconComponent className={`w-6 h-6 flex-shrink-0 ${
                                     formData.currency === currency.code ? 'text-teal-600' : 'text-gray-600'
                                   }`} />
-                                  <div className="text-left">
+                                  <div className="text-left flex-1">
                                     <div className="font-semibold text-sm">{currency.code}</div>
                                     <div className="text-xs text-gray-600">{currency.name}</div>
                                   </div>
@@ -604,7 +766,7 @@ export function CreateBusinessForm() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Language *
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {languages.map((language) => (
                             <button
                               key={language.code}
@@ -702,356 +864,355 @@ export function CreateBusinessForm() {
                                 onChange={(e) => setFormData({ ...formData, deliveryFee: e.target.value })}
                                 min="0"
                                 step="0.01"
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"/>
-                                </div>
-    
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Delivery Radius (km)
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={formData.deliveryRadius}
-                                    onChange={(e) => setFormData({ ...formData, deliveryRadius: e.target.value })}
-                                    min="1"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
-                                  />
-                                </div>
-                              </div>
-    
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Estimated Delivery Time
-                                </label>
-                                <input
-                                  type="text"
-                                  value={formData.estimatedDeliveryTime}
-                                  onChange={(e) => setFormData({ ...formData, estimatedDeliveryTime: e.target.value })}
-                                  placeholder="30-45 minutes"
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
-                                />
-                              </div>
-                            </div>
-                          )}
-    
-                          {formData.pickupEnabled && (
-                            <div className="bg-gray-50 p-4 rounded-lg">
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Estimated Pickup Time
-                              </label>
-                              <input
-                                type="text"
-                                value={formData.estimatedPickupTime}
-                                onChange={(e) => setFormData({ ...formData, estimatedPickupTime: e.target.value })}
-                                placeholder="15-20 minutes"
                                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
                               />
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-    
-                  {currentStep === 5 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Methods</h2>
-                        <p className="text-gray-600 text-sm mb-4">Optional - Select available payment methods</p>
-                        
-                        <div className="space-y-4">
-                          {paymentMethodOptions.map((method) => (
-                            <div key={method.id} className="border border-gray-200 rounded-lg p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{method.name}</h4>
-                                  <p className="text-sm text-gray-600 mt-1">{method.description}</p>
-                                </div>
-                                <input
-                                  type="checkbox"
-                                  checked={formData.paymentMethods.includes(method.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setFormData({
-                                        ...formData,
-                                        paymentMethods: [...formData.paymentMethods, method.id]
-                                      })
-                                    } else {
-                                      setFormData({
-                                        ...formData,
-                                        paymentMethods: formData.paymentMethods.filter(m => m !== method.id)
-                                      })
-                                    }
-                                  }}
-                                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                                />
-                              </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Delivery Radius (km)
+                              </label>
+                              <input
+                                type="number"
+                                value={formData.deliveryRadius}
+                                onChange={(e) => setFormData({ ...formData, deliveryRadius: e.target.value })}
+                                min="1"
+                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                              />
                             </div>
-                          ))}
-    
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-blue-800">
-                              <strong>Note:</strong> Currently only FREE plan is available. Stripe integration for paid plans is coming soon.
-                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Estimated Delivery Time
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.estimatedDeliveryTime}
+                              onChange={(e) => setFormData({ ...formData, estimatedDeliveryTime: e.target.value })}
+                              placeholder="30-45 minutes"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
+                            />
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  )}
-    
-                  {currentStep === 6 && (
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">Business Goals</h2>
-                        <p className="text-gray-600 text-sm mb-4">Optional - What do you want to achieve?</p>
-                        
-                        <div className="space-y-3">
-                          {businessGoalOptions.map((goal) => {
-                            const IconComponent = goal.icon
-                            return (
-                              <button
-                                key={goal.id}
-                                type="button"
-                                onClick={() => {
-                                  if (formData.businessGoals.includes(goal.id)) {
-                                    setFormData({
-                                      ...formData,
-                                      businessGoals: formData.businessGoals.filter(g => g !== goal.id)
-                                    })
-                                  } else {
-                                    setFormData({
-                                      ...formData,
-                                      businessGoals: [...formData.businessGoals, goal.id]
-                                    })
-                                  }
-                                }}
-                                className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
-                                  formData.businessGoals.includes(goal.id)
-                                    ? 'border-teal-500 bg-teal-50'
-                                    : 'border-gray-200 hover:border-teal-300'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <IconComponent className={`w-5 h-5 ${
-                                      formData.businessGoals.includes(goal.id) ? 'text-teal-600' : 'text-gray-600'
-                                    }`} />
-                                    <span className="font-medium">{goal.name}</span>
-                                  </div>
-                                  {formData.businessGoals.includes(goal.id) && (
-                                    <CheckCircle className="w-5 h-5 text-teal-600" />
-                                  )}
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-    
-                  {/* Navigation Buttons */}
-                  <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={currentStep === 1}
-                      className="flex items-center px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4 mr-2" />
-                      Back
-                    </button>
-    
-                    {currentStep < totalSteps ? (
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={!canProceedFromStep(currentStep)}
-                        className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next
-                        <ChevronRight className="w-4 h-4 ml-2" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={loading || !canProceedFromStep(1) || !canProceedFromStep(2) || !canProceedFromStep(3)}
-                        className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4 mr-2" />
-                            Create Business
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-    
-              {/* Info Section - 1/4 width */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <Info className="w-5 h-5 mr-2 text-teal-600" />
-                    {stepInfo?.title}
-                  </h3>
-    
-                  <p className="text-sm text-gray-600 mb-4">
-                    {stepInfo?.description}
-                  </p>
-    
-                  <div className="space-y-6">
-                    {/* Tips Section */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
-                        <Zap className="w-4 h-4 mr-2 text-yellow-500" />
-                        Quick Tips
-                      </h4>
-                      <ul className="space-y-2">
-                        {stepInfo?.tips.map((tip, index) => (
-                          <li key={index} className="flex items-start text-sm text-gray-600">
-                            <CheckCircle className="w-4 h-4 mr-2 text-teal-500 flex-shrink-0 mt-0.5" />
-                            <span>{tip}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-    
-                    {/* Step-specific additional info */}
-                    {currentStep === 1 && (
-                      <div className="bg-teal-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-teal-800 mb-2 flex items-center">
-                          <TrendingUp className="w-4 h-4 mr-2" />
-                          Why This Matters
-                        </h4>
-                        <p className="text-xs text-teal-700">
-                          A complete business profile increases customer trust by 73% and leads to 2.5x more orders in the first month.
-                        </p>
-                      </div>
-                    )}
-    
-                    {currentStep === 2 && (
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          Location Benefits
-                        </h4>
-                        <p className="text-xs text-blue-700">
-                          Accurate location enables automatic delivery zone creation and real-time distance calculations for fees.
-                        </p>
-                      </div>
-                    )}
-    
-                    {currentStep === 3 && (
-                      <div className="bg-purple-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center">
-                          <Globe className="w-4 h-4 mr-2" />
-                          Multi-Language
-                        </h4>
-                        <p className="text-xs text-purple-700">
-                          Select your primary language. You can add translations later to reach more customers.
-                        </p>
-                      </div>
-                    )}
-    
-                    {currentStep === 4 && (
-                      <div className="bg-orange-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-orange-800 mb-2 flex items-center">
-                          <Truck className="w-4 h-4 mr-2" />
-                          Delivery Stats
-                        </h4>
-                        <div className="space-y-1 text-xs text-orange-700">
-                          <div className="flex justify-between">
-                            <span>Delivery orders:</span>
-                            <span className="font-medium">68% of revenue</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Pickup orders:</span>
-                            <span className="font-medium">32% of revenue</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-    
-                    {currentStep === 5 && (
-                      <div className="bg-green-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Payment Roadmap
-                        </h4>
-                        <ul className="space-y-1 text-xs text-green-700">
-                          <li>✓ Cash payments (available now)</li>
-                          <li>⏳ Stripe integration (Q2 2025)</li>
-                          <li>⏳ PayPal (Q3 2025)</li>
-                          <li>⏳ Local payment methods</li>
-                        </ul>
-                      </div>
-                    )}
-    
-                    {currentStep === 6 && (
-                      <div className="bg-indigo-50 p-3 rounded-lg">
-                        <h4 className="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
-                          <Target className="w-4 h-4 mr-2" />
-                          Goal-Based Features
-                        </h4>
-                        <p className="text-xs text-indigo-700">
-                          Your selected goals help us customize your dashboard and suggest relevant features to achieve them faster.
-                        </p>
-                      </div>
-                    )}
-    
-                    {/* Progress indicator */}
-                    <div className="bg-gray-50 p-3 rounded-lg">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                        <Clock className="w-4 h-4 mr-2" />
-                        Setup Progress
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-gray-600">
-                          <span>Steps Completed</span>
-                          <span className="font-medium">{currentStep - 1} of {totalSteps}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-teal-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${((currentStep - 1) / totalSteps) * 100}%` }}
+                      )}
+
+                      {formData.pickupEnabled && (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Estimated Pickup Time
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.estimatedPickupTime}
+                            onChange={(e) => setFormData({ ...formData, estimatedPickupTime: e.target.value })}
+                            placeholder="15-20 minutes"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
-                        <p className="text-xs text-gray-500">
-                          Est. time remaining: {Math.max(1, totalSteps - currentStep)} min
-                        </p>
-                      </div>
-                    </div>
-    
-                    {/* Support info */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                        <Users className="w-4 h-4 mr-2" />
-                        Need Help?
-                      </h4>
-                      <p className="text-xs text-gray-600 mb-2">
-                        Our team is here to assist with setup and onboarding.
-                      </p>
-                      <a 
-                        href="mailto:hello@waveorder.app" 
-                        className="text-xs text-teal-600 hover:text-teal-700 font-medium"
-                      >
-                        Contact Support →
-                      </a>
+                      )}
                     </div>
                   </div>
                 </div>
+              )}
+
+              {currentStep === 5 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Payment Methods</h2>
+                    <p className="text-gray-600 text-sm mb-4">Optional - Select available payment methods</p>
+                    
+                    <div className="space-y-4">
+                      {paymentMethodOptions.map((method) => (
+                        <div key={method.id} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-gray-900">{method.name}</h4>
+                              <p className="text-sm text-gray-600 mt-1">{method.description}</p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={formData.paymentMethods.includes(method.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    paymentMethods: [...formData.paymentMethods, method.id]
+                                  })
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    paymentMethods: formData.paymentMethods.filter(m => m !== method.id)
+                                  })
+                                }
+                              }}
+                              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>Note:</strong> Currently only FREE plan is available. Stripe integration for paid plans is coming soon.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 6 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Business Goals</h2>
+                    <p className="text-gray-600 text-sm mb-4">Optional - What do you want to achieve?</p>
+                    
+                    <div className="space-y-3">
+                      {businessGoalOptions.map((goal) => {
+                        const IconComponent = goal.icon
+                        return (
+                          <button
+                            key={goal.id}
+                            type="button"
+                            onClick={() => {
+                              if (formData.businessGoals.includes(goal.id)) {
+                                setFormData({
+                                  ...formData,
+                                  businessGoals: formData.businessGoals.filter(g => g !== goal.id)
+                                })
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  businessGoals: [...formData.businessGoals, goal.id]
+                                })
+                              }
+                            }}
+                            className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
+                              formData.businessGoals.includes(goal.id)
+                                ? 'border-teal-500 bg-teal-50'
+                                : 'border-gray-200 hover:border-teal-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <IconComponent className={`w-5 h-5 ${
+                                  formData.businessGoals.includes(goal.id) ? 'text-teal-600' : 'text-gray-600'
+                                }`} />
+                                <span className="font-medium">{goal.name}</span>
+                              </div>
+                              {formData.businessGoals.includes(goal.id) && (
+                                <CheckCircle className="w-5 h-5 text-teal-600" />
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={currentStep === 1}
+                  className="flex items-center px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  Back
+                </button>
+
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={!canProceedFromStep(currentStep)}
+                    className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading || !canProceedFromStep(1) || !canProceedFromStep(2) || !canProceedFromStep(3)}
+                    className="flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Create Business
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Info Section - 1/4 width */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Info className="w-5 h-5 mr-2 text-teal-600" />
+                {stepInfo?.title}
+              </h3>
+
+              <p className="text-sm text-gray-600 mb-4">
+                {stepInfo?.description}
+              </p>
+
+              <div className="space-y-6">
+                {/* Tips Section */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                    <Zap className="w-4 h-4 mr-2 text-yellow-500" />
+                    Quick Tips
+                  </h4>
+                  <ul className="space-y-2">
+                    {stepInfo?.tips.map((tip, index) => (
+                      <li key={index} className="flex items-start text-sm text-gray-600">
+                        <CheckCircle className="w-4 h-4 mr-2 text-teal-500 flex-shrink-0 mt-0.5" />
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+               {/* Step-specific additional info */}
+                {currentStep === 1 && (
+                  <div className="bg-teal-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-teal-800 mb-2 flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Setup Best Practices
+                    </h4>
+                    <p className="text-xs text-teal-700">
+                      Complete business profiles help owners onboard faster and start accepting orders immediately. Ensure all contact details are accurate for seamless communication.
+                    </p>
+                  </div>
+                )}
+
+                {currentStep === 2 && (
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      Location Benefits
+                    </h4>
+                    <p className="text-xs text-blue-700">
+                      Accurate location enables automatic delivery zone creation and real-time distance calculations for delivery fees. WhatsApp number is the primary channel for order notifications.
+                    </p>
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <div className="bg-purple-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center">
+                      <Globe className="w-4 h-4 mr-2" />
+                      Regional Configuration
+                    </h4>
+                    <p className="text-xs text-purple-700">
+                      Currency and language settings affect the customer-facing catalog. Timezone is used for business hours and order scheduling. All settings can be modified later by the business owner.
+                    </p>
+                  </div>
+                )}
+
+                {currentStep === 4 && (
+                  <div className="bg-orange-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-orange-800 mb-2 flex items-center">
+                      <Truck className="w-4 h-4 mr-2" />
+                      Delivery Configuration
+                    </h4>
+                    <p className="text-xs text-orange-700">
+                      Delivery and pickup options can both be enabled. Delivery radius and fees are editable by the business owner. Estimated times help set customer expectations for order fulfillment.
+                    </p>
+                  </div>
+                )}
+
+                {currentStep === 5 && (
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Payment Methods
+                    </h4>
+                    <p className="text-xs text-green-700">
+                      Currently only FREE plan with cash payment is available. Online payment integrations (Stripe, PayPal) will be available with paid subscription plans in future releases.
+                    </p>
+                  </div>
+                )}
+
+                {currentStep === 6 && (
+                  <div className="bg-indigo-50 p-3 rounded-lg">
+                    <h4 className="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
+                      <Target className="w-4 h-4 mr-2" />
+                      Business Goals
+                    </h4>
+                    <p className="text-xs text-indigo-700">
+                      Selected goals help customize the dashboard experience and feature recommendations for the business owner. Goals can be updated anytime from the business settings.
+                    </p>
+                  </div>
+                )}
+
+                {/* Progress indicator */}
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                    <Clock className="w-4 h-4 mr-2" />
+                    Setup Progress
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-600">
+                      <span>Steps Completed</span>
+                      <span className="font-medium">{currentStep - 1} of {totalSteps}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-teal-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${((currentStep - 1) / totalSteps) * 100}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Est. time remaining: {Math.max(1, totalSteps - currentStep)} min
+                    </p>
+                  </div>
+                </div>
+
+                {/* Admin Resources */}
+              <div className="border-t border-gray-200 pt-4">
+                <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  Admin Resources
+                </h4>
+                <p className="text-xs text-gray-600 mb-2">
+                  Quick links for managing businesses on the platform.
+                </p>
+                <div className="space-y-1">
+                  <a 
+                    href="/superadmin/businesses" 
+                    className="text-xs text-teal-600 hover:text-teal-700 font-medium block"
+                  >
+                    View All Businesses →
+                  </a>
+                  <a 
+                    href="/superadmin/dashboard" 
+                    className="text-xs text-teal-600 hover:text-teal-700 font-medium block"
+                  >
+                    SuperAdmin Dashboard →
+                  </a>
+                </div>
+              </div>
               </div>
             </div>
           </div>
         </div>
-      )
-    }
+      </div>
+    </div>
+  )
+}

@@ -84,6 +84,8 @@ model Business {
   subscriptionPlan   SubscriptionPlan   @default(FREE)
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
 
+  createdByAdmin Boolean @default(false)
+
   // Branding
   primaryColor        String  @default("#0D9488")
   secondaryColor      String  @default("#1F2937")

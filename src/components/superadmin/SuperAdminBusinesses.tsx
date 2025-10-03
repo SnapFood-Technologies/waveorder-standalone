@@ -53,6 +53,7 @@ interface Business {
   updatedAt: string;
   onboardingCompleted: boolean;
   setupWizardCompleted: boolean;
+  createdByAdmin: boolean;
   owner: {
     id: string;
     name: string;
@@ -484,10 +485,24 @@ export function SuperAdminBusinesses() {
                       
                       <td className="px-6 py-4">
   <div className="flex items-center gap-2">
-    <div className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</div>
-    {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+    <div>
+      <div className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</div>
+      <div className="flex items-center gap-2 mt-1">
+        <span className="text-sm text-gray-500">{business.owner?.email || 'No email'}</span>
+        {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+      </div>
+      {business.createdByAdmin && (
+        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded mt-1">
+          Admin Created
+        </span>
+      )}
+      {!business.createdByAdmin && (
+        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded mt-1">
+          Self Registered
+        </span>
+      )}
+    </div>
   </div>
-  <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
 </td>
                       
                       <td className="px-6 py-4">
@@ -704,7 +719,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
           </div>
 
          {/* Owner Information */}
-<div>
+         <div>
   <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div className="flex items-center gap-3">
@@ -722,6 +737,15 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
       <div>
         <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
         <p className="text-xs text-gray-500">Email</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-3 md:col-span-2">
+      <Building2 className="w-4 h-4 text-gray-400" />
+      <div>
+        <p className="text-sm font-medium text-gray-900">
+          {business.createdByAdmin ? 'Created by Admin' : 'Self Registered'}
+        </p>
+        <p className="text-xs text-gray-500">Registration Type</p>
       </div>
     </div>
   </div>
