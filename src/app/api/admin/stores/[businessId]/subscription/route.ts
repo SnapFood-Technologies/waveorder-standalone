@@ -1,7 +1,6 @@
 // app/api/businesses/[businessId]/subscription/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,42 +10,41 @@ export async function GET(
   context: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     const { businessId } = await context.params
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { message: 'Unauthorized' },
-        { status: 401 }
-      )
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Check if user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: session.user.id,
-        businessId: businessId
-      },
-      include: {
-        business: {
-          select: {
-            id: true,
-            name: true,
-            subscriptionPlan: true,
-            subscriptionStatus: true
-          }
-        }
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: {
+        id: true,
+        name: true,
+        subscriptionPlan: true,
+        subscriptionStatus: true
       }
     })
 
-    if (!businessUser) {
+    if (!business) {
       return NextResponse.json(
-        { message: 'Business not found or access denied' },
+        { message: 'Business not found' },
         { status: 404 }
       )
     }
 
-    const business = businessUser.business
+    // Get user role
+    const businessUser = await prisma.businessUser.findFirst({
+      where: {
+        userId: access.session.user.id,
+        businessId: businessId
+      },
+      select: {
+        role: true
+      }
+    })
 
     return NextResponse.json({
       businessId: business.id,
@@ -54,7 +52,7 @@ export async function GET(
       subscriptionPlan: business.subscriptionPlan,
       subscriptionStatus: business.subscriptionStatus,
       hasProAccess: business.subscriptionPlan === 'PRO' && business.subscriptionStatus === 'ACTIVE',
-      userRole: businessUser.role
+      userRole: businessUser?.role || 'OWNER'
     })
 
   } catch (error) {
