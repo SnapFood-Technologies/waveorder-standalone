@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/business-hours/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -27,25 +26,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      },
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       select: {
         id: true,
         businessHours: true
@@ -57,7 +47,7 @@ export async function GET(
     }
 
     return NextResponse.json({ 
-        // @ts-ignore
+      // @ts-ignore
       businessHours: business.businessHours as BusinessHours || null
     })
 
@@ -72,31 +62,15 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
-    const { businessHours } = await request.json()
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
+
+    const { businessHours } = await request.json()
 
     // Validate business hours structure
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -105,7 +79,6 @@ export async function PUT(
       return NextResponse.json({ message: 'Invalid business hours format' }, { status: 400 })
     }
 
-    // Validate each day
     for (const day of days) {
       const dayHours = businessHours[day]
       
@@ -118,7 +91,6 @@ export async function PUT(
       }
 
       if (!dayHours.closed) {
-        // Validate time format (HH:MM)
         const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
         
         if (!dayHours.open || !timeRegex.test(dayHours.open)) {
@@ -129,19 +101,15 @@ export async function PUT(
           return NextResponse.json({ message: `${day}: Invalid closing time format` }, { status: 400 })
         }
 
-        // Check that closing time is after opening time
         if (dayHours.open >= dayHours.close) {
           return NextResponse.json({ message: `${day}: Closing time must be after opening time` }, { status: 400 })
         }
       }
     }
 
-    // Update business hours
     await prisma.business.update({
       where: { id: businessId },
-      data: {
-        businessHours: businessHours as any // Store as JSON
-      }
+      data: { businessHours: businessHours as any }
     })
 
     return NextResponse.json({ 
