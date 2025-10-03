@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
@@ -9,28 +8,14 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     const { businessId } = await params
 
-    if (!session?.user?.id) {
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: session.user.id,
-        businessId: businessId
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
+        { error: access.error },
+        { status: access.status }
       )
     }
 
@@ -158,32 +143,37 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     const { businessId } = await params
 
-    if (!session?.user?.id) {
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: access.error },
+        { status: access.status }
       )
     }
 
-    // Check if user has access to this business with proper permissions
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: session.user.id,
-        businessId: businessId,
-        role: {
-          in: ['OWNER', 'MANAGER']
+    // For PUT operations, check if it's an impersonation or normal access
+    // If impersonating, allow it (SuperAdmin has full access)
+    // If normal user, verify they have proper permissions (OWNER/MANAGER)
+    if (!access.isImpersonating) {
+      const businessUser = await prisma.businessUser.findFirst({
+        where: {
+          userId: access.session.user.id,
+          businessId: businessId,
+          role: {
+            in: ['OWNER', 'MANAGER']
+          }
         }
-      }
-    })
+      })
 
-    if (!businessUser) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
+      if (!businessUser) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions - requires OWNER or MANAGER role' },
+          { status: 403 }
+        )
+      }
     }
 
     const body = await request.json()

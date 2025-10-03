@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/customers/recent/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,25 +10,12 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Await params before using
     const { businessId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     // Get recent customers (customers who have placed orders in the last 30 days, limit 10)
