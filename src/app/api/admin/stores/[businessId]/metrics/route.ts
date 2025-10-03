@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/metrics/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,25 +10,12 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Await params before using
     const { businessId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     // Get query parameters for date range
@@ -67,7 +53,7 @@ export async function GET(
         total: true,
         createdAt: true,
         status: true,
-        paymentStatus: true // Include payment status
+        paymentStatus: true
       }
     })
 
@@ -96,7 +82,7 @@ export async function GET(
       count,
       label: orderStatusConfig[status]?.label || status,
       color: orderStatusConfig[status]?.color || '#6b7280'
-    })).sort((a, b) => b.count - a.count) // Sort by count descending
+    })).sort((a, b) => b.count - a.count)
 
     // Get completed orders for revenue calculation (DELIVERED + PAID only)
     const revenueOrders = allOrders.filter(order => 
@@ -125,7 +111,7 @@ export async function GET(
     // Calculate growth (compare with previous period)
     const periodDuration = endDate.getTime() - startDate.getTime()
     const prevStartDate = new Date(startDate.getTime() - periodDuration)
-    const prevEndDate = new Date(startDate.getTime() - 1) // End just before current period starts
+    const prevEndDate = new Date(startDate.getTime() - 1)
     
     const prevRevenueOrders = await prisma.order.findMany({
       where: {
@@ -151,7 +137,6 @@ export async function GET(
         revenue: totalRevenue,
         growth: growth,
         ordersByStatus: orderStatusData,
-        // Additional revenue insights
         revenueStats: {
           totalOrdersWithRevenue: revenueOrders.length,
           averageOrderValue: revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0,
