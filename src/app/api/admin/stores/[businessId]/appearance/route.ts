@@ -1,11 +1,9 @@
 // src/app/api/admin/stores/[businessId]/appearance/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-// Validation schema for appearance settings
 const appearanceSchema = z.object({
   primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
   secondaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
@@ -21,43 +19,37 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     const { businessId } = await params
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
     }
 
-    // Check if user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: session.user.id,
-        businessId: businessId,
-        role: {
-          in: ['OWNER', 'MANAGER']
+    // Check permissions for write operation
+    if (!access.isImpersonating) {
+      const businessUser = await prisma.businessUser.findFirst({
+        where: {
+          userId: access.session.user.id,
+          businessId: businessId,
+          role: { in: ['OWNER', 'MANAGER'] }
         }
-      }
-    })
+      })
 
-    if (!businessUser) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
+      if (!businessUser) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions - requires OWNER or MANAGER role' },
+          { status: 403 }
+        )
+      }
     }
 
-    // Parse and validate request body
     const body = await request.json()
     const validatedData = appearanceSchema.parse(body)
 
-    // Update business appearance settings
     const updatedBusiness = await prisma.business.update({
-      where: {
-        id: businessId
-      },
+      where: { id: businessId },
       data: {
         primaryColor: validatedData.primaryColor,
         secondaryColor: validatedData.secondaryColor,
@@ -118,36 +110,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
     const { businessId } = await params
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ error: access.error }, { status: access.status })
     }
 
-    // Check if user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: session.user.id,
-        businessId: businessId
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
-    }
-
-    // Get business appearance settings
     const business = await prisma.business.findUnique({
-      where: {
-        id: businessId
-      },
+      where: { id: businessId },
       select: {
         id: true,
         name: true,
@@ -172,16 +144,10 @@ export async function GET(
     })
 
     if (!business) {
-      return NextResponse.json(
-        { error: 'Business not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      success: true,
-      business
-    })
+    return NextResponse.json({ success: true, business })
 
   } catch (error) {
     console.error('Error fetching appearance settings:', error)

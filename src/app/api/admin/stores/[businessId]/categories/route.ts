@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/categories/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,29 +10,12 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     const categories = await prisma.category.findMany({
@@ -61,33 +43,16 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const categoryData = await request.json()
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    // Get the highest sort order to append new category at the end
     const lastCategory = await prisma.category.findFirst({
       where: { businessId },
       orderBy: { sortOrder: 'desc' }
