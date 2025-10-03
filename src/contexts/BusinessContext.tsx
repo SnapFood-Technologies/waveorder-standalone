@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 
 interface Business {
   id: string
@@ -33,10 +33,18 @@ interface BusinessProviderProps {
 export function BusinessProvider({ children, currentBusinessId }: BusinessProviderProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [subscription, setSubscription] = useState({ plan: 'FREE' as const, isActive: true })
   const [loading, setLoading] = useState(true)
   const [accessChecked, setAccessChecked] = useState(false)
+
+  // Check if SuperAdmin is impersonating
+  const isImpersonating = 
+    session?.user?.role === 'SUPER_ADMIN' && 
+    pathname.startsWith('/admin') &&
+    (searchParams.get('impersonate') === 'true' || document.cookie.includes('impersonating='))
 
   const fetchData = async () => {
     if (status === 'loading') return
@@ -49,7 +57,31 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
     try {
       setLoading(true)
       
-      // Single API call for both businesses and subscription
+      // If SuperAdmin is impersonating, fetch the business directly
+      if (isImpersonating) {
+        const businessRes = await fetch(`/api/superadmin/businesses/${currentBusinessId}`)
+        if (businessRes.ok) {
+          const data = await businessRes.json()
+          const business = {
+            id: data.business.id,
+            name: data.business.name,
+            slug: data.business.slug,
+            subscriptionPlan: data.business.subscriptionPlan,
+            setupWizardCompleted: data.business.setupWizardCompleted,
+            onboardingCompleted: data.business.onboardingCompleted
+          }
+          setBusinesses([business])
+          setSubscription({ 
+            plan: data.business.subscriptionPlan, 
+            isActive: data.business.isActive 
+          })
+          setAccessChecked(true)
+          setLoading(false)
+          return
+        }
+      }
+
+      // Normal flow for regular business owners
       const [businessesRes, subscriptionRes] = await Promise.all([
         fetch('/api/user/businesses'),
         fetch('/api/user/subscription')
@@ -96,7 +128,9 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
       setAccessChecked(true)
     } catch (error) {
       console.error('Error fetching business data:', error)
-      router.push('/setup')
+      if (!isImpersonating) {
+        router.push('/setup')
+      }
     } finally {
       setLoading(false)
     }
@@ -104,7 +138,7 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
 
   useEffect(() => {
     fetchData()
-  }, [ currentBusinessId])
+  }, [currentBusinessId, isImpersonating])
 
   const currentBusiness = businesses.find(b => b.id === currentBusinessId) || null
 

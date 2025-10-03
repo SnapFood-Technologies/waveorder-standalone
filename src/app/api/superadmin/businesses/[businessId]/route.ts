@@ -6,6 +6,55 @@ import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { businessId } = await params
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!business) {
+      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      business: {
+        id: business.id,
+        name: business.name,
+        slug: business.slug,
+        owner: business.users[0]?.user || null
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching business:', error)
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string }> }
@@ -168,60 +217,6 @@ export async function DELETE(
       )
     }
 
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ businessId: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { businessId } = await params
-
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      include: {
-        users: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                createdAt: true
-              }
-            }
-          }
-        },
-        _count: {
-          select: {
-            orders: true,
-            customers: true,
-            products: true,
-            categories: true
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    return NextResponse.json({ business })
-
-  } catch (error) {
-    console.error('Error fetching business:', error)
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

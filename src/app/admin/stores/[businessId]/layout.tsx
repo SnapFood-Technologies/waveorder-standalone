@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { AdminSidebar } from '@/components/admin/layout/AdminSidebar'
 import { AdminHeader } from '@/components/admin/layout/AdminHeader'
 import { BusinessProvider, useBusiness } from '@/contexts/BusinessContext'
+import { ImpersonationBanner } from '@/components/superadmin/ImpersonationBanner'
 
 function AdminLayoutContent({
   children,
@@ -36,6 +37,9 @@ function AdminLayoutContent({
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Impersonation Banner - appears above header */}
+        <ImpersonationBanner />
+        
         <AdminHeader 
           onMenuClick={() => setSidebarOpen(true)}
           businessId={businessId}

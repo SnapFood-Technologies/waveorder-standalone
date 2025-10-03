@@ -177,9 +177,10 @@ export function SuperAdminBusinesses() {
     setSearchQuery(e.target.value);
   };
 
-  const handleImpersonate = (businessId: string) => {
-    window.open(`/admin/stores/${businessId}/dashboard?impersonate=true`, '_blank');
-  };
+  const handleImpersonate = (business: Business) => {
+    const url = `/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`
+    window.open(url, '_blank')
+  }
 
 
   const openDeleteModal = (business: Business) => {
@@ -554,7 +555,7 @@ export function SuperAdminBusinesses() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleImpersonate(business.id)}
+                            onClick={() => handleImpersonate(business)}
                             className="text-blue-600 hover:text-blue-700 p-1"
                             title="Impersonate"
                           >

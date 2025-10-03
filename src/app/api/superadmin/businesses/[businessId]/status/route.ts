@@ -65,9 +65,6 @@ export async function PATCH(
       }
     })
 
-    // Log the action for audit purposes
-    console.log(`SuperAdmin ${session.user.email} ${isActive ? 'activated' : 'deactivated'} business: ${updatedBusiness.name} (${businessId})`)
-
     return NextResponse.json({
       success: true,
       message: `Business "${updatedBusiness.name}" has been ${isActive ? 'activated' : 'deactivated'} successfully`,

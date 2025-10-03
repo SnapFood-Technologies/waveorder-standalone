@@ -7,6 +7,10 @@ export async function middleware(request: NextRequest) {
   const isAuth = !!token
   const pathname = request.nextUrl.pathname
 
+  // Check for impersonation
+  const isImpersonating = request.nextUrl.searchParams.get('impersonate') === 'true'
+  const impersonateBusinessId = request.nextUrl.searchParams.get('businessId')
+
   // Protect SuperAdmin routes
   if (pathname.startsWith('/superadmin')) {
     if (!isAuth) {
@@ -63,8 +67,8 @@ export async function middleware(request: NextRequest) {
   
   // Protect setup route - Require auth (no token allowed anymore)
   if (pathname.startsWith('/setup')) {
-    // Block SuperAdmins
-    if (isAuth && token.role === 'SUPER_ADMIN') {
+    // Block SuperAdmins UNLESS they're impersonating
+    if (isAuth && token.role === 'SUPER_ADMIN' && !isImpersonating) {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
   
@@ -76,18 +80,36 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protect admin routes - BLOCK SuperAdmins from accessing business admin
-  if (pathname.startsWith('/admin')) {
-    if (!isAuth) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
+  // Protect admin routes
+if (pathname.startsWith('/admin')) {
+  if (!isAuth) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
 
-    if (token.role === 'SUPER_ADMIN') {
-      return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
+  if (token.role === 'SUPER_ADMIN') {
+    const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
+    
+    if (isImpersonating && impersonateBusinessId) {
+      
+      if (pathBusinessId === impersonateBusinessId) {
+        const response = NextResponse.next()
+        
+        response.cookies.set('impersonating', impersonateBusinessId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60
+        })
+        
+        return response
+      }
     }
     
-    return NextResponse.next()
+    return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
   }
+  
+  return NextResponse.next()
+}
 
   return NextResponse.next()
 }
