@@ -30,7 +30,17 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     { name: 'Settings', href: '/superadmin/settings', icon: Settings },
   ];
 
-  const isActive = (href: string) => pathname === href;
+  // Updated isActive function to match parent routes
+  const isActive = (href: string) => {
+    // Exact match
+    if (pathname === href) return true;
+    
+    // Check if current path starts with the href (for nested routes)
+    // This makes /superadmin/businesses/new match with /superadmin/businesses
+    if (pathname.startsWith(href + '/')) return true;
+    
+    return false;
+  };
 
   // Close sidebar when clicking outside on mobile
   useEffect(() => {

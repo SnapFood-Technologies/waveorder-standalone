@@ -7,6 +7,10 @@ export async function middleware(request: NextRequest) {
   const isAuth = !!token
   const pathname = request.nextUrl.pathname
 
+  // Check for impersonation
+  const isImpersonating = request.nextUrl.searchParams.get('impersonate') === 'true'
+  const impersonateBusinessId = request.nextUrl.searchParams.get('businessId')
+
   // Protect SuperAdmin routes
   if (pathname.startsWith('/superadmin')) {
     if (!isAuth) {
@@ -52,18 +56,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/setup', request.url))
   }
 
-  // Protect setup route - BLOCK SuperAdmins
+  // MUST BE BEFORE /setup CHECK - Allow /setup-password with token only
+  if (pathname.startsWith('/setup-password')) {
+    const setupToken = request.nextUrl.searchParams.get('token')
+    if (!setupToken) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    return NextResponse.next()
+  }
+  
+  // Protect setup route - Require auth (no token allowed anymore)
   if (pathname.startsWith('/setup')) {
+    // Block SuperAdmins
     if (isAuth && token.role === 'SUPER_ADMIN') {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
-
-    const setupToken = request.nextUrl.searchParams.get('token')
   
-    if (setupToken) {
-      return NextResponse.next()
-    }
-  
+    // Require authentication (no token access)
     if (!isAuth) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
@@ -71,23 +80,40 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Protect admin routes - BLOCK SuperAdmins from accessing business admin
-  if (pathname.startsWith('/admin')) {
-    if (!isAuth) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
+  // Protect admin routes
+if (pathname.startsWith('/admin')) {
+  if (!isAuth) {
+    return NextResponse.redirect(new URL('/auth/login', request.url))
+  }
 
-    // NEW: Block SuperAdmins from accessing business admin areas
-    if (token.role === 'SUPER_ADMIN') {
-      return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
+  if (token.role === 'SUPER_ADMIN') {
+    const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
+    
+    if (isImpersonating && impersonateBusinessId) {
+      
+      if (pathBusinessId === impersonateBusinessId) {
+        const response = NextResponse.next()
+        
+        response.cookies.set('impersonating', impersonateBusinessId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60
+        })
+        
+        return response
+      }
     }
     
-    return NextResponse.next()
+    return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
   }
+  
+  return NextResponse.next()
+}
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/auth/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
+  matcher: ['/auth/:path*', '/setup-password/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
 }

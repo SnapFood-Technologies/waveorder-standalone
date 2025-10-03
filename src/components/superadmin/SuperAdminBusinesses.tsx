@@ -5,7 +5,6 @@ import {
   Building2, 
   Search, 
   Plus, 
-  Edit, 
   Trash2, 
   UserCheck,
   AlertTriangle,
@@ -29,9 +28,11 @@ import {
   Mail,
   Phone,
   Globe,
-  Package
+  Package,
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
+import Link from 'next/link'
+
 
 interface Business {
   id: string;
@@ -52,6 +53,7 @@ interface Business {
   updatedAt: string;
   onboardingCompleted: boolean;
   setupWizardCompleted: boolean;
+  createdByAdmin: boolean;
   owner: {
     id: string;
     name: string;
@@ -112,7 +114,6 @@ export function SuperAdminBusinesses() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
@@ -176,37 +177,11 @@ export function SuperAdminBusinesses() {
     setSearchQuery(e.target.value);
   };
 
-  const handleImpersonate = (businessId: string) => {
-    window.open(`/admin/stores/${businessId}/dashboard?impersonate=true`, '_blank');
-  };
+  const handleImpersonate = (business: Business) => {
+    const url = `/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`
+    window.open(url, '_blank')
+  }
 
-  const handleCreateBusiness = async (data: CreateBusinessData) => {
-    try {
-      const response = await fetch('/api/superadmin/businesses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create business');
-      }
-
-      setShowCreateModal(false);
-      fetchBusinesses();
-      
-      // Show success message
-      setSuccessMessage({
-        title: 'Business Created Successfully',
-        message: `${data.businessName} has been created and the owner has been notified.`
-      });
-      setTimeout(() => setSuccessMessage(null), 5000);
-    } catch (error) {
-      console.error('Error creating business:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create business');
-    }
-  };
 
   const openDeleteModal = (business: Business) => {
     setBusinessToDelete(business);
@@ -380,13 +355,13 @@ export function SuperAdminBusinesses() {
           </p>
         </div>
         <div className="w-full sm:w-auto">
-          <button
-            onClick={() => setShowCreateModal(true)}
+          <Link
+            href="/superadmin/businesses/new"
             className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Business
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -451,13 +426,13 @@ export function SuperAdminBusinesses() {
               }
             </p>
             {!debouncedSearchQuery && (
-              <button
-                onClick={() => setShowCreateModal(true)}
+              <Link
+                href="/superadmin/businesses/new"
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Business
-              </button>
+              </Link>
             )}
           </div>
         ) : (
@@ -511,10 +486,24 @@ export function SuperAdminBusinesses() {
                       
                       <td className="px-6 py-4">
   <div className="flex items-center gap-2">
-    <div className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</div>
-    {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+    <div>
+      <div className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</div>
+      <div className="flex items-center gap-2 mt-1">
+        <span className="text-sm text-gray-500">{business.owner?.email || 'No email'}</span>
+        {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+      </div>
+      {business.createdByAdmin && (
+        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-800 rounded mt-1">
+          Admin Created
+        </span>
+      )}
+      {!business.createdByAdmin && (
+        <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded mt-1">
+          Self Registered
+        </span>
+      )}
+    </div>
   </div>
-  <div className="text-sm text-gray-500">{business.owner?.email || 'No email'}</div>
 </td>
                       
                       <td className="px-6 py-4">
@@ -566,7 +555,7 @@ export function SuperAdminBusinesses() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleImpersonate(business.id)}
+                            onClick={() => handleImpersonate(business)}
                             className="text-blue-600 hover:text-blue-700 p-1"
                             title="Impersonate"
                           >
@@ -632,12 +621,7 @@ export function SuperAdminBusinesses() {
         )}
       </div>
 
-      {/* Create Business Modal */}
-      <CreateBusinessModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateBusiness}
-      />
+    
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
@@ -736,7 +720,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
           </div>
 
          {/* Owner Information */}
-<div>
+         <div>
   <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div className="flex items-center gap-3">
@@ -754,6 +738,15 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
       <div>
         <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
         <p className="text-xs text-gray-500">Email</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-3 md:col-span-2">
+      <Building2 className="w-4 h-4 text-gray-400" />
+      <div>
+        <p className="text-sm font-medium text-gray-900">
+          {business.createdByAdmin ? 'Created by Admin' : 'Self Registered'}
+        </p>
+        <p className="text-xs text-gray-500">Registration Type</p>
       </div>
     </div>
   </div>
@@ -1007,241 +1000,3 @@ function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm, onToggl
       </div>
     );
   }
-
-// CreateBusinessModal Component
-interface CreateBusinessModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: CreateBusinessData) => void;
-}
-
-function CreateBusinessModal({ isOpen, onClose, onSubmit }: CreateBusinessModalProps) {
-  const [formData, setFormData] = useState<CreateBusinessData>({
-    businessName: '',
-    ownerName: '',
-    ownerEmail: '',
-    whatsappNumber: '',
-    businessType: 'RESTAURANT',
-    subscriptionPlan: 'FREE',
-    currency: 'USD',
-    language: 'en',
-    password: '',
-    sendEmail: false
-  });
-  const [loading, setLoading] = useState(false);
-
-  const businessTypes = [
-    { value: 'RESTAURANT', label: 'Restaurant' },
-    { value: 'CAFE', label: 'Cafe' },
-    { value: 'RETAIL', label: 'Retail & Shopping' },
-    { value: 'GROCERY', label: 'Grocery & Supermarket' },
-    { value: 'HEALTH_BEAUTY', label: 'Health & Beauty' },
-    { value: 'JEWELRY', label: 'Jewelry Store' },
-    { value: 'FLORIST', label: 'Florist' },
-    { value: 'OTHER', label: 'Other' }
-  ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      await onSubmit(formData);
-      setFormData({
-        businessName: '',
-        ownerName: '',
-        ownerEmail: '',
-        whatsappNumber: '',
-        businessType: 'RESTAURANT',
-        subscriptionPlan: 'FREE',
-        currency: 'USD',
-        language: 'en',
-        password: '',
-        sendEmail: false
-      });
-    } catch (error) {
-      console.error('Error submitting form:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Create New Business</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.businessName}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Pizza Palace"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Type *
-              </label>
-              <select
-                value={formData.businessType}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessType: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                {businessTypes.map(type => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Owner Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.ownerName}
-                onChange={(e) => setFormData(prev => ({ ...prev, ownerName: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="John Doe"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Owner Email *
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.ownerEmail}
-                onChange={(e) => setFormData(prev => ({ ...prev, ownerEmail: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="john@pizzapalace.com"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                WhatsApp Number *
-              </label>
-              <input
-                type="tel"
-                required
-                value={formData.whatsappNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="+1234567890"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subscription Plan
-              </label>
-              <select
-                value={formData.subscriptionPlan}
-                onChange={(e) => setFormData(prev => ({ ...prev, subscriptionPlan: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                <option value="FREE">Free</option>
-                <option value="PRO">Pro</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Currency
-              </label>
-              <select
-                value={formData.currency}
-                onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="ALL">ALL - Albanian Lek</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Language
-              </label>
-              <select
-                value={formData.language}
-                onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              >
-                <option value="en">English</option>
-                <option value="sq">Albanian</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password (Optional)
-              </label>
-              <input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                placeholder="Leave empty for magic link login"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="sendEmail"
-              checked={formData.sendEmail}
-              onChange={(e) => setFormData(prev => ({ ...prev, sendEmail: e.target.checked }))}
-              className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-            />
-            <label htmlFor="sendEmail" className="ml-2 text-sm text-gray-700">
-              Send welcome email to business owner
-            </label>
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Creating...' : 'Create Business'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}

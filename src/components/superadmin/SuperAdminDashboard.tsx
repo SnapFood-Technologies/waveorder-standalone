@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   Info
 } from 'lucide-react';
+import { AuthMethodIcon } from './AuthMethodIcon';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -34,6 +35,7 @@ interface DashboardStats {
   totalPageViews: number;
 }
 
+// In SuperAdminDashboard.tsx, update the interface:
 interface RecentBusiness {
   id: string;
   name: string;
@@ -44,6 +46,8 @@ interface RecentBusiness {
   subscriptionPlan: string;
   businessType: string;
   logo?: string;
+  createdByAdmin: boolean;  // ADD THIS
+  authMethod: string;       // ADD THIS
 }
 
 interface DateRange {
@@ -381,14 +385,15 @@ export function SuperAdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Business</th>
-                  <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Owner</th>
-                  <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">WhatsApp</th>
-                  <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Type</th>
-                  <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Plan</th>
-                  <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Registered</th>
-                </tr>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Business</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Owner</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Registration</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">WhatsApp</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Type</th>
+                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Plan</th>
+                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Registered</th>
+              </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {recentBusinesses.map((business) => (
@@ -405,10 +410,24 @@ export function SuperAdminDashboard() {
                     </td>
                     <td className="py-3 px-3">
                       <div>
-                        <p className="text-sm text-gray-900">{business.owner}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-gray-900">{business.owner}</p>
+                          <AuthMethodIcon authMethod={business.authMethod as 'google' | 'email' | 'magic-link' | 'oauth'} />
+                        </div>
                         <p className="text-xs text-gray-500">{business.ownerEmail}</p>
                       </div>
                     </td>
+                    <td className="py-3 px-3">
+  {business.createdByAdmin ? (
+    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
+      Admin
+    </span>
+  ) : (
+    <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+      Self
+    </span>
+  )}
+</td>
                     <td className="py-3 px-3">
                       <p className="text-sm text-gray-600">{business.whatsappNumber || 'Not provided'}</p>
                     </td>

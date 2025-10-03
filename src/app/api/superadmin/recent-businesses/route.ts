@@ -14,9 +14,8 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get recent businesses with owner info and whatsapp number
     const businesses = await prisma.business.findMany({
-      take: 5, // Limit to 5 most recent
+      take: 5,
       orderBy: {
         createdAt: 'desc'
       },
@@ -27,7 +26,8 @@ export async function GET() {
         subscriptionPlan: true,
         businessType: true,
         logo: true,
-        whatsappNumber: true, // Add this field
+        whatsappNumber: true,
+        createdByAdmin: true,
         users: {
           where: {
             role: 'OWNER'
@@ -36,7 +36,14 @@ export async function GET() {
             user: {
               select: {
                 name: true,
-                email: true
+                email: true,
+                password: true,
+                accounts: {
+                  select: {
+                    provider: true,
+                    type: true
+                  }
+                }
               }
             }
           }
@@ -44,18 +51,37 @@ export async function GET() {
       }
     })
 
-    // Format response
-    const formattedBusinesses = businesses.map(business => ({
-      id: business.id,
-      name: business.name,
-      owner: business.users[0]?.user?.name || 'Unknown',
-      ownerEmail: business.users[0]?.user?.email || 'No email', // Add this field
-      whatsappNumber: business.whatsappNumber || 'Not provided', // Add this field
-      createdAt: business.createdAt.toISOString(),
-      subscriptionPlan: business.subscriptionPlan,
-      businessType: business.businessType,
-      logo: business.logo
-    }))
+    const formattedBusinesses = businesses.map(business => {
+      const owner = business.users[0]?.user
+      let authMethod = 'email'
+      
+      if (owner?.accounts?.length > 0) {
+        const googleAccount = owner.accounts.find(acc => acc.provider === 'google')
+        if (googleAccount) {
+          authMethod = 'google'
+        } else {
+          authMethod = 'oauth'
+        }
+      } else if (owner?.password) {
+        authMethod = 'email'
+      } else {
+        authMethod = 'magic-link'
+      }
+
+      return {
+        id: business.id,
+        name: business.name,
+        owner: owner?.name || 'Unknown',
+        ownerEmail: owner?.email || 'No email',
+        whatsappNumber: business.whatsappNumber || 'Not provided',
+        createdAt: business.createdAt.toISOString(),
+        subscriptionPlan: business.subscriptionPlan,
+        businessType: business.businessType,
+        logo: business.logo,
+        createdByAdmin: business.createdByAdmin,
+        authMethod
+      }
+    })
 
     return NextResponse.json({ businesses: formattedBusinesses })
 

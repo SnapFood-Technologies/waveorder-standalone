@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Menu, User, Settings, LogOut, ChevronDown, Bell, Store, ExternalLink, Cog, CreditCard } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -16,12 +17,26 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
   
-  // Use context instead of local state and API calls
   const { businesses, currentBusiness } = useBusiness()
-  
   const { data: session } = useSession()
+  const pathname = usePathname()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const businessDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Check if SuperAdmin is impersonating
+  const isImpersonating = 
+    session?.user?.role === 'SUPER_ADMIN' && 
+    pathname.startsWith('/admin')
+
+  // Helper function to add impersonation params to URLs
+  const addImpersonationParams = (href: string) => {
+    if (!isImpersonating) return href
+    
+    const url = new URL(href, window.location.origin)
+    url.searchParams.set('impersonate', 'true')
+    url.searchParams.set('businessId', businessId)
+    return url.pathname + url.search
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,11 +56,13 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
     signOut({ callbackUrl: '/' })
   }
 
+  // Display role text based on impersonation state
+  const userRoleText = isImpersonating ? 'SuperAdmin (Impersonating)' : 'Admin'
+
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-6">
       {/* Left side */}
       <div className="flex items-center space-x-4">
-        {/* Mobile menu button */}
         <button
           onClick={onMenuClick}
           className="p-2 text-gray-400 hover:text-gray-600 lg:hidden"
@@ -56,8 +73,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
         {/* Business Selector */}
         {currentBusiness && (
           <div className="relative" ref={businessDropdownRef}>
-            {businesses.length > 1 ? (
-              // Multiple businesses - show dropdown
+            {businesses.length > 1 && !isImpersonating ? (
               <button
                 onClick={() => setIsBusinessDropdownOpen(!isBusinessDropdownOpen)}
                 className="flex items-center space-x-2 p-2 text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-50 max-w-xs"
@@ -76,7 +92,6 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
             ) : (
-              // Single business - direct link to store
               <Link
                 href={`/${currentBusiness.slug}`}
                 target="_blank"
@@ -100,7 +115,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
             )}
 
             {/* Business Dropdown */}
-            {isBusinessDropdownOpen && businesses.length > 1 && (
+            {isBusinessDropdownOpen && businesses.length > 1 && !isImpersonating && (
               <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="py-1 max-h-60 overflow-y-auto">
                   {businesses.map((business) => (
@@ -141,9 +156,8 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center space-x-2 lg:space-x-4">
-        {/* Notifications - Now redirects to Order Notifications */}
         <Link
-          href={`/admin/stores/${businessId}/settings/notifications`}
+          href={addImpersonationParams(`/admin/stores/${businessId}/settings/notifications`)}
           className="p-2 text-gray-400 hover:text-gray-600 relative"
         >
           <Bell className="w-5 h-5" />
@@ -172,7 +186,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
               <p className="text-sm font-medium text-gray-900 truncate max-w-24">
                 {session?.user?.name || 'User'}
               </p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-gray-500">{userRoleText}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
           </button>
@@ -191,7 +205,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
               
               <div className="py-1">
                 <Link
-                  href={`/admin/stores/${businessId}/settings/business`}
+                  href={addImpersonationParams(`/admin/stores/${businessId}/settings/business`)}
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsDropdownOpen(false)}
                 >
@@ -199,21 +213,13 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                   Settings
                 </Link>
                 <Link
-                  href={`/admin/stores/${businessId}/settings/configurations`}
+                  href={addImpersonationParams(`/admin/stores/${businessId}/settings/configurations`)}
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   <Cog className="w-4 h-4 mr-3" />
                   Configurations
                 </Link>
-                {/* <Link
-                  href={`/admin/stores/${businessId}/settings/billing`}
-                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  onClick={() => setIsDropdownOpen(false)}
-                >
-                  <CreditCard className="w-4 h-4 mr-3" />
-                  Billing
-                </Link> */}
               </div>
               
               <div className="border-t border-gray-100">

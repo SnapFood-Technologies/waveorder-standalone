@@ -41,6 +41,14 @@ interface ContactFormParams {
   type: string
 }
 
+interface BusinessCreatedEmailParams {
+  to: string
+  name: string
+  businessName: string
+  setupUrl: string
+  dashboardUrl: string
+}
+
 
 interface ContactNotificationParams {
   messageId: string
@@ -115,6 +123,80 @@ const createEmailTemplate = (content: string, title: string) => `
   </div>
 </body>
 </html>
+`
+
+
+const createBusinessCreatedEmailContent = (
+  name: string, 
+  businessName: string, 
+  setupUrl: string,
+  dashboardUrl: string
+) => `
+<div style="padding: 40px 30px;">
+  <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
+    Welcome to WaveOrder, ${name}! 🎉
+  </h2>
+  <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
+    Great news! Your business "${businessName}" has been successfully created on WaveOrder. You're all set to start accepting WhatsApp orders and managing your business online.
+  </p>
+  
+  <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <p style="color: #0c4a6e; margin: 0; font-size: 14px; font-weight: 500;">
+      Your account has been created by our team and is ready to use!
+    </p>
+  </div>
+
+  <!-- Complete Setup Button -->
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${setupUrl}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);">
+      Complete Setup & Access Dashboard
+    </a>
+  </div>
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+    <h3 style="color: #1f2937; margin: 0 0 16px; font-size: 16px;">What's Next?</h3>
+    <div style="font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 12px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #374151;"><strong>Click the button above</strong> to set your password and access your dashboard</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 12px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #374151;"><strong>Add your products</strong> and organize them into categories</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 12px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #374151;"><strong>Customize your store</strong> branding and settings</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #374151;"><strong>Start receiving orders</strong> directly on WhatsApp</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="background-color: #fef3cd; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 24px 0;">
+    <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: 500;">
+      ⏰ Setup Link Expires in 7 Days
+    </p>
+    <p style="color: #92400e; margin: 8px 0 0; font-size: 14px;">
+      Please complete your setup within 7 days. After that, you'll need to contact support for a new setup link.
+    </p>
+  </div>
+  
+  <p style="color: #6b7280; margin: 24px 0 0; font-size: 14px; line-height: 1.5;">
+    If the button doesn't work, you can also copy and paste this link into your browser:<br>
+    <a href="${setupUrl}" style="color: #0d9488; word-break: break-all;">${setupUrl}</a>
+  </p>
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">Need Help?</h3>
+    <p style="color: #6b7280; margin: 0; font-size: 14px;">
+      Our support team is here to help! If you have any questions about setting up your business or using WaveOrder, don't hesitate to reach out to us at 
+      <a href="mailto:hello@waveorder.app" style="color: #0d9488; text-decoration: none;">hello@waveorder.app</a>
+    </p>
+  </div>
+</div>
 `
 
 // Email verification template
@@ -207,6 +289,37 @@ const createTeamInvitationContent = (name: string, businessName: string, inviter
   </div>
 </div>
 `
+
+export async function sendBusinessCreatedEmail({
+  to,
+  name,
+  businessName,
+  setupUrl,
+  dashboardUrl
+}: BusinessCreatedEmailParams) {
+  const content = createBusinessCreatedEmailContent(name, businessName, setupUrl, dashboardUrl)
+  const html = createEmailTemplate(content, 'Welcome to WaveOrder')
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `Welcome to WaveOrder - Your business "${businessName}" is ready!`,
+      html,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Business-Name': businessName,
+        'X-Setup-Email': 'true',
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send business created email:', error)
+    throw new Error('Failed to send business created email')
+  }
+}
 
 // Add team invitation email function
 export async function sendTeamInvitationEmail({ to, name = 'there', businessName, inviterName, role, inviteUrl }: TeamInvitationParams) {

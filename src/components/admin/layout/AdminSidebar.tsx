@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -51,18 +52,31 @@ interface NavigationItem {
 
 export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { data: session } = useSession()
   
-  // Use context instead of local state and API calls
   const { subscription } = useBusiness()
   
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings'])
 
-  // Remove the useEffect that was making API calls to fetch subscription
+  // Check if SuperAdmin is impersonating
+  const isImpersonating = 
+    session?.user?.role === 'SUPER_ADMIN' && 
+    pathname.startsWith('/admin')
+
+  // Helper function to add impersonation params to URLs
+  const addImpersonationParams = (href: string) => {
+    if (!isImpersonating) return href
+    
+    const url = new URL(href, window.location.origin)
+    url.searchParams.set('impersonate', 'true')
+    url.searchParams.set('businessId', businessId)
+    return url.pathname + url.search
+  }
 
   const baseUrl = `/admin/stores/${businessId}`
 
   const navigation: NavigationItem[] = [
-    // FREE Plan Features
     { 
       name: 'Dashboard', 
       href: `${baseUrl}/dashboard`, 
@@ -119,7 +133,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'FREE'
     },
     
-    // PRO Plan Features (only show if user has PRO)
     ...(subscription.plan === 'PRO' ? [
       { 
         name: 'Inventory', 
@@ -172,7 +185,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       },
     ] : []),
     
-    // Settings with submenu
     { 
       name: 'Settings', 
       icon: Settings, 
@@ -196,12 +208,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'FREE'
         },
-        // { 
-        //   name: 'Billing', 
-        //   href: `${baseUrl}/settings/billing`, 
-        //   icon: CreditCard, 
-        //   requiredPlan: 'FREE'
-        // },
       ]
     },
   ]
@@ -227,7 +233,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const isParentActive = (children: NavigationItem[]) => 
     children.some(child => child.href && pathname === child.href)
 
-  // Close sidebar when clicking outside on mobile
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -275,11 +280,11 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           
           {isExpanded && (
             <div className="ml-8 mt-1 space-y-1">
-                  {/* @ts-ignore */}
+              {/* @ts-ignore */}
               {item.children.map(child => (
                 <Link
                   key={child.name}
-                  href={child.href || '#'}
+                  href={addImpersonationParams(child.href || '#')}
                   onClick={onClose}
                   className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
                     isActive(child.href!)
@@ -300,7 +305,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     return (
       <Link
         key={item.name}
-        href={item.href || '#'}
+        href={addImpersonationParams(item.href || '#')}
         onClick={onClose}
         className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors group ${
           isActive(item.href!)
@@ -322,7 +327,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -330,14 +334,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         />
       )}
 
-      {/* Sidebar */}
       <div className={`
         fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:inset-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
-          {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
             <Link href="/" className="flex items-center space-x-3" onClick={onClose}>
               <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
@@ -353,12 +355,10 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             </button>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map(renderNavigationItem)}
           </nav>
 
-          {/* Upgrade Prompt - Visual Design Only */}
           <div className="p-4 border-t border-gray-200">
             <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-4 text-white">
               <h3 className="font-semibold text-sm mb-1">
@@ -369,16 +369,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
                   ? 'Unlock inventory, discounts, analytics, team & domain management' 
                   : 'Enjoying advanced features and analytics'}
               </p>
-              {subscription.plan === 'FREE' ? (
-                <></>
-                // <Link
-                //   href={`${baseUrl}/settings/billing`}
-                //   onClick={onClose}
-                //   className="inline-block bg-white text-teal-600 px-3 py-1 rounded text-xs font-medium hover:bg-teal-50 transition-colors"
-                // >
-                //   Learn More
-                // </Link>
-              ) : (
+              {subscription.plan === 'PRO' && (
                 <div className="text-xs text-teal-100">
                   Thanks for being a Pro user!
                 </div>
