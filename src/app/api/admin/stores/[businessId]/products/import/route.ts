@@ -1,11 +1,8 @@
-
 // app/api/admin/stores/[businessId]/products/import/route.ts
 import Papa from 'papaparse'
-
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -14,35 +11,19 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const formData = await request.formData()
     const file = formData.get('file') as File
 
     if (!file) {
       return NextResponse.json({ message: 'No file provided' }, { status: 400 })
-    }
-
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
     const csvText = await file.text()
@@ -64,10 +45,9 @@ export async function POST(
     const categories = new Set<string>()
     const products: any[] = []
 
-    // Process CSV rows
     for (const row of rows) {
       if (!row.name || !row.price || !row.category) {
-        continue // Skip invalid rows
+        continue
       }
 
       categories.add(row.category)
@@ -82,7 +62,6 @@ export async function POST(
       })
     }
 
-    // Create categories that don't exist
     const existingCategories = await prisma.category.findMany({
       where: {
         businessId,
@@ -103,13 +82,11 @@ export async function POST(
       })
     }
 
-    // Get all categories again
     const allCategories = await prisma.category.findMany({
       where: { businessId }
     })
     const categoryMap = new Map(allCategories.map(c => [c.name, c.id]))
 
-    // Create products
     const createdProducts = []
     for (const productData of products) {
       const categoryId = categoryMap.get(productData.category)
@@ -131,7 +108,6 @@ export async function POST(
         }
       })
 
-      // Create inventory activity
       if (productData.stock > 0) {
         await prisma.inventoryActivity.create({
           data: {

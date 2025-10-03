@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/settings/business/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,25 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      },
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       select: {
         id: true,
         name: true,
@@ -66,8 +56,8 @@ export async function GET(
         noIndex: true,
         noFollow: true,
         whatsappNumber: true,
-        storeLatitude: true,     // ADD THIS
-        storeLongitude: true     // ADD THIS
+        storeLatitude: true,
+        storeLongitude: true
       }
     })
 
@@ -75,11 +65,9 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Add computed fields and format dates for frontend
     const businessWithComputed = {
       ...business,
       noIndex: !business.isIndexable,
-      // Format dates for datetime-local input
       closureStartDate: business.closureStartDate 
         ? new Date(business.closureStartDate.getTime() - business.closureStartDate.getTimezoneOffset() * 60000)
             .toISOString().slice(0, 16)
@@ -103,33 +91,16 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const data = await request.json()
 
-    // Verify user has access to business
-    const existingBusiness = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!existingBusiness) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    // Validate required fields
     if (!data.name?.trim()) {
       return NextResponse.json({ message: 'Business name is required' }, { status: 400 })
     }
@@ -142,8 +113,12 @@ export async function PUT(
       return NextResponse.json({ message: 'Business address is required' }, { status: 400 })
     }
 
-    // Check slug uniqueness if changed
-    if (data.slug !== existingBusiness.slug) {
+    const existingBusiness = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { slug: true }
+    })
+
+    if (data.slug !== existingBusiness?.slug) {
       const slugExists = await prisma.business.findFirst({
         where: {
           slug: data.slug,
@@ -156,7 +131,6 @@ export async function PUT(
       }
     }
 
-    // Validate schema data if provided
     let parsedSchemaData = null
     if (data.schemaData) {
       try {
@@ -168,12 +142,10 @@ export async function PUT(
       }
     }
 
-    // Handle noIndex/isIndexable relationship
     let isIndexable = data.isIndexable
     let noIndex = data.noIndex
     let noFollow = data.noFollow || false
 
-    // If noIndex is set, override isIndexable
     if (typeof data.noIndex === 'boolean') {
       isIndexable = !data.noIndex
       noIndex = data.noIndex
@@ -182,7 +154,6 @@ export async function PUT(
       isIndexable = data.isIndexable
     }
 
-    // Update business
     const updatedBusiness = await prisma.business.update({
       where: { id: businessId },
       data: {
@@ -221,7 +192,6 @@ export async function PUT(
         isIndexable: isIndexable !== undefined ? isIndexable : true,
         noIndex: noIndex !== undefined ? noIndex : false,
         noFollow: noFollow,
-        // ADD COORDINATE HANDLING
         storeLatitude: data.storeLatitude ? parseFloat(data.storeLatitude) : null,
         storeLongitude: data.storeLongitude ? parseFloat(data.storeLongitude) : null,
         updatedAt: new Date()
@@ -261,12 +231,11 @@ export async function PUT(
         isIndexable: true,
         noIndex: true,
         noFollow: true,
-        storeLatitude: true,     // ADD THIS
-        storeLongitude: true     // ADD THIS
+        storeLatitude: true,
+        storeLongitude: true
       }
     })
 
-    // Format dates for frontend response
     const formattedBusiness = {
       ...updatedBusiness,
       closureStartDate: updatedBusiness.closureStartDate 

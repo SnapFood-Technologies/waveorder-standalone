@@ -1,7 +1,6 @@
 // app/api/admin/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { uploadBusinessImage } from '@/lib/businessStorage'
 import { PrismaClient } from '@prisma/client'
 
@@ -9,11 +8,6 @@ const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const file = formData.get('file') as File
     const folder = formData.get('folder') as string
@@ -23,18 +17,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 })
     }
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      },
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const validFolders = ['logo', 'cover', 'favicon', 'ogImage'] as const
+    if (!validFolders.includes(folder as any)) {
+      return NextResponse.json({ message: 'Invalid folder type' }, { status: 400 })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       select: {
         id: true,
         logo: true,
@@ -45,22 +40,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (!business) {
-      return NextResponse.json({ message: 'Business not found or access denied' }, { status: 404 })
+      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Validate folder type
-    const validFolders = ['logo', 'cover', 'favicon', 'ogImage'] as const
-    if (!validFolders.includes(folder as any)) {
-      return NextResponse.json({ message: 'Invalid folder type' }, { status: 400 })
-    }
-
-    // Get old image URL for cleanup
     const oldImageUrl = folder === 'logo' ? business.logo :
                        folder === 'cover' ? business.coverImage :
                        folder === 'favicon' ? business.favicon :
                        folder === 'ogImage' ? business.ogImage : null
 
-    // Upload image to Supabase
     const result = await uploadBusinessImage(
       file, 
       businessId, 
