@@ -119,6 +119,7 @@ export function SuperAdminBusinesses() {
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
   const [businessToView, setBusinessToView] = useState<Business | null>(null);
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
+  const [impersonateError, setImpersonateError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 10,
@@ -177,7 +178,13 @@ export function SuperAdminBusinesses() {
     setSearchQuery(e.target.value);
   };
 
+  // Update handleImpersonate
   const handleImpersonate = (business: Business) => {
+    if (!business.setupWizardCompleted || !business.onboardingCompleted) {
+      setImpersonateError(`Cannot impersonate "${business.name}" - setup is incomplete`);
+      setTimeout(() => setImpersonateError(null), 5000);
+      return;
+    }
     const url = `/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`
     window.open(url, '_blank')
   }
@@ -409,6 +416,16 @@ export function SuperAdminBusinesses() {
         </div>
       </div>
 
+      {impersonateError && (
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+    <AlertTriangle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+    <p className="text-red-700">{impersonateError}</p>
+    <button onClick={() => setImpersonateError(null)} className="ml-auto text-red-600">
+      <X className="w-4 h-4" />
+    </button>
+  </div>
+)}
+
       {/* Businesses Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {businesses.length === 0 ? (
@@ -555,12 +572,21 @@ export function SuperAdminBusinesses() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleImpersonate(business)}
-                            className="text-blue-600 hover:text-blue-700 p-1"
-                            title="Impersonate"
-                          >
-                            <UserCheck className="w-4 h-4" />
-                          </button>
+  onClick={() => handleImpersonate(business)}
+  disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
+  className={`p-1 ${
+    business.setupWizardCompleted && business.onboardingCompleted
+      ? 'text-blue-600 hover:text-blue-700'
+      : 'text-gray-300 cursor-not-allowed'
+  }`}
+  title={
+    business.setupWizardCompleted && business.onboardingCompleted
+      ? 'Impersonate'
+      : 'Setup Incomplete'
+  }
+>
+  <UserCheck className="w-4 h-4" />
+</button>
                           <button
                             onClick={() => window.open(`/${business.slug}`, '_blank')}
                             className="text-green-600 hover:text-green-700 p-1"
@@ -650,6 +676,8 @@ interface QuickViewModalProps {
 }
 
 function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
+  const [impersonateError, setImpersonateError] = useState<string | null>(null);
+
   if (!isOpen || !business) return null;
 
   const formatDate = (dateString: string) => {
@@ -673,6 +701,21 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
     
     const IconComponent = businessTypeIcons[business.businessType as keyof typeof businessTypeIcons] || Building2;
     return <IconComponent className="w-8 h-8 text-gray-600" />;
+  };
+
+  const canImpersonate = business.setupWizardCompleted && business.onboardingCompleted;
+
+  const handleImpersonate = () => {
+    if (!canImpersonate) {
+      setImpersonateError('Cannot impersonate this business - setup is incomplete');
+      setTimeout(() => setImpersonateError(null), 5000);
+      return;
+    }
+    
+    window.open(
+      `/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, 
+      '_blank'
+    );
   };
 
   return (
@@ -717,40 +760,45 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             }`}>
               {business.subscriptionPlan} Plan
             </span>
+            {!canImpersonate && (
+              <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                Setup Incomplete
+              </span>
+            )}
           </div>
 
-         {/* Owner Information */}
-         <div>
-  <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="flex items-center gap-3">
-      <UserCheck className="w-4 h-4 text-gray-400" />
-      <div className="flex-1">
-        <p className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</p>
-        <p className="text-xs text-gray-500">Owner</p>
-      </div>
-      <div className="flex-shrink-0">
-        {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
-      </div>
-    </div>
-    <div className="flex items-center gap-3">
-      <Mail className="w-4 h-4 text-gray-400" />
-      <div>
-        <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
-        <p className="text-xs text-gray-500">Email</p>
-      </div>
-    </div>
-    <div className="flex items-center gap-3 md:col-span-2">
-      <Building2 className="w-4 h-4 text-gray-400" />
-      <div>
-        <p className="text-sm font-medium text-gray-900">
-          {business.createdByAdmin ? 'Created by Admin' : 'Self Registered'}
-        </p>
-        <p className="text-xs text-gray-500">Registration Type</p>
-      </div>
-    </div>
-  </div>
-</div>
+          {/* Owner Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Owner Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <UserCheck className="w-4 h-4 text-gray-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{business.owner?.name || 'Unknown'}</p>
+                  <p className="text-xs text-gray-500">Owner</p>
+                </div>
+                <div className="flex-shrink-0">
+                  {business.owner && <AuthMethodIcon authMethod={business.owner.authMethod} />}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.owner?.email || 'No email'}</p>
+                  <p className="text-xs text-gray-500">Email</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 md:col-span-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {business.createdByAdmin ? 'Created by Admin' : 'Self Registered'}
+                  </p>
+                  <p className="text-xs text-gray-500">Registration Type</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Contact Information */}
           <div>
@@ -774,12 +822,12 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
               )}
               {business.address && (
                 <div className="flex items-start gap-3 md:col-span-2">
-                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{business.address}</p>
-                  <p className="text-xs text-gray-500">Business Address</p>
+                  <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.address}</p>
+                    <p className="text-xs text-gray-500">Business Address</p>
+                  </div>
                 </div>
-              </div>
               )}
               {business.website && (
                 <div className="flex items-center gap-3">
@@ -793,32 +841,32 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             </div>
           </div>
 
-        {/* Business Stats */}
-<div>
-  <h3 className="text-lg font-medium text-gray-900 mb-3">Business Statistics</h3>
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-    <div className="bg-gray-50 rounded-lg p-3 text-center">
-      <Package className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-      <p className="text-xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-      <p className="text-xs text-gray-500">Orders</p>
-    </div>
-    <div className="bg-gray-50 rounded-lg p-3 text-center">
-      <UserCheck className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-      <p className="text-xl font-bold text-gray-900">{business.stats.totalCustomers || 0}</p>
-      <p className="text-xs text-gray-500">Customers</p>
-    </div>
-    <div className="bg-gray-50 rounded-lg p-3 text-center">
-      <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-      <p className="text-xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
-      <p className="text-xs text-gray-500">Products</p>
-    </div>
-    <div className="bg-gray-50 rounded-lg p-3 text-center">
-      <Building2 className="w-5 h-5 text-gray-400 mx-auto mb-1" />
-      <p className="text-xl font-bold text-gray-900">{business.currency} {business.stats.totalRevenue.toFixed(2)}</p>
-      <p className="text-xs text-gray-500">Revenue</p>
-    </div>
-  </div>
-</div>
+          {/* Business Stats */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Business Statistics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <Package className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-gray-900">{business.stats.totalOrders}</p>
+                <p className="text-xs text-gray-500">Orders</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <UserCheck className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-gray-900">{business.stats.totalCustomers || 0}</p>
+                <p className="text-xs text-gray-500">Customers</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
+                <p className="text-xs text-gray-500">Products</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <Building2 className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                <p className="text-xl font-bold text-gray-900">{business.currency} {business.stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">Revenue</p>
+              </div>
+            </div>
+          </div>
 
           {/* Business Details */}
           <div>
@@ -860,6 +908,14 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
 
         {/* Footer */}
         <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-lg">
+          {/* Error Message */}
+          {impersonateError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-700">{impersonateError}</p>
+            </div>
+          )}
+
           <div className="flex justify-between items-center">
             <div className="flex space-x-3">
               <button
@@ -870,8 +926,13 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
                 Visit Store
               </button>
               <button
-                onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true`, '_blank')}
-                className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                onClick={handleImpersonate}
+                disabled={!canImpersonate}
+                className={`inline-flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                  canImpersonate
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 <UserCheck className="w-4 h-4 mr-2" />
                 Impersonate
