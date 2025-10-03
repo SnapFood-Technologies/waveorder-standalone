@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/orders/[orderId]/revert-stock/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,27 +10,14 @@ export async function POST(
   { params }: { params: Promise<{ businessId: string; orderId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, orderId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Get order with items
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
@@ -64,7 +50,6 @@ export async function POST(
       return NextResponse.json({ message: 'Order not found' }, { status: 404 })
     }
 
-    // Check if order is cancelled
     if (order.status !== 'CANCELLED') {
       return NextResponse.json({ 
         message: 'Can only revert stock for cancelled orders' 
@@ -73,15 +58,12 @@ export async function POST(
 
     let revertedItems = 0
 
-    // Process each order item to revert stock
     for (const item of order.items) {
-      // Only revert if inventory tracking is enabled
       if (!item.product.trackInventory) {
         continue
       }
 
       try {
-        // Revert product stock
         const newProductStock = item.product.stock + item.quantity
 
         await prisma.product.update({
@@ -89,21 +71,19 @@ export async function POST(
           data: { stock: newProductStock }
         })
 
-        // Create inventory activity for product
         await prisma.inventoryActivity.create({
           data: {
             productId: item.product.id,
             businessId,
-            type: 'RETURN', // Using RETURN type for cancelled order reverts
-            quantity: item.quantity, // Positive because we're adding back
+            type: 'RETURN',
+            quantity: item.quantity,
             oldStock: item.product.stock,
             newStock: newProductStock,
             reason: `Order cancellation revert - Order #${order.orderNumber}`,
-            changedBy: session.user.id
+            changedBy: access.session.user.id
           }
         })
 
-        // Handle variant stock if applicable
         if (item.variantId && item.variant) {
           const newVariantStock = item.variant.stock + item.quantity
 
@@ -112,7 +92,6 @@ export async function POST(
             data: { stock: newVariantStock }
           })
 
-          // Create inventory activity for variant
           await prisma.inventoryActivity.create({
             data: {
               productId: item.product.id,
@@ -123,7 +102,7 @@ export async function POST(
               oldStock: item.variant.stock,
               newStock: newVariantStock,
               reason: `Order cancellation revert - Order #${order.orderNumber} (Variant: ${item.variant.name})`,
-              changedBy: session.user.id
+              changedBy: access.session.user.id
             }
           })
         }
@@ -132,7 +111,6 @@ export async function POST(
 
       } catch (error) {
         console.error(`Error reverting stock for item ${item.id}:`, error)
-        // Continue with other items even if one fails
       }
     }
 

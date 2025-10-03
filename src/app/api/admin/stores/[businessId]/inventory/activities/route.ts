@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/inventory/activities/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,36 +10,20 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const { searchParams } = new URL(request.url)
     
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
     const skip = (page - 1) * limit
-
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
 
     const whereClause: any = {
       businessId

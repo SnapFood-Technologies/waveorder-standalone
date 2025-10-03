@@ -1,8 +1,7 @@
 // app/api/admin/stores/[businessId]/configuration/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient, PaymentMethod } from '@prisma/client'
-import { authOptions } from '@/lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -11,24 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId } = await params
 
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      },
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       select: {
         deliveryEnabled: true,
         pickupEnabled: true,
@@ -87,36 +78,18 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const { businessId } = await params
     const config = await request.json()
 
-    // Verify user has access to business
-    const business = await prisma.business.findFirst({
-      where: {
-        id: businessId,
-        users: {
-          some: {
-            user: {
-              email: session.user.email
-            }
-          }
-        }
-      }
-    })
-
-    if (!business) {
-      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
-    }
-
-    // Update business configuration following onboarding patterns
     const updateData: any = {}
 
-    // Handle delivery methods - same pattern as onboarding
     if (config.deliveryMethods) {
       updateData.deliveryEnabled = Boolean(config.deliveryMethods.delivery)
       updateData.pickupEnabled = Boolean(config.deliveryMethods.pickup)
@@ -133,17 +106,14 @@ export async function PUT(
       }
     }
 
-    // Handle payment methods - keep as array like onboarding
     if (config.paymentMethods) {
       updateData.paymentMethods = config.paymentMethods
     }
 
-    // Handle payment instructions
     if (config.paymentInstructions !== undefined) {
       updateData.paymentInstructions = config.paymentInstructions
     }
 
-    // Handle WhatsApp settings - same pattern as onboarding
     if (config.whatsappSettings) {
       updateData.orderNumberFormat = config.whatsappSettings.orderNumberFormat || 'WO-{number}'
       if (config.whatsappSettings.greetingMessage !== undefined) {
@@ -158,7 +128,6 @@ export async function PUT(
       }
     }
 
-    // Handle WhatsApp number
     if (config.whatsappNumber !== undefined) {
       updateData.whatsappNumber = config.whatsappNumber
     }

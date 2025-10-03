@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/orders/[orderId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,27 +10,14 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string; orderId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, orderId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Get order with all related data
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
@@ -93,7 +79,7 @@ export async function GET(
         deliveryFee: order.deliveryFee,
         tax: order.tax,
         discount: order.discount,
-        createdByAdmin: order.createdByAdmin,  // Add this line
+        createdByAdmin: order.createdByAdmin,
         customer: order.customer,
         items: order.items.map(item => ({
           id: item.id,
@@ -128,45 +114,31 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string; orderId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, orderId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-
     const validateStatusTransition = (currentStatus: string, newStatus: string): boolean => {
-        const validTransitions: Record<string, string[]> = {
-          PENDING: ['CONFIRMED', 'CANCELLED'],
-          CONFIRMED: ['PREPARING', 'CANCELLED'],
-          PREPARING: ['READY', 'CANCELLED'],
-          READY: ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'],
-          OUT_FOR_DELIVERY: ['DELIVERED', 'CANCELLED'], // Allow cancellation during delivery
-          DELIVERED: ['REFUNDED'], // Allow refund after delivery
-          CANCELLED: ['REFUNDED'], // Only refund allowed after cancellation
-          REFUNDED: [] // Final state - no changes allowed
-        }
-      
-        return validTransitions[currentStatus]?.includes(newStatus) || currentStatus === newStatus
+      const validTransitions: Record<string, string[]> = {
+        PENDING: ['CONFIRMED', 'CANCELLED'],
+        CONFIRMED: ['PREPARING', 'CANCELLED'],
+        PREPARING: ['READY', 'CANCELLED'],
+        READY: ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'],
+        OUT_FOR_DELIVERY: ['DELIVERED', 'CANCELLED'],
+        DELIVERED: ['REFUNDED'],
+        CANCELLED: ['REFUNDED'],
+        REFUNDED: []
       }
+    
+      return validTransitions[currentStatus]?.includes(newStatus) || currentStatus === newStatus
+    }
 
     const body = await request.json()
 
-    // Verify order exists and belongs to business
     const existingOrder = await prisma.order.findFirst({
       where: {
         id: orderId,
@@ -182,20 +154,17 @@ export async function PUT(
       return NextResponse.json({ message: 'Order not found' }, { status: 404 })
     }
 
-    // Prepare update data
     const updateData: any = {}
 
-    // Status update with validation
     if (body.status && body.status !== existingOrder.status) {
-        if (!validateStatusTransition(existingOrder.status, body.status)) {
-          return NextResponse.json({ 
-            message: `Cannot change status from ${existingOrder.status} to ${body.status}` 
-          }, { status: 400 })
-        }
-        updateData.status = body.status
+      if (!validateStatusTransition(existingOrder.status, body.status)) {
+        return NextResponse.json({ 
+          message: `Cannot change status from ${existingOrder.status} to ${body.status}` 
+        }, { status: 400 })
+      }
+      updateData.status = body.status
     }
 
-    // Payment status update
     if (body.paymentStatus && body.paymentStatus !== existingOrder.paymentStatus) {
       const validPaymentStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED']
       
@@ -206,17 +175,14 @@ export async function PUT(
       updateData.paymentStatus = body.paymentStatus
     }
 
-    // Notes update
     if (body.notes !== undefined) {
       updateData.notes = body.notes
     }
 
-    // Delivery time update
     if (body.deliveryTime !== undefined) {
       updateData.deliveryTime = body.deliveryTime ? new Date(body.deliveryTime) : null
     }
 
-    // Update the order
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: updateData,
@@ -231,23 +197,6 @@ export async function PUT(
         }
       }
     })
-
-    // Create order notification record for status changes
-    // TODO: maybe in the future we support self - notifications for admins that change their business order status
-    // if (updateData.status && updateData.status !== existingOrder.status) {
-    //   await prisma.orderNotification.create({
-    //     data: {
-    //       businessId: businessId,
-    //       orderId: orderId,
-    //       orderNumber: existingOrder.orderNumber,
-    //       orderStatus: updateData.status,
-    //       customerName: existingOrder.customer.name,
-    //       total: existingOrder.total,
-    //       notifiedAt: new Date(),
-    //       emailSent: false // Will be updated when notification service sends email
-    //     }
-    //   })
-    // }
 
     return NextResponse.json({
       order: {
@@ -273,22 +222,14 @@ export async function DELETE(
   { params }: { params: Promise<{ businessId: string, orderId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, orderId } = await params
 
-    // Verify access
-    const businessUser = await prisma.businessUser.findFirst({
-      where: { businessId, userId: session.user.id }
-    })
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Get order with items for stock restoration
     const order = await prisma.order.findFirst({
       where: { id: orderId, businessId },
       include: { items: { include: { product: true, variant: true } } }
@@ -298,7 +239,6 @@ export async function DELETE(
       return NextResponse.json({ message: 'Order not found' }, { status: 404 })
     }
 
-    // Restore stock and create inventory activities
     for (const item of order.items) {
       if (item.variantId && item.variant) {
         await prisma.productVariant.update({
@@ -316,7 +256,7 @@ export async function DELETE(
             oldStock: item.variant.stock,
             newStock: item.variant.stock + item.quantity,
             reason: `Order deleted - ${order.orderNumber}`,
-            changedBy: session.user.id
+            changedBy: access.session.user.id
           }
         })
       } else {
@@ -334,13 +274,12 @@ export async function DELETE(
             oldStock: item.product.stock,
             newStock: item.product.stock + item.quantity,
             reason: `Order deleted - ${order.orderNumber}`,
-            changedBy: session.user.id
+            changedBy: access.session.user.id
           }
         })
       }
     }
 
-    // Delete order (cascade will delete items)
     await prisma.order.delete({
       where: { id: orderId }
     })
