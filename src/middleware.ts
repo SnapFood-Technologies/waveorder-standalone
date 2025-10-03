@@ -67,8 +67,8 @@ export async function middleware(request: NextRequest) {
   
   // Protect setup route - Require auth (no token allowed anymore)
   if (pathname.startsWith('/setup')) {
-    // Block SuperAdmins UNLESS they're impersonating
-    if (isAuth && token.role === 'SUPER_ADMIN' && !isImpersonating) {
+    // Block SuperAdmins
+    if (isAuth && token.role === 'SUPER_ADMIN') {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
   
