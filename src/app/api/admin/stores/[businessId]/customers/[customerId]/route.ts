@@ -1,7 +1,6 @@
 // src/app/api/admin/stores/[businessId]/customers/[customerId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -11,27 +10,14 @@ export async function GET(
   { params }: { params: Promise<{ businessId: string; customerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, customerId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Get customer with order statistics
     const customer = await prisma.customer.findFirst({
       where: {
         id: customerId,
@@ -57,7 +43,6 @@ export async function GET(
       return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
     }
 
-    // Calculate customer statistics
     const completedOrders = customer.orders.filter(order => 
       ['DELIVERED', 'READY'].includes(order.status)
     )
@@ -104,29 +89,16 @@ export async function PUT(
   { params }: { params: Promise<{ businessId: string; customerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, customerId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
     const body = await request.json()
     
-    // Validation
     if (!body.name?.trim()) {
       return NextResponse.json({ message: 'Customer name is required' }, { status: 400 })
     }
@@ -135,13 +107,11 @@ export async function PUT(
       return NextResponse.json({ message: 'Phone number is required' }, { status: 400 })
     }
 
-    // Validate phone format
     const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/
     if (!phoneRegex.test(body.phone.trim())) {
       return NextResponse.json({ message: 'Invalid phone number format' }, { status: 400 })
     }
 
-    // Validate email if provided
     if (body.email?.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(body.email.trim())) {
@@ -149,7 +119,6 @@ export async function PUT(
       }
     }
 
-    // Check if customer exists
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         id: customerId,
@@ -161,7 +130,6 @@ export async function PUT(
       return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
     }
 
-    // Check if phone number is taken by another customer
     if (body.phone.trim() !== existingCustomer.phone) {
       const phoneInUse = await prisma.customer.findFirst({
         where: {
@@ -176,7 +144,6 @@ export async function PUT(
       }
     }
 
-    // Prepare customer data
     const customerData = {
       name: body.name.trim(),
       phone: body.phone.trim(),
@@ -185,10 +152,9 @@ export async function PUT(
       tags: body.tags || [],
       notes: body.notes?.trim() || null,
       addressJson: null as any,
-      address: null as string | null // Keep for backward compatibility
+      address: null as string | null
     }
 
-    // Handle address data
     if (body.addressJson && body.addressJson.street?.trim()) {
       customerData.addressJson = {
         street: body.addressJson.street.trim(),
@@ -200,7 +166,6 @@ export async function PUT(
         longitude: body.addressJson.longitude || null
       }
 
-      // Create backward-compatible address string
       const addressParts = [
         customerData.addressJson.street,
         customerData.addressJson.additional,
@@ -210,11 +175,8 @@ export async function PUT(
       customerData.address = addressParts.join(', ')
     }
 
-    // Update customer
     const updatedCustomer = await prisma.customer.update({
-      where: {
-        id: customerId
-      },
+      where: { id: customerId },
       data: customerData
     })
 
@@ -240,27 +202,14 @@ export async function DELETE(
   { params }: { params: Promise<{ businessId: string; customerId: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
-    }
-
     const { businessId, customerId } = await params
 
-    // Verify user has access to this business
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        businessId: businessId,
-        userId: session.user.id
-      }
-    })
-
-    if (!businessUser) {
-      return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Check if customer exists and get order count
     const customer = await prisma.customer.findFirst({
       where: {
         id: customerId,
@@ -279,18 +228,14 @@ export async function DELETE(
       return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
     }
 
-    // Check if customer has orders
     if (customer._count.orders > 0) {
       return NextResponse.json({ 
         message: 'Cannot delete customer with existing orders. Consider archiving instead.' 
       }, { status: 400 })
     }
 
-    // Delete customer
     await prisma.customer.delete({
-      where: {
-        id: customerId
-      }
+      where: { id: customerId }
     })
 
     return NextResponse.json({ message: 'Customer deleted successfully' })
