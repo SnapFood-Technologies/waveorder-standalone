@@ -226,11 +226,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (data.sendEmail) {
-      // Generate setup token for passwordless onboarding
-      const setupToken = crypto.randomBytes(32).toString('hex')
-      const setupExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-      userData.setupToken = setupToken
-      userData.setupExpiry = setupExpiry
+      const passwordSetupToken = crypto.randomBytes(32).toString('hex')
+      const passwordSetupExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      userData.passwordSetupToken = passwordSetupToken
+      userData.passwordSetupExpiry = passwordSetupExpiry
     } else {
       // Hash password for immediate login
       const hashedPassword = await bcrypt.hash(data.password, 10)
@@ -330,7 +329,7 @@ export async function POST(request: NextRequest) {
     // Send welcome email with setup instructions if requested
     if (data.sendEmail) {
       try {
-        const setupUrl = `${process.env.NEXTAUTH_URL}/setup/complete?token=${userData.setupToken}`
+        const setupUrl = `${process.env.NEXTAUTH_URL}/setup-password?token=${userData.passwordSetupToken}`
         const dashboardUrl = `${process.env.NEXTAUTH_URL}/admin/stores/${business.id}/dashboard`
         
         await sendBusinessCreatedEmail({

@@ -52,18 +52,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/setup', request.url))
   }
 
-  // Protect setup route - BLOCK SuperAdmins
+  // MUST BE BEFORE /setup CHECK - Allow /setup-password with token only
+  if (pathname.startsWith('/setup-password')) {
+    const setupToken = request.nextUrl.searchParams.get('token')
+    if (!setupToken) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    return NextResponse.next()
+  }
+  
+  // Protect setup route - Require auth (no token allowed anymore)
   if (pathname.startsWith('/setup')) {
+    // Block SuperAdmins
     if (isAuth && token.role === 'SUPER_ADMIN') {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
-
-    const setupToken = request.nextUrl.searchParams.get('token')
   
-    if (setupToken) {
-      return NextResponse.next()
-    }
-  
+    // Require authentication (no token access)
     if (!isAuth) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
@@ -77,7 +82,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // NEW: Block SuperAdmins from accessing business admin areas
     if (token.role === 'SUPER_ADMIN') {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
@@ -89,5 +93,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/auth/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
+  matcher: ['/auth/:path*', '/setup-password/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
 }

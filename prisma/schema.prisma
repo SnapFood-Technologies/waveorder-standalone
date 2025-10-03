@@ -48,6 +48,9 @@ model User {
   setupToken  String? // Add this field
   setupExpiry DateTime? // Add this field
 
+  passwordSetupToken  String?
+  passwordSetupExpiry DateTime?
+
   role       UserRole       @default(BUSINESS_OWNER)
   accounts   Account[]
   sessions   Session[]
