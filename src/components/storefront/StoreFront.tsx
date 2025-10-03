@@ -1586,6 +1586,31 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }).map(product => ({ ...product, categoryName: category.name }))
   )
 
+  // Helper function to validate phone number is complete
+  const isPhoneValid = (phone: string) => {
+    if (!phone) return false
+    
+    // Remove all non-numeric characters except +
+    const cleanPhone = phone.replace(/[^\d+]/g, '')
+    
+    // Check minimum length based on country code
+    if (cleanPhone.startsWith('+355')) {
+      // Albania: +355 + 9 digits = 13 characters
+      return cleanPhone.length >= 13
+    } else if (cleanPhone.startsWith('+30')) {
+      // Greece: +30 + 10 digits = 13 characters
+      return cleanPhone.length >= 13
+    } else if (cleanPhone.startsWith('+39')) {
+      // Italy: +39 + 9-10 digits = 12-13 characters
+      return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+1')) {
+      // US: +1 + 10 digits = 12 characters
+      return cleanPhone.length >= 12
+    } else {
+      // Generic: at least 11 digits total (minimum international format)
+      return cleanPhone.length >= 11
+    }
+  }
 
   // Create a helper function to check if the order can be submitted:
   const canSubmitOrder = () => {
@@ -1594,6 +1619,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     // Basic requirements
     if (cart.length === 0) return false
     if (!customerInfo.name || !customerInfo.phone) return false
+    
+    // Phone validation - must be complete and valid
+    if (!isPhoneValid(customerInfo.phone)) return false
+    
     if (isOrderLoading) return false
     
     // Delivery specific checks
@@ -1951,10 +1980,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       const result = await response.json()
   
       if (result.success) {
-        // Open WhatsApp
-        // window.open(result.whatsappUrl, '_blank')
-        window.location.href = result.whatsappUrl        
-        // Clear cart and close modal
+        // Clear cart and close modal first
         setCart([])
         setShowCartModal(false)
         
@@ -1974,12 +2000,17 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         // Clear any delivery errors
         setDeliveryError(null)
         setCalculatedDeliveryFee(storeData.deliveryFee)
-  
+      
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
           orderNumber: result.orderNumber
         })
+        
+        // Open WhatsApp after 1.5 second delay
+        setTimeout(() => {
+          window.location.href = result.whatsappUrl
+        }, 1500)
         
         // Hide success message after 10 seconds
         setTimeout(() => {
