@@ -203,18 +203,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique slug
-    const baseSlug = data.businessName.toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
+    // Handle slug - either provided or auto-generated
+    let slug = data.slug
     
-    let slug = baseSlug
-    let counter = 1
-    
-    while (await prisma.business.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`
-      counter++
+    if (slug) {
+      // Validate provided slug format
+      const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+      if (!slugRegex.test(slug)) {
+        return NextResponse.json(
+          { message: 'Invalid slug format. Use only lowercase letters, numbers, and hyphens' },
+          { status: 400 }
+        )
+      }
+      
+      // Check if provided slug is unique
+      const existingSlug = await prisma.business.findUnique({ where: { slug } })
+      if (existingSlug) {
+        return NextResponse.json(
+          { message: 'This store URL is already taken' },
+          { status: 400 }
+        )
+      }
+    } else {
+      // Auto-generate slug from business name
+      const baseSlug = data.businessName.toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+      
+      slug = baseSlug
+      let counter = 1
+      
+      while (await prisma.business.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${counter}`
+        counter++
+      }
     }
 
     // Prepare user data

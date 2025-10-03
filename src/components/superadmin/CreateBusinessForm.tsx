@@ -37,11 +37,13 @@ import {
   X,
   Eye,
   EyeOff,
-  Key
+  Key,
+  Link as LinkIcon
 } from 'lucide-react'
 
 interface FormData {
   businessName: string
+  slug: string
   businessType: string
   ownerName: string
   ownerEmail: string
@@ -188,7 +190,6 @@ function AddressAutocomplete({
         const lat = place.geometry.location.lat()
         const lng = place.geometry.location.lng()
         
-        // Batch the updates
         onChange(hasAddress)
         setTimeout(() => {
           onCoordinatesChange(lat, lng)
@@ -208,7 +209,7 @@ function AddressAutocomplete({
         window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
       }
     }
-  }, [isLoaded]) // Only depend on isLoaded, not on onChange/onCoordinatesChange
+  }, [isLoaded])
 
   return (
     <input
@@ -236,8 +237,14 @@ export function CreateBusinessForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
   
+  // Slug management
+  const [manualSlug, setManualSlug] = useState(false)
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
+  const [checkingSlug, setCheckingSlug] = useState(false)
+  
   const [formData, setFormData] = useState<FormData>({
     businessName: '',
+    slug: '',
     businessType: 'RESTAURANT',
     ownerName: '',
     ownerEmail: '',
@@ -261,6 +268,58 @@ export function CreateBusinessForm() {
   })
 
   const totalSteps = 6
+
+  // Check slug availability
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setSlugAvailable(null)
+      return
+    }
+    
+    setCheckingSlug(true)
+    try {
+      const response = await fetch('/api/setup/check-slug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug })
+      })
+      const { available } = await response.json()
+      setSlugAvailable(available)
+    } catch (error) {
+      console.error('Slug check error:', error)
+      setSlugAvailable(null)
+    } finally {
+      setCheckingSlug(false)
+    }
+  }
+
+  // Debounced slug checking for manual mode
+  useEffect(() => {
+    if (manualSlug && formData.slug && formData.slug.length >= 3) {
+      const timeoutId = setTimeout(() => checkSlugAvailability(formData.slug), 500)
+      return () => clearTimeout(timeoutId)
+    } else {
+      setSlugAvailable(null)
+    }
+  }, [formData.slug, manualSlug])
+
+  // Auto-generate slug when not in manual mode AND check its availability
+  useEffect(() => {
+    if (!manualSlug && formData.businessName) {
+      const autoSlug = formData.businessName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+      
+      setFormData(prev => ({ ...prev, slug: autoSlug }))
+      
+      // Check if auto-generated slug is available
+      if (autoSlug.length >= 3) {
+        checkSlugAvailability(autoSlug)
+      }
+    }
+  }, [formData.businessName, manualSlug])
 
   const validatePhoneNumber = (number: string, prefix: string): boolean => {
     const prefixData = phonePrefixes.find(p => p.code === prefix)
@@ -299,6 +358,13 @@ export function CreateBusinessForm() {
     setLoading(true)
     setError(null)
 
+    // Validate slug if manual
+    if (manualSlug && slugAvailable !== true) {
+      setError('Please choose an available store URL')
+      setLoading(false)
+      return
+    }
+
     // Validate password if not sending email
     if (!formData.sendEmail && (!formData.password || formData.password.length < 8)) {
       setError('Password must be at least 8 characters when not sending email')
@@ -314,6 +380,7 @@ export function CreateBusinessForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName: formData.businessName,
+          slug: formData.slug,
           businessType: formData.businessType,
           ownerName: formData.ownerName,
           ownerEmail: formData.ownerEmail,
@@ -364,7 +431,9 @@ export function CreateBusinessForm() {
   const canProceedFromStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.businessName && formData.businessType && formData.ownerName && formData.ownerEmail)
+        const hasBasicInfo = !!(formData.businessName && formData.businessType && formData.ownerName && formData.ownerEmail)
+        const hasValidSlug = !!(formData.slug && (!manualSlug || slugAvailable === true))
+        return hasBasicInfo && hasValidSlug
       case 2:
         return !!(formData.whatsappNumber && formData.address && !phoneError)
       case 3:
@@ -388,7 +457,7 @@ export function CreateBusinessForm() {
             'Choose a memorable business name',
             'Select the business type that best matches',
             'Owner email will receive setup instructions',
-            'All fields with * are required'
+            'Customize the store URL or auto-generate it'
           ]
         }
       case 2:
@@ -453,7 +522,6 @@ export function CreateBusinessForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      {/* Success Message */}
       {successMessage && (
         <div className="fixed top-4 right-4 z-50 max-w-md">
           <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4">
@@ -527,6 +595,85 @@ export function CreateBusinessForm() {
                           className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                           placeholder="Pizza Palace"
                         />
+                      </div>
+
+                      {/* Slug Configuration */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Store URL *
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualSlug(!manualSlug)
+                              setSlugAvailable(null)
+                            }}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                          >
+                            {manualSlug ? 'Auto-generate' : 'Enter manually'}
+                          </button>
+                        </div>
+
+                        <div className="flex">
+                          <span className="inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm rounded-l-lg">
+                            waveorder.app/
+                          </span>
+                          <input
+                            type="text"
+                            value={manualSlug ? formData.slug : (
+                              formData.businessName
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]/g, '-')
+                                .replace(/-+/g, '-')
+                                .replace(/^-|-$/g, '')
+                            )}
+                            onChange={(e) => {
+                              if (manualSlug) {
+                                const cleanSlug = e.target.value
+                                  .toLowerCase()
+                                  .replace(/[^a-z0-9-]/g, '')
+                                  .replace(/-+/g, '-')
+                                setFormData({ ...formData, slug: cleanSlug })
+                              }
+                            }}
+                            disabled={!manualSlug}
+                            className={`flex-1 border border-gray-300 rounded-r-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                              !manualSlug ? 'bg-gray-50 text-gray-500' : ''
+                            }`}
+                            placeholder="your-business-slug"
+                            required
+                          />
+                        </div>
+
+                        {/* Show validation for BOTH manual and auto modes */}
+                        {formData.slug && formData.slug.length >= 3 && (
+                          <div className="mt-2">
+                            {checkingSlug ? (
+                              <p className="text-sm text-gray-600 flex items-center">
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Checking availability...
+                              </p>
+                            ) : slugAvailable === true ? (
+                              <p className="text-sm text-green-600 flex items-center">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                URL is available
+                              </p>
+                            ) : slugAvailable === false ? (
+                              <p className="text-sm text-red-600 flex items-center">
+                                <X className="w-3 h-3 mr-1" />
+                                URL is already taken - {manualSlug ? 'try another' : 'switch to manual mode to customize'}
+                              </p>
+                            ) : null}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-gray-500 mt-1">
+                          {manualSlug 
+                            ? 'Enter a custom URL for this business (lowercase letters, numbers, and hyphens only)'
+                            : 'URL is automatically generated from business name'
+                          }
+                        </p>
                       </div>
 
                       <div>
@@ -651,77 +798,77 @@ export function CreateBusinessForm() {
                 </div>
               )}
 
-{currentStep === 2 && (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact & Location</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            WhatsApp Number *
-          </label>
-          <div className="flex gap-2">
-            <select
-              value={formData.phonePrefix}
-              onChange={(e) => {
-                setFormData(prev => ({ 
-                  ...prev, 
-                  phonePrefix: e.target.value,
-                  whatsappNumber: '' // Reset only the phone number when prefix changes
-                }))
-                setPhoneError(null) // Clear error when prefix changes
-              }}
-              className="w-40 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            >
-              {phonePrefixes.map((prefix) => (
-                <option key={prefix.code} value={prefix.code}>
-                  {prefix.flag} {prefix.code}
-                </option>
-              ))}
-            </select>
-            <input
-              type="tel"
-              required
-              value={formData.whatsappNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
-              className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
-                phoneError ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder={phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
-            />
-          </div>
-          {phoneError && (
-            <p className="text-red-600 text-sm mt-1">{phoneError}</p>
-          )}
-          <p className="text-gray-500 text-xs mt-1">
-            Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
-          </p>
-        </div>
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact & Location</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          WhatsApp Number *
+                        </label>
+                        <div className="flex gap-2">
+                          <select
+                            value={formData.phonePrefix}
+                            onChange={(e) => {
+                              setFormData(prev => ({ 
+                                ...prev, 
+                                phonePrefix: e.target.value,
+                                whatsappNumber: ''
+                              }))
+                              setPhoneError(null)
+                            }}
+                            className="w-40 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          >
+                            {phonePrefixes.map((prefix) => (
+                              <option key={prefix.code} value={prefix.code}>
+                                {prefix.flag} {prefix.code}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            required
+                            value={formData.whatsappNumber}
+                            onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+                            className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
+                              phoneError ? 'border-red-300' : 'border-gray-300'
+                            }`}
+                            placeholder={phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+                          />
+                        </div>
+                        {phoneError && (
+                          <p className="text-red-600 text-sm mt-1">{phoneError}</p>
+                        )}
+                        <p className="text-gray-500 text-xs mt-1">
+                          Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+                        </p>
+                      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Business Address *
-          </label>
-          <AddressAutocomplete
-            value={formData.address}
-            onChange={(address) => setFormData(prev => ({ ...prev, address }))}
-            onCoordinatesChange={(lat, lng) => setFormData(prev => ({ 
-              ...prev, 
-              storeLatitude: lat, 
-              storeLongitude: lng 
-            }))}
-          />
-          {formData.storeLatitude && formData.storeLongitude && (
-            <p className="text-xs text-gray-400 mt-1">
-              Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Business Address *
+                        </label>
+                        <AddressAutocomplete
+                          value={formData.address}
+                          onChange={(address) => setFormData(prev => ({ ...prev, address }))}
+                          onCoordinatesChange={(lat, lng) => setFormData(prev => ({ 
+                            ...prev, 
+                            storeLatitude: lat, 
+                            storeLongitude: lng 
+                          }))}
+                        />
+                        {formData.storeLatitude && formData.storeLongitude && (
+                          <p className="text-xs text-gray-400 mt-1">
+                            Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {currentStep === 3 && (
                 <div className="space-y-6">
@@ -1088,7 +1235,7 @@ export function CreateBusinessForm() {
                   </ul>
                 </div>
 
-               {/* Step-specific additional info */}
+                {/* Step-specific additional info */}
                 {currentStep === 1 && (
                   <div className="bg-teal-50 p-3 rounded-lg">
                     <h4 className="text-sm font-semibold text-teal-800 mb-2 flex items-center">
@@ -1103,88 +1250,88 @@ export function CreateBusinessForm() {
 
                 {currentStep === 2 && (
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      Location Benefits
-                    </h4>
-                    <p className="text-xs text-blue-700">
-                      Accurate location enables automatic delivery zone creation and real-time distance calculations for delivery fees. WhatsApp number is the primary channel for order notifications.
-                    </p>
-                  </div>
-                )}
-
-                {currentStep === 3 && (
-                  <div className="bg-purple-50 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center">
-                      <Globe className="w-4 h-4 mr-2" />
-                      Regional Configuration
-                    </h4>
-                    <p className="text-xs text-purple-700">
-                      Currency and language settings affect the customer-facing catalog. Timezone is used for business hours and order scheduling. All settings can be modified later by the business owner.
-                    </p>
-                  </div>
-                )}
-
-                {currentStep === 4 && (
-                  <div className="bg-orange-50 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-orange-800 mb-2 flex items-center">
-                      <Truck className="w-4 h-4 mr-2" />
-                      Delivery Configuration
-                    </h4>
-                    <p className="text-xs text-orange-700">
-                      Delivery and pickup options can both be enabled. Delivery radius and fees are editable by the business owner. Estimated times help set customer expectations for order fulfillment.
-                    </p>
-                  </div>
-                )}
-
-                {currentStep === 5 && (
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Payment Methods
-                    </h4>
-                    <p className="text-xs text-green-700">
-                      Currently only FREE plan with cash payment is available. Online payment integrations (Stripe, PayPal) will be available with paid subscription plans in future releases.
-                    </p>
-                  </div>
-                )}
-
-                {currentStep === 6 && (
-                  <div className="bg-indigo-50 p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
-                      <Target className="w-4 h-4 mr-2" />
-                      Business Goals
-                    </h4>
-                    <p className="text-xs text-indigo-700">
-                      Selected goals help customize the dashboard experience and feature recommendations for the business owner. Goals can be updated anytime from the business settings.
-                    </p>
-                  </div>
-                )}
-
-                {/* Progress indicator */}
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Setup Progress
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Location Benefits
                   </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-gray-600">
-                      <span>Steps Completed</span>
-                      <span className="font-medium">{currentStep - 1} of {totalSteps}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-teal-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${((currentStep - 1) / totalSteps) * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Est. time remaining: {Math.max(1, totalSteps - currentStep)} min
-                    </p>
-                  </div>
+                  <p className="text-xs text-blue-700">
+                    Accurate location enables automatic delivery zone creation and real-time distance calculations for delivery fees. WhatsApp number is the primary channel for order notifications.
+                  </p>
                 </div>
+              )}
 
-                {/* Admin Resources */}
+              {currentStep === 3 && (
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center">
+                    <Globe className="w-4 h-4 mr-2" />
+                    Regional Configuration
+                  </h4>
+                  <p className="text-xs text-purple-700">
+                    Currency and language settings affect the customer-facing catalog. Timezone is used for business hours and order scheduling. All settings can be modified later by the business owner.
+                  </p>
+                </div>
+              )}
+
+              {currentStep === 4 && (
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-orange-800 mb-2 flex items-center">
+                    <Truck className="w-4 h-4 mr-2" />
+                    Delivery Configuration
+                  </h4>
+                  <p className="text-xs text-orange-700">
+                    Delivery and pickup options can both be enabled. Delivery radius and fees are editable by the business owner. Estimated times help set customer expectations for order fulfillment.
+                  </p>
+                </div>
+              )}
+
+              {currentStep === 5 && (
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Payment Methods
+                  </h4>
+                  <p className="text-xs text-green-700">
+                    Currently only FREE plan with cash payment is available. Online payment integrations (Stripe, PayPal) will be available with paid subscription plans in future releases.
+                  </p>
+                </div>
+              )}
+
+              {currentStep === 6 && (
+                <div className="bg-indigo-50 p-3 rounded-lg">
+                  <h4 className="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
+                    <Target className="w-4 h-4 mr-2" />
+                    Business Goals
+                  </h4>
+                  <p className="text-xs text-indigo-700">
+                    Selected goals help customize the dashboard experience and feature recommendations for the business owner. Goals can be updated anytime from the business settings.
+                  </p>
+                </div>
+              )}
+
+              {/* Progress indicator */}
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                  <Clock className="w-4 h-4 mr-2" />
+                  Setup Progress
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Steps Completed</span>
+                    <span className="font-medium">{currentStep - 1} of {totalSteps}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-teal-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${((currentStep - 1) / totalSteps) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Est. time remaining: {Math.max(1, totalSteps - currentStep)} min
+                  </p>
+                </div>
+              </div>
+
+              {/* Admin Resources */}
               <div className="border-t border-gray-200 pt-4">
                 <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center">
                   <Users className="w-4 h-4 mr-2" />
@@ -1208,11 +1355,11 @@ export function CreateBusinessForm() {
                   </a>
                 </div>
               </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  </div>
+)
 }
