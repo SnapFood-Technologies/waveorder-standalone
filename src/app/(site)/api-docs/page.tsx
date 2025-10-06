@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { Code, BookOpen, Lock, Download, ArrowRight, Check, Shield, Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Code, BookOpen, Lock, Shield, Zap, CheckCircle, Download, ArrowRight } from 'lucide-react'
 
 export default function ProtectedApiDocsLanding() {
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (localStorage.getItem('api_docs_auth') === 'true') {
+      setAuthenticated(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,6 +24,7 @@ export default function ProtectedApiDocsLanding() {
     })
 
     if (response.ok) {
+      localStorage.setItem('api_docs_auth', 'true')
       setAuthenticated(true)
       setError('')
     } else {
@@ -52,12 +59,16 @@ export default function ProtectedApiDocsLanding() {
               </p>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-center">
-                  <Check className="w-4 h-4 text-teal-600 mr-2" />
+                  <CheckCircle className="w-4 h-4 text-teal-600 mr-2 flex-shrink-0" />
                   Real-time endpoint testing
                 </li>
                 <li className="flex items-center">
-                  <Check className="w-4 h-4 text-teal-600 mr-2" />
+                  <CheckCircle className="w-4 h-4 text-teal-600 mr-2 flex-shrink-0" />
                   Pre-filled code examples
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-teal-600 mr-2 flex-shrink-0" />
+                  Request/response inspection
                 </li>
               </ul>
             </div>
@@ -72,12 +83,16 @@ export default function ProtectedApiDocsLanding() {
               </p>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-center">
-                  <Check className="w-4 h-4 text-emerald-600 mr-2" />
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" />
                   Detailed schema docs
                 </li>
                 <li className="flex items-center">
-                  <Check className="w-4 h-4 text-emerald-600 mr-2" />
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" />
                   Easy navigation
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 mr-2 flex-shrink-0" />
+                  Three-panel layout
                 </li>
               </ul>
             </div>
@@ -88,16 +103,18 @@ export default function ProtectedApiDocsLanding() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">OmniStack Gateway</h3>
               <p className="text-gray-600 mb-4">
-                Third-party integrations via secure API keys
+                All WaveOrder APIs available as third-party integrations through OmniStack Gateway with secure API key authentication.
               </p>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center">
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
                   <span className="w-2 h-2 bg-teal-600 rounded-full mr-2"></span>
                   <span className="font-semibold text-gray-900">VenueBoost</span>
+                  <span className="text-gray-600 ml-1">integration</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center text-sm">
                   <span className="w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
                   <span className="font-semibold text-gray-900">SnapFood</span>
+                  <span className="text-gray-600 ml-1">integration</span>
                 </div>
               </div>
             </div>
@@ -109,19 +126,26 @@ export default function ProtectedApiDocsLanding() {
               <h3 className="text-xl font-bold text-gray-900 mb-3">Access Required</h3>
               
               <form onSubmit={handleSubmit}>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  autoFocus
-                />
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    autoFocus
+                  />
+                </div>
+                
                 {error && (
-                  <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{error}</p>
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm font-medium">{error}</p>
                   </div>
                 )}
+                
                 <button
                   type="submit"
                   className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700 font-semibold transition-colors"
@@ -130,11 +154,11 @@ export default function ProtectedApiDocsLanding() {
                 </button>
               </form>
 
-              <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-xs text-gray-600 text-center">
-                  Need credentials?{' '}
+                  Need access?{' '}
                   <a href="/contact" className="text-teal-600 hover:text-teal-700 font-medium">
-                    Contact us
+                    Request credentials
                   </a>
                 </p>
               </div>
@@ -143,7 +167,8 @@ export default function ProtectedApiDocsLanding() {
 
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <p className="text-sm text-gray-600 text-center">
-              <strong className="text-gray-900">Authorized access only.</strong> All requests are logged for security.
+              <strong className="text-gray-900">Note:</strong> This documentation is for authorized developers only. 
+              All API requests are logged and monitored for security purposes.
             </p>
           </div>
         </div>
@@ -224,51 +249,6 @@ export default function ProtectedApiDocsLanding() {
                 <Download className="w-4 h-4 mr-2" />
                 Download JSON
               </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-12 bg-gray-50">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-            Quick Start
-          </h2>
-          
-          <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                  1
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Get API Key</h3>
-                  <p className="text-gray-600 text-sm">Contact support for credentials</p>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                  2
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 mb-2">Make First Request</h3>
-                  <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto text-xs">
-{`curl -H "X-API-Key: your-key" \\
-  https://yourdomain.com/api/admin/stores/ID/products`}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="flex items-start">
-                <div className="w-8 h-8 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-bold mr-3 flex-shrink-0">
-                  3
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-1">Explore</h3>
-                  <p className="text-gray-600 text-sm">Use interactive docs to test endpoints</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
