@@ -7,4 +7,5 @@ export const GET = ApiReference({
   },
   theme: 'purple',
   darkMode: false,
+  pageTitle: 'WaveOrder API Documentation',
 })
