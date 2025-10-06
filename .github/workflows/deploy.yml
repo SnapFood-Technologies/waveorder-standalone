@@ -68,6 +68,9 @@ jobs:
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           LEGAL_EMAIL: ${{ secrets.LEGAL_EMAIL }}
           PRIVACY_EMAIL: ${{ secrets.PRIVACY_EMAIL }}
+
+          # API Docs
+          API_DOCS_PASSWORD: ${{ secrets.API_DOCS_PASSWORD }}
           
           # 🏭 Build Environment
           NODE_ENV: production
@@ -108,7 +111,7 @@ jobs:
           
           # 🌐 Public Variables
           NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_CLARITY_ID=${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
           NEXT_PUBLIC_GA_ID=${{ secrets.NEXT_PUBLIC_GA_ID }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
@@ -118,6 +121,9 @@ jobs:
           EMAIL_FROM=${{ secrets.EMAIL_FROM }}
           LEGAL_EMAIL=${{ secrets.LEGAL_EMAIL }}
           PRIVACY_EMAIL=${{ secrets.PRIVACY_EMAIL }}
+
+          # API Docs
+          API_DOCS_PASSWORD=${{ secrets.API_DOCS_PASSWORD }}
           EOF
           echo "✅ Production environment file created"
 
