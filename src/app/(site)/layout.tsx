@@ -27,6 +27,7 @@ export default function SiteLayout({
     '/auth/register',
     '/auth/login',
     '/dashboard',
+    '/api-docs',
     '/privacy',
     '/terms',
     '/cookies',
