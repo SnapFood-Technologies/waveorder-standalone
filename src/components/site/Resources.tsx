@@ -82,7 +82,7 @@ export default function Resources() {
         },
         {
           question: "Can I use my own domain name?",
-          answer: "Yes! Premium plans include custom domain support. You can use yourrestaurant.com instead of waveorder.com/yourrestaurant for a more professional appearance."
+          answer: "Yes! Premium plans include custom domain support. You can use yourrestaurant.com instead of waveorder.app/yourrestaurant for a more professional appearance."
         },
         {
           question: "How do I organize my menu categories?",
