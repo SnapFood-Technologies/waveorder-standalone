@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
@@ -6,6 +5,30 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request })
   const isAuth = !!token
   const pathname = request.nextUrl.pathname
+
+  // PASSWORD PROTECT API DOCS
+  if (pathname.startsWith('/api/reference') || 
+      pathname.startsWith('/docs') || 
+      pathname.startsWith('/api-docs')) {
+    
+    const authHeader = request.headers.get('authorization')
+    const username = process.env.API_DOCS_USERNAME
+    const password = process.env.API_DOCS_PASSWORD
+    
+    if (username && password) {
+      const credentials = `${username}:${password}`
+      const expectedAuth = `Basic ${Buffer.from(credentials).toString('base64')}`
+      
+      if (!authHeader || authHeader !== expectedAuth) {
+        return new NextResponse('Authentication required', {
+          status: 401,
+          headers: {
+            'WWW-Authenticate': 'Basic realm="API Docs"',
+          },
+        })
+      }
+    }
+  }
 
   // Check for impersonation
   const isImpersonating = request.nextUrl.searchParams.get('impersonate') === 'true'
@@ -81,39 +104,48 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect admin routes
-if (pathname.startsWith('/admin')) {
-  if (!isAuth) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
+  if (pathname.startsWith('/admin')) {
+    if (!isAuth) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
 
-  if (token.role === 'SUPER_ADMIN') {
-    const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
-    
-    if (isImpersonating && impersonateBusinessId) {
+    if (token.role === 'SUPER_ADMIN') {
+      const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
       
-      if (pathBusinessId === impersonateBusinessId) {
-        const response = NextResponse.next()
+      if (isImpersonating && impersonateBusinessId) {
         
-        response.cookies.set('impersonating', impersonateBusinessId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60
-        })
-        
-        return response
+        if (pathBusinessId === impersonateBusinessId) {
+          const response = NextResponse.next()
+          
+          response.cookies.set('impersonating', impersonateBusinessId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60
+          })
+          
+          return response
+        }
       }
+      
+      return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
     
-    return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
+    return NextResponse.next()
   }
-  
-  return NextResponse.next()
-}
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/auth/:path*', '/setup-password/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
+  matcher: [
+    '/auth/:path*', 
+    '/setup-password/:path*', 
+    '/setup/:path*', 
+    '/admin/:path*', 
+    '/superadmin/:path*',
+    '/api/reference/:path*',
+    '/docs/:path*',
+    '/api-docs/:path*'
+  ]
 }

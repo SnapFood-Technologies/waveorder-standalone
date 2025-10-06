@@ -2,7 +2,7 @@
 
 import { RedocStandalone } from 'redoc'
 
-export default function DocsPage() {
+export default function DocsViewPage() {
   return (
     <RedocStandalone
       specUrl="/api/openapi"

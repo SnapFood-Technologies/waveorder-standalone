@@ -83,6 +83,12 @@ Disallow: /
 # User-agent: Claude-Web
 # Disallow: /
 
+
+Disallow: /api/reference
+Disallow: /docs
+Disallow: /api-docs
+Disallow: /api/openapi
+
 # Crawl delay for aggressive crawlers
 User-agent: *
 Crawl-delay: 1
