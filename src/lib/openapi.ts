@@ -878,7 +878,6 @@ export const openApiSpec = {
               type: 'string',
               enum: ['DELIVERY', 'PICKUP', 'DINE_IN']
             },
-            
             items: {
               type: 'array',
               items: {
