@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { ShoppingBag, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface RecentOrdersWidgetProps {
   businessId: string
@@ -23,6 +24,8 @@ interface Business {
 }
 
 export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [orders, setOrders] = useState<Order[]>([])
   const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
@@ -67,8 +70,7 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
       USD: '$',
       EUR: '€',
       GBP: '£',
-      ALL: 'L', // Albanian Lek
-      // Add more currencies as needed
+      ALL: 'L',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency
@@ -109,6 +111,10 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
     return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
+  const handleOrderClick = (orderId: string) => {
+    window.location.href = addParams(`/admin/stores/${businessId}/orders/${orderId}`)
+  }
+
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg border border-gray-200 animate-pulse">
@@ -130,14 +136,14 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
           {orders.length > 0 && (
             <div className="flex items-center space-x-2">
               <Link
-                href={`/admin/stores/${businessId}/orders/create`}
+                href={addParams(`/admin/stores/${businessId}/orders/create`)}
                 className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Add
               </Link>
               <Link
-                href={`/admin/stores/${businessId}/orders`}
+                href={addParams(`/admin/stores/${businessId}/orders`)}
                 className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
               >
                 View All
@@ -155,7 +161,7 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
             When customers place orders, they'll appear here. You can also create orders manually for walk-in customers.
           </p>
           <Link
-            href={`/admin/stores/${businessId}/orders/create`}
+            href={addParams(`/admin/stores/${businessId}/orders/create`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -179,7 +185,7 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
                 <tr 
                   key={order.id} 
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => window.location.href = `/admin/stores/${businessId}/orders/${order.id}`}
+                  onClick={() => handleOrderClick(order.id)}
                 >
                   <td className="py-3 px-3">
                     <div className="flex items-center space-x-3">
