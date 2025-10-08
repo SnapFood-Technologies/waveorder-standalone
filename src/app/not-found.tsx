@@ -1,4 +1,4 @@
-// src/app/not-found.tsx
+// src/app/site/not-found.tsx
 import NotFoundClient from '@/components/site/NotFoundClient'
 import Header from '@/components/site/Header'
 import Footer from '@/components/site/Footer'
