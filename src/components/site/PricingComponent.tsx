@@ -1,4 +1,4 @@
-// src/components/site/Pricing.tsx
+// src/components/site/PricingComponent.tsx
 'use client'
 
 import Link from 'next/link'
@@ -16,13 +16,13 @@ export default function PricingComponent() {
       description: "Perfect for getting started",
       features: [
         "Up to 30 products",
-        "10 category",
+        "10 categories",
         "Basic WhatsApp orders",
         "Mobile catalog",
         "Manual product entry",
         "Basic branding",
         "CSV import",
-        "Basic Order analytics",
+        "Basic order analytics",
       ],
       buttonText: "Start Free",
       buttonStyle: "border-2 border-gray-300 text-gray-700 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50",
@@ -32,14 +32,14 @@ export default function PricingComponent() {
     },
     {
       name: "Pro",
-      monthlyPrice: 'x',
-      yearlyPrice: 'y',
+      monthlyPrice: 12,
+      yearlyPrice: 10,
       description: "For growing businesses",
       features: [
         "Unlimited products",
         "Unlimited categories",
         "Advanced branding (colors, logo)",
-        "Advanced Order analytics",
+        "Advanced order analytics",
         "Inventory management",
         "Custom domains",
         "Wholesale pricing",
@@ -91,13 +91,18 @@ export default function PricingComponent() {
     },
     {
       question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, PayPal, and bank transfers. All payments are processed securely through Stripe."
+      answer: "We accept all major credit cards and payments are processed securely through Stripe."
     }
   ]
 
   const getPrice = (plan: typeof plans[0]) => {
     if (plan.monthlyPrice === 0) return 0
     return billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
+  }
+
+  const getSavings = (plan: typeof plans[0]) => {
+    if (plan.monthlyPrice === 0) return 0
+    return (plan.monthlyPrice * 12) - (plan.yearlyPrice * 12)
   }
 
   return (
@@ -136,7 +141,7 @@ export default function PricingComponent() {
               >
                 Yearly
                 <span className="absolute -top-2 -right-2 bg-emerald-500 text-white text-xs px-2 py-1 rounded-full">
-                  Save 20%
+                  Save 17%
                 </span>
               </button>
             </div>
@@ -151,6 +156,7 @@ export default function PricingComponent() {
             {plans.map((plan, index) => {
               const IconComponent = plan.icon
               const price = getPrice(plan)
+              const savings = getSavings(plan)
               
               return (
                 <div
@@ -191,6 +197,11 @@ export default function PricingComponent() {
                           {price === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                         </span>
                       </div>
+                      {billingCycle === 'yearly' && savings > 0 && (
+                        <p className="text-sm text-emerald-600 font-medium mt-2">
+                          Save ${savings} per year
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -220,7 +231,7 @@ export default function PricingComponent() {
                     
                     {plan.popular && (
                       <p className="text-center text-sm text-gray-500">
-                        You can cancel anytime
+                        Cancel anytime, no questions asked
                       </p>
                     )}
                   </div>

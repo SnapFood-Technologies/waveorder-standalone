@@ -16,27 +16,27 @@ export default function Pricing() {
       description: "Perfect for getting started",
       features: [
         "Up to 30 products",
-        "10 category",
+        "10 categories",
         "Basic WhatsApp orders",
         "Mobile catalog",
         "Manual product entry",
         "Basic branding",
         "CSV import",
-        "Basic Order analytics",
+        "Basic order analytics",
       ],
       buttonText: "Start Free",
       buttonStyle: "border-2 border-teal-600 text-teal-600 hover:bg-teal-50"
     },
     {
       name: "Pro",
-      monthlyPrice: 'x',
-      yearlyPrice: 'y',
+      monthlyPrice: 12,
+      yearlyPrice: 10,
       description: "For growing businesses",
       features: [
         "Unlimited products",
         "Unlimited categories",
         "Advanced branding (colors, logo)",
-        "Avvanced Order analytics",
+        "Advanced order analytics",
         "Inventory management",
         "Custom domains",
         "Wholesale pricing",
@@ -56,7 +56,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            Choose the plan that fits your business's needs
+            Choose the plan that fits your business needs
           </p>
           
           {/* Billing Toggle */}
@@ -79,7 +79,7 @@ export default function Pricing() {
               }`}
               onClick={() => setBillingCycle('yearly')}
             >
-              Yearly (Save 20%)
+              Yearly (Save 17%)
             </button>
           </div>
         </div>
@@ -111,6 +111,11 @@ export default function Pricing() {
                     {plan.monthlyPrice === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                   </span>
                 </div>
+                {billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
+                  <p className="text-sm text-emerald-600 font-medium">
+                    Save ${(plan.monthlyPrice * 12) - (plan.yearlyPrice * 12)} per year
+                  </p>
+                )}
               </div>
               
               <ul className="space-y-4 mb-8">
@@ -130,9 +135,15 @@ export default function Pricing() {
                   {plan.buttonText}
                 </Link>
                 
+                {plan.name === 'Free' && (
+                  <p className="text-center text-sm text-gray-500">
+                    No credit card required
+                  </p>
+                )}
+                
                 {plan.popular && (
                   <p className="text-center text-sm text-gray-500">
-                    You can cancel anytime
+                    Cancel anytime, no questions asked
                   </p>
                 )}
               </div>
