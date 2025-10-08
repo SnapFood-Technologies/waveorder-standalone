@@ -258,7 +258,7 @@ export default function PricingComponent() {
         </div>
       </section>
 
-      {/* Enterprise Section */}
+      {/* Pro Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-white rounded-3xl p-12 shadow-xl border border-gray-200">
