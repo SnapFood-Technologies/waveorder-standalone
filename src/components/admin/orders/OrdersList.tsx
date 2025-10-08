@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Search, Plus, ShoppingBag, Phone, Clock, MapPin, ChevronLeft, ChevronRight, Eye, Filter, X, Star, User } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface OrdersListProps {
   businessId: string
@@ -17,14 +18,14 @@ interface Order {
   total: number
   subtotal: number
   deliveryFee: number
-  createdByAdmin: boolean  // Add this line
+  createdByAdmin: boolean
   customer: {
     id: string
     name: string
     phone: string
     email: string | null
-    isFirstOrder?: boolean // New field to indicate if this is customer's first order
-    orderCount?: number // Total orders for this customer
+    isFirstOrder?: boolean
+    orderCount?: number
   }
   itemCount: number
   items: {
@@ -49,6 +50,7 @@ interface Pagination {
 }
 
 export default function OrdersList({ businessId, customerId }: OrdersListProps) {
+  const { addParams } = useImpersonation(businessId)
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -208,7 +210,6 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
   const parseStreetFromAddress = (address: string | null) => {
     if (!address) return null
     
-    // Try to parse if it's a JSON string first
     try {
       const parsedAddress = JSON.parse(address)
       if (parsedAddress && typeof parsedAddress === 'object') {
@@ -218,15 +219,12 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
       // Not JSON, continue with string parsing
     }
     
-    // Common address parsing patterns
-    // Split by common delimiters and take the first part (usually the street)
     const parts = address.split(/[,\n\r]/)
     const streetPart = parts[0].trim()
     
-    // Remove common prefixes/suffixes that aren't the street
     const cleanStreet = streetPart
-      .replace(/^(deliver to:?|address:?|ship to:?)\s*/i, '') // Remove delivery prefixes
-      .replace(/\s+(apt|apartment|unit|suite|floor|fl|#)\s*\w+.*$/i, '') // Remove apartment info
+      .replace(/^(deliver to:?|address:?|ship to:?)\s*/i, '')
+      .replace(/\s+(apt|apartment|unit|suite|floor|fl|#)\s*\w+.*$/i, '')
       .trim()
     
     return cleanStreet || streetPart
@@ -268,7 +266,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
         </div>
         <div className="w-full sm:w-auto">
           <Link
-            href={`/admin/stores/${businessId}/orders/create`}
+            href={addParams(`/admin/stores/${businessId}/orders/create`)}
             className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -386,7 +384,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
             </p>
             {!debouncedSearchQuery && activeFiltersCount === 0 && (
               <Link
-                href={`/admin/stores/${businessId}/orders/create`}
+                href={addParams(`/admin/stores/${businessId}/orders/create`)}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -464,19 +462,17 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                                 First Order
                               </span>
                             )}
-
-{order.createdByAdmin && (
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-          <User className="w-3 h-3 mr-1" />
-          Admin
-        </span>
-      )}
+                            {order.createdByAdmin && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                <User className="w-3 h-3 mr-1" />
+                                Admin
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center text-xs text-gray-600">
                             <Phone className="w-3 h-3 mr-1" />
                             {order.customer.phone}
                           </div>
-                          
                         </div>
                       </td>
                       
@@ -497,7 +493,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                               <div className="text-xs text-gray-600 flex items-center max-w-56">
                                 <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
                                 <span className="truncate" title={order.deliveryAddress}>
-                                {truncateAddress(parseStreetFromAddress(order.deliveryAddress))}
+                                  {truncateAddress(parseStreetFromAddress(order.deliveryAddress))}
                                 </span>
                               </div>
                             </div>
@@ -510,7 +506,6 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                             {order.status.replace('_', ' ')}
                           </span>
-                          
                         </div>
                       </td>
                       
@@ -538,7 +533,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                       
                       <td className="px-6 py-4 text-right">
                         <Link
-                          href={`/admin/stores/${businessId}/orders/${order.id}`}
+                          href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
                           className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Eye className="w-3 h-3 mr-1" />

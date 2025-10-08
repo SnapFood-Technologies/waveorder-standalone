@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface StockAdjustmentsPageProps {
   businessId: string,
@@ -41,6 +42,8 @@ export default function StockAdjustmentsComponent({
     businessId, 
     initialProductId 
   }: StockAdjustmentsPageProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -143,7 +146,7 @@ export default function StockAdjustmentsComponent({
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href={`/admin/stores/${businessId}/inventory`}
+          href={addParams(`/admin/stores/${businessId}/inventory`)}
           className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

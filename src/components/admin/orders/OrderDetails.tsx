@@ -27,6 +27,7 @@ import {
   Trash2
 } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface OrderDetailsProps {
   businessId: string
@@ -77,7 +78,7 @@ interface Order {
   deliveryFee: number
   tax: number
   discount: number
-  createdByAdmin: boolean  // Add this line
+  createdByAdmin: boolean
   customer: Customer
   items: OrderItem[]
   deliveryAddress: string | null
@@ -101,6 +102,8 @@ interface Business {
 }
 
 export default function OrderDetails({ businessId, orderId }: OrderDetailsProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [order, setOrder] = useState<Order | null>(null)
   const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
@@ -154,7 +157,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     }
   }
 
-
   const handleDeleteOrder = async () => {
     if (!order) return
   
@@ -166,13 +168,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       })
   
       if (response.ok) {
-        // Show success message
         setDeleteSuccess(true)
         setIsDeleting(false)
         
-        // Redirect after showing success for 2 seconds
         setTimeout(() => {
-          window.location.href = `/admin/stores/${businessId}/orders`
+          window.location.href = addParams(`/admin/stores/${businessId}/orders`)
         }, 2000)
       } else {
         const data = await response.json()
@@ -203,11 +203,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       case 'OUT_FOR_DELIVERY':
         return ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
       case 'DELIVERED':
-        return ['DELIVERED', 'REFUNDED'] // Allow refund after delivery
+        return ['DELIVERED', 'REFUNDED']
       case 'CANCELLED':
         return ['CANCELLED', 'REFUNDED']
       case 'REFUNDED':
-        return ['REFUNDED'] // Final state
+        return ['REFUNDED']
       default:
         return ['PENDING']
     }
@@ -223,7 +223,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         status: newStatus 
       }
 
-      // Add rejection reason to notes if rejecting
       if (newStatus === 'CANCELLED' && rejectReason) {
         const existingNotes = order.notes || ''
         const rejectionNote = `[REJECTED] ${rejectReason}`
@@ -239,19 +238,16 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       if (response.ok) {
         const data = await response.json()
         
-        // If cancelling, revert stock
         if (newStatus === 'CANCELLED' && order.status !== 'CANCELLED') {
             await revertOrderStock()
           }
         
-        // Refresh order data
         await fetchOrder()
         
         showSuccess(`Order status updated to ${newStatus.toLowerCase().replace('_', ' ')}`)
         setShowRejectModal(false)
         setRejectionReason('')
         
-        // Show WhatsApp option for status changes
         if (newStatus !== 'CANCELLED') {
           setWhatsappMessage(generateWhatsAppMessage())
           setShowWhatsAppModal(true)
@@ -423,7 +419,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     
     switch (type) {
       case 'DELIVERY':
-        // Use business-type appropriate delivery icons
         switch (businessType) {
           case 'RESTAURANT':
           case 'CAFE':
@@ -437,7 +432,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             return <Truck className="w-5 h-5" />
         }
       case 'PICKUP':
-        // Use business-type appropriate pickup icons
         switch (businessType) {
           case 'RESTAURANT':
           case 'CAFE':
@@ -453,7 +447,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             return <Store className="w-5 h-5" />
         }
       case 'DINE_IN':
-        // Use business-type appropriate in-person icons
         switch (businessType) {
           case 'RESTAURANT':
           case 'CAFE':
@@ -513,7 +506,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       message += `⏰ ${timeLabel}: ${deliveryDate.toLocaleString()}\n`
     }
     
-    // Add status-specific information
     switch (order.status) {
       case 'CONFIRMED':
         message += `\n✅ Your order has been confirmed and we're preparing it for you!\n`
@@ -569,7 +561,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Order</h3>
           <p className="text-red-600 mb-6">{error}</p>
           <Link
-            href={`/admin/stores/${businessId}/orders`}
+            href={addParams(`/admin/stores/${businessId}/orders`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -590,7 +582,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             The order you're looking for doesn't exist or you don't have access to view it.
           </p>
           <Link
-            href={`/admin/stores/${businessId}/orders`}
+            href={addParams(`/admin/stores/${businessId}/orders`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -627,7 +619,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div className="flex items-center space-x-4">
           <Link
-            href={`/admin/stores/${businessId}/orders`}
+            href={addParams(`/admin/stores/${businessId}/orders`)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -665,7 +657,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     Delete Order
   </button>
           <Link
-            href={`/admin/stores/${businessId}/customers/${order.customer.id}`}
+            href={addParams(`/admin/stores/${businessId}/customers/${order.customer.id}`)}
             className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm"
           >
             <User className="w-4 h-4 mr-2" />
@@ -757,7 +749,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           disabled={updating}
         />
         <div className="flex items-center space-x-2">
-          <button
+        <button
             onClick={updateDeliveryTime}
             disabled={updating}
             className="flex items-center justify-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -1096,7 +1088,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               </button>
               
               <Link
-                href={`/admin/stores/${businessId}/customers/${order.customer.id}`}
+                href={addParams(`/admin/stores/${businessId}/customers/${order.customer.id}`)}
                 className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <User className="w-5 h-5 mr-3 text-teal-600 flex-shrink-0" />
@@ -1107,7 +1099,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               </Link>
               
               <Link
-                href={`/admin/stores/${businessId}/orders`}
+                href={addParams(`/admin/stores/${businessId}/orders`)}
                 className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <ShoppingBag className="w-5 h-5 mr-3 text-gray-600 flex-shrink-0" />
@@ -1309,7 +1301,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div className="bg-white rounded-lg max-w-md w-full p-6">
       {!deleteSuccess ? (
-        // Delete Confirmation Content
         <>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -1364,7 +1355,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           </div>
         </>
       ) : (
-        // Success Content
         <div className="text-center py-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
