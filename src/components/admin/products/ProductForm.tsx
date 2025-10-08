@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface ProductFormProps {
   businessId: string
@@ -75,6 +76,7 @@ interface ProductForm {
 }
 
 export function ProductForm({ businessId, productId }: ProductFormProps) {
+  const { addParams } = useImpersonation(businessId)
   const router = useRouter()
   const isEditing = productId !== 'new'
   const { isPro } = useSubscription()
@@ -182,7 +184,6 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     return currencySymbols[business.currency] || business.currency
   }
 
-  // Fixed handleImageUpload function in ProductForm component
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -191,8 +192,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     try {
       for (const file of Array.from(files)) {
         const formData = new FormData()
-        formData.append('image', file) // Keep existing field name
-        formData.append('folder', 'products') // Specify products folder
+        formData.append('image', file)
+        formData.append('folder', 'products')
 
         const response = await fetch(`/api/admin/stores/${businessId}/upload`, {
           method: 'POST',
@@ -203,7 +204,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           const data = await response.json()
           setForm(prev => ({
             ...prev,
-            images: [...prev.images, data.imageUrl] // Use imageUrl field
+            images: [...prev.images, data.imageUrl]
           }))
         } else {
           const errorData = await response.json()
@@ -294,15 +295,13 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       })
   
       if (response.ok) {
-        // Show success toast
         setSuccessMessage({
           type: isEditing ? 'update' : 'create',
           productName: form.name
         })
   
-        // Navigate after showing success message
         setTimeout(() => {
-          router.push(`/admin/stores/${businessId}/products`)
+          router.push(addParams(`/admin/stores/${businessId}/products`))
         }, 2000)
       }
     } catch (error) {
@@ -506,7 +505,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     <div className="flex flex-col gap-4 mb-6">
     <div className="flex items-start gap-4">
         <Link
-        href={`/admin/stores/${businessId}/products`}
+        href={addParams(`/admin/stores/${businessId}/products`)}
         className="p-2 text-gray-600 hover:text-gray-900 transition-colors flex-shrink-0 mt-1"
         >
         <ArrowLeft className="w-5 h-5" />
@@ -689,7 +688,6 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     </p>
                   </div>
 
-                 {/* Only show Sale Price for PRO users */}
                   {isPro && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -753,7 +751,6 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                   </div>
                 </div>
 
-                {/* Pricing Preview */}
                 {isPro && form.originalPrice && form.price < form.originalPrice && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -893,7 +890,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     Add Variant
                 </button>
                 </div>
-                                {form.variants.length === 0 ? (
+                
+                {form.variants.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Settings className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                     <p>No variants added yet</p>
@@ -1118,7 +1116,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
             {/* Submit Buttons */}
             <div className="flex items-center justify-between pt-6">
               <Link
-                href={`/admin/stores/${businessId}/products`}
+                href={addParams(`/admin/stores/${businessId}/products`)}
                 className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancel

@@ -18,6 +18,7 @@ import {
   Download
 } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface InventoryDashboardProps {
   businessId: string
@@ -61,6 +62,8 @@ interface InventoryActivity {
 }
 
 export default function InventoryDashboard({ businessId }: InventoryDashboardProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [stats, setStats] = useState<InventoryStats | null>(null)
   const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
@@ -102,8 +105,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
       USD: '$',
       EUR: '€',
       GBP: '£',
-      ALL: 'L', // Albanian Lek
-      // Add more currencies as needed
+      ALL: 'L',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency
@@ -187,7 +189,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
           </select>
           
           <Link
-            href={`/admin/stores/${businessId}/inventory/adjustments`}
+            href={addParams(`/admin/stores/${businessId}/inventory/adjustments`)}
             className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -254,7 +256,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
                 </p>
               </div>
               <Link
-                href={`/admin/stores/${businessId}/products?filter=low-stock`}
+                href={addParams(`/admin/stores/${businessId}/products?filter=low-stock`)}
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >
                 View all
@@ -310,7 +312,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
                 </p>
               </div>
               <Link
-                href={`/admin/stores/${businessId}/inventory/activities`}
+                href={addParams(`/admin/stores/${businessId}/inventory/activities`)}
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium"
               >
                 View all
@@ -372,7 +374,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
         <p className="text-sm text-gray-600 mb-4">Manage your inventory with these essential tools</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
-            href={`/admin/stores/${businessId}/inventory/adjustments`}
+            href={addParams(`/admin/stores/${businessId}/inventory/adjustments`)}
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-teal-300 transition-all duration-200 group"
           >
             <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-teal-200 transition-colors">
@@ -385,7 +387,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
           </Link>
           
           <Link
-            href={`/admin/stores/${businessId}/inventory/activities`}
+            href={addParams(`/admin/stores/${businessId}/inventory/activities`)}
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
           >
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
@@ -398,7 +400,7 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
           </Link>
           
           <Link
-            href={`/admin/stores/${businessId}/products`}
+            href={addParams(`/admin/stores/${businessId}/products`)}
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-green-300 transition-all duration-200 group"
           >
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-green-200 transition-colors">

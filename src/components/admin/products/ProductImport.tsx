@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, Download, ArrowLeft, FileText, CheckCircle, AlertCircle, Info } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface ImportPageProps {
     businessId: string
 }
 
 export default function ImportPage({ businessId }: ImportPageProps) {
+  const { addParams } = useImpersonation(businessId)
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -75,7 +77,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Link
-          href={`/admin/stores/${businessId}/products`}
+          href={addParams(`/admin/stores/${businessId}/products`)}
           className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -249,7 +251,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
               
               <div className="flex gap-3 justify-center">
                 <Link
-                  href={`/admin/stores/${businessId}/products`}
+                  href={addParams(`/admin/stores/${businessId}/products`)}
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   View Products
