@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface InventoryActivity {
   id: string
@@ -25,7 +26,7 @@ interface InventoryActivity {
   oldStock: number
   newStock: number
   reason?: string
-  changedBy?: string  // Add this field
+  changedBy?: string
   createdAt: string
   user?: {
     id: string
@@ -34,7 +35,7 @@ interface InventoryActivity {
   product: {
     id: string
     name: string
-    images?: string[]  // Change to images array
+    images?: string[]
   }
   variant?: {
     id: string
@@ -44,7 +45,7 @@ interface InventoryActivity {
 
 interface InventoryActivityProps {
   businessId: string
-  productId?: string // Optional filter by product
+  productId?: string
 }
 
 interface Pagination {
@@ -55,6 +56,8 @@ interface Pagination {
 }
 
 export function InventoryActivity({ businessId, productId }: InventoryActivityProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [activities, setActivities] = useState<InventoryActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'increase' | 'decrease'>('all')
@@ -72,14 +75,13 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
     fetchActivities()
   }, [businessId, productId, currentPage, debouncedSearchQuery])
 
-  // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
       if (searchQuery !== debouncedSearchQuery) {
-        setCurrentPage(1) // Reset page only when search actually changes
+        setCurrentPage(1)
       }
-    }, 500) // 500ms delay
+    }, 500)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
@@ -112,7 +114,6 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
-    // Don't reset page here - let the debounced effect handle it
   }
 
   const getActivityIcon = (type: string, quantity: number) => {
@@ -240,11 +241,9 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
       </div>
     )}
 
-
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-          {/* Search */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
@@ -256,7 +255,6 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
             />
           </div>
 
-          {/* Activity Type Filter */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <select
@@ -295,14 +293,14 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
             {!debouncedSearchQuery && (
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <a 
-                  href={`/admin/stores/${businessId}/inventory/adjustments`}
+                  href={addParams(`/admin/stores/${businessId}/inventory/adjustments`)}
                   className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Make Stock Adjustment
                 </a>
                 <a 
-                  href={`/admin/stores/${businessId}/products`}
+                  href={addParams(`/admin/stores/${businessId}/products`)}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <Package className="w-4 h-4 mr-2" />

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowLeft, Users, Phone, Mail, MapPin, Tag, FileText, Edit, ShoppingBag, Calendar, Wallet, Trash2, AlertCircle, CheckCircle, X } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface CustomerDetailsProps {
   businessId: string
@@ -62,6 +63,8 @@ interface Business {
 }
 
 export default function CustomerDetails({ businessId, customerId }: CustomerDetailsProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [stats, setStats] = useState<CustomerStats>({
@@ -152,8 +155,8 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       USD: '$',
       EUR: '€',
       GBP: '£',
-      ALL: 'L', // Albanian Lek
-      GEL: '₾', // Georgian Lari
+      ALL: 'L',
+      GEL: '₾',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency
@@ -207,8 +210,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
   }
 
   const handleEdit = () => {
-    // Navigate to edit page
-    window.location.href = `/admin/stores/${businessId}/customers/${customerId}/edit`
+    window.location.href = addParams(`/admin/stores/${businessId}/customers/${customerId}/edit`)
   }
 
   const handleDelete = async () => {
@@ -219,13 +221,11 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       })
 
       if (response.ok) {
-        // Show success message
         setDeleteSuccess(true)
         setIsDeleting(false)
         
-        // Redirect after showing success for 2 seconds
         setTimeout(() => {
-          window.location.href = `/admin/stores/${businessId}/customers`
+          window.location.href = addParams(`/admin/stores/${businessId}/customers`)
         }, 2000)
       } else {
         const data = await response.json()
@@ -273,7 +273,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Customer</h3>
           <p className="text-red-600 mb-6">{error}</p>
           <Link
-            href={`/admin/stores/${businessId}/customers`}
+            href={addParams(`/admin/stores/${businessId}/customers`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -294,7 +294,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             The customer you're looking for doesn't exist or you don't have access to view it.
           </p>
           <Link
-            href={`/admin/stores/${businessId}/customers`}
+            href={addParams(`/admin/stores/${businessId}/customers`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -311,7 +311,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
-            href={`/admin/stores/${businessId}/customers`}
+            href={addParams(`/admin/stores/${businessId}/customers`)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -343,7 +343,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             Delete
           </button>
           <Link
-            href={`/admin/stores/${businessId}/orders/create?customerId=${customerId}`}
+            href={addParams(`/admin/stores/${businessId}/orders/create?customerId=${customerId}`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <ShoppingBag className="w-4 h-4 mr-2" />
@@ -532,11 +532,6 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         <div className="text-gray-600">
                           {customer.addressJson.country}
                         </div>
-                        {/* {(customer.addressJson.latitude && customer.addressJson.longitude) && (
-                          <div className="text-xs text-gray-500 pt-2 border-t border-gray-200">
-                            Coordinates: {customer.addressJson.latitude.toFixed(6)}, {customer.addressJson.longitude.toFixed(6)}
-                          </div>
-                        )} */}
                       </div>
                     </div>
                   </div>
@@ -590,7 +585,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   
                   <div className="space-y-3">
                     <Link
-                      href={`/admin/stores/${businessId}/orders/create?customerId=${customerId}`}
+                      href={addParams(`/admin/stores/${businessId}/orders/create?customerId=${customerId}`)}
                       className="w-full flex items-center px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <ShoppingBag className="w-5 h-5 mr-3 text-teal-600" />
@@ -638,7 +633,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                     This customer hasn't placed any orders yet.
                   </p>
                   <Link
-                    href={`/admin/stores/${businessId}/orders/create?customerId=${customerId}`}
+                    href={addParams(`/admin/stores/${businessId}/orders/create?customerId=${customerId}`)}
                     className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
                     <ShoppingBag className="w-4 h-4 mr-2" />
@@ -712,7 +707,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Link
-                          href={`/admin/stores/${businessId}/orders/${order.id}`}
+                          href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
                           className="text-teal-600 hover:text-teal-700 text-sm font-medium inline-flex items-center"
                         >
                           View Order Details 
@@ -730,7 +725,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                         Showing recent {Math.min(orders.length, 10)} orders
                       </p>
                       <Link
-                        href={`/admin/stores/${businessId}/orders?customer=${customerId}`}
+                        href={addParams(`/admin/stores/${businessId}/orders?customer=${customerId}`)}
                         className="text-teal-600 hover:text-teal-700 text-sm font-medium"
                       >
                         View All Orders →
@@ -749,7 +744,6 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             {!deleteSuccess ? (
-              // Delete Confirmation Content
               <>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -816,7 +810,6 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                 </div>
               </>
             ) : (
-              // Success Content
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-600" />
