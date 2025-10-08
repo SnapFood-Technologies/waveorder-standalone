@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useImpersonation } from '@/lib/impersonation'
 import { 
   Bell, 
   Mail, 
@@ -54,7 +55,9 @@ interface Pagination {
 }
 
 export function OrderNotificationSettings({ businessId }: OrderNotificationSettingsProps) {
+  const { addParams } = useImpersonation(businessId)
   const router = useRouter()
+  
   const [settings, setSettings] = useState<NotificationSettings>({
     orderNotificationsEnabled: false,
     orderNotificationEmail: null,
@@ -140,9 +143,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const formatStatus = (status: string) => {
-    // return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
     return 'New Order Received'
-
   }
 
   const getStatusColor = (status: string) => {
@@ -231,7 +232,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const handleNotificationClick = (orderNumber: string) => {
-    router.push(`/admin/stores/${businessId}/orders?search=${orderNumber}`)
+    router.push(addParams(`/admin/stores/${businessId}/orders?search=${orderNumber}`))
   }
 
   const refreshNotifications = () => {
@@ -459,28 +460,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                     {/* Status Badge */}
                     <div className="flex flex-col items-end space-y-1">
                       <div className="flex items-center text-sm">
-                     
                         <div className="flex items-center text-green-600">
                           <CheckCircle className="w-4 h-4 mr-1" />
                           <span className="text-xs font-medium">Admin Received</span>
                         </div>
-                       
-                        {/* {notification.emailSent ? (
-                          <div className="flex items-center text-green-600">
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Sent</span>
-                          </div>
-                        ) : notification.emailError ? (
-                          <div className="flex items-center text-red-600">
-                            <X className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Failed</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center text-gray-500">
-                            <Clock className="w-4 h-4 mr-1" />
-                            <span className="text-xs font-medium">Pending</span>
-                          </div>
-                        )} */}
                       </div>
                       
                       {/* Error details */}
