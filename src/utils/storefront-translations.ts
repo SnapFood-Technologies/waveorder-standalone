@@ -70,6 +70,12 @@ inCartLabel: string
     addToCart: string
     
 
+    website: string
+    yourFullName: string
+    emailPlaceholder: string
+    linkCopied: string
+    moreSharingOptions: string
+
     inCartAvailable: string
 onlyStockAvailable: string
     // Placeholders
@@ -223,6 +229,12 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     mins: "mins",
 
     
+    website: "Website",
+    yourFullName: "Your full name",
+    emailPlaceholder: "your.email@example.com",
+    linkCopied: "Link copied to clipboard!",
+    moreSharingOptions: "More sharing options",
+
     // English translations:
     now: "Now",
     schedule: "Schedule",
@@ -378,11 +390,17 @@ max: "Max",
     left: "të mbetur!",
 
 
+    website: "Website",
+    yourFullName: "Emri juaj i plotë",
+    emailPlaceholder: "email.juaj@shembull.com",
+    linkCopied: "Linku u kopjua në clipboard!",
+    moreSharingOptions: "Më shumë opsione shpërndarjeje",
+    
     onlyMoreCanBeAdded: "Vetëm {count} më shumë mund të shtohen në shportë",
 stockLabel: "Stoku",
 inCartLabel: "Në shportë",
 
-itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut ose tashmë në sasinë maksimale në shportën tuaj",
+itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut ose tashmë në sasinë maksimale në shportën tënde",
 
 
     now: "Tani",
@@ -396,7 +414,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     pickupLocation: "Vendi i Marrjes",
     directions: "Udhëzimet",
     tapForDirections: "Prek për udhëzime",
-    pickupInstructions: "Ju lutemi ejani në këtë vendndodhje për të marrë porosinë tuaj.",
+    pickupInstructions: "Të lutem shko në këtë vendndodhje për të marrë porosinë tënde.",
     mapView: "Pamja e Hartës",
     businessInfo: "Informacioni i Biznesit",
     about: "Rreth Nesh",
@@ -438,21 +456,21 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     deliveryFee: "Kostoja e Dërgesës",
     total: "Totali",
     minimumOrder: "Porosia minimale është",
-    forDelivery: "për dërgesa. Shtoni",
+    forDelivery: "për dërgesa. Shto",
     moreTo: "më shumë për të bërë porosinë.",
     specialInstructions: "Udhëzime Speciale",
     anySpecialRequests: "Çdo kërkesë speciale...",
     orderViaWhatsapp: "Porosit përmes WhatsApp",
     placingOrder: "Duke vendosur porosinë...",
-    clickingButton: "Klikimi i këtij butoni do të hapë WhatsApp me detajet e porosisë tuaj",
-    yourOrder: "Porosia Juaj",
+    clickingButton: "Klikimi i këtij butoni do të hapë WhatsApp me detajet e porosisë tënde",
+    yourOrder: "Porosia Jote",
 
     sorryOnlyStockAvailable: "Na vjen keq, vetëm {count} {itemWord} të disponueshme në stok",
 
     
     // Product Modal
-    chooseSize: "Zgjidhni Madhësinë",
-    addExtras: "Shtoni Ekstra",
+    chooseSize: "Zgjidh Madhësinë",
+    addExtras: "Shto Ekstra",
     required: "(I detyrueshëm)",
     quantity: "Sasia",
     addToCart: "Shto në Shportë",
@@ -469,13 +487,13 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     
     // Empty States
     noProductsFound: "Nuk u gjetën produkte",
-    noProductsFoundDescription: "Nuk mund të gjenim produkte që përputhen me kërkimin tuaj. Provoni të ndryshoni termat e kërkimit.",
+    noProductsFoundDescription: "Nuk mund të gjenim produkte që përputhen me kërkimin tënde. Provo të ndryshosh termat e kërkimit.",
     noProductsInCategory: "Nuk ka produkte në këtë kategori",
-    noProductsInCategoryDescription: "Kjo kategori nuk ka ende produkte. Kontrolloni më vonë ose shfletoni kategori të tjera.",
-    tryDifferentSearch: "Provoni një kërkim tjetër",
-    browseAllProducts: "Shfletoni të gjitha produktet",
+    noProductsInCategoryDescription: "Kjo kategori nuk ka ende produkte. Kontrollo më vonë ose shfleto kategori të tjera.",
+    tryDifferentSearch: "Provo një kërkim tjetër",
+    browseAllProducts: "Shfleto të gjitha produktet",
     comingSoon: "Së shpejti!",
-    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë.",
+    checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Të lutem kontrollo më vonë.",
     freeDelivery: "Transport Falas",
     pickupAvailable: "Merr tek Biznesi",
       // Closure Messages
@@ -491,36 +509,36 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
   outsideDeliveryAreaDesc: "Na vjen keq, nuk dërgojmë në këtë adresë. Distanca maksimale e dërgesës është",
   deliveryNotAvailable: "Dërgesa nuk është e disponueshme",
   deliveryCalculationFailed: "Nuk mund të llogarisim tarifën e dërgesës",
-  tryDifferentAddress: "Provoni një adresë tjetër",
-  selectDifferentArea: "Ju lutemi zgjidhni një adresë brenda zonës sonë të dërgesës",
+  tryDifferentAddress: "Provo një adresë tjetër",
+  selectDifferentArea: "Të lutem zgjidh një adresë brenda zonës sonë të dërgesës",
   maxDeliveryDistance: "Distanca maksimale e dërgesës",
-  failedToCreateOrder: "Dështoi të krijojë porosinë. Ju lutemi provoni përsëri.",
-  failedToSubmitOrder: "Dështoi të dërgojë porosinë. Ju lutemi provoni përsëri.",
+  failedToCreateOrder: "Dështoi të krijojë porosinë. Të lutem provo përsëri.",
+  failedToSubmitOrder: "Dështoi të dërgojë porosinë. Të lutem provo përsëri.",
 
 
     // Success Message & Scheduling
     orderPrepared: "Porosia u Përgatit!",
     orderNumber: "Numri i Porosisë",
-    orderOpenedWhatsApp: "Detajet e porosisë tuaj janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Ju lutemi dërgoni mesazhin për të përfunduar porosinë tuaj (nëse nuk e keni dërguar ende).",
+    orderOpenedWhatsApp: "Detajet e porosisë tënde janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Të lutem dërgo mesazhin për të përfunduar porosinë tënde (nëse nuk e ke dërguar ende).",
     nextSteps: "Hapat e Ardhshëm",
-    sendWhatsAppMessage: "Dërgoni mesazhin në WhatsApp (nëse nuk është dërguar ende)",
-    awaitConfirmation: "Prisni konfirmimin tonë",
-    weWillPrepareOrder: "Do ta përgatisim porosinë tuaj pasi të konfirmohet",
+    sendWhatsAppMessage: "Dërgo mesazhin në WhatsApp (nëse nuk është dërguar ende)",
+    awaitConfirmation: "Prit konfirmimin tonë",
+    weWillPrepareOrder: "Do ta përgatisim porosinë tënde pasi të konfirmohet",
     storeCurrentlyClosed: "Dyqani është aktualisht i mbyllur",
-    wouldYouLikeToSchedule: "A dëshironi të planifikoni porosinë tuaj për më vonë në vend të kësaj?",
+    wouldYouLikeToSchedule: "A dëshiron të planifikosh porosinë tënde për më vonë në vend të kësaj?",
 
-    cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikoni porosinë tuaj për kur të jemi të hapur!",
+    cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikosh porosinë tënde për kur të jemi të hapur!",
 schedulingBenefits: "Pse të planifikosh porosinë?",
 guaranteedPreparation: "Përgatitje e garantuar kur jemi të hapur",
-noWaitingTime: "Pa pritje - gati kur të arrini",
-secureYourOrder: "Siguroni kohën tuaj të preferuar",
+noWaitingTime: "Nuk ka kohë pritje - gati kur të arrish",
+secureYourOrder: "Siguro kohën tënde të preferuar",
 continueAnyway: "Vazhdo Sidoqoftë",
 scheduleOrder: "Skedulo Porosinë",
 close: "Mbyll", // Albanian
-selectTimeForSchedule: "Ju lutemi zgjidhni një kohë për porosinë tuaj",
-addItemsToCart: "Shtoni artikuj në shportë",
-fillRequiredInfo: "Plotësoni informacionin e kërkuar",
-addDeliveryAddress: "Shtoni adresën e dërgesës",
+selectTimeForSchedule: "Të lutem zgjidh një kohë për porosinë tënde",
+addItemsToCart: "Shto artikuj në shportë",
+fillRequiredInfo: "Plotëso informacionin e kërkuar",
+addDeliveryAddress: "Shto adresën e dërgesës",
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "në shportë",
   available: "të disponueshme",
