@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
+import { createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -15,7 +16,8 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (session?.user?.email) {
       user = await prisma.user.findUnique({
-        where: { email: session.user.email }
+        where: { email: session.user.email },
+        include: { subscription: true }
       })
     }
     
@@ -27,12 +29,58 @@ export async function POST(request: NextRequest) {
           setupExpiry: {
             gt: new Date()
           }
-        }
+        },
+        include: { subscription: true }
       })
     }
 
     if (!user) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Handle subscription plan selection (Step 3)
+    if (step === 3 && data.subscriptionPlan) {
+      // If user chose FREE or skipped, create Stripe customer + FREE subscription
+      if (data.subscriptionPlan === 'FREE' && !user.stripeCustomerId) {
+        try {
+          // Create Stripe customer
+          const stripeCustomer = await createStripeCustomer(user.email, user.name || 'User')
+          
+          // Create FREE subscription in Stripe
+          const stripeSubscription = await createFreeSubscription(stripeCustomer.id)
+          
+          // Create subscription in database
+          const subscription = await prisma.subscription.create({
+            data: {
+              stripeId: stripeSubscription.id,
+              status: stripeSubscription.status,
+              priceId: process.env.STRIPE_FREE_PRICE_ID!,
+              plan: 'FREE',
+              // @ts-ignore
+              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+              // @ts-ignore
+              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+            }
+          })
+
+          // Update user with Stripe info
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              stripeCustomerId: stripeCustomer.id,
+              subscriptionId: subscription.id,
+              plan: 'FREE'
+            }
+          })
+
+        } catch (stripeError) {
+          console.error('❌ Stripe error during FREE subscription:', stripeError)
+          // Continue with setup even if Stripe fails
+        }
+      }
+      
+      // If user chose PRO, we'll handle it in the checkout flow
+      // Just save the selection for now
     }
 
     // Find or create business for this user
@@ -57,6 +105,8 @@ export async function POST(request: NextRequest) {
           currency: data.currency || 'USD',
           language: data.language || 'en',
           whatsappNumber: data.whatsappNumber || '',
+          subscriptionPlan: data.subscriptionPlan || 'FREE',
+          subscriptionStatus: 'ACTIVE',
           onboardingStep: step,
           users: {
             create: {
@@ -80,24 +130,25 @@ export async function POST(request: NextRequest) {
       if (data.language) updateData.language = data.language
       if (data.whatsappNumber) updateData.whatsappNumber = data.whatsappNumber
       if (data.businessGoals) updateData.businessGoals = data.businessGoals
-      if (data.subscriptionPlan) updateData.subscriptionPlan = data.subscriptionPlan
+      if (data.subscriptionPlan) {
+        updateData.subscriptionPlan = data.subscriptionPlan
+        updateData.subscriptionStatus = 'ACTIVE'
+      }
       if (data.paymentMethods) updateData.paymentMethods = data.paymentMethods
       if (data.paymentInstructions !== undefined) updateData.paymentInstructions = data.paymentInstructions
 
-      // Handle delivery methods - Now properly dynamic for both delivery AND pickup
+      // Handle delivery methods
       if (data.deliveryMethods) {
         updateData.deliveryEnabled = Boolean(data.deliveryMethods.delivery)
         updateData.pickupEnabled = Boolean(data.deliveryMethods.pickup)
-        updateData.dineInEnabled = false // Disabled for v2
+        updateData.dineInEnabled = false
         
-        // Only update delivery settings if delivery is enabled
         if (data.deliveryMethods.delivery) {
           updateData.deliveryFee = data.deliveryMethods.deliveryFee || 0
           updateData.deliveryRadius = data.deliveryMethods.deliveryRadius || 10
           updateData.estimatedDeliveryTime = data.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
         }
         
-        // Only update pickup settings if pickup is enabled
         if (data.deliveryMethods.pickup) {
           updateData.estimatedPickupTime = data.deliveryMethods.estimatedPickupTime || '15-20 minutes'
         }
@@ -118,12 +169,10 @@ export async function POST(request: NextRequest) {
 
     // Handle categories
     if (data.categories && Array.isArray(data.categories)) {
-      // Delete existing categories for this business
       await prisma.category.deleteMany({
         where: { businessId: business.id }
       })
 
-      // Create new categories
       if (data.categories.length > 0) {
         await prisma.category.createMany({
           data: data.categories.map((cat: any, index: number) => ({
@@ -138,20 +187,17 @@ export async function POST(request: NextRequest) {
 
     // Handle products
     if (data.products && Array.isArray(data.products)) {
-      // Delete existing products for this business
       await prisma.product.deleteMany({
         where: { businessId: business.id }
       })
 
       if (data.products.length > 0) {
-        // Get category IDs for products
         const categories = await prisma.category.findMany({
           where: { businessId: business.id }
         })
 
         const categoryMap = new Map(categories.map(cat => [cat.name, cat.id]))
 
-        // Create new products
         for (const product of data.products) {
           const categoryId = categoryMap.get(product.category)
           if (categoryId) {
@@ -172,7 +218,6 @@ export async function POST(request: NextRequest) {
 
     // Handle team invitations
     if (data.teamMembers && Array.isArray(data.teamMembers)) {
-      // Delete existing pending invitations for this business
       await prisma.teamInvitation.deleteMany({
         where: { 
           businessId: business.id,
@@ -180,7 +225,6 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Create new invitations
       for (const member of data.teamMembers) {
         if (member.email && member.email.trim()) {
           await prisma.teamInvitation.create({
@@ -189,7 +233,7 @@ export async function POST(request: NextRequest) {
               businessId: business.id,
               role: member.role || 'STAFF',
               token: crypto.randomUUID(),
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
               status: 'PENDING'
             }
           })
@@ -209,5 +253,7 @@ export async function POST(request: NextRequest) {
       message: 'Internal server error',
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
+  } finally {
+    await prisma.$disconnect()
   }
 }
