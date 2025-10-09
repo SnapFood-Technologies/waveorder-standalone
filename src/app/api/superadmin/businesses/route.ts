@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { sendBusinessCreatedEmail } from '@/lib/email'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -207,7 +208,6 @@ export async function POST(request: NextRequest) {
     let slug = data.slug
     
     if (slug) {
-      // Validate provided slug format
       const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
       if (!slugRegex.test(slug)) {
         return NextResponse.json(
@@ -216,7 +216,6 @@ export async function POST(request: NextRequest) {
         )
       }
       
-      // Check if provided slug is unique
       const existingSlug = await prisma.business.findUnique({ where: { slug } })
       if (existingSlug) {
         return NextResponse.json(
@@ -225,7 +224,6 @@ export async function POST(request: NextRequest) {
         )
       }
     } else {
-      // Auto-generate slug from business name
       const baseSlug = data.businessName.toLowerCase()
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
@@ -240,12 +238,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create Stripe customer and FREE subscription
+    let stripeCustomerId: string | undefined
+    let subscriptionId: string | undefined
+
+    try {
+      console.log('Creating Stripe customer for:', data.ownerEmail)
+      const stripeCustomer = await createStripeCustomer(data.ownerEmail, data.ownerName)
+      stripeCustomerId = stripeCustomer.id
+      
+      console.log('Creating FREE subscription for customer:', stripeCustomerId)
+      const stripeSubscription = await createFreeSubscription(stripeCustomerId)
+      
+      // Create subscription in database
+      const subscription = await prisma.subscription.create({
+        data: {
+          stripeId: stripeSubscription.id,
+          status: stripeSubscription.status,
+          priceId: process.env.STRIPE_FREE_PRICE_ID!,
+          plan: 'FREE',
+          // @ts-ignore
+          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+          // @ts-ignore
+          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+        }
+      })
+      
+      subscriptionId = subscription.id
+      console.log('✅ Subscription created:', subscription.id)
+    } catch (stripeError) {
+      console.error('❌ Stripe error:', stripeError)
+      // Continue without Stripe - can be fixed later
+    }
+
     // Prepare user data
     let userData: any = {
       name: data.ownerName,
       email: data.ownerEmail.toLowerCase(),
       role: 'BUSINESS_OWNER',
-      emailVerified: new Date(), // Mark as verified since SuperAdmin creates it
+      emailVerified: new Date(),
+      plan: 'FREE',
+      stripeCustomerId,
+      subscriptionId,
     }
 
     if (data.sendEmail) {
@@ -254,7 +288,6 @@ export async function POST(request: NextRequest) {
       userData.passwordSetupToken = passwordSetupToken
       userData.passwordSetupExpiry = passwordSetupExpiry
     } else {
-      // Hash password for immediate login
       const hashedPassword = await bcrypt.hash(data.password, 10)
       userData.password = hashedPassword
     }
@@ -303,7 +336,8 @@ export async function POST(request: NextRequest) {
         name: data.businessName,
         slug: slug,
         businessType: data.businessType,
-        subscriptionPlan: 'FREE', // Only FREE plan for now
+        subscriptionPlan: 'FREE',
+        subscriptionStatus: 'ACTIVE',
         currency: data.currency || 'USD',
         language: data.language || 'en',
         timezone: data.timezone || 'UTC',
@@ -312,14 +346,12 @@ export async function POST(request: NextRequest) {
         storeLatitude: data.storeLatitude,
         storeLongitude: data.storeLongitude,
         
-        // Mark as completed since SuperAdmin creates it
         onboardingCompleted: true,
         setupWizardCompleted: true,
         onboardingStep: 999,
         isActive: true,
         createdByAdmin: true,
         
-        // Delivery settings
         deliveryEnabled: data.deliveryEnabled ?? true,
         pickupEnabled: data.pickupEnabled ?? false,
         deliveryFee: data.deliveryFee ?? 0,
@@ -327,12 +359,8 @@ export async function POST(request: NextRequest) {
         estimatedDeliveryTime: defaults.estimatedDeliveryTime,
         estimatedPickupTime: defaults.estimatedPickupTime,
         
-        // Payment methods - NOTE: Stripe integration for paid plans coming soon
         paymentMethods: data.paymentMethods || ['CASH'],
-        
-        // Business goals
         businessGoals: data.businessGoals || [],
-        
         orderNumberFormat: 'WO-{number}',
         
         users: {
@@ -360,11 +388,11 @@ export async function POST(request: NextRequest) {
           name: data.ownerName,
           businessName: data.businessName,
           setupUrl,
-          dashboardUrl
+          dashboardUrl,
+          subscriptionPlan: 'FREE' // Add this
         })
       } catch (emailError) {
         console.error('Failed to send email:', emailError)
-        // Don't fail the whole request if email fails
       }
     }
 
@@ -377,7 +405,9 @@ export async function POST(request: NextRequest) {
           slug: business.slug,
           owner: business.users[0]?.user,
           createdByAdmin: business.createdByAdmin,
-          setupMethod: data.sendEmail ? 'email' : 'password'
+          setupMethod: data.sendEmail ? 'email' : 'password',
+          subscriptionPlan: 'FREE',
+          stripeCustomerId,
         }
       },
       { status: 201 }
@@ -389,5 +419,7 @@ export async function POST(request: NextRequest) {
       { message: 'Internal server error' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }

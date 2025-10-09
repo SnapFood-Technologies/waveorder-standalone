@@ -23,6 +23,7 @@ interface PasswordResetParams extends BaseEmailParams {
 interface WelcomeEmailParams extends BaseEmailParams {
   businessName?: string
   dashboardUrl: string
+  subscriptionPlan?: 'FREE' | 'PRO' // Add this
 }
 
 interface TeamInvitationParams extends BaseEmailParams {
@@ -47,6 +48,7 @@ interface BusinessCreatedEmailParams {
   businessName: string
   setupUrl: string
   dashboardUrl: string
+  subscriptionPlan?: 'FREE' | 'PRO' // Add this
 }
 
 
@@ -130,7 +132,8 @@ const createBusinessCreatedEmailContent = (
   name: string, 
   businessName: string, 
   setupUrl: string,
-  dashboardUrl: string
+  dashboardUrl: string,
+  subscriptionPlan: 'FREE' | 'PRO' = 'FREE'
 ) => `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
@@ -140,11 +143,32 @@ const createBusinessCreatedEmailContent = (
     Great news! Your business "${businessName}" has been successfully created on WaveOrder. You're all set to start accepting WhatsApp orders and managing your business online.
   </p>
   
-  <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
-    <p style="color: #0c4a6e; margin: 0; font-size: 14px; font-weight: 500;">
-      Your account has been created by our team and is ready to use!
+  <!-- Subscription Plan Badge -->
+  <div style="text-align: center; margin: 24px 0;">
+    <div style="display: inline-block; background: ${subscriptionPlan === 'PRO' ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'}; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan' : '🆓 FREE Plan'}
+    </div>
+  </div>
+  
+  ${subscriptionPlan === 'PRO' ? `
+  <div style="background-color: #faf5ff; border-left: 4px solid #a855f7; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <p style="color: #6b21a8; margin: 0 0 8px; font-size: 14px; font-weight: 600;">
+      🎉 PRO Features Unlocked!
+    </p>
+    <p style="color: #7c3aed; margin: 0; font-size: 14px;">
+      You have access to unlimited products, advanced analytics, custom domains, inventory management, and priority support.
     </p>
   </div>
+  ` : `
+  <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <p style="color: #0c4a6e; margin: 0 0 8px; font-size: 14px; font-weight: 600;">
+      🆓 Your account is on the FREE plan
+    </p>
+    <p style="color: #0369a1; margin: 0; font-size: 14px;">
+      Get started with up to 30 products and 10 categories. Upgrade to PRO anytime for unlimited products, advanced features, and priority support.
+    </p>
+  </div>
+  `}
 
   <!-- Complete Setup Button -->
   <div style="text-align: center; margin: 32px 0;">
@@ -290,27 +314,30 @@ const createTeamInvitationContent = (name: string, businessName: string, inviter
 </div>
 `
 
+// Update the sendBusinessCreatedEmail function
 export async function sendBusinessCreatedEmail({
   to,
   name,
   businessName,
   setupUrl,
-  dashboardUrl
+  dashboardUrl,
+  subscriptionPlan = 'FREE'
 }: BusinessCreatedEmailParams) {
-  const content = createBusinessCreatedEmailContent(name, businessName, setupUrl, dashboardUrl)
+  const content = createBusinessCreatedEmailContent(name, businessName, setupUrl, dashboardUrl, subscriptionPlan)
   const html = createEmailTemplate(content, 'Welcome to WaveOrder')
 
   try {
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       to: [to],
-      subject: `Welcome to WaveOrder - Your business "${businessName}" is ready!`,
+      subject: `Welcome to WaveOrder ${subscriptionPlan === 'PRO' ? '👑' : ''} - Your business "${businessName}" is ready!`,
       html,
       // @ts-ignore
       reply_to: 'hello@waveorder.app',
       headers: {
         'X-Business-Name': businessName,
         'X-Setup-Email': 'true',
+        'X-Subscription-Plan': subscriptionPlan,
       },
     })
 
@@ -380,12 +407,89 @@ const createPasswordResetEmailContent = (name: string, resetUrl: string) => `
 `
 
 // Welcome email template
-const createWelcomeEmailContent = (name: string, businessName: string, dashboardUrl: string) => `
+const createWelcomeEmailContent = (
+  name: string, 
+  businessName: string, 
+  dashboardUrl: string,
+  subscriptionPlan: 'FREE' | 'PRO' = 'FREE'
+) => `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">Welcome to WaveOrder! 🎉</h2>
   <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
     Hi ${name}! Your account is now verified and ready to use. ${businessName ? `Your business "${businessName}" is set up and ready to accept WhatsApp orders.` : 'You can now start setting up your WhatsApp ordering system.'}
   </p>
+  
+  <!-- Subscription Plan Badge -->
+  <div style="text-align: center; margin: 24px 0;">
+    <div style="display: inline-block; background: ${subscriptionPlan === 'PRO' ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'}; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan Active' : '🆓 FREE Plan'}
+    </div>
+  </div>
+  
+  ${subscriptionPlan === 'PRO' ? `
+  <div style="background-color: #faf5ff; border-left: 4px solid #a855f7; padding: 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <h3 style="color: #6b21a8; margin: 0 0 12px; font-size: 16px; font-weight: 600;">
+      🎉 Welcome to PRO!
+    </h3>
+    <p style="color: #7c3aed; margin: 0 0 12px; font-size: 14px;">
+      You now have access to all PRO features:
+    </p>
+    <div style="font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #a855f7; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #7c3aed;">Unlimited products & categories</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #a855f7; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #7c3aed;">Advanced analytics & reporting</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #a855f7; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #7c3aed;">Custom domain connection</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #a855f7; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #7c3aed;">Inventory management</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: #a855f7; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #7c3aed;">Priority support</span>
+      </div>
+    </div>
+  </div>
+  ` : `
+  <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <h3 style="color: #0c4a6e; margin: 0 0 12px; font-size: 16px; font-weight: 600;">
+      🆓 You're on the FREE Plan
+    </h3>
+    <p style="color: #0369a1; margin: 0 0 12px; font-size: 14px;">
+      Get started with essential features:
+    </p>
+    <div style="font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #0369a1;">Up to 30 products</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #0369a1;">10 categories</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #0369a1;">WhatsApp order management</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: #0ea5e9; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: #0369a1;">Basic analytics</span>
+      </div>
+    </div>
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #bae6fd;">
+      <p style="color: #0c4a6e; margin: 0; font-size: 14px;">
+        💡 Want more? <a href="${dashboardUrl}/settings/billing" style="color: #0369a1; font-weight: 600; text-decoration: none;">Upgrade to PRO</a> for unlimited products, advanced features, and custom domains.
+      </p>
+    </div>
+  </div>
+  `}
   
   <!-- Get Started Button -->
   <div style="text-align: center; margin: 32px 0;">
@@ -488,16 +592,25 @@ export async function sendPasswordResetEmail({ to, name = 'there', resetUrl }: P
   }
 }
 
-export async function sendWelcomeEmail({ to, name = 'there', businessName, dashboardUrl }: WelcomeEmailParams) {
-  const content = createWelcomeEmailContent(name, businessName || '', dashboardUrl)
+export async function sendWelcomeEmail({ 
+  to, 
+  name = 'there', 
+  businessName, 
+  dashboardUrl,
+  subscriptionPlan = 'FREE'
+}: WelcomeEmailParams) {
+  const content = createWelcomeEmailContent(name, businessName || '', dashboardUrl, subscriptionPlan)
   const html = createEmailTemplate(content, 'Welcome to WaveOrder')
 
   try {
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       to: [to],
-      subject: `Welcome to WaveOrder, ${name}! Your account is verified 🎉`,
+      subject: `Welcome to WaveOrder${subscriptionPlan === 'PRO' ? ' PRO 👑' : ''}, ${name}! Your account is verified 🎉`,
       html,
+      headers: {
+        'X-Subscription-Plan': subscriptionPlan,
+      },
     })
 
     return { success: true, emailId: result.data?.id }
