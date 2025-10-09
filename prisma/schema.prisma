@@ -80,9 +80,9 @@ model Subscription {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
   stripeId String @unique
 
-  status   String
-  priceId  String
-  plan     SubscriptionPlan
+  status  String
+  priceId String
+  plan    SubscriptionPlan
 
   // Current period
   currentPeriodStart DateTime

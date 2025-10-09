@@ -43,7 +43,9 @@ export async function createUserWithSubscription({
           status: stripeSubscription.status,
           priceId: PLANS.FREE.priceId,
           plan: 'FREE',
+          // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+          // @ts-ignore
           currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
         }
       })
@@ -58,6 +60,21 @@ export async function createUserWithSubscription({
           stripeCustomerId: stripeCustomer.id,
           subscriptionId: subscription.id,
           emailVerified: provider !== 'credentials' ? new Date() : null,
+        }
+      })
+
+      // Sync all user's businesses with the new plan
+      await tx.business.updateMany({
+        where: {
+          users: {
+            some: {
+              userId: user.id
+            }
+          }
+        },
+        data: {
+          subscriptionPlan: 'FREE',
+          subscriptionStatus: 'ACTIVE'
         }
       })
 
@@ -125,7 +142,9 @@ export async function upgradeUserSubscription(
           status: stripeSubscription.status,
           priceId: priceId,
           plan: newPlan,
+          // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+           // @ts-ignore
           currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
         }
       })
@@ -135,6 +154,21 @@ export async function upgradeUserSubscription(
         where: { id: userId },
         data: {
           plan: newPlan,
+        }
+      })
+
+      // Sync all user's businesses with the new plan
+      await tx.business.updateMany({
+        where: {
+          users: {
+            some: {
+              userId: userId
+            }
+          }
+        },
+        data: {
+          subscriptionPlan: newPlan,
+          subscriptionStatus: 'ACTIVE'
         }
       })
 
@@ -168,6 +202,21 @@ export async function cancelUserSubscription(userId: string) {
       data: {
         cancelAtPeriodEnd: true,
         canceledAt: new Date()
+      }
+    })
+
+    // Sync all user's businesses to FREE plan (will take effect at period end)
+    await prisma.business.updateMany({
+      where: {
+        users: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      data: {
+        subscriptionPlan: 'FREE',
+        subscriptionStatus: 'CANCELLED'
       }
     })
 
@@ -224,7 +273,9 @@ export async function syncSubscriptionFromStripe(stripeSubscriptionId: string) {
         data: {
           status: stripeSubscription.status,
           plan,
+           // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+           // @ts-ignore
           currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
           cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
         }
@@ -234,6 +285,22 @@ export async function syncSubscriptionFromStripe(stripeSubscriptionId: string) {
       await tx.user.updateMany({
         where: { subscriptionId: subscription.id },
         data: { plan }
+      })
+
+      // Sync all businesses owned by these users
+      const users = subscription.users.map(u => u.id)
+      await tx.business.updateMany({
+        where: {
+          users: {
+            some: {
+              userId: { in: users }
+            }
+          }
+        },
+        data: {
+          subscriptionPlan: plan,
+          subscriptionStatus: stripeSubscription.status === 'active' ? 'ACTIVE' : 'INACTIVE'
+        }
       })
     })
 

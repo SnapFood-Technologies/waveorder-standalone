@@ -133,8 +133,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       
       if (business.subscriptionPlan === 'PRO') {
         priority = 0.8 // Pro businesses get higher priority
-      } else if (business.subscriptionPlan === 'BASIC') {
-        priority = 0.7 // Basic plan businesses
       }
 
       // Determine change frequency based on activity
