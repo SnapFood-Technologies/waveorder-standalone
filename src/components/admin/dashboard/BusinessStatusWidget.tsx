@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { Clock, MapPin, Phone, Globe, AlertCircle, CheckCircle, AlertTriangle, Settings, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface BusinessStatusWidgetProps {
   businessId: string
@@ -37,6 +38,8 @@ interface SetupItem {
 }
 
 export function BusinessStatusWidget({ businessId }: BusinessStatusWidgetProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [status, setStatus] = useState<BusinessStatus>({
     isOpen: false,
     nextChange: '',
@@ -81,35 +84,35 @@ export function BusinessStatusWidget({ businessId }: BusinessStatusWidgetProps) 
         label: 'WhatsApp Number',
         completed: !!business.whatsappNumber,
         required: true,
-        href: `/admin/stores/${businessId}/settings/configurations`
+        href: addParams(`/admin/stores/${businessId}/settings/configurations`)
       },
       {
         key: 'hours',
         label: 'Business Hours',
         completed: !!business.businessHours,
         required: true,
-        href: `/admin/stores/${businessId}/settings/configurations`
+        href: addParams(`/admin/stores/${businessId}/settings/configurations`)
       },
       {
         key: 'contact',
         label: 'Contact Info',
         completed: !!(business.phone || business.email),
         required: false,
-        href: `/admin/stores/${businessId}/settings/business`
+        href: addParams(`/admin/stores/${businessId}/settings/business`)
       },
       {
         key: 'address',
         label: 'Business Address',
         completed: !!business.address,
         required: false,
-        href: `/admin/stores/${businessId}/settings/business`
+        href: addParams(`/admin/stores/${businessId}/settings/business`)
       },
       {
         key: 'appearance',
         label: 'Store Appearance',
-        completed: false, // You can add logic here based on logo/branding setup
+        completed: false,
         required: false,
-        href: `/admin/stores/${businessId}/appearance`
+        href: addParams(`/admin/stores/${businessId}/appearance`)
       }
     ]
   }
@@ -244,7 +247,7 @@ export function BusinessStatusWidget({ businessId }: BusinessStatusWidgetProps) 
             <h4 className="font-medium text-gray-900 mb-3">Quick Actions</h4>
             <div className="space-y-2">
               <Link
-                href={`/admin/stores/${businessId}/settings/configurations`}
+                href={addParams(`/admin/stores/${businessId}/settings/configurations`)}
                 className="block text-center px-3 py-2 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors text-sm font-medium border border-teal-200"
               >
                 Manage Hours
@@ -252,7 +255,7 @@ export function BusinessStatusWidget({ businessId }: BusinessStatusWidgetProps) 
               
               {!status.isTemporarilyClosed ? (
                 <Link
-                  href={`/admin/stores/${businessId}/settings/business`}
+                  href={addParams(`/admin/stores/${businessId}/settings/business`)}
                   className="block text-center px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                 >
                   Close Temporarily

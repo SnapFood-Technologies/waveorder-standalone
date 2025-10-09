@@ -4,7 +4,7 @@ import { hash } from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create SuperAdmin user
+  // Create SuperAdmin user // password hidden and once generated
   const hashedPassword = await hash('********', 12)
   
   await prisma.user.create({

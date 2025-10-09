@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Search, Plus, Users, Phone, Mail, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface CustomersListProps {
   businessId: string
@@ -28,6 +29,8 @@ interface Pagination {
 }
 
 export default function CustomersList({ businessId }: CustomersListProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -133,7 +136,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
         </div>
         <div className="w-full sm:w-auto">
           <Link
-            href={`/admin/stores/${businessId}/customers/create`}
+            href={addParams(`/admin/stores/${businessId}/customers/create`)}
             className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -195,7 +198,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
             </p>
             {!debouncedSearchQuery && (
               <Link
-                href={`/admin/stores/${businessId}/customers/create`}
+                href={addParams(`/admin/stores/${businessId}/customers/create`)}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -307,7 +310,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                         
                         <td className="px-6 py-4 text-right">
                           <Link
-                            href={`/admin/stores/${businessId}/customers/${customer.id}`}
+                            href={addParams(`/admin/stores/${businessId}/customers/${customer.id}`)}
                             className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <Eye className="w-3 h-3 mr-1" />

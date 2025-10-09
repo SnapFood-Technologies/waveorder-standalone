@@ -143,7 +143,7 @@ function getPriceRange(categories: any[], currency: string): string {
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const { lang } = await searchParams
-  const isAlbanian = lang === 'al'
+  const isAlbanian = lang === 'al' || lang === 'sq'
   const storeData = await getStoreData(slug)
   
   if (!storeData) {
@@ -227,7 +227,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 export default async function StorePage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const { lang } = await searchParams
-  const isAlbanian = lang === 'al'
+  const isAlbanian = lang === 'al' || lang === 'sq'
   const storeData = await getStoreData(slug)
 
   if (!storeData) {

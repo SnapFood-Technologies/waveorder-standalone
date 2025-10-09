@@ -1,9 +1,7 @@
 // app/api/businesses/[businessId]/subscription/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -18,13 +16,22 @@ export async function GET(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Get business with user relationship
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: {
         id: true,
         name: true,
         subscriptionPlan: true,
-        subscriptionStatus: true
+        subscriptionStatus: true,
+        users: {
+          where: {
+            userId: access.session.user.id
+          },
+          select: {
+            role: true
+          }
+        }
       }
     })
 
@@ -35,24 +42,13 @@ export async function GET(
       )
     }
 
-    // Get user role
-    const businessUser = await prisma.businessUser.findFirst({
-      where: {
-        userId: access.session.user.id,
-        businessId: businessId
-      },
-      select: {
-        role: true
-      }
-    })
-
     return NextResponse.json({
       businessId: business.id,
       businessName: business.name,
       subscriptionPlan: business.subscriptionPlan,
       subscriptionStatus: business.subscriptionStatus,
       hasProAccess: business.subscriptionPlan === 'PRO' && business.subscriptionStatus === 'ACTIVE',
-      userRole: businessUser?.role || 'OWNER'
+      userRole: business.users[0]?.role || 'OWNER'
     })
 
   } catch (error) {
@@ -61,5 +57,7 @@ export async function GET(
       { message: 'Internal server error' },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }

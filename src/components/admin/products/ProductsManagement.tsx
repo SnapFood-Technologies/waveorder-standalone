@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
-
+import { useImpersonation } from '@/lib/impersonation'
 
 interface Product {
   id: string
@@ -92,6 +92,8 @@ interface Pagination {
 }
 
 export default function ProductsManagement({ businessId }: ProductsPageProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [business, setBusiness] = useState<Business>({ currency: 'USD' })
@@ -350,7 +352,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
             </button>
             
             <Link
-                href={`/admin/stores/${businessId}/products/import`}
+                href={addParams(`/admin/stores/${businessId}/products/import`)}
                 className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
                 <Upload className="w-4 h-4 mr-2" />
@@ -359,7 +361,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
             </div>
             
             <Link
-            href={`/admin/stores/${businessId}/products/new`}
+            href={addParams(`/admin/stores/${businessId}/products/new`)}
             className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
             <Plus className="w-4 h-4 mr-2" />
@@ -524,14 +526,14 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
           {pagination.total === 0 && (
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
-                href={`/admin/stores/${businessId}/products/new`}
+                href={addParams(`/admin/stores/${businessId}/products/new`)}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Product
               </Link>
               <Link
-                href={`/admin/stores/${businessId}/products/import`}
+                href={addParams(`/admin/stores/${businessId}/products/import`)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <Upload className="w-4 h-4 mr-2" />
@@ -619,7 +621,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                                {isPro && (
                                   <>
                                     <Link
-                                      href={`/admin/stores/${businessId}/products/${product.id}/inventory/activities`}
+                                      href={addParams(`/admin/stores/${businessId}/products/${product.id}/inventory/activities`)}
                                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                       onClick={() => setOpenDropdown(null)}
                                     >
@@ -627,7 +629,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                                       View Activities
                                     </Link>
                                     <Link
-                                      href={`/admin/stores/${businessId}/inventory/adjustments?productId=${product.id}`}
+                                      href={addParams(`/admin/stores/${businessId}/inventory/adjustments?productId=${product.id}`)}
                                       className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                       onClick={() => setOpenDropdown(null)}
                                     >
@@ -636,7 +638,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                                     </Link>
                                   </>
                                 )}
-                                                      <button
+                              <button
                                 onClick={() => {
                                   setDeleteModalProduct(product)
                                   setOpenDropdown(null)
@@ -702,7 +704,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <Link
-                        href={`/admin/stores/${businessId}/products/${product.id}`}
+                        href={addParams(`/admin/stores/${businessId}/products/${product.id}`)}
                         className="flex-1 px-3 py-2 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 transition-colors text-center"
                       >
                         <Edit className="w-3 h-3 inline mr-1" />

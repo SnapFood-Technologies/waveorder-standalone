@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Phone, Mail } from 'lucide-react'
 import Link from 'next/link'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface RecentCustomersWidgetProps {
   businessId: string
@@ -23,6 +24,8 @@ interface Customer {
 }
 
 export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps) {
+  const { addParams } = useImpersonation(businessId)
+  
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -66,6 +69,10 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
     return styles[tier as keyof typeof styles] || styles.REGULAR
   }
 
+  const handleCustomerClick = (customerId: string) => {
+    window.location.href = addParams(`/admin/stores/${businessId}/customers/${customerId}`)
+  }
+
   if (loading) {
     return (
       <div className="bg-white p-6 rounded-lg border border-gray-200 animate-pulse">
@@ -87,14 +94,14 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
           {customers.length > 0 && (
             <div className="flex items-center space-x-2">
               <Link
-                href={`/admin/stores/${businessId}/customers/create`}
+                href={addParams(`/admin/stores/${businessId}/customers/create`)}
                 className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors"
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Add
               </Link>
               <Link
-                href={`/admin/stores/${businessId}/customers`}
+                href={addParams(`/admin/stores/${businessId}/customers`)}
                 className="inline-flex cursor-pointer items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
               >
                 View All
@@ -112,7 +119,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
             When customers place orders, they'll appear here. You can also add customers manually to build your customer base.
           </p>
           <Link
-            href={`/admin/stores/${businessId}/customers/create`}
+            href={addParams(`/admin/stores/${businessId}/customers/create`)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -136,7 +143,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
                 <tr 
                   key={customer.id} 
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => window.location.href = `/admin/stores/${businessId}/customers/${customer.id}`}
+                  onClick={() => handleCustomerClick(customer.id)}
                 >
                   <td className="py-3 px-3">
                     <div className="flex items-center space-x-3">
