@@ -1,7 +1,8 @@
 // src/app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe, mapStripePlanToDb } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, PLANS } from '@/lib/stripe'
+import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
           break
 
         default:
-       
+          console.log(`ℹ️ Unhandled event type: ${event.type}`)
       }
 
       // Mark as processed
@@ -124,6 +125,8 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       throw new Error(`User not found for Stripe customer: ${customerId}`)
     }
 
+    const oldPlan = user.plan || 'FREE'
+
     await prisma.$transaction(async (tx) => {
       // Create subscription record
       const subscription = await tx.subscription.create({
@@ -134,7 +137,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
           plan: plan,
           // @ts-ignore
           currentPeriodStart: new Date(sub.current_period_start * 1000),
-            // @ts-ignore
+          // @ts-ignore
           currentPeriodEnd: new Date(sub.current_period_end * 1000),
         }
       })
@@ -164,6 +167,27 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       })
     })
 
+    // 📧 SEND UPGRADE EMAIL
+    if (plan === 'PRO' && oldPlan !== 'PRO') {
+      try {
+        const isAnnual = priceId === PLANS.PRO.annualPriceId
+        await sendSubscriptionChangeEmail({
+          to: user.email,
+          name: user.name || 'there',
+          changeType: 'upgraded',
+          oldPlan: oldPlan as 'FREE' | 'PRO',
+          newPlan: 'PRO',
+          billingInterval: isAnnual ? 'annual' : 'monthly',
+          amount: isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price,
+          // @ts-ignore
+          nextBillingDate: new Date(sub.current_period_end * 1000)
+        })
+        console.log('✅ Sent upgrade email to:', user.email)
+      } catch (emailError) {
+        console.error('❌ Failed to send upgrade email:', emailError)
+        // Don't fail the webhook if email fails
+      }
+    }
 
   } catch (error) {
     console.error('❌ Error handling subscription created:', error)
@@ -185,6 +209,9 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       console.error(`❌ Subscription not found in database: ${sub.id}`)
       return
     }
+
+    const oldPlan = subscription.plan
+    const user = subscription.users[0] // Get first user for email
 
     await prisma.$transaction(async (tx) => {
       // Update subscription
@@ -225,6 +252,29 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       })
     })
 
+    // 📧 SEND EMAIL IF PLAN CHANGED
+    if (user && oldPlan !== plan) {
+      try {
+        const isAnnual = priceId === PLANS.PRO.annualPriceId
+        const changeType = plan === 'PRO' ? 'upgraded' : 'downgraded'
+        
+        await sendSubscriptionChangeEmail({
+          to: user.email,
+          name: user.name || 'there',
+          changeType: changeType,
+          oldPlan: oldPlan as 'FREE' | 'PRO',
+          newPlan: plan as 'FREE' | 'PRO',
+          billingInterval: isAnnual ? 'annual' : 'monthly',
+          amount: plan === 'PRO' ? (isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price) : undefined,
+          // @ts-ignore
+          nextBillingDate: new Date(sub.current_period_end * 1000)
+        })
+        console.log(`✅ Sent ${changeType} email to:`, user.email)
+      } catch (emailError) {
+        console.error('❌ Failed to send subscription update email:', emailError)
+      }
+    }
+
   } catch (error) {
     console.error('❌ Error handling subscription updated:', error)
     throw error
@@ -243,6 +293,8 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
       return
     }
 
+    const oldPlan = subscription.plan
+    const user = subscription.users[0] // Get first user for email
 
     await prisma.$transaction(async (tx) => {
       // Update subscription status
@@ -277,6 +329,24 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
       })
     })
 
+    // 📧 SEND CANCELLATION EMAIL
+    if (user && oldPlan === 'PRO') {
+      try {
+        await sendSubscriptionChangeEmail({
+          to: user.email,
+          name: user.name || 'there',
+          changeType: 'canceled',
+          oldPlan: 'PRO',
+          newPlan: 'FREE',
+          // @ts-ignore
+          nextBillingDate: new Date(sub.current_period_end * 1000)
+        })
+        console.log('✅ Sent cancellation email to:', user.email)
+      } catch (emailError) {
+        console.error('❌ Failed to send cancellation email:', emailError)
+      }
+    }
+
   } catch (error) {
     console.error('❌ Error handling subscription deleted:', error)
     throw error
@@ -287,8 +357,40 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   try {
     // @ts-ignore
     if (invoice.subscription) {
-        // @ts-ignore
+      // @ts-ignore
       const sub = await stripe.subscriptions.retrieve(invoice.subscription as string)
+      
+      // Check if this is a renewal (not first payment)
+      if (invoice.billing_reason === 'subscription_cycle') {
+        const customerId = sub.customer as string
+        const user = await prisma.user.findFirst({
+          where: { stripeCustomerId: customerId }
+        })
+
+        // 📧 SEND RENEWAL EMAIL
+        if (user && user.plan === 'PRO') {
+          try {
+            const priceId = sub.items.data[0].price.id
+            const isAnnual = priceId === PLANS.PRO.annualPriceId
+            
+            await sendSubscriptionChangeEmail({
+              to: user.email,
+              name: user.name || 'there',
+              changeType: 'renewed',
+              oldPlan: 'PRO',
+              newPlan: 'PRO',
+              billingInterval: isAnnual ? 'annual' : 'monthly',
+              amount: isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price,
+              // @ts-ignore
+              nextBillingDate: new Date(sub.current_period_end * 1000)
+            })
+            console.log('✅ Sent renewal email to:', user.email)
+          } catch (emailError) {
+            console.error('❌ Failed to send renewal email:', emailError)
+          }
+        }
+      }
+      
       await handleSubscriptionUpdated(sub)
     }
   } catch (error) {
@@ -304,8 +406,28 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       where: { stripeCustomerId: customerId }
     })
 
+    // 📧 SEND PAYMENT FAILED EMAIL
     if (user) {
-      // TODO: Send payment failed email notification
+      try {
+        // Create portal session for updating payment method
+        const portalSession = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${process.env.NEXTAUTH_URL}/admin/stores`,
+        })
+
+        await sendPaymentFailedEmail({
+          to: user.email,
+          name: user.name || 'there',
+          amount: invoice.amount_due / 100, // Convert cents to dollars
+          nextRetryDate: invoice.next_payment_attempt 
+            ? new Date(invoice.next_payment_attempt * 1000) 
+            : undefined,
+          updatePaymentUrl: portalSession.url
+        })
+        console.log('✅ Sent payment failed email to:', user.email)
+      } catch (emailError) {
+        console.error('❌ Failed to send payment failed email:', emailError)
+      }
     }
   } catch (error) {
     console.error('❌ Error handling payment failed:', error)
