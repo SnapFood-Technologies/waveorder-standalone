@@ -140,18 +140,19 @@ function getPriceRange(categories: any[], currency: string): string {
   return '$$$$'
 }
 
-export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const { lang } = await searchParams
-  const isAlbanian = lang === 'al' || lang === 'sq'
   const storeData = await getStoreData(slug)
   
   if (!storeData) {
     return {
-      title: isAlbanian ? 'Dyqani Nuk u Gjet' : 'Store Not Found',
-      description: isAlbanian ? 'Dyqani i kërkuar nuk mund të gjindej.' : 'The requested store could not be found.'
+      title: 'Store Not Found',
+      description: 'The requested store could not be found.'
     }
   }
+
+  // FIXED: Use store's language setting from database
+  const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
 
   // Check if store should be indexed
   const shouldIndex = storeData.isIndexable && !storeData.noIndex && !storeData.isTemporarilyClosed
@@ -194,7 +195,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       images,
       type: 'website',
       siteName: storeData.name,
-      locale: isAlbanian ? 'sq_AL' : (storeData.language || 'en_US'),
+      locale: isAlbanian ? 'sq_AL' : 'en_US',
     },
     twitter: {
       card: 'summary_large_image',
@@ -203,11 +204,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       images: primaryImage ? [primaryImage] : [],
     },
     alternates: {
-      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}${isAlbanian ? '?lang=al' : ''}`,
-      languages: {
-        'en': `https://waveorder.app/${slug}`,
-        'sq': `https://waveorder.app/${slug}?lang=al`
-      }
+      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}`,
     },
     other: {
       'business:contact_data:street_address': storeData.address || '',
@@ -224,16 +221,16 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   }
 }
 
-export default async function StorePage({ params, searchParams }: PageProps) {
+export default async function StorePage({ params }: PageProps) {
   const { slug } = await params
-  const { lang } = await searchParams
-  // just to be extra safe, we are doing 2 comparisons
-  const isAlbanian = lang === 'al' || lang === 'sq'
   const storeData = await getStoreData(slug)
 
   if (!storeData) {
     notFound()
   }
+
+  // FIXED: Use store's language setting from database
+  const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
 
   const priceRange = getPriceRange(storeData.categories, storeData.currency)
   const primaryImage = storeData.ogImage || storeData.coverImage || storeData.logo
@@ -280,7 +277,7 @@ export default async function StorePage({ params, searchParams }: PageProps) {
             "description": businessDescription,
             "image": primaryImage,
             "logo": storeData.logo,
-            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}${isAlbanian ? '?lang=al' : ''}`,
+            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}`,
             "telephone": storeData.phone,
             "email": storeData.email,
             "priceRange": priceRange,
@@ -303,9 +300,9 @@ export default async function StorePage({ params, searchParams }: PageProps) {
               "@type": "ContactPoint",
               "telephone": storeData.whatsappNumber,
               "contactType": "customer service",
-              "availableLanguage": isAlbanian ? "sq" : (storeData.language || "en")
+              "availableLanguage": isAlbanian ? "sq" : "en"
             },
-            "inLanguage": isAlbanian ? "sq" : (storeData.language || "en"),
+            "inLanguage": isAlbanian ? "sq" : "en",
             "sameAs": storeData.website ? [storeData.website] : undefined,
             ...(storeData.schemaData || {})
           })
@@ -313,7 +310,7 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       />
       
       {/* Language Alternates */}
-      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang="en" />
+      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang={isAlbanian ? "sq" : "en"} />
       <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang="x-default" />
       
       {/* Canonical URL */}
