@@ -3109,7 +3109,7 @@ function ProductModal({
             {/* Image Section */}
             {product.images.length > 0 && (
               <div className="relative">
-                <div className="w-full max-w-sm mx-auto aspect-square">
+                <div className="w-full max-w-sm mx-auto">
                   <img 
                     src={product.images[0]} 
                     alt={product.name}
