@@ -173,6 +173,7 @@ export async function GET(
       name: business.name,
       slug: business.slug,
       description: business.description,
+      descriptionAl: business.descriptionAl, // ALBANIAN
       logo: business.logo,
       coverImage: business.coverImage,
       phone: business.phone,
@@ -224,7 +225,7 @@ export async function GET(
       storeLatitude: business.storeLatitude,
       storeLongitude: business.storeLongitude,
       
-      // SEO
+      // SEO (English)
       seoTitle: business.seoTitle,
       seoDescription: business.seoDescription,
       seoKeywords: business.seoKeywords,
@@ -234,6 +235,11 @@ export async function GET(
       schemaData: business.schemaData,
       favicon: business.favicon,
       noIndex: business.noIndex,
+      
+      // SEO (Albanian) - NEW
+      seoTitleAl: business.seoTitleAl,
+      seoDescriptionAl: business.seoDescriptionAl,
+      seoKeywordsAl: business.seoKeywordsAl,
       
       // Business Hours
       businessHours: business.businessHours,

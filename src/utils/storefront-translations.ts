@@ -360,7 +360,7 @@ max: "Max",
   
   const albanianTranslations: StorefrontTranslations = {
     // Navigation & Search
-    search: "Kërko në meny...",
+    search: "Kërko në menu...",
     allCategories: "Të gjitha kategoritë",
     all: "Të gjitha",
     
