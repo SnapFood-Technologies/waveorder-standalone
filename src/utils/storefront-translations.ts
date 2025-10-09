@@ -32,6 +32,11 @@ inCartLabel: string
     pickup: string
     dineIn: string
     
+    noResultsFor: string
+    result: string
+    results: string
+    for: string
+
     // Form Fields
     name: string
     whatsappNumber: string
@@ -320,6 +325,12 @@ onlyStockAvailable: "Only {stock} available",
     supplyIssuesMessage: "We are temporarily closed due to supply issues.",
     temporaryClosureMessage: "We are temporarily closed and will reopen soon.",
 
+    noResultsFor: 'No results for',
+    result: 'result',
+    results: 'results',
+    for: 'for',
+
+
      // Delivery Zone Errors
   outsideDeliveryArea: "Address is outside delivery area",
   outsideDeliveryAreaDesc: "Unfortunately, we don't deliver to this address. Maximum delivery distance is",
@@ -394,8 +405,8 @@ max: "Max",
     yourFullName: "Emri juaj i plotë",
     emailPlaceholder: "email.juaj@shembull.com",
     linkCopied: "Linku u kopjua në clipboard!",
-    moreSharingOptions: "Më shumë opsione shpërndarjeje",
-    
+    moreSharingOptions: "Më shumë opsione",
+
     onlyMoreCanBeAdded: "Vetëm {count} më shumë mund të shtohen në shportë",
 stockLabel: "Stoku",
 inCartLabel: "Në shportë",
@@ -475,6 +486,11 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     quantity: "Sasia",
     addToCart: "Shto në Shportë",
     
+    noResultsFor: 'Nuk ka rezultate për',
+    result: 'rezultat',
+    results: 'rezultate',
+    for: 'për',
+
     // Placeholders
     streetAddress: "Adresa e rrugës",
     apartment: "Apartamenti, suitë, etj.",
