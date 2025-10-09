@@ -289,7 +289,7 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
 
     
     // Product Modal
-    chooseSize: "Choose Size",
+    chooseSize: "Choose Option",
     addExtras: "Add Extras",
     required: "(Required)",
     quantity: "Quantity",
@@ -480,7 +480,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
 
     
     // Product Modal
-    chooseSize: "Zgjidh Madhësinë",
+    chooseSize: "Zgjidh Opsionin",
     addExtras: "Shto Ekstra",
     required: "(I detyrueshëm)",
     quantity: "Sasia",
