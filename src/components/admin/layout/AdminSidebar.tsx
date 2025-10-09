@@ -197,6 +197,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'FREE'
         },
         { 
+          name: 'Billing', 
+          href: `${baseUrl}/settings/billing`, 
+          icon: CreditCard, 
+          requiredPlan: 'FREE'
+        },
+        { 
           name: 'Order Notifications', 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 

@@ -210,7 +210,15 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                   onClick={() => setIsDropdownOpen(false)}
                 >
                   <Settings className="w-4 h-4 mr-3" />
-                  Settings
+                  Business Settings
+                </Link>
+                <Link
+                  href={addImpersonationParams(`/admin/stores/${businessId}/settings/billing`)}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsDropdownOpen(false)}
+                >
+                  <CreditCard className="w-4 h-4 mr-3" />
+                  Billing & Plans
                 </Link>
                 <Link
                   href={addImpersonationParams(`/admin/stores/${businessId}/settings/configurations`)}
