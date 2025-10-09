@@ -227,6 +227,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 export default async function StorePage({ params, searchParams }: PageProps) {
   const { slug } = await params
   const { lang } = await searchParams
+  // just to be extra safe, we are doing 2 comparisons
   const isAlbanian = lang === 'al' || lang === 'sq'
   const storeData = await getStoreData(slug)
 
