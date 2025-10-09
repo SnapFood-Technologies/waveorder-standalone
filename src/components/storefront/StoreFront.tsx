@@ -2228,70 +2228,67 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-1 mb-6 overflow-x-auto">
+          <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
             <button
-                onClick={() => {
+              onClick={() => {
                 setSelectedCategory('all')
-                // Keep search term when switching to "All"
-                }}
-                disabled={false}
-                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+              }}
+              disabled={false}
+              className={`px-4 py-2.5 font-medium transition-all flex-shrink-0 border-b-2 relative text-sm ${
                 selectedCategory === 'all'
-                    ? 'border-b-2'
-                    : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                }`}
-                style={{ 
+                  ? 'border-b-2'
+                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+              }`}
+              style={{ 
                 color: selectedCategory === 'all' ? primaryColor : undefined,
                 borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
-                }}
+              }}
             >
-                {translations.all || 'All'}
-                {searchTerm && selectedCategory === 'all' && (
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {getFilteredProducts().length}
+              {translations.all || 'All'}
+              {searchTerm && selectedCategory === 'all' && (
+                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  {getFilteredProducts().length}
                 </span>
-                )}
+              )}
             </button>
             {storeData.categories.map(category => {
-                // Count products in this category that match search
-                const categoryProductCount = searchTerm 
+              const categoryProductCount = searchTerm 
                 ? category.products.filter(product => {
                     const searchTermLower = searchTerm.toLowerCase().trim()
                     return product.name.toLowerCase().includes(searchTermLower) ||
-                            product.description?.toLowerCase().includes(searchTermLower) ||
-                            category.name.toLowerCase().includes(searchTermLower)
-                    }).length
+                          product.description?.toLowerCase().includes(searchTermLower) ||
+                          category.name.toLowerCase().includes(searchTermLower)
+                  }).length
                 : category.products.length
-                
-                return (
+              
+              return (
                 <button
-                    key={category.id}
-                    onClick={() => {
+                  key={category.id}
+                  onClick={() => {
                     setSelectedCategory(category.id)
-                    // Clear search when switching to specific category
                     if (searchTerm) {
-                        setSearchTerm('')
+                      setSearchTerm('')
                     }
-                    }}
-                    disabled={false}
-                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                  }}
+                  disabled={false}
+                  className={`px-4 py-2.5 font-medium transition-all flex-shrink-0 border-b-2 relative text-sm ${
                     selectedCategory === category.id
-                        ? 'border-b-2'
-                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                    }`}
-                    style={{ 
+                      ? 'border-b-2'
+                      : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                  }`}
+                  style={{ 
                     color: selectedCategory === category.id ? primaryColor : undefined,
                     borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
-                    }}
+                  }}
                 >
-                    {category.name}
-                    {searchTerm && selectedCategory !== 'all' && (
-                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {categoryProductCount}
+                  {category.name}
+                  {searchTerm && selectedCategory !== 'all' && (
+                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      {categoryProductCount}
                     </span>
-                    )}
+                  )}
                 </button>
-                )
+              )
             })}
           </div>
 
