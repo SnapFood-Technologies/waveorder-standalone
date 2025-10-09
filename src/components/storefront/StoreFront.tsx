@@ -2231,8 +2231,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
       <p className="text-sm text-gray-600">
         {getFilteredProducts().length === 0 
-          ? `No results for "${searchTerm}"`
-          : `${getFilteredProducts().length} result${getFilteredProducts().length !== 1 ? 's' : ''} for "${searchTerm}"`
+          ? `${translations.noResultsFor || 'No results for'} "${searchTerm}"`
+          : `${getFilteredProducts().length} ${getFilteredProducts().length !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${searchTerm}"`
         }
       </p>
     </div>
