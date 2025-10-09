@@ -45,11 +45,17 @@ model User {
   verificationToken  String?
   verificationExpiry DateTime?
 
-  setupToken  String? // Add this field
-  setupExpiry DateTime? // Add this field
+  setupToken  String?
+  setupExpiry DateTime?
 
   passwordSetupToken  String?
   passwordSetupExpiry DateTime?
+
+  // Subscription and Stripe fields
+  plan             SubscriptionPlan @default(FREE)
+  stripeCustomerId String?
+  subscriptionId   String?          @db.ObjectId
+  subscription     Subscription?    @relation(fields: [subscriptionId], references: [id])
 
   role       UserRole       @default(BUSINESS_OWNER)
   accounts   Account[]
@@ -67,6 +73,59 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verificationtokens")
+}
+
+// NEW: Subscription model for Stripe integration
+model Subscription {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  stripeId String @unique
+
+  status  String
+  priceId String
+  plan    SubscriptionPlan
+
+  // Current period
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+
+  // Cancellation
+  cancelAtPeriodEnd Boolean   @default(false)
+  canceledAt        DateTime?
+
+  // Relations
+  users User[]
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+// NEW: Webhook logging model
+model WebhookLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  eventType String
+  stripeId  String?
+  data      Json
+  processed Boolean  @default(false)
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@map("webhook_logs")
+}
+
+// NEW: Email verification model
+model EmailVerification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  token     String   @unique
+  expires   DateTime
+  type      String // 'verification', 'password_reset'
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("email_verifications")
 }
 
 model Business {
@@ -96,8 +155,8 @@ model Business {
   whatsappButtonColor String?
   mobileCartStyle     String  @default("bar")
 
-  cartBadgeColor     String @default("#EF4444") // Red color for cart badge numbers
-  featuredBadgeColor String @default("#EF4444") // Red color for "Popular" badges
+  cartBadgeColor     String @default("#EF4444")
+  featuredBadgeColor String @default("#EF4444")
 
   deliveryZones DeliveryZone[]
 
@@ -113,8 +172,8 @@ model Business {
   paymentMethods      PaymentMethod[]
   paymentInstructions String?
 
-  // Business hours - JSON structure for each day of week
-  businessHours Json? // {"monday": {"open": "09:00", "close": "21:00", "closed": false}, ...}
+  // Business hours
+  businessHours Json?
 
   // WhatsApp settings
   messageTemplate  String?
@@ -129,43 +188,43 @@ model Business {
   deliveryEnabled       Boolean        @default(true)
   pickupEnabled         Boolean        @default(false)
   dineInEnabled         Boolean        @default(false)
-  estimatedDeliveryTime String? // "30-45 minutes"
-  estimatedPickupTime   String? // "15-20 minutes"
+  estimatedDeliveryTime String?
+  estimatedPickupTime   String?
   greetingMessage       String?
   orderNumberFormat     String         @default("WO-{number}")
 
   // Store Closure Fields
   isTemporarilyClosed Boolean   @default(false)
-  closureReason       String? // Predefined reasons or custom
-  closureMessage      String? // Custom message for customers
-  closureStartDate    DateTime? // When closure started
-  closureEndDate      DateTime? // Expected reopening (optional)
+  closureReason       String?
+  closureMessage      String?
+  closureStartDate    DateTime?
+  closureEndDate      DateTime?
 
   // SEO Configuration (English/Default)
-  seoTitle       String? // Custom page title, falls back to displayName or username
-  seoDescription String? // Meta description for search engines
-  seoKeywords    String? // Comma-separated keywords
-  favicon        String? // Custom favicon URL (PRO feature with custom domain)
-  ogImage        String? // Open Graph image for social sharing
-  canonicalUrl   String? // Canonical URL if using custom domain
-  noIndex        Boolean @default(false) // Override isIndexable for specific SEO control
-  noFollow       Boolean @default(false) // Add nofollow to external links
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  favicon        String?
+  ogImage        String?
+  canonicalUrl   String?
+  noIndex        Boolean @default(false)
+  noFollow       Boolean @default(false)
 
   // Structured Data / Schema.org
-  schemaType String? @default("Person") // Person, Organization, LocalBusiness, etc.
-  schemaData Json? // Additional schema.org structured data
+  schemaType String? @default("Person")
+  schemaData Json?
 
   // Albanian SEO Configuration
-  seoTitleAl       String? // Albanian version of SEO title
-  seoDescriptionAl String? // Albanian version of SEO description
-  seoKeywordsAl    String? // Albanian version of SEO keywords
-  descriptionAl    String? // Albanian version of business description (for SEO meta description)
+  seoTitleAl       String?
+  seoDescriptionAl String?
+  seoKeywordsAl    String?
+  descriptionAl    String?
 
   isIndexable Boolean @default(false)
 
   // Order Notification Settings
   orderNotificationsEnabled   Boolean   @default(false)
-  orderNotificationEmail      String? // Can be different from business email
+  orderNotificationEmail      String?
   orderNotificationLastUpdate DateTime?
 
   users              BusinessUser[]
@@ -197,7 +256,7 @@ model OrderNotification {
   total        Float
   notifiedAt   DateTime    @default(now())
   emailSent    Boolean     @default(false)
-  emailError   String? // Store email delivery errors
+  emailError   String?
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -252,9 +311,8 @@ model Product {
   isActive      Boolean  @default(true)
   featured      Boolean  @default(false)
 
-  // Enhanced inventory fields
   trackInventory Boolean @default(true)
-  lowStockAlert  Int? // Alert when stock goes below this number
+  lowStockAlert  Int?
 
   categoryId String @db.ObjectId
   businessId String @db.ObjectId
@@ -268,7 +326,6 @@ model Product {
   modifiers  ProductModifier[]
   orderItems OrderItem[]
 
-  // SEO
   metaTitle       String?
   metaDescription String?
 
@@ -287,7 +344,6 @@ model ProductVariant {
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
 
-  // Inventory activities for variants
   inventoryActivities InventoryActivity[]
 
   createdAt DateTime @default(now())
@@ -301,13 +357,12 @@ model InventoryActivity {
   businessId String  @db.ObjectId
 
   type     InventoryChangeType
-  quantity Int // Positive for increase, negative for decrease
+  quantity Int
   oldStock Int
   newStock Int
-  reason   String? // "Manual adjustment", "Order sale", "Restock", etc.
+  reason   String?
 
-  // Who made the change
-  changedBy String? // Admin user ID
+  changedBy String?
 
   product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
@@ -321,34 +376,28 @@ model ContactMessage {
   id      String         @id @default(auto()) @map("_id") @db.ObjectId
   name    String
   email   String
-  company String? // Business name (optional)
+  company String?
   subject ContactSubject @default(GENERAL)
   message String
 
-  // Spam detection
   isSpam    Boolean @default(false)
-  spamScore Float? // Akismet confidence score
+  spamScore Float?
 
-  // Request metadata
   ipAddress String?
   userAgent String?
   referer   String?
 
-  // Status tracking
   status ContactStatus @default(PENDING)
 
-  // Admin handling
   adminNotes  String?
-  assignedTo  String? // Admin user ID
+  assignedTo  String?
   respondedAt DateTime?
-  respondedBy String? // Admin user ID
+  respondedBy String?
 
-  // Email tracking
   emailSent      Boolean   @default(false)
   emailSentAt    DateTime?
   emailConfirmed Boolean   @default(false)
 
-  // Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -379,23 +428,12 @@ model Customer {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   orders   Order[]
 
-  // Customer tier for wholesale pricing
   tier CustomerTier @default(REGULAR)
 
-  // Enhanced address structure
-  addressJson Json? // {
-  // "street": "123 Main St",
-  // "additional": "Apt 4B", 
-  // "zipCode": "12345",
-  // "city": "New York",
-  // "country": "USA",
-  // "latitude": 40.7128,
-  // "longitude": -74.0060
-  // }
+  addressJson Json?
 
-  // Admin and management fields
   addedByAdmin Boolean  @default(false)
-  tags         String[] // ["vip", "frequent", "wholesale", etc.]
+  tags         String[]
   notes        String?
 
   createdAt DateTime @default(now())
@@ -408,8 +446,8 @@ model DeliveryZone {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  maxDistance Float // Maximum distance in km for this zone
-  fee         Float // Delivery fee for this zone
+  maxDistance Float
+  fee         Float
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)
   businessId  String  @db.ObjectId
@@ -440,26 +478,22 @@ model Order {
   customerLatitude  Float?
   customerLongitude Float?
 
-  // Pricing
   subtotal    Float
   deliveryFee Float @default(0)
   tax         Float @default(0)
   discount    Float @default(0)
   total       Float
 
-  // Delivery info
   deliveryAddress String?
   deliveryTime    DateTime?
   notes           String?
 
   createdByAdmin Boolean @default(false)
-  createdBy      String? @db.ObjectId // Which admin user created it
+  createdBy      String? @db.ObjectId
 
-  // Payment
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
 
-  // WhatsApp
   whatsappMessageId String?
 
   createdAt DateTime @default(now())
@@ -479,7 +513,7 @@ model OrderItem {
   product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant ProductVariant? @relation(fields: [variantId], references: [id])
 
-  modifiers String[] // JSON array of selected modifiers
+  modifiers String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -507,7 +541,6 @@ model Analytics {
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  // Metrics
   visitors Int   @default(0)
   orders   Int   @default(0)
   revenue  Float @default(0)
@@ -552,10 +585,7 @@ enum BusinessType {
 
 enum SubscriptionPlan {
   FREE
-  BASIC
-  PREMIUM
   PRO
-  ENTERPRISE
 }
 
 enum SubscriptionStatus {

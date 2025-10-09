@@ -13,7 +13,12 @@ import {
   Trash2,
   UserPlus,
   Info,
-  UserCheck
+  UserCheck,
+  ShoppingCart,
+  Package,
+  TrendingUp,
+  BarChart3,
+  Sparkles
 } from 'lucide-react'
 import { AuthMethodIcon } from './AuthMethodIcon'
 
@@ -96,7 +101,7 @@ export function SuperAdminSettings() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-teal-600" />
+                  <ShoppingCart className="w-4 h-4 text-teal-600" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900">Free</h3>
               </div>
@@ -110,36 +115,47 @@ export function SuperAdminSettings() {
               <p className="text-sm text-gray-600">Forever free</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 mb-4">
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">WhatsApp order management</span>
+                <span className="text-sm text-gray-700">Up to 30 products</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Email order notifications</span>
+                <span className="text-sm text-gray-700">10 categories</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Product catalog</span>
+                <span className="text-sm text-gray-700">Basic WhatsApp orders</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Basic inventory tracking</span>
+                <span className="text-sm text-gray-700">Mobile catalog</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Customer management</span>
+                <span className="text-sm text-gray-700">Basic branding</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Subdomain store (yourstore.yourdomain.com)</span>
+                <span className="text-sm text-gray-700">CSV import</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Basic order analytics</span>
               </div>
             </div>
           </div>
 
           {/* Pro Plan */}
-          <div className="border-2 border-gray-200 rounded-lg p-6 hover:border-gray-300 transition-colors">
+          <div className="border-2 border-purple-200 rounded-lg p-6 hover:border-purple-300 transition-colors bg-gradient-to-br from-purple-50 to-white relative">
+            <div className="absolute -top-3 right-4">
+              <span className="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center gap-1">
+                <Sparkles className="w-3 h-3" />
+                PREMIUM
+              </span>
+            </div>
+
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -153,51 +169,107 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="mb-6">
-              <p className="text-3xl font-bold text-gray-900">$XX</p>
-              <p className="text-sm text-gray-600">per month</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-3xl font-bold text-gray-900">$12</p>
+                <span className="text-sm text-gray-600">per month</span>
+              </div>
+              <p className="text-sm text-emerald-600 font-medium mt-1">
+                Save $24/year with annual billing ($10/mo)
+              </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 mb-4">
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-700 font-medium">Everything in Free, plus:</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Custom domain support</span>
+                <span className="text-sm text-gray-700">Unlimited products</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Advanced SEO controls</span>
+                <span className="text-sm text-gray-700">Unlimited categories</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Advanced analytics</span>
+                <span className="text-sm text-gray-700">Advanced branding (colors, logo)</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Advanced order analytics</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Inventory management</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Custom domains</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-gray-700">Wholesale pricing</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-gray-700">Priority support</span>
               </div>
-              <div className="flex items-start gap-2">
-                <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700">Team collaboration</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Plan Comparison Stats */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-blue-900">30 vs ∞</p>
+                <p className="text-sm text-blue-700">Product Limit</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-emerald-900">17%</p>
+                <p className="text-sm text-emerald-700">Annual Savings</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-purple-900">Advanced</p>
+                <p className="text-sm text-purple-700">Analytics & Features</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Info Note */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="mt-6 bg-teal-50 border border-teal-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-medium text-blue-900 mb-1">
-                Plan Information
+              <h4 className="text-sm font-medium text-teal-900 mb-1">
+                Subscription Information
               </h4>
-              <p className="text-sm text-blue-700">
-                All businesses start with the Free plan by default. Pro plan pricing and features 
-                will be finalized soon. Payment processing with Stripe will be available for Pro 
-                plans in a future update.
+              <p className="text-sm text-teal-700">
+                All businesses start with the Free plan by default. Pro plan is available at $12/month 
+                or $10/month with annual billing (save $24/year). Payment processing is handled securely 
+                through Stripe. Users can upgrade, downgrade, or cancel anytime from their dashboard.
               </p>
             </div>
           </div>
