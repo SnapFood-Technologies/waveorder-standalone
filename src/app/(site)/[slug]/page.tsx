@@ -153,7 +153,6 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     }
   }
 
-  console.log('storeData', storeData);
   // Check if store should be indexed
   const shouldIndex = storeData.isIndexable && !storeData.noIndex && !storeData.isTemporarilyClosed
 
