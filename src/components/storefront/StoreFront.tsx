@@ -795,16 +795,22 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
           
           <div className="overflow-y-auto max-h-[calc(85vh-100px)] p-6 space-y-6">
             {/* Business Description */}
-            {storeData.description && (
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-                  {translations.about || 'About'}
-                </h3>
-                <p className="text-gray-700 leading-relaxed">{storeData.description}</p>
-              </div>
-            )}
+{(() => {
+  const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
+    ? storeData.descriptionAl 
+    : storeData.description
   
+  return displayDescription && (
+    <div className="bg-gray-50 p-4 rounded-xl">
+      <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+        <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+        {translations.about || 'About'}
+      </h3>
+      <p className="text-gray-700 leading-relaxed">{displayDescription}</p>
+    </div>
+  )
+})()}
+            
             {/* Contact Information */}
             <div>
              {/* Website */}
@@ -1350,6 +1356,7 @@ interface StoreData {
   name: string
   slug: string
   description?: string
+  descriptionAl?: string
   logo?: string
   coverImage?: string
   phone?: string
@@ -2120,10 +2127,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               </div>
           </div>
                         
-              {storeData.description && (
-                <p className="text-gray-500 text-md sm:text-md mb-3">{storeData.description}</p>
-              )}
-              
+          {(() => {
+  const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
+    ? storeData.descriptionAl 
+    : storeData.description
+  
+  return displayDescription && (
+    <p className="text-gray-500 text-md sm:text-md mb-3">{displayDescription}</p>
+  )
+})()}
               <div className="space-y-2 sm:space-y-0">
               {/* Address */}
               {storeData.address && (
@@ -2228,67 +2240,70 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
+          <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide" style={{maxWidth: '350px'}}>
             <button
-              onClick={() => {
+                onClick={() => {
                 setSelectedCategory('all')
-              }}
-              disabled={false}
-              className={`px-4 py-2.5 font-medium transition-all flex-shrink-0 border-b-2 relative text-sm ${
+                // Keep search term when switching to "All"
+                }}
+                disabled={false}
+                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                 selectedCategory === 'all'
-                  ? 'border-b-2'
-                  : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-              }`}
-              style={{ 
+                    ? 'border-b-2'
+                    : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                }`}
+                style={{ 
                 color: selectedCategory === 'all' ? primaryColor : undefined,
                 borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
-              }}
+                }}
             >
-              {translations.all || 'All'}
-              {searchTerm && selectedCategory === 'all' && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  {getFilteredProducts().length}
+                {translations.all || 'All'}
+                {searchTerm && selectedCategory === 'all' && (
+                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                    {getFilteredProducts().length}
                 </span>
-              )}
+                )}
             </button>
             {storeData.categories.map(category => {
-              const categoryProductCount = searchTerm 
+                // Count products in this category that match search
+                const categoryProductCount = searchTerm 
                 ? category.products.filter(product => {
                     const searchTermLower = searchTerm.toLowerCase().trim()
                     return product.name.toLowerCase().includes(searchTermLower) ||
-                          product.description?.toLowerCase().includes(searchTermLower) ||
-                          category.name.toLowerCase().includes(searchTermLower)
-                  }).length
+                            product.description?.toLowerCase().includes(searchTermLower) ||
+                            category.name.toLowerCase().includes(searchTermLower)
+                    }).length
                 : category.products.length
-              
-              return (
+                
+                return (
                 <button
-                  key={category.id}
-                  onClick={() => {
+                    key={category.id}
+                    onClick={() => {
                     setSelectedCategory(category.id)
+                    // Clear search when switching to specific category
                     if (searchTerm) {
-                      setSearchTerm('')
+                        setSearchTerm('')
                     }
-                  }}
-                  disabled={false}
-                  className={`px-4 py-2.5 font-medium transition-all flex-shrink-0 border-b-2 relative text-sm ${
+                    }}
+                    disabled={false}
+                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
                     selectedCategory === category.id
-                      ? 'border-b-2'
-                      : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                  }`}
-                  style={{ 
+                        ? 'border-b-2'
+                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                    }`}
+                    style={{ 
                     color: selectedCategory === category.id ? primaryColor : undefined,
                     borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
-                  }}
+                    }}
                 >
-                  {category.name}
-                  {searchTerm && selectedCategory !== 'all' && (
-                    <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                      {categoryProductCount}
+                    {category.name}
+                    {searchTerm && selectedCategory !== 'all' && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                        {categoryProductCount}
                     </span>
-                  )}
+                    )}
                 </button>
-              )
+                )
             })}
           </div>
 
