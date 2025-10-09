@@ -2182,8 +2182,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {/* Main Content */}
       <div className="max-w-[75rem] mx-auto px-4 md:px-0 py-6 grid lg:grid-cols-3 gap-8">
         {/* Left Side - Menu */}
-        <div className="lg:col-span-2">
-          {/* Mobile Delivery Type Switcher */}
+        <div className="lg:col-span-2 overflow-hidden">
+        {/* Mobile Delivery Type Switcher */}
           <div className="lg:hidden mb-6">
           <DeliveryTypeSwitcher
             deliveryType={deliveryType}
@@ -2240,7 +2240,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide" style={{maxWidth: '350px'}}>
+          <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+
             <button
                 onClick={() => {
                 setSelectedCategory('all')
