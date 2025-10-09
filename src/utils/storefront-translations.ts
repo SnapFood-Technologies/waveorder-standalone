@@ -386,7 +386,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
 
 
     now: "Tani",
-    schedule: "Planifiko",
+    schedule: "Skedulo",
     selectDate: "Zgjidh Datën",
     selectTime: "Zgjidh Kohën",
     today: "Sot",
@@ -417,7 +417,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     // Order Details
     orderDetails: "Detajet e Porosisë",
     delivery: "Dërgesa",
-    pickup: "Marrje në Lokal",
+    pickup: "Merr tek Biznesi",
     dineIn: "Në Restorant",
     
     // Form Fields
@@ -477,7 +477,7 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     comingSoon: "Së shpejti!",
     checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Ju lutemi kontrolloni më vonë.",
     freeDelivery: "Transport Falas",
-    pickupAvailable: "Pickup Gati",
+    pickupAvailable: "Merr tek Biznesi",
       // Closure Messages
       maintenanceMessage: "Aktualisht po kryejmë mirëmbajtje dhe do të jemi përsëri të hapur së shpejti.",
       holidayMessage: "Jemi të mbyllur për festën.",
@@ -515,7 +515,7 @@ guaranteedPreparation: "Përgatitje e garantuar kur jemi të hapur",
 noWaitingTime: "Pa pritje - gati kur të arrini",
 secureYourOrder: "Siguroni kohën tuaj të preferuar",
 continueAnyway: "Vazhdo Sidoqoftë",
-scheduleOrder: "Planifiko Porosinë",
+scheduleOrder: "Skedulo Porosinë",
 close: "Mbyll", // Albanian
 selectTimeForSchedule: "Ju lutemi zgjidhni një kohë për porosinë tuaj",
 addItemsToCart: "Shtoni artikuj në shportë",

@@ -1207,7 +1207,7 @@ function TimeSelection({
     <CalendarClock className="w-4 h-4 mr-1" />
     <span className="text-sm font-medium">{translations.schedule || 'Schedule'}</span>
   </div>
-  <div className="text-xs opacity-80">{translations.pickTime || 'Pick time'}</div>
+  <div className="text-xs opacity-80">{translations.selectTime || 'Pick time'}</div>
 </button>
       </div>
 
