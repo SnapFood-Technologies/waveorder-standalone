@@ -270,3 +270,4 @@ export function InviteMemberModal({ businessId, onSuccess, onClose }: InviteMemb
     </div>
   )
 }
+
