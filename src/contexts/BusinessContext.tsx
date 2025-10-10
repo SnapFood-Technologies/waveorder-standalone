@@ -12,6 +12,7 @@ interface Business {
   subscriptionPlan: 'FREE' | 'PRO'
   setupWizardCompleted: boolean
   onboardingCompleted: boolean
+  role: 'OWNER' | 'MANAGER' | 'STAFF'
 }
 
 interface BusinessContextValue {
@@ -20,6 +21,7 @@ interface BusinessContextValue {
   loading: boolean
   currentBusiness: Business | null
   accessChecked: boolean
+  userRole: 'OWNER' | 'MANAGER' | 'STAFF' | null
   refetch: () => void
 }
 
@@ -39,6 +41,7 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
   const [subscription, setSubscription] = useState({ plan: 'FREE' as const, isActive: true })
   const [loading, setLoading] = useState(true)
   const [accessChecked, setAccessChecked] = useState(false)
+  const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -68,9 +71,11 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
             slug: data.business.slug,
             subscriptionPlan: data.business.subscriptionPlan,
             setupWizardCompleted: data.business.setupWizardCompleted,
-            onboardingCompleted: data.business.onboardingCompleted
+            onboardingCompleted: data.business.onboardingCompleted,
+            role: 'OWNER' as const // SuperAdmin impersonating has OWNER access
           }
           setBusinesses([business])
+          setUserRole('OWNER')
           setSubscription({ 
             plan: data.business.subscriptionPlan, 
             isActive: data.business.isActive 
@@ -96,8 +101,11 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
       const businesses = businessData.businesses || []
       setBusinesses(businesses)
 
-      // Check access to current business
+      // Set user role for current business
       const userBusiness = businesses.find((b: Business) => b.id === currentBusinessId)
+      if (userBusiness) {
+        setUserRole(userBusiness.role)
+      }
       
       if (!userBusiness) {
         if (businesses.length > 0) {
@@ -148,6 +156,7 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
     loading,
     currentBusiness,
     accessChecked,
+    userRole,
     refetch: fetchData
   }
 
