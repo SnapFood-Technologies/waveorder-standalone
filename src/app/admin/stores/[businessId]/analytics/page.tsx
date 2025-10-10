@@ -1,5 +1,6 @@
 // src/app/admin/stores/[businessId]/analytics/page.tsx
 import AdvancedAnalytics from '@/components/admin/analytics/AdvancedAnalytics'
+import { SubscriptionGuard } from '@/components/SubscriptionGuard'
 
 interface AnalyticsPageProps {
   params: Promise<{ businessId: string }>
@@ -8,5 +9,8 @@ interface AnalyticsPageProps {
 export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
   const { businessId } = await params
   
-  return <AdvancedAnalytics businessId={businessId} />
+  // Pro Guard
+  return <SubscriptionGuard requiredPlan="PRO">
+    <AdvancedAnalytics businessId={businessId} />
+  </SubscriptionGuard>
 }
