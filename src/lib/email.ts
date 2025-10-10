@@ -33,6 +33,19 @@ interface TeamInvitationParams extends BaseEmailParams {
   inviteUrl: string
 }
 
+interface TeamMemberRemovedParams extends BaseEmailParams {
+  businessName: string
+  removedBy: string
+  reason?: string
+}
+
+interface RoleChangedParams extends BaseEmailParams {
+  businessName: string
+  oldRole: string
+  newRole: string
+  changedBy: string
+}
+
 // Add these interfaces
 interface SubscriptionChangeEmailParams {
   to: string
@@ -1065,5 +1078,199 @@ export async function sendUserCreatedNotification(params: UserCreatedNotificatio
     console.error('Failed to send user created notification:', error)
     // @ts-ignore
     return { success: false, error: error.message }
+  }
+}
+
+// Team member removal email
+export async function sendTeamMemberRemovedEmail({ to, name, businessName, removedBy, reason }: TeamMemberRemovedParams) {
+  const content = `
+    <div style="max-width: 600px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333;">
+      <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <div style="background: white; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; color: #0d9488;">👋</div>
+        </div>
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Access Removed</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">You've been removed from ${businessName}</p>
+      </div>
+      
+      <div style="background: white; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <p style="margin: 0 0 20px; font-size: 16px;">Hi ${name || 'there'},</p>
+        
+        <p style="margin: 0 0 20px; font-size: 16px;">
+          Your access to <strong>${businessName}</strong> has been removed by ${removedBy}.
+        </p>
+        
+        ${reason ? `
+          <div style="background: #f8fafc; border-left: 4px solid #e2e8f0; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; font-size: 14px; color: #64748b;"><strong>Reason:</strong> ${reason}</p>
+          </div>
+        ` : ''}
+        
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #92400e;">
+            <strong>What this means:</strong><br>
+            • You no longer have access to the business dashboard<br>
+            • You cannot view or manage orders, products, or settings<br>
+            • All your previous permissions have been revoked
+          </p>
+        </div>
+        
+        <p style="margin: 20px 0 0; font-size: 16px;">
+          If you believe this was done in error, please contact ${removedBy} directly or reach out to our support team.
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="mailto:hello@waveorder.app" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Contact Support
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        
+        <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+          Thank you for your time with ${businessName}.<br>
+          <strong>WaveOrder Team</strong>
+        </p>
+      </div>
+    </div>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `Access removed from ${businessName}`,
+      html: content,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Team-Removal': 'true',
+        'X-Business': businessName,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send team member removed email:', error)
+    throw new Error('Failed to send team member removed email')
+  }
+}
+
+// Role change notification email
+export async function sendRoleChangedEmail({ to, name, businessName, oldRole, newRole, changedBy }: RoleChangedParams) {
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case 'OWNER':
+        return 'Full access to all features, can manage team and billing'
+      case 'MANAGER':
+        return 'Can manage products, orders, and invite staff members'
+      case 'STAFF':
+        return 'Can view and manage orders and products'
+      default:
+        return 'Limited access'
+    }
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'OWNER':
+        return '#3b82f6'
+      case 'MANAGER':
+        return '#8b5cf6'
+      case 'STAFF':
+        return '#6b7280'
+      default:
+        return '#6b7280'
+    }
+  }
+
+  const isUpgrade = ['STAFF', 'MANAGER'].includes(oldRole) && newRole === 'OWNER' ||
+                   oldRole === 'STAFF' && newRole === 'MANAGER'
+
+  const content = `
+    <div style="max-width: 600px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333;">
+      <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+        <div style="background: white; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; color: #0d9488;">${isUpgrade ? '🎉' : '📋'}</div>
+        </div>
+        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">Role Updated</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Your role in ${businessName} has been changed</p>
+      </div>
+      
+      <div style="background: white; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <p style="margin: 0 0 20px; font-size: 16px;">Hi ${name || 'there'},</p>
+        
+        <p style="margin: 0 0 20px; font-size: 16px;">
+          Your role in <strong>${businessName}</strong> has been updated by ${changedBy}.
+        </p>
+        
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin: 30px 0;">
+          <div style="text-align: center;">
+            <div style="background: ${getRoleBadgeColor(oldRole)}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+              ${oldRole}
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #64748b;">Previous Role</p>
+          </div>
+          
+          <div style="font-size: 24px; color: #0d9488;">→</div>
+          
+          <div style="text-align: center;">
+            <div style="background: ${getRoleBadgeColor(newRole)}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+              ${newRole}
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #64748b;">New Role</p>
+          </div>
+        </div>
+        
+        <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0; font-size: 14px; color: #166534;">
+            <strong>New Permissions:</strong><br>
+            ${getRoleDescription(newRole)}
+          </p>
+        </div>
+        
+        ${isUpgrade ? `
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+              🎉 <strong>Congratulations!</strong> Your role has been upgraded. You now have access to additional features and permissions.
+            </p>
+          </div>
+        ` : ''}
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXTAUTH_URL}/auth/login" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Access Dashboard
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        
+        <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+          Questions about your new role? Contact ${changedBy} or our support team.<br>
+          <strong>WaveOrder Team</strong>
+        </p>
+      </div>
+    </div>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `Role updated in ${businessName} - You are now ${newRole}`,
+      html: content,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Role-Change': 'true',
+        'X-Business': businessName,
+        'X-New-Role': newRole,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send role changed email:', error)
+    throw new Error('Failed to send role changed email')
   }
 }
