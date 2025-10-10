@@ -47,6 +47,7 @@ export function TeamMemberCard({
   const canEditThisUser = !isCurrentUser && member.role !== 'OWNER'
   const canRemoveThisUser = !isCurrentUser && member.role !== 'OWNER'
 
+
   const handleRoleChange = (newRole: string) => {
     onUpdateRole(member.userId, newRole)
     setShowRoleModal(false)
@@ -131,43 +132,42 @@ export function TeamMemberCard({
             </div>
           </div>
           
-          {/* Actions */}
-          {(canUpdateRoles || canRemove) && (
-            <div className="relative">
-              <button
-                onClick={() => setShowActions(!showActions)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              
-              {showActions && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                  <div className="py-1">
-                    {canUpdateRoles && canEditThisUser && (
-                      <button
-                        onClick={() => setShowRoleModal(true)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                      >
-                        <Edit3 className="w-4 h-4 mr-2" />
-                        Change Role
-                      </button>
-                    )}
-                    
-                    {canRemove && canRemoveThisUser && (
-                      <button
-                        onClick={() => setShowRemoveModal(true)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove Member
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+          {(canUpdateRoles || canRemove) && (canEditThisUser || canRemoveThisUser) && (
+  <div className="relative">
+    <button
+      onClick={() => setShowActions(!showActions)}
+      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+    >
+      <MoreVertical className="w-4 h-4" />
+    </button>
+    
+    {showActions && (
+      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+        <div className="py-1">
+          {canUpdateRoles && canEditThisUser && (
+            <button
+              onClick={() => setShowRoleModal(true)}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            >
+              <Edit3 className="w-4 h-4 mr-2" />
+              Change Role
+            </button>
           )}
+          
+          {canRemove && canRemoveThisUser && (
+            <button
+              onClick={() => setShowRemoveModal(true)}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Remove Member
+            </button>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+)}
         </div>
       </div>
 

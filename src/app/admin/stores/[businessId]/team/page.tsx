@@ -1,5 +1,6 @@
 // src/app/admin/stores/[businessId]/team/page.tsx
 import { TeamManagement } from '@/components/admin/team/TeamManagement'
+import { SubscriptionGuard } from '@/components/SubscriptionGuard'
 
 interface TeamManagementPageProps {
   params: Promise<{ businessId: string }>
@@ -7,5 +8,9 @@ interface TeamManagementPageProps {
 
 export default async function TeamManagementPage({ params }: TeamManagementPageProps) {
   const { businessId } = await params
-  return <TeamManagement businessId={businessId} />
+
+  // Pro Guard
+  return <SubscriptionGuard requiredPlan="PRO">
+    <TeamManagement businessId={businessId} />
+  </SubscriptionGuard>
 }

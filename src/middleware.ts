@@ -64,6 +64,12 @@ export async function middleware(request: NextRequest) {
     }
     return NextResponse.next()
   }
+
+  // ADD THIS - Allow /team/invite with token (unauthenticated access)
+  if (pathname.startsWith('/team/invite/')) {
+    // Allow anyone to access invitation page (they're not logged in yet)
+    return NextResponse.next()
+  }
   
   // Protect setup route - Require auth (no token allowed anymore)
   if (pathname.startsWith('/setup')) {
@@ -81,39 +87,46 @@ export async function middleware(request: NextRequest) {
   }
 
   // Protect admin routes
-if (pathname.startsWith('/admin')) {
-  if (!isAuth) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
+  if (pathname.startsWith('/admin')) {
+    if (!isAuth) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
 
-  if (token.role === 'SUPER_ADMIN') {
-    const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
-    
-    if (isImpersonating && impersonateBusinessId) {
+    if (token.role === 'SUPER_ADMIN') {
+      const pathBusinessId = pathname.split('/')[3] // /admin/stores/{businessId}/...
       
-      if (pathBusinessId === impersonateBusinessId) {
-        const response = NextResponse.next()
+      if (isImpersonating && impersonateBusinessId) {
         
-        response.cookies.set('impersonating', impersonateBusinessId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60
-        })
-        
-        return response
+        if (pathBusinessId === impersonateBusinessId) {
+          const response = NextResponse.next()
+          
+          response.cookies.set('impersonating', impersonateBusinessId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60
+          })
+          
+          return response
+        }
       }
+      
+      return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
     }
     
-    return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
+    return NextResponse.next()
   }
-  
-  return NextResponse.next()
-}
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/auth/:path*', '/setup-password/:path*', '/setup/:path*', '/admin/:path*', '/superadmin/:path*']
+  matcher: [
+    '/auth/:path*', 
+    '/setup-password/:path*', 
+    '/team/invite/:path*',  // ADD THIS
+    '/setup/:path*', 
+    '/admin/:path*', 
+    '/superadmin/:path*'
+  ]
 }

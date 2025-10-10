@@ -17,7 +17,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
   
-  const { businesses, currentBusiness } = useBusiness()
+  const { businesses, currentBusiness, userRole } = useBusiness() // ADD userRole
   const { data: session } = useSession()
   const pathname = usePathname()
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -56,8 +56,24 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
     signOut({ callbackUrl: '/' })
   }
 
-  // Display role text based on impersonation state
-  const userRoleText = isImpersonating ? 'SuperAdmin (Impersonating)' : 'Admin'
+  // Display role text - UPDATED LOGIC
+  const getRoleDisplayText = () => {
+    if (isImpersonating) {
+      return 'SuperAdmin (Impersonating)'
+    }
+    
+    // Show actual business role
+    switch (userRole) {
+      case 'OWNER':
+        return 'Owner'
+      case 'MANAGER':
+        return 'Manager'
+      case 'STAFF':
+        return 'Staff'
+      default:
+        return 'Team Member'
+    }
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-6">
@@ -186,7 +202,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
               <p className="text-sm font-medium text-gray-900 truncate max-w-24">
                 {session?.user?.name || 'User'}
               </p>
-              <p className="text-xs text-gray-500">{userRoleText}</p>
+              <p className="text-xs text-gray-500">{getRoleDisplayText()}</p>
             </div>
             <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
           </button>
