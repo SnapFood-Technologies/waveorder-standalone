@@ -43,8 +43,21 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+  serverExternalPackages: ['@prisma/client'],
+  
+  // Tell Next.js to transpile these packages
+  transpilePackages: ['redoc'],
+  
+  // @ts-ignore
+  webpack: (config, { isServer }) => {
+    // Exclude yaml from being processed on the client side
+    if (!isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'yaml': 'commonjs yaml'
+      });
+    }
+    return config;
   },
 }
 

@@ -417,6 +417,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
                 member={member}
                 canUpdateRoles={canUpdateRoles}
                 canRemove={canRemove}
+                // @ts-ignore
                 currentUserId={session?.user?.id}
                 onUpdateRole={handleUpdateRole}
                 onRemove={handleRemoveMember}
