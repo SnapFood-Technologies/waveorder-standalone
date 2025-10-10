@@ -79,7 +79,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const { addParams } = useImpersonation(businessId)
   const router = useRouter()
   const isEditing = productId !== 'new'
-  const { isPro } = useSubscription()
+  const isPro  = true;
   
   const [form, setForm] = useState<ProductForm>({
     name: '',

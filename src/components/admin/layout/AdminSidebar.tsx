@@ -133,7 +133,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'FREE'
     },
     
-    ...(subscription.plan === 'PRO' ? [
+    ...(subscription.plan === 'FREE' ? [
       { 
         name: 'Inventory', 
         icon: Boxes,
@@ -163,7 +163,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         name: 'Discounts', 
         href: `${baseUrl}/discounts`, 
         icon: Percent, 
-        requiredPlan: 'PRO' as Plan
+        requiredPlan: 'FREE' as Plan
       },
       { 
         name: 'Analytics', 
