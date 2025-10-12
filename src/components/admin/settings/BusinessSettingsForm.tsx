@@ -164,37 +164,31 @@ function AddressAutocomplete({
   placeholder, 
   required, 
   businessData,
-  onCoordinatesChange // ADD THIS PROP
+  onCoordinatesChange
 }: {
   value: string
   onChange: (address: string) => void
   placeholder: string
   required: boolean
   businessData?: any
-  onCoordinatesChange?: (lat: number, lng: number) => void // ADD THIS TYPE
+  onCoordinatesChange?: (lat: number, lng: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   
-  // Load Google Places API - Fixed version
+  // Load Google Places API
   useEffect(() => {
-    // Check if Google Maps is already loaded
-    // @ts-ignore
-    if (window.google?.maps?.places) {
+    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
       setIsLoaded(true)
       return
     }
     
-    // Check if script already exists
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
     if (existingScript) {
-      // Script exists, wait for Google to be available
       const checkGoogle = () => {
-        // @ts-ignore
-        if (window.google?.maps?.places) {
+        if ((window as any).google?.maps?.places) {
           setIsLoaded(true)
         } else {
-          // Keep checking every 100ms until Google is available
           setTimeout(checkGoogle, 100)
         }
       }
@@ -202,7 +196,6 @@ function AddressAutocomplete({
       return
     }
     
-    // Only create script if none exists
     const script = document.createElement('script')
     script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
     script.async = true
@@ -210,62 +203,51 @@ function AddressAutocomplete({
     script.onload = () => setIsLoaded(true)
     script.onerror = () => console.error('Failed to load Google Maps API')
     document.head.appendChild(script)
-    
-    // Don't remove the script in cleanup - let it stay for other components
   }, [])
   
   useEffect(() => {
-    if (isLoaded && inputRef.current) {
-      const detectedCountry = detectBusinessCountry(businessData)
-      
-      const getAllowedCountries = () => {
-        switch (detectedCountry) {
-          case 'AL':
-            return ['al']
-          case 'GR':
-            return ['gr', 'al', 'it', 'us'] // Extended for Greece
-          case 'IT':
-            return ['it']
-          case 'US':
-            return ['us']
-          default:
-            return ['us']
-        }
-      }
-      
-      const allowedCountries = getAllowedCountries()
-      
-      // @ts-ignore
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['address'],
-        componentRestrictions: { 
-          country: allowedCountries
-        }
-      })
-      
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace()
-        if (place.formatted_address) {
-          onChange(place.formatted_address)
-          
-          // CAPTURE AND SAVE COORDINATES
-          if (place.geometry?.location && onCoordinatesChange) {
-            const lat = place.geometry.location.lat()
-            const lng = place.geometry.location.lng()
-            onCoordinatesChange(lat, lng)
-          }
-        }
-      })
+    if (!isLoaded || !inputRef.current) return
 
-      // Cleanup function to remove listeners
-      return () => {
-        // @ts-ignore
-        if (window.google?.maps?.event) {
-          // @ts-ignore
-          window.google.maps.event.clearInstanceListeners(autocomplete)
-        }
+    const detectedCountry = detectBusinessCountry(businessData)
+    
+    const getAllowedCountries = () => {
+      switch (detectedCountry) {
+        case 'AL':
+          return ['al']
+        case 'GR':
+          return ['gr', 'al', 'it', 'us']
+        case 'IT':
+          return ['it']
+        case 'US':
+          return ['us']
+        default:
+          return ['us']
       }
     }
+    
+    const allowedCountries = getAllowedCountries()
+    
+    const autocomplete = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
+      types: ['address'],
+      componentRestrictions: { 
+        country: allowedCountries
+      }
+    })
+    
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      
+      if (place.formatted_address && place.geometry?.location) {
+        const lat = place.geometry.location.lat()
+        const lng = place.geometry.location.lng()
+        
+        onChange(place.formatted_address)
+        
+        if (onCoordinatesChange) {
+          onCoordinatesChange(lat, lng)
+        }
+      }
+    })
   }, [isLoaded, onChange, businessData, onCoordinatesChange])
 
   return (
