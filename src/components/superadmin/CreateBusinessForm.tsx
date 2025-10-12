@@ -121,15 +121,10 @@ function AddressAutocomplete({
   onCoordinatesChange: (lat: number, lng: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const autocompleteRef = useRef<any>(null)
-  const listenerRef = useRef<any>(null)
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    // @ts-ignore
-    if (window.google?.maps?.places) {
+    if (typeof window !== 'undefined' && (window as any).google?.maps?.places) {
       setIsLoaded(true)
       return
     }
@@ -137,8 +132,7 @@ function AddressAutocomplete({
     const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
     if (existingScript) {
       const checkGoogle = () => {
-        // @ts-ignore
-        if (window.google?.maps?.places) {
+        if ((window as any).google?.maps?.places) {
           setIsLoaded(true)
         } else {
           setTimeout(checkGoogle, 100)
@@ -158,58 +152,23 @@ function AddressAutocomplete({
 
   useEffect(() => {
     if (!isLoaded || !inputRef.current) return
-    
-    // Clean up existing instance
-    if (listenerRef.current) {
-      // @ts-ignore
-      window.google?.maps?.event?.removeListener(listenerRef.current)
-      listenerRef.current = null
-    }
 
-    if (autocompleteRef.current) {
-      // @ts-ignore
-      window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
-    }
-
-    // Create new autocomplete instance
-    // @ts-ignore
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+    const autocomplete = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
       types: ['address']
     })
 
-    // Add single listener
-    listenerRef.current = autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace()
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
       
-      if (!place) return
-      
-      const hasGeometry = place.geometry?.location
-      const hasAddress = place.formatted_address
-      
-      if (hasGeometry && hasAddress) {
+      if (place.formatted_address && place.geometry?.location) {
         const lat = place.geometry.location.lat()
         const lng = place.geometry.location.lng()
         
-        onChange(hasAddress)
-        setTimeout(() => {
-          onCoordinatesChange(lat, lng)
-        }, 0)
-      } else if (hasAddress) {
-        onChange(hasAddress)
+        onChange(place.formatted_address)
+        onCoordinatesChange(lat, lng)
       }
     })
-
-    return () => {
-      if (listenerRef.current) {
-        // @ts-ignore
-        window.google?.maps?.event?.removeListener(listenerRef.current)
-      }
-      if (autocompleteRef.current) {
-        // @ts-ignore
-        window.google?.maps?.event?.clearInstanceListeners(autocompleteRef.current)
-      }
-    }
-  }, [isLoaded])
+  }, [isLoaded, onChange, onCoordinatesChange])
 
   return (
     <input
