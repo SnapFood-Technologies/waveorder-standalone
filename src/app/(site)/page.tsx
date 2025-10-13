@@ -85,7 +85,7 @@ export default function HomePage() {
             "name": "WaveOrder",
             "description": "WhatsApp ordering platform for restaurants and businesses. Create beautiful catalogs and receive orders directly on WhatsApp.",
             "url": "https://waveorder.app",
-            "logo": "https://waveorder.app/images/logo.png",
+            "logo": "https://waveorder.app/images/waveorder-logo.png",
             "foundingDate": "2025",
             "slogan": "Make WhatsApp Ordering Super Easy",
             "contactPoint": {
