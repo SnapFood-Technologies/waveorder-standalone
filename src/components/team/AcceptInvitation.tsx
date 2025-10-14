@@ -136,8 +136,6 @@ export default function AcceptInvitation({ token }: AcceptInvitationProps) {
         redirect: false
       })
 
-      console.log('signInResult', signInResult)
-
       if (signInResult?.ok) {
         router.push(`/admin/stores/${invitationData?.businessId}/dashboard`)
       } else {

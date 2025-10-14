@@ -78,7 +78,6 @@ export default function UserProfileForm() {
       
       if (response.ok) {
         const data = await response.json()
-        console.log('data', data)
         setProfile(data.user)
         setImagePreview(data.user.image)
       }
