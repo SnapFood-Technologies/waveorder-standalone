@@ -24,18 +24,26 @@ jobs:
         with:
           clean: true  # Ensures clean checkout
 
+      # 🧹 CLEAN PREVIOUS BUILD
+      - name: 🧹 Clean Previous Build
+        run: |
+          echo "Cleaning previous build artifacts..."
+          rm -rf node_modules
+          rm -rf .next
+          rm -f package-lock.json
+          echo "✅ Cleanup completed"
+
       # ⚙️ SETUP NODE.JS
       - name: ⚙️ Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'  # Cache npm dependencies
 
       # 📦 INSTALL DEPENDENCIES
       - name: 📦 Install Dependencies
         run: |
           echo "Installing dependencies..."
-          npm ci --no-audit --no-fund
+          npm install --no-audit --no-fund
           echo "✅ Dependencies installed successfully"
 
       # 🏗️ BUILD APPLICATION
@@ -94,7 +102,6 @@ jobs:
           npm prune --production --no-audit
           echo "✅ Development dependencies removed"
 
-      
       # 📝 CREATE PRODUCTION ENVIRONMENT FILE
       - name: 📝 Create Production Environment
         run: |
