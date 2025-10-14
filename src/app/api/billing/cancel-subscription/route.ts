@@ -17,8 +17,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log('🔄 Canceling subscription for user:', session.user.id)
-
     // Get user with subscription details before canceling
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -35,7 +33,6 @@ export async function POST(req: NextRequest) {
     // Cancel the subscription
     await cancelUserSubscription(session.user.id)
     
-    console.log('✅ Subscription canceled successfully')
 
     // 📧 SEND CANCELLATION CONFIRMATION EMAIL
     if (user.subscription) {
@@ -48,7 +45,6 @@ export async function POST(req: NextRequest) {
           newPlan: 'FREE',
           nextBillingDate: user.subscription.currentPeriodEnd || undefined
         })
-        console.log('✅ Sent cancellation email to:', user.email)
       } catch (emailError) {
         console.error('❌ Failed to send cancellation email:', emailError)
         // Don't fail the API call if email fails
