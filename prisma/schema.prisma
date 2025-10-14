@@ -42,8 +42,18 @@ model User {
   image         String?
   password      String?
 
+  // Email change verification
+  pendingEmail      String?
+  emailChangeToken  String?
+  emailChangeExpiry DateTime?
+
   verificationToken  String?
   verificationExpiry DateTime?
+
+  // Login activity tracking
+  loginActivity LoginActivity[]
+
+  lastPasswordChange DateTime?
 
   setupToken  String?
   setupExpiry DateTime?
@@ -63,6 +73,23 @@ model User {
   businesses BusinessUser[]
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
+}
+
+model LoginActivity {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String  @db.ObjectId
+  device    String
+  browser   String
+  location  String
+  ipAddress String
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  loginAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([loginAt])
 }
 
 model VerificationToken {

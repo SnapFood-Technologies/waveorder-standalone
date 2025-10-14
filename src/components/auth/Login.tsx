@@ -43,6 +43,19 @@ export default function LoginComponent() {
       if (result?.error) {
         setError('Invalid email or password')
       } else if (result?.ok) {
+
+        try {
+          await fetch('/api/user/track-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        } catch (trackingError) {
+          console.error('Failed to track login activity:', trackingError)
+          // Don't fail the login if tracking fails
+        }
+        
         // Check if SuperAdmin via session
         const sessionResponse = await fetch('/api/auth/session')
         if (sessionResponse.ok) {

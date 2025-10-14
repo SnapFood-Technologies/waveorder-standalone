@@ -8,6 +8,15 @@ interface BaseEmailParams {
   name?: string
 }
 
+interface EmailChangeVerificationParams {
+  to: string
+  name: string
+  currentEmail: string
+  newEmail: string
+  verificationUrl: string
+}
+
+
 interface VerificationEmailParams extends BaseEmailParams {
   verificationUrl: string
 }
@@ -524,6 +533,91 @@ const createTeamInvitationContent = (name: string, businessName: string, inviter
 </div>
 `
 
+const createEmailChangeVerificationContent = (
+  name: string,
+  currentEmail: string,
+  newEmail: string,
+  verificationUrl: string
+) => `
+<div style="padding: 40px 30px;">
+  <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">Verify Your New Email Address</h2>
+  <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
+    Hi ${name}! You recently requested to change your email address from <strong>${currentEmail}</strong> to <strong>${newEmail}</strong>.
+  </p>
+  
+  <div style="background-color: #fef3cd; border-left: 4px solid #f59e0b; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <p style="color: #92400e; margin: 0; font-size: 14px; font-weight: 500;">
+      ⚠️ Important Security Notice
+    </p>
+    <p style="color: #92400e; margin: 8px 0 0; font-size: 14px;">
+      If you didn't request this change, please ignore this email and your email address will remain unchanged. Your account security is important to us.
+    </p>
+  </div>
+  
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);">
+      Verify New Email Address
+    </a>
+  </div>
+  
+  <p style="color: #6b7280; margin: 24px 0 0; font-size: 14px; line-height: 1.5;">
+    If the button doesn't work, you can also copy and paste this link into your browser:<br>
+    <a href="${verificationUrl}" style="color: #0d9488; word-break: break-all;">${verificationUrl}</a>
+  </p>
+  
+  <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0;">
+    <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">What happens next?</h3>
+    <div style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>Click the verification button above</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>Your email will be updated to ${newEmail}</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span>You'll use ${newEmail} to sign in from now on</span>
+      </div>
+    </div>
+  </div>
+  
+  <p style="color: #9ca3af; margin: 24px 0 0; font-size: 14px;">
+    This verification link will expire in 24 hours. After verification, you'll need to use your new email address to sign in.
+  </p>
+</div>
+`
+
+export async function sendEmailChangeVerification({
+  to,
+  name,
+  currentEmail,
+  newEmail,
+  verificationUrl
+}: EmailChangeVerificationParams) {
+  const content = createEmailChangeVerificationContent(name, currentEmail, newEmail, verificationUrl)
+  const html = createEmailTemplate(content, 'Verify Email Change')
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: 'Verify Your New Email Address - WaveOrder',
+      html,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Email-Change': 'true',
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send email change verification:', error)
+    throw new Error('Failed to send email change verification')
+  }
+}
 
 // Export functions
 export async function sendSubscriptionChangeEmail({

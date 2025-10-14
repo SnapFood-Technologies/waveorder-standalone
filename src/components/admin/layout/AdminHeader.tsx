@@ -221,6 +221,14 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
               
               <div className="py-1">
                 <Link
+                  href={addImpersonationParams(`/admin/stores/${businessId}/settings/profile`)}
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsDropdownOpen(false)}
+                >
+                  <User className="w-4 h-4 mr-3" />
+                  Profile
+                </Link>
+                <Link
                   href={addImpersonationParams(`/admin/stores/${businessId}/settings/business`)}
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                   onClick={() => setIsDropdownOpen(false)}

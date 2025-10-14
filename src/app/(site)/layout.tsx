@@ -25,6 +25,7 @@ export default function SiteLayout({
     '/sitemap',
     '/resources',
     '/auth/register',
+    '/auth/verify-email-change',
     '/auth/login',
     '/dashboard',
     '/documentation',

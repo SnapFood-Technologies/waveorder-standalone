@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request })
   const isAuth = !!token
   const pathname = request.nextUrl.pathname
+  console.log('pathname', pathname)
 
   // Check for impersonation
   const isImpersonating = request.nextUrl.searchParams.get('impersonate') === 'true'
@@ -24,7 +25,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Redirect authenticated users away from auth pages
+  // EXCEPTION: Allow authenticated users to access email verification pages
+  // They need to verify their email change even if they're logged in
+  if (pathname.startsWith('/auth/verify-email-change')) {
+    return NextResponse.next()
+  }
+
+  // Redirect authenticated users away from other auth pages
   if (pathname.startsWith('/auth') && isAuth) {
     if (token.role === 'SUPER_ADMIN') {
       return NextResponse.redirect(new URL('/superadmin/dashboard', request.url))
@@ -124,7 +131,7 @@ export const config = {
   matcher: [
     '/auth/:path*', 
     '/setup-password/:path*', 
-    '/team/invite/:path*',  // ADD THIS
+    '/team/invite/:path*',
     '/setup/:path*', 
     '/admin/:path*', 
     '/superadmin/:path*'
