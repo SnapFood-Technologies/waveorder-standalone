@@ -45,20 +45,35 @@ function parseUserAgent(userAgent: string): { device: string; browser: string } 
 }
 
 async function getLocationFromIP(ip: string): Promise<string> {
-  try {
-    if (ip === '::1' || ip === '127.0.0.1') {
-      return 'Local'
+try {
+    if (ip === '::1' || ip === '127.0.0.1' || ip === 'Unknown') {
+    return 'Local'
     }
     
-    // Optional: Integrate with IP geolocation service
-    // const response = await fetch(`https://ipapi.co/${ip}/json/`)
-    // const data = await response.json()
-    // return `${data.city}, ${data.country_name}`
+    const response = await fetch(`https://ipapi.co/${ip}/json/`, {
+    headers: {
+        'User-Agent': 'nodejs'
+    },
+    cache: 'no-store'
+    })
+    
+    if (!response.ok) {
+    return 'Unknown Location'
+    }
+    
+    const data = await response.json()
+    
+    if (data.city && data.country_name) {
+    return `${data.city}, ${data.country_name}`
+    } else if (data.country_name) {
+    return data.country_name
+    }
     
     return 'Unknown Location'
-  } catch {
+} catch (error) {
+    console.error('IP geolocation error:', error)
     return 'Unknown Location'
-  }
+}
 }
 
 export async function trackLoginActivity(userId: string): Promise<void> {
