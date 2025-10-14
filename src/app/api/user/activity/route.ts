@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         loginAt: 'desc'
       },
-      take: 10,
+      take: 5,
       select: {
         id: true,
         device: true,

@@ -68,7 +68,7 @@ export default function LoginActivitySection() {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">Recent Login Activity</h3>
-        <p className="text-sm text-gray-600 mt-1">Your last 10 login sessions</p>
+        <p className="text-sm text-gray-600 mt-1">Your last 5 login sessions</p>
       </div>
 
       <div className="divide-y divide-gray-200">
