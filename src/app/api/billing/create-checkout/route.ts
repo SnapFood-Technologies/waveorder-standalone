@@ -51,7 +51,6 @@ export async function POST(req: NextRequest) {
     let stripeCustomerId = user.stripeCustomerId
 
     if (!stripeCustomerId) {
-      console.log('⚠️ [CHECKOUT] User has no Stripe customer, creating one...')
       
       try {
         // Create Stripe customer
@@ -85,7 +84,6 @@ export async function POST(req: NextRequest) {
           }
         })
         
-        console.log('✅ [CHECKOUT] Created Stripe customer and FREE subscription for old user')
       } catch (stripeError) {
         console.error('❌ [CHECKOUT] Failed to create Stripe customer:', stripeError)
         return NextResponse.json(
@@ -139,8 +137,6 @@ export async function POST(req: NextRequest) {
       success_url: successUrl,
       cancel_url: cancelUrl,
     })
-
-    console.log('✅ Checkout session created:', checkoutSession.id)
 
     return NextResponse.json({ 
       checkoutUrl: checkoutSession.url,
