@@ -32,6 +32,9 @@ DATABASE_URL="mongodb://localhost:27017/waveorder"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your-secret-key-here"
 
+# Cron Jobs
+CRON_SECRET="your-cron-secret-key-here"
+
 # Resend
 RESEND_API_KEY="your-resend-api-key"
 
