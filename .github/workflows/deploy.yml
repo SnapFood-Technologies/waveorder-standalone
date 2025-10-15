@@ -71,6 +71,9 @@ jobs:
           BKT_API_KEY: ${{ secrets.BKT_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+
+          # CRON
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           
           # 🌐 Public Environment Variables
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -132,6 +135,9 @@ jobs:
           BKT_API_KEY=${{ secrets.BKT_API_KEY }}
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
           PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}
+
+          # CRON
+          CRON_SECRET=${{ secrets.CRON_SECRET }}
           
           # 🌐 Public Variables
           NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
