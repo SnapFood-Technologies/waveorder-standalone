@@ -17,6 +17,24 @@ interface EmailChangeVerificationParams {
 }
 
 
+interface LowStockProduct {
+  name: string
+  sku: string
+  currentStock: number
+  lowStockAlert: number
+  category: string
+}
+
+
+interface SendLowStockAlertEmailParams {
+  to: string
+  ownerName: string
+  businessName: string
+  businessId: string
+  products: LowStockProduct[]
+}
+
+
 interface VerificationEmailParams extends BaseEmailParams {
   verificationUrl: string
 }
@@ -493,6 +511,111 @@ const createMagicLinkEmailContent = (magicLinkUrl: string) => `
   </p>
 </div>
 `
+
+const createLowStockAlertEmailContent = (
+  ownerName: string,
+  businessName: string,
+  businessId: string,
+  products: LowStockProduct[]
+) => {
+  // Sort products by stock level (lowest first)
+  const sortedProducts = [...products].sort((a, b) => a.currentStock - b.currentStock)
+
+  // Generate products HTML
+  const productsHTML = sortedProducts.map(product => {
+    const stockPercentage = Math.round((product.currentStock / product.lowStockAlert) * 100)
+    const urgencyColor = stockPercentage === 0 ? '#DC2626' : stockPercentage <= 50 ? '#EA580C' : '#F59E0B'
+    const urgencyLabel = stockPercentage === 0 ? 'OUT OF STOCK' : stockPercentage <= 50 ? 'CRITICAL' : 'LOW'
+
+    return `
+      <tr>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+          <div style="font-weight: 600; color: #1f2937; margin-bottom: 4px;">${product.name}</div>
+          <div style="font-size: 13px; color: #6b7280;">SKU: ${product.sku} • ${product.category}</div>
+        </td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+          <span style="display: inline-block; padding: 4px 12px; background-color: ${urgencyColor}; color: white; border-radius: 9999px; font-size: 11px; font-weight: 600;">
+            ${urgencyLabel}
+          </span>
+        </td>
+        <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+          <div style="font-size: 20px; font-weight: 700; color: ${urgencyColor};">${product.currentStock}</div>
+          <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">of ${product.lowStockAlert}</div>
+        </td>
+      </tr>
+    `
+  }).join('')
+
+  return `
+  <div style="padding: 40px 30px;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <div style="display: inline-block; width: 64px; height: 64px; background: linear-gradient(135deg, #F59E0B 0%, #EA580C 100%); border-radius: 50%; margin-bottom: 16px;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="padding: 16px;">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+    </div>
+
+    <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600; text-align: center;">
+      Low Stock Alert ⚠️
+    </h2>
+    <p style="color: #6b7280; margin: 0 0 8px; font-size: 16px; text-align: center;">
+      ${businessName}
+    </p>
+    
+    <div style="height: 1px; background-color: #e5e7eb; margin: 24px 0;"></div>
+
+    <p style="color: #374151; margin: 0 0 8px 0; font-size: 16px;">Hello ${ownerName},</p>
+    <p style="color: #6b7280; margin: 0 0 24px 0; font-size: 15px; line-height: 1.6;">
+      You have <strong style="color: #F59E0B;">${products.length} product${products.length > 1 ? 's' : ''}</strong> that ${products.length > 1 ? 'are' : 'is'} running low on stock and require${products.length > 1 ? '' : 's'} your attention.
+    </p>
+
+    <!-- Products Table -->
+    <table style="width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; border-collapse: collapse; overflow: hidden; margin: 24px 0;">
+      <thead>
+        <tr style="background-color: #f9fafb;">
+          <th style="padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb;">Product</th>
+          <th style="padding: 12px 16px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb;">Status</th>
+          <th style="padding: 12px 16px; text-align: center; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb;">Stock</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${productsHTML}
+      </tbody>
+    </table>
+
+    <!-- Action Buttons -->
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/inventory/adjustments" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4); margin-right: 8px;">
+        Adjust Stock Levels
+      </a>
+      <a href="${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/products" style="display: inline-block; background-color: #f3f4f6; color: #374151; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+        View All Products
+      </a>
+    </div>
+
+    <!-- Info Box -->
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 24px 0;">
+      <p style="color: #1e40af; margin: 0; font-size: 14px; line-height: 1.6;">
+        <strong>💡 Tip:</strong> You can configure low stock alerts for each product individually in your product settings. Disable notifications for specific products if you don't need alerts.
+      </p>
+    </div>
+
+    <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e5e7eb;">
+      <p style="color: #6b7280; margin: 0; font-size: 13px; text-align: center;">
+        This is an automated alert from WaveOrder
+      </p>
+      <p style="color: #9ca3af; margin: 8px 0 0; font-size: 12px; text-align: center;">
+        To manage email notifications, visit your 
+        <a href="${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/products" style="color: #0d9488; text-decoration: none;">product settings</a>
+      </p>
+    </div>
+  </div>
+  `
+}
+
 // Team invitation template
 const createTeamInvitationContent = (name: string, businessName: string, inviterName: string, role: string, inviteUrl: string) => `
 <div style="padding: 40px 30px;">
@@ -730,6 +853,37 @@ export async function sendBusinessCreatedEmail({
   } catch (error) {
     console.error('Failed to send business created email:', error)
     throw new Error('Failed to send business created email')
+  }
+}
+
+export async function sendLowStockAlertEmail({
+  to,
+  ownerName,
+  businessName,
+  businessId,
+  products
+}: SendLowStockAlertEmailParams) {
+  const content = createLowStockAlertEmailContent(ownerName, businessName, businessId, products)
+  const html = createEmailTemplate(content, 'Low Stock Alert')
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `⚠️ Low Stock Alert - ${products.length} Product${products.length > 1 ? 's' : ''} Running Low`,
+      html,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Business-Name': businessName,
+        'X-Alert-Type': 'low-stock',
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send low stock alert email:', error)
+    throw new Error('Failed to send low stock alert email')
   }
 }
 

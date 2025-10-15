@@ -80,6 +80,7 @@ export async function PUT(
         stock: productData.trackInventory ? productData.stock : 0,
         trackInventory: productData.trackInventory,
         lowStockAlert: productData.lowStockAlert || null,
+        enableLowStockNotification: productData.enableLowStockNotification || false,
         isActive: productData.isActive,
         featured: productData.featured,
         metaTitle: productData.metaTitle || null,
