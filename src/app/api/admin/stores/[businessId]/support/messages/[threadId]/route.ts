@@ -30,7 +30,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            role: true
           }
         },
         recipient: {
@@ -55,12 +56,30 @@ export async function GET(
 
     // Get thread info from first message
     const firstMessage = messages[0]
+    
+    // Get business info
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { id: true, name: true }
+    })
+    
+    // Get support team name from superadmin settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      select: { supportTeamName: true }
+    })
+    
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+    
+    // Get all superadmin user IDs for name replacement
+    const superAdminUsers = await prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN' },
+      select: { id: true }
+    })
+    const superAdminIds = superAdminUsers.map(user => user.id)
+    
     const threadInfo = {
-      subject: firstMessage.subject,
-      business: {
-        id: businessId,
-        name: 'Business' // This would need to be fetched from business table
-      }
+      subject: firstMessage.subject || 'No Subject',
+      business: business || { id: businessId, name: 'Unknown Business' }
     }
 
     // Mark messages as read for current user
@@ -84,7 +103,11 @@ export async function GET(
         id: message.id,
         content: message.content,
         createdAt: message.createdAt.toISOString(),
-        sender: message.sender,
+        sender: {
+          ...message.sender,
+          // Replace superadmin name with support team name
+          name: superAdminIds.includes(message.sender.id) ? supportTeamName : message.sender.name
+        },
         recipient: message.recipient,
         isRead: message.isRead
       }))

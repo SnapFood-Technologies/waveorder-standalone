@@ -134,3 +134,55 @@ export async function GET(
     )
   }
 }
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ threadId: string }> }
+) {
+  try {
+    const { threadId } = await params
+    const session = await getServerSession(authOptions)
+    
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { markAsRead } = body
+
+    if (markAsRead) {
+      // Mark all messages in this thread as read for the current user
+      await prisma.supportMessage.updateMany({
+        where: {
+          threadId,
+          recipientId: session.user.id,
+          isRead: false
+        },
+        data: {
+          isRead: true,
+          readAt: new Date()
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Messages marked as read'
+      })
+    }
+
+    return NextResponse.json(
+      { error: 'Invalid request' },
+      { status: 400 }
+    )
+
+  } catch (error) {
+    console.error('Error updating message thread:', error)
+    return NextResponse.json(
+      { error: 'Failed to update message thread' },
+      { status: 500 }
+    )
+  }
+}

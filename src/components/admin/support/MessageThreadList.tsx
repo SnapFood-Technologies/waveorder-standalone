@@ -59,17 +59,20 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
   }
 
   const filteredThreads = threads.filter(thread =>
-    thread.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    thread.lastMessage.content.toLowerCase().includes(searchQuery.toLowerCase())
+    (thread.subject || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (thread.lastMessage.content || '').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInHours = diffInMinutes / 60
     
-    if (diffInHours < 1) {
+    if (diffInMinutes < 1) {
       return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)} minutes ago`
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)} hours ago`
     } else if (diffInHours < 168) { // 7 days
@@ -104,20 +107,25 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-          <p className="text-gray-600 mt-1">
-            Communicate with our support team directly.
-          </p>
+      <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-6 border border-teal-100">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+              <MessageSquare className="w-6 h-6 mr-3 text-teal-600" />
+              Messages
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Communicate with our support team directly.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowComposeModal(true)}
+            className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-md hover:shadow-lg transition-all"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Message
+          </button>
         </div>
-        <button
-          onClick={() => setShowComposeModal(true)}
-          className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Message
-        </button>
       </div>
 
       {/* Search */}
@@ -128,65 +136,87 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
           placeholder="Search messages..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 shadow-sm"
         />
       </div>
 
       {/* Threads List */}
       {filteredThreads.length === 0 ? (
-        <div className="text-center py-12">
-          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No messages yet</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+          <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">No messages found</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchQuery
-              ? 'No messages match your search.'
-              : 'You haven\'t sent any messages to support yet.'}
+              ? 'No messages match your search criteria. Try adjusting your search terms.'
+              : 'You haven\'t started any conversations with our support team yet. Get help with your WaveOrder store by sending a message.'}
           </p>
-          {!searchQuery && (
+          {searchQuery ? (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Clear Search
+            </button>
+          ) : (
             <button
               onClick={() => setShowComposeModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Send Your First Message
+              Start Your First Conversation
             </button>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredThreads.map((thread) => (
             <div
               key={thread.threadId}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-teal-200 transition-all duration-200 cursor-pointer group"
               onClick={() => window.location.href = `/admin/stores/${businessId}/support/messages/${thread.threadId}`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {thread.subject}
+                    <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-teal-700 transition-colors">
+                      {thread.subject || 'No Subject'}
                     </h3>
                     {thread.unreadCount > 0 && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 animate-pulse">
                         {thread.unreadCount} new
                       </span>
                     )}
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {thread.lastMessage.content}
-                  </p>
+                  {/* Most Recent Message */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3 border-l-4 border-teal-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-medium text-teal-600 uppercase tracking-wide">
+                        Most Recent Message
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(thread.lastMessage.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-2">
+                      {thread.lastMessage.content}
+                    </p>
+                    <div className="flex items-center mt-2 text-xs text-gray-500">
+                      <User className="w-3 h-3 mr-1" />
+                      From {thread.lastMessage.sender.name}
+                    </div>
+                  </div>
                   
+                  {/* Thread Stats */}
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span className="flex items-center">
-                      <User className="w-4 h-4 mr-1" />
-                      {thread.lastMessage.sender.name}
+                    <span className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      {thread.totalMessages} message{thread.totalMessages !== 1 ? 's' : ''}
                     </span>
-                    <span className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
+                    <span className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                      <Clock className="w-3 h-3 mr-1" />
                       {formatDate(thread.lastMessage.createdAt)}
                     </span>
-                    <span>{thread.totalMessages} message{thread.totalMessages !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>

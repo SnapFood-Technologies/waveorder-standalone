@@ -55,11 +55,28 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
       if (response.ok) {
         const data = await response.json()
         setThread(data.thread)
+        
+        // Mark messages as read after fetching
+        await markMessagesAsRead()
       }
     } catch (error) {
       console.error('Failed to fetch message thread:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const markMessagesAsRead = async () => {
+    try {
+      await fetch(`/api/superadmin/support/messages/${threadId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ markAsRead: true })
+      })
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error)
     }
   }
 

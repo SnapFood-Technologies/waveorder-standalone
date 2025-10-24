@@ -88,13 +88,21 @@ export function MessageThread({ businessId, threadId }: MessageThreadProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleString([], {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const now = new Date()
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInHours = diffInMinutes / 60
+    
+    if (diffInMinutes < 1) {
+      return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)} minutes ago`
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)} hours ago`
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+    } else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    }
   }
 
   const isCurrentUser = (senderId: string) => {
@@ -134,7 +142,7 @@ export function MessageThread({ businessId, threadId }: MessageThreadProps) {
             {threadInfo?.subject || 'Message Thread'}
           </h1>
           <p className="text-gray-600">
-            {threadInfo?.business.name && `Business: ${threadInfo.business.name}`}
+            {threadInfo?.business.name}
           </p>
         </div>
       </div>

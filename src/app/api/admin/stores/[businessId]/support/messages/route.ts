@@ -30,7 +30,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            role: true
           }
         },
         recipient: {
@@ -72,6 +73,20 @@ export async function GET(
       }
     })
 
+    // Get support team name from superadmin settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      select: { supportTeamName: true }
+    })
+    
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+    
+    // Get all superadmin user IDs for name replacement
+    const superAdminUsers = await prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN' },
+      select: { id: true }
+    })
+    const superAdminIds = superAdminUsers.map(user => user.id)
+
     // Convert to array and get latest message for each thread
     const threadList = Array.from(threadMap.values()).map(thread => {
       const sortedMessages = thread.messages.sort((a: any, b: any) => 
@@ -79,13 +94,22 @@ export async function GET(
       )
       const lastMessage = sortedMessages[0]
       
+      // Get the subject from the first message (thread creation)
+      const firstMessage = thread.messages.sort((a: any, b: any) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      )[0]
+      
       return {
         threadId: thread.threadId,
-        subject: thread.subject,
+        subject: firstMessage.subject || 'No Subject',
         lastMessage: {
           content: lastMessage.content,
           createdAt: lastMessage.createdAt.toISOString(),
-          sender: lastMessage.sender
+          sender: {
+            ...lastMessage.sender,
+            // Replace superadmin name with support team name
+            name: superAdminIds.includes(lastMessage.sender.id) ? supportTeamName : lastMessage.sender.name
+          }
         },
         unreadCount: thread.unreadCount,
         totalMessages: thread.messages.length,

@@ -122,20 +122,25 @@ export function MessageManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-          <p className="text-gray-600 mt-1">
-            Manage communication with business administrators.
-          </p>
+      <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl p-6 border border-teal-100">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+              <MessageSquare className="w-6 h-6 mr-3 text-teal-600" />
+              Messages
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage communication with business administrators.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowInitiateModal(true)}
+            className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 shadow-md hover:shadow-lg transition-all"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Message
+          </button>
         </div>
-        <button
-          onClick={() => setShowInitiateModal(true)}
-          className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Message
-        </button>
       </div>
 
       {/* Stats */}
@@ -247,44 +252,59 @@ export function MessageManagement() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredThreads.map((thread) => (
             <div
               key={thread.threadId}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-teal-200 transition-all duration-200 cursor-pointer group"
               onClick={() => window.location.href = `/superadmin/support/messages/${thread.threadId}`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
+                    <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-teal-700 transition-colors">
                       {thread.subject || 'No Subject'}
                     </h3>
                     {thread.unreadCount > 0 && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 animate-pulse">
                         {thread.unreadCount} new
                       </span>
                     )}
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {thread.lastMessage.content}
-                  </p>
+                  {/* Most Recent Message */}
+                  <div className="bg-gray-50 rounded-lg p-3 mb-3 border-l-4 border-teal-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-xs font-medium text-teal-600 uppercase tracking-wide">
+                        Most Recent Message
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {formatDate(thread.lastMessage.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 line-clamp-2">
+                      {thread.lastMessage.content}
+                    </p>
+                    <div className="flex items-center mt-2 text-xs text-gray-500">
+                      <User className="w-3 h-3 mr-1" />
+                      From {thread.lastMessage.sender.name}
+                    </div>
+                  </div>
                   
+                  {/* Thread Stats */}
                   <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span className="flex items-center">
-                      <Building2 className="w-4 h-4 mr-1" />
+                    <span className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                      <Building2 className="w-3 h-3 mr-1" />
                       {thread.business.name}
                     </span>
-                    <span className="flex items-center">
-                      <User className="w-4 h-4 mr-1" />
-                      {thread.lastMessage.sender.name}
+                    <span className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                      <MessageSquare className="w-3 h-3 mr-1" />
+                      {thread.totalMessages} message{thread.totalMessages !== 1 ? 's' : ''}
                     </span>
-                    <span className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
+                    <span className="flex items-center bg-gray-100 px-2 py-1 rounded-md">
+                      <Clock className="w-3 h-3 mr-1" />
                       {formatDate(thread.lastMessage.createdAt)}
                     </span>
-                    <span>{thread.totalMessages} message{thread.totalMessages !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>
