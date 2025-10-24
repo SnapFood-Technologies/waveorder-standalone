@@ -322,7 +322,7 @@ export function TicketManagement() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredTickets.map((ticket) => (
             <div
               key={ticket.id}

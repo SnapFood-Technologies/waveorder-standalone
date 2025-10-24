@@ -104,10 +104,20 @@ export async function POST(
       }
     })
 
+    // Get SuperAdmin email settings if recipient is SuperAdmin
+    let notificationEmail = message.recipient.email
+    if (message.recipient.role === 'SUPER_ADMIN') {
+      const superAdminSettings = await prisma.superAdminSettings.findFirst({
+        where: { userId: message.recipient.id },
+        select: { primaryEmail: true }
+      })
+      notificationEmail = superAdminSettings?.primaryEmail || message.recipient.email
+    }
+
     // Send email notification to recipient
     try {
       await sendSupportMessageReceivedEmail({
-        to: message.recipient.email,
+        to: notificationEmail,
         recipientName: message.recipient.name,
         senderName: message.sender.name,
         subject: `Re: Support Message`,

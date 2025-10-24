@@ -159,21 +159,22 @@ export async function PUT(
       }
     })
 
-    // Create notification for ticket creator
-    await prisma.notification.create({
-      data: {
-        type: 'TICKET_UPDATED',
-        title: 'Ticket Updated',
-        message: `Your support ticket #${ticket.ticketNumber} has been updated. Status: ${ticket.status}`,
-        link: `/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`,
-        userId: ticket.createdBy.id
-      }
-    })
-
     // Get support team name from settings
     const supportSettings = await prisma.superAdminSettings.findFirst({
       where: { userId: session.user.id },
       select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
+    // Create notification for ticket creator
+    await prisma.notification.create({
+      data: {
+        type: 'TICKET_UPDATED',
+        title: `Ticket Updated by ${supportTeamName}`,
+        message: `Your support ticket #${ticket.ticketNumber} has been updated. Status: ${ticket.status}`,
+        link: `/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`,
+        userId: ticket.createdBy.id
+      }
     })
 
     // Send email notification to ticket creator

@@ -218,26 +218,38 @@ export function TicketList({ businessId }: TicketListProps) {
 
       {/* Tickets List */}
       {filteredTickets.length === 0 ? (
-        <div className="text-center py-12">
-          <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+          <Ticket className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">No tickets found</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all'
-              ? 'No tickets match your current filters.'
-              : 'You haven\'t created any support tickets yet.'}
+              ? 'No tickets match your current filters. Try adjusting your search terms or filters.'
+              : 'You haven\'t created any support tickets yet. Get help with your WaveOrder store by creating a ticket.'}
           </p>
-          {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && priorityFilter === 'all' && (
+          {!searchQuery && statusFilter === 'all' && typeFilter === 'all' && priorityFilter === 'all' ? (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Ticket
             </button>
+          ) : (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+                setTypeFilter('all')
+                setPriorityFilter('all')
+              }}
+              className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Clear Filters
+            </button>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredTickets.map((ticket) => (
             <TicketCard
               key={ticket.id}

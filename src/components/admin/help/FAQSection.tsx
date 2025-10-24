@@ -2,7 +2,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, Search } from 'lucide-react'
 
 interface FAQSectionProps {
   sectionId: string
@@ -46,7 +46,7 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'store-link',
       question: 'How do customers access my store?',
-      answer: 'Your store has a unique link that you can share with customers. The link format is: yourdomain.com/your-store-name. You can find this link in your dashboard and share it via social media, business cards, or any other marketing channels.',
+      answer: 'Your store has a unique link that you can share with customers. For free plans, your link will be: waveorder.app/your-store-name. For paid plans, you can set up a custom domain. You can find this link in your dashboard and share it via social media, business cards, or any other marketing channels.',
       links: [
         { text: 'Share Store Link', href: '/admin/stores/[businessId]/marketing' }
       ]
@@ -245,7 +245,7 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'custom-domains',
       question: 'Can I use my own domain name?',
-      answer: 'Yes! PRO users can connect their own domain (like yourstore.com) instead of using the default WaveOrder subdomain. This gives your store a more professional appearance.',
+      answer: 'Yes! PRO users can connect their own domain (like yourstore.com) instead of using the default waveorder.app subdomain. This gives your store a more professional appearance and better branding.',
       links: [
         { text: 'Domain Setup', href: '/admin/stores/[businessId]/domains' }
       ]
@@ -308,6 +308,15 @@ export function FAQSection({ sectionId, searchQuery }: FAQSectionProps) {
 
   const faqs = faqData[sectionId] || []
   
+  // If no FAQs found and no search query, show a message
+  if (faqs.length === 0 && searchQuery.trim() === '') {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <p>No FAQs available for this section yet.</p>
+      </div>
+    )
+  }
+  
   // Filter FAQs based on search query
   const filteredFAQs = faqs.filter(faq => 
     searchQuery === '' || 
@@ -315,10 +324,22 @@ export function FAQSection({ sectionId, searchQuery }: FAQSectionProps) {
     faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (filteredFAQs.length === 0) {
+  if (filteredFAQs.length === 0 && searchQuery.trim() !== '') {
     return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">No FAQs found matching your search.</p>
+      <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Search className="w-6 h-6 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No FAQs found</h3>
+        <p className="text-gray-600 mb-4">
+          No FAQs match your search criteria. Try different keywords or browse all sections.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Clear Search
+        </button>
       </div>
     )
   }

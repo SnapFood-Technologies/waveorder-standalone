@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { generateTicketNumber } from '@/lib/support-helpers'
+import { sendSupportTicketCreatedEmail } from '@/lib/email'
 
 export async function GET(
   request: NextRequest,
@@ -155,8 +156,47 @@ export async function POST(
       }
     })
 
-    // TODO: Send notification to superadmin
-    // TODO: Send email notification
+    // Find a superadmin to notify
+    const superAdminUser = await prisma.user.findFirst({
+      where: { role: 'SUPER_ADMIN' },
+      select: { id: true, email: true, name: true }
+    })
+
+    if (superAdminUser) {
+      // Get SuperAdmin email settings
+      const superAdminSettings = await prisma.superAdminSettings.findFirst({
+        where: { userId: superAdminUser.id },
+        select: { primaryEmail: true }
+      })
+      
+      const notificationEmail = superAdminSettings?.primaryEmail || superAdminUser.email
+
+      // Create notification for SuperAdmin
+      await prisma.notification.create({
+        data: {
+          type: 'TICKET_CREATED',
+          title: 'New Support Ticket Created',
+          message: `A new support ticket #${ticket.ticketNumber} has been created: "${ticket.subject}"`,
+          link: `/superadmin/support/tickets/${ticket.id}`,
+          userId: superAdminUser.id
+        }
+      })
+
+      // Send email notification to SuperAdmin
+      try {
+        await sendSupportTicketCreatedEmail({
+          to: notificationEmail,
+          recipientName: superAdminUser.name,
+          ticketNumber: ticket.ticketNumber,
+          subject: ticket.subject,
+          description: ticket.description,
+          businessName: access.business.name,
+          ticketUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/tickets/${ticket.id}`
+        })
+      } catch (emailError) {
+        console.error('Failed to send email notification to SuperAdmin:', emailError)
+      }
+    }
 
     return NextResponse.json({
       success: true,
