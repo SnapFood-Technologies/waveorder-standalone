@@ -1812,7 +1812,7 @@ export async function sendSupportMessageReceivedEmail({
   }
 }
 
-// @ts-ignore - feat: complete help and support and notification module
+// feat: complete help and support and notification module
 export async function sendSupportTicketCommentEmail({
   to,
   recipientName,
