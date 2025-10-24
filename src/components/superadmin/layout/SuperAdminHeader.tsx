@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Settings, LogOut, ChevronDown, Crown } from 'lucide-react';
+import { Menu, Settings, LogOut, ChevronDown, Crown, Bell, X } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 interface SuperAdminHeaderProps {
   onMenuClick: () => void;
@@ -8,13 +9,20 @@ interface SuperAdminHeaderProps {
 
 export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { data: session } = useSession();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
 
@@ -22,8 +30,47 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch('/api/superadmin/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
+          setUnreadCount(data.unreadCount || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+      }
+    };
+
+    fetchNotifications();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
+  };
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      await fetch(`/api/superadmin/notifications/${notificationId}/read`, {
+        method: 'PUT',
+      });
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
   return (
@@ -52,6 +99,97 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center space-x-4">
+        {/* Notifications */}
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notification Dropdown */}
+          {isNotificationOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                  <Link 
+                    href="/superadmin/notifications"
+                    className="text-sm text-teal-600 hover:text-teal-700"
+                    onClick={() => setIsNotificationOpen(false)}
+                  >
+                    View all
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {notifications.slice(0, 5).map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                          !notification.isRead ? 'bg-teal-50' : ''
+                        }`}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markNotificationAsRead(notification.id);
+                          }
+                          if (notification.link) {
+                            window.location.href = notification.link;
+                          }
+                          setIsNotificationOpen(false);
+                        }}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            !notification.isRead ? 'bg-teal-500' : 'bg-gray-300'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {new Date(notification.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {notifications.length > 0 && (
+                <div className="p-3 border-t border-gray-100">
+                  <Link
+                    href="/superadmin/notifications"
+                    className="block w-full text-center text-sm text-teal-600 hover:text-teal-700 py-2"
+                    onClick={() => setIsNotificationOpen(false)}
+                  >
+                    View all notifications
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendSupportTicketUpdatedEmail } from '@/lib/email'
 
 export async function GET(
   request: NextRequest,
@@ -158,8 +159,33 @@ export async function PUT(
       }
     })
 
-    // TODO: Send notifications to relevant parties
-    // TODO: Send email notifications
+    // Create notification for ticket creator
+    await prisma.notification.create({
+      data: {
+        type: 'TICKET_UPDATED',
+        title: 'Ticket Updated',
+        message: `Your support ticket #${ticket.ticketNumber} has been updated. Status: ${ticket.status}`,
+        link: `/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`,
+        userId: ticket.createdBy.id
+      }
+    })
+
+    // Send email notification to ticket creator
+    try {
+      await sendSupportTicketUpdatedEmail({
+        to: ticket.createdBy.email,
+        adminName: ticket.createdBy.name,
+        ticketNumber: ticket.ticketNumber,
+        subject: ticket.subject,
+        status: ticket.status,
+        businessName: ticket.business.name,
+        updatedBy: session.user.name || 'Support Team',
+        ticketUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`
+      })
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError)
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       success: true,

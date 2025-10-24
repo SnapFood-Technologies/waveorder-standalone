@@ -82,17 +82,36 @@ export async function GET(
       }
     })
 
+    // Get participants (unique users in this thread)
+    const participants = Array.from(new Set([
+      ...messages.map(m => m.sender.id),
+      ...messages.map(m => m.recipient.id)
+    ])).map(userId => {
+      const message = messages.find(m => m.sender.id === userId || m.recipient.id === userId)
+      return message?.sender.id === userId ? message.sender : message?.recipient
+    }).filter(Boolean)
+
+    // Count unread messages for current user
+    const unreadCount = messages.filter(m => 
+      m.recipientId === session.user.id && !m.isRead
+    ).length
+
     return NextResponse.json({
       success: true,
-      threadInfo,
-      messages: messages.map(message => ({
-        id: message.id,
-        content: message.content,
-        createdAt: message.createdAt.toISOString(),
-        sender: message.sender,
-        recipient: message.recipient,
-        isRead: message.isRead
-      }))
+      thread: {
+        threadId,
+        subject: threadInfo.subject,
+        business: threadInfo.business,
+        participants,
+        messages: messages.map(message => ({
+          id: message.id,
+          content: message.content,
+          createdAt: message.createdAt.toISOString(),
+          sender: message.sender,
+          isRead: message.isRead
+        })),
+        unreadCount
+      }
     })
 
   } catch (error) {

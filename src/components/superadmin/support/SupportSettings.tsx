@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, AlertCircle, CheckCircle, Clock, Mail, Bell } from 'lucide-react'
+import { Save, AlertCircle, CheckCircle, Clock, Mail, Bell, User, Settings } from 'lucide-react'
 
 interface SupportSettings {
   autoAssignTickets: boolean
@@ -25,6 +25,13 @@ interface SupportSettings {
     startTime: string
     endTime: string
     timezone: string
+  }
+  superAdminEmailSettings: {
+    primaryEmail: string
+    backupEmails: string[]
+    emailFrequency: 'immediate' | 'hourly' | 'daily'
+    emailDigest: boolean
+    urgentOnly: boolean
   }
 }
 
@@ -50,6 +57,13 @@ export function SupportSettings() {
       startTime: '09:00',
       endTime: '17:00',
       timezone: 'UTC'
+    },
+    superAdminEmailSettings: {
+      primaryEmail: '',
+      backupEmails: [],
+      emailFrequency: 'immediate',
+      emailDigest: false,
+      urgentOnly: false
     }
   })
   const [loading, setLoading] = useState(true)
@@ -347,6 +361,109 @@ export function SupportSettings() {
               type="checkbox"
               checked={settings.businessNotifications.messageReceived}
               onChange={(e) => handleChange('businessNotifications.messageReceived', e.target.checked)}
+              className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* SuperAdmin Email Settings */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <User className="w-5 h-5 mr-2 text-teal-600" />
+          SuperAdmin Email Settings
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Primary email address</label>
+            <input
+              type="email"
+              value={settings.superAdminEmailSettings.primaryEmail}
+              onChange={(e) => handleChange('superAdminEmailSettings.primaryEmail', e.target.value)}
+              placeholder="admin@waveorder.app"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Main email address for receiving support notifications</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Backup email addresses</label>
+            <div className="space-y-2">
+              {settings.superAdminEmailSettings.backupEmails.map((email, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      const newEmails = [...settings.superAdminEmailSettings.backupEmails]
+                      newEmails[index] = e.target.value
+                      handleChange('superAdminEmailSettings.backupEmails', newEmails)
+                    }}
+                    placeholder="backup@waveorder.app"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newEmails = settings.superAdminEmailSettings.backupEmails.filter((_, i) => i !== index)
+                      handleChange('superAdminEmailSettings.backupEmails', newEmails)
+                    }}
+                    className="p-2 text-red-600 hover:text-red-700"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const newEmails = [...settings.superAdminEmailSettings.backupEmails, '']
+                  handleChange('superAdminEmailSettings.backupEmails', newEmails)
+                }}
+                className="text-sm text-teal-600 hover:text-teal-700"
+              >
+                + Add backup email
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">Additional email addresses to receive notifications</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email frequency</label>
+            <select
+              value={settings.superAdminEmailSettings.emailFrequency}
+              onChange={(e) => handleChange('superAdminEmailSettings.emailFrequency', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="immediate">Immediate</option>
+              <option value="hourly">Hourly digest</option>
+              <option value="daily">Daily digest</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">How often to receive email notifications</p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email digest</label>
+              <p className="text-sm text-gray-500">Group multiple notifications into a single email</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.superAdminEmailSettings.emailDigest}
+              onChange={(e) => handleChange('superAdminEmailSettings.emailDigest', e.target.checked)}
+              className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Urgent notifications only</label>
+              <p className="text-sm text-gray-500">Only receive emails for urgent tickets and high-priority messages</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={settings.superAdminEmailSettings.urgentOnly}
+              onChange={(e) => handleChange('superAdminEmailSettings.urgentOnly', e.target.checked)}
               className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
             />
           </div>

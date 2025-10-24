@@ -19,16 +19,30 @@ export async function GET(
       )
     }
 
-    // Get notifications for the current user
-    const notifications = await prisma.notification.findMany({
-      where: {
-        userId: access.session.user.id
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: 100 // Limit to 100 most recent notifications
-    })
+    // Get pagination parameters
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const offset = (page - 1) * limit
+
+    // Get total count and notifications
+    const [notifications, totalCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: {
+          userId: access.session.user.id
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip: offset,
+        take: limit
+      }),
+      prisma.notification.count({
+        where: {
+          userId: access.session.user.id
+        }
+      })
+    ])
 
     return NextResponse.json({
       success: true,
@@ -40,7 +54,13 @@ export async function GET(
         link: notification.link,
         isRead: notification.isRead,
         createdAt: notification.createdAt.toISOString()
-      }))
+      })),
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
+      }
     })
 
   } catch (error) {

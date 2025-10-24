@@ -294,14 +294,32 @@ export function TicketManagement() {
 
       {/* Tickets List */}
       {filteredTickets.length === 0 ? (
-        <div className="text-center py-12">
-          <Ticket className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No tickets found</h3>
-          <p className="text-gray-600">
+        <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+          <Ticket className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">No tickets found</h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all' || businessFilter !== 'all'
-              ? 'No tickets match your current filters.'
-              : 'No support tickets have been created yet.'}
+              ? 'No tickets match your current filters. Try adjusting your search criteria.'
+              : 'No support tickets have been created yet. When businesses create support tickets, they will appear here.'}
           </p>
+          {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || priorityFilter !== 'all' || businessFilter !== 'all' ? (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+                setTypeFilter('all')
+                setPriorityFilter('all')
+                setBusinessFilter('all')
+              }}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Clear Filters
+            </button>
+          ) : (
+            <div className="text-sm text-gray-500">
+              <p>Support tickets will appear here when businesses need assistance.</p>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

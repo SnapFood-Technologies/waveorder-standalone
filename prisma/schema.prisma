@@ -71,20 +71,23 @@ model User {
   accounts   Account[]
   sessions   Session[]
   businesses BusinessUser[]
-  
+
   // Support relations
-  createdTickets    SupportTicket[] @relation("TicketCreator")
-  assignedTickets   SupportTicket[] @relation("TicketAssignee")
-  resolvedTickets   SupportTicket[] @relation("TicketResolver")
-  ticketComments    TicketComment[]
-  
-  sentMessages      SupportMessage[] @relation("MessageSender")
-  receivedMessages  SupportMessage[] @relation("MessageRecipient")
-  
-  notifications     Notification[]
-  
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdTickets  SupportTicket[] @relation("TicketCreator")
+  assignedTickets SupportTicket[] @relation("TicketAssignee")
+  resolvedTickets SupportTicket[] @relation("TicketResolver")
+  ticketComments  TicketComment[]
+
+  sentMessages     SupportMessage[] @relation("MessageSender")
+  receivedMessages SupportMessage[] @relation("MessageRecipient")
+
+  notifications Notification[]
+
+  // SuperAdmin settings
+  superAdminSettings SuperAdminSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model LoginActivity {
@@ -273,10 +276,10 @@ model Business {
   customers          Customer[]
   analytics          Analytics[]
   orderNotifications OrderNotification[]
-  
+
   // Support relations
-  supportTickets     SupportTicket[]
-  supportMessages    SupportMessage[]
+  supportTickets  SupportTicket[]
+  supportMessages SupportMessage[]
 
   onboardingCompleted  Boolean @default(false)
   onboardingStep       Int     @default(0)
@@ -720,78 +723,78 @@ enum ContactStatus {
 
 // Support Ticket Model
 model SupportTicket {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  ticketNumber String       @unique
-  subject     String
-  description String
-  status      TicketStatus  @default(OPEN)
-  priority    TicketPriority @default(MEDIUM)
-  type        TicketType    @default(GENERAL)
-  
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  ticketNumber String         @unique
+  subject      String
+  description  String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  type         TicketType     @default(GENERAL)
+
   // Relations
-  businessId  String        @db.ObjectId
-  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  
-  createdById String        @db.ObjectId
-  createdBy   User          @relation("TicketCreator", fields: [createdById], references: [id])
-  
-  assignedToId String?      @db.ObjectId
-  assignedTo   User?        @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdById String @db.ObjectId
+  createdBy   User   @relation("TicketCreator", fields: [createdById], references: [id])
+
+  assignedToId String? @db.ObjectId
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
+
   // Comments
-  comments    TicketComment[]
-  
-  resolvedAt  DateTime?
-  resolvedById String?      @db.ObjectId
-  resolvedBy   User?        @relation("TicketResolver", fields: [resolvedById], references: [id])
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  
+  comments TicketComment[]
+
+  resolvedAt   DateTime?
+  resolvedById String?   @db.ObjectId
+  resolvedBy   User?     @relation("TicketResolver", fields: [resolvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([businessId])
   @@index([status])
   @@index([createdById])
 }
 
 model TicketComment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  content   String
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  content    String
   isInternal Boolean @default(false)
-  
-  ticketId  String   @db.ObjectId
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  
-  authorId  String   @db.ObjectId
-  author    User     @relation(fields: [authorId], references: [id])
-  
+
+  ticketId String        @db.ObjectId
+  ticket   SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  authorId String @db.ObjectId
+  author   User   @relation(fields: [authorId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([ticketId])
 }
 
 // Support Message Model (Thread-based messaging)
 model SupportMessage {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  threadId   String
-  subject    String?
-  content    String
-  
-  businessId String?  @db.ObjectId
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  threadId String
+  subject  String?
+  content  String
+
+  businessId String?   @db.ObjectId
   business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  
-  senderId   String   @db.ObjectId
-  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
-  
-  recipientId String  @db.ObjectId
-  recipient   User    @relation("MessageRecipient", fields: [recipientId], references: [id])
-  
-  isRead     Boolean  @default(false)
-  readAt     DateTime?
-  
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
+
+  senderId String @db.ObjectId
+  sender   User   @relation("MessageSender", fields: [senderId], references: [id])
+
+  recipientId String @db.ObjectId
+  recipient   User   @relation("MessageRecipient", fields: [recipientId], references: [id])
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([threadId])
   @@index([senderId])
   @@index([recipientId])
@@ -800,20 +803,20 @@ model SupportMessage {
 
 // Notification Model
 model Notification {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
-  type      NotificationType
-  title     String
-  message   String
-  link      String?
-  
-  userId    String           @db.ObjectId
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  isRead    Boolean          @default(false)
-  readAt    DateTime?
-  
-  createdAt DateTime         @default(now())
-  
+  id      String           @id @default(auto()) @map("_id") @db.ObjectId
+  type    NotificationType
+  title   String
+  message String
+  link    String?
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
@@ -849,4 +852,59 @@ enum NotificationType {
   TICKET_RESOLVED
   MESSAGE_RECEIVED
   SYSTEM_UPDATE
+}
+
+// SuperAdmin Settings Model
+model SuperAdminSettings {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Email settings
+  primaryEmail   String
+  backupEmails   String[]
+  emailFrequency EmailFrequency @default(IMMEDIATE)
+  emailDigest    Boolean        @default(false)
+  urgentOnly     Boolean        @default(false)
+
+  // Support settings
+  autoAssignTickets     Boolean        @default(false)
+  defaultTicketPriority TicketPriority @default(MEDIUM)
+  responseTimeSLA       Int            @default(24) // hours
+  workingHours          WorkingHours?
+
+  // Notification preferences
+  emailNotificationsTicketCreated   Boolean @default(true)
+  emailNotificationsTicketUpdated   Boolean @default(true)
+  emailNotificationsTicketResolved  Boolean @default(true)
+  emailNotificationsMessageReceived Boolean @default(true)
+
+  businessNotificationsTicketCreated   Boolean @default(true)
+  businessNotificationsTicketUpdated   Boolean @default(true)
+  businessNotificationsTicketResolved  Boolean @default(true)
+  businessNotificationsMessageReceived Boolean @default(true)
+
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WorkingHours {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  enabled   Boolean @default(false)
+  startTime String  @default("09:00")
+  endTime   String  @default("17:00")
+  timezone  String  @default("UTC")
+
+  settingsId String             @unique @db.ObjectId
+  settings   SuperAdminSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum EmailFrequency {
+  IMMEDIATE
+  HOURLY
+  DAILY
 }

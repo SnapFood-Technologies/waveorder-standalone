@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendSupportMessageReceivedEmail } from '@/lib/email'
 
 export async function POST(
   request: NextRequest,
@@ -37,6 +38,14 @@ export async function POST(
           { senderId: session.user.id },
           { recipientId: session.user.id }
         ]
+      },
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
       }
     })
 
@@ -48,19 +57,41 @@ export async function POST(
     }
 
     // Find the other participant in the thread
-    const otherParticipant = await prisma.supportMessage.findFirst({
+    // Look for a message where current user is the recipient, then get the sender
+    // OR look for a message where current user is the sender, then get the recipient
+    let otherParticipantId = null
+    
+    // First, try to find a message where current user is the recipient
+    const messageToCurrentUser = await prisma.supportMessage.findFirst({
       where: {
         threadId,
-        senderId: {
-          not: session.user.id
-        }
+        recipientId: session.user.id
       },
       select: {
         senderId: true
       }
     })
+    
+    if (messageToCurrentUser) {
+      otherParticipantId = messageToCurrentUser.senderId
+    } else {
+      // If not found, look for a message where current user is the sender
+      const messageFromCurrentUser = await prisma.supportMessage.findFirst({
+        where: {
+          threadId,
+          senderId: session.user.id
+        },
+        select: {
+          recipientId: true
+        }
+      })
+      
+      if (messageFromCurrentUser) {
+        otherParticipantId = messageFromCurrentUser.recipientId
+      }
+    }
 
-    if (!otherParticipant) {
+    if (!otherParticipantId) {
       return NextResponse.json(
         { error: 'Cannot find thread participant' },
         { status: 400 }
@@ -74,7 +105,7 @@ export async function POST(
         content: content.trim(),
         businessId: existingMessage.businessId,
         senderId: session.user.id,
-        recipientId: otherParticipant.senderId
+        recipientId: otherParticipantId
       },
       include: {
         sender: {
@@ -94,8 +125,32 @@ export async function POST(
       }
     })
 
-    // TODO: Send notification to recipient
-    // TODO: Send email notification
+    // Create notification for recipient
+    await prisma.notification.create({
+      data: {
+        type: 'MESSAGE_RECEIVED',
+        title: 'New Message from Support',
+        message: `You have received a new message: "${content.trim().substring(0, 100)}${content.trim().length > 100 ? '...' : ''}"`,
+        link: `/admin/stores/${existingMessage.businessId}/support/messages/${threadId}`,
+        userId: otherParticipantId
+      }
+    })
+
+    // Send email notification
+    try {
+      await sendSupportMessageReceivedEmail({
+        to: message.recipient.email,
+        recipientName: message.recipient.name,
+        senderName: message.sender.name,
+        subject: `Re: Support Message`,
+        content: content.trim(),
+        businessName: existingMessage.business.name,
+        messageUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${existingMessage.businessId}/support/messages/${threadId}`
+      })
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError)
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -105,7 +160,6 @@ export async function POST(
         content: message.content,
         createdAt: message.createdAt.toISOString(),
         sender: message.sender,
-        recipient: message.recipient,
         isRead: message.isRead
       }
     })

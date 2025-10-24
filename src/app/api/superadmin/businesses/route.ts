@@ -53,13 +53,13 @@ export async function GET(request: NextRequest) {
         where: whereConditions,
         include: {
           users: {
-            where: { role: 'OWNER' },
             include: {
               user: {
                 select: {
                   id: true,
                   name: true,
                   email: true,
+                  role: true,
                   createdAt: true,
                   password: true,
                   accounts: {
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     // Format response with auth method detection
     const formattedBusinesses = businesses.map(business => {
-      const owner = business.users[0]?.user
+      const owner = business.users.find(u => u.role === 'OWNER')?.user
       let authMethod = 'email'
       
       if (owner?.accounts?.length > 0) {
@@ -107,6 +107,14 @@ export async function GET(request: NextRequest) {
       } else {
         authMethod = 'magic-link'
       }
+
+      // Format all users for the business
+      const users = business.users.map(businessUser => ({
+        id: businessUser.user.id,
+        name: businessUser.user.name,
+        email: businessUser.user.email,
+        role: businessUser.user.role
+      }))
 
       return {
         id: business.id,
@@ -126,6 +134,7 @@ export async function GET(request: NextRequest) {
         onboardingCompleted: business.onboardingCompleted,
         setupWizardCompleted: business.setupWizardCompleted,
         createdByAdmin: business.createdByAdmin,
+        users: users,
         owner: owner ? {
           id: owner.id,
           name: owner.name,

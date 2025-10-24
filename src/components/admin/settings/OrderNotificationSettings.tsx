@@ -365,7 +365,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Recent Notifications</h2>
-            {pagination.total > 0 && (
+            {pagination?.total > 0 && (
               <p className="text-sm text-gray-600 mt-1">
                 {pagination.total} total notifications
               </p>
@@ -483,7 +483,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
             </div>
 
             {/* Pagination */}
-            {pagination.pages > 1 && (
+            {pagination?.pages > 1 && (
               <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="text-sm text-gray-700">
                   Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
