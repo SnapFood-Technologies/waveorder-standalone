@@ -91,6 +91,16 @@ export async function GET(request: NextRequest) {
         emailFrequency: settings.emailFrequency.toLowerCase(),
         emailDigest: settings.emailDigest,
         urgentOnly: settings.urgentOnly
+      },
+      supportContactSettings: {
+        supportEmail: settings.supportEmail,
+        supportPhone: settings.supportPhone,
+        supportWebsite: settings.supportWebsite,
+        supportHours: settings.supportHours,
+        responseTime: settings.responseTime,
+        emergencyContact: settings.emergencyContact,
+        supportMessage: settings.supportMessage,
+        supportTeamName: settings.supportTeamName
       }
     }
 
@@ -156,6 +166,14 @@ export async function PUT(request: NextRequest) {
           businessNotificationsTicketUpdated: settings.businessNotifications?.ticketUpdated ?? existingSettings.businessNotificationsTicketUpdated,
           businessNotificationsTicketResolved: settings.businessNotifications?.ticketResolved ?? existingSettings.businessNotificationsTicketResolved,
           businessNotificationsMessageReceived: settings.businessNotifications?.messageReceived ?? existingSettings.businessNotificationsMessageReceived,
+          supportEmail: settings.supportContactSettings?.supportEmail || existingSettings.supportEmail,
+          supportPhone: settings.supportContactSettings?.supportPhone || existingSettings.supportPhone,
+          supportWebsite: settings.supportContactSettings?.supportWebsite || existingSettings.supportWebsite,
+          supportHours: settings.supportContactSettings?.supportHours || existingSettings.supportHours,
+          responseTime: settings.supportContactSettings?.responseTime || existingSettings.responseTime,
+          emergencyContact: settings.supportContactSettings?.emergencyContact || existingSettings.emergencyContact,
+          supportMessage: settings.supportContactSettings?.supportMessage || existingSettings.supportMessage,
+          supportTeamName: settings.supportContactSettings?.supportTeamName || existingSettings.supportTeamName,
         }
       })
 
@@ -192,6 +210,14 @@ export async function PUT(request: NextRequest) {
           businessNotificationsTicketUpdated: settings.businessNotifications?.ticketUpdated ?? true,
           businessNotificationsTicketResolved: settings.businessNotifications?.ticketResolved ?? true,
           businessNotificationsMessageReceived: settings.businessNotifications?.messageReceived ?? true,
+          supportEmail: settings.supportContactSettings?.supportEmail || 'support@waveorder.app',
+          supportPhone: settings.supportContactSettings?.supportPhone || '+1 (555) 123-4567',
+          supportWebsite: settings.supportContactSettings?.supportWebsite || 'https://waveorder.app/support',
+          supportHours: settings.supportContactSettings?.supportHours || 'Monday - Friday, 9:00 AM - 6:00 PM EST',
+          responseTime: settings.supportContactSettings?.responseTime || 'Within 24 hours',
+          emergencyContact: settings.supportContactSettings?.emergencyContact || 'emergency@waveorder.app',
+          supportMessage: settings.supportContactSettings?.supportMessage || 'We\'re here to help! Contact us anytime for support with your WaveOrder store.',
+          supportTeamName: settings.supportContactSettings?.supportTeamName || 'WaveOrder Support Team',
           workingHours: settings.workingHours ? {
             create: {
               enabled: settings.workingHours.enabled,

@@ -64,10 +64,13 @@ export function MessageManagement() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInHours = diffInMinutes / 60
     
-    if (diffInHours < 1) {
+    if (diffInMinutes < 1) {
       return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)} minutes ago`
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)} hours ago`
     } else if (diffInHours < 168) { // 7 days
@@ -78,9 +81,9 @@ export function MessageManagement() {
   }
 
   const filteredThreads = threads.filter(thread => {
-    const matchesSearch = thread.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         thread.lastMessage.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         thread.business.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = (thread.subject || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (thread.lastMessage.content || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (thread.business.name || '').toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesBusiness = businessFilter === 'all' || thread.business.id === businessFilter
     const matchesStatus = statusFilter === 'all' || 
@@ -255,7 +258,7 @@ export function MessageManagement() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {thread.subject}
+                      {thread.subject || 'No Subject'}
                     </h3>
                     {thread.unreadCount > 0 && (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">

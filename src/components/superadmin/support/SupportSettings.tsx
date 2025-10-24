@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, AlertCircle, CheckCircle, Clock, Mail, Bell, User, Settings } from 'lucide-react'
+import { Save, AlertCircle, CheckCircle, Clock, Mail, Bell, User, Settings, Phone, MessageSquare, Globe } from 'lucide-react'
 
 interface SupportSettings {
   autoAssignTickets: boolean
@@ -32,6 +32,16 @@ interface SupportSettings {
     emailFrequency: 'immediate' | 'hourly' | 'daily'
     emailDigest: boolean
     urgentOnly: boolean
+  }
+  supportContactSettings: {
+    supportEmail: string
+    supportPhone: string
+    supportWebsite: string
+    supportHours: string
+    responseTime: string
+    emergencyContact: string
+    supportMessage: string
+    supportTeamName: string
   }
 }
 
@@ -64,6 +74,16 @@ export function SupportSettings() {
       emailFrequency: 'immediate',
       emailDigest: false,
       urgentOnly: false
+    },
+    supportContactSettings: {
+      supportEmail: 'support@waveorder.app',
+      supportPhone: '+1 (555) 123-4567',
+      supportWebsite: 'https://waveorder.app/support',
+      supportHours: 'Monday - Friday, 9:00 AM - 6:00 PM EST',
+      responseTime: 'Within 24 hours',
+      emergencyContact: 'emergency@waveorder.app',
+      supportMessage: 'We\'re here to help! Contact us anytime for support with your WaveOrder store.',
+      supportTeamName: 'WaveOrder Support Team'
     }
   })
   const [loading, setLoading] = useState(true)
@@ -466,6 +486,115 @@ export function SupportSettings() {
               onChange={(e) => handleChange('superAdminEmailSettings.urgentOnly', e.target.checked)}
               className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Support Contact Configuration */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <MessageSquare className="w-5 h-5 mr-2 text-teal-600" />
+          Support Contact Configuration
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Support Team Name</label>
+            <input
+              type="text"
+              value={settings.supportContactSettings.supportTeamName}
+              onChange={(e) => handleChange('supportContactSettings.supportTeamName', e.target.value)}
+              placeholder="WaveOrder Support Team"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Name that will appear when SuperAdmin sends messages (instead of actual user name)</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Support Email</label>
+              <input
+                type="email"
+                value={settings.supportContactSettings.supportEmail}
+                onChange={(e) => handleChange('supportContactSettings.supportEmail', e.target.value)}
+                placeholder="support@waveorder.app"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">Primary support email address</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Support Phone</label>
+              <input
+                type="tel"
+                value={settings.supportContactSettings.supportPhone}
+                onChange={(e) => handleChange('supportContactSettings.supportPhone', e.target.value)}
+                placeholder="+1 (555) 123-4567"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">Support phone number</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Support Website</label>
+            <input
+              type="url"
+              value={settings.supportContactSettings.supportWebsite}
+              onChange={(e) => handleChange('supportContactSettings.supportWebsite', e.target.value)}
+              placeholder="https://waveorder.app/support"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Support website URL</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Support Hours</label>
+              <input
+                type="text"
+                value={settings.supportContactSettings.supportHours}
+                onChange={(e) => handleChange('supportContactSettings.supportHours', e.target.value)}
+                placeholder="Monday - Friday, 9:00 AM - 6:00 PM EST"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">Business hours for support</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
+              <input
+                type="text"
+                value={settings.supportContactSettings.responseTime}
+                onChange={(e) => handleChange('supportContactSettings.responseTime', e.target.value)}
+                placeholder="Within 24 hours"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              />
+              <p className="text-sm text-gray-500 mt-1">Expected response time</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Emergency Contact</label>
+            <input
+              type="email"
+              value={settings.supportContactSettings.emergencyContact}
+              onChange={(e) => handleChange('supportContactSettings.emergencyContact', e.target.value)}
+              placeholder="emergency@waveorder.app"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Emergency contact email for urgent issues</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Support Message</label>
+            <textarea
+              value={settings.supportContactSettings.supportMessage}
+              onChange={(e) => handleChange('supportContactSettings.supportMessage', e.target.value)}
+              placeholder="We're here to help! Contact us anytime for support with your WaveOrder store."
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+            <p className="text-sm text-gray-500 mt-1">Welcome message shown to users when they contact support</p>
           </div>
         </div>
       </div>

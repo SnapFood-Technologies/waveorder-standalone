@@ -96,6 +96,14 @@ export async function GET(
       m.recipientId === session.user.id && !m.isRead
     ).length
 
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
     return NextResponse.json({
       success: true,
       thread: {
@@ -107,7 +115,11 @@ export async function GET(
           id: message.id,
           content: message.content,
           createdAt: message.createdAt.toISOString(),
-          sender: message.sender,
+          sender: {
+            ...message.sender,
+            // Replace superadmin name with support team name
+            name: message.sender.id === session.user.id ? supportTeamName : message.sender.name
+          },
           isRead: message.isRead
         })),
         unreadCount

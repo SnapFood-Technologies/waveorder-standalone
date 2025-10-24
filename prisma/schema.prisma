@@ -882,6 +882,16 @@ model SuperAdminSettings {
   businessNotificationsTicketResolved  Boolean @default(true)
   businessNotificationsMessageReceived Boolean @default(true)
 
+  // Support contact settings
+  supportEmail     String @default("support@waveorder.app")
+  supportPhone     String @default("+1 (555) 123-4567")
+  supportWebsite   String @default("https://waveorder.app/support")
+  supportHours     String @default("Monday - Friday, 9:00 AM - 6:00 PM EST")
+  responseTime     String @default("Within 24 hours")
+  emergencyContact String @default("emergency@waveorder.app")
+  supportMessage   String @default("We're here to help! Contact us anytime for support with your WaveOrder store.")
+  supportTeamName  String @default("WaveOrder Support Team")
+
   userId String @unique @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 

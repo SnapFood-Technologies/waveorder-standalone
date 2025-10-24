@@ -77,6 +77,14 @@ export async function GET(request: NextRequest) {
     })
 
     // Convert to array and get latest message for each thread
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
     const threadList = Array.from(threadMap.values()).map(thread => {
       const sortedMessages = thread.messages.sort((a: any, b: any) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -89,7 +97,11 @@ export async function GET(request: NextRequest) {
         lastMessage: {
           content: lastMessage.content,
           createdAt: lastMessage.createdAt.toISOString(),
-          sender: lastMessage.sender
+          sender: {
+            ...lastMessage.sender,
+            // Replace superadmin name with support team name
+            name: lastMessage.sender.id === session.user.id ? supportTeamName : lastMessage.sender.name
+          }
         },
         unreadCount: thread.unreadCount,
         totalMessages: thread.messages.length,

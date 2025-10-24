@@ -170,6 +170,12 @@ export async function PUT(
       }
     })
 
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+
     // Send email notification to ticket creator
     try {
       await sendSupportTicketUpdatedEmail({
@@ -179,7 +185,7 @@ export async function PUT(
         subject: ticket.subject,
         status: ticket.status,
         businessName: ticket.business.name,
-        updatedBy: session.user.name || 'Support Team',
+        updatedBy: supportSettings?.supportTeamName || 'WaveOrder Support Team',
         ticketUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`
       })
     } catch (emailError) {

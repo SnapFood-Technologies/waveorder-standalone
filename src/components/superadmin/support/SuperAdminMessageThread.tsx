@@ -98,10 +98,13 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInHours = diffInMinutes / 60
     
-    if (diffInHours < 1) {
+    if (diffInMinutes < 1) {
       return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)} minutes ago`
     } else if (diffInHours < 24) {
       return `${Math.floor(diffInHours)} hours ago`
     } else if (diffInHours < 168) { // 7 days
@@ -163,7 +166,7 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{thread.subject}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{thread.subject || 'No Subject'}</h1>
           <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
             <div className="flex items-center">
               <Building2 className="w-4 h-4 mr-1" />

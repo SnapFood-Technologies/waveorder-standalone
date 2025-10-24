@@ -136,12 +136,18 @@ export async function POST(
       }
     })
 
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+
     // Send email notification
     try {
       await sendSupportMessageReceivedEmail({
         to: message.recipient.email,
         recipientName: message.recipient.name,
-        senderName: message.sender.name,
+        senderName: supportSettings?.supportTeamName || 'WaveOrder Support Team',
         subject: `Re: Support Message`,
         content: content.trim(),
         businessName: existingMessage.business.name,
