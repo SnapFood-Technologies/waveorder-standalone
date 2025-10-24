@@ -29,7 +29,11 @@ import {
   TrendingUp,
   UserPlus,
   Globe,
-  Bell
+  Bell,
+  HelpCircle,
+  BookOpen,
+  Ticket,
+  MessageSquare
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -132,6 +136,35 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: Megaphone, 
       requiredPlan: 'FREE'
     },
+    
+    // Help & Support (only show when not impersonating)
+    ...(!isImpersonating ? [
+      { 
+        name: 'Help & Support', 
+        icon: HelpCircle,
+        requiredPlan: 'FREE',
+        children: [
+          { 
+            name: 'Help Center', 
+            href: `${baseUrl}/help`, 
+            icon: BookOpen, 
+            requiredPlan: 'FREE'
+          },
+          { 
+            name: 'Support Tickets', 
+            href: `${baseUrl}/support/tickets`, 
+            icon: Ticket, 
+            requiredPlan: 'FREE'
+          },
+          { 
+            name: 'Messages', 
+            href: `${baseUrl}/support/messages`, 
+            icon: MessageSquare, 
+            requiredPlan: 'FREE'
+          },
+        ]
+      }
+    ] : []),
     
     ...(subscription.plan === 'PRO' ? [
       { 

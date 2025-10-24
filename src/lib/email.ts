@@ -34,6 +34,41 @@ interface SendLowStockAlertEmailParams {
   products: LowStockProduct[]
 }
 
+// Support email interfaces
+interface SupportTicketCreatedEmailParams {
+  to: string
+  superadminName: string
+  ticketNumber: string
+  subject: string
+  description: string
+  businessName: string
+  createdBy: string
+  priority: string
+  type: string
+  ticketUrl: string
+}
+
+interface SupportTicketUpdatedEmailParams {
+  to: string
+  adminName: string
+  ticketNumber: string
+  subject: string
+  status: string
+  businessName: string
+  updatedBy: string
+  ticketUrl: string
+}
+
+interface SupportMessageReceivedEmailParams {
+  to: string
+  recipientName: string
+  senderName: string
+  subject: string
+  content: string
+  businessName: string
+  messageUrl: string
+}
+
 
 interface VerificationEmailParams extends BaseEmailParams {
   verificationUrl: string
@@ -1520,5 +1555,227 @@ export async function sendRoleChangedEmail({ to, name, businessName, oldRole, ne
   } catch (error) {
     console.error('Failed to send role changed email:', error)
     throw new Error('Failed to send role changed email')
+  }
+}
+
+// Support Email Functions
+
+export async function sendSupportTicketCreatedEmail({
+  to,
+  superadminName,
+  ticketNumber,
+  subject,
+  description,
+  businessName,
+  createdBy,
+  priority,
+  type,
+  ticketUrl
+}: SupportTicketCreatedEmailParams) {
+  const content = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">New Support Ticket</h1>
+        <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 16px;">Ticket #${ticketNumber}</p>
+      </div>
+      
+      <div style="padding: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1e293b;">${subject}</h2>
+          <p style="margin: 0; color: #64748b; line-height: 1.6;">${description}</p>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Priority</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">${priority}</p>
+          </div>
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 8px;">
+            <p style="margin: 0 0 5px 0; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Type</p>
+            <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">${type}</p>
+          </div>
+        </div>
+        
+        <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #166534;">
+            <strong>Business:</strong> ${businessName}<br>
+            <strong>Created by:</strong> ${createdBy}
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${ticketUrl}" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            View Ticket
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        
+        <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+          This ticket requires your attention. Please respond as soon as possible.<br>
+          <strong>WaveOrder Support Team</strong>
+        </p>
+      </div>
+    </div>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `New Support Ticket #${ticketNumber} - ${subject}`,
+      html: content,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Support-Ticket': 'true',
+        'X-Ticket-Number': ticketNumber,
+        'X-Business': businessName,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send support ticket created email:', error)
+    throw new Error('Failed to send support ticket created email')
+  }
+}
+
+export async function sendSupportTicketUpdatedEmail({
+  to,
+  adminName,
+  ticketNumber,
+  subject,
+  status,
+  businessName,
+  updatedBy,
+  ticketUrl
+}: SupportTicketUpdatedEmailParams) {
+  const content = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">Ticket Updated</h1>
+        <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 16px;">Ticket #${ticketNumber}</p>
+      </div>
+      
+      <div style="padding: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1e293b;">${subject}</h2>
+          <p style="margin: 0; color: #64748b; line-height: 1.6;">Your support ticket has been updated.</p>
+        </div>
+        
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">New Status</p>
+          <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1e293b;">${status}</p>
+        </div>
+        
+        <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #166534;">
+            <strong>Business:</strong> ${businessName}<br>
+            <strong>Updated by:</strong> ${updatedBy}
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${ticketUrl}" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            View Ticket
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        
+        <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+          Thank you for using WaveOrder support. We're here to help!<br>
+          <strong>WaveOrder Support Team</strong>
+        </p>
+      </div>
+    </div>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `Ticket #${ticketNumber} Updated - ${status}`,
+      html: content,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Support-Ticket': 'true',
+        'X-Ticket-Number': ticketNumber,
+        'X-Business': businessName,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send support ticket updated email:', error)
+    throw new Error('Failed to send support ticket updated email')
+  }
+}
+
+export async function sendSupportMessageReceivedEmail({
+  to,
+  recipientName,
+  senderName,
+  subject,
+  content: messageContent,
+  businessName,
+  messageUrl
+}: SupportMessageReceivedEmailParams) {
+  const content = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+      <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">New Message</h1>
+        <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 16px;">From ${senderName}</p>
+      </div>
+      
+      <div style="padding: 30px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+          <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1e293b;">${subject}</h2>
+          <p style="margin: 0; color: #64748b; line-height: 1.6;">${messageContent}</p>
+        </div>
+        
+        <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #166534;">
+            <strong>Business:</strong> ${businessName}<br>
+            <strong>From:</strong> ${senderName}
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${messageUrl}" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            Reply to Message
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        
+        <p style="margin: 0; font-size: 14px; color: #64748b; text-align: center;">
+          You can reply directly to this message through your WaveOrder dashboard.<br>
+          <strong>WaveOrder Support Team</strong>
+        </p>
+      </div>
+    </div>
+  `
+
+  try {
+    const result = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `New Message: ${subject}`,
+      html: content,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+      headers: {
+        'X-Support-Message': 'true',
+        'X-Business': businessName,
+      },
+    })
+
+    return { success: true, emailId: result.data?.id }
+  } catch (error) {
+    console.error('Failed to send support message received email:', error)
+    throw new Error('Failed to send support message received email')
   }
 }

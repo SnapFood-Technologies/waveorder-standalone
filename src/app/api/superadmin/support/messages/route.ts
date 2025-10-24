@@ -1,0 +1,201 @@
+// src/app/api/superadmin/support/messages/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { generateThreadId } from '@/lib/support-helpers'
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get all message threads where superadmin is involved
+    const messages = await prisma.supportMessage.findMany({
+      where: {
+        OR: [
+          { senderId: session.user.id },
+          { recipientId: session.user.id }
+        ]
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        recipient: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        business: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Group messages by threadId
+    const threadMap = new Map()
+    
+    messages.forEach(message => {
+      if (!threadMap.has(message.threadId)) {
+        threadMap.set(message.threadId, {
+          threadId: message.threadId,
+          subject: message.subject,
+          business: message.business,
+          messages: [],
+          unreadCount: 0,
+          participants: new Set()
+        })
+      }
+      
+      threadMap.get(message.threadId).messages.push(message)
+      if (!message.isRead && message.recipientId === session.user.id) {
+        threadMap.get(message.threadId).unreadCount++
+      }
+      
+      // Add participants
+      threadMap.get(message.threadId).participants.add(message.sender)
+      threadMap.get(message.threadId).participants.add(message.recipient)
+    })
+
+    // Convert to array and get latest message for each thread
+    const threadList = Array.from(threadMap.values()).map(thread => {
+      const sortedMessages = thread.messages.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      const lastMessage = sortedMessages[0]
+      
+      return {
+        threadId: thread.threadId,
+        subject: thread.subject,
+        lastMessage: {
+          content: lastMessage.content,
+          createdAt: lastMessage.createdAt.toISOString(),
+          sender: lastMessage.sender
+        },
+        unreadCount: thread.unreadCount,
+        totalMessages: thread.messages.length,
+        business: thread.business,
+        participants: Array.from(thread.participants)
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      threads: threadList
+    })
+
+  } catch (error) {
+    console.error('Error fetching message threads:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch message threads' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { subject, content, businessId, recipientId } = body
+
+    if (!subject || !content || !businessId || !recipientId) {
+      return NextResponse.json(
+        { error: 'Subject, content, businessId, and recipientId are required' },
+        { status: 400 }
+      )
+    }
+
+    // Generate unique thread ID
+    const threadId = generateThreadId()
+
+    // Create message
+    const message = await prisma.supportMessage.create({
+      data: {
+        threadId,
+        subject,
+        content,
+        businessId,
+        senderId: session.user.id,
+        recipientId
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        recipient: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        business: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    // TODO: Send notification to recipient
+    // TODO: Send email notification
+
+    return NextResponse.json({
+      success: true,
+      message: 'Message sent successfully',
+      thread: {
+        threadId: message.threadId,
+        subject: message.subject,
+        lastMessage: {
+          content: message.content,
+          createdAt: message.createdAt.toISOString(),
+          sender: message.sender
+        },
+        unreadCount: 0,
+        totalMessages: 1,
+        business: message.business,
+        participants: [message.sender, message.recipient]
+      }
+    })
+
+  } catch (error) {
+    console.error('Error sending message:', error)
+    return NextResponse.json(
+      { error: 'Failed to send message' },
+      { status: 500 }
+    )
+  }
+}

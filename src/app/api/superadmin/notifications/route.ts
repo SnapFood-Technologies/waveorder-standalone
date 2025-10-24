@@ -1,28 +1,24 @@
-// src/app/api/admin/stores/[businessId]/notifications/route.ts
+// src/app/api/superadmin/notifications/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { checkBusinessAccess } from '@/lib/api-helpers'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ businessId: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { businessId } = await params
-
-    const access = await checkBusinessAccess(businessId)
+    const session = await getServerSession(authOptions)
     
-    if (!access.authorized) {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
-        { error: access.error },
-        { status: access.status }
+        { error: 'Unauthorized' },
+        { status: 401 }
       )
     }
 
-    // Get notifications for the current user
+    // Get notifications for the current superadmin user
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: access.session.user.id
+        userId: session.user.id
       },
       orderBy: {
         createdAt: 'desc'

@@ -1,17 +1,22 @@
 'use client'
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  BarChart3, 
-  Building2, 
-  Users, 
-  Settings, 
+import {
+  BarChart3,
+  Building2,
+  Users,
+  Settings,
   TrendingUp,
   X,
   Waves,
-  Activity
+  Activity,
+  HeadphonesIcon,
+  Ticket,
+  MessageSquare,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -21,12 +26,34 @@ interface SuperAdminSidebarProps {
 
 export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
   const pathname = usePathname();
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
   
   const navigation = [
     { name: 'Dashboard', href: '/superadmin/dashboard', icon: BarChart3 },
     { name: 'Businesses', href: '/superadmin/businesses', icon: Building2 },
     { name: 'Users', href: '/superadmin/users', icon: Users },
     { name: 'Analytics', href: '/superadmin/analytics', icon: TrendingUp },
+    { 
+      name: 'Support', 
+      icon: HeadphonesIcon,
+      children: [
+        { 
+          name: 'Tickets', 
+          href: '/superadmin/support/tickets', 
+          icon: Ticket
+        },
+        { 
+          name: 'Messages', 
+          href: '/superadmin/support/messages', 
+          icon: MessageSquare
+        },
+        { 
+          name: 'Settings', 
+          href: '/superadmin/support/settings', 
+          icon: Settings
+        }
+      ]
+    },
     { name: 'Settings', href: '/superadmin/settings', icon: Settings },
   ];
 
@@ -40,6 +67,20 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname.startsWith(href + '/')) return true;
     
     return false;
+  };
+
+  // Check if a parent item should be active (has active children)
+  const isParentActive = (children: any[]) => {
+    return children.some(child => isActive(child.href));
+  };
+
+  // Toggle expanded state for items with children
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemName) 
+        ? prev.filter(name => name !== itemName)
+        : [...prev, itemName]
+    );
   };
 
   // Close sidebar when clicking outside on mobile
@@ -94,21 +135,72 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  isActive(item.href)
-                    ? 'bg-teal-100 text-teal-700'
-                    : 'text-gray-700 hover:bg-teal-50 hover:text-teal-700'
-                }`}
-              >
-                <item.icon className={`w-5 h-5 mr-3 flex-shrink-0 ${
-                  isActive(item.href) ? 'text-teal-500' : 'text-gray-400'
-                }`} />
-                <span className="truncate">{item.name}</span>
-              </Link>
+              <div key={item.name}>
+                {item.children ? (
+                  // Parent item with children
+                  <div>
+                    <button
+                      onClick={() => toggleExpanded(item.name)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isParentActive(item.children)
+                          ? 'bg-teal-100 text-teal-700'
+                          : 'text-gray-700 hover:bg-teal-50 hover:text-teal-700'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <item.icon className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                          isParentActive(item.children) ? 'text-teal-500' : 'text-gray-400'
+                        }`} />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      {expandedItems.includes(item.name) ? (
+                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      )}
+                    </button>
+                    
+                    {/* Children */}
+                    {expandedItems.includes(item.name) && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            onClick={onClose}
+                            className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              isActive(child.href)
+                                ? 'bg-teal-100 text-teal-700'
+                                : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700'
+                            }`}
+                          >
+                            <child.icon className={`w-4 h-4 mr-3 flex-shrink-0 ${
+                              isActive(child.href) ? 'text-teal-500' : 'text-gray-400'
+                            }`} />
+                            <span className="truncate">{child.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Regular item without children
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-teal-100 text-teal-700'
+                        : 'text-gray-700 hover:bg-teal-50 hover:text-teal-700'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 mr-3 flex-shrink-0 ${
+                      isActive(item.href) ? 'text-teal-500' : 'text-gray-400'
+                    }`} />
+                    <span className="truncate">{item.name}</span>
+                  </Link>
+                )}
+              </div>
             ))}
           </nav>
 
