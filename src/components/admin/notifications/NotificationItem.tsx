@@ -59,14 +59,18 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60)
+    const diffInHours = diffInMinutes / 60
+    const diffInDays = diffInHours / 24
     
-    if (diffInHours < 1) {
+    if (diffInMinutes < 1) {
       return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${Math.floor(diffInMinutes)}m ago`
     } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)} hours ago`
-    } else if (diffInHours < 168) { // 7 days
-      return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+      return `${Math.floor(diffInHours)}h ago`
+    } else if (diffInDays < 7) {
+      return `${Math.floor(diffInDays)}d ago`
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
     }
@@ -80,7 +84,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
 
   const content = (
     <div
-      className={`bg-white border rounded-lg p-4 transition-all duration-200 ${
+      className={`bg-white border rounded-lg p-4 mb-4 transition-all duration-200 ${
         isHovered ? 'shadow-md' : 'hover:shadow-sm'
       } ${getNotificationColor(notification.type)} ${
         !notification.isRead ? 'border-l-4 border-l-teal-500' : ''

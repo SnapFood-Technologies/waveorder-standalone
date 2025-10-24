@@ -125,21 +125,22 @@ export async function POST(
       }
     })
 
-    // Create notification for recipient
-    await prisma.notification.create({
-      data: {
-        type: 'MESSAGE_RECEIVED',
-        title: 'New Message from Support',
-        message: `You have received a new message: "${content.trim().substring(0, 100)}${content.trim().length > 100 ? '...' : ''}"`,
-        link: `/admin/stores/${existingMessage.businessId}/support/messages/${threadId}`,
-        userId: otherParticipantId
-      }
-    })
-
     // Get support team name from settings
     const supportSettings = await prisma.superAdminSettings.findFirst({
       where: { userId: session.user.id },
       select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
+    // Create notification for recipient
+    await prisma.notification.create({
+      data: {
+        type: 'MESSAGE_RECEIVED',
+        title: `New Message from ${supportTeamName}`,
+        message: `"${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`,
+        link: `/admin/stores/${existingMessage.businessId}/support/messages/${threadId}`,
+        userId: otherParticipantId
+      }
     })
 
     // Send email notification

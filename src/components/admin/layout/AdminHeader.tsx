@@ -16,12 +16,16 @@ interface AdminHeaderProps {
 export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   
   const { businesses, currentBusiness, userRole } = useBusiness() // ADD userRole
   const { data: session } = useSession()
   const pathname = usePathname()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const businessDropdownRef = useRef<HTMLDivElement>(null)
+  const notificationRef = useRef<HTMLDivElement>(null)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -46,11 +50,85 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
       if (businessDropdownRef.current && !businessDropdownRef.current.contains(event.target as Node)) {
         setIsBusinessDropdownOpen(false)
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/notifications?t=${Date.now()}`, {
+          cache: 'no-store'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          // Filter to only show unread notifications in header
+          const unreadNotifications = (data.notifications || []).filter((notif: any) => !notif.isRead)
+          setNotifications(unreadNotifications)
+          setUnreadCount(unreadNotifications.length)
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error)
+      }
+    }
+
+    fetchNotifications()
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000)
+    
+    // Refresh notifications when user returns to the page
+    const handleFocus = () => {
+      fetchNotifications()
+    }
+    
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Refresh when user navigates back (including from notifications page)
+      if (event.persisted || document.visibilityState === 'visible') {
+        fetchNotifications()
+      }
+    }
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications()
+      }
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pageshow', handlePageShow)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pageshow', handlePageShow)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [businessId])
+
+  const markNotificationAsRead = async (notificationId: string) => {
+    try {
+      await fetch(`/api/admin/stores/${businessId}/notifications/${notificationId}/read`, {
+        method: 'PUT',
+      })
+      // Update local state
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId ? { ...notif, isRead: true } : notif
+        )
+      )
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error)
+    }
+  }
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' })
@@ -172,12 +250,96 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
 
       {/* Right side */}
       <div className="flex items-center space-x-2 lg:space-x-4">
-        <Link
-          href={addImpersonationParams(`/admin/stores/${businessId}/settings/notifications`)}
-          className="p-2 text-gray-400 hover:text-gray-600 relative"
-        >
-          <Bell className="w-5 h-5" />
-        </Link>
+        {/* Notifications */}
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+            className="relative p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notification Dropdown */}
+          {isNotificationOpen && (
+            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                  <Link 
+                    href={addImpersonationParams(`/admin/stores/${businessId}/notifications`)}
+                    className="text-sm text-teal-600 hover:text-teal-700"
+                    onClick={() => setIsNotificationOpen(false)}
+                  >
+                    View all
+                  </Link>
+                </div>
+              </div>
+              
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {notifications.slice(0, 5).map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                          !notification.isRead ? 'bg-teal-50' : ''
+                        }`}
+                        onClick={() => {
+                          if (!notification.isRead) {
+                            markNotificationAsRead(notification.id)
+                          }
+                          if (notification.link) {
+                            window.location.href = notification.link
+                          }
+                          setIsNotificationOpen(false)
+                        }}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                            !notification.isRead ? 'bg-teal-500' : 'bg-gray-300'
+                          }`} />
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {notification.title}
+                            </p>
+                            <p className="text-sm text-gray-600 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(notification.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {notifications.length > 0 && (
+                <div className="p-3 border-t border-gray-100">
+                  <Link
+                    href={addImpersonationParams(`/admin/stores/${businessId}/notifications`)}
+                    className="block w-full text-center text-sm text-teal-600 hover:text-teal-700 py-2"
+                    onClick={() => setIsNotificationOpen(false)}
+                  >
+                    View all notifications
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>

@@ -94,14 +94,13 @@ export async function GET(
       )
       const lastMessage = sortedMessages[0]
       
-      // Get the subject from the first message (thread creation)
-      const firstMessage = thread.messages.sort((a: any, b: any) => 
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      )[0]
+      // Get subject from first message that has a subject, or use a fallback
+      const firstMessageWithSubject = thread.messages.find((msg: any) => msg.subject && msg.subject.trim() !== '')
+      const threadSubject = firstMessageWithSubject?.subject || thread.subject || 'Message Thread'
       
       return {
         threadId: thread.threadId,
-        subject: firstMessage.subject || 'No Subject',
+        subject: threadSubject,
         lastMessage: {
           content: lastMessage.content,
           createdAt: lastMessage.createdAt.toISOString(),
@@ -208,8 +207,16 @@ export async function POST(
       }
     })
 
-    // TODO: Send notification to superadmin
-    // TODO: Send email notification
+    // Create notification for SuperAdmin
+    await prisma.notification.create({
+      data: {
+        type: 'MESSAGE_RECEIVED',
+        title: `New Message from ${message.sender.name}`,
+        message: `"${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`,
+        link: `/superadmin/support/messages/${threadId}`,
+        userId: superAdmin.id
+      }
+    })
 
     return NextResponse.json({
       success: true,

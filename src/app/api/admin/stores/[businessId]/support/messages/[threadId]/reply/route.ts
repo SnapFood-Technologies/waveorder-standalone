@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { sendSupportMessageReceivedEmail } from '@/lib/email'
 
 export async function POST(
   request: NextRequest,
@@ -92,8 +93,32 @@ export async function POST(
       }
     })
 
-    // TODO: Send notification to recipient
-    // TODO: Send email notification
+    // Create notification for recipient
+    await prisma.notification.create({
+      data: {
+        type: 'MESSAGE_RECEIVED',
+        title: `New Message from ${message.sender.name}`,
+        message: `"${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`,
+        link: `/superadmin/support/messages/${threadId}`,
+        userId: message.recipient.id
+      }
+    })
+
+    // Send email notification to recipient
+    try {
+      await sendSupportMessageReceivedEmail({
+        to: message.recipient.email,
+        recipientName: message.recipient.name,
+        senderName: message.sender.name,
+        subject: `Re: Support Message`,
+        content: content.trim(),
+        businessName: business.name,
+        messageUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/messages/${threadId}`
+      })
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError)
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       success: true,

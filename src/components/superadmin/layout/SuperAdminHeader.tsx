@@ -34,11 +34,15 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch('/api/superadmin/notifications');
+        const response = await fetch(`/api/superadmin/notifications?t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         if (response.ok) {
           const data = await response.json();
-          setNotifications(data.notifications || []);
-          setUnreadCount(data.unreadCount || 0);
+          // Filter to only show unread notifications in header
+          const unreadNotifications = (data.notifications || []).filter((notif: any) => !notif.isRead);
+          setNotifications(unreadNotifications);
+          setUnreadCount(unreadNotifications.length);
         }
       } catch (error) {
         console.error('Failed to fetch notifications:', error);
@@ -49,7 +53,35 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
     
     // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    
+    // Refresh notifications when user returns to the page
+    const handleFocus = () => {
+      fetchNotifications();
+    };
+    
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Refresh when user navigates back (including from notifications page)
+      if (event.persisted || document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('pageshow', handlePageShow);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleSignOut = () => {
@@ -140,7 +172,7 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
                     {notifications.slice(0, 5).map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                        className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                           !notification.isRead ? 'bg-teal-50' : ''
                         }`}
                         onClick={() => {
@@ -154,17 +186,17 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
                         }}
                       >
                         <div className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                          <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
                             !notification.isRead ? 'bg-teal-500' : 'bg-gray-300'
                           }`} />
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 space-y-1">
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {notification.title}
                             </p>
                             <p className="text-sm text-gray-600 line-clamp-2">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-400">
                               {new Date(notification.createdAt).toLocaleDateString()}
                             </p>
                           </div>
