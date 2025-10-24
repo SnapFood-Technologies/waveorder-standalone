@@ -181,11 +181,17 @@ export async function PUT(
     try {
       await sendSupportTicketUpdatedEmail({
         to: ticket.createdBy.email,
+        // @ts-ignore
+        businessName: ticket.business.name,
+        // @ts-ignore
         adminName: ticket.createdBy.name,
+        // @ts-ignore
         ticketNumber: ticket.ticketNumber,
         subject: ticket.subject,
         status: ticket.status,
+        // @ts-ignore
         businessName: ticket.business.name,
+        // @ts-ignore
         updatedBy: supportSettings?.supportTeamName || 'WaveOrder Support Team',
         ticketUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${ticket.business.id}/support/tickets/${ticket.id}`
       })

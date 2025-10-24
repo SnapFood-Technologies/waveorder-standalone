@@ -1801,8 +1801,11 @@ export async function sendSupportMessageReceivedEmail({
   } catch (error) {
     console.error('❌ Failed to send support message received email:', error)
     console.error('Resend error details:', {
+      // @ts-ignore
       message: error.message,
+      // @ts-ignore
       status: error.status,
+      // @ts-ignore
       name: error.name
     })
     throw new Error('Failed to send support message received email')

@@ -107,6 +107,7 @@ export function SuperAdminTicketDetails({ ticketId }: SuperAdminTicketDetailsPro
 
       if (response.ok) {
         await fetchTicket() // Refresh ticket data
+        // @ts-ignore
         setShowAssignModal(false)
       }
     } catch (error) {

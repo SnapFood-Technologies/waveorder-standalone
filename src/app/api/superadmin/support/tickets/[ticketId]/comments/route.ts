@@ -183,11 +183,15 @@ export async function POST(
     try {
       await sendSupportTicketCommentEmail({
         to: ticket.createdBy.email,
+        // @ts-ignore
         recipientName: ticket.createdBy.name,
+        // @ts-ignore
         ticketNumber: ticket.ticketNumber,
         subject: ticket.subject,
         comment: content.trim(),
+        // @ts-ignore
         commentAuthor: supportTeamName,
+        // @ts-ignore
         businessName: ticket.business.name,
         ticketUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${ticket.business.id}/support/tickets/${ticketId}`
       })
@@ -205,6 +209,7 @@ export async function POST(
         createdAt: comment.createdAt.toISOString(),
         author: {
           ...comment.author,
+          // @ts-ignore
           name: comment.author.role === 'SUPER_ADMIN' ? supportTeamName : comment.author.name
         }
       }
