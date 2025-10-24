@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Clock, MessageSquare, User, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { TicketComments } from './TicketComments'
 import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
 
@@ -42,6 +43,7 @@ export function TicketDetails({ businessId, ticketId }: TicketDetailsProps) {
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchTicket()
@@ -208,7 +210,10 @@ export function TicketDetails({ businessId, ticketId }: TicketDetailsProps) {
                 <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-gray-400" />
                   <span className="text-gray-600">Created by:</span>
-                  <span className="font-medium">{ticket.createdBy.name}</span>
+                  <span className="font-medium">
+                    {ticket.createdBy.name}
+                    {ticket.createdBy.id === session?.user?.id && ' (You)'}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-gray-400" />

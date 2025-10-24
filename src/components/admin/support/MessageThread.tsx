@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, User, Clock, MessageSquare } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 interface Message {
   id: string
@@ -36,6 +37,7 @@ export function MessageThread({ businessId, threadId }: MessageThreadProps) {
     subject: string
     business: { id: string; name: string }
   } | null>(null)
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchThread()
@@ -167,6 +169,7 @@ export function MessageThread({ businessId, threadId }: MessageThreadProps) {
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="text-sm font-medium text-gray-900">
                         {message.sender.name}
+                        {message.sender.id === session?.user?.id && ' (You)'}
                       </span>
                       <span className="text-xs text-gray-500">•</span>
                       <span className="text-xs text-gray-500 flex items-center">

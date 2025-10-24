@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, MessageSquare, Clock, User, Search } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { ComposeMessageModal } from './ComposeMessageModal'
 
 interface MessageThread {
@@ -33,6 +34,7 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
   const [loading, setLoading] = useState(true)
   const [showComposeModal, setShowComposeModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchThreads()
@@ -250,6 +252,7 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
                     <div className="flex items-center mt-2 text-xs text-gray-500">
                       <User className="w-3 h-3 mr-1" />
                       From {thread.lastMessage.sender.name}
+                      {thread.lastMessage.sender.id === session?.user?.id && ' (You)'}
                     </div>
                   </div>
                   

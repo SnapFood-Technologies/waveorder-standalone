@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Send, User, Building2, Clock, MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 interface Message {
   id: string
@@ -43,6 +44,7 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
   const [sending, setSending] = useState(false)
   const [newMessage, setNewMessage] = useState('')
   const router = useRouter()
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchThread()
@@ -213,7 +215,10 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-sm font-medium text-gray-900">{message.sender.name}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {message.sender.name}
+                    {message.sender.id === session?.user?.id && ' (You)'}
+                  </span>
                   <span className="text-xs text-gray-500">{message.sender.email}</span>
                   <span className="text-xs text-gray-400">•</span>
                   <span className="text-xs text-gray-400 flex items-center">

@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Filter, Search, MessageSquare, Clock, User, Building2 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 import { InitiateMessageModal } from './InitiateMessageModal'
 
 interface MessageThread {
@@ -36,6 +37,7 @@ export function MessageManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [businessFilter, setBusinessFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchThreads()
@@ -334,6 +336,7 @@ export function MessageManagement() {
                     <div className="flex items-center mt-2 text-xs text-gray-500">
                       <User className="w-3 h-3 mr-1" />
                       From {thread.lastMessage.sender.name}
+                      {thread.lastMessage.sender.id === session?.user?.id && ' (You)'}
                     </div>
                   </div>
                   
