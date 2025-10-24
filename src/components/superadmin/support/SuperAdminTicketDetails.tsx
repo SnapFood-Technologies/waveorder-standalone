@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Clock, MessageSquare, User, Calendar, AlertCircle, CheckCircle, XCircle, Building2, UserCheck } from 'lucide-react'
 import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
-import { AssignTicketModal } from './AssignTicketModal'
+import { SuperAdminTicketComments } from './SuperAdminTicketComments'
 
 interface Ticket {
   id: string
@@ -41,8 +41,9 @@ export function SuperAdminTicketDetails({ ticketId }: SuperAdminTicketDetailsPro
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [showAssignModal, setShowAssignModal] = useState(false)
   const [updating, setUpdating] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
     fetchTicket()
@@ -80,6 +81,9 @@ export function SuperAdminTicketDetails({ ticketId }: SuperAdminTicketDetailsPro
 
       if (response.ok) {
         await fetchTicket() // Refresh ticket data
+        setToastMessage('Ticket status updated successfully!')
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
       }
     } catch (error) {
       console.error('Failed to update ticket status:', error)
@@ -306,13 +310,6 @@ export function SuperAdminTicketDetails({ ticketId }: SuperAdminTicketDetailsPro
                 </select>
               </div>
 
-              <button
-                onClick={() => setShowAssignModal(true)}
-                className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <UserCheck className="w-4 h-4 mr-2" />
-                {ticket.assignedTo ? 'Reassign Ticket' : 'Assign Ticket'}
-              </button>
             </div>
           </div>
         </div>
@@ -321,18 +318,19 @@ export function SuperAdminTicketDetails({ ticketId }: SuperAdminTicketDetailsPro
       {/* Comments Section */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments</h3>
-        <p className="text-gray-600">Comments functionality will be implemented here.</p>
+        <SuperAdminTicketComments ticketId={ticketId} onUpdate={fetchTicket} />
       </div>
 
-      {/* Assign Ticket Modal */}
-      {showAssignModal && (
-        <AssignTicketModal
-          ticketId={ticketId}
-          currentAssignee={ticket.assignedTo}
-          onClose={() => setShowAssignModal(false)}
-          onAssign={handleAssign}
-        />
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          <div className="flex items-center">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            {toastMessage}
+          </div>
+        </div>
       )}
+
     </div>
   )
 }

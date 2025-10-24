@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { sendSupportTicketCommentEmail } from '@/lib/email'
 
 export async function GET(
   request: NextRequest,
@@ -139,8 +140,48 @@ export async function POST(
       data: { updatedAt: new Date() }
     })
 
-    // TODO: Send notification to relevant parties
-    // TODO: Send email notification
+    // Find SuperAdmin to notify
+    const superAdminUser = await prisma.user.findFirst({
+      where: { role: 'SUPER_ADMIN' },
+      select: { id: true, email: true, name: true }
+    })
+
+    if (superAdminUser) {
+      // Get SuperAdmin email settings
+      const superAdminSettings = await prisma.superAdminSettings.findFirst({
+        where: { userId: superAdminUser.id },
+        select: { primaryEmail: true }
+      })
+      
+      const notificationEmail = superAdminSettings?.primaryEmail || superAdminUser.email
+
+      // Create notification for SuperAdmin
+      await prisma.notification.create({
+        data: {
+          type: 'TICKET_UPDATED',
+          title: 'New Comment on Support Ticket',
+          message: `A new comment has been added to ticket #${ticket.ticketNumber}: "${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`,
+          link: `/superadmin/support/tickets/${ticketId}`,
+          userId: superAdminUser.id
+        }
+      })
+
+      // Send email notification to SuperAdmin
+      try {
+        await sendSupportTicketCommentEmail({
+          to: notificationEmail,
+          recipientName: superAdminUser.name,
+          ticketNumber: ticket.ticketNumber,
+          subject: ticket.subject,
+          comment: content.trim(),
+          commentAuthor: comment.author.name,
+          businessName: access.business.name,
+          ticketUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/tickets/${ticketId}`
+        })
+      } catch (emailError) {
+        console.error('Failed to send email notification to SuperAdmin:', emailError)
+      }
+    }
 
     return NextResponse.json({
       success: true,

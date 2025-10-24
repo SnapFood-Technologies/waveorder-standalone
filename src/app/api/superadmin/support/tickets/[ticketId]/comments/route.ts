@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sendSupportTicketCommentEmail } from '@/lib/email'
 
 export async function GET(
   request: NextRequest,
@@ -10,6 +11,7 @@ export async function GET(
 ) {
   try {
     const { ticketId } = await params
+
     const session = await getServerSession(authOptions)
     
     if (!session || session.user.role !== 'SUPER_ADMIN') {
@@ -20,7 +22,7 @@ export async function GET(
     }
 
     // Verify ticket exists
-    const ticket = await prisma.supportTicket.findUnique({
+    const ticket = await prisma.supportTicket.findFirst({
       where: { id: ticketId }
     })
 
@@ -30,6 +32,13 @@ export async function GET(
         { status: 404 }
       )
     }
+
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
 
     // Get comments
     const comments = await prisma.ticketComment.findMany({
@@ -41,7 +50,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            role: true
           }
         }
       },
@@ -57,7 +67,10 @@ export async function GET(
         content: comment.content,
         isInternal: comment.isInternal,
         createdAt: comment.createdAt.toISOString(),
-        author: comment.author
+        author: {
+          ...comment.author,
+          name: comment.author.role === 'SUPER_ADMIN' ? supportTeamName : comment.author.name
+        }
       }))
     })
 
@@ -76,6 +89,7 @@ export async function POST(
 ) {
   try {
     const { ticketId } = await params
+
     const session = await getServerSession(authOptions)
     
     if (!session || session.user.role !== 'SUPER_ADMIN') {
@@ -86,7 +100,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { content, isInternal = false } = body
+    const { content } = body
 
     if (!content || !content.trim()) {
       return NextResponse.json(
@@ -96,8 +110,23 @@ export async function POST(
     }
 
     // Verify ticket exists
-    const ticket = await prisma.supportTicket.findUnique({
-      where: { id: ticketId }
+    const ticket = await prisma.supportTicket.findFirst({
+      where: { id: ticketId },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        business: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
     })
 
     if (!ticket) {
@@ -111,7 +140,7 @@ export async function POST(
     const comment = await prisma.ticketComment.create({
       data: {
         content: content.trim(),
-        isInternal,
+        isInternal: false, // SuperAdmin comments are not internal
         ticketId,
         authorId: session.user.id
       },
@@ -132,8 +161,39 @@ export async function POST(
       data: { updatedAt: new Date() }
     })
 
-    // TODO: Send notification to relevant parties
-    // TODO: Send email notification
+    // Get support team name from settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: session.user.id },
+      select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
+    // Create notification for ticket creator (admin)
+    await prisma.notification.create({
+      data: {
+        type: 'TICKET_UPDATED',
+        title: `New Comment from ${supportTeamName}`,
+        message: `${supportTeamName} has added a comment to your ticket #${ticket.ticketNumber}: "${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`,
+        link: `/admin/stores/${ticket.business.id}/support/tickets/${ticketId}`,
+        userId: ticket.createdBy.id
+      }
+    })
+
+    // Send email notification to ticket creator
+    try {
+      await sendSupportTicketCommentEmail({
+        to: ticket.createdBy.email,
+        recipientName: ticket.createdBy.name,
+        ticketNumber: ticket.ticketNumber,
+        subject: ticket.subject,
+        comment: content.trim(),
+        commentAuthor: supportTeamName,
+        businessName: ticket.business.name,
+        ticketUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${ticket.business.id}/support/tickets/${ticketId}`
+      })
+    } catch (emailError) {
+      console.error('Failed to send email notification:', emailError)
+    }
 
     return NextResponse.json({
       success: true,
@@ -143,7 +203,10 @@ export async function POST(
         content: comment.content,
         isInternal: comment.isInternal,
         createdAt: comment.createdAt.toISOString(),
-        author: comment.author
+        author: {
+          ...comment.author,
+          name: comment.author.role === 'SUPER_ADMIN' ? supportTeamName : comment.author.name
+        }
       }
     })
 

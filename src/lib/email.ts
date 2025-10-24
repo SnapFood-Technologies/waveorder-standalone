@@ -1779,3 +1779,70 @@ export async function sendSupportMessageReceivedEmail({
     throw new Error('Failed to send support message received email')
   }
 }
+
+export async function sendSupportTicketCommentEmail({
+  to,
+  recipientName,
+  ticketNumber,
+  subject,
+  comment,
+  commentAuthor,
+  businessName,
+  ticketUrl
+}: {
+  to: string
+  recipientName: string
+  ticketNumber: string
+  subject: string
+  comment: string
+  commentAuthor: string
+  businessName: string
+  ticketUrl: string
+}) {
+  try {
+    await resend.emails.send({
+      from: 'WaveOrder Support <support@waveorder.app>',
+      to: [to],
+      subject: `New Comment on Ticket #${ticketNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px; font-weight: bold;">New Comment on Support Ticket</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Ticket #${ticketNumber}</p>
+          </div>
+          
+          <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h2 style="color: #1f2937; margin: 0 0 10px 0; font-size: 18px;">Ticket Details</h2>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Ticket #:</strong> ${ticketNumber}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Subject:</strong> ${subject}</p>
+              <p style="margin: 5px 0; color: #6b7280;"><strong>Business:</strong> ${businessName}</p>
+            </div>
+            
+            <div style="background: #f0f9ff; padding: 20px; border-left: 4px solid #0ea5e9; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+              <h3 style="color: #1f2937; margin: 0 0 10px 0; font-size: 16px;">New Comment</h3>
+              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;"><strong>From:</strong> ${commentAuthor}</p>
+              <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                <p style="margin: 0; color: #374151; line-height: 1.6; white-space: pre-wrap;">${comment}</p>
+              </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${ticketUrl}" style="display: inline-block; background: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;">
+                View Ticket & Reply
+              </a>
+            </div>
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 14px;">
+              <p style="margin: 0;">This is an automated notification from WaveOrder Support System.</p>
+              <p style="margin: 5px 0 0 0;">Please do not reply to this email. Use the link above to respond.</p>
+            </div>
+          </div>
+        </div>
+      `
+    })
+  } catch (error) {
+    console.error('Failed to send support ticket comment email:', error)
+    throw error
+  }
+}

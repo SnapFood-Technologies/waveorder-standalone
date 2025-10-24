@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Filter, Search, Ticket, Clock, CheckCircle, AlertCircle, XCircle, User, Building2 } from 'lucide-react'
+import { Plus, Filter, Search, Ticket, Clock, CheckCircle, AlertCircle, XCircle, User, Building2, UserCheck } from 'lucide-react'
 import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
 
 interface Ticket {
@@ -322,59 +322,70 @@ export function TicketManagement() {
           )}
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredTickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-teal-200 transition-all duration-200 cursor-pointer group"
               onClick={() => window.location.href = `/superadmin/support/tickets/${ticket.id}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {ticket.subject}
-                    </h3>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
-                      {getStatusIcon(ticket.status)}
-                      <span className="ml-1">{getStatusText(ticket.status)}</span>
-                    </span>
+                  {/* Header with subject and status */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-teal-700 transition-colors mb-2">
+                        {ticket.subject}
+                      </h3>
+                      <div className="flex items-center space-x-3">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTicketStatusColor(ticket.status)}`}>
+                          {getStatusIcon(ticket.status)}
+                          <span className="ml-1.5">{getStatusText(ticket.status)}</span>
+                        </span>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTicketPriorityColor(ticket.priority)}`}>
+                          {getPriorityText(ticket.priority)}
+                        </span>
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                          {getTicketTypeDisplayName(ticket.type)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <div className="text-sm text-gray-500 mb-1">
+                        {formatDate(ticket.updatedAt)}
+                      </div>
+                      <div className="font-mono text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                        {ticket.ticketNumber}
+                      </div>
+                    </div>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  {/* Description */}
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                     {ticket.description}
                   </p>
                   
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      {ticket.ticketNumber}
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
-                      {getPriorityText(ticket.priority)}
-                    </span>
-                    <span className="text-xs">
-                      {getTicketTypeDisplayName(ticket.type)}
-                    </span>
-                    <span className="flex items-center text-xs">
-                      <Building2 className="w-3 h-3 mr-1" />
-                      {ticket.business.name}
-                    </span>
-                    <span className="flex items-center text-xs">
-                      <User className="w-3 h-3 mr-1" />
-                      {ticket.createdBy.name}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end space-y-2 ml-4">
-                  <div className="text-xs text-gray-500">
-                    {formatDate(ticket.updatedAt)}
-                  </div>
-                  {ticket.assignedTo && (
-                    <div className="text-xs text-gray-500">
-                      Assigned to: {ticket.assignedTo.name}
+                  {/* Footer with business and user info */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-6 text-sm text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Building2 className="w-4 h-4 text-gray-400" />
+                        <span className="font-medium">{ticket.business.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600">Reported by</span>
+                        <span className="font-medium text-gray-900">{ticket.createdBy.name}</span>
+                      </div>
                     </div>
-                  )}
+                    
+                    {ticket.assignedTo && (
+                      <div className="flex items-center space-x-1 text-sm text-teal-600">
+                        <UserCheck className="w-4 h-4" />
+                        <span className="font-medium">Assigned to {ticket.assignedTo.name}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
