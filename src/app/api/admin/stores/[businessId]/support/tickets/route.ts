@@ -95,6 +95,19 @@ export async function POST(
       )
     }
 
+    // Get business details
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { name: true }
+    })
+
+    if (!business) {
+      return NextResponse.json(
+        { error: 'Business not found' },
+        { status: 404 }
+      )
+    }
+
     const body = await request.json()
     const { subject, description, type, priority } = body
 
@@ -163,13 +176,34 @@ export async function POST(
     })
 
     if (superAdminUser) {
-      // Get SuperAdmin email settings
-      const superAdminSettings = await prisma.superAdminSettings.findFirst({
+      console.log('🔍 SuperAdmin user found:', superAdminUser)
+      
+      // Get or create SuperAdmin email settings
+      let superAdminSettings = await prisma.superAdminSettings.findFirst({
         where: { userId: superAdminUser.id },
         select: { primaryEmail: true }
       })
       
+      // Create default settings if they don't exist
+      if (!superAdminSettings) {
+        console.log('🔍 No SuperAdmin settings found, creating defaults...')
+        superAdminSettings = await prisma.superAdminSettings.create({
+          data: {
+            userId: superAdminUser.id,
+            primaryEmail: superAdminUser.email,
+            backupEmails: [],
+            emailFrequency: 'IMMEDIATE',
+            emailDigest: false,
+            urgentOnly: false,
+            supportTeamName: 'WaveOrder Support Team'
+          },
+          select: { primaryEmail: true }
+        })
+        console.log('🔍 Created default SuperAdmin settings:', superAdminSettings)
+      }
+      
       const notificationEmail = superAdminSettings?.primaryEmail || superAdminUser.email
+      console.log('🔍 Using email for SuperAdmin:', notificationEmail)
 
       // Create notification for SuperAdmin
       await prisma.notification.create({
@@ -183,18 +217,32 @@ export async function POST(
       })
 
       // Send email notification to SuperAdmin
+      console.log('📧 Attempting to send ticket created email with params:', {
+        to: notificationEmail,
+        recipientName: superAdminUser.name,
+        ticketNumber: ticket.ticketNumber,
+        subject: ticket.subject,
+        businessName: business.name
+      })
+      
       try {
-        await sendSupportTicketCreatedEmail({
+        const emailResult = await sendSupportTicketCreatedEmail({
           to: notificationEmail,
           recipientName: superAdminUser.name,
           ticketNumber: ticket.ticketNumber,
           subject: ticket.subject,
           description: ticket.description,
-          businessName: access.business.name,
+          businessName: business.name,
           ticketUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/tickets/${ticket.id}`
         })
+        console.log('✅ Ticket created email sent successfully:', emailResult)
       } catch (emailError) {
-        console.error('Failed to send email notification to SuperAdmin:', emailError)
+        console.error('❌ Failed to send ticket created email to SuperAdmin:', emailError)
+        console.error('Email error details:', {
+          message: emailError.message,
+          stack: emailError.stack,
+          name: emailError.name
+        })
       }
     }
 

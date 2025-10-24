@@ -20,6 +20,19 @@ export async function POST(
       )
     }
 
+    // Get business details
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { name: true }
+    })
+
+    if (!business) {
+      return NextResponse.json(
+        { error: 'Business not found' },
+        { status: 404 }
+      )
+    }
+
     const body = await request.json()
     const { content } = body
 
@@ -46,20 +59,38 @@ export async function POST(
     }
 
     // Find the other participant in the thread
-    const otherParticipant = await prisma.supportMessage.findFirst({
+    // First, get all messages in the thread to understand the participants
+    const threadMessages = await prisma.supportMessage.findMany({
       where: {
         threadId,
-        businessId,
-        senderId: {
-          not: access.session.user.id
-        }
+        businessId
       },
       select: {
-        senderId: true
+        senderId: true,
+        recipientId: true
       }
     })
 
-    if (!otherParticipant) {
+    console.log('🔍 Thread messages:', threadMessages)
+    console.log('🔍 Current user ID:', access.session.user.id)
+
+    // Find the other participant - could be sender or recipient
+    let otherParticipantId = null
+    
+    for (const msg of threadMessages) {
+      if (msg.senderId !== access.session.user.id) {
+        otherParticipantId = msg.senderId
+        break
+      }
+      if (msg.recipientId !== access.session.user.id) {
+        otherParticipantId = msg.recipientId
+        break
+      }
+    }
+
+    console.log('🔍 Other participant ID:', otherParticipantId)
+
+    if (!otherParticipantId) {
       return NextResponse.json(
         { error: 'Cannot find thread participant' },
         { status: 400 }
@@ -73,7 +104,7 @@ export async function POST(
         content: content.trim(),
         businessId,
         senderId: access.session.user.id,
-        recipientId: otherParticipant.senderId
+        recipientId: otherParticipantId
       },
       include: {
         sender: {
@@ -87,7 +118,8 @@ export async function POST(
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            role: true
           }
         }
       }
@@ -106,17 +138,55 @@ export async function POST(
 
     // Get SuperAdmin email settings if recipient is SuperAdmin
     let notificationEmail = message.recipient.email
+    console.log('🔍 Recipient details:', {
+      id: message.recipient.id,
+      name: message.recipient.name,
+      email: message.recipient.email,
+      role: message.recipient.role
+    })
+    
     if (message.recipient.role === 'SUPER_ADMIN') {
-      const superAdminSettings = await prisma.superAdminSettings.findFirst({
+      console.log('🔍 Recipient is SuperAdmin, checking settings...')
+      let superAdminSettings = await prisma.superAdminSettings.findFirst({
         where: { userId: message.recipient.id },
         select: { primaryEmail: true }
       })
+      
+      // Create default settings if they don't exist
+      if (!superAdminSettings) {
+        console.log('🔍 No SuperAdmin settings found, creating defaults...')
+        superAdminSettings = await prisma.superAdminSettings.create({
+          data: {
+            userId: message.recipient.id,
+            primaryEmail: message.recipient.email,
+            backupEmails: [],
+            emailFrequency: 'IMMEDIATE',
+            emailDigest: false,
+            urgentOnly: false,
+            supportTeamName: 'WaveOrder Support Team'
+          },
+          select: { primaryEmail: true }
+        })
+        console.log('🔍 Created default SuperAdmin settings:', superAdminSettings)
+      }
+      
+      console.log('🔍 SuperAdmin settings found:', superAdminSettings)
       notificationEmail = superAdminSettings?.primaryEmail || message.recipient.email
+      console.log('🔍 Final email to use:', notificationEmail)
+    } else {
+      console.log('🔍 Recipient is not SuperAdmin, using default email:', notificationEmail)
     }
 
     // Send email notification to recipient
+    console.log('Attempting to send email with params:', {
+      to: notificationEmail,
+      recipientName: message.recipient.name,
+      senderName: message.sender.name,
+      businessName: business.name
+    })
+    
     try {
-      await sendSupportMessageReceivedEmail({
+      const emailResult = await sendSupportMessageReceivedEmail({
         to: notificationEmail,
         recipientName: message.recipient.name,
         senderName: message.sender.name,
@@ -125,8 +195,14 @@ export async function POST(
         businessName: business.name,
         messageUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/messages/${threadId}`
       })
+      console.log('✅ Email sent successfully:', emailResult)
     } catch (emailError) {
-      console.error('Failed to send email notification:', emailError)
+      console.error('❌ Failed to send email notification:', emailError)
+      console.error('Email error details:', {
+        message: emailError.message,
+        stack: emailError.stack,
+        name: emailError.name
+      })
       // Don't fail the request if email fails
     }
 

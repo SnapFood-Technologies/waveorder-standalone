@@ -25,18 +25,25 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     fetchNotifications()
   }, [businessId])
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (page: number = currentPage) => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/admin/stores/${businessId}/notifications`)
+      const response = await fetch(`/api/admin/stores/${businessId}/notifications?page=${page}&limit=10`)
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
+        setTotalPages(data.pagination?.pages || 1)
+        setTotalCount(data.pagination?.total || 0)
+        setUnreadCount(data.unreadCount || 0)
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
@@ -91,7 +98,6 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
     return matchesSearch && matchesType && matchesStatus
   })
 
-  const unreadCount = notifications.filter(n => !n.isRead).length
 
   if (loading) {
     return (
@@ -125,7 +131,7 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
             Stay updated with your support tickets, messages, and system updates.
           </p>
         </div>
-        {unreadCount > 0 && (
+        {totalCount > 0 && (
           <button
             onClick={handleMarkAllAsRead}
             className="mt-4 lg:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
@@ -143,7 +149,7 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
             <Bell className="w-8 h-8 text-blue-500" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{notifications.length}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
             </div>
           </div>
         </div>
@@ -161,7 +167,7 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
             <Check className="w-8 h-8 text-green-500" />
             <div className="ml-3">
               <p className="text-sm font-medium text-gray-600">Read</p>
-              <p className="text-2xl font-bold text-gray-900">{notifications.length - unreadCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalCount - unreadCount}</p>
             </div>
           </div>
         </div>
@@ -230,6 +236,44 @@ export function NotificationCenter({ businessId }: NotificationCenterProps) {
               onMarkAsRead={handleMarkAsRead}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center text-sm text-gray-700">
+            <span>
+              Showing page {currentPage} of {totalPages} ({totalCount} total notifications)
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                const newPage = currentPage - 1
+                setCurrentPage(newPage)
+                fetchNotifications(newPage)
+              }}
+              disabled={currentPage === 1}
+              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="px-3 py-2 text-sm font-medium text-gray-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => {
+                const newPage = currentPage + 1
+                setCurrentPage(newPage)
+                fetchNotifications(newPage)
+              }}
+              disabled={currentPage === totalPages}
+              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

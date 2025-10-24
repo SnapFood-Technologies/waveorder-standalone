@@ -35,6 +35,12 @@ export async function GET(
       )
     }
 
+    // Get support team name from SuperAdmin settings
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
     // Get comments
     const comments = await prisma.ticketComment.findMany({
       where: {
@@ -45,7 +51,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            role: true
           }
         }
       },
@@ -61,7 +68,10 @@ export async function GET(
         content: comment.content,
         isInternal: comment.isInternal,
         createdAt: comment.createdAt.toISOString(),
-        author: comment.author
+        author: {
+          ...comment.author,
+          name: comment.author.role === 'SUPER_ADMIN' ? supportTeamName : comment.author.name
+        }
       }))
     })
 
@@ -140,6 +150,12 @@ export async function POST(
       data: { updatedAt: new Date() }
     })
 
+    // Get support team name for response
+    const supportSettings = await prisma.superAdminSettings.findFirst({
+      select: { supportTeamName: true }
+    })
+    const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+
     // Find SuperAdmin to notify
     const superAdminUser = await prisma.user.findFirst({
       where: { role: 'SUPER_ADMIN' },
@@ -147,13 +163,16 @@ export async function POST(
     })
 
     if (superAdminUser) {
+      console.log('Found SuperAdmin user:', superAdminUser)
       // Get SuperAdmin email settings
       const superAdminSettings = await prisma.superAdminSettings.findFirst({
         where: { userId: superAdminUser.id },
         select: { primaryEmail: true }
       })
+      console.log('SuperAdmin settings:', superAdminSettings)
       
       const notificationEmail = superAdminSettings?.primaryEmail || superAdminUser.email
+      console.log('Using email for SuperAdmin:', notificationEmail)
 
       // Create notification for SuperAdmin
       await prisma.notification.create({
@@ -167,8 +186,15 @@ export async function POST(
       })
 
       // Send email notification to SuperAdmin
+      console.log('Attempting to send ticket comment email with params:', {
+        to: notificationEmail,
+        recipientName: superAdminUser.name,
+        ticketNumber: ticket.ticketNumber,
+        businessName: access.business.name
+      })
+      
       try {
-        await sendSupportTicketCommentEmail({
+        const emailResult = await sendSupportTicketCommentEmail({
           to: notificationEmail,
           recipientName: superAdminUser.name,
           ticketNumber: ticket.ticketNumber,
@@ -178,8 +204,14 @@ export async function POST(
           businessName: access.business.name,
           ticketUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/tickets/${ticketId}`
         })
+        console.log('✅ Ticket comment email sent successfully:', emailResult)
       } catch (emailError) {
-        console.error('Failed to send email notification to SuperAdmin:', emailError)
+        console.error('❌ Failed to send ticket comment email to SuperAdmin:', emailError)
+        console.error('Email error details:', {
+          message: emailError.message,
+          stack: emailError.stack,
+          name: emailError.name
+        })
       }
     }
 
@@ -191,7 +223,10 @@ export async function POST(
         content: comment.content,
         isInternal: comment.isInternal,
         createdAt: comment.createdAt.toISOString(),
-        author: comment.author
+        author: {
+          ...comment.author,
+          name: comment.author.role === 'SUPER_ADMIN' ? supportTeamName : comment.author.name
+        }
       }
     })
 

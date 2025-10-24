@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Send, User, Clock } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 interface Comment {
   id: string
@@ -27,6 +28,7 @@ export function TicketComments({ ticketId, businessId, onUpdate }: TicketComment
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const { data: session } = useSession()
 
   useEffect(() => {
     fetchComments()
@@ -133,7 +135,9 @@ export function TicketComments({ ticketId, businessId, onUpdate }: TicketComment
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-sm font-medium text-gray-900">{comment.author.name}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {comment.author.id === session?.user?.id ? `${comment.author.name} (You)` : comment.author.name}
+                  </span>
                   <span className="text-xs text-gray-500">•</span>
                   <span className="text-xs text-gray-500 flex items-center">
                     <Clock className="w-3 h-3 mr-1" />

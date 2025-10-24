@@ -25,8 +25,8 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
-    // Get total count and notifications
-    const [notifications, totalCount] = await Promise.all([
+    // Get total count, unread count, and notifications
+    const [notifications, totalCount, unreadCount] = await Promise.all([
       prisma.notification.findMany({
         where: {
           userId: access.session.user.id
@@ -41,12 +41,18 @@ export async function GET(
         where: {
           userId: access.session.user.id
         }
+      }),
+      prisma.notification.count({
+        where: {
+          userId: access.session.user.id,
+          isRead: false
+        }
       })
     ])
 
     return NextResponse.json({
       success: true,
-      notifications: notifications.map(notification => ({
+      notifications: notifications.map((notification: any) => ({
         id: notification.id,
         type: notification.type,
         title: notification.title,
@@ -60,7 +66,8 @@ export async function GET(
         limit,
         total: totalCount,
         pages: Math.ceil(totalCount / limit)
-      }
+      },
+      unreadCount
     })
 
   } catch (error) {

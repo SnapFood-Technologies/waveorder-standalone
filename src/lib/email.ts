@@ -1723,6 +1723,22 @@ export async function sendSupportMessageReceivedEmail({
   businessName,
   messageUrl
 }: SupportMessageReceivedEmailParams) {
+  console.log('📧 sendSupportMessageReceivedEmail called with:', {
+    to,
+    recipientName,
+    senderName,
+    subject,
+    businessName,
+    messageUrl
+  })
+  
+  // Check if RESEND_API_KEY is set
+  if (!process.env.RESEND_API_KEY) {
+    console.error('❌ RESEND_API_KEY is not set!')
+    throw new Error('RESEND_API_KEY environment variable is not set')
+  }
+  
+  console.log('✅ RESEND_API_KEY is set:', process.env.RESEND_API_KEY ? 'Yes' : 'No')
   const content = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px; text-align: center;">
@@ -1760,6 +1776,13 @@ export async function sendSupportMessageReceivedEmail({
   `
 
   try {
+    console.log('📧 Attempting to send email via Resend:', {
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [to],
+      subject: `New Message: ${subject}`,
+      businessName
+    })
+    
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
       to: [to],
@@ -1773,9 +1796,15 @@ export async function sendSupportMessageReceivedEmail({
       },
     })
 
+    console.log('✅ Resend email sent successfully:', result)
     return { success: true, emailId: result.data?.id }
   } catch (error) {
-    console.error('Failed to send support message received email:', error)
+    console.error('❌ Failed to send support message received email:', error)
+    console.error('Resend error details:', {
+      message: error.message,
+      status: error.status,
+      name: error.name
+    })
     throw new Error('Failed to send support message received email')
   }
 }

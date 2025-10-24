@@ -44,7 +44,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
       case 'TICKET_CREATED':
         return 'bg-blue-50 border-blue-200'
       case 'TICKET_UPDATED':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-purple-50 border-purple-200'
       case 'TICKET_RESOLVED':
         return 'bg-green-50 border-green-200'
       case 'MESSAGE_RECEIVED':
