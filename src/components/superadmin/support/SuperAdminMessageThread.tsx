@@ -205,7 +205,7 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
 
       {/* Messages */}
       <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="p-6 space-y-6 max-h-96 overflow-y-auto">
+        <div className="p-6 space-y-6 max-h-96 overflow-y-auto scrollbar-hide">
           {thread.messages.map((message) => (
             <div key={message.id} className="flex space-x-3">
               <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">

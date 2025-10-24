@@ -156,7 +156,7 @@ export function MessageThread({ businessId, threadId }: MessageThreadProps) {
             <p className="text-gray-600">This conversation hasn't started yet.</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
+          <div className="max-h-96 overflow-y-auto scrollbar-hide divide-y divide-gray-200">
             {messages.map((message) => (
               <div key={message.id} className="p-6">
                 <div className="flex items-start space-x-3">

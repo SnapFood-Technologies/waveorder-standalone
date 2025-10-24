@@ -36,12 +36,42 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
 
   useEffect(() => {
     fetchThreads()
+    
+    // Refresh threads when user returns to the page (e.g., from a thread)
+    const handleFocus = () => {
+      fetchThreads()
+    }
+    
+    const handlePageShow = (event: PageTransitionEvent) => {
+      // Refresh when user navigates back (including from thread page)
+      if (event.persisted || document.visibilityState === 'visible') {
+        fetchThreads()
+      }
+    }
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchThreads()
+      }
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pageshow', handlePageShow)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pageshow', handlePageShow)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [businessId])
 
   const fetchThreads = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/admin/stores/${businessId}/support/messages`)
+      const response = await fetch(`/api/admin/stores/${businessId}/support/messages?t=${Date.now()}`, {
+        cache: 'no-store'
+      })
       if (response.ok) {
         const data = await response.json()
         setThreads(data.threads || [])
@@ -173,7 +203,23 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
             <div
               key={thread.threadId}
               className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-teal-200 transition-all duration-200 cursor-pointer group"
-              onClick={() => window.location.href = `/admin/stores/${businessId}/support/messages/${thread.threadId}`}
+              onClick={async () => {
+                // Mark messages as read before navigating
+                if (thread.unreadCount > 0) {
+                  try {
+                    await fetch(`/api/admin/stores/${businessId}/support/messages/${thread.threadId}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({ markAsRead: true })
+                    })
+                  } catch (error) {
+                    console.error('Failed to mark messages as read:', error)
+                  }
+                }
+                window.location.href = `/admin/stores/${businessId}/support/messages/${thread.threadId}`
+              }}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">
