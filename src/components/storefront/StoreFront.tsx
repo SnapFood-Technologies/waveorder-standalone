@@ -3309,7 +3309,7 @@ function OrderPanel({
   deliveryError = null,
   onClearDeliveryError,
   canSubmitOrder,
-  forceScheduleMode = false // ADD THIS LINE
+  forceScheduleMode = false
 }: {
   storeData: any
   cart: CartItem[]
@@ -3338,7 +3338,7 @@ function OrderPanel({
   } | null
   onClearDeliveryError?: () => void
   canSubmitOrder: () => boolean
-  forceScheduleMode?: boolean // ADD THIS LINE
+  forceScheduleMode?: boolean
 }) {
   
   // Helper function to clear address and delivery error

@@ -13,7 +13,7 @@ model Business {
   // ... existing fields
   customDomain               String?
   domainStatus               DomainStatus @default(NONE)
-  domainVerificationToken    String?      // ADD THIS LINE
+  domainVerificationToken    String?
   subdomainEnabled           Boolean      @default(false)
 }
 ```

@@ -46,8 +46,8 @@ interface RecentBusiness {
   subscriptionPlan: string;
   businessType: string;
   logo?: string;
-  createdByAdmin: boolean;  // ADD THIS
-  authMethod: string;       // ADD THIS
+  createdByAdmin: boolean;
+  authMethod: string;
 }
 
 interface DateRange {
