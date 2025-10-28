@@ -25,8 +25,10 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "core-js": "^3.46.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.544.0",
+    "mobx": "^6.15.0",
     "next": "15.5.3",
     "next-auth": "^4.24.11",
     "node-cron": "^4.2.1",
@@ -43,6 +45,7 @@
     "redocly": "^1.0.0",
     "resend": "^6.1.0",
     "stripe": "^19.1.0",
+    "styled-components": "^6.1.19",
     "swagger-jsdoc": "^6.2.8",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.9"
