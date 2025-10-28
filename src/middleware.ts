@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // ADD THIS - Allow /team/invite with token (unauthenticated access)
+  //  Allow /team/invite with token (unauthenticated access)
   if (pathname.startsWith('/team/invite/')) {
     // Allow anyone to access invitation page (they're not logged in yet)
     return NextResponse.next()

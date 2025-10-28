@@ -190,7 +190,7 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
     )
   }
 
-  // Mobile responsive messages - ADD THIS AFTER THE EXISTING DESKTOP CHECK
+  // Mobile responsive messages
 if (isMobile && device === 'mobile') {
   return (
     <div className="bg-gray-50 rounded-xl p-6 text-center">
