@@ -42,11 +42,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # 📦 INSTALL YARN
+      - name: 📦 Install Yarn
+        run: |
+          echo "Installing Yarn..."
+          npm install -g yarn
+          yarn --version
+          echo "✅ Yarn installed successfully"
+
       # 📦 INSTALL DEPENDENCIES
       - name: 📦 Install Dependencies
         run: |
-          echo "Installing dependencies..."
-          npm install --no-audit --no-fund
+          echo "Installing dependencies with Yarn..."
+          yarn install --frozen-lockfile
           echo "✅ Dependencies installed successfully"
 
       # 🏗️ BUILD APPLICATION
@@ -98,14 +106,14 @@ jobs:
           NODE_ENV: production
         run: |
           echo "Starting build process..."
-          npm run build
+          yarn build
           echo "✅ Build completed successfully"
 
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |
           echo "Removing development dependencies..."
-          npm prune --production --no-audit
+          yarn install --production --frozen-lockfile
           echo "✅ Development dependencies removed"
 
       # 📝 CREATE PRODUCTION ENVIRONMENT FILE
@@ -166,7 +174,7 @@ jobs:
           echo "Checking PM2 installation..."
           if ! command -v pm2 &> /dev/null; then
             echo "Installing PM2 globally..."
-            npm install -g pm2
+            yarn global add pm2
           else
             echo "PM2 is already installed"
           fi
@@ -186,7 +194,7 @@ jobs:
             }
           else
             echo "🆕 Starting new application..."
-            pm2 start npm --name "${{ env.APP_NAME }}" -- start
+            pm2 start yarn --name "${{ env.APP_NAME }}" -- start
           fi
           
           # Save PM2 process list
