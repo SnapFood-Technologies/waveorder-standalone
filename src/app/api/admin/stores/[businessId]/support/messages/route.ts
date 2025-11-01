@@ -246,14 +246,6 @@ export async function POST(
     const notificationEmail = superAdminSettings?.primaryEmail || superAdmin.email
     console.log('🔍 Using email for SuperAdmin:', notificationEmail)
 
-    // Send email notification to SuperAdmin
-    console.log('📧 Attempting to send new message email with params:', {
-      to: notificationEmail,
-      recipientName: superAdmin.name,
-      senderName: message.sender.name,
-      subject: subject,
-      businessName: message.business.name
-    })
     
     try {
       const emailResult = await sendSupportMessageReceivedEmail({
