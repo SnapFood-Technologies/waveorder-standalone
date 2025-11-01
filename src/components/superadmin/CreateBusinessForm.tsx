@@ -97,7 +97,8 @@ const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'sq', name: 'Albanian', flag: '🇦🇱' },
   { code: 'el', name: 'Greek', flag: '🇬🇷' },
-  { code: 'it', name: 'Italian', flag: '🇮🇹' }
+  { code: 'it', name: 'Italian', flag: '🇮🇹' },
+  { code: 'es', name: 'Spanish', flag: '🇪🇸' }
 ]
 
 const paymentMethodOptions = [
@@ -914,6 +915,7 @@ export function CreateBusinessForm() {
                             <option value="Europe/Paris">Paris</option>
                             <option value="Europe/Rome">Rome</option>
                             <option value="Europe/Athens">Athens</option>
+                            <option value="Europe/Madrid">Madrid</option>
                             <option value="Europe/Tirane">Tirana</option>
                           </optgroup>
                         </select>

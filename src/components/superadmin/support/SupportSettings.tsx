@@ -649,13 +649,23 @@ export function SupportSettings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="UTC">UTC</option>
-                  <option value="America/New_York">Eastern Time</option>
-                  <option value="America/Chicago">Central Time</option>
-                  <option value="America/Denver">Mountain Time</option>
-                  <option value="America/Los_Angeles">Pacific Time</option>
-                  <option value="Europe/London">London</option>
-                  <option value="Europe/Paris">Paris</option>
-                  <option value="Asia/Tokyo">Tokyo</option>
+                  <optgroup label="North America">
+                    <option value="America/New_York">Eastern Time</option>
+                    <option value="America/Chicago">Central Time</option>
+                    <option value="America/Denver">Mountain Time</option>
+                    <option value="America/Los_Angeles">Pacific Time</option>
+                  </optgroup>
+                  <optgroup label="Europe">
+                    <option value="Europe/London">London</option>
+                    <option value="Europe/Paris">Paris</option>
+                    <option value="Europe/Rome">Rome</option>
+                    <option value="Europe/Athens">Athens</option>
+                    <option value="Europe/Madrid">Madrid</option>
+                    <option value="Europe/Tirane">Tirana</option>
+                  </optgroup>
+                  <optgroup label="Asia">
+                    <option value="Asia/Tokyo">Tokyo</option>
+                  </optgroup>
                 </select>
               </div>
             </div>
