@@ -83,6 +83,7 @@ const phonePrefixes = [
   { code: '+1', country: 'US', flag: '🇺🇸', name: 'United States', pattern: /^[2-9]\d{9}$/, placeholder: '(555) 123-4567' },
   { code: '+30', country: 'GR', flag: '🇬🇷', name: 'Greece', pattern: /^[2-9]\d{9}$/, placeholder: '694 123 4567' },
   { code: '+39', country: 'IT', flag: '🇮🇹', name: 'Italy', pattern: /^[0-9]{9,10}$/, placeholder: '345 123 4567' },
+  { code: '+34', country: 'ES', flag: '🇪🇸', name: 'Spain', pattern: /^[6-9]\d{8}$/, placeholder: '612 345 678' },
   { code: '+355', country: 'AL', flag: '🇦🇱', name: 'Albania', pattern: /^[6-9]\d{8}$/, placeholder: '68 123 4567' }
 ]
 

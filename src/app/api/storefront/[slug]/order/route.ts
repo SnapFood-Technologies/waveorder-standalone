@@ -69,6 +69,9 @@ function parseAndCleanAddress(addressString: string, latitude?: number, longitud
       } else if (lastPartLower.includes('italy') || lastPartLower.includes('it')) {
         country = 'IT';
         additional = lastPart.replace(/italy/i, '').trim();
+      } else if (lastPartLower.includes('spain') || lastPartLower.includes('es')) {
+        country = 'ES';
+        additional = lastPart.replace(/spain/i, '').trim();
       } else {
         // No country detected, treat entire last part as additional
         additional = lastPart;
@@ -1147,6 +1150,9 @@ function formatWhatsAppNumber(phoneNumber: string): string {
     return cleanNumber
   } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
     // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
+    return cleanNumber
+  } else if (cleanNumber.startsWith('34') && cleanNumber.length >= 11) {
+    // Spanish number: +34XXXXXXXXX -> 34XXXXXXXXX
     return cleanNumber
   }
   

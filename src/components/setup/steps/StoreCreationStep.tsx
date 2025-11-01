@@ -77,11 +77,13 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     if (showAlbanianCode) {
       return [
         { code: '+355', country: 'AL', flag: '🇦🇱' },
+        { code: '+34', country: 'ES', flag: '🇪🇸' },
         { code: '+1', country: 'US', flag: '🇺🇸' }
       ]
     }
     return [
-      { code: '+1', country: 'US', flag: '🇺🇸' }
+      { code: '+1', country: 'US', flag: '🇺🇸' },
+      { code: '+34', country: 'ES', flag: '🇪🇸' }
     ]
   }
 
@@ -106,6 +108,12 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
           ...prev,
           countryCode: '+355',
           whatsappNumber: data.whatsappNumber.replace('+355', '')
+        }))
+      } else if (data.whatsappNumber.startsWith('+34')) {
+        setFormData(prev => ({
+          ...prev,
+          countryCode: '+34',
+          whatsappNumber: data.whatsappNumber.replace('+34', '')
         }))
       } else if (data.whatsappNumber.startsWith('+1')) {
         setFormData(prev => ({

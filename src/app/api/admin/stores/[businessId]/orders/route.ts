@@ -49,6 +49,8 @@ function parseAndCleanAddress(addressJson: any): any {
         addressJson.country = 'GR'
       } else if (lastPart.includes('italy') || lastPart.includes('it')) {
         addressJson.country = 'IT'
+      } else if (lastPart.includes('spain') || lastPart.includes('es')) {
+        addressJson.country = 'ES'
       }
     }
     

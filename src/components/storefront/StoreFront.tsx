@@ -493,6 +493,8 @@ function AddressAutocomplete({
           return ['gr', 'al', 'it', 'us'] // Greece business - 4 country addresses -- test purpose
         case 'IT':
           return ['it'] // Italy business - only Italy addresses
+        case 'ES':
+          return ['es'] // Spain business - only Spain addresses
         default:
           return ['us'] // Default fallback
       }
@@ -560,7 +562,7 @@ function AddressAutocomplete({
   
 
 // Detect country from user's location and business data
-function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'DEFAULT' {
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'DEFAULT' {
     // TESTING OVERRIDE: Check user's location first for Greece testing
     if (typeof window !== 'undefined') {
       const browserLanguage = navigator.language.toLowerCase()
@@ -598,6 +600,11 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         return 'IT'
       }
       
+      // Spain boundaries: approximately 36.0-43.8°N, -9.3 to 4.3°E
+      if (lat >= 36.0 && lat <= 43.8 && lng >= -9.3 && lng <= 4.3) {
+        return 'ES'
+      }
+      
       // United States boundaries: approximately 24-71°N, -180 to -66°W
       if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
         return 'US'
@@ -608,6 +615,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.whatsappNumber?.startsWith('+355')) return 'AL'
     if (storeData.whatsappNumber?.startsWith('+30')) return 'GR'
     if (storeData.whatsappNumber?.startsWith('+39')) return 'IT'
+    if (storeData.whatsappNumber?.startsWith('+34')) return 'ES'
     if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
     
     // TERTIARY: Check other user location indicators
@@ -619,11 +627,15 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
       if (browserLanguage.startsWith('it')) {
         return 'IT'
       }
+      if (browserLanguage.startsWith('es')) {
+        return 'ES'
+      }
       
       try {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
         if (timezone === 'Europe/Tirane') return 'AL'
         if (timezone === 'Europe/Rome') return 'IT'
+        if (timezone === 'Europe/Madrid') return 'ES'
       } catch (error) {
         // Timezone detection failed
       }
@@ -633,6 +645,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.currency === 'ALL' || storeData.language === 'sq') return 'AL'
     if (storeData.currency === 'EUR' && storeData.language === 'el') return 'GR'
     if (storeData.currency === 'EUR' && storeData.language === 'it') return 'IT'
+    if (storeData.currency === 'EUR' && storeData.language === 'es') return 'ES'
     
     return 'US'
   }
@@ -1609,6 +1622,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       return cleanPhone.length >= 13
     } else if (cleanPhone.startsWith('+39')) {
       // Italy: +39 + 9-10 digits = 12-13 characters
+      return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+34')) {
+      // Spain: +34 + 9 digits = 12 characters
       return cleanPhone.length >= 12
     } else if (cleanPhone.startsWith('+1')) {
       // US: +1 + 10 digits = 12 characters
