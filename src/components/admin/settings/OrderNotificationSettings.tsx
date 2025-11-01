@@ -29,6 +29,7 @@ interface NotificationSettings {
   orderNotificationsEnabled: boolean
   orderNotificationEmail: string | null
   orderNotificationLastUpdate: string | null
+  notifyOnAdminCreatedOrders: boolean
   lastOrderNotified?: string | null
 }
 
@@ -62,6 +63,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     orderNotificationsEnabled: false,
     orderNotificationEmail: null,
     orderNotificationLastUpdate: null,
+    notifyOnAdminCreatedOrders: false,
     lastOrderNotified: null
   })
   
@@ -96,6 +98,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           orderNotificationsEnabled: data.business.orderNotificationsEnabled || false,
           orderNotificationEmail: data.business.orderNotificationEmail || data.business.email || '',
           orderNotificationLastUpdate: data.business.orderNotificationLastUpdate,
+          notifyOnAdminCreatedOrders: data.business.notifyOnAdminCreatedOrders || false,
           lastOrderNotified: data.business.lastOrderNotified
         })
         setBusiness({ currency: data.business.currency })
@@ -335,10 +338,26 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </p>
               </div>
 
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="notifyOnAdminCreatedOrders"
+                  checked={settings.notifyOnAdminCreatedOrders}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <label className="ml-3 text-sm font-medium text-gray-700">
+                  Also notify when I create orders from admin panel
+                </label>
+              </div>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">What you'll be notified about:</h3>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• New orders placed by customers</li>
+                  {settings.notifyOnAdminCreatedOrders && (
+                    <li>• Orders you create from the admin panel</li>
+                  )}
                 </ul>
               </div>
 

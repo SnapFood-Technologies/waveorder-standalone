@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
+import { sendOrderNotification } from '@/lib/orderNotificationService'
 
 const prisma = new PrismaClient()
 
@@ -513,6 +514,63 @@ export async function POST(
           })
         }
       }
+    }
+
+    // Send order notification email if enabled for admin-created orders
+    try {
+      const businessWithNotifications = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: {
+          orderNotificationsEnabled: true,
+          notifyOnAdminCreatedOrders: true,
+          orderNotificationEmail: true,
+          email: true,
+          name: true,
+          currency: true,
+          businessType: true,
+          language: true
+        }
+      })
+
+      if (businessWithNotifications?.notifyOnAdminCreatedOrders && 
+          businessWithNotifications.orderNotificationsEnabled) {
+        // Format order items for email
+        const orderItemsForEmail = order.items.map(item => ({
+          id: item.id,
+          product: { name: item.product.name },
+          variant: item.variant ? { name: item.variant.name } : null,
+          quantity: item.quantity,
+          price: item.price
+        }))
+
+        // Call the order notification service
+        await sendOrderNotification(
+          {
+            id: order.id,
+            orderNumber: order.orderNumber,
+            status: order.status,
+            type: order.type,
+            total: order.total,
+            deliveryAddress: order.deliveryAddress,
+            notes: order.notes,
+            customer: { name: order.customer.name, phone: order.customer.phone },
+            items: orderItemsForEmail,
+            businessId: businessId
+          },
+          {
+            name: businessWithNotifications.name,
+            orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
+            orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
+            email: businessWithNotifications.email,
+            currency: businessWithNotifications.currency,
+            businessType: businessWithNotifications.businessType,
+            language: businessWithNotifications.language
+          }
+        )
+      }
+    } catch (emailError) {
+      // Don't fail order creation if email fails
+      console.error('Order notification email failed for admin-created order:', emailError)
     }
 
     return NextResponse.json({

@@ -24,6 +24,7 @@ export async function GET(
         orderNotificationsEnabled: true,
         orderNotificationEmail: true,
         orderNotificationLastUpdate: true,
+        notifyOnAdminCreatedOrders: true,
         email: true,
         currency: true
       }
@@ -69,6 +70,7 @@ export async function PUT(
         orderNotificationEmail: data.orderNotificationsEnabled 
           ? data.orderNotificationEmail?.trim() || null 
           : null,
+        notifyOnAdminCreatedOrders: data.notifyOnAdminCreatedOrders ?? false,
         orderNotificationLastUpdate: new Date(),
         updatedAt: new Date()
       },
@@ -76,6 +78,7 @@ export async function PUT(
         orderNotificationsEnabled: true,
         orderNotificationEmail: true,
         orderNotificationLastUpdate: true,
+        notifyOnAdminCreatedOrders: true,
         email: true,
         currency: true
       }
