@@ -117,14 +117,15 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         page: currentPage.toString(),
         limit: '10'
       })
-      const response = await fetch(`/api/admin/stores/${businessId}/notifications?${params}`)
+      // Use the order notifications endpoint specifically for OrderNotifications
+      const response = await fetch(`/api/admin/stores/${businessId}/notifications/order-notifications?${params}`)
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
         setPagination(data.pagination)
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error)
+      console.error('Error fetching order notifications:', error)
     } finally {
       setLoadingNotifications(false)
     }
@@ -432,8 +433,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                             {notification.orderNumber}
                             <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />
                           </h4>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(notification.orderStatus)}`}>
-                            {formatStatus(notification.orderStatus)}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(notification.orderStatus || '')}`}>
+                            {formatStatus(notification.orderStatus || '')}
                           </span>
                         </div>
                         

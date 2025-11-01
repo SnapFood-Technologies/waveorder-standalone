@@ -25,12 +25,33 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
-    // Get total count, unread count, and notifications
+    // Get notifications for the logged-in user
+    // When impersonating: get notifications for business users
+    // When not impersonating: get notifications for the admin user
+    let whereClause: any
+    
+    if (access.isImpersonating) {
+      // SuperAdmin impersonating - get notifications for business users, not superadmin
+      const businessUsers = await prisma.businessUser.findMany({
+        where: { businessId },
+        select: { userId: true }
+      })
+      const businessUserIds = businessUsers.map(bu => bu.userId)
+      
+      // Use business user IDs if any exist, otherwise fallback to superadmin
+      if (businessUserIds.length > 0) {
+        whereClause = { userId: { in: businessUserIds } }
+      } else {
+        whereClause = { userId: access.session.user.id }
+      }
+    } else {
+      // Regular admin user - get their own notifications
+      whereClause = { userId: access.session.user.id }
+    }
+
     const [notifications, totalCount, unreadCount] = await Promise.all([
       prisma.notification.findMany({
-        where: {
-          userId: access.session.user.id
-        },
+        where: whereClause,
         orderBy: {
           createdAt: 'desc'
         },
@@ -38,13 +59,11 @@ export async function GET(
         take: limit
       }),
       prisma.notification.count({
-        where: {
-          userId: access.session.user.id
-        }
+        where: whereClause
       }),
       prisma.notification.count({
         where: {
-          userId: access.session.user.id,
+          ...whereClause,
           isRead: false
         }
       })
