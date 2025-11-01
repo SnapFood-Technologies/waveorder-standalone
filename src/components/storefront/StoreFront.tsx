@@ -1984,9 +1984,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         body: JSON.stringify(orderData)
       })
   
-      const result = await response.json()
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        // If response is not JSON, show a generic error
+        showError(translations.failedToSubmitOrder || 'Failed to submit order. Please try again.', 'error')
+        return
+      }
   
-      if (result.success) {
+      if (response.ok && result.success) {
         // Clear cart and close modal first
         setCart([])
         setShowCartModal(false)
@@ -2024,7 +2031,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           setOrderSuccessMessage(null)
         }, 10000)
       } else {
-        showError(translations.failedToCreateOrder || 'Failed to create order. Please try again.', 'error')
+        // Display the error message from the API, or fallback to default message
+        const errorMessage = result.error || result.message || (translations.failedToCreateOrder || 'Failed to create order. Please try again.')
+        showError(errorMessage, 'error')
       }
     } catch (error) {
       console.error('Order submission error:', error)

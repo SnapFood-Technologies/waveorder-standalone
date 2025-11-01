@@ -765,33 +765,37 @@ export async function POST(
       }
 
       // Check stock if inventory tracking is enabled
-      if (product.trackInventory && product.stock < item.quantity) {
-        return NextResponse.json({ 
-          error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
-        }, { status: 400 });
-      }
+      // If variant is selected, check variant stock; otherwise check product stock
+      if (product.trackInventory) {
+        if (item.variantId) {
+          // Check variant stock if variant is selected
+          const variant = await prisma.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: { 
+              id: true, 
+              name: true, 
+              stock: true 
+            }
+          });
 
-      // Check variant stock if applicable
-      if (item.variantId) {
-        const variant = await prisma.productVariant.findUnique({
-          where: { id: item.variantId },
-          select: { 
-            id: true, 
-            name: true, 
-            stock: true 
+          if (!variant) {
+            return NextResponse.json({ 
+              error: `Product variant not found: ${item.variantId}` 
+            }, { status: 400 });
           }
-        });
 
-        if (!variant) {
-          return NextResponse.json({ 
-            error: `Product variant not found: ${item.variantId}` 
-          }, { status: 400 });
-        }
-
-        if (variant.stock < item.quantity) {
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
-          }, { status: 400 });
+          if (variant.stock < item.quantity) {
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
+        } else {
+          // Check product stock if no variant is selected
+          if (product.stock < item.quantity) {
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
         }
       }
     }
