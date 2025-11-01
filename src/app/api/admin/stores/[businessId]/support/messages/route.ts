@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { generateThreadId } from '@/lib/support-helpers'
+import { sendSupportMessageReceivedEmail } from '@/lib/email'
 
 export async function GET(
   request: NextRequest,
@@ -217,6 +218,70 @@ export async function POST(
         userId: superAdmin.id
       }
     })
+
+    // Get or create SuperAdmin email settings
+    let superAdminSettings = await prisma.superAdminSettings.findFirst({
+      where: { userId: superAdmin.id },
+      select: { primaryEmail: true }
+    })
+    
+    // Create default settings if they don't exist
+    if (!superAdminSettings) {
+      console.log('🔍 No SuperAdmin settings found, creating defaults...')
+      superAdminSettings = await prisma.superAdminSettings.create({
+        data: {
+          userId: superAdmin.id,
+          primaryEmail: superAdmin.email,
+          backupEmails: [],
+          emailFrequency: 'IMMEDIATE',
+          emailDigest: false,
+          urgentOnly: false,
+          supportTeamName: 'WaveOrder Support Team'
+        },
+        select: { primaryEmail: true }
+      })
+      console.log('🔍 Created default SuperAdmin settings:', superAdminSettings)
+    }
+    
+    const notificationEmail = superAdminSettings?.primaryEmail || superAdmin.email
+    console.log('🔍 Using email for SuperAdmin:', notificationEmail)
+
+    // Send email notification to SuperAdmin
+    console.log('📧 Attempting to send new message email with params:', {
+      to: notificationEmail,
+      recipientName: superAdmin.name,
+      senderName: message.sender.name,
+      subject: subject,
+      businessName: message.business.name
+    })
+    
+    try {
+      const emailResult = await sendSupportMessageReceivedEmail({
+        to: notificationEmail,
+        // @ts-ignore
+        recipientName: superAdmin.name,
+        // @ts-ignore
+        senderName: message.sender.name,
+        subject: subject,
+        content: content.trim(),
+        // @ts-ignore
+        businessName: message.business.name,
+        // @ts-ignore
+        messageUrl: `${process.env.NEXTAUTH_URL}/superadmin/support/messages/${threadId}`
+      })
+      console.log('✅ New message email sent successfully:', emailResult)
+    } catch (emailError) {
+      console.error('❌ Failed to send new message email to SuperAdmin:', emailError)
+      console.error('Email error details:', {
+        // @ts-ignore
+        message: emailError.message,
+        // @ts-ignore
+        stack: emailError.stack,
+        // @ts-ignore
+        name: emailError.name
+      })
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({
       success: true,
