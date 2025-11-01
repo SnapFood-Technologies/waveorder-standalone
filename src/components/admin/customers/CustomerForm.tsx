@@ -103,13 +103,27 @@ const COUNTRY_CONFIGS = {
       }
       return clean
     }
+  },
+  ES: {
+    prefix: '+34',
+    placeholder: '612 345 678',
+    pattern: /^(\+34|34)[6-9]\d{8}$/,
+    flag: '🇪🇸',
+    name: 'Spain',
+    allowedAddressCountries: ['es'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 9) {
+        return clean.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3')
+      }
+      return clean
+    }
   }
 }
 
 const OTHER_COUNTRIES = [
   { code: 'FR', prefix: '+33', flag: '🇫🇷', name: 'France', placeholder: '6 12 34 56 78' },
   { code: 'DE', prefix: '+49', flag: '🇩🇪', name: 'Germany', placeholder: '151 12345678' },
-  { code: 'ES', prefix: '+34', flag: '🇪🇸', name: 'Spain', placeholder: '612 345 678' },
   { code: 'UK', prefix: '+44', flag: '🇬🇧', name: 'United Kingdom', placeholder: '7700 900123' },
   { code: 'CA', prefix: '+1', flag: '🇨🇦', name: 'Canada', placeholder: '(555) 123-4567' },
 ]
@@ -140,6 +154,8 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (lat >= 34.8 && lat <= 41.8 && lng >= 19.3 && lng <= 28.2) return 'GR'
     // Italy boundaries
     if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) return 'IT'
+    // Spain boundaries
+    if (lat >= 36.0 && lat <= 43.8 && lng >= -9.3 && lng <= 4.3) return 'ES'
     // US boundaries
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) return 'US'
   }
@@ -149,6 +165,7 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (storeData.whatsappNumber.startsWith('+355')) return 'AL'
     if (storeData.whatsappNumber.startsWith('+30')) return 'GR'
     if (storeData.whatsappNumber.startsWith('+39')) return 'IT'
+    if (storeData.whatsappNumber.startsWith('+34')) return 'ES'
     if (storeData.whatsappNumber.startsWith('+1')) return 'US'
   }
   
@@ -159,6 +176,7 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
       if (timezone === 'Europe/Tirane') return 'AL'
       if (timezone === 'Europe/Athens') return 'GR'
       if (timezone === 'Europe/Rome') return 'IT'
+      if (timezone === 'Europe/Madrid') return 'ES'
       if (timezone.includes('America/')) return 'US'
     } catch (error) {
       // Continue with other detection methods
@@ -173,12 +191,14 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('+355')) return 'AL'
   if (phoneValue.startsWith('+30')) return 'GR'
   if (phoneValue.startsWith('+39')) return 'IT'
+  if (phoneValue.startsWith('+34')) return 'ES'
   if (phoneValue.startsWith('+1')) return 'US'
   
   // Without + prefix
   if (phoneValue.startsWith('355')) return 'AL'
   if (phoneValue.startsWith('30')) return 'GR'
   if (phoneValue.startsWith('39')) return 'IT'
+  if (phoneValue.startsWith('34')) return 'ES'
   if (phoneValue.startsWith('1')) return 'US'
   
   return 'OTHER'
@@ -522,6 +542,8 @@ function AddressAutocomplete({
         return ['gr', 'al', 'it', 'us']
       case 'IT':
         return ['it']
+      case 'ES':
+        return ['es']
       default:
         return ['us']
     }
