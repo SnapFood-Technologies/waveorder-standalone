@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { trackBusinessView } from '@/lib/analytics'
+import * as Sentry from '@sentry/nextjs'
 
 const prisma = new PrismaClient()
 
@@ -121,8 +122,19 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
+  let slug: string = 'unknown'
+  
   try {
-    const { slug } = await context.params
+    slug = (await context.params).slug
+
+    // Set Sentry context for this request
+    Sentry.setContext('storefront_request', {
+      endpoint: '/api/storefront/[slug]',
+      method: 'GET',
+      slug,
+    })
+    Sentry.setTag('api_type', 'storefront')
+    Sentry.setTag('method', 'GET')
 
     // Find business by slug
     const business = await prisma.business.findUnique({
@@ -153,12 +165,27 @@ export async function GET(
     })
 
     if (!business) {
+      Sentry.setTag('error_type', 'store_not_found')
+      Sentry.setTag('status_code', '404')
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
+
+    // Set business context for Sentry
+    Sentry.setTag('business_id', business.id)
+    Sentry.setTag('business_type', business.businessType)
 
     // Track the view - call this after confirming business exists
     // Run in background, don't await to avoid slowing down the response
     trackBusinessView(business.id).catch(error => {
+      Sentry.captureException(error, {
+        tags: {
+          operation: 'track_business_view',
+          businessId: business.id,
+        },
+        extra: {
+          slug,
+        },
+      })
       console.error('Failed to track view:', error)
     })
 
@@ -286,6 +313,19 @@ export async function GET(
     return NextResponse.json(storeData)
 
   } catch (error) {
+    // Capture error in Sentry
+    Sentry.captureException(error, {
+      tags: {
+        endpoint: 'storefront_get',
+        method: 'GET',
+        error_type: 'unexpected_error',
+      },
+      extra: {
+        slug,
+        url: request.url,
+      },
+    })
+    
     console.error('Storefront API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
