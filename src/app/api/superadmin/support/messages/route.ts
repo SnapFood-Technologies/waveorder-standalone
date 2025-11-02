@@ -4,17 +4,50 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateThreadId } from '@/lib/support-helpers'
+import { handleApiError, setSentryContext, setSentryUser, setSentryTags } from '@/lib/api-error-handler'
+import { AuthenticationError, DatabaseError, ValidationError } from '@/lib/errors'
+import * as Sentry from '@sentry/nextjs'
 
 export async function GET(request: NextRequest) {
   try {
+    // Set Sentry context
+    setSentryContext({
+      endpoint: '/api/superadmin/support/messages',
+      method: 'GET',
+    })
+    
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Set Sentry user context
+    if (session?.user) {
+      setSentryUser({
+        id: session.user.id,
+        email: session.user.email || undefined,
+        role: session.user.role,
+      })
     }
+    
+    if (!session) {
+      throw new AuthenticationError('No session found')
+    }
+    
+    if (session.user.role !== 'SUPER_ADMIN') {
+      setSentryTags({
+        unauthorized: 'true',
+        userRole: session.user.role || 'none',
+      })
+      throw new AuthenticationError('SuperAdmin access required')
+    }
+
+    if (!session.user.id) {
+      throw new AuthenticationError('User ID missing from session')
+    }
+
+    setSentryContext({
+      endpoint: '/api/superadmin/support/messages',
+      method: 'GET',
+      userId: session.user.id,
+    })
 
     // Get all message threads where superadmin is involved
     const messages = await prisma.supportMessage.findMany({
@@ -49,6 +82,12 @@ export async function GET(request: NextRequest) {
       orderBy: {
         createdAt: 'desc'
       }
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: { operation: 'find_support_messages' },
+        extra: { userId: session.user.id },
+      })
+      throw new DatabaseError('Failed to fetch support messages', error, { userId: session.user.id })
     })
 
     // Group messages by threadId
@@ -81,6 +120,14 @@ export async function GET(request: NextRequest) {
     const supportSettings = await prisma.superAdminSettings.findFirst({
       where: { userId: session.user.id },
       select: { supportTeamName: true }
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: { operation: 'find_support_settings' },
+        extra: { userId: session.user.id },
+      })
+      // Don't fail the request if settings fetch fails, just use default
+      console.warn('Failed to fetch support settings:', error)
+      return null
     })
 
     const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
@@ -120,34 +167,89 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching message threads:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch message threads' },
-      { status: 500 }
-    )
+    // Enhanced error handling with Sentry
+    Sentry.captureException(error, {
+      tags: {
+        endpoint: 'superadmin_support_messages',
+        method: 'GET',
+      },
+      extra: {
+        url: request.url,
+      },
+    })
+    
+    return handleApiError(error, {
+      endpoint: '/api/superadmin/support/messages',
+      method: 'GET',
+      url: request.url,
+    })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Set Sentry context
+    setSentryContext({
+      endpoint: '/api/superadmin/support/messages',
+      method: 'POST',
+    })
+    
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Set Sentry user context
+    if (session?.user) {
+      setSentryUser({
+        id: session.user.id,
+        email: session.user.email || undefined,
+        role: session.user.role,
+      })
+    }
+    
+    if (!session) {
+      throw new AuthenticationError('No session found')
+    }
+    
+    if (session.user.role !== 'SUPER_ADMIN') {
+      setSentryTags({
+        unauthorized: 'true',
+        userRole: session.user.role || 'none',
+      })
+      throw new AuthenticationError('SuperAdmin access required')
     }
 
-    const body = await request.json()
+    if (!session.user.id) {
+      throw new AuthenticationError('User ID missing from session')
+    }
+
+    const body = await request.json().catch((error) => {
+      throw new ValidationError('Invalid JSON in request body', { error: error.message })
+    })
+    
     const { subject, content, businessId, recipientId } = body
 
-    if (!subject || !content || !businessId || !recipientId) {
-      return NextResponse.json(
-        { error: 'Subject, content, businessId, and recipientId are required' },
-        { status: 400 }
-      )
+    if (!subject || !subject.trim()) {
+      throw new ValidationError('Subject is required')
     }
+    
+    if (!content || !content.trim()) {
+      throw new ValidationError('Content is required')
+    }
+    
+    if (!businessId) {
+      throw new ValidationError('BusinessId is required')
+    }
+    
+    if (!recipientId) {
+      throw new ValidationError('RecipientId is required')
+    }
+
+    setSentryContext({
+      endpoint: '/api/superadmin/support/messages',
+      method: 'POST',
+      userId: session.user.id,
+      businessId,
+      recipientId,
+    })
 
     // Generate unique thread ID
     const threadId = generateThreadId()
@@ -184,13 +286,37 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: { operation: 'create_support_message' },
+        extra: { 
+          userId: session.user.id,
+          businessId,
+          recipientId,
+          threadId,
+        },
+      })
+      throw new DatabaseError('Failed to create support message', error, {
+        businessId,
+        recipientId,
+        threadId,
+      })
     })
 
     // Get support team name from settings
     const supportSettings = await prisma.superAdminSettings.findFirst({
       where: { userId: session.user.id },
       select: { supportTeamName: true }
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: { operation: 'find_support_settings' },
+        extra: { userId: session.user.id },
+      })
+      // Don't fail the request if settings fetch fails, just use default
+      console.warn('Failed to fetch support settings:', error)
+      return null
     })
+    
     const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
 
     // Create notification for recipient
@@ -202,6 +328,17 @@ export async function POST(request: NextRequest) {
         link: `/admin/stores/${businessId}/support/messages/${threadId}`,
         userId: recipientId
       }
+    }).catch((error) => {
+      Sentry.captureException(error, {
+        tags: { operation: 'create_notification' },
+        extra: { 
+          recipientId,
+          threadId,
+          businessId,
+        },
+      })
+      // Don't fail the request if notification creation fails, just log it
+      console.error('Failed to create notification:', error)
     })
 
     return NextResponse.json({
@@ -223,10 +360,21 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error sending message:', error)
-    return NextResponse.json(
-      { error: 'Failed to send message' },
-      { status: 500 }
-    )
+    // Enhanced error handling with Sentry
+    Sentry.captureException(error, {
+      tags: {
+        endpoint: 'superadmin_support_messages',
+        method: 'POST',
+      },
+      extra: {
+        url: request.url,
+      },
+    })
+    
+    return handleApiError(error, {
+      endpoint: '/api/superadmin/support/messages',
+      method: 'POST',
+      url: request.url,
+    })
   }
 }
