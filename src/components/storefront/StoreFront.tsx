@@ -18,6 +18,8 @@ import {
   CalendarClock,
   AlertTriangle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Phone,
   Mail,
   Globe,
@@ -3048,6 +3050,7 @@ function ProductModal({
   featuredBadgeColor?: string // Only add this
 }) {
   const [quantity, setQuantity] = useState(1)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   // Calculate available stock and current cart quantity
   const availableStock = selectedVariant?.stock || product.stock
@@ -3063,6 +3066,7 @@ function ProductModal({
   // Reset quantity when variant changes or modal opens
   useEffect(() => {
     setQuantity(1)
+    setCurrentImageIndex(0) // Reset image index when product changes
   }, [selectedVariant, product.id])
 
   // Adjust quantity if it exceeds available stock
@@ -3135,16 +3139,86 @@ function ProductModal({
             {/* Image Section */}
             {product.images.length > 0 && (
               <div className="relative">
-                <div className="w-full max-w-sm mx-auto">
-                  <img 
-                    src={product.images[0]} 
-                    alt={product.name}
-                    className="w-full h-full object-contain rounded-2xl"
-                  />
+                <div className="w-full max-w-sm mx-auto relative">
+                  {/* Main Image */}
+                  <div className="relative overflow-hidden rounded-2xl bg-gray-50">
+                    <img 
+                      src={product.images[currentImageIndex]} 
+                      alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                      className="w-full h-full object-contain transition-opacity duration-300"
+                      style={{ minHeight: '300px' }}
+                    />
+                    
+                    {/* Navigation Arrows - Only show if multiple images */}
+                    {product.images.length > 1 && (
+                      <>
+                        {/* Left Arrow */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCurrentImageIndex((prev) => 
+                              prev === 0 ? product.images.length - 1 : prev - 1
+                            )
+                          }}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-700" />
+                        </button>
+                        
+                        {/* Right Arrow */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCurrentImageIndex((prev) => 
+                              prev === product.images.length - 1 ? 0 : prev + 1
+                            )
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-700" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Image Dots Indicator - Only show if multiple images */}
+                  {product.images.length > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      {product.images.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`transition-all rounded-full ${
+                            currentImageIndex === index
+                              ? 'w-2.5 h-2.5'
+                              : 'w-2 h-2'
+                          }`}
+                          style={{
+                            backgroundColor: currentImageIndex === index 
+                              ? primaryColor 
+                              : '#d1d5db',
+                            opacity: currentImageIndex === index ? 1 : 0.5
+                          }}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Image Counter */}
+                  {product.images.length > 1 && (
+                    <div className="absolute top-3 left-3 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                      {currentImageIndex + 1} / {product.images.length}
+                    </div>
+                  )}
                 </div>
+                
+                {/* Featured Badge */}
                 {product.featured && (
                   <span 
-                    className="absolute top-3 right-3 px-3 py-1 rounded-lg text-sm font-semibold text-white"
+                    className="absolute top-3 right-3 px-3 py-1 rounded-lg text-sm font-semibold text-white z-10"
                     style={{ backgroundColor: featuredBadgeColor }}
                   >
                     {translations.popular || 'Popular'}
