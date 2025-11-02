@@ -55,7 +55,12 @@ interface OrderItem {
   id: string
   quantity: number
   price: number
-  modifiers: string[]
+  modifiers: Array<{
+    id: string
+    name: string
+    price: number
+    required: boolean
+  }>
   product: {
     id: string
     name: string
@@ -948,9 +953,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       <div className="mt-2">
                         <p className="text-xs text-gray-500">Add-ons:</p>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {item.modifiers.map((modifier, index) => (
-                            <span key={index} className="inline-block bg-gray-100 text-xs px-2 py-1 rounded">
-                              {modifier}
+                          {item.modifiers.map((modifier) => (
+                            <span key={modifier.id} className="inline-block bg-gray-100 text-xs px-2 py-1 rounded">
+                              {modifier.name} (+{formatCurrency(modifier.price)})
                             </span>
                           ))}
                         </div>

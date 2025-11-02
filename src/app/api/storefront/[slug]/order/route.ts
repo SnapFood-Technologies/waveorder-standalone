@@ -1062,6 +1062,12 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
 
     // Create order items
     for (const item of items) {
+      // Transform modifiers from objects to IDs (strings)
+      const modifierIds = item.modifiers?.map((mod: any) => {
+        // Handle both object format {id, name, price} and string ID format
+        return typeof mod === 'string' ? mod : mod.id
+      }) || []
+      
       await prisma.orderItem.create({
         data: {
           orderId: order.id,
@@ -1069,7 +1075,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           variantId: item.variantId || null,
           quantity: item.quantity,
           price: item.price,
-          modifiers: item.modifiers || []
+          modifiers: modifierIds
         }
       })
     }
