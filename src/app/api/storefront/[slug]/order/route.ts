@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import * as Sentry from '@sentry/nextjs'
 
 
 const prisma = new PrismaClient()
@@ -665,9 +666,21 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
+  let orderData: any = null
+  let slug: string = 'unknown'
+  
   try {
-    const { slug } = await context.params
-    const orderData = await request.json()
+    slug = (await context.params).slug
+    orderData = await request.json()
+
+    // Set Sentry context for this request
+    Sentry.setContext('storefront_order_request', {
+      endpoint: '/api/storefront/[slug]/order',
+      method: 'POST',
+      slug,
+    })
+    Sentry.setTag('api_type', 'storefront')
+    Sentry.setTag('method', 'POST')
 
     // Find business and check if it's closed
     const business = await prisma.business.findUnique({
@@ -701,11 +714,19 @@ export async function POST(
     })
 
     if (!business) {
+      Sentry.setTag('error_type', 'store_not_found')
+      Sentry.setTag('status_code', '404')
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
+    // Set business context for Sentry
+    Sentry.setTag('business_id', business.id)
+    Sentry.setTag('business_type', business.businessType)
+
     // Check if store is temporarily closed
     if (business.isTemporarilyClosed) {
+      Sentry.setTag('error_type', 'store_closed')
+      Sentry.setTag('status_code', '400')
       return NextResponse.json({ 
         error: 'Store is temporarily closed',
         message: business.closureMessage || 'We are temporarily closed. Please check back later.',
@@ -733,20 +754,37 @@ export async function POST(
       total
     } = orderData
 
+    // Set order context
+    Sentry.setContext('order_data', {
+      deliveryType: orderData.deliveryType,
+      itemCount: orderData.items?.length || 0,
+      total: orderData.total,
+      hasCustomerEmail: !!orderData.customerEmail,
+    })
+    Sentry.setTag('delivery_type', orderData.deliveryType)
+
     // Validate required fields
     if (!customerName || !customerName.trim()) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
       return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
     }
 
     if (!customerPhone || !customerPhone.trim()) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
       return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
       return NextResponse.json({ error: 'At least one item is required' }, { status: 400 })
     }
 
     if (!deliveryType) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
       return NextResponse.json({ error: 'Delivery type is required' }, { status: 400 })
     }
 
@@ -770,18 +808,27 @@ export async function POST(
     for (const item of items) {
       // Validate item structure
       if (!item.productId) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        Sentry.setContext('validation_error', { item, itemIndex: items.indexOf(item) })
         return NextResponse.json({ 
           error: 'Each item must have a product ID' 
         }, { status: 400 });
       }
 
       if (!item.quantity || item.quantity <= 0) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        Sentry.setContext('validation_error', { item, itemIndex: items.indexOf(item) })
         return NextResponse.json({ 
           error: 'Each item must have a valid quantity' 
         }, { status: 400 });
       }
 
       if (item.price === undefined || item.price === null || item.price < 0) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        Sentry.setContext('validation_error', { item, itemIndex: items.indexOf(item) })
         return NextResponse.json({ 
           error: 'Each item must have a valid price' 
         }, { status: 400 });
@@ -798,6 +845,12 @@ export async function POST(
       });
 
       if (!product) {
+        Sentry.setTag('error_type', 'product_not_found')
+        Sentry.setTag('status_code', '400')
+        Sentry.setContext('product_error', {
+          productId: item.productId,
+          itemIndex: items.indexOf(item),
+        })
         return NextResponse.json({ 
           error: `Product not found: ${item.productId}` 
         }, { status: 400 });
@@ -818,24 +871,46 @@ export async function POST(
           });
 
           if (!variant) {
+            Sentry.setTag('error_type', 'variant_not_found')
+            Sentry.setTag('status_code', '400')
+            Sentry.setContext('variant_error', {
+              productId: item.productId,
+              variantId: item.variantId,
+              itemIndex: items.indexOf(item),
+            })
             return NextResponse.json({ 
               error: `Product variant not found: ${item.variantId}` 
             }, { status: 400 });
           }
 
           if (variant.stock < item.quantity) {
-            return NextResponse.json({ 
-              error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
-            }, { status: 400 });
-          }
-        } else {
-          // Check product stock if no variant is selected
-          if (product.stock < item.quantity) {
-            return NextResponse.json({ 
-              error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
-            }, { status: 400 });
-          }
+          Sentry.setTag('error_type', 'insufficient_stock')
+          Sentry.setTag('status_code', '400')
+          Sentry.setContext('stock_error', {
+            productId: item.productId,
+            variantId: item.variantId,
+            requested: item.quantity,
+            available: variant.stock,
+          })
+          return NextResponse.json({ 
+            error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+          }, { status: 400 });
         }
+      } else {
+        // Check product stock if no variant is selected
+        if (product.stock < item.quantity) {
+          Sentry.setTag('error_type', 'insufficient_stock')
+          Sentry.setTag('status_code', '400')
+          Sentry.setContext('stock_error', {
+            productId: item.productId,
+            requested: item.quantity,
+            available: product.stock,
+          })
+          return NextResponse.json({ 
+            error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+          }, { status: 400 });
+        }
+      }
       }
     }
 
@@ -860,11 +935,29 @@ export async function POST(
           }, { status: 400 })
         }
       } catch (error) {
+        // Capture delivery fee calculation errors
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'calculate_delivery_fee',
+            businessId: business.id,
+            error_type: 'delivery_fee_calculation_error',
+          },
+          extra: {
+            latitude,
+            longitude,
+            deliveryType,
+          },
+        })
+        
         if (error instanceof Error) {
           if (error.message === 'Address is outside delivery area') {
+            Sentry.setTag('error_type', 'outside_delivery_area')
+            Sentry.setTag('status_code', '400')
             return NextResponse.json({ error: 'Address is outside our delivery area' }, { status: 400 })
           }
           if (error.message === 'Store is temporarily closed') {
+            Sentry.setTag('error_type', 'store_closed')
+            Sentry.setTag('status_code', '400')
             return NextResponse.json({ error: 'Store is temporarily closed' }, { status: 400 })
           }
         }
@@ -1031,10 +1124,20 @@ try {
       }
     )
   }
-} catch (emailError) {
-  // Don't fail order creation if email fails
-  console.error('Order notification email failed:', emailError)
-}
+  } catch (emailError) {
+    // Don't fail order creation if email fails
+    Sentry.captureException(emailError, {
+      tags: {
+        operation: 'send_order_notification',
+        businessId: business.id,
+      },
+      extra: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
+    })
+    console.error('Order notification email failed:', emailError)
+  }
 
 
     // Format WhatsApp message with enhanced pickup/delivery support
@@ -1053,6 +1156,16 @@ try {
       }
     })
 
+    // Set success context
+    Sentry.setTag('order_created', 'true')
+    Sentry.setTag('order_id', order.id)
+    Sentry.setContext('order_success', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      total: order.total,
+      deliveryType: order.type,
+    })
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
@@ -1064,6 +1177,24 @@ try {
     })
 
   } catch (error) {
+    // Capture error in Sentry
+    Sentry.captureException(error, {
+      tags: {
+        endpoint: 'storefront_order_post',
+        method: 'POST',
+        error_type: 'order_creation_error',
+      },
+      extra: {
+        slug,
+        orderData: orderData ? {
+          deliveryType: orderData.deliveryType,
+          itemCount: orderData.items?.length,
+          hasCustomerEmail: !!orderData.customerEmail,
+        } : null,
+        url: request.url,
+      },
+    })
+    
     console.error('Order creation error:', error)
     
     // Provide more specific error messages
