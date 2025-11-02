@@ -2,8 +2,87 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
+import { sendCustomerOrderStatusEmail } from '@/lib/customer-email-notification'
+import * as Sentry from '@sentry/nextjs'
 
 const prisma = new PrismaClient()
+
+/**
+ * Check if customer should be notified for this status based on business settings
+ * Takes into account order type (DELIVERY, PICKUP, DINE_IN)
+ */
+function shouldNotifyCustomer(business: any, status: string, orderType: string): boolean {
+  // Customer notifications must be enabled globally
+  if (!business.customerNotificationEnabled) {
+    return false
+  }
+
+  // Use order-type-specific setting if available, otherwise fall back to global setting
+  switch (status) {
+    case 'CONFIRMED':
+      if (orderType === 'DELIVERY') {
+        return business.notifyDeliveryOnConfirmed ?? business.notifyCustomerOnConfirmed ?? false
+      }
+      if (orderType === 'PICKUP') {
+        return business.notifyPickupOnConfirmed ?? business.notifyCustomerOnConfirmed ?? false
+      }
+      if (orderType === 'DINE_IN') {
+        return business.notifyDineInOnConfirmed ?? business.notifyCustomerOnConfirmed ?? false
+      }
+      return business.notifyCustomerOnConfirmed ?? false
+
+    case 'PREPARING':
+      if (orderType === 'DELIVERY') {
+        return business.notifyDeliveryOnPreparing ?? business.notifyCustomerOnPreparing ?? false
+      }
+      if (orderType === 'PICKUP') {
+        return business.notifyPickupOnPreparing ?? business.notifyCustomerOnPreparing ?? false
+      }
+      if (orderType === 'DINE_IN') {
+        return business.notifyDineInOnPreparing ?? business.notifyCustomerOnPreparing ?? false
+      }
+      return business.notifyCustomerOnPreparing ?? false
+
+    case 'READY':
+      // READY doesn't apply to DELIVERY (they use OUT_FOR_DELIVERY instead)
+      if (orderType === 'DELIVERY') {
+        return false
+      }
+      if (orderType === 'PICKUP') {
+        return business.notifyPickupOnReady ?? business.notifyCustomerOnReady ?? true
+      }
+      if (orderType === 'DINE_IN') {
+        return business.notifyDineInOnReady ?? business.notifyCustomerOnReady ?? true
+      }
+      return business.notifyCustomerOnReady ?? true
+
+    case 'OUT_FOR_DELIVERY':
+      // OUT_FOR_DELIVERY only applies to DELIVERY orders
+      if (orderType !== 'DELIVERY') {
+        return false
+      }
+      return business.notifyDeliveryOnOutForDelivery ?? business.notifyCustomerOnOutForDelivery ?? true
+
+    case 'DELIVERED':
+      if (orderType === 'DELIVERY') {
+        return business.notifyDeliveryOnDelivered ?? business.notifyCustomerOnDelivered ?? true
+      }
+      if (orderType === 'PICKUP') {
+        return business.notifyPickupOnDelivered ?? business.notifyCustomerOnDelivered ?? true
+      }
+      if (orderType === 'DINE_IN') {
+        return business.notifyDineInOnDelivered ?? business.notifyCustomerOnDelivered ?? true
+      }
+      return business.notifyCustomerOnDelivered ?? true
+
+    case 'CANCELLED':
+      // Cancellation applies to all order types globally
+      return business.notifyCustomerOnCancelled ?? true
+
+    default:
+      return false
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -122,6 +201,12 @@ export async function PUT(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Set Sentry context for impersonation tracking
+    if (access.isImpersonating) {
+      Sentry.setTag('impersonating', 'true')
+      Sentry.setTag('impersonated_business_id', businessId)
+    }
+
     const validateStatusTransition = (currentStatus: string, newStatus: string): boolean => {
       const validTransitions: Record<string, string[]> = {
         PENDING: ['CONFIRMED', 'CANCELLED'],
@@ -194,9 +279,116 @@ export async function PUT(
             phone: true,
             email: true
           }
+        },
+        business: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            phone: true,
+            currency: true,
+            customerNotificationEnabled: true,
+            notifyCustomerOnConfirmed: true,
+            notifyCustomerOnPreparing: true,
+            notifyCustomerOnReady: true,
+            notifyCustomerOnOutForDelivery: true,
+            notifyCustomerOnDelivered: true,
+            notifyCustomerOnCancelled: true,
+            // Order-type specific settings
+            notifyDeliveryOnConfirmed: true,
+            notifyDeliveryOnPreparing: true,
+            notifyDeliveryOnOutForDelivery: true,
+            notifyDeliveryOnDelivered: true,
+            notifyPickupOnConfirmed: true,
+            notifyPickupOnPreparing: true,
+            notifyPickupOnReady: true,
+            notifyPickupOnDelivered: true,
+            notifyDineInOnConfirmed: true,
+            notifyDineInOnPreparing: true,
+            notifyDineInOnReady: true,
+            notifyDineInOnDelivered: true
+          }
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true
+              }
+            },
+            variant: {
+              select: {
+                name: true
+              }
+            }
+          }
         }
       }
     })
+
+    // Send customer email notification if status changed and settings allow it
+    if (body.status && body.status !== existingOrder.status && updatedOrder.customer.email) {
+      try {
+        // Get notification setting for this status and order type
+        const shouldNotify = shouldNotifyCustomer(updatedOrder.business, body.status, updatedOrder.type)
+        
+        if (shouldNotify) {
+          // Send email notification (don't await to avoid blocking response)
+          sendCustomerOrderStatusEmail(
+            {
+              name: updatedOrder.customer.name,
+              email: updatedOrder.customer.email
+            },
+            {
+              orderNumber: updatedOrder.orderNumber,
+              status: body.status,
+              type: updatedOrder.type,
+              total: updatedOrder.total,
+              deliveryAddress: updatedOrder.deliveryAddress,
+              deliveryTime: updatedOrder.deliveryTime || undefined,
+              businessName: updatedOrder.business.name,
+              businessAddress: updatedOrder.business.address || undefined,
+              businessPhone: updatedOrder.business.phone || undefined,
+              currency: updatedOrder.business.currency,
+              items: updatedOrder.items.map(item => ({
+                name: item.product.name,
+                quantity: item.quantity,
+                price: item.price,
+                variant: item.variant?.name || null
+              }))
+            }
+          ).catch((error) => {
+            // Log error but don't fail the request
+            Sentry.captureException(error, {
+              tags: {
+                operation: 'send_customer_email_notification',
+                orderId: orderId,
+                status: body.status,
+              },
+              extra: {
+                businessId,
+                customerId: updatedOrder.customer.id,
+                orderNumber: updatedOrder.orderNumber,
+              },
+            })
+            console.error('Failed to send customer email notification:', error)
+          })
+        }
+      } catch (error) {
+        // Log error but don't fail the request
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'customer_notification_check',
+            orderId: orderId,
+          },
+          extra: {
+            businessId,
+            status: body.status,
+          },
+        })
+        console.error('Error checking customer notification settings:', error)
+      }
+    }
 
     return NextResponse.json({
       order: {
