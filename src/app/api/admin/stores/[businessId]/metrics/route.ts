@@ -84,10 +84,19 @@ export async function GET(
       color: orderStatusConfig[status]?.color || '#6b7280'
     })).sort((a, b) => b.count - a.count)
 
-    // Get completed orders for revenue calculation (DELIVERED + PAID only)
-    const revenueOrders = allOrders.filter(order => 
-      order.status === 'DELIVERED' && order.paymentStatus === 'PAID'
-    )
+    // Get completed orders for revenue calculation
+    // Revenue includes orders that are paid and completed/fulfilled:
+    // - DELIVERED + PAID (for delivery orders or fully completed pickup/dine-in)
+    // - READY + PAID (for pickup/dine-in orders that are ready but not marked delivered)
+    // - CONFIRMED + PAID (for pickup orders that stop at confirmed status)
+    // Note: Excludes CANCELLED and REFUNDED orders
+    const revenueOrders = allOrders.filter(order => {
+      if (order.paymentStatus !== 'PAID') return false
+      if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+      
+      // Count any paid order that's been confirmed or beyond
+      return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
+    })
 
     // Get analytics data for views
     const analytics = await prisma.analytics.findMany({
@@ -120,8 +129,10 @@ export async function GET(
           gte: prevStartDate,
           lte: prevEndDate
         },
-        status: 'DELIVERED',
-        paymentStatus: 'PAID'
+        paymentStatus: 'PAID',
+        status: {
+          in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+        }
       },
       select: { total: true }
     })
