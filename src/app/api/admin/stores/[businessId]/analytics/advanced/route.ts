@@ -70,8 +70,14 @@ export async function GET(
     // Calculate overview metrics
     const totalViews = analytics.reduce((sum, a) => sum + a.visitors, 0)
     const totalOrders = orders.length
+    // Revenue calculation: Paid orders that are confirmed/completed
+    // Includes DELIVERED, READY, CONFIRMED + PAID (to catch pickup orders that stop early)
     const totalRevenue = orders
-      .filter(o => o.status === 'DELIVERED' && o.paymentStatus === 'PAID')
+      .filter(o => {
+        if (o.paymentStatus !== 'PAID') return false
+        if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
+        return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+      })
       .reduce((sum, o) => sum + o.total, 0)
     
     const conversionRate = totalViews > 0 ? ((totalOrders / totalViews) * 100).toFixed(2) : 0
@@ -104,7 +110,11 @@ export async function GET(
 
     const prevViews = prevAnalytics.reduce((sum, a) => sum + a.visitors, 0)
     const prevRevenue = prevOrders
-      .filter(o => o.status === 'DELIVERED' && o.paymentStatus === 'PAID')
+      .filter(o => {
+        if (o.paymentStatus !== 'PAID') return false
+        if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
+        return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+      })
       .reduce((sum, o) => sum + o.total, 0)
 
     const viewsGrowth = prevViews > 0 ? (((totalViews - prevViews) / prevViews) * 100).toFixed(1) : 0
@@ -158,7 +168,7 @@ export async function GET(
     orders.forEach(order => {
       const hour = order.createdAt.getHours()
       hourlyData[hour].orders++
-      if (order.status === 'DELIVERED' && order.paymentStatus === 'PAID') {
+      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
         hourlyData[hour].revenue += order.total
       }
     })
@@ -175,7 +185,7 @@ export async function GET(
       const dayOfWeek = order.createdAt.getDay()
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert Sunday from 0 to 6
       dailyData[adjustedDay].orders++
-      if (order.status === 'DELIVERED' && order.paymentStatus === 'PAID') {
+      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
         dailyData[adjustedDay].revenue += order.total
       }
     })

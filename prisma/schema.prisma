@@ -264,11 +264,40 @@ model Business {
 
   isIndexable Boolean @default(false)
 
-  // Order Notification Settings
+  // Order Notification Settings (to business)
   orderNotificationsEnabled   Boolean   @default(false)
   orderNotificationEmail      String?
   orderNotificationLastUpdate DateTime?
   notifyOnAdminCreatedOrders  Boolean   @default(false)
+
+  // Customer Notification Settings (per status and order type)
+  customerNotificationEnabled Boolean @default(false)
+
+  // Global status toggles (apply to all order types)
+  notifyCustomerOnConfirmed      Boolean @default(false)
+  notifyCustomerOnPreparing      Boolean @default(false)
+  notifyCustomerOnReady          Boolean @default(true)
+  notifyCustomerOnOutForDelivery Boolean @default(true)
+  notifyCustomerOnDelivered      Boolean @default(true)
+  notifyCustomerOnCancelled      Boolean @default(true)
+
+  // Delivery-specific settings
+  notifyDeliveryOnConfirmed      Boolean @default(false)
+  notifyDeliveryOnPreparing      Boolean @default(false)
+  notifyDeliveryOnOutForDelivery Boolean @default(true)
+  notifyDeliveryOnDelivered      Boolean @default(true)
+
+  // Pickup-specific settings
+  notifyPickupOnConfirmed Boolean @default(false)
+  notifyPickupOnPreparing Boolean @default(false)
+  notifyPickupOnReady     Boolean @default(true)
+  notifyPickupOnDelivered Boolean @default(false)
+
+  // Dine-in specific settings
+  notifyDineInOnConfirmed Boolean @default(false)
+  notifyDineInOnPreparing Boolean @default(false)
+  notifyDineInOnReady     Boolean @default(true)
+  notifyDineInOnDelivered Boolean @default(false)
 
   users              BusinessUser[]
   categories         Category[]

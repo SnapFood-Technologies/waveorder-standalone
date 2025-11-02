@@ -53,11 +53,13 @@ export async function GET(request: NextRequest) {
       prisma.user.count(),
       prisma.order.count(),
       
-      // Delivered and paid orders for revenue
+      // Paid and completed orders for revenue (includes CONFIRMED, READY, DELIVERED)
       prisma.order.findMany({
         where: {
-          status: 'DELIVERED',
-          paymentStatus: 'PAID'
+          paymentStatus: 'PAID',
+          status: {
+            in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+          }
         },
         select: {
           total: true,
@@ -71,8 +73,10 @@ export async function GET(request: NextRequest) {
         include: {
           orders: {
             where: {
-              status: 'DELIVERED',
-              paymentStatus: 'PAID'
+              paymentStatus: 'PAID',
+              status: {
+                in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+              }
             },
             select: {
               total: true

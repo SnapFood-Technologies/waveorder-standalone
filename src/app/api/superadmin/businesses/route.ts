@@ -149,11 +149,14 @@ export async function GET(request: NextRequest) {
         } : null,
         stats: {
           totalOrders: business._count.orders,
+          // Revenue: Paid orders that are confirmed/completed
+          // Includes CONFIRMED, READY, DELIVERED + PAID (catches pickup orders that stop early)
           totalRevenue: business.orders
-            .filter((order: any) => 
-              order.status === 'DELIVERED' && 
-              order.paymentStatus === 'PAID'
-            )
+            .filter((order: any) => {
+              if (order.paymentStatus !== 'PAID') return false
+              if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+              return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
+            })
             // @ts-ignore
             .reduce((sum, order) => sum + order.total, 0),
           totalCustomers: 0,
