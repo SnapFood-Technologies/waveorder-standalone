@@ -120,7 +120,15 @@ export async function GET(
                 id: true,
                 name: true,
                 description: true,
-                images: true
+                images: true,
+                modifiers: {
+                  select: {
+                    id: true,
+                    name: true,
+                    price: true,
+                    required: true
+                  }
+                }
               }
             },
             variant: {
@@ -147,6 +155,32 @@ export async function GET(
       return NextResponse.json({ message: 'Order not found' }, { status: 404 })
     }
 
+    // Fetch modifier details for each item
+    const itemsWithModifiers = await Promise.all(
+      order.items.map(async (item) => {
+        let modifierDetails: Array<{ id: string; name: string; price: number; required: boolean }> = []
+        
+        if (item.modifiers && item.modifiers.length > 0) {
+          // Get all modifier IDs from this item
+          const modifierIds = item.modifiers.filter((id): id is string => typeof id === 'string')
+          
+          if (modifierIds.length > 0) {
+            // Fetch modifier details from product's modifiers
+            modifierDetails = item.product.modifiers.filter(mod => modifierIds.includes(mod.id))
+          }
+        }
+        
+        return {
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          modifiers: modifierDetails,
+          product: item.product,
+          variant: item.variant
+        }
+      })
+    )
+
     return NextResponse.json({
       order: {
         id: order.id,
@@ -160,14 +194,7 @@ export async function GET(
         discount: order.discount,
         createdByAdmin: order.createdByAdmin,
         customer: order.customer,
-        items: order.items.map(item => ({
-          id: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          modifiers: item.modifiers,
-          product: item.product,
-          variant: item.variant
-        })),
+        items: itemsWithModifiers,
         deliveryAddress: order.deliveryAddress,
         deliveryTime: order.deliveryTime,
         notes: order.notes,
