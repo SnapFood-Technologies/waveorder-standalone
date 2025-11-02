@@ -733,6 +733,23 @@ export async function POST(
       total
     } = orderData
 
+    // Validate required fields
+    if (!customerName || !customerName.trim()) {
+      return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
+    }
+
+    if (!customerPhone || !customerPhone.trim()) {
+      return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'At least one item is required' }, { status: 400 })
+    }
+
+    if (!deliveryType) {
+      return NextResponse.json({ error: 'Delivery type is required' }, { status: 400 })
+    }
+
     // Validate delivery type is enabled
     if (deliveryType === 'delivery' && !business.deliveryEnabled) {
       return NextResponse.json({ error: 'Delivery not available' }, { status: 400 })
@@ -751,6 +768,25 @@ export async function POST(
 
     // STOCK VALIDATION - Check product availability before proceeding
     for (const item of items) {
+      // Validate item structure
+      if (!item.productId) {
+        return NextResponse.json({ 
+          error: 'Each item must have a product ID' 
+        }, { status: 400 });
+      }
+
+      if (!item.quantity || item.quantity <= 0) {
+        return NextResponse.json({ 
+          error: 'Each item must have a valid quantity' 
+        }, { status: 400 });
+      }
+
+      if (item.price === undefined || item.price === null || item.price < 0) {
+        return NextResponse.json({ 
+          error: 'Each item must have a valid price' 
+        }, { status: 400 });
+      }
+
       const product = await prisma.product.findUnique({
         where: { id: item.productId },
         select: { 
@@ -1029,8 +1065,47 @@ try {
 
   } catch (error) {
     console.error('Order creation error:', error)
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      // Check for common validation errors
+      if (error.message.includes('required') || error.message.includes('missing')) {
+        return NextResponse.json(
+          { error: `Validation error: ${error.message}` },
+          { status: 400 }
+        )
+      }
+      
+      // Check for database constraint errors
+      if (error.message.includes('Unique constraint') || error.message.includes('duplicate')) {
+        return NextResponse.json(
+          { error: 'An order with this information already exists. Please try again.' },
+          { status: 409 }
+        )
+      }
+      
+      // Check for invalid data errors
+      if (error.message.includes('Invalid') || error.message.includes('invalid')) {
+        return NextResponse.json(
+          { error: `Invalid data: ${error.message}` },
+          { status: 400 }
+        )
+      }
+      
+      // Return the error message if it's informative
+      if (error.message && error.message.length < 200) {
+        return NextResponse.json(
+          { error: error.message },
+          { status: 500 }
+        )
+      }
+    }
+    
+    // Generic fallback error
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { 
+        error: 'Failed to create order. Please check your information and try again.'
+      },
       { status: 500 }
     )
   }
