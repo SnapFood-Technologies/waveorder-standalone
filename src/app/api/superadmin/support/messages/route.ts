@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateThreadId } from '@/lib/support-helpers'
+import { sendSupportMessageReceivedEmail } from '@/lib/email'
 import { handleApiError, setSentryContext, setSentryUser, setSentryTags } from '@/lib/api-error-handler'
 import { AuthenticationError, DatabaseError, ValidationError } from '@/lib/errors'
 import * as Sentry from '@sentry/nextjs'
@@ -303,10 +304,13 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    // Get support team name from settings
+    // Get support team name and notification settings
     const supportSettings = await prisma.superAdminSettings.findFirst({
       where: { userId: session.user.id },
-      select: { supportTeamName: true }
+      select: { 
+        supportTeamName: true,
+        businessNotificationsMessageReceived: true
+      }
     }).catch((error) => {
       Sentry.captureException(error, {
         tags: { operation: 'find_support_settings' },
@@ -318,6 +322,7 @@ export async function POST(request: NextRequest) {
     })
     
     const supportTeamName = supportSettings?.supportTeamName || 'WaveOrder Support Team'
+    const shouldSendEmail = supportSettings?.businessNotificationsMessageReceived ?? true
 
     // Create notification for recipient
     await prisma.notification.create({
@@ -340,6 +345,37 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if notification creation fails, just log it
       console.error('Failed to create notification:', error)
     })
+
+    // Send email notification to business admin if enabled
+    if (shouldSendEmail) {
+      try {
+        await sendSupportMessageReceivedEmail({
+          to: message.recipient.email,
+          // @ts-ignore
+          recipientName: message.recipient.name,
+          // @ts-ignore
+          senderName: supportTeamName,
+          subject: subject,
+          content: content.trim(),
+          // @ts-ignore
+          businessName: message.business.name,
+          // @ts-ignore
+          messageUrl: `${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/support/messages/${threadId}`
+        })
+        console.log('✅ New message email sent successfully to business admin')
+      } catch (emailError) {
+        console.error('❌ Failed to send new message email to business admin:', emailError)
+        Sentry.captureException(emailError, {
+          tags: { operation: 'send_message_email' },
+          extra: { 
+            recipientId,
+            businessId,
+            threadId,
+          },
+        })
+        // Don't fail the request if email fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
