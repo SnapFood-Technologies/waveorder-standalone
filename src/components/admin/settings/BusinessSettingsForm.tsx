@@ -47,6 +47,7 @@ interface BusinessSettings {
   currency: string
   timezone: string
   language: string
+  storefrontLanguage: string // Language for storefront UI (can be different from business language)
   timeFormat: string // "12" or "24"
   translateContentToBusinessLanguage: boolean // Translate customer-facing content to business language
   
@@ -286,6 +287,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     currency: 'USD',
     timezone: 'UTC',
     language: 'en',
+    storefrontLanguage: 'en',
     timeFormat: '24',
     translateContentToBusinessLanguage: true,
     schemaType: 'LocalBusiness',
@@ -321,7 +323,12 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       const response = await fetch(`/api/admin/stores/${businessId}/settings/business`)
       if (response.ok) {
         const data = await response.json()
-        setSettings(data.business)
+        // Ensure storefrontLanguage defaults to language if not set
+        const businessData = {
+          ...data.business,
+          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en'
+        }
+        setSettings(businessData)
         setOriginalSlug(data.business.slug)
         
         // Detect country and show appropriate fields
@@ -767,6 +774,30 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                     <option value="it">Italian (Italiano)</option>
                   )}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  This language is used for customer emails and WhatsApp messages
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Storefront Language
+                </label>
+                <select
+                  name="storefrontLanguage"
+                  value={settings.storefrontLanguage}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                >
+                  <option value="en">English</option>
+                  <option value="es">Spanish (Español)</option>
+                  {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
+                    <option value="sq">Albanian (Shqip)</option>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  This language is used for the storefront UI (buttons, labels, messages). Defaults to your business language but can be changed separately.
+                </p>
               </div>
 
               <div>

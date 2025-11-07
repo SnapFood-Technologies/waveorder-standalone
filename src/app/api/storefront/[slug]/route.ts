@@ -223,6 +223,7 @@ export async function GET(
       currency: business.currency,
       timezone: business.timezone,
       language: business.language,
+      storefrontLanguage: business.storefrontLanguage || business.language || 'en', // Defaults to business language
       timeFormat: business.timeFormat || '24', // Default to 24-hour format
       deliveryFee: business.deliveryFee,
       minimumOrder: business.minimumOrder,

@@ -80,7 +80,11 @@ export async function GET(request: NextRequest) {
             }
           },
           _count: {
-            select: { orders: true }
+            select: { 
+              orders: true,
+              customers: true,
+              products: true
+            }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -159,8 +163,8 @@ export async function GET(request: NextRequest) {
             })
             // @ts-ignore
             .reduce((sum, order) => sum + order.total, 0),
-          totalCustomers: 0,
-          totalProducts: 0
+          totalCustomers: business._count.customers || 0,
+          totalProducts: business._count.products || 0
         }
       }
     })

@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
           businessType: data.businessType || 'OTHER',
           currency: data.currency || 'USD',
           language: data.language || 'en',
+          storefrontLanguage: data.language || 'en', // Defaults to business language
           whatsappNumber: data.whatsappNumber || '',
           subscriptionPlan: data.subscriptionPlan || 'FREE',
           subscriptionStatus: 'ACTIVE',
@@ -127,7 +128,14 @@ export async function POST(request: NextRequest) {
       if (data.storeSlug) updateData.slug = data.storeSlug
       if (data.businessType) updateData.businessType = data.businessType
       if (data.currency) updateData.currency = data.currency
-      if (data.language) updateData.language = data.language
+      if (data.language) {
+        updateData.language = data.language
+        // Update storefrontLanguage to match if not explicitly set
+        if (!data.storefrontLanguage) {
+          updateData.storefrontLanguage = data.language
+        }
+      }
+      if (data.storefrontLanguage) updateData.storefrontLanguage = data.storefrontLanguage
       if (data.whatsappNumber) updateData.whatsappNumber = data.whatsappNumber
       if (data.businessGoals) updateData.businessGoals = data.businessGoals
       if (data.subscriptionPlan) {
