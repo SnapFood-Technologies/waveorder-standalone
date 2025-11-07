@@ -48,6 +48,7 @@ interface BusinessSettings {
   timezone: string
   language: string
   timeFormat: string // "12" or "24"
+  translateContentToBusinessLanguage: boolean // Translate customer-facing content to business language
   
   // SEO fields
   seoTitle?: string
@@ -286,6 +287,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     timezone: 'UTC',
     language: 'en',
     timeFormat: '24',
+    translateContentToBusinessLanguage: true,
     schemaType: 'LocalBusiness',
     isTemporarilyClosed: false,
     isIndexable: true,
@@ -756,15 +758,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                 >
                   <option value="en">English</option>
+                  <option value="es">Spanish (Español)</option>
                   {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
                     <option value="sq">Albanian (Shqip)</option>
                   )}
                   {detectedCountry === 'GR' && <option value="el">Greek (Ελληνικά)</option>}
                   {(detectedCountry === 'IT' || detectedCountry === 'GR') && (
                     <option value="it">Italian (Italiano)</option>
-                  )}
-                  {detectedCountry === 'ES' && (
-                    <option value="es">Spanish (Español)</option>
                   )}
                 </select>
               </div>
@@ -884,6 +884,26 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 <p className="text-xs text-gray-500 mt-1">
                   This format will be used for pickup and delivery time selection on your storefront
                 </p>
+              </div>
+
+              <div className="md:col-span-2">
+                <div className="flex items-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <input
+                    type="checkbox"
+                    name="translateContentToBusinessLanguage"
+                    checked={settings.translateContentToBusinessLanguage}
+                    onChange={handleInputChange}
+                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <div className="ml-3">
+                    <label className="text-sm font-medium text-gray-700">
+                      Translate customer-facing content to business language
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">
+                      When enabled, all customer emails and WhatsApp messages will be automatically translated to your selected business language. Item names and business names will remain as you configured them.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

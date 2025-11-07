@@ -660,6 +660,168 @@ const messageTerms = {
       pickup_type: 'Marrje',
       dineIn_type: 'Vizitë'
     }
+  },
+  es: {
+    RESTAURANT: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Llegada',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Entrega',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Comer Aquí'
+    },
+    CAFE: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Llegada',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Entrega',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Comer Aquí'
+    },
+    RETAIL: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Envío',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Envío',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Envío',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Visita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Envío',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Visita'
+    },
+    GROCERY: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Visita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Entrega',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Visita'
+    },
+    JEWELRY: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Envío',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Envío',
+      pickupLocation: 'Ubicación de la Tienda',
+      deliveryTime: 'Hora de Envío',
+      pickupTime: 'Hora de Cita',
+      arrivalTime: 'Hora de Cita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Servicio',
+      delivery_type: 'Envío',
+      pickup_type: 'Visita a la Tienda',
+      dineIn_type: 'Consulta'
+    },
+    FLORIST: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Visita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Entrega',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Visita'
+    },
+    HEALTH_BEAUTY: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Cita',
+      arrivalTime: 'Hora de Cita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Servicio',
+      delivery_type: 'Entrega',
+      pickup_type: 'Visita a la Tienda',
+      dineIn_type: 'Consulta'
+    },
+    OTHER: {
+      order: 'Pedido',
+      subtotal: 'Subtotal',
+      delivery: 'Entrega',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección de Entrega',
+      pickupLocation: 'Ubicación de Recogida',
+      deliveryTime: 'Hora de Entrega',
+      pickupTime: 'Hora de Recogida',
+      arrivalTime: 'Hora de Visita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Pedido',
+      delivery_type: 'Entrega',
+      pickup_type: 'Recogida',
+      dineIn_type: 'Visita'
+    }
   }
 }
 
@@ -1294,7 +1456,9 @@ try {
 
 function formatWhatsAppOrder({ business, order, customer, items, orderData }: any) {
   const currencySymbol = getCurrencySymbol(business.currency)
-  const language = business.language || 'en'
+  // Use business language if translation is enabled, otherwise default to English
+  const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
+  const language = useBusinessLanguage ? (business.language || 'en') : 'en'
   const businessType = business.businessType || 'RESTAURANT'
   
   // Get appropriate terms for business type and language
@@ -1322,9 +1486,12 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   message += `\n---\n`
   message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
   
-  if (orderData.discount > 0) {
-    message += `${language === 'sq' ? 'Zbritje' : 'Discount'}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
-  }
+    if (orderData.discount > 0) {
+      const discountLabel = language === 'sq' ? 'Zbritje' : 
+                           language === 'es' ? 'Descuento' : 
+                           'Discount'
+      message += `${discountLabel}: -${currencySymbol}${orderData.discount.toFixed(2)}\n`
+    }
   
   if (orderData.deliveryFee > 0) {
     const deliveryLabel = orderData.deliveryZone ? `${terms.delivery} (${orderData.deliveryZone})` : terms.delivery
@@ -1352,25 +1519,34 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
     }
     
     const timeLabel = terms.deliveryTime
+    const locale = language === 'sq' ? 'sq-AL' : 
+                   language === 'es' ? 'es-ES' : 
+                   'en-US'
     message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
   } else if (orderData.deliveryType === 'pickup') {
     // Use business address instead of null
-    const pickupAddress = business.address || 'Store location'
+    const pickupAddress = business.address || (language === 'es' ? 'Ubicación de la tienda' : 'Store location')
     message += `🏪 ${terms.pickupLocation}: ${pickupAddress}\n`
     
     const timeLabel = terms.pickupTime
+    const locale = language === 'sq' ? 'sq-AL' : 
+                   language === 'es' ? 'es-ES' : 
+                   'en-US'
     message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
   } else if (orderData.deliveryType === 'dineIn') {
-    const dineInAddress = business.address || 'Restaurant location'
+    const dineInAddress = business.address || (language === 'es' ? 'Ubicación del restaurante' : 'Restaurant location')
     message += `🍽️ ${dineInAddress}\n`
     
     const timeLabel = terms.arrivalTime
+    const locale = language === 'sq' ? 'sq-AL' : 
+                   language === 'es' ? 'es-ES' : 
+                   'en-US'
     message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : 'en-US') 
+      new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
   }
   

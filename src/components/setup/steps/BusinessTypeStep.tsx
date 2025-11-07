@@ -41,6 +41,7 @@ const allCurrencies = [
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Spanish', flag: '🇪🇸' },
   { code: 'sq', name: 'Albanian', flag: '🇦🇱' }
 ]
 

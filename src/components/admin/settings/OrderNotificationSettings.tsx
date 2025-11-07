@@ -688,9 +688,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                         
                         {/* Details */}
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
-                          <div className="flex items-center">
-                            <User className="w-3 h-3 mr-1" />
-                            <span className="truncate">{notification.customerName}</span>
+                          <div className="flex items-center flex-1 min-w-0">
+                            <User className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate" title={notification.customerName}>{notification.customerName}</span>
                           </div>
                           <div className="flex items-center">
                             <DollarSign className="w-3 h-3 mr-1" />
