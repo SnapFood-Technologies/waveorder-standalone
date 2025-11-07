@@ -68,6 +68,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
     pages: 0
   })
   const [currency, setCurrency] = useState('USD')
+  const [timeFormat, setTimeFormat] = useState('24')
   const [showFilters, setShowFilters] = useState(false)
 
   // Debounce search query for user typing
@@ -99,6 +100,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
         setOrders(data.orders || [])
         setPagination(data.pagination)
         setCurrency(data.currency || 'USD')
+        setTimeFormat(data.timeFormat || '24')
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -193,12 +195,14 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    const use24Hour = timeFormat === '24'
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: !use24Hour
     })
   }
 

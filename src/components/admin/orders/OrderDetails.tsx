@@ -104,6 +104,7 @@ interface Business {
   whatsappNumber: string
   businessType: string
   language: string
+  timeFormat?: string
 }
 
 export default function OrderDetails({ businessId, orderId }: OrderDetailsProps) {
@@ -473,12 +474,16 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    const timeFormat = business?.timeFormat || '24'
+    const use24Hour = timeFormat === '24'
+    
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: !use24Hour
     })
   }
 
@@ -505,10 +510,33 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     
     if (order.deliveryTime) {
       const deliveryDate = new Date(order.deliveryTime)
+      const timeFormat = business?.timeFormat || '24'
+      const use24Hour = timeFormat === '24'
       const timeLabel = order.type === 'DELIVERY' ? 'Delivery time' :
                        order.type === 'PICKUP' ? 'Pickup time' :
                        'Arrival time'
-      message += `⏰ ${timeLabel}: ${deliveryDate.toLocaleString()}\n`
+      
+      let timeString: string
+      if (use24Hour) {
+        // 24-hour format: "November 7, 2025 at 15:00"
+        timeString = deliveryDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) + ' at ' + deliveryDate.toTimeString().slice(0, 5)
+      } else {
+        // 12-hour format: "November 7, 2025 at 3:00 PM"
+        timeString = deliveryDate.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
+      }
+      
+      message += `⏰ ${timeLabel}: ${timeString}\n`
     }
     
     switch (order.status) {

@@ -67,6 +67,7 @@ interface OrderNotification {
 
 interface Business {
   currency: string
+  timeFormat?: string
 }
 
 interface Pagination {
@@ -164,7 +165,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           notifyDineInOnReady: data.business.notifyDineInOnReady ?? true,
           notifyDineInOnDelivered: data.business.notifyDineInOnDelivered ?? false
         })
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ 
+          currency: data.business.currency,
+          timeFormat: data.business.timeFormat || '24'
+        })
       } else {
         setError('Failed to load notification settings')
       }
@@ -249,12 +253,14 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
+    const timeFormat = business?.timeFormat || '24'
+    const use24Hour = timeFormat === '24'
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: !use24Hour
     })
   }
 
