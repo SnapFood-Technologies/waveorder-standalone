@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
+import { phoneNumbersMatch, normalizePhoneNumber, isValidPhoneNumber } from '@/lib/phone-utils'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 
 const prisma = new PrismaClient()
@@ -275,15 +276,56 @@ export async function POST(
         return NextResponse.json({ message: 'Customer name and phone are required' }, { status: 400 })
       }
 
-      const existingCustomer = await prisma.customer.findFirst({
+      // Validate phone number format
+      const normalizedPhone = normalizePhoneNumber(newCustomerData.phone.trim())
+      if (!isValidPhoneNumber(normalizedPhone)) {
+        return NextResponse.json({ 
+          message: 'Invalid phone number format. Phone number must contain at least 10 digits.' 
+        }, { status: 400 })
+      }
+
+      // Use normalized phone matching to find existing customer
+      const allCustomers = await prisma.customer.findMany({
         where: {
-          phone: newCustomerData.phone.trim(),
           businessId: businessId
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true
         }
       })
 
+      // Find customer with matching normalized phone
+      const existingCustomer = allCustomers.find(c => phoneNumbersMatch(c.phone, newCustomerData.phone.trim()))
+
       if (existingCustomer) {
         customerId = existingCustomer.id
+        
+        // Update customer info if new data is more complete
+        let updateData: any = {}
+        const currentName = existingCustomer.name?.trim() || ''
+        const newName = newCustomerData.name?.trim() || ''
+        
+        if (newName && (newName.length > currentName.length || !currentName)) {
+          updateData.name = newName
+        }
+        
+        if (newCustomerData.email?.trim()) {
+          const currentEmail = existingCustomer.email?.trim() || ''
+          const newEmail = newCustomerData.email.trim()
+          if (newEmail !== currentEmail) {
+            updateData.email = newEmail
+          }
+        }
+        
+        if (Object.keys(updateData).length > 0) {
+          await prisma.customer.update({
+            where: { id: existingCustomer.id },
+            data: updateData
+          })
+        }
       } else {
         let customerAddressJson = null
         let customerAddress = null

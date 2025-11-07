@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import * as Sentry from '@sentry/nextjs'
 
 
@@ -967,13 +968,34 @@ export async function POST(
       }
     }
 
-    // Enhanced customer creation/retrieval logic
-    let customer = await prisma.customer.findFirst({
+    // Enhanced customer creation/retrieval logic with normalized phone matching
+    // Normalize the incoming phone number for matching
+    const normalizedPhone = normalizePhoneNumber(customerPhone)
+    
+    if (!normalizedPhone || normalizedPhone.length < 10) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
+    // Find customer by matching normalized phone numbers
+    // Get all customers for this business and match by normalized phone
+    const allCustomers = await prisma.customer.findMany({
       where: {
-        phone: customerPhone,
         businessId: business.id
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        address: true,
+        addressJson: true
       }
     })
+
+    // Find customer with matching normalized phone
+    let customer = allCustomers.find(c => phoneNumbersMatch(c.phone, customerPhone))
 
     if (!customer) {
       // Customer doesn't exist, create new one with address from order
@@ -1001,8 +1023,8 @@ export async function POST(
       customer = await prisma.customer.create({
         data: {
           name: customerName,
-          phone: customerPhone,
-          email: customerEmail,
+          phone: customerPhone.trim(), // Store original format for display
+          email: customerEmail?.trim() || null,
           address: backwardCompatibleAddress,
           addressJson: addressJson,
           businessId: business.id,
@@ -1011,16 +1033,24 @@ export async function POST(
         }
       })
     } else {
-      // Customer exists - DO NOT update address even if different
-      // Only update name and email if they've changed
+      // Customer exists - Update with most complete information
+      // Strategy: Keep longer/more complete name, update email if provided
       let updateData: any = {};
       
-      if (customer.name !== customerName) {
-        updateData.name = customerName;
+      // Update name if new name is longer or more complete (prefer more complete data)
+      const currentName = customer.name?.trim() || ''
+      const newName = customerName?.trim() || ''
+      if (newName && (newName.length > currentName.length || !currentName)) {
+        updateData.name = newName;
       }
       
-      if (customerEmail && customer.email !== customerEmail) {
-        updateData.email = customerEmail;
+      // Update email if provided and different (prefer non-null email)
+      if (customerEmail?.trim()) {
+        const currentEmail = customer.email?.trim() || ''
+        const newEmail = customerEmail.trim()
+        if (newEmail !== currentEmail) {
+          updateData.email = newEmail;
+        }
       }
       
       // Only update if there's something to update
@@ -1029,6 +1059,19 @@ export async function POST(
           where: { id: customer.id },
           data: updateData
         });
+        
+        // Refresh customer data
+        customer = await prisma.customer.findUnique({
+          where: { id: customer.id },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            address: true,
+            addressJson: true
+          }
+        }) || customer
       }
     }
 
