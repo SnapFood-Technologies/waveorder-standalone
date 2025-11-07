@@ -248,13 +248,18 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             await revertOrderStock()
           }
         
+        // Refresh order data first to ensure we have latest status
         await fetchOrder()
+        
+        // Wait a bit to ensure state is updated before generating message
+        await new Promise(resolve => setTimeout(resolve, 100))
         
         showSuccess(`Order status updated to ${newStatus.toLowerCase().replace('_', ' ')}`)
         setShowRejectModal(false)
         setRejectionReason('')
         
         if (newStatus !== 'CANCELLED') {
+          // Generate message after order state is refreshed
           setWhatsappMessage(generateWhatsAppMessage())
           setShowWhatsAppModal(true)
         }
@@ -495,8 +500,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                           business.currency === 'ALL' ? 'L' : 
                           business.currency === 'GBP' ? '£' : '$'
 
+    // Use current order status (should be updated after fetchOrder)
+    const currentStatus = order.status || 'PENDING'
+    
     let message = `Hello ${order.customer.name}!\n\n`
-    message += `Your order #${order.orderNumber} status has been updated to: *${order.status.replace('_', ' ')}*\n\n`
+    message += `Your order #${order.orderNumber} status has been updated to: *${currentStatus.replace('_', ' ')}*\n\n`
     
     if (order.type === 'DELIVERY' && order.deliveryAddress) {
       message += `📍 Delivery Address: ${order.deliveryAddress}\n`
@@ -539,7 +547,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       message += `⏰ ${timeLabel}: ${timeString}\n`
     }
     
-    switch (order.status) {
+    switch (currentStatus) {
       case 'CONFIRMED':
         message += `\n✅ Your order has been confirmed and we're preparing it for you!\n`
         break

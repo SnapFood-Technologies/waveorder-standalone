@@ -112,6 +112,10 @@ function getStatusMessage(status: string, orderType: string): string {
       return 'Your order has been delivered! Thank you for your order.'
     case 'CANCELLED':
       return 'Your order has been cancelled. If you have any questions, please contact us.'
+    case 'PAYMENT_RECEIVED':
+      return 'We have received your payment. Thank you!'
+    case 'PICKED_UP_AND_PAID':
+      return 'Your order has been picked up and payment received. Thank you for your order!'
     default:
       return `Your order status has been updated to ${status.toLowerCase().replace('_', ' ')}.`
   }
@@ -268,6 +272,10 @@ function getStatusColor(status: string): { background: string; border: string; t
       return { background: '#d1fae5', border: '#059669', text: '#065f46' }
     case 'CANCELLED':
       return { background: '#fee2e2', border: '#ef4444', text: '#991b1b' }
+    case 'PAYMENT_RECEIVED':
+      return { background: '#f0fdf4', border: '#10b981', text: '#065f46' }
+    case 'PICKED_UP_AND_PAID':
+      return { background: '#d1fae5', border: '#059669', text: '#065f46' }
     default:
       return { background: '#f3f4f6', border: '#6b7280', text: '#374151' }
   }
@@ -281,6 +289,8 @@ function getStatusIcon(status: string): string {
     case 'OUT_FOR_DELIVERY': return '🚚'
     case 'DELIVERED': return '📦'
     case 'CANCELLED': return '❌'
+    case 'PAYMENT_RECEIVED': return '💳'
+    case 'PICKED_UP_AND_PAID': return '✅'
     default: return '📋'
   }
 }
