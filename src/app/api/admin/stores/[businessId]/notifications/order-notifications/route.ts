@@ -36,7 +36,18 @@ export async function GET(
           notifiedAt: 'desc'
         },
         skip: offset,
-        take: limit
+        take: limit,
+        include: {
+          order: {
+            select: {
+              customer: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        }
       }),
       prisma.orderNotification.count({
         where: {
@@ -47,17 +58,28 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      notifications: orderNotifications.map((notification: any) => ({
-        id: notification.id,
-        orderId: notification.orderId,
-        orderNumber: notification.orderNumber,
-        orderStatus: notification.orderStatus,
-        customerName: notification.customerName,
-        total: notification.total,
-        notifiedAt: notification.notifiedAt.toISOString(),
-        emailSent: notification.emailSent,
-        emailError: notification.emailError
-      })),
+      notifications: orderNotifications.map((notification: any) => {
+        const historicalName = notification.customerName
+        const currentName = notification.order?.customer?.name || historicalName
+        
+        // Format customer name: show current name, and historical name if different
+        let displayName = currentName
+        if (currentName !== historicalName && historicalName) {
+          displayName = `${currentName} (name was: ${historicalName})`
+        }
+        
+        return {
+          id: notification.id,
+          orderId: notification.orderId,
+          orderNumber: notification.orderNumber,
+          orderStatus: notification.orderStatus,
+          customerName: displayName,
+          total: notification.total,
+          notifiedAt: notification.notifiedAt.toISOString(),
+          emailSent: notification.emailSent,
+          emailError: notification.emailError
+        }
+      }),
       pagination: {
         page,
         limit,
