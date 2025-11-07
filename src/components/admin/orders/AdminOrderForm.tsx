@@ -1224,7 +1224,28 @@ export default function AdminOrderForm({
                 <div className="flex justify-between">
                   <span>Scheduled:</span>
                   <span className="font-medium">
-                    {new Date(formData.scheduledTime).toLocaleString()}
+                    {(() => {
+                      const date = new Date(formData.scheduledTime)
+                      const timeFormat = storeData.timeFormat || '24'
+                      const use24Hour = timeFormat === '24'
+                      
+                      if (use24Hour) {
+                        return date.toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        }) + ' at ' + date.toTimeString().slice(0, 5)
+                      } else {
+                        return date.toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })
+                      }
+                    })()}
                   </span>
                 </div>
               )}

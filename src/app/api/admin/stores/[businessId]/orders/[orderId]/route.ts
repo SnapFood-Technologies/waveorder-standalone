@@ -145,7 +145,8 @@ export async function GET(
             currency: true,
             whatsappNumber: true,
             businessType: true,
-            language: true
+            language: true,
+            timeFormat: true
           }
         }
       }

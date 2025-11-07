@@ -51,6 +51,7 @@ export async function GET(
         currency: true,
         language: true,
         timezone: true,
+        timeFormat: true,
         deliveryFee: true,
         minimumOrder: true,
         deliveryRadius: true,

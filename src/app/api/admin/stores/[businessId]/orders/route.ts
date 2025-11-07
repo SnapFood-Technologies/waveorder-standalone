@@ -169,7 +169,7 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { currency: true }
+      select: { currency: true, timeFormat: true }
     })
 
     return NextResponse.json({
@@ -213,7 +213,8 @@ export async function GET(
         total,
         pages: Math.ceil(total / limit)
       },
-      currency: business?.currency || 'USD'
+      currency: business?.currency || 'USD',
+      timeFormat: business?.timeFormat || '24'
     })
 
   } catch (error) {
