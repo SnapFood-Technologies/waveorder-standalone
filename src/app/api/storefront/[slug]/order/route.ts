@@ -246,53 +246,7 @@ async function createInventoryActivities(orderId: string, businessId: string, it
         continue;
       }
 
-      // Handle product inventory
-      if (product.stock >= item.quantity) {
-        const newStock = product.stock - item.quantity;
-        
-        // Update product stock
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: newStock }
-        });
-
-        // Create inventory activity for product
-        await prisma.inventoryActivity.create({
-          data: {
-            productId: item.productId,
-            businessId,
-            type: 'ORDER_SALE',
-            quantity: -item.quantity, // Negative because it's a sale
-            oldStock: product.stock,
-            newStock,
-            reason: `Order sale - Order ID: ${orderId}`,
-            changedBy: 'Customer Order'
-          }
-        });
-      } else {
-        console.warn(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Ordered: ${item.quantity}`);
-        // Still create the activity to track the attempt
-        await prisma.inventoryActivity.create({
-          data: {
-            productId: item.productId,
-            businessId,
-            type: 'ORDER_SALE',
-            quantity: -item.quantity,
-            oldStock: product.stock,
-            newStock: Math.max(0, product.stock - item.quantity), // Don't go below 0
-            reason: `Order sale - Order ID: ${orderId} (Oversold)`,
-            changedBy: 'Customer Order'
-          }
-        });
-        
-        // Update to 0 if oversold
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: Math.max(0, product.stock - item.quantity) }
-        });
-      }
-
-      // Handle variant inventory if applicable
+      // Handle variant inventory if applicable (variants have separate stock)
       if (item.variantId) {
         const variant = await prisma.productVariant.findUnique({
           where: { id: item.variantId },
@@ -325,6 +279,52 @@ async function createInventoryActivities(orderId: string, businessId: string, it
               reason: `Order sale - Order ID: ${orderId} (Variant: ${variant.name})`,
               changedBy: 'Customer Order'
             }
+          });
+        }
+      } else {
+        // Handle product inventory (only when no variant is selected)
+        if (product.stock >= item.quantity) {
+          const newStock = product.stock - item.quantity;
+          
+          // Update product stock
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: newStock }
+          });
+
+          // Create inventory activity for product
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity, // Negative because it's a sale
+              oldStock: product.stock,
+              newStock,
+              reason: `Order sale - Order ID: ${orderId}`,
+              changedBy: 'Customer Order'
+            }
+          });
+        } else {
+          console.warn(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Ordered: ${item.quantity}`);
+          // Still create the activity to track the attempt
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity,
+              oldStock: product.stock,
+              newStock: Math.max(0, product.stock - item.quantity), // Don't go below 0
+              reason: `Order sale - Order ID: ${orderId} (Oversold)`,
+              changedBy: 'Customer Order'
+            }
+          });
+          
+          // Update to 0 if oversold
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: Math.max(0, product.stock - item.quantity) }
           });
         }
       }
@@ -884,34 +884,35 @@ export async function POST(
           }
 
           if (variant.stock < item.quantity) {
-          Sentry.setTag('error_type', 'insufficient_stock')
-          Sentry.setTag('status_code', '400')
-          Sentry.setContext('stock_error', {
-            productId: item.productId,
-            variantId: item.variantId,
-            requested: item.quantity,
-            available: variant.stock,
-          })
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
-          }, { status: 400 });
-        }
-      } else {
-        // Check product stock if no variant is selected
-        if (product.stock < item.quantity) {
-          Sentry.setTag('error_type', 'insufficient_stock')
-          Sentry.setTag('status_code', '400')
-          Sentry.setContext('stock_error', {
-            productId: item.productId,
-            requested: item.quantity,
-            available: product.stock,
-          })
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
-          }, { status: 400 });
+            Sentry.setTag('error_type', 'insufficient_stock')
+            Sentry.setTag('status_code', '400')
+            Sentry.setContext('stock_error', {
+              productId: item.productId,
+              variantId: item.variantId,
+              requested: item.quantity,
+              available: variant.stock,
+            })
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
+        } else {
+          // Check product stock if no variant is selected (but tracking is enabled)
+          if (product.stock < item.quantity) {
+            Sentry.setTag('error_type', 'insufficient_stock')
+            Sentry.setTag('status_code', '400')
+            Sentry.setContext('stock_error', {
+              productId: item.productId,
+              requested: item.quantity,
+              available: product.stock,
+            })
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
         }
       }
-      }
+      // If trackInventory is false, skip stock validation (unlimited stock)
     }
 
     // Calculate and validate delivery fee for delivery orders

@@ -47,6 +47,7 @@ interface BusinessSettings {
   currency: string
   timezone: string
   language: string
+  timeFormat: string // "12" or "24"
   
   // SEO fields
   seoTitle?: string
@@ -284,6 +285,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     currency: 'USD',
     timezone: 'UTC',
     language: 'en',
+    timeFormat: '24',
     schemaType: 'LocalBusiness',
     isTemporarilyClosed: false,
     isIndexable: true,
@@ -864,6 +866,25 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     This timezone will be used for business hours and order timestamps
   </p>
 </div>
+
+              {/* Time Format */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Time Format
+                </label>
+                <select
+                  name="timeFormat"
+                  value={settings.timeFormat}
+                  onChange={handleInputChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                >
+                  <option value="24">24-hour format (14:30)</option>
+                  <option value="12">12-hour format (2:30 PM)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  This format will be used for pickup and delivery time selection on your storefront
+                </p>
+              </div>
             </div>
           </div>
 
