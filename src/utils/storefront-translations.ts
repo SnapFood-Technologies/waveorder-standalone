@@ -567,8 +567,199 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   max: "Maks",
 
   }
-  
+
+  const spanishTranslations: StorefrontTranslations = {
+    // Navigation & Search
+    search: "Buscar en el menú...",
+    allCategories: "Todas las categorías",
+    all: "Todas",
+    
+    // Status
+    open: "● Abierto",
+    closed: "● Cerrado",
+    
+    // General
+    welcome: "¡Bienvenido!",
+    deliveryIn: "Entrega en",
+    customize: "Personalizar",
+    add: "Añadir",
+    outOfStock: "Sin stock",
+    onlyLeft: "Solo",
+    left: "disponibles!",
+
+    onlyMoreCanBeAdded: "Solo {count} más se pueden añadir al carrito",
+    stockLabel: "Stock",
+    inCartLabel: "En carrito",
+
+    itemOutOfStockOrMaxQuantity: "Lo sentimos, este artículo está sin stock o ya está en la cantidad máxima en tu carrito",
+
+    
+    // Order Details
+    orderDetails: "Detalles del Pedido",
+    delivery: "Entrega",
+    pickup: "Recogida",
+    dineIn: "Comer aquí",
+    
+    // Form Fields
+    name: "Nombre",
+    whatsappNumber: "Número de WhatsApp",
+    email: "Email",
+    addressLine1: "Dirección Línea 1",
+    addressLine2: "Dirección Línea 2",
+    deliveryTime: "Hora de Entrega",
+    pickupTime: "Hora de Recogida",
+    arrivalTime: "Hora de Llegada",
+    asap: "LO ANTES POSIBLE",
+    mins: "min",
+
+    
+    website: "Sitio web",
+    yourFullName: "Tu nombre completo",
+    emailPlaceholder: "tu.email@ejemplo.com",
+    linkCopied: "¡Enlace copiado al portapapeles!",
+    moreSharingOptions: "Más opciones de compartir",
+
+    // Spanish translations:
+    now: "Ahora",
+    schedule: "Programar",
+    selectDate: "Seleccionar Fecha",
+    selectTime: "Seleccionar Hora",
+    today: "Hoy",
+    tomorrow: "Mañana",
+    noTimeSlots: "No hay horarios disponibles para esta fecha",
+    address: "Dirección",
+    pickupLocation: "Ubicación de Recogida",
+    directions: "Direcciones",
+    tapForDirections: "Toca para ver direcciones",
+    pickupInstructions: "Por favor, ven a esta ubicación para recoger tu pedido.",
+    mapView: "Vista de Mapa",
+    businessInfo: "Información del Negocio",
+    about: "Acerca de",
+    contact: "Contacto",
+    hours: "Horarios",
+    serviceOptions: "Opciones de Servicio",
+    share: "Compartir",
+    copyLink: "Copiar Enlace",
+    shareVia: "Compartir vía",
+    temporarilyClosed: "Cerrado Temporalmente",
+    expectedReopen: "Se espera reabrir",
+    storeTemporarilyClosed: "Tienda Cerrada Temporalmente",
+    storeClosedMessage: "Disculpa las molestias.",
+    time: "Hora",
+    serviceFee: "Tarifa de Servicio",
+    popular: "Popular",
+    
+    // Cart & Checkout
+    cartItems: "Artículos en el Carrito",
+    subtotal: "Subtotal",
+    deliveryFee: "Tarifa de Entrega",
+    total: "Total",
+    minimumOrder: "El pedido mínimo es",
+    forDelivery: "para entrega. Añade",
+    moreTo: "más para realizar tu pedido.",
+    specialInstructions: "Instrucciones Especiales",
+    anySpecialRequests: "Cualquier solicitud especial...",
+    orderViaWhatsapp: "Pedir por WhatsApp",
+    placingOrder: "Realizando Pedido...",
+    clickingButton: "Al hacer clic en este botón se abrirá WhatsApp con los detalles de tu pedido",
+    yourOrder: "Tu Pedido",
+
+    sorryOnlyStockAvailable: "Lo sentimos, solo {count} {itemWord} disponibles en stock",
+
+    
+    // Product Modal
+    chooseSize: "Elegir Opción",
+    addExtras: "Añadir Extras",
+    required: "(Obligatorio)",
+    quantity: "Cantidad",
+    addToCart: "Añadir al Carrito",
+    
+    // Placeholders
+    streetAddress: "Dirección",
+    apartment: "Apartamento, suite, etc.",
+
+    inCartAvailable: "{inCart} en carrito, {available} disponibles",
+    onlyStockAvailable: "Solo {stock} disponibles",
+    
+    // Footer
+    poweredBy: "Desarrollado por",
+    
+    // Empty States
+    noProductsFound: "No se encontraron productos",
+    noProductsFoundDescription: "No pudimos encontrar productos que coincidan con tu búsqueda. Intenta ajustar tus términos de búsqueda.",
+    noProductsInCategory: "No hay productos en esta categoría",
+    noProductsInCategoryDescription: "Esta categoría aún no tiene productos. Vuelve más tarde o explora otras categorías.",
+    tryDifferentSearch: "Prueba una búsqueda diferente",
+    browseAllProducts: "Explorar todos los productos",
+    comingSoon: "¡Próximamente!",
+    checkBackLater: "Estamos trabajando en añadir productos a esta sección. Por favor, vuelve más tarde.",
+    freeDelivery: "Entrega Gratis",
+    pickupAvailable: "Recogida disponible",
+    // Closure Messages
+    maintenanceMessage: "Actualmente estamos realizando mantenimiento y volveremos pronto.",
+    holidayMessage: "Estamos cerrados por las vacaciones.",
+    emergencyMessage: "Estamos cerrados temporalmente debido a circunstancias imprevistas.",
+    staffShortageMessage: "Estamos cerrados temporalmente debido a problemas de personal.",
+    supplyIssuesMessage: "Estamos cerrados temporalmente debido a problemas de suministro.",
+    temporaryClosureMessage: "Estamos cerrados temporalmente y reabriremos pronto.",
+
+    noResultsFor: 'No hay resultados para',
+    result: 'resultado',
+    results: 'resultados',
+    for: 'para',
+
+     // Delivery Zone Errors
+  outsideDeliveryArea: "La dirección está fuera del área de entrega",
+  outsideDeliveryAreaDesc: "Desafortunadamente, no entregamos a esta dirección. La distancia máxima de entrega es",
+  deliveryNotAvailable: "Entrega no disponible",
+  deliveryCalculationFailed: "No se pudo calcular la tarifa de entrega",
+  tryDifferentAddress: "Prueba una dirección diferente",
+  selectDifferentArea: "Por favor, selecciona una dirección dentro de nuestra área de entrega",
+  maxDeliveryDistance: "Distancia máxima de entrega",
+  failedToCreateOrder: "Error al crear el pedido. Por favor, inténtalo de nuevo.",
+  failedToSubmitOrder: "Error al enviar el pedido. Por favor, inténtalo de nuevo.",
+
+  // Success Message & Scheduling
+  orderPrepared: "¡Pedido Preparado!",
+  orderNumber: "Número de Pedido",
+  orderOpenedWhatsApp: "Los detalles de tu pedido han sido preparados y WhatsApp debería estar abierto ahora. Por favor, envía el mensaje para completar tu pedido (si aún no lo has enviado).",
+  nextSteps: "Próximos Pasos",
+  sendWhatsAppMessage: "Envía el mensaje de WhatsApp (si aún no se ha enviado)",
+  awaitConfirmation: "Espera nuestra confirmación",
+  weWillPrepareOrder: "Prepararemos tu pedido una vez confirmado",
+  storeCurrentlyClosed: "La tienda está actualmente cerrada",
+  wouldYouLikeToSchedule: "¿Te gustaría programar tu pedido para más tarde?",
+
+  cannotPlaceNowOrder: "Actualmente estamos cerrados y no podemos aceptar pedidos para entrega/recogida inmediata. Sin embargo, ¡puedes programar tu pedido para cuando estemos abiertos!",
+  schedulingBenefits: "¿Por qué programar tu pedido?",
+  guaranteedPreparation: "Preparación garantizada cuando estemos abiertos",
+  noWaitingTime: "Sin espera - listo cuando llegues",
+  secureYourOrder: "Asegura tu horario preferido",
+  continueAnyway: "Continuar de Todos Modos",
+  scheduleOrder: "Programar Pedido",
+  close: "Cerrar",
+  selectTimeForSchedule: "Por favor, selecciona una hora para tu pedido",
+  addItemsToCart: "Añadir artículos al carrito",
+  fillRequiredInfo: "Completar información requerida",
+  addDeliveryAddress: "Añadir dirección de entrega",
+  // NEW STOCK-RELATED TRANSLATIONS
+  inCart: "en carrito",
+  available: "disponibles",
+  onlyAvailable: "Solo disponibles",
+  item: "artículo",
+  items: "artículos",
+  maximumQuantityInCart: "Cantidad máxima ({count}) ya en carrito",
+  canBeAdded: "más se pueden añadir al carrito",
+  stock: "Stock",
+  max: "Máx",
+
+  }
+
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {
-    const isAlbanian = language === 'sq' || language === 'al'
-    return isAlbanian ? albanianTranslations : englishTranslations
+    if (language === 'sq' || language === 'al') {
+      return albanianTranslations
+    } else if (language === 'es') {
+      return spanishTranslations
+    }
+    return englishTranslations
   }

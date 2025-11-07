@@ -1611,7 +1611,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }, [cart])
 
   const currencySymbol = getCurrencySymbol(storeData.currency)
-  const translations = getStorefrontTranslations(storeData.language)
+  const translations = getStorefrontTranslations(storeData.storefrontLanguage || storeData.language || 'en')
   const primaryColor = storeData.primaryColor || '#0D9488'
 
   // Calculate cart totals with dynamic delivery fee
