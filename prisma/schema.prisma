@@ -300,6 +300,10 @@ model Business {
   notifyDineInOnReady     Boolean @default(true)
   notifyDineInOnDelivered Boolean @default(false)
 
+  // Payment and pickup notifications
+  notifyCustomerOnPaymentReceived Boolean @default(true)
+  notifyCustomerOnPickedUpAndPaid Boolean @default(true)
+
   users              BusinessUser[]
   categories         Category[]
   products           Product[]

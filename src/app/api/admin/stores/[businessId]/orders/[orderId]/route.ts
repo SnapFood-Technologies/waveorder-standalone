@@ -334,7 +334,10 @@ export async function PUT(
             notifyDineInOnConfirmed: true,
             notifyDineInOnPreparing: true,
             notifyDineInOnReady: true,
-            notifyDineInOnDelivered: true
+            notifyDineInOnDelivered: true,
+            // Payment and pickup notifications
+            notifyCustomerOnPaymentReceived: true,
+            notifyCustomerOnPickedUpAndPaid: true
           }
         },
         items: {
@@ -415,6 +418,122 @@ export async function PUT(
           },
         })
         console.error('Error checking customer notification settings:', error)
+      }
+    }
+
+    // Send customer email notification if payment status changed to PAID
+    if (body.paymentStatus && 
+        body.paymentStatus === 'PAID' && 
+        existingOrder.paymentStatus !== 'PAID' && 
+        updatedOrder.customer.email &&
+        updatedOrder.business.customerNotificationEnabled &&
+        updatedOrder.business.notifyCustomerOnPaymentReceived !== false) {
+      try {
+        // Send payment received notification
+        sendCustomerOrderStatusEmail(
+          {
+            name: updatedOrder.customer.name,
+            email: updatedOrder.customer.email
+          },
+          {
+            orderNumber: updatedOrder.orderNumber,
+            status: 'PAYMENT_RECEIVED', // Special status for payment
+            type: updatedOrder.type,
+            total: updatedOrder.total,
+            deliveryAddress: updatedOrder.deliveryAddress,
+            deliveryTime: updatedOrder.deliveryTime || undefined,
+            businessName: updatedOrder.business.name,
+            businessAddress: updatedOrder.business.address || undefined,
+            businessPhone: updatedOrder.business.phone || undefined,
+            currency: updatedOrder.business.currency,
+            items: updatedOrder.items.map(item => ({
+              name: item.product.name,
+              quantity: item.quantity,
+              price: item.price,
+              variant: item.variant?.name || null
+            }))
+          }
+        ).catch((error) => {
+          Sentry.captureException(error, {
+            tags: {
+              operation: 'send_payment_received_notification',
+              orderId: orderId,
+            },
+            extra: {
+              businessId,
+              customerId: updatedOrder.customer.id,
+              orderNumber: updatedOrder.orderNumber,
+            },
+          })
+          console.error('Failed to send payment received notification:', error)
+        })
+      } catch (error) {
+        console.error('Error sending payment received notification:', error)
+      }
+    }
+
+    // Send "Picked Up & Paid" notification for pickup orders
+    // Trigger when: order is READY (or DELIVERED for pickup) AND payment is PAID
+    if (updatedOrder.type === 'PICKUP' &&
+        updatedOrder.paymentStatus === 'PAID' &&
+        (updatedOrder.status === 'READY' || updatedOrder.status === 'DELIVERED') &&
+        updatedOrder.customer.email &&
+        updatedOrder.business.customerNotificationEnabled &&
+        updatedOrder.business.notifyCustomerOnPickedUpAndPaid !== false) {
+      
+      // Only send if payment was just marked as PAID (not if it was already PAID)
+      const paymentJustPaid = body.paymentStatus === 'PAID' && existingOrder.paymentStatus !== 'PAID'
+      // Or if status was just changed to READY/DELIVERED and payment is already PAID
+      const statusJustChanged = body.status && 
+                                body.status !== existingOrder.status &&
+                                (body.status === 'READY' || body.status === 'DELIVERED') &&
+                                existingOrder.paymentStatus === 'PAID' &&
+                                existingOrder.status !== 'READY' &&
+                                existingOrder.status !== 'DELIVERED'
+      
+      if (paymentJustPaid || statusJustChanged) {
+        try {
+          // Send picked up & paid notification
+          sendCustomerOrderStatusEmail(
+            {
+              name: updatedOrder.customer.name,
+              email: updatedOrder.customer.email
+            },
+            {
+              orderNumber: updatedOrder.orderNumber,
+              status: 'PICKED_UP_AND_PAID', // Special status for picked up & paid
+              type: updatedOrder.type,
+              total: updatedOrder.total,
+              deliveryAddress: updatedOrder.deliveryAddress,
+              deliveryTime: updatedOrder.deliveryTime || undefined,
+              businessName: updatedOrder.business.name,
+              businessAddress: updatedOrder.business.address || undefined,
+              businessPhone: updatedOrder.business.phone || undefined,
+              currency: updatedOrder.business.currency,
+              items: updatedOrder.items.map(item => ({
+                name: item.product.name,
+                quantity: item.quantity,
+                price: item.price,
+                variant: item.variant?.name || null
+              }))
+            }
+          ).catch((error) => {
+            Sentry.captureException(error, {
+              tags: {
+                operation: 'send_picked_up_paid_notification',
+                orderId: orderId,
+              },
+              extra: {
+                businessId,
+                customerId: updatedOrder.customer.id,
+                orderNumber: updatedOrder.orderNumber,
+              },
+            })
+            console.error('Failed to send picked up & paid notification:', error)
+          })
+        } catch (error) {
+          console.error('Error sending picked up & paid notification:', error)
+        }
       }
     }
 
