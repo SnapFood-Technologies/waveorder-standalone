@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import * as Sentry from '@sentry/nextjs'
 
 
@@ -246,53 +247,7 @@ async function createInventoryActivities(orderId: string, businessId: string, it
         continue;
       }
 
-      // Handle product inventory
-      if (product.stock >= item.quantity) {
-        const newStock = product.stock - item.quantity;
-        
-        // Update product stock
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: newStock }
-        });
-
-        // Create inventory activity for product
-        await prisma.inventoryActivity.create({
-          data: {
-            productId: item.productId,
-            businessId,
-            type: 'ORDER_SALE',
-            quantity: -item.quantity, // Negative because it's a sale
-            oldStock: product.stock,
-            newStock,
-            reason: `Order sale - Order ID: ${orderId}`,
-            changedBy: 'Customer Order'
-          }
-        });
-      } else {
-        console.warn(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Ordered: ${item.quantity}`);
-        // Still create the activity to track the attempt
-        await prisma.inventoryActivity.create({
-          data: {
-            productId: item.productId,
-            businessId,
-            type: 'ORDER_SALE',
-            quantity: -item.quantity,
-            oldStock: product.stock,
-            newStock: Math.max(0, product.stock - item.quantity), // Don't go below 0
-            reason: `Order sale - Order ID: ${orderId} (Oversold)`,
-            changedBy: 'Customer Order'
-          }
-        });
-        
-        // Update to 0 if oversold
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: Math.max(0, product.stock - item.quantity) }
-        });
-      }
-
-      // Handle variant inventory if applicable
+      // Handle variant inventory if applicable (variants have separate stock)
       if (item.variantId) {
         const variant = await prisma.productVariant.findUnique({
           where: { id: item.variantId },
@@ -325,6 +280,52 @@ async function createInventoryActivities(orderId: string, businessId: string, it
               reason: `Order sale - Order ID: ${orderId} (Variant: ${variant.name})`,
               changedBy: 'Customer Order'
             }
+          });
+        }
+      } else {
+        // Handle product inventory (only when no variant is selected)
+        if (product.stock >= item.quantity) {
+          const newStock = product.stock - item.quantity;
+          
+          // Update product stock
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: newStock }
+          });
+
+          // Create inventory activity for product
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity, // Negative because it's a sale
+              oldStock: product.stock,
+              newStock,
+              reason: `Order sale - Order ID: ${orderId}`,
+              changedBy: 'Customer Order'
+            }
+          });
+        } else {
+          console.warn(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Ordered: ${item.quantity}`);
+          // Still create the activity to track the attempt
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: item.productId,
+              businessId,
+              type: 'ORDER_SALE',
+              quantity: -item.quantity,
+              oldStock: product.stock,
+              newStock: Math.max(0, product.stock - item.quantity), // Don't go below 0
+              reason: `Order sale - Order ID: ${orderId} (Oversold)`,
+              changedBy: 'Customer Order'
+            }
+          });
+          
+          // Update to 0 if oversold
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: Math.max(0, product.stock - item.quantity) }
           });
         }
       }
@@ -884,34 +885,35 @@ export async function POST(
           }
 
           if (variant.stock < item.quantity) {
-          Sentry.setTag('error_type', 'insufficient_stock')
-          Sentry.setTag('status_code', '400')
-          Sentry.setContext('stock_error', {
-            productId: item.productId,
-            variantId: item.variantId,
-            requested: item.quantity,
-            available: variant.stock,
-          })
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
-          }, { status: 400 });
-        }
-      } else {
-        // Check product stock if no variant is selected
-        if (product.stock < item.quantity) {
-          Sentry.setTag('error_type', 'insufficient_stock')
-          Sentry.setTag('status_code', '400')
-          Sentry.setContext('stock_error', {
-            productId: item.productId,
-            requested: item.quantity,
-            available: product.stock,
-          })
-          return NextResponse.json({ 
-            error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
-          }, { status: 400 });
+            Sentry.setTag('error_type', 'insufficient_stock')
+            Sentry.setTag('status_code', '400')
+            Sentry.setContext('stock_error', {
+              productId: item.productId,
+              variantId: item.variantId,
+              requested: item.quantity,
+              available: variant.stock,
+            })
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name} - ${variant.name}. Available: ${variant.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
+        } else {
+          // Check product stock if no variant is selected (but tracking is enabled)
+          if (product.stock < item.quantity) {
+            Sentry.setTag('error_type', 'insufficient_stock')
+            Sentry.setTag('status_code', '400')
+            Sentry.setContext('stock_error', {
+              productId: item.productId,
+              requested: item.quantity,
+              available: product.stock,
+            })
+            return NextResponse.json({ 
+              error: `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}` 
+            }, { status: 400 });
+          }
         }
       }
-      }
+      // If trackInventory is false, skip stock validation (unlimited stock)
     }
 
     // Calculate and validate delivery fee for delivery orders
@@ -966,13 +968,34 @@ export async function POST(
       }
     }
 
-    // Enhanced customer creation/retrieval logic
-    let customer = await prisma.customer.findFirst({
+    // Enhanced customer creation/retrieval logic with normalized phone matching
+    // Normalize the incoming phone number for matching
+    const normalizedPhone = normalizePhoneNumber(customerPhone)
+    
+    if (!normalizedPhone || normalizedPhone.length < 10) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
+    // Find customer by matching normalized phone numbers
+    // Get all customers for this business and match by normalized phone
+    const allCustomers = await prisma.customer.findMany({
       where: {
-        phone: customerPhone,
         businessId: business.id
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        address: true,
+        addressJson: true
       }
     })
+
+    // Find customer with matching normalized phone
+    let customer = allCustomers.find(c => phoneNumbersMatch(c.phone, customerPhone))
 
     if (!customer) {
       // Customer doesn't exist, create new one with address from order
@@ -1000,8 +1023,8 @@ export async function POST(
       customer = await prisma.customer.create({
         data: {
           name: customerName,
-          phone: customerPhone,
-          email: customerEmail,
+          phone: customerPhone.trim(), // Store original format for display
+          email: customerEmail?.trim() || null,
           address: backwardCompatibleAddress,
           addressJson: addressJson,
           businessId: business.id,
@@ -1010,16 +1033,24 @@ export async function POST(
         }
       })
     } else {
-      // Customer exists - DO NOT update address even if different
-      // Only update name and email if they've changed
+      // Customer exists - Update with most complete information
+      // Strategy: Keep longer/more complete name, update email if provided
       let updateData: any = {};
       
-      if (customer.name !== customerName) {
-        updateData.name = customerName;
+      // Update name if new name is longer or more complete (prefer more complete data)
+      const currentName = customer.name?.trim() || ''
+      const newName = customerName?.trim() || ''
+      if (newName && (newName.length > currentName.length || !currentName)) {
+        updateData.name = newName;
       }
       
-      if (customerEmail && customer.email !== customerEmail) {
-        updateData.email = customerEmail;
+      // Update email if provided and different (prefer non-null email)
+      if (customerEmail?.trim()) {
+        const currentEmail = customer.email?.trim() || ''
+        const newEmail = customerEmail.trim()
+        if (newEmail !== currentEmail) {
+          updateData.email = newEmail;
+        }
       }
       
       // Only update if there's something to update
@@ -1028,6 +1059,19 @@ export async function POST(
           where: { id: customer.id },
           data: updateData
         });
+        
+        // Refresh customer data
+        customer = await prisma.customer.findUnique({
+          where: { id: customer.id },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            address: true,
+            addressJson: true
+          }
+        }) || customer
       }
     }
 

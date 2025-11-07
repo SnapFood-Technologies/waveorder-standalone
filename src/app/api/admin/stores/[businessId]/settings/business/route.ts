@@ -38,6 +38,7 @@ export async function GET(
         currency: true,
         timezone: true,
         language: true,
+        timeFormat: true,
         seoTitle: true,
         seoDescription: true,
         seoKeywords: true,
@@ -173,6 +174,7 @@ export async function PUT(
         currency: data.currency,
         timezone: data.timezone,
         language: data.language,
+        timeFormat: data.timeFormat || '24', // Default to 24-hour format
         seoTitle: data.seoTitle?.trim() || null,
         seoDescription: data.seoDescription?.trim() || null,
         seoKeywords: data.seoKeywords?.trim() || null,
@@ -214,6 +216,7 @@ export async function PUT(
         currency: true,
         timezone: true,
         language: true,
+        timeFormat: true,
         seoTitle: true,
         seoDescription: true,
         seoKeywords: true,

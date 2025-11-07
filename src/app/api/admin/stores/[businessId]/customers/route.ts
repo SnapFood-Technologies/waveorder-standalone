@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
+import { normalizePhoneNumber, phoneNumbersMatch, isValidPhoneNumber } from '@/lib/phone-utils'
 
 const prisma = new PrismaClient()
 
@@ -64,6 +65,7 @@ export async function POST(
 
     const body = await request.json()
     
+    // Validate required fields
     if (!body.name?.trim()) {
       return NextResponse.json({ message: 'Customer name is required' }, { status: 400 })
     }
@@ -72,11 +74,16 @@ export async function POST(
       return NextResponse.json({ message: 'Phone number is required' }, { status: 400 })
     }
 
-    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/
-    if (!phoneRegex.test(body.phone.trim())) {
-      return NextResponse.json({ message: 'Invalid phone number format' }, { status: 400 })
+    // Normalize and validate phone number
+    const normalizedPhone = normalizePhoneNumber(body.phone.trim())
+    
+    if (!isValidPhoneNumber(normalizedPhone)) {
+      return NextResponse.json({ 
+        message: 'Invalid phone number format. Phone number must contain at least 10 digits.' 
+      }, { status: 400 })
     }
 
+    // Validate email format if provided
     if (body.email?.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(body.email.trim())) {
@@ -84,15 +91,33 @@ export async function POST(
       }
     }
 
-    const existingCustomer = await prisma.customer.findFirst({
+    // Check for existing customer using normalized phone matching
+    // Get all customers for this business and check normalized phones
+    const allCustomers = await prisma.customer.findMany({
       where: {
-        phone: body.phone.trim(),
         businessId: businessId
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true
       }
     })
 
+    // Find customer with matching normalized phone
+    const existingCustomer = allCustomers.find(c => phoneNumbersMatch(c.phone, body.phone.trim()))
+
     if (existingCustomer) {
-      return NextResponse.json({ message: 'A customer with this phone number already exists' }, { status: 409 })
+      return NextResponse.json({ 
+        message: `A customer with this phone number already exists: ${existingCustomer.name}${existingCustomer.email ? ` (${existingCustomer.email})` : ''}`,
+        existingCustomer: {
+          id: existingCustomer.id,
+          name: existingCustomer.name,
+          phone: existingCustomer.phone,
+          email: existingCustomer.email
+        }
+      }, { status: 409 })
     }
 
     const customerData = {

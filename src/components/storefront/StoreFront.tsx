@@ -70,7 +70,7 @@ const useGooglePlaces = () => {
 
 // Time slot generator for scheduling
 // @ts-ignore
-const generateTimeSlots = (businessHours, currentDate, orderType) => {
+const generateTimeSlots = (businessHours, currentDate, orderType, timeFormat = '24') => {
   // @ts-ignore
   const slots = []
   const now = new Date()
@@ -109,14 +109,27 @@ const generateTimeSlots = (businessHours, currentDate, orderType) => {
     }
   }
   
+  const use24Hour = timeFormat === '24'
+  
   while (currentTime < closeTime) {
-    slots.push({
-      value: currentTime.toTimeString().slice(0, 5),
-      label: currentTime.toLocaleTimeString('en-US', { 
+    const timeValue = currentTime.toTimeString().slice(0, 5) // HH:MM format
+    let timeLabel: string
+    
+    if (use24Hour) {
+      // 24-hour format: "14:30"
+      timeLabel = timeValue
+    } else {
+      // 12-hour format: "2:30 PM"
+      timeLabel = currentTime.toLocaleTimeString('en-US', { 
         hour: 'numeric', 
         minute: '2-digit',
         hour12: true 
       })
+    }
+    
+    slots.push({
+      value: timeValue,
+      label: timeLabel
     })
     currentTime.setMinutes(currentTime.getMinutes() + 30)
   }
@@ -1121,8 +1134,11 @@ function TimeSelection({
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showTimeDropdown, setShowTimeDropdown] = useState(false)
   
-  // Generate time slots (same as before)
-  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType)
+  // Get time format from store data (default to 24-hour)
+  const timeFormat = storeData.timeFormat || '24'
+  
+  // Generate time slots with time format
+  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType, timeFormat)
   
   useEffect(() => {
     if (forceScheduleMode) {
@@ -1280,11 +1296,20 @@ function TimeSelection({
                 style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
               >
                <span>{selectedTime && timeMode === 'schedule' && selectedTime !== 'asap' ? 
-  new Date(selectedTime).toLocaleTimeString('en-US', { 
-    hour: 'numeric', 
-    minute: '2-digit', 
-    hour12: true 
-  }) : 
+  (() => {
+    const date = new Date(selectedTime)
+    if (timeFormat === '24') {
+      // 24-hour format: "14:30"
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+    } else {
+      // 12-hour format: "2:30 PM"
+      return date.toLocaleTimeString('en-US', { 
+        hour: 'numeric', 
+        minute: '2-digit', 
+        hour12: true 
+      })
+    }
+  })() : 
   translations.selectTime || 'Select Time'
 }</span>
                 <ChevronDown className="w-4 h-4" />
