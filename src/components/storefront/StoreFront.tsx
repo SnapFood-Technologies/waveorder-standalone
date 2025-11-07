@@ -1410,6 +1410,8 @@ interface StoreData {
   fontFamily: string
   currency: string
   language: string
+  storefrontLanguage?: string
+  timeFormat?: string
   deliveryFee: number
   minimumOrder: number
   deliveryRadius: number

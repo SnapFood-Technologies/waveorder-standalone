@@ -203,15 +203,15 @@ model Business {
   deliveryZones DeliveryZone[]
 
   // Settings
-  currency       String @default("USD")
-  timezone       String @default("UTC")
-  language       String @default("en")
-  storefrontLanguage String @default("en") // Language for storefront UI (defaults to business language, can be changed separately)
-  timeFormat     String @default("24") // "12" for 12-hour format, "24" for 24-hour format
+  currency                           String  @default("USD")
+  timezone                           String  @default("UTC")
+  language                           String  @default("en")
+  storefrontLanguage                 String  @default("en") // Language for storefront UI (defaults to business language, can be changed separately)
+  timeFormat                         String  @default("24") // "12" for 12-hour format, "24" for 24-hour format
   translateContentToBusinessLanguage Boolean @default(true) // Translate customer-facing content to business language
-  deliveryFee    Float  @default(0)
-  minimumOrder   Float  @default(0)
-  deliveryRadius Float  @default(10)
+  deliveryFee                        Float   @default(0)
+  minimumOrder                       Float   @default(0)
+  deliveryRadius                     Float   @default(10)
 
   // Payment settings
   paymentMethods      PaymentMethod[]
