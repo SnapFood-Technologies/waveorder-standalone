@@ -207,6 +207,7 @@ model Business {
   timezone       String @default("UTC")
   language       String @default("en")
   timeFormat     String @default("24") // "12" for 12-hour format, "24" for 24-hour format
+  translateContentToBusinessLanguage Boolean @default(true) // Translate customer-facing content to business language
   deliveryFee    Float  @default(0)
   minimumOrder   Float  @default(0)
   deliveryRadius Float  @default(10)
