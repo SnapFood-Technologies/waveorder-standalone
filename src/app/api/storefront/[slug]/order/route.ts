@@ -1033,14 +1033,14 @@ export async function POST(
         }
       })
     } else {
-      // Customer exists - Update with most complete information
-      // Strategy: Keep longer/more complete name, update email if provided
+      // Customer exists - Update with most recent information
+      // Strategy: Always update name/email if different (customer knows their info best)
       let updateData: any = {};
       
-      // Update name if new name is longer or more complete (prefer more complete data)
+      // Update name if different (trust the most recent order)
       const currentName = customer.name?.trim() || ''
       const newName = customerName?.trim() || ''
-      if (newName && (newName.length > currentName.length || !currentName)) {
+      if (newName && newName !== currentName) {
         updateData.name = newName;
       }
       

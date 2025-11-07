@@ -304,15 +304,17 @@ export async function POST(
       if (existingCustomer) {
         customerId = existingCustomer.id
         
-        // Update customer info if new data is more complete
+        // Update customer info if different (trust the most recent order)
         let updateData: any = {}
         const currentName = existingCustomer.name?.trim() || ''
         const newName = newCustomerData.name?.trim() || ''
         
-        if (newName && (newName.length > currentName.length || !currentName)) {
+        // Update name if different (always trust the most recent)
+        if (newName && newName !== currentName) {
           updateData.name = newName
         }
         
+        // Update email if provided and different
         if (newCustomerData.email?.trim()) {
           const currentEmail = existingCustomer.email?.trim() || ''
           const newEmail = newCustomerData.email.trim()
