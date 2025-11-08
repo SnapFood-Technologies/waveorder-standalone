@@ -204,7 +204,7 @@ export async function GET(
           customer: {
             ...order.customer,
             // Use stored customer name from order (preserves historical name) or fallback to current customer name
-            name: order.customerName || order.customer.name,
+            name: (order.customerName as string | undefined) || order.customer.name || '',
             isFirstOrder,
             orderCount: customerOrderCount
           },
