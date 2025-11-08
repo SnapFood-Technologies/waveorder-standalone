@@ -102,7 +102,28 @@ export async function GET(
         id: orderId,
         businessId: businessId
       },
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        type: true,
+        total: true,
+        subtotal: true,
+        deliveryFee: true,
+        tax: true,
+        discount: true,
+        createdByAdmin: true,
+        customerName: true, // Include stored customer name
+        deliveryAddress: true,
+        deliveryTime: true,
+        notes: true,
+        paymentStatus: true,
+        paymentMethod: true,
+        customerLatitude: true,
+        customerLongitude: true,
+        whatsappMessageId: true,
+        createdAt: true,
+        updatedAt: true,
         customer: {
           select: {
             id: true,
@@ -194,7 +215,11 @@ export async function GET(
         tax: order.tax,
         discount: order.discount,
         createdByAdmin: order.createdByAdmin,
-        customer: order.customer,
+        customer: {
+          ...order.customer,
+          // Use stored customer name from order (preserves historical name) or fallback to current customer name
+          name: order.customerName || order.customer.name
+        },
         items: itemsWithModifiers,
         deliveryAddress: order.deliveryAddress,
         deliveryTime: order.deliveryTime,

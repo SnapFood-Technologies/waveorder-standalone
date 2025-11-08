@@ -112,7 +112,22 @@ export async function GET(
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where: whereClause,
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          type: true,
+          total: true,
+          subtotal: true,
+          deliveryFee: true,
+          createdByAdmin: true,
+          customerName: true, // Include stored customer name
+          deliveryAddress: true,
+          notes: true,
+          paymentStatus: true,
+          paymentMethod: true,
+          createdAt: true,
+          updatedAt: true,
           customer: {
             select: {
               id: true,
@@ -188,6 +203,8 @@ export async function GET(
           createdByAdmin: order.createdByAdmin,
           customer: {
             ...order.customer,
+            // Use stored customer name from order (preserves historical name) or fallback to current customer name
+            name: order.customerName || order.customer.name,
             isFirstOrder,
             orderCount: customerOrderCount
           },
@@ -256,6 +273,7 @@ export async function POST(
     }
 
     let customerId: string
+    let customerName: string = ''
 
     if (body.customerId) {
       customerId = body.customerId
@@ -264,12 +282,18 @@ export async function POST(
         where: {
           id: customerId,
           businessId: businessId
+        },
+        select: {
+          id: true,
+          name: true
         }
       })
 
       if (!customer) {
         return NextResponse.json({ message: 'Customer not found' }, { status: 404 })
       }
+      
+      customerName = customer.name || ''
     } else if (body.newCustomer) {
       const newCustomerData = body.newCustomer
 
@@ -303,6 +327,8 @@ export async function POST(
 
       if (existingCustomer) {
         customerId = existingCustomer.id
+        // Store the name from the order (could be updated name)
+        customerName = newCustomerData.name.trim()
         
         // Update customer info if different (trust the most recent order)
         let updateData: any = {}
@@ -369,6 +395,7 @@ export async function POST(
         })
 
         customerId = newCustomer.id
+        customerName = newCustomerData.name.trim()
       }
     } else {
       return NextResponse.json({ message: 'Customer information is required' }, { status: 400 })
@@ -481,6 +508,7 @@ export async function POST(
         type: body.orderType,
         customerId,
         businessId,
+        customerName: customerName || 'Unknown', // Store customer name at order creation time
         subtotal,
         deliveryFee,
         total,
