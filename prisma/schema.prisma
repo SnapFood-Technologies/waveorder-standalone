@@ -553,6 +553,7 @@ model Order {
 
   customerId String @db.ObjectId
   businessId String @db.ObjectId
+  customerName String // Store customer name at order creation time
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)

@@ -1250,6 +1250,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         type: deliveryType.toUpperCase(),
         customerId: customer.id,
         businessId: business.id,
+        customerName: customerName || customer.name || '', // Store customer name at order creation time
         subtotal,
         deliveryFee: finalDeliveryFee,
         tax: tax || 0,
