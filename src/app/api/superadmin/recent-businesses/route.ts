@@ -27,6 +27,7 @@ export async function GET() {
         businessType: true,
         logo: true,
         whatsappNumber: true,
+        address: true,
         createdByAdmin: true,
         users: {
           where: {
@@ -74,6 +75,7 @@ export async function GET() {
         owner: owner?.name || 'Unknown',
         ownerEmail: owner?.email || 'No email',
         whatsappNumber: business.whatsappNumber || 'Not provided',
+        address: business.address || null,
         createdAt: business.createdAt.toISOString(),
         subscriptionPlan: business.subscriptionPlan,
         businessType: business.businessType,

@@ -42,6 +42,8 @@ interface Business {
   subscriptionPlan: string;
   subscriptionStatus: string;
   isActive: boolean;
+  deactivatedAt?: string | null;
+  deactivationReason?: string | null;
   currency: string;
   whatsappNumber: string;
   address?: string;
@@ -115,8 +117,11 @@ export function SuperAdminBusinesses() {
   const [planFilter, setPlanFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
+  const [businessToDeactivate, setBusinessToDeactivate] = useState<Business | null>(null);
+  const [deactivationReason, setDeactivationReason] = useState('');
   const [businessToView, setBusinessToView] = useState<Business | null>(null);
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
   const [impersonateError, setImpersonateError] = useState<string | null>(null);
@@ -189,6 +194,16 @@ export function SuperAdminBusinesses() {
     window.open(url, '_blank')
   }
 
+  const isBusinessIncomplete = (business: Business): boolean => {
+    const hasWhatsApp = business.whatsappNumber && 
+      business.whatsappNumber !== 'Not provided' && 
+      business.whatsappNumber.trim() !== '';
+    const hasAddress = business.address && 
+      business.address !== 'Not set' && 
+      business.address.trim() !== '';
+    return !hasWhatsApp || !hasAddress;
+  }
+
 
   const openDeleteModal = (business: Business) => {
     setBusinessToDelete(business);
@@ -198,6 +213,18 @@ export function SuperAdminBusinesses() {
   const closeDeleteModal = () => {
     setBusinessToDelete(null);
     setShowDeleteModal(false);
+  };
+
+  const openDeactivateModal = (business: Business) => {
+    setBusinessToDeactivate(business);
+    setDeactivationReason('');
+    setShowDeactivateModal(true);
+  };
+
+  const closeDeactivateModal = () => {
+    setBusinessToDeactivate(null);
+    setDeactivationReason('');
+    setShowDeactivateModal(false);
   };
 
   const openQuickViewModal = (business: Business) => {
@@ -237,31 +264,70 @@ export function SuperAdminBusinesses() {
     }
   };
 
-  const handleToggleBusinessStatus = async (business: Business) => {
-    const newStatus = !business.isActive; // Toggle the status
-    
+  const handleDeactivateBusiness = async () => {
+    if (!businessToDeactivate) return;
+
     try {
-      const response = await fetch(`/api/superadmin/businesses/${business.id}/status`, {
+      const response = await fetch(`/api/superadmin/businesses/${businessToDeactivate.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: newStatus })
+        body: JSON.stringify({ 
+          isActive: false,
+          deactivationReason: deactivationReason.trim() || undefined
+        })
       });
-  
+
       if (!response.ok) {
-        throw new Error('Failed to update business status');
+        throw new Error('Failed to deactivate business');
       }
-  
+
+      closeDeactivateModal();
       fetchBusinesses();
       
       // Show success message
       setSuccessMessage({
-        title: `Business ${newStatus ? 'Activated' : 'Deactivated'} Successfully`,
-        message: `"${business.name}" has been ${newStatus ? 'activated' : 'deactivated'} successfully.`
+        title: 'Business Deactivated Successfully',
+        message: `"${businessToDeactivate.name}" has been deactivated successfully.`
       });
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
-      console.error('Error updating business status:', error);
-      setError('Failed to update business status');
+      console.error('Error deactivating business:', error);
+      setError('Failed to deactivate business');
+    }
+  };
+
+  const handleActivateBusiness = async (business: Business) => {
+    try {
+      const response = await fetch(`/api/superadmin/businesses/${business.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to activate business');
+      }
+
+      fetchBusinesses();
+      
+      // Show success message
+      setSuccessMessage({
+        title: 'Business Activated Successfully',
+        message: `"${business.name}" has been activated successfully.`
+      });
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (error) {
+      console.error('Error activating business:', error);
+      setError('Failed to activate business');
+    }
+  };
+
+  // Wrapper for DeleteConfirmationModal compatibility
+  const handleToggleBusinessStatus = async (business: Business) => {
+    if (business.isActive) {
+      openDeactivateModal(business);
+    } else {
+      await handleActivateBusiness(business);
     }
   };
 
@@ -397,6 +463,7 @@ export function SuperAdminBusinesses() {
     <option value="all">All Status</option>
     <option value="active">Active</option>
     <option value="inactive">Inactive</option>
+    <option value="incomplete">Incomplete</option>
   </select>
   
   <select
@@ -493,7 +560,14 @@ export function SuperAdminBusinesses() {
                             {getBusinessIcon(business)}
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{business.name}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm font-medium text-gray-900">{business.name}</div>
+                              {isBusinessIncomplete(business) && (
+                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                  Incomplete
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm text-gray-500 capitalize">
                               {business.businessType.toLowerCase().replace('_', ' ')}
                             </div>
@@ -537,14 +611,35 @@ export function SuperAdminBusinesses() {
                         </span>
                       </td>
                       
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          business.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {business.isActive ? 'Active' : 'Inactive'}
-                        </span>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col items-start gap-2">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            business.isActive
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {business.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          {!business.isActive && business.deactivatedAt && (
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>
+                                  {new Date(business.deactivatedAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                              {business.deactivationReason && (
+                                <div className="text-gray-700 max-w-xs truncate" title={business.deactivationReason}>
+                                  {business.deactivationReason}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       
                       <td className="px-6 py-4">
@@ -594,6 +689,23 @@ export function SuperAdminBusinesses() {
                           >
                             <ExternalLink className="w-4 h-4" />
                           </button>
+                          {business.isActive ? (
+                            <button
+                              onClick={() => openDeactivateModal(business)}
+                              className="text-orange-600 hover:text-orange-700 p-1"
+                              title="Deactivate"
+                            >
+                              <UserX className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleActivateBusiness(business)}
+                              className="text-green-600 hover:text-green-700 p-1"
+                              title="Activate"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             className="text-red-600 hover:text-red-700 p-1"
                             title="Delete"
@@ -656,6 +768,16 @@ export function SuperAdminBusinesses() {
         onClose={closeDeleteModal}
         onConfirm={handleDeleteBusiness}
         onToggleStatus={handleToggleBusinessStatus}
+      />
+
+      {/* Deactivate Modal */}
+      <DeactivateModal
+        isOpen={showDeactivateModal}
+        business={businessToDeactivate}
+        reason={deactivationReason}
+        onReasonChange={setDeactivationReason}
+        onClose={closeDeactivateModal}
+        onConfirm={handleDeactivateBusiness}
       />
 
       {/* Quick View Modal */}
@@ -1061,3 +1183,84 @@ function DeleteConfirmationModal({ isOpen, business, onClose, onConfirm, onToggl
       </div>
     );
   }
+
+// Deactivate Modal Component
+interface DeactivateModalProps {
+  isOpen: boolean;
+  business: Business | null;
+  reason: string;
+  onReasonChange: (reason: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function DeactivateModal({ isOpen, business, reason, onReasonChange, onClose, onConfirm }: DeactivateModalProps) {
+  if (!isOpen || !business) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <UserX className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Deactivate Business</h3>
+              <p className="text-sm text-gray-600">Temporarily disable this business</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to deactivate <strong>"{business.name}"</strong>?
+            </p>
+            <div className="p-4 border border-orange-200 bg-orange-50 rounded-lg mb-4">
+              <p className="text-sm text-orange-800 mb-2">
+                <strong>What happens when you deactivate:</strong>
+              </p>
+              <ul className="text-sm text-orange-700 space-y-1 list-disc list-inside">
+                <li>The business will be hidden from the storefront</li>
+                <li>All data will be preserved</li>
+                <li>The business can be reactivated later</li>
+              </ul>
+            </div>
+            
+            <div>
+              <label htmlFor="deactivation-reason" className="block text-sm font-medium text-gray-700 mb-2">
+                Reason (Optional)
+              </label>
+              <textarea
+                id="deactivation-reason"
+                value={reason}
+                onChange={(e) => onReasonChange(e.target.value)}
+                placeholder="Enter reason for deactivation..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                This reason will be stored for administrative records.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center"
+            >
+              <UserX className="w-4 h-4 mr-2" />
+              Deactivate Business
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

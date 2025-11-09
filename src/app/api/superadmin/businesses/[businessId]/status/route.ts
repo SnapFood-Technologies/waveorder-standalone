@@ -19,7 +19,7 @@ export async function PATCH(
 
     const { businessId } = await params
     const body = await request.json()
-    const { isActive } = body
+    const { isActive, deactivationReason } = body
 
     if (!businessId) {
       return NextResponse.json({ message: 'Business ID is required' }, { status: 400 })
@@ -50,17 +50,34 @@ export async function PATCH(
       }, { status: 400 })
     }
 
+    // Prepare update data
+    const updateData: any = {
+      isActive,
+      updatedAt: new Date()
+    }
+
+    // If deactivating, set deactivation timestamp and reason
+    if (!isActive) {
+      updateData.deactivatedAt = new Date()
+      if (deactivationReason && deactivationReason.trim() !== '') {
+        updateData.deactivationReason = deactivationReason.trim()
+      }
+    } else {
+      // If reactivating, clear deactivation data
+      updateData.deactivatedAt = null
+      updateData.deactivationReason = null
+    }
+
     // Update business status
     const updatedBusiness = await prisma.business.update({
       where: { id: businessId },
-      data: { 
-        isActive,
-        updatedAt: new Date()
-      },
+      data: updateData,
       select: {
         id: true,
         name: true,
         isActive: true,
+        deactivatedAt: true,
+        deactivationReason: true,
         updatedAt: true
       }
     })
