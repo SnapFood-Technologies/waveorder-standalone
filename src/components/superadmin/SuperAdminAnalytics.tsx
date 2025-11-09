@@ -17,6 +17,8 @@ import {
 interface AnalyticsData {
   overview: {
     totalBusinesses: number
+    activeBusinesses: number
+    incompleteBusinesses: number
     totalUsers: number
     totalOrders: number
     totalRevenue: number
@@ -176,6 +178,30 @@ export function SuperAdminAnalytics() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
+              <p className="text-sm font-medium text-gray-600">Active Businesses</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatNumber(data.overview.activeBusinesses)}
+              </p>
+            </div>
+            <Activity className="w-10 h-10 text-green-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Incomplete Businesses</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatNumber(data.overview.incompleteBusinesses)}
+              </p>
+            </div>
+            <AlertTriangle className="w-10 h-10 text-yellow-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatNumber(data.overview.totalUsers)}
@@ -229,7 +255,7 @@ export function SuperAdminAnalytics() {
                 {data.overview.conversionRate.toFixed(1)}%
               </p>
             </div>
-            <Activity className="w-10 h-10 text-pink-500" />
+            <BarChart3 className="w-10 h-10 text-pink-500" />
           </div>
         </div>
       </div>
@@ -389,6 +415,80 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
       )}
+
+      {/* Analytics Information Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Analytics Guide</h3>
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Overview Metrics</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><strong>Total Businesses:</strong> All businesses that have been created on the platform (active and inactive).</li>
+              <li><strong>Active Businesses:</strong> Businesses that are currently active and visible on the platform.</li>
+              <li><strong>Incomplete Businesses:</strong> Businesses missing essential setup information (WhatsApp number or address).</li>
+              <li><strong>Total Users:</strong> All registered users on the platform (excluding super admins).</li>
+              <li><strong>Total Orders:</strong> All orders placed across all businesses.</li>
+              <li><strong>Total Revenue:</strong> Revenue from completed and paid orders (CONFIRMED, PREPARING, READY, OUT_FOR_DELIVERY, DELIVERED statuses with PAID payment status).</li>
+              <li><strong>Avg Order Value:</strong> Average value of all orders across the platform.</li>
+              <li><strong>Conversion Rate:</strong> Percentage of storefront visits that result in orders (calculated from analytics data).</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Business Statuses</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><strong>Active:</strong> Business is live and visible to customers. Can receive orders and operate normally.</li>
+              <li><strong>Inactive:</strong> Business has been deactivated. Not visible to customers and cannot receive orders. Data is preserved and can be reactivated.</li>
+              <li><strong>Incomplete:</strong> Business is missing essential setup information (WhatsApp number or business address). These businesses may be active but need attention to function properly.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Revenue by Subscription Plan</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li><strong>Businesses Count:</strong> Number of <strong>active</strong> businesses on each subscription plan.</li>
+              <li><strong>Revenue:</strong> Platform subscription revenue from each plan. Currently $0 as all businesses are on the FREE plan.</li>
+              <li><strong>Note:</strong> Only active businesses are counted in this section. Inactive businesses are excluded from plan statistics.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Top Performing Businesses</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>Ranked by total revenue from completed and paid orders.</li>
+              <li>Only includes <strong>active</strong> businesses with revenue greater than $0.</li>
+              <li>Shows the top 10 businesses by revenue.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Incomplete Businesses</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>Businesses missing WhatsApp number (empty or "Not provided") or business address (empty, "Not set", or null).</li>
+              <li>Includes both active and inactive businesses that have incomplete setup.</li>
+              <li>Shows which specific fields are missing (WhatsApp, Address, or both).</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Inactive Businesses</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>Businesses that have been deactivated by a super admin.</li>
+              <li>Shows deactivation date and reason (if provided).</li>
+              <li>These businesses are not visible to customers but all data is preserved.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Date Range Filter</h4>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>The date range filter affects: Business Growth, User Growth, Orders, and Conversion Rate calculations.</li>
+              <li>Overview metrics (Total Businesses, Active Businesses, Incomplete Businesses) show all-time counts regardless of date range.</li>
+              <li>Revenue calculations use orders from the selected date range only.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     // Fetch all data in parallel for performance
     const [
       totalBusinesses,
+      activeBusinesses,
       totalUsers,
       totalOrders,
       deliveredOrders,
@@ -52,6 +53,10 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // Total counts
       prisma.business.count(),
+      // Active businesses count
+      prisma.business.count({
+        where: { isActive: true }
+      }),
       prisma.user.count(),
       prisma.order.count(),
       
@@ -70,9 +75,16 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Businesses with order counts for top performers
+      // Businesses with order counts for top performers (only active businesses)
       prisma.business.findMany({
-        include: {
+        where: {
+          isActive: true // Only count active businesses for revenue calculations
+        },
+        select: {
+          id: true,
+          name: true,
+          subscriptionPlan: true,
+          isActive: true,
           orders: {
             where: {
               paymentStatus: 'PAID',
@@ -124,17 +136,28 @@ export async function GET(request: NextRequest) {
       }),
 
       // Incomplete businesses: missing WhatsApp or address
-      // Note: whatsappNumber is required (String) so we only check for empty strings
-      // address is optional (String?) so we can check for null/undefined
+      // A business is incomplete if EITHER WhatsApp OR address is missing
+      // Note: whatsappNumber is required (String) in schema but can be empty string or 'Not provided'
+      // address is optional (String?) so can be null, empty, or 'Not set'
+      // Using OR condition so businesses missing either field will be included
       prisma.business.findMany({
         where: {
           OR: [
-            { whatsappNumber: 'Not provided' },
-            { whatsappNumber: '' },
-            { address: 'Not set' },
-            { address: '' },
-            // For MongoDB/Prisma, check if address field doesn't exist or is null
-            { address: { equals: null } }
+            // Condition 1: Missing WhatsApp (empty or 'Not provided')
+            {
+              OR: [
+                { whatsappNumber: 'Not provided' },
+                { whatsappNumber: '' }
+              ]
+            },
+            // Condition 2: Missing Address (null, empty, or 'Not set')
+            {
+              OR: [
+                { address: null },
+                { address: '' },
+                { address: 'Not set' }
+              ]
+            }
           ] as any
         },
         select: {
@@ -221,7 +244,8 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10)
 
-    // TODO: Platform subscription revenue by plan
+    // Platform subscription revenue by plan
+    // Note: Only counting ACTIVE businesses for each plan (businesses array is already filtered to active only)
     // Once Pro plan pricing is set and Stripe integration is implemented:
     // - Track actual subscription payments from Stripe
     // - Calculate MRR (Monthly Recurring Revenue) = active Pro businesses × Pro plan price
@@ -238,7 +262,7 @@ export async function GET(request: NextRequest) {
         revenue: 0, // TODO: Will calculate once Pro pricing and Stripe are implemented
         businesses: businesses.filter(b => b.subscriptionPlan === 'PRO').length
       }
-    ].filter(item => item.businesses > 0) // Only show plans that have businesses
+    ].filter(item => item.businesses > 0) // Only show plans that have active businesses
 
     // Format cumulative growth data
     const formatCumulativeGrowth = (data: any[]) => {
@@ -250,15 +274,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Format incomplete businesses
-    const formattedIncompleteBusinesses = incompleteBusinesses.map(business => ({
-      id: business.id,
-      name: business.name,
-      missingFields: [
-        (!business.whatsappNumber || business.whatsappNumber === 'Not provided' || business.whatsappNumber === '') && 'WhatsApp',
-        (!business.address || business.address === 'Not set' || business.address === '') && 'Address'
-      ].filter(Boolean) as string[],
-      createdAt: business.createdAt.toISOString()
-    }))
+    // Check for missing fields: WhatsApp or Address
+    const formattedIncompleteBusinesses = incompleteBusinesses.map(business => {
+      const whatsappNumber = business.whatsappNumber?.trim() || ''
+      const address = business.address?.trim() || ''
+      
+      const missingFields: string[] = []
+      
+      // Check if WhatsApp is missing
+      if (!whatsappNumber || whatsappNumber === 'Not provided' || whatsappNumber === '') {
+        missingFields.push('WhatsApp')
+      }
+      
+      // Check if Address is missing
+      if (!address || address === 'Not set' || address === '') {
+        missingFields.push('Address')
+      }
+      
+      return {
+        id: business.id,
+        name: business.name,
+        missingFields,
+        createdAt: business.createdAt.toISOString()
+      }
+    })
 
     // Format inactive businesses with reasons
     const formattedInactiveBusinesses = inactiveBusinesses.map(business => ({
@@ -272,9 +311,14 @@ export async function GET(request: NextRequest) {
     // Calculate total revenue from delivered orders
     const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0)
 
+    // Calculate incomplete businesses count (all businesses, not just in date range)
+    const incompleteCount = incompleteBusinesses.length
+
     return NextResponse.json({
       overview: {
         totalBusinesses,
+        activeBusinesses,
+        incompleteBusinesses: incompleteCount,
         totalUsers,
         totalOrders,
         totalRevenue,
