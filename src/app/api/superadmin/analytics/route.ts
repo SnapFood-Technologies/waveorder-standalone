@@ -57,15 +57,25 @@ export async function GET(request: NextRequest) {
       prisma.business.count({
         where: { isActive: true }
       }),
-      prisma.user.count(),
+      prisma.user.count({
+        where: {
+          role: {
+            not: 'SUPER_ADMIN'
+          }
+        }
+      }),
       prisma.order.count(),
       
       // Paid and completed orders for revenue (includes CONFIRMED, READY, DELIVERED)
+      // Filter by date range if specified
       prisma.order.findMany({
         where: {
           paymentStatus: 'PAID',
           status: {
             in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+          },
+          createdAt: {
+            gte: startDate
           }
         },
         select: {
@@ -136,31 +146,9 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Incomplete businesses: missing WhatsApp or address
-      // A business is incomplete if EITHER WhatsApp OR address is missing
-      // Note: whatsappNumber is required (String) in schema but can be empty string or 'Not provided'
-      // address is optional (String?) so can be null, empty, or 'Not set'
-      // Using OR condition so businesses missing either field will be included
+      // Fetch all businesses first (we'll filter for incomplete in memory)
+      // Prisma/MongoDB has issues with null checks in nested OR conditions
       prisma.business.findMany({
-        where: {
-          OR: [
-            // Condition 1: Missing WhatsApp (empty or 'Not provided')
-            {
-              OR: [
-                { whatsappNumber: 'Not provided' },
-                { whatsappNumber: '' }
-              ]
-            },
-            // Condition 2: Missing Address (null, empty, or 'Not set')
-            {
-              OR: [
-                { address: null },
-                { address: '' },
-                { address: 'Not set' }
-              ]
-            }
-          ] as any
-        },
         select: {
           id: true,
           name: true,
@@ -274,11 +262,23 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Filter incomplete businesses in memory (due to Prisma/MongoDB null handling issues)
+    // A business is incomplete if WhatsApp is missing OR address is missing
+    const incompleteBusinessesFiltered = incompleteBusinesses.filter(business => {
+      const whatsappNumber = (business.whatsappNumber || '').trim()
+      const address = business.address ? business.address.trim() : null
+      
+      const hasWhatsApp = whatsappNumber !== '' && whatsappNumber !== 'Not provided'
+      const hasAddress = address !== null && address !== '' && address !== 'Not set'
+      
+      return !hasWhatsApp || !hasAddress
+    })
+
     // Format incomplete businesses
     // Check for missing fields: WhatsApp or Address
-    const formattedIncompleteBusinesses = incompleteBusinesses.map(business => {
-      const whatsappNumber = business.whatsappNumber?.trim() || ''
-      const address = business.address?.trim() || ''
+    const formattedIncompleteBusinesses = incompleteBusinessesFiltered.map(business => {
+      const whatsappNumber = (business.whatsappNumber || '').trim()
+      const address = business.address ? business.address.trim() : null
       
       const missingFields: string[] = []
       
@@ -313,7 +313,7 @@ export async function GET(request: NextRequest) {
     const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0)
 
     // Calculate incomplete businesses count (all businesses, not just in date range)
-    const incompleteCount = incompleteBusinesses.length
+    const incompleteCount = incompleteBusinessesFiltered.length
 
     return NextResponse.json({
       overview: {
