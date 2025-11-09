@@ -220,14 +220,16 @@ export function SuperAdminBusinesses() {
 
     if (!hasWhatsApp) {
       missingFields.push('WhatsApp Number');
-      suggestions.push('Add a WhatsApp Business number so customers can place orders directly via WhatsApp');
-      suggestions.push('Use the format: +[country code][number] (e.g., +1234567890)');
+      suggestions.push('Reach out to the business owner to help them set up their WhatsApp Business number');
+      suggestions.push('Explain that WhatsApp is essential for receiving customer orders directly');
+      suggestions.push('Offer support to guide them through the setup process if needed');
     }
 
     if (!hasAddress) {
       missingFields.push('Business Address');
-      suggestions.push('Add the business physical address or service area');
-      suggestions.push('This helps customers understand delivery/pickup locations and improves local SEO');
+      suggestions.push('Contact the business to collect their physical address or service area');
+      suggestions.push('Explain that the address helps customers understand delivery/pickup locations');
+      suggestions.push('Mention that it also improves local SEO and helps with order fulfillment');
     }
 
     return { missingFields, suggestions };
