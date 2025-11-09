@@ -31,36 +31,23 @@ export async function GET(request: NextRequest) {
 
     // Handle incomplete filter (separate from active/inactive)
     // Incomplete businesses can be either active or inactive
-    // Use the same structure as analytics query for consistency
+    // A business is incomplete if WhatsApp is missing OR address is missing
     if (status === 'incomplete') {
-      // Incomplete businesses: missing WhatsApp OR missing address
-      // Note: whatsappNumber is required (String) but can be empty or 'Not provided'
-      // address is optional (String?) so can be null, empty, or 'Not set'
-      // Use type assertion to handle Prisma/MongoDB null checks
-      const incompleteCondition: any = {
-        OR: [
-          // Condition 1: Missing WhatsApp (empty or 'Not provided')
-          {
-            OR: [
-              { whatsappNumber: 'Not provided' },
-              { whatsappNumber: '' }
-            ]
-          },
-          // Condition 2: Missing Address (null, empty, or 'Not set')
-          {
-            OR: [
-              { address: null },
-              { address: '' },
-              { address: 'Not set' }
-            ]
-          }
-        ] as any
-      }
+      // Flat OR array - Prisma/MongoDB handles this better than nested ORs
+      // Missing WhatsApp: empty string or 'Not provided'
+      // Missing Address: null, empty string, or 'Not set'
+      const incompleteConditions: any[] = [
+        { whatsappNumber: 'Not provided' },
+        { whatsappNumber: '' },
+        { address: null },
+        { address: '' },
+        { address: 'Not set' }
+      ]
 
       if (search) {
-        // Combine incomplete filter with search
+        // Combine incomplete filter with search using AND
         whereConditions.AND = [
-          incompleteCondition,
+          { OR: incompleteConditions },
           {
             OR: [
               { name: { contains: search, mode: 'insensitive' } },
@@ -72,9 +59,8 @@ export async function GET(request: NextRequest) {
           }
         ]
       } else {
-        // Just incomplete filter, no search
-        // Use the incompleteCondition directly - it has the correct OR structure
-        Object.assign(whereConditions, incompleteCondition)
+        // Just incomplete filter - use flat OR array
+        whereConditions.OR = incompleteConditions
       }
     } else {
       // Regular status filter (active/inactive/all) - NOT incomplete
