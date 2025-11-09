@@ -124,16 +124,18 @@ export async function GET(request: NextRequest) {
       }),
 
       // Incomplete businesses: missing WhatsApp or address
+      // Note: whatsappNumber is required (String) so we only check for empty strings
+      // address is optional (String?) so we can check for null/undefined
       prisma.business.findMany({
         where: {
           OR: [
             { whatsappNumber: 'Not provided' },
             { whatsappNumber: '' },
-            { whatsappNumber: null },
             { address: 'Not set' },
             { address: '' },
-            { address: null }
-          ]
+            // For MongoDB/Prisma, check if address field doesn't exist or is null
+            { address: { equals: null } }
+          ] as any
         },
         select: {
           id: true,
