@@ -29,23 +29,36 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {}
 
-    // Handle incomplete filter first (it's a special case)
+    // Handle incomplete filter (separate from active/inactive)
+    // Incomplete businesses can be either active or inactive
+    // Use the same structure as analytics query for consistency
     if (status === 'incomplete') {
-      // Incomplete businesses: missing WhatsApp or address
-      // Note: whatsappNumber is required (String) so we only check for empty strings
-      // address is optional (String?) so we can check for null/undefined
+      // Incomplete businesses: missing WhatsApp OR missing address
+      // Note: whatsappNumber is required (String) but can be empty or 'Not provided'
+      // address is optional (String?) so can be null, empty, or 'Not set'
+      // Use type assertion to handle Prisma/MongoDB null checks
       const incompleteCondition: any = {
         OR: [
-          { whatsappNumber: 'Not provided' },
-          { whatsappNumber: '' },
-          { address: 'Not set' },
-          { address: '' },
-          { address: { equals: null } }
-        ]
+          // Condition 1: Missing WhatsApp (empty or 'Not provided')
+          {
+            OR: [
+              { whatsappNumber: 'Not provided' },
+              { whatsappNumber: '' }
+            ]
+          },
+          // Condition 2: Missing Address (null, empty, or 'Not set')
+          {
+            OR: [
+              { address: null },
+              { address: '' },
+              { address: 'Not set' }
+            ]
+          }
+        ] as any
       }
 
       if (search) {
-        // Combine search with incomplete filter
+        // Combine incomplete filter with search
         whereConditions.AND = [
           incompleteCondition,
           {
@@ -59,10 +72,12 @@ export async function GET(request: NextRequest) {
           }
         ]
       } else {
+        // Just incomplete filter, no search
+        // Use the incompleteCondition directly - it has the correct OR structure
         Object.assign(whereConditions, incompleteCondition)
       }
     } else {
-      // Regular status filter (active/inactive)
+      // Regular status filter (active/inactive/all) - NOT incomplete
       if (search) {
         whereConditions.OR = [
           { name: { contains: search, mode: 'insensitive' } },
@@ -78,8 +93,27 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Apply plan filter to all queries (works with incomplete, active, inactive, all)
     if (plan !== 'all') {
-      whereConditions.subscriptionPlan = plan.toUpperCase()
+      const planCondition = { subscriptionPlan: plan.toUpperCase() }
+      
+      // If we have AND conditions, add plan to AND array
+      if (whereConditions.AND) {
+        whereConditions.AND.push(planCondition)
+      } 
+      // If we have OR conditions (incomplete filter or search), wrap in AND
+      else if (whereConditions.OR) {
+        const existingOR = whereConditions.OR
+        delete whereConditions.OR
+        whereConditions.AND = [
+          { OR: existingOR },
+          planCondition
+        ]
+      } 
+      // Otherwise, add plan as a direct condition
+      else {
+        whereConditions.subscriptionPlan = plan.toUpperCase()
+      }
     }
 
     // Get businesses with pagination
