@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
           name: true,
           subscriptionPlan: true,
           isActive: true,
+          createdAt: true, // Needed for business growth calculation
           orders: {
             where: {
               paymentStatus: 'PAID',
