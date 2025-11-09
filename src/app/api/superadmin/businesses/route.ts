@@ -29,40 +29,9 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {}
 
-    // Handle incomplete filter (separate from active/inactive)
-    // Incomplete businesses can be either active or inactive
-    // A business is incomplete if WhatsApp is missing OR address is missing
-    if (status === 'incomplete') {
-      // Flat OR array - Prisma/MongoDB handles this better than nested ORs
-      // Missing WhatsApp: empty string or 'Not provided'
-      // Missing Address: null, empty string, or 'Not set'
-      const incompleteConditions: any[] = [
-        { whatsappNumber: 'Not provided' },
-        { whatsappNumber: '' },
-        { address: null },
-        { address: '' },
-        { address: 'Not set' }
-      ]
-
-      if (search) {
-        // Combine incomplete filter with search using AND
-        whereConditions.AND = [
-          { OR: incompleteConditions },
-          {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { slug: { contains: search, mode: 'insensitive' } },
-              { address: { contains: search, mode: 'insensitive' } },
-              { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
-              { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
-            ]
-          }
-        ]
-      } else {
-        // Just incomplete filter - use flat OR array
-        whereConditions.OR = incompleteConditions
-      }
-    } else {
+    // Handle incomplete filter separately - filter in memory due to Prisma/MongoDB null handling issues
+    // Skip building whereConditions for incomplete - we'll handle it in the query section
+    if (status !== 'incomplete') {
       // Regular status filter (active/inactive/all) - NOT incomplete
       if (search) {
         whereConditions.OR = [
@@ -102,10 +71,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get businesses with pagination
-    const [businesses, totalCount] = await Promise.all([
-      prisma.business.findMany({
-        where: whereConditions,
+    // For incomplete filter, we need to fetch all and filter in memory
+    // because Prisma/MongoDB has issues with null checks in OR conditions
+    let businesses: any[]
+    let totalCount: number
+
+    if (status === 'incomplete') {
+      // Fetch ALL businesses first (with search and plan filters applied)
+      const baseConditions: any = {}
+      if (search) {
+        baseConditions.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { slug: { contains: search, mode: 'insensitive' } },
+          { address: { contains: search, mode: 'insensitive' } },
+          { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
+          { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
+        ]
+      }
+      if (plan !== 'all') {
+        baseConditions.subscriptionPlan = plan.toUpperCase()
+      }
+
+      // Get all businesses matching search/plan
+      const allBusinesses = await prisma.business.findMany({
+        where: Object.keys(baseConditions).length > 0 ? baseConditions : undefined,
         include: {
           users: {
             include: {
@@ -142,12 +131,74 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        orderBy: { createdAt: 'desc' },
-        skip: offset,
-        take: limit
-      }),
-      prisma.business.count({ where: whereConditions })
-    ])
+        orderBy: { createdAt: 'desc' }
+      })
+
+      // Filter for incomplete businesses in memory
+      const incompleteBusinesses = allBusinesses.filter(business => {
+        const whatsappNumber = (business.whatsappNumber || '').trim()
+        const address = business.address ? business.address.trim() : null
+        
+        const hasWhatsApp = whatsappNumber !== '' && whatsappNumber !== 'Not provided'
+        const hasAddress = address !== null && address !== '' && address !== 'Not set'
+        
+        return !hasWhatsApp || !hasAddress
+      })
+
+      totalCount = incompleteBusinesses.length
+      
+      // Apply pagination
+      businesses = incompleteBusinesses.slice(offset, offset + limit)
+    } else {
+      // Regular query for active/inactive/all
+      const result = await Promise.all([
+        prisma.business.findMany({
+          where: whereConditions,
+          include: {
+            users: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    createdAt: true,
+                    password: true,
+                    accounts: {
+                      select: {
+                        provider: true,
+                        type: true
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            orders: {
+              select: { 
+                total: true,
+                status: true,
+                paymentStatus: true
+              }
+            },
+            _count: {
+              select: { 
+                orders: true,
+                customers: true,
+                products: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: offset,
+          take: limit
+        }),
+        prisma.business.count({ where: whereConditions })
+      ])
+      businesses = result[0]
+      totalCount = result[1]
+    }
 
     // Format response with auth method detection
     // @ts-ignore
