@@ -32,14 +32,15 @@ export async function GET(request: NextRequest) {
     // Handle incomplete filter first (it's a special case)
     if (status === 'incomplete') {
       // Incomplete businesses: missing WhatsApp or address
-      const incompleteCondition = {
+      // Note: whatsappNumber is required (String) so we only check for empty strings
+      // address is optional (String?) so we can check for null/undefined
+      const incompleteCondition: any = {
         OR: [
           { whatsappNumber: 'Not provided' },
           { whatsappNumber: '' },
-          { whatsappNumber: null },
           { address: 'Not set' },
           { address: '' },
-          { address: null }
+          { address: { equals: null } }
         ]
       }
 

@@ -7,6 +7,7 @@ Allow: /
 Disallow: /dashboard/
 Disallow: /api/
 Disallow: /admin/
+Disallow: /superadmin/
 Disallow: /setup/
 Disallow: /_next/
 Disallow: /auth/
