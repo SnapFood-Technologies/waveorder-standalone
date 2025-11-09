@@ -201,10 +201,14 @@ export async function GET(
           subtotal: order.subtotal,
           deliveryFee: order.deliveryFee,
           createdByAdmin: order.createdByAdmin,
+          customerName: order.customerName || null, // Include stored customerName for debugging
           customer: {
-            ...order.customer,
-            // Use stored customer name from order (preserves historical name) or fallback to current customer name
-            name: (order.customerName as string | undefined) || order.customer.name || '',
+            id: order.customer.id,
+            name: order.customerName && order.customerName.trim() !== '' 
+              ? order.customerName.trim()
+              : (order.customer.name || ''),
+            phone: order.customer.phone,
+            email: order.customer.email,
             isFirstOrder,
             orderCount: customerOrderCount
           },

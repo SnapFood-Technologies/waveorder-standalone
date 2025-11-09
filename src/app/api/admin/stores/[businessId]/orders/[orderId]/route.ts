@@ -216,9 +216,14 @@ export async function GET(
         discount: order.discount,
         createdByAdmin: order.createdByAdmin,
         customer: {
-          ...order.customer,
-          // Use stored customer name from order (preserves historical name) or fallback to current customer name
-          name: order.customerName || order.customer.name
+          id: order.customer.id,
+          name: order.customerName && order.customerName.trim() !== '' 
+            ? order.customerName.trim()
+            : (order.customer.name || ''),
+          phone: order.customer.phone,
+          email: order.customer.email,
+          addressJson: order.customer.addressJson,
+          tier: order.customer.tier
         },
         items: itemsWithModifiers,
         deliveryAddress: order.deliveryAddress,

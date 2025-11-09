@@ -28,7 +28,13 @@ export async function GET(
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
         }
       },
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        status: true,
+        createdAt: true,
+        customerName: true, // Include stored customer name
         customer: {
           select: {
             name: true
@@ -44,7 +50,10 @@ export async function GET(
     const formattedOrders = orders.map(order => ({
       id: order.id,
       orderNumber: order.orderNumber,
-      customerName: order.customer.name,
+      // Use stored customer name from order (preserves historical name) or fallback to current customer name
+      customerName: order.customerName && order.customerName.trim() !== '' 
+        ? order.customerName.trim()
+        : (order.customer.name || ''),
       total: order.total,
       status: order.status,
       createdAt: order.createdAt.toISOString()
