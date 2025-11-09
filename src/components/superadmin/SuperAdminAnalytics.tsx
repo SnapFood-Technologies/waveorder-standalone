@@ -11,7 +11,14 @@ import {
   ShoppingCart,
   DollarSign,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  Info,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Calendar,
+  Filter,
+  HelpCircle
 } from 'lucide-react'
 
 interface AnalyticsData {
@@ -416,76 +423,249 @@ export function SuperAdminAnalytics() {
         </div>
       )}
 
-      {/* Analytics Information Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Analytics Guide</h3>
-        <div className="space-y-6">
+      {/* Analytics Guide Section */}
+      <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-lg border border-teal-200 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+            <HelpCircle className="w-6 h-6 text-teal-600" />
+          </div>
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Overview Metrics</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><strong>Total Businesses:</strong> All businesses that have been created on the platform (active and inactive).</li>
-              <li><strong>Active Businesses:</strong> Businesses that are currently active and visible on the platform.</li>
-              <li><strong>Incomplete Businesses:</strong> Businesses missing essential setup information (WhatsApp number or address).</li>
-              <li><strong>Total Users:</strong> All registered users on the platform (excluding super admins).</li>
-              <li><strong>Total Orders:</strong> All orders placed across all businesses.</li>
-              <li><strong>Total Revenue:</strong> Revenue from completed and paid orders (CONFIRMED, PREPARING, READY, OUT_FOR_DELIVERY, DELIVERED statuses with PAID payment status).</li>
-              <li><strong>Avg Order Value:</strong> Average value of all orders across the platform.</li>
-              <li><strong>Conversion Rate:</strong> Percentage of storefront visits that result in orders (calculated from analytics data).</li>
-            </ul>
+            <h3 className="text-xl font-bold text-gray-900">Analytics Guide</h3>
+            <p className="text-sm text-gray-600">Understand how metrics are calculated and what they mean</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Overview Metrics Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Overview Metrics</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Building2 className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Total Businesses</p>
+                  <p className="text-xs text-gray-600 mt-1">All businesses created on the platform (active and inactive)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Activity className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Active Businesses</p>
+                  <p className="text-xs text-gray-600 mt-1">Currently active and visible to customers</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Incomplete Businesses</p>
+                  <p className="text-xs text-gray-600 mt-1">Missing essential setup (WhatsApp number or address)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Users className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Total Users</p>
+                  <p className="text-xs text-gray-600 mt-1">All registered users (excluding super admins)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <ShoppingCart className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Total Orders</p>
+                  <p className="text-xs text-gray-600 mt-1">All orders placed across all businesses</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <DollarSign className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Total Revenue</p>
+                  <p className="text-xs text-gray-600 mt-1">From completed paid orders (CONFIRMED, PREPARING, READY, OUT_FOR_DELIVERY, DELIVERED with PAID status)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Avg Order Value</p>
+                  <p className="text-xs text-gray-600 mt-1">Average value of all orders across the platform</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <BarChart3 className="w-4 h-4 text-pink-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Conversion Rate</p>
+                  <p className="text-xs text-gray-600 mt-1">Percentage of storefront visits that result in orders</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Business Statuses</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><strong>Active:</strong> Business is live and visible to customers. Can receive orders and operate normally.</li>
-              <li><strong>Inactive:</strong> Business has been deactivated. Not visible to customers and cannot receive orders. Data is preserved and can be reactivated.</li>
-              <li><strong>Incomplete:</strong> Business is missing essential setup information (WhatsApp number or business address). These businesses may be active but need attention to function properly.</li>
-            </ul>
+          {/* Business Statuses Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <Info className="w-5 h-5 text-green-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Business Statuses</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="p-4 border-l-4 border-green-500 bg-green-50 rounded-r-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <p className="text-sm font-semibold text-gray-900">Active</p>
+                </div>
+                <p className="text-xs text-gray-700">Business is live and visible to customers. Can receive orders and operate normally.</p>
+              </div>
+              <div className="p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                  <p className="text-sm font-semibold text-gray-900">Inactive</p>
+                </div>
+                <p className="text-xs text-gray-700">Business has been deactivated. Not visible to customers and cannot receive orders. Data is preserved and can be reactivated.</p>
+              </div>
+              <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-r-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  <p className="text-sm font-semibold text-gray-900">Incomplete</p>
+                </div>
+                <p className="text-xs text-gray-700">Business is missing essential setup information (WhatsApp number or business address). These businesses may be active but need attention to function properly.</p>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Revenue by Subscription Plan</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><strong>Businesses Count:</strong> Number of <strong>active</strong> businesses on each subscription plan.</li>
-              <li><strong>Revenue:</strong> Platform subscription revenue from each plan. Currently $0 as all businesses are on the FREE plan.</li>
-              <li><strong>Note:</strong> Only active businesses are counted in this section. Inactive businesses are excluded from plan statistics.</li>
-            </ul>
+          {/* Revenue by Plan Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-purple-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Revenue by Subscription Plan</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                <p className="text-sm font-medium text-gray-900 mb-1">Businesses Count</p>
+                <p className="text-xs text-gray-600">Number of <strong>active</strong> businesses on each subscription plan</p>
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                <p className="text-sm font-medium text-gray-900 mb-1">Revenue</p>
+                <p className="text-xs text-gray-600">Platform subscription revenue from each plan. Currently $0 as all businesses are on the FREE plan.</p>
+              </div>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs text-amber-800"><strong>Note:</strong> Only active businesses are counted. Inactive businesses are excluded from plan statistics.</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Top Performing Businesses</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>Ranked by total revenue from completed and paid orders.</li>
-              <li>Only includes <strong>active</strong> businesses with revenue greater than $0.</li>
-              <li>Shows the top 10 businesses by revenue.</li>
-            </ul>
+          {/* Top Performing Businesses Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-teal-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Top Performing Businesses</h4>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>Ranked by total revenue from completed and paid orders</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>Only includes <strong>active</strong> businesses with revenue greater than $0</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-teal-500 mt-0.5">•</span>
+                <span>Shows the top 10 businesses by revenue</span>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Incomplete Businesses</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>Businesses missing WhatsApp number (empty or "Not provided") or business address (empty, "Not set", or null).</li>
-              <li>Includes both active and inactive businesses that have incomplete setup.</li>
-              <li>Shows which specific fields are missing (WhatsApp, Address, or both).</li>
-            </ul>
+          {/* Incomplete Businesses Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Incomplete Businesses</h4>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                <span>Businesses missing WhatsApp number (empty or "Not provided") or business address (empty, "Not set", or null)</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                <span>Includes both active and inactive businesses that have incomplete setup</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-yellow-500 mt-0.5">•</span>
+                <span>Shows which specific fields are missing (WhatsApp, Address, or both)</span>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Inactive Businesses</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>Businesses that have been deactivated by a super admin.</li>
-              <li>Shows deactivation date and reason (if provided).</li>
-              <li>These businesses are not visible to customers but all data is preserved.</li>
-            </ul>
+          {/* Inactive Businesses Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Inactive Businesses</h4>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-red-500 mt-0.5">•</span>
+                <span>Businesses that have been deactivated by a super admin</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-red-500 mt-0.5">•</span>
+                <span>Shows deactivation date and reason (if provided)</span>
+              </div>
+              <div className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-red-500 mt-0.5">•</span>
+                <span>These businesses are not visible to customers but all data is preserved</span>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Date Range Filter</h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>The date range filter affects: Business Growth, User Growth, Orders, and Conversion Rate calculations.</li>
-              <li>Overview metrics (Total Businesses, Active Businesses, Incomplete Businesses) show all-time counts regardless of date range.</li>
-              <li>Revenue calculations use orders from the selected date range only.</li>
-            </ul>
+          {/* Date Range Filter Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm lg:col-span-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <Filter className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900">Date Range Filter</h4>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-4 h-4 text-indigo-600" />
+                  <p className="text-sm font-medium text-gray-900">Affected Metrics</p>
+                </div>
+                <p className="text-xs text-gray-700">Business Growth, User Growth, Orders, and Conversion Rate calculations</p>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-indigo-600" />
+                  <p className="text-sm font-medium text-gray-900">Always Shown</p>
+                </div>
+                <p className="text-xs text-gray-700">Overview metrics (Total Businesses, Active Businesses, Incomplete Businesses) show all-time counts regardless of date range</p>
+              </div>
+              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 md:col-span-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-indigo-600" />
+                  <p className="text-sm font-medium text-gray-900">Revenue Calculations</p>
+                </div>
+                <p className="text-xs text-gray-700">Revenue calculations use orders from the selected date range only</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
