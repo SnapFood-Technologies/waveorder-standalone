@@ -30,7 +30,6 @@ import {
   Globe,
   Package,
   Info,
-  AlertTriangle,
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import Link from 'next/link'
