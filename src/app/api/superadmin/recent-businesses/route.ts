@@ -15,6 +15,9 @@ export async function GET() {
     }
 
     const businesses = await prisma.business.findMany({
+      where: {
+        isActive: true // Only show active businesses in recent registrations
+      },
       take: 5,
       orderBy: {
         createdAt: 'desc'
