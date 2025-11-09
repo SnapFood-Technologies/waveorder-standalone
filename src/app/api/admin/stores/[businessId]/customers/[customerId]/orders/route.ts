@@ -40,7 +40,23 @@ export async function GET(
           customerId: customerId,
           businessId: businessId
         },
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          type: true,
+          total: true,
+          subtotal: true,
+          deliveryFee: true,
+          tax: true,
+          discount: true,
+          deliveryAddress: true,
+          notes: true,
+          paymentStatus: true,
+          paymentMethod: true,
+          createdAt: true,
+          updatedAt: true,
+          customerName: true, // Include stored customer name
           items: {
             select: {
               id: true,
