@@ -46,7 +46,9 @@ export async function GET(request: NextRequest) {
       deliveredOrders,
       businesses,
       users,
-      orders
+      orders,
+      incompleteBusinesses,
+      inactiveBusinesses
     ] = await Promise.all([
       // Total counts
       prisma.business.count(),
@@ -118,6 +120,47 @@ export async function GET(request: NextRequest) {
         select: {
           createdAt: true,
           status: true
+        }
+      }),
+
+      // Incomplete businesses: missing WhatsApp or address
+      prisma.business.findMany({
+        where: {
+          OR: [
+            { whatsappNumber: 'Not provided' },
+            { whatsappNumber: '' },
+            { whatsappNumber: null },
+            { address: 'Not set' },
+            { address: '' },
+            { address: null }
+          ]
+        },
+        select: {
+          id: true,
+          name: true,
+          whatsappNumber: true,
+          address: true,
+          createdAt: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }),
+
+      // Inactive businesses with deactivation info
+      prisma.business.findMany({
+        where: {
+          isActive: false
+        },
+        select: {
+          id: true,
+          name: true,
+          deactivatedAt: true,
+          deactivationReason: true,
+          createdAt: true
+        },
+        orderBy: {
+          deactivatedAt: 'desc'
         }
       })
     ])
@@ -204,18 +247,44 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Format incomplete businesses
+    const formattedIncompleteBusinesses = incompleteBusinesses.map(business => ({
+      id: business.id,
+      name: business.name,
+      missingFields: [
+        (!business.whatsappNumber || business.whatsappNumber === 'Not provided' || business.whatsappNumber === '') && 'WhatsApp',
+        (!business.address || business.address === 'Not set' || business.address === '') && 'Address'
+      ].filter(Boolean) as string[],
+      createdAt: business.createdAt.toISOString()
+    }))
+
+    // Format inactive businesses with reasons
+    const formattedInactiveBusinesses = inactiveBusinesses.map(business => ({
+      id: business.id,
+      name: business.name,
+      deactivatedAt: business.deactivatedAt?.toISOString() || null,
+      deactivationReason: business.deactivationReason || null,
+      createdAt: business.createdAt.toISOString()
+    }))
+
+    // Calculate total revenue from delivered orders
+    const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0)
+
     return NextResponse.json({
       overview: {
         totalBusinesses,
         totalUsers,
         totalOrders,
+        totalRevenue,
         avgOrderValue, // Average order value across all businesses
         conversionRate
       },
       businessGrowth: formatCumulativeGrowth(businessGrowth),
       userGrowth: formatCumulativeGrowth(userGrowth),
       topBusinesses, // Ranked by business order revenue (delivered + paid)
-      revenueByPlan // Platform subscription revenue by plan (currently all $0)
+      revenueByPlan, // Platform subscription revenue by plan (currently all $0)
+      incompleteBusinesses: formattedIncompleteBusinesses,
+      inactiveBusinesses: formattedInactiveBusinesses
     })
 
   } catch (error) {

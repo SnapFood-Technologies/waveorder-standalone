@@ -42,6 +42,7 @@ interface RecentBusiness {
   owner: string;
   ownerEmail: string;
   whatsappNumber: string;
+  address: string | null;
   createdAt: string;
   subscriptionPlan: string;
   businessType: string;
@@ -136,6 +137,16 @@ export function SuperAdminDashboard() {
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
+  };
+
+  const isBusinessIncomplete = (business: RecentBusiness): boolean => {
+    const hasWhatsApp = business.whatsappNumber && 
+      business.whatsappNumber !== 'Not provided' && 
+      business.whatsappNumber.trim() !== '';
+    const hasAddress = business.address && 
+      business.address !== 'Not set' && 
+      business.address.trim() !== '';
+    return !hasWhatsApp || !hasAddress;
   };
 
   const formatDateRange = () => {
@@ -403,8 +414,13 @@ export function SuperAdminDashboard() {
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                           {getBusinessIcon(business)}
                         </div>
-                        <div>
+                        <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-gray-900">{business.name}</p>
+                          {isBusinessIncomplete(business) && (
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                              Incomplete
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>

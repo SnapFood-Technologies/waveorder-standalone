@@ -43,6 +43,19 @@ interface AnalyticsData {
     revenue: number
     businesses: number
   }[]
+  incompleteBusinesses: {
+    id: string
+    name: string
+    missingFields: string[]
+    createdAt: string
+  }[]
+  inactiveBusinesses: {
+    id: string
+    name: string
+    deactivatedAt: string | null
+    deactivationReason: string | null
+    createdAt: string
+  }[]
 }
 
 export function SuperAdminAnalytics() {
@@ -283,6 +296,99 @@ export function SuperAdminAnalytics() {
           ))}
         </div>
       </div>
+
+      {/* Incomplete Businesses */}
+      {data.incompleteBusinesses && data.incompleteBusinesses.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Incomplete Businesses</h3>
+            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+              {data.incompleteBusinesses.length} businesses
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Business</th>
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Missing Fields</th>
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Created</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {data.incompleteBusinesses.map((business) => (
+                  <tr key={business.id} className="hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex flex-wrap gap-2">
+                        {business.missingFields.map((field, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded"
+                          >
+                            {field}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {new Date(business.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Inactive Businesses */}
+      {data.inactiveBusinesses && data.inactiveBusinesses.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Inactive Businesses</h3>
+            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+              {data.inactiveBusinesses.length} businesses
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Business</th>
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Deactivated</th>
+                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Reason</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {data.inactiveBusinesses.map((business) => (
+                  <tr key={business.id} className="hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {business.deactivatedAt
+                        ? new Date(business.deactivatedAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })
+                        : 'N/A'}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {business.deactivationReason || (
+                        <span className="text-gray-400 italic">No reason provided</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

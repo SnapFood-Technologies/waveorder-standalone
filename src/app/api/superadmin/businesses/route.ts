@@ -29,18 +29,52 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {}
 
-    if (search) {
-      whereConditions.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { slug: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
-        { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
-        { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
-      ]
-    }
+    // Handle incomplete filter first (it's a special case)
+    if (status === 'incomplete') {
+      // Incomplete businesses: missing WhatsApp or address
+      const incompleteCondition = {
+        OR: [
+          { whatsappNumber: 'Not provided' },
+          { whatsappNumber: '' },
+          { whatsappNumber: null },
+          { address: 'Not set' },
+          { address: '' },
+          { address: null }
+        ]
+      }
 
-    if (status !== 'all') {
-      whereConditions.isActive = status === 'active'
+      if (search) {
+        // Combine search with incomplete filter
+        whereConditions.AND = [
+          incompleteCondition,
+          {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+              { address: { contains: search, mode: 'insensitive' } },
+              { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
+              { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
+            ]
+          }
+        ]
+      } else {
+        Object.assign(whereConditions, incompleteCondition)
+      }
+    } else {
+      // Regular status filter (active/inactive)
+      if (search) {
+        whereConditions.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { slug: { contains: search, mode: 'insensitive' } },
+          { address: { contains: search, mode: 'insensitive' } },
+          { users: { some: { user: { name: { contains: search, mode: 'insensitive' } } } } },
+          { users: { some: { user: { email: { contains: search, mode: 'insensitive' } } } } }
+        ]
+      }
+
+      if (status !== 'all') {
+        whereConditions.isActive = status === 'active'
+      }
     }
 
     if (plan !== 'all') {
@@ -133,6 +167,8 @@ export async function GET(request: NextRequest) {
         subscriptionPlan: business.subscriptionPlan,
         subscriptionStatus: business.subscriptionStatus,
         isActive: business.isActive,
+        deactivatedAt: business.deactivatedAt,
+        deactivationReason: business.deactivationReason,
         currency: business.currency,
         language: business.language,
         whatsappNumber: business.whatsappNumber,
