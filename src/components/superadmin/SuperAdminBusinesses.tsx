@@ -29,6 +29,8 @@ import {
   Phone,
   Globe,
   Package,
+  Info,
+  AlertTriangle,
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import Link from 'next/link'
@@ -119,10 +121,12 @@ export function SuperAdminBusinesses() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [showQuickViewModal, setShowQuickViewModal] = useState(false);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null);
   const [businessToDeactivate, setBusinessToDeactivate] = useState<Business | null>(null);
   const [deactivationReason, setDeactivationReason] = useState('');
   const [businessToView, setBusinessToView] = useState<Business | null>(null);
+  const [businessForIncomplete, setBusinessForIncomplete] = useState<Business | null>(null);
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
   const [impersonateError, setImpersonateError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
@@ -202,6 +206,42 @@ export function SuperAdminBusinesses() {
       business.address !== 'Not set' && 
       business.address.trim() !== '';
     return !hasWhatsApp || !hasAddress;
+  }
+
+  const getIncompleteReasons = (business: Business): { missingFields: string[]; suggestions: string[] } => {
+    const missingFields: string[] = [];
+    const suggestions: string[] = [];
+
+    const hasWhatsApp = business.whatsappNumber && 
+      business.whatsappNumber !== 'Not provided' && 
+      business.whatsappNumber.trim() !== '';
+    const hasAddress = business.address && 
+      business.address !== 'Not set' && 
+      business.address.trim() !== '';
+
+    if (!hasWhatsApp) {
+      missingFields.push('WhatsApp Number');
+      suggestions.push('Add a WhatsApp Business number so customers can place orders directly via WhatsApp');
+      suggestions.push('Use the format: +[country code][number] (e.g., +1234567890)');
+    }
+
+    if (!hasAddress) {
+      missingFields.push('Business Address');
+      suggestions.push('Add the business physical address or service area');
+      suggestions.push('This helps customers understand delivery/pickup locations and improves local SEO');
+    }
+
+    return { missingFields, suggestions };
+  }
+
+  const openIncompleteModal = (business: Business) => {
+    setBusinessForIncomplete(business);
+    setShowIncompleteModal(true);
+  }
+
+  const closeIncompleteModal = () => {
+    setShowIncompleteModal(false);
+    setBusinessForIncomplete(null);
   }
 
 
@@ -563,8 +603,18 @@ export function SuperAdminBusinesses() {
                             <div className="flex items-center gap-2">
                               <div className="text-sm font-medium text-gray-900">{business.name}</div>
                               {isBusinessIncomplete(business) && (
-                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-                                  Incomplete
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+                                  <span>Incomplete</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openIncompleteModal(business);
+                                    }}
+                                    className="hover:bg-yellow-200 rounded-full p-0.5 transition-colors"
+                                    title="View incomplete details"
+                                  >
+                                    <Info className="w-3 h-3" />
+                                  </button>
                                 </span>
                               )}
                             </div>
@@ -779,6 +829,15 @@ export function SuperAdminBusinesses() {
         onClose={closeDeactivateModal}
         onConfirm={handleDeactivateBusiness}
       />
+
+      {/* Incomplete Info Modal */}
+      {showIncompleteModal && businessForIncomplete && (
+        <IncompleteInfoModal
+          business={businessForIncomplete}
+          onClose={closeIncompleteModal}
+          getIncompleteReasons={getIncompleteReasons}
+        />
+      )}
 
       {/* Quick View Modal */}
       <QuickViewModal
@@ -1257,6 +1316,75 @@ function DeactivateModal({ isOpen, business, reason, onReasonChange, onClose, on
             >
               <UserX className="w-4 h-4 mr-2" />
               Deactivate Business
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+// Incomplete Business Info Modal Component
+interface IncompleteInfoModalProps {
+  business: Business;
+  onClose: () => void;
+  getIncompleteReasons: (business: Business) => { missingFields: string[]; suggestions: string[] };
+}
+
+function IncompleteInfoModal({ business, onClose, getIncompleteReasons }: IncompleteInfoModalProps) {
+  const { missingFields, suggestions } = getIncompleteReasons(business);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-6 h-6 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900">Incomplete Business Setup</h3>
+              <p className="text-sm text-gray-600">{business.name}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-2">Missing Information:</h4>
+            <ul className="space-y-2 mb-4">
+              {missingFields.map((field, index) => (
+                <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                  {field}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <span>💡 Suggestions:</span>
+            </h4>
+            <ul className="space-y-2">
+              {suggestions.map((suggestion, index) => (
+                <li key={index} className="flex items-start gap-2 text-sm text-gray-600">
+                  <span className="text-teal-500 mt-0.5">•</span>
+                  <span>{suggestion}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              Close
             </button>
           </div>
         </div>

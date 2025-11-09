@@ -18,7 +18,7 @@ export async function GET() {
       where: {
         isActive: true // Only show active businesses in recent registrations
       },
-      take: 5,
+      take: 10,
       orderBy: {
         createdAt: 'desc'
       },
