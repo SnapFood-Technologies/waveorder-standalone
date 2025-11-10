@@ -52,9 +52,6 @@ interface NotificationSettings {
   notifyDineInOnPreparing: boolean
   notifyDineInOnReady: boolean
   notifyDineInOnDelivered: boolean
-  // Payment and pickup notifications
-  notifyCustomerOnPaymentReceived: boolean
-  notifyCustomerOnPickedUpAndPaid: boolean
 }
 
 interface OrderNotification {
@@ -110,10 +107,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     notifyDineInOnConfirmed: false,
     notifyDineInOnPreparing: false,
     notifyDineInOnReady: true,
-    notifyDineInOnDelivered: false,
-    // Payment and pickup notifications
-    notifyCustomerOnPaymentReceived: true,
-    notifyCustomerOnPickedUpAndPaid: true
+    notifyDineInOnDelivered: false
   })
   
   const [business, setBusiness] = useState<Business>({ currency: 'USD' })
@@ -169,10 +163,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           notifyDineInOnConfirmed: data.business.notifyDineInOnConfirmed ?? false,
           notifyDineInOnPreparing: data.business.notifyDineInOnPreparing ?? false,
           notifyDineInOnReady: data.business.notifyDineInOnReady ?? true,
-          notifyDineInOnDelivered: data.business.notifyDineInOnDelivered ?? false,
-          // Payment and pickup notifications
-          notifyCustomerOnPaymentReceived: data.business.notifyCustomerOnPaymentReceived ?? true,
-          notifyCustomerOnPickedUpAndPaid: data.business.notifyCustomerOnPickedUpAndPaid ?? true
+          notifyDineInOnDelivered: data.business.notifyDineInOnDelivered ?? false
         })
         setBusiness({ 
           currency: data.business.currency,
@@ -570,30 +561,6 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 <div className="flex items-center justify-between p-2 bg-white rounded">
                   <label className="text-sm text-gray-700">Cancelled</label>
                   <input type="checkbox" name="notifyCustomerOnCancelled" checked={settings.notifyCustomerOnCancelled} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                </div>
-              </div>
-
-              {/* Payment and Pickup Notifications */}
-              <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
-                <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Payment & Pickup Notifications
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Payment Received</label>
-                      <p className="text-xs text-gray-500 mt-0.5">Notify customer when payment status is marked as PAID</p>
-                    </div>
-                    <input type="checkbox" name="notifyCustomerOnPaymentReceived" checked={settings.notifyCustomerOnPaymentReceived} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Picked Up & Paid (Pickup Orders)</label>
-                      <p className="text-xs text-gray-500 mt-0.5">Notify customer when pickup order is READY/DELIVERED and payment is PAID</p>
-                    </div>
-                    <input type="checkbox" name="notifyCustomerOnPickedUpAndPaid" checked={settings.notifyCustomerOnPickedUpAndPaid} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
                 </div>
               </div>
 

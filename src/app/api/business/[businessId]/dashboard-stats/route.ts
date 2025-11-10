@@ -24,14 +24,14 @@ export async function GET(
     ])
 
     // Revenue calculation: Paid orders that are confirmed/completed
-    // Includes CONFIRMED, READY, DELIVERED + PAID to catch all completed orders
-    // Some pickup/dine-in orders may stop at CONFIRMED or READY, not DELIVERED
+    // Includes CONFIRMED, READY, PICKED_UP, DELIVERED + PAID to catch all completed orders
+    // Some pickup/dine-in orders may stop at CONFIRMED, READY, or PICKED_UP
     const revenue = await prisma.order.aggregate({
       where: { 
         businessId,
         paymentStatus: 'PAID',
         status: {
-          in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+          in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED']
         },
         NOT: {
           status: {
