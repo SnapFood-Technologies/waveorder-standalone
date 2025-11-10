@@ -248,19 +248,18 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             await revertOrderStock()
           }
         
-        // Refresh order data first to ensure we have latest status
+        // Refresh order data to get latest status and other updates
         await fetchOrder()
         
-        // Wait a bit to ensure state is updated before generating message
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        showSuccess(`Order status updated to ${newStatus.toLowerCase().replace('_', ' ')}`)
+        showSuccess(`Order status updated to ${newStatus.toLowerCase().replace(/_/g, ' ')}`)
         setShowRejectModal(false)
         setRejectionReason('')
         
         if (newStatus !== 'CANCELLED') {
-          // Generate message after order state is refreshed
-          setWhatsappMessage(generateWhatsAppMessage())
+          // Generate message with newStatus directly to avoid race condition
+          // React state updates are async, so order.status might still be old
+          // Passing newStatus ensures the message shows the correct status
+          setWhatsappMessage(generateWhatsAppMessage(newStatus))
           setShowWhatsAppModal(true)
         }
       } else {
@@ -492,7 +491,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     })
   }
 
-  const generateWhatsAppMessage = () => {
+  const generateWhatsAppMessage = (statusOverride?: string) => {
     if (!order || !business) return ''
 
     const currencySymbol = business.currency === 'USD' ? '$' : 
@@ -500,11 +499,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                           business.currency === 'ALL' ? 'L' : 
                           business.currency === 'GBP' ? '£' : '$'
 
-    // Use current order status (should be updated after fetchOrder)
-    const currentStatus = order.status || 'PENDING'
+    // Use statusOverride if provided (for when status was just updated), otherwise use current order status
+    const currentStatus = statusOverride || order.status || 'PENDING'
     
     let message = `Hello ${order.customer.name}!\n\n`
-    message += `Your order #${order.orderNumber} status has been updated to: *${currentStatus.replace('_', ' ')}*\n\n`
+    message += `Your order #${order.orderNumber} status has been updated to: *${currentStatus.replace(/_/g, ' ')}*\n\n`
     
     if (order.type === 'DELIVERY' && order.deliveryAddress) {
       message += `📍 Delivery Address: ${order.deliveryAddress}\n`
