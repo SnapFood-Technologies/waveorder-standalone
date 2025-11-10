@@ -524,7 +524,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                     <input type="checkbox" name="notifyPickupOnReady" checked={settings.notifyPickupOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Delivered</label>
+                    <label className="text-sm text-gray-700">Picked Up</label>
                     <input type="checkbox" name="notifyPickupOnDelivered" checked={settings.notifyPickupOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                 </div>
@@ -549,7 +549,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                     <input type="checkbox" name="notifyDineInOnReady" checked={settings.notifyDineInOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Delivered</label>
+                    <label className="text-sm text-gray-700">Picked Up</label>
                     <input type="checkbox" name="notifyDineInOnDelivered" checked={settings.notifyDineInOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                 </div>
