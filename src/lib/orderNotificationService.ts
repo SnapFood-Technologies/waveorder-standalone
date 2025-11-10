@@ -284,6 +284,7 @@ function getStatusColor(status: string): string {
     case 'confirmed': return '#3b82f6'
     case 'preparing': return '#f97316'
     case 'ready': return '#10b981'
+    case 'picked_up': return '#059669'
     case 'out_for_delivery': return '#06b6d4'
     case 'delivered': return '#059669'
     case 'cancelled': return '#ef4444'

@@ -147,6 +147,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
       CONFIRMED: 'text-blue-600 bg-blue-100',
       PREPARING: 'text-orange-600 bg-orange-100',
       READY: 'text-green-600 bg-green-100',
+      PICKED_UP: 'text-emerald-600 bg-emerald-100',
       OUT_FOR_DELIVERY: 'text-cyan-600 bg-cyan-100',
       DELIVERED: 'text-emerald-600 bg-emerald-100',
       CANCELLED: 'text-red-600 bg-red-100',

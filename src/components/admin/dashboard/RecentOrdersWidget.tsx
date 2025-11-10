@@ -83,6 +83,7 @@ export function RecentOrdersWidget({ businessId }: RecentOrdersWidgetProps) {
       case 'confirmed': return 'text-blue-600 bg-blue-100'
       case 'preparing': return 'text-orange-600 bg-orange-100'
       case 'ready': return 'text-green-600 bg-green-100'
+      case 'picked_up': return 'text-emerald-600 bg-emerald-100'
       case 'out_for_delivery': return 'text-cyan-600 bg-cyan-100'
       case 'delivered': return 'text-emerald-600 bg-emerald-100'
       case 'cancelled': return 'text-red-600 bg-red-100'
