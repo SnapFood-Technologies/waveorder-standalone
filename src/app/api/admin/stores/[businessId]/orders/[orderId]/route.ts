@@ -337,6 +337,14 @@ export async function PUT(
         }, { status: 400 })
       }
       updateData.status = body.status
+      
+      // Automatically set pickup time to now when status changes to PICKED_UP (for PICKUP/DINE_IN orders)
+      if (body.status === 'PICKED_UP' && (existingOrder.type === 'PICKUP' || existingOrder.type === 'DINE_IN')) {
+        // Only set time if it's not already set and not being explicitly provided in the request
+        if (!existingOrder.deliveryTime && body.deliveryTime === undefined) {
+          updateData.deliveryTime = new Date()
+        }
+      }
     }
 
     if (body.paymentStatus && body.paymentStatus !== existingOrder.paymentStatus) {
@@ -353,7 +361,8 @@ export async function PUT(
       updateData.notes = body.notes
     }
 
-    if (body.deliveryTime !== undefined) {
+    // Only set deliveryTime from body if it's explicitly provided AND we haven't auto-set it for PICKED_UP status
+    if (body.deliveryTime !== undefined && !updateData.deliveryTime) {
       updateData.deliveryTime = body.deliveryTime ? new Date(body.deliveryTime) : null
     }
 
