@@ -76,7 +76,7 @@ interface OrderItem {
 interface Order {
   id: string
   orderNumber: string
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
   type: 'DELIVERY' | 'PICKUP' | 'DINE_IN'
   total: number
   subtotal: number
@@ -104,6 +104,7 @@ interface Business {
   whatsappNumber: string
   businessType: string
   language: string
+  translateContentToBusinessLanguage?: boolean
   timeFormat?: string
 }
 
@@ -196,7 +197,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     setTimeout(() => setSuccessMessage(null), 5000)
   }
 
-  const getValidStatusOptions = (currentStatus: string) => {
+  const getValidStatusOptions = (currentStatus: string, orderType?: string) => {
     switch (currentStatus) {
       case 'PENDING':
         return ['PENDING', 'CONFIRMED', 'CANCELLED']
@@ -205,7 +206,15 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       case 'PREPARING':
         return ['PREPARING', 'READY', 'CANCELLED']
       case 'READY':
-        return ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
+        // For PICKUP and DINE_IN orders, can proceed to PICKED_UP
+        // For DELIVERY orders, can proceed to OUT_FOR_DELIVERY or DELIVERED
+        if (orderType === 'PICKUP' || orderType === 'DINE_IN') {
+          return ['READY', 'PICKED_UP', 'CANCELLED']
+        } else {
+          return ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
+        }
+      case 'PICKED_UP':
+        return ['PICKED_UP', 'REFUNDED'] // PICKED_UP is final, can only refund
       case 'OUT_FOR_DELIVERY':
         return ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
       case 'DELIVERED':
@@ -404,6 +413,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       CONFIRMED: 'text-blue-600 bg-blue-100 border-blue-200',
       PREPARING: 'text-orange-600 bg-orange-100 border-orange-200',
       READY: 'text-green-600 bg-green-100 border-green-200',
+      PICKED_UP: 'text-emerald-600 bg-emerald-100 border-emerald-200',
       OUT_FOR_DELIVERY: 'text-cyan-600 bg-cyan-100 border-cyan-200',
       DELIVERED: 'text-emerald-600 bg-emerald-100 border-emerald-200',
       CANCELLED: 'text-red-600 bg-red-100 border-red-200',
@@ -499,41 +509,57 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                           business.currency === 'ALL' ? 'L' : 
                           business.currency === 'GBP' ? '£' : '$'
 
+    // Determine language to use
+    const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
+    const language = useBusinessLanguage ? (business.language || 'en') : 'en'
+    const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : 'en-US'
+
+    // Get WhatsApp message translations
+    const whatsappLabels = getWhatsAppLabels(language)
+    const statusMessages = getWhatsAppStatusMessages(language)
+
     // Use statusOverride if provided (for when status was just updated), otherwise use current order status
     const currentStatus = statusOverride || order.status || 'PENDING'
+    const statusLabel = getStatusLabel(currentStatus, language)
     
-    let message = `Hello ${order.customer.name}!\n\n`
-    message += `Your order #${order.orderNumber} status has been updated to: *${currentStatus.replace(/_/g, ' ')}*\n\n`
+    let message = `${whatsappLabels.hello} ${order.customer.name}!\n\n`
+    message += `${whatsappLabels.orderStatusUpdate} #${order.orderNumber} ${whatsappLabels.hasBeenUpdatedTo}: *${statusLabel}*\n\n`
     
     if (order.type === 'DELIVERY' && order.deliveryAddress) {
-      message += `📍 Delivery Address: ${order.deliveryAddress}\n`
+      message += `📍 ${whatsappLabels.deliveryAddress}: ${order.deliveryAddress}\n`
     } else if (order.type === 'PICKUP') {
-      message += `🏪 Pickup at: ${business.name}\n`
+      message += `🏪 ${whatsappLabels.pickupAt}: ${business.name}\n`
     } else if (order.type === 'DINE_IN') {
-      message += `🍽️ Dine-in at: ${business.name}\n`
+      message += `🍽️ ${whatsappLabels.dineInAt}: ${business.name}\n`
     }
     
-    message += `💰 Total: ${formatCurrency(order.total)}\n`
+    message += `💰 ${whatsappLabels.total}: ${formatCurrency(order.total)}\n`
     
     if (order.deliveryTime) {
       const deliveryDate = new Date(order.deliveryTime)
       const timeFormat = business?.timeFormat || '24'
       const use24Hour = timeFormat === '24'
-      const timeLabel = order.type === 'DELIVERY' ? 'Delivery time' :
-                       order.type === 'PICKUP' ? 'Pickup time' :
-                       'Arrival time'
+      
+      let timeLabel: string
+      if (order.type === 'DELIVERY') {
+        timeLabel = whatsappLabels.deliveryTime
+      } else if (order.type === 'PICKUP') {
+        timeLabel = whatsappLabels.pickupTime
+      } else {
+        timeLabel = whatsappLabels.arrivalTime
+      }
       
       let timeString: string
       if (use24Hour) {
-        // 24-hour format: "November 7, 2025 at 15:00"
-        timeString = deliveryDate.toLocaleDateString('en-US', {
+        // 24-hour format
+        timeString = deliveryDate.toLocaleDateString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric'
-        }) + ' at ' + deliveryDate.toTimeString().slice(0, 5)
+        }) + ' ' + whatsappLabels.at + ' ' + deliveryDate.toTimeString().slice(0, 5)
       } else {
-        // 12-hour format: "November 7, 2025 at 3:00 PM"
-        timeString = deliveryDate.toLocaleString('en-US', {
+        // 12-hour format
+        timeString = deliveryDate.toLocaleString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -546,33 +572,183 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       message += `⏰ ${timeLabel}: ${timeString}\n`
     }
     
-    switch (currentStatus) {
+    // Get status-specific message
+    const statusKey = currentStatus.toUpperCase()
+    let statusMessage = ''
+    
+    switch (statusKey) {
       case 'CONFIRMED':
-        message += `\n✅ Your order has been confirmed and we're preparing it for you!\n`
+        statusMessage = statusMessages.CONFIRMED
         break
       case 'PREPARING':
-        message += `\n👨‍🍳 Your order is being prepared with care!\n`
+        statusMessage = statusMessages.PREPARING
         break
       case 'READY':
         if (order.type === 'PICKUP') {
-          message += `\n🎉 Your order is ready for pickup!\n`
+          statusMessage = statusMessages.READY_PICKUP
         } else if (order.type === 'DINE_IN') {
-          message += `\n🎉 Your table is ready!\n`
+          statusMessage = statusMessages.READY_DINE_IN
         } else {
-          message += `\n🎉 Your order is ready!\n`
+          statusMessage = statusMessages.READY_DELIVERY
+        }
+        break
+      case 'PICKED_UP':
+        if (order.type === 'PICKUP') {
+          statusMessage = statusMessages.PICKED_UP_PICKUP
+        } else if (order.type === 'DINE_IN') {
+          statusMessage = statusMessages.PICKED_UP_DINE_IN
+        } else {
+          statusMessage = statusMessages.PICKED_UP_DELIVERY
         }
         break
       case 'OUT_FOR_DELIVERY':
-        message += `\n🚗 Your order is on its way to you!\n`
+        statusMessage = statusMessages.OUT_FOR_DELIVERY
         break
       case 'DELIVERED':
-        message += `\n✨ Your order has been delivered. Enjoy!\n`
+        statusMessage = statusMessages.DELIVERED
         break
     }
     
-    message += `\nThank you for choosing ${business.name}!`
+    if (statusMessage) {
+      message += `\n${statusMessage}\n`
+    }
+    
+    message += `\n${whatsappLabels.thankYou} ${business.name}!`
 
     return message
+  }
+
+  // Helper function to get WhatsApp labels
+  const getWhatsAppLabels = (language: string = 'en'): Record<string, string> => {
+    const labels: Record<string, Record<string, string>> = {
+      en: {
+        hello: 'Hello',
+        orderStatusUpdate: 'Your order',
+        hasBeenUpdatedTo: 'status has been updated to',
+        deliveryAddress: 'Delivery Address',
+        pickupAt: 'Pickup at',
+        dineInAt: 'Dine-in at',
+        total: 'Total',
+        deliveryTime: 'Delivery time',
+        pickupTime: 'Pickup time',
+        arrivalTime: 'Arrival time',
+        at: 'at',
+        thankYou: 'Thank you for choosing'
+      },
+      es: {
+        hello: 'Hola',
+        orderStatusUpdate: 'Tu pedido',
+        hasBeenUpdatedTo: 'ha sido actualizado a',
+        deliveryAddress: 'Dirección de Entrega',
+        pickupAt: 'Recogida en',
+        dineInAt: 'Comer aquí en',
+        total: 'Total',
+        deliveryTime: 'Hora de entrega',
+        pickupTime: 'Hora de recogida',
+        arrivalTime: 'Hora de llegada',
+        at: 'a las',
+        thankYou: 'Gracias por elegir'
+      },
+      sq: {
+        hello: 'Përshëndetje',
+        orderStatusUpdate: 'Porosia juaj',
+        hasBeenUpdatedTo: 'është përditësuar në',
+        deliveryAddress: 'Adresa e Dorëzimit',
+        pickupAt: 'Marrje në',
+        dineInAt: 'Në vend në',
+        total: 'Total',
+        deliveryTime: 'Koha e dorëzimit',
+        pickupTime: 'Koha e marrjes',
+        arrivalTime: 'Koha e mbërritjes',
+        at: 'në',
+        thankYou: 'Faleminderit që na zgjodhët'
+      }
+    }
+    return labels[language] || labels.en
+  }
+
+  // Helper function to get WhatsApp status messages
+  const getWhatsAppStatusMessages = (language: string = 'en'): Record<string, string> => {
+    const messages: Record<string, Record<string, string>> = {
+      en: {
+        CONFIRMED: '✅ Your order has been confirmed and we\'re preparing it for you!',
+        PREPARING: '👨‍🍳 Your order is being prepared with care!',
+        READY_PICKUP: '🎉 Your order is ready for pickup!',
+        READY_DINE_IN: '🎉 Your table is ready!',
+        READY_DELIVERY: '🎉 Your order is ready!',
+        PICKED_UP_PICKUP: '✨ Your order has been picked up. Thank you!',
+        PICKED_UP_DINE_IN: '✨ Enjoy your meal! Thank you!',
+        PICKED_UP_DELIVERY: '✨ Your order is complete. Thank you!',
+        OUT_FOR_DELIVERY: '🚗 Your order is on its way to you!',
+        DELIVERED: '✨ Your order has been delivered. Enjoy!'
+      },
+      es: {
+        CONFIRMED: '✅ ¡Tu pedido ha sido confirmado y lo estamos preparando para ti!',
+        PREPARING: '👨‍🍳 ¡Tu pedido se está preparando con cuidado!',
+        READY_PICKUP: '🎉 ¡Tu pedido está listo para recoger!',
+        READY_DINE_IN: '🎉 ¡Tu mesa está lista!',
+        READY_DELIVERY: '🎉 ¡Tu pedido está listo!',
+        PICKED_UP_PICKUP: '✨ ¡Tu pedido ha sido recogido. Gracias!',
+        PICKED_UP_DINE_IN: '✨ ¡Que disfrutes tu comida! ¡Gracias!',
+        PICKED_UP_DELIVERY: '✨ ¡Tu pedido está completo. Gracias!',
+        OUT_FOR_DELIVERY: '🚗 ¡Tu pedido está en camino hacia ti!',
+        DELIVERED: '✨ ¡Tu pedido ha sido entregado. ¡Que lo disfrutes!'
+      },
+      sq: {
+        CONFIRMED: '✅ Porosia juaj është konfirmuar dhe po e përgatisim për ju!',
+        PREPARING: '👨‍🍳 Porosia juaj po përgatitet me kujdes!',
+        READY_PICKUP: '🎉 Porosia juaj është gati për marrje!',
+        READY_DINE_IN: '🎉 Tavolina juaj është gati!',
+        READY_DELIVERY: '🎉 Porosia juaj është gati!',
+        PICKED_UP_PICKUP: '✨ Porosia juaj është marrë. Faleminderit!',
+        PICKED_UP_DINE_IN: '✨ Shijoni ushqimin tuaj! Faleminderit!',
+        PICKED_UP_DELIVERY: '✨ Porosia juaj është e plotë. Faleminderit!',
+        OUT_FOR_DELIVERY: '🚗 Porosia juaj është në rrugë për tek ju!',
+        DELIVERED: '✨ Porosia juaj është dorëzuar. Shijoni!'
+      }
+    }
+    return messages[language] || messages.en
+  }
+
+  // Helper function to get status label
+  const getStatusLabel = (status: string, language: string = 'en'): string => {
+    const statusLabels: Record<string, Record<string, string>> = {
+      en: {
+        PENDING: 'Pending',
+        CONFIRMED: 'Confirmed',
+        PREPARING: 'Preparing',
+        READY: 'Ready',
+        PICKED_UP: 'Picked Up',
+        OUT_FOR_DELIVERY: 'Out for Delivery',
+        DELIVERED: 'Delivered',
+        CANCELLED: 'Cancelled',
+        REFUNDED: 'Refunded'
+      },
+      es: {
+        PENDING: 'Pendiente',
+        CONFIRMED: 'Confirmado',
+        PREPARING: 'Preparando',
+        READY: 'Listo',
+        PICKED_UP: 'Recogido',
+        OUT_FOR_DELIVERY: 'En Camino',
+        DELIVERED: 'Entregado',
+        CANCELLED: 'Cancelado',
+        REFUNDED: 'Reembolsado'
+      },
+      sq: {
+        PENDING: 'Në Pritje',
+        CONFIRMED: 'E Konfirmuar',
+        PREPARING: 'Duke U Përgatitur',
+        READY: 'Gati',
+        PICKED_UP: 'Marrë',
+        OUT_FOR_DELIVERY: 'Në Rrugë',
+        DELIVERED: 'Dorëzuar',
+        CANCELLED: 'Anuluar',
+        REFUNDED: 'Rimbursuar'
+      }
+    }
+    const labels = statusLabels[language] || statusLabels.en
+    return labels[status.toUpperCase()] || status.replace(/_/g, ' ')
   }
 
   if (loading) {
@@ -668,7 +844,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Order #{order.orderNumber}</h1>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border w-fit mt-2 sm:mt-0 ${getStatusColor(order.status)}`}>
-                {order.status.replace('_', ' ')}
+                {order.status.replace(/_/g, ' ')}
               </span>
             </div>
             <p className="text-gray-600 text-sm">Order details and management</p>
@@ -724,9 +900,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
       disabled={updating}
     >
-      {getValidStatusOptions(order.status).map(status => (
+      {getValidStatusOptions(order.status, order.type).map(status => (
         <option key={status} value={status}>
-          {status.replace('_', ' ')}
+          {status.replace(/_/g, ' ')}
         </option>
       ))}
     </select>

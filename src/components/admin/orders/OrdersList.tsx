@@ -335,6 +335,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                   <option value="CONFIRMED">Confirmed</option>
                   <option value="PREPARING">Preparing</option>
                   <option value="READY">Ready</option>
+                  <option value="PICKED_UP">Picked Up</option>
                   <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
                   <option value="DELIVERED">Delivered</option>
                   <option value="CANCELLED">Cancelled</option>

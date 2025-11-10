@@ -66,13 +66,13 @@ export async function GET(request: NextRequest) {
       }),
       prisma.order.count(),
       
-      // Paid and completed orders for revenue (includes CONFIRMED, READY, DELIVERED)
+      // Paid and completed orders for revenue (includes CONFIRMED, READY, PICKED_UP, DELIVERED)
       // Filter by date range if specified
       prisma.order.findMany({
         where: {
           paymentStatus: 'PAID',
           status: {
-            in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+            in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED']
           },
           createdAt: {
             gte: startDate
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
             where: {
               paymentStatus: 'PAID',
               status: {
-                in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+                in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED']
               }
             },
             select: {

@@ -63,6 +63,7 @@ export async function GET(
       CONFIRMED: { label: 'Confirmed', color: '#3b82f6' },
       PREPARING: { label: 'Preparing', color: '#f59e0b' },
       READY: { label: 'Ready', color: '#8b5cf6' },
+      PICKED_UP: { label: 'Picked Up', color: '#10b981' },
       OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: '#06b6d4' },
       DELIVERED: { label: 'Delivered', color: '#10b981' },
       CANCELLED: { label: 'Cancelled', color: '#ef4444' },
@@ -86,16 +87,17 @@ export async function GET(
 
     // Get completed orders for revenue calculation
     // Revenue includes orders that are paid and completed/fulfilled:
-    // - DELIVERED + PAID (for delivery orders or fully completed pickup/dine-in)
-    // - READY + PAID (for pickup/dine-in orders that are ready but not marked delivered)
-    // - CONFIRMED + PAID (for pickup orders that stop at confirmed status)
+    // - DELIVERED + PAID (for delivery orders)
+    // - PICKED_UP + PAID (for pickup/dine-in orders - final status)
+    // - READY + PAID (for pickup/dine-in orders that are ready but not marked picked up)
+    // - CONFIRMED + PAID (for orders that stop at confirmed status)
     // Note: Excludes CANCELLED and REFUNDED orders
     const revenueOrders = allOrders.filter(order => {
       if (order.paymentStatus !== 'PAID') return false
       if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
       
       // Count any paid order that's been confirmed or beyond
-      return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
+      return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
     })
 
     // Get analytics data for views
@@ -131,7 +133,7 @@ export async function GET(
         },
         paymentStatus: 'PAID',
         status: {
-          in: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED']
+          in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED']
         }
       },
       select: { total: true }

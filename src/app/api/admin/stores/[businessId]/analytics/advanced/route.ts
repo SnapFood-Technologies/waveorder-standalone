@@ -71,12 +71,12 @@ export async function GET(
     const totalViews = analytics.reduce((sum, a) => sum + a.visitors, 0)
     const totalOrders = orders.length
     // Revenue calculation: Paid orders that are confirmed/completed
-    // Includes DELIVERED, READY, CONFIRMED + PAID (to catch pickup orders that stop early)
+    // Includes DELIVERED, PICKED_UP, READY, CONFIRMED + PAID (to catch all order types)
     const totalRevenue = orders
       .filter(o => {
         if (o.paymentStatus !== 'PAID') return false
         if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+        return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
       })
       .reduce((sum, o) => sum + o.total, 0)
     
@@ -113,7 +113,7 @@ export async function GET(
       .filter(o => {
         if (o.paymentStatus !== 'PAID') return false
         if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+        return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
       })
       .reduce((sum, o) => sum + o.total, 0)
 
@@ -168,7 +168,7 @@ export async function GET(
     orders.forEach(order => {
       const hour = order.createdAt.getHours()
       hourlyData[hour].orders++
-      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
+      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
         hourlyData[hour].revenue += order.total
       }
     })
@@ -185,7 +185,7 @@ export async function GET(
       const dayOfWeek = order.createdAt.getDay()
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert Sunday from 0 to 6
       dailyData[adjustedDay].orders++
-      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
+      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
         dailyData[adjustedDay].revenue += order.total
       }
     })

@@ -46,9 +46,6 @@ export async function GET(
         notifyDineInOnPreparing: true,
         notifyDineInOnReady: true,
         notifyDineInOnDelivered: true,
-        // Payment and pickup notifications
-        notifyCustomerOnPaymentReceived: true,
-        notifyCustomerOnPickedUpAndPaid: true,
         email: true,
         currency: true,
         timeFormat: true
@@ -118,9 +115,6 @@ export async function PUT(
         notifyDineInOnPreparing: data.notifyDineInOnPreparing ?? false,
         notifyDineInOnReady: data.notifyDineInOnReady ?? false,
         notifyDineInOnDelivered: data.notifyDineInOnDelivered ?? false,
-        // Payment and pickup notifications
-        notifyCustomerOnPaymentReceived: data.notifyCustomerOnPaymentReceived ?? true,
-        notifyCustomerOnPickedUpAndPaid: data.notifyCustomerOnPickedUpAndPaid ?? true,
         updatedAt: new Date()
       },
       select: {
@@ -148,9 +142,6 @@ export async function PUT(
         notifyDineInOnPreparing: true,
         notifyDineInOnReady: true,
         notifyDineInOnDelivered: true,
-        // Payment and pickup notifications
-        notifyCustomerOnPaymentReceived: true,
-        notifyCustomerOnPickedUpAndPaid: true,
         email: true,
         currency: true,
         timeFormat: true
