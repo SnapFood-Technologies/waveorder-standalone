@@ -272,6 +272,7 @@ model Business {
   orderNotificationEmail      String?
   orderNotificationLastUpdate DateTime?
   notifyOnAdminCreatedOrders  Boolean   @default(false)
+  notifyAdminOnPickedUpAndPaid Boolean  @default(true)
 
   // Customer Notification Settings (per status and order type)
   customerNotificationEnabled Boolean @default(false)

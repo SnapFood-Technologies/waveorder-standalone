@@ -30,6 +30,7 @@ interface NotificationSettings {
   orderNotificationEmail: string | null
   orderNotificationLastUpdate: string | null
   notifyOnAdminCreatedOrders: boolean
+  notifyAdminOnPickedUpAndPaid: boolean
   lastOrderNotified?: string | null
   // Customer notification settings (global)
   customerNotificationEnabled: boolean
@@ -86,6 +87,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     orderNotificationEmail: null,
     orderNotificationLastUpdate: null,
     notifyOnAdminCreatedOrders: false,
+    notifyAdminOnPickedUpAndPaid: true,
     lastOrderNotified: null,
     // Customer notification settings (global)
     customerNotificationEnabled: false,
@@ -142,6 +144,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           orderNotificationEmail: data.business.orderNotificationEmail || data.business.email || '',
           orderNotificationLastUpdate: data.business.orderNotificationLastUpdate,
           notifyOnAdminCreatedOrders: data.business.notifyOnAdminCreatedOrders || false,
+          notifyAdminOnPickedUpAndPaid: data.business.notifyAdminOnPickedUpAndPaid ?? true,
           lastOrderNotified: data.business.lastOrderNotified,
           // Customer notification settings (global)
           customerNotificationEnabled: data.business.customerNotificationEnabled ?? false,
@@ -421,12 +424,31 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </label>
               </div>
 
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="notifyAdminOnPickedUpAndPaid"
+                  checked={settings.notifyAdminOnPickedUpAndPaid}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <label className="ml-3 text-sm font-medium text-gray-700">
+                  Notify me when customer picks up order and payment is received
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 ml-7 mt-1">
+                You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.
+              </p>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">What you'll be notified about:</h3>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• New orders placed by customers</li>
                   {settings.notifyOnAdminCreatedOrders && (
                     <li>• Orders you create from the admin panel</li>
+                  )}
+                  {settings.notifyAdminOnPickedUpAndPaid && (
+                    <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
                   )}
                 </ul>
               </div>

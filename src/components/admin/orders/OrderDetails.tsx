@@ -751,6 +751,46 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     return labels[status.toUpperCase()] || status.replace(/_/g, ' ')
   }
 
+  // Helper function to get admin UI labels
+  const getAdminUILabels = (language: string = 'en'): Record<string, string> => {
+    const labels: Record<string, Record<string, string>> = {
+      en: {
+        sendWhatsAppUpdate: 'Send WhatsApp Update',
+        notifyCustomer: 'Notify customer about order status',
+        sendWhatsAppUpdateTo: 'Send WhatsApp Update to',
+        customizeMessage: 'Customize the message before sending to your customer:',
+        whatsAppMessage: 'WhatsApp Message',
+        cancel: 'Cancel',
+        sendWhatsAppMessage: 'Send WhatsApp Message',
+        resetToDefault: 'Reset to Default',
+        messagePreview: 'Message preview above'
+      },
+      es: {
+        sendWhatsAppUpdate: 'Enviar Actualización de WhatsApp',
+        notifyCustomer: 'Notificar al cliente sobre el estado del pedido',
+        sendWhatsAppUpdateTo: 'Enviar Actualización de WhatsApp a',
+        customizeMessage: 'Personaliza el mensaje antes de enviarlo a tu cliente:',
+        whatsAppMessage: 'Mensaje de WhatsApp',
+        cancel: 'Cancelar',
+        sendWhatsAppMessage: 'Enviar Mensaje de WhatsApp',
+        resetToDefault: 'Restablecer a Predeterminado',
+        messagePreview: 'Vista previa del mensaje arriba'
+      },
+      sq: {
+        sendWhatsAppUpdate: 'Dërgoni Përditësim WhatsApp',
+        notifyCustomer: 'Njoftoni klientin për statusin e porosisë',
+        sendWhatsAppUpdateTo: 'Dërgoni Përditësim WhatsApp te',
+        customizeMessage: 'Përshtatni mesazhin para se ta dërgoni klientit tuaj:',
+        whatsAppMessage: 'Mesazh WhatsApp',
+        cancel: 'Anulo',
+        sendWhatsAppMessage: 'Dërgoni Mesazh WhatsApp',
+        resetToDefault: 'Rivendosni në Parazgjedhje',
+        messagePreview: 'Parapamje e mesazhit më sipër'
+      }
+    }
+    return labels[language] || labels.en
+  }
+
   if (loading) {
     return (
       <div className="max-w-8xl mx-auto">
@@ -797,17 +837,15 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           <p className="text-gray-600 mb-6">
             The order you're looking for doesn't exist or you don't have access to view it.
           </p>
-          <Link
-            href={addParams(`/admin/stores/${businessId}/orders`)}
-            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Orders
-          </Link>
         </div>
       </div>
     )
   }
+
+  // Get admin UI labels based on business language (after we know business exists)
+  const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
+  const adminLanguage = useBusinessLanguage ? (business.language || 'en') : 'en'
+  const adminUILabels = getAdminUILabels(adminLanguage)
 
   return (
     <div className="max-w-8xl mx-auto space-y-6">
@@ -1298,8 +1336,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               >
                 <MessageCircle className="w-5 h-5 mr-3 text-green-600 flex-shrink-0" />
                 <div className="text-left">
-                  <div className="text-sm font-medium text-gray-900">Send WhatsApp Update</div>
-                  <div className="text-xs text-gray-600">Notify customer about order status</div>
+                  <div className="text-sm font-medium text-gray-900">{adminUILabels.sendWhatsAppUpdate}</div>
+                  <div className="text-xs text-gray-600">{adminUILabels.notifyCustomer}</div>
                 </div>
               </button>
               
@@ -1449,7 +1487,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <MessageCircle className="w-5 h-5 text-green-500 mr-2" />
-                Send WhatsApp Update to {order.customer.name}
+                {adminUILabels.sendWhatsAppUpdateTo} {order.customer.name}
               </h3>
               <button
                 onClick={() => setShowWhatsAppModal(false)}
@@ -1461,13 +1499,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             
             <div className="mb-6">
               <p className="text-gray-600 mb-4">
-                Customize the message before sending to your customer:
+                {adminUILabels.customizeMessage}
               </p>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    WhatsApp Message
+                    {adminUILabels.whatsAppMessage}
                   </label>
                   <textarea
                     value={whatsappMessage}
@@ -1479,12 +1517,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 </div>
                 
                 <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>Message preview above</span>
+                  <span>{adminUILabels.messagePreview}</span>
                   <button
                     onClick={() => setWhatsappMessage(generateWhatsAppMessage())}
                     className="text-green-600 hover:text-green-700 transition-colors"
                   >
-                    Reset to Default
+                    {adminUILabels.resetToDefault}
                   </button>
                 </div>
               </div>
@@ -1495,7 +1533,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 onClick={() => setShowWhatsAppModal(false)}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {adminUILabels.cancel}
               </button>
               <a
                 href={`https://wa.me/${business?.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
@@ -1505,7 +1543,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 onClick={() => setShowWhatsAppModal(false)}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Send WhatsApp Message
+                {adminUILabels.sendWhatsAppMessage}
               </a>
             </div>
           </div>

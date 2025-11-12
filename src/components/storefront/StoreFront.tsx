@@ -1137,6 +1137,17 @@ function TimeSelection({
   // Get time format from store data (default to 24-hour)
   const timeFormat = storeData.timeFormat || '24'
   
+  // Get locale from store language for date formatting
+  const getLocaleFromLanguage = (language: string): string => {
+    switch (language) {
+      case 'es': return 'es-ES'
+      case 'sq': return 'sq-AL'
+      case 'en': return 'en-US'
+      default: return 'en-US'
+    }
+  }
+  const locale = getLocaleFromLanguage(storeData.storefrontLanguage || storeData.language || 'en')
+  
   // Generate time slots with time format
   const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType, timeFormat)
   
@@ -1274,10 +1285,10 @@ function TimeSelection({
                   <div className="text-sm font-medium">
                     {index === 0 ? translations.today || 'Today' : 
                      index === 1 ? translations.tomorrow || 'Tomorrow' :
-                     date.toLocaleDateString('en-US', { weekday: 'short' })}
+                     date.toLocaleDateString(locale, { weekday: 'short' })}
                   </div>
                   <div className="text-xs opacity-80">
-                    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                   </div>
                 </button>
               ))}

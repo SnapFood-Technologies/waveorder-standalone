@@ -406,7 +406,13 @@ export async function PUT(
             notifyDineInOnConfirmed: true,
             notifyDineInOnPreparing: true,
             notifyDineInOnReady: true,
-            notifyDineInOnDelivered: true
+            notifyDineInOnDelivered: true,
+            // Admin notification settings
+            orderNotificationsEnabled: true,
+            orderNotificationEmail: true,
+            notifyAdminOnPickedUpAndPaid: true,
+            email: true,
+            businessType: true
           }
         },
         items: {
@@ -492,7 +498,72 @@ export async function PUT(
       }
     }
 
-
+    // Send admin notification when customer picks up and pays
+    // This happens when:
+    // 1. Order status is READY or DELIVERED AND payment is PAID
+    // 2. Either status changed to READY/DELIVERED (with payment already PAID) OR payment changed to PAID (with status already READY/DELIVERED)
+    if (updatedOrder.paymentStatus === 'PAID' && 
+        (updatedOrder.status === 'READY' || updatedOrder.status === 'DELIVERED')) {
+      
+      const paymentJustPaid = body.paymentStatus === 'PAID' && existingOrder.paymentStatus !== 'PAID'
+      const statusJustChanged = body.status && 
+                                body.status !== existingOrder.status &&
+                                (body.status === 'READY' || body.status === 'DELIVERED') &&
+                                existingOrder.paymentStatus === 'PAID'
+      
+      // Only send notification if this is a transition (not already in this state)
+      if (paymentJustPaid || statusJustChanged) {
+        try {
+          // Import the order notification service
+          const { sendOrderNotification } = await import('@/lib/orderNotificationService')
+          
+          // Check if admin notifications are enabled AND the specific setting for picked up and paid is enabled (defaults to true)
+          // Since default is true, we check if it's not explicitly false
+          if (updatedOrder.business.orderNotificationsEnabled && 
+              (updatedOrder.business.notifyAdminOnPickedUpAndPaid ?? true)) {
+            // Send admin notification (don't await to avoid blocking response)
+            sendOrderNotification(
+              {
+                id: updatedOrder.id,
+                orderNumber: updatedOrder.orderNumber,
+                status: updatedOrder.status,
+                type: updatedOrder.type,
+                total: updatedOrder.total,
+                deliveryAddress: updatedOrder.deliveryAddress,
+                notes: updatedOrder.notes,
+                customer: {
+                  name: updatedOrder.customer.name,
+                  phone: updatedOrder.customer.phone
+                },
+                items: updatedOrder.items.map(item => ({
+                  product: { name: item.product.name },
+                  variant: item.variant ? { name: item.variant.name } : null,
+                  quantity: item.quantity,
+                  price: item.price
+                })),
+                businessId: businessId
+              },
+              {
+                name: updatedOrder.business.name,
+                orderNotificationsEnabled: updatedOrder.business.orderNotificationsEnabled,
+                orderNotificationEmail: updatedOrder.business.orderNotificationEmail,
+                email: updatedOrder.business.email,
+                currency: updatedOrder.business.currency,
+                businessType: updatedOrder.business.businessType || 'RESTAURANT',
+                language: updatedOrder.business.language || 'en'
+              },
+              false // isNewOrder = false (this is an update notification)
+            ).catch((error) => {
+              // Log error but don't fail the request
+              console.error('Failed to send admin notification for picked up and paid:', error)
+            })
+          }
+        } catch (error) {
+          // Log error but don't fail the request
+          console.error('Error sending admin notification for picked up and paid:', error)
+        }
+      }
+    }
 
     return NextResponse.json({
       order: {
