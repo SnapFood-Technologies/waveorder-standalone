@@ -106,6 +106,17 @@ interface Business {
   language: string
   translateContentToBusinessLanguage?: boolean
   timeFormat?: string
+  // Notification settings
+  customerNotificationEnabled?: boolean
+  notifyPickupOnConfirmed?: boolean
+  notifyPickupOnPreparing?: boolean
+  notifyPickupOnReady?: boolean
+  notifyDeliveryOnConfirmed?: boolean
+  notifyDeliveryOnPreparing?: boolean
+  notifyDeliveryOnOutForDelivery?: boolean
+  notifyDineInOnConfirmed?: boolean
+  notifyDineInOnPreparing?: boolean
+  notifyDineInOnReady?: boolean
 }
 
 export default function OrderDetails({ businessId, orderId }: OrderDetailsProps) {
@@ -265,11 +276,15 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         setRejectionReason('')
         
         if (newStatus !== 'CANCELLED') {
-          // Generate message with newStatus directly to avoid race condition
-          // React state updates are async, so order.status might still be old
-          // Passing newStatus ensures the message shows the correct status
-          setWhatsappMessage(generateWhatsAppMessage(newStatus))
-          setShowWhatsAppModal(true)
+          // Only show WhatsApp modal if customer notifications are enabled for this status
+          const shouldShowWhatsApp = shouldShowWhatsAppModal(newStatus, order.type, business)
+          if (shouldShowWhatsApp) {
+            // Generate message with newStatus directly to avoid race condition
+            // React state updates are async, so order.status might still be old
+            // Passing newStatus ensures the message shows the correct status
+            setWhatsappMessage(generateWhatsAppMessage(newStatus))
+            setShowWhatsAppModal(true)
+          }
         }
       } else {
         const errorData = await response.json()
@@ -499,6 +514,63 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       minute: '2-digit',
       hour12: !use24Hour
     })
+  }
+
+  // Check if WhatsApp modal should be shown based on notification settings
+  const shouldShowWhatsAppModal = (status: string, orderType: string, business: Business | null): boolean => {
+    if (!business || !business.customerNotificationEnabled) {
+      return false
+    }
+
+    // Check order-type-specific settings first, then fall back to global
+    switch (status) {
+      case 'CONFIRMED':
+        if (orderType === 'DELIVERY') {
+          return business.notifyDeliveryOnConfirmed ?? false
+        }
+        if (orderType === 'PICKUP') {
+          return business.notifyPickupOnConfirmed ?? false
+        }
+        if (orderType === 'DINE_IN') {
+          return business.notifyDineInOnConfirmed ?? false
+        }
+        return false
+
+      case 'PREPARING':
+        if (orderType === 'DELIVERY') {
+          return business.notifyDeliveryOnPreparing ?? false
+        }
+        if (orderType === 'PICKUP') {
+          return business.notifyPickupOnPreparing ?? false
+        }
+        if (orderType === 'DINE_IN') {
+          return business.notifyDineInOnPreparing ?? false
+        }
+        return false
+
+      case 'READY':
+        // READY doesn't apply to DELIVERY (they use OUT_FOR_DELIVERY instead)
+        if (orderType === 'DELIVERY') {
+          return false
+        }
+        if (orderType === 'PICKUP') {
+          return business.notifyPickupOnReady ?? true
+        }
+        if (orderType === 'DINE_IN') {
+          return business.notifyDineInOnReady ?? true
+        }
+        return true
+
+      case 'OUT_FOR_DELIVERY':
+        // OUT_FOR_DELIVERY only applies to DELIVERY orders
+        if (orderType !== 'DELIVERY') {
+          return false
+        }
+        return business.notifyDeliveryOnOutForDelivery ?? true
+
+      default:
+        return false
+    }
   }
 
   const generateWhatsAppMessage = (statusOverride?: string) => {

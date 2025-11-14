@@ -26,6 +26,7 @@ export async function GET(
         orderNotificationLastUpdate: true,
         notifyOnAdminCreatedOrders: true,
         notifyAdminOnPickedUpAndPaid: true,
+        notifyAdminOnStatusUpdates: true,
         // Customer notification settings (global)
         customerNotificationEnabled: true,
         notifyCustomerOnConfirmed: true,
@@ -95,6 +96,7 @@ export async function PUT(
           : null,
         notifyOnAdminCreatedOrders: data.notifyOnAdminCreatedOrders ?? false,
         notifyAdminOnPickedUpAndPaid: data.notifyAdminOnPickedUpAndPaid ?? true,
+        notifyAdminOnStatusUpdates: data.notifyAdminOnStatusUpdates ?? false,
         orderNotificationLastUpdate: new Date(),
         // Customer notification settings (global)
         customerNotificationEnabled: data.customerNotificationEnabled ?? false,
@@ -125,6 +127,7 @@ export async function PUT(
         orderNotificationLastUpdate: true,
         notifyOnAdminCreatedOrders: true,
         notifyAdminOnPickedUpAndPaid: true,
+        notifyAdminOnStatusUpdates: true,
         customerNotificationEnabled: true,
         notifyCustomerOnConfirmed: true,
         notifyCustomerOnPreparing: true,

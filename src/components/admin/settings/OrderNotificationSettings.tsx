@@ -31,6 +31,7 @@ interface NotificationSettings {
   orderNotificationLastUpdate: string | null
   notifyOnAdminCreatedOrders: boolean
   notifyAdminOnPickedUpAndPaid: boolean
+  notifyAdminOnStatusUpdates: boolean
   lastOrderNotified?: string | null
   // Customer notification settings (global)
   customerNotificationEnabled: boolean
@@ -88,6 +89,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     orderNotificationLastUpdate: null,
     notifyOnAdminCreatedOrders: false,
     notifyAdminOnPickedUpAndPaid: true,
+    notifyAdminOnStatusUpdates: false,
     lastOrderNotified: null,
     // Customer notification settings (global)
     customerNotificationEnabled: false,
@@ -440,6 +442,22 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.
               </p>
 
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="notifyAdminOnStatusUpdates"
+                  checked={settings.notifyAdminOnStatusUpdates}
+                  onChange={handleInputChange}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <label className="ml-3 text-sm font-medium text-gray-700">
+                  Receive same status update notifications as customers
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 ml-7 mt-1">
+                When enabled, you will receive email notifications for all order status updates (Confirmed, Preparing, Ready, etc.) just like your customers do. This helps you stay informed about order progress.
+              </p>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">What you'll be notified about:</h3>
                 <ul className="text-sm text-blue-700 space-y-1">
@@ -449,6 +467,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   )}
                   {settings.notifyAdminOnPickedUpAndPaid && (
                     <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
+                  )}
+                  {settings.notifyAdminOnStatusUpdates && (
+                    <li>• All order status updates (same notifications as customers receive)</li>
                   )}
                 </ul>
               </div>

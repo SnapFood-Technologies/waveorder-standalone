@@ -181,7 +181,18 @@ export async function GET(
             businessType: true,
             language: true,
             translateContentToBusinessLanguage: true,
-            timeFormat: true
+            timeFormat: true,
+            // Notification settings for WhatsApp modal control
+            customerNotificationEnabled: true,
+            notifyPickupOnConfirmed: true,
+            notifyPickupOnPreparing: true,
+            notifyPickupOnReady: true,
+            notifyDeliveryOnConfirmed: true,
+            notifyDeliveryOnPreparing: true,
+            notifyDeliveryOnOutForDelivery: true,
+            notifyDineInOnConfirmed: true,
+            notifyDineInOnPreparing: true,
+            notifyDineInOnReady: true
           }
         }
       }
@@ -411,6 +422,7 @@ export async function PUT(
             orderNotificationsEnabled: true,
             orderNotificationEmail: true,
             notifyAdminOnPickedUpAndPaid: true,
+            notifyAdminOnStatusUpdates: true,
             email: true,
             businessType: true
           }
@@ -495,6 +507,59 @@ export async function PUT(
           },
         })
         console.error('Error checking customer notification settings:', error)
+      }
+    }
+
+    // Send admin status update notification if enabled and status changed
+    if (body.status && body.status !== existingOrder.status && updatedOrder.business.notifyAdminOnStatusUpdates) {
+      try {
+        // Get notification setting for this status and order type (same logic as customer)
+        const shouldNotify = shouldNotifyCustomer(updatedOrder.business, body.status, updatedOrder.type)
+        
+        if (shouldNotify && updatedOrder.business.orderNotificationsEnabled && updatedOrder.business.orderNotificationEmail) {
+          // Import the order notification service
+          const { sendOrderNotification } = await import('@/lib/orderNotificationService')
+          
+          // Send admin notification (don't await to avoid blocking response)
+          sendOrderNotification(
+            {
+              id: updatedOrder.id,
+              orderNumber: updatedOrder.orderNumber,
+              status: body.status,
+              type: updatedOrder.type,
+              total: updatedOrder.total,
+              deliveryAddress: updatedOrder.deliveryAddress,
+              notes: updatedOrder.notes,
+              customer: {
+                name: updatedOrder.customer.name,
+                phone: updatedOrder.customer.phone
+              },
+              items: updatedOrder.items.map(item => ({
+                product: { name: item.product.name },
+                variant: item.variant ? { name: item.variant.name } : null,
+                quantity: item.quantity,
+                price: item.price
+              })),
+              businessId: businessId
+            },
+            {
+              name: updatedOrder.business.name,
+              orderNotificationsEnabled: updatedOrder.business.orderNotificationsEnabled,
+              orderNotificationEmail: updatedOrder.business.orderNotificationEmail,
+              email: updatedOrder.business.email,
+              currency: updatedOrder.business.currency,
+              businessType: updatedOrder.business.businessType || 'RESTAURANT',
+              language: updatedOrder.business.language || 'en'
+            },
+            false // isNewOrder = false (this is a status update notification)
+          ).catch((error) => {
+            // Log error but don't fail the request
+            console.error('Failed to send admin status update notification:', error)
+          })
+        }
+      } catch (error) {
+        // Log error but don't fail the request
+        console.error('Error sending admin status update notification:', error)
       }
     }
 
