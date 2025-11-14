@@ -273,6 +273,7 @@ model Business {
   orderNotificationLastUpdate DateTime?
   notifyOnAdminCreatedOrders  Boolean   @default(false)
   notifyAdminOnPickedUpAndPaid Boolean  @default(true)
+  notifyAdminOnStatusUpdates  Boolean   @default(false) // Admin receives same status updates as customers
 
   // Customer Notification Settings (per status and order type)
   customerNotificationEnabled Boolean @default(false)
