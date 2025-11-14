@@ -1536,7 +1536,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 {adminUILabels.cancel}
               </button>
               <a
-                href={`https://wa.me/${business?.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
+                href={`https://wa.me/${order.customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
