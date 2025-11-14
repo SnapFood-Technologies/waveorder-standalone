@@ -147,6 +147,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           orderNotificationLastUpdate: data.business.orderNotificationLastUpdate,
           notifyOnAdminCreatedOrders: data.business.notifyOnAdminCreatedOrders || false,
           notifyAdminOnPickedUpAndPaid: data.business.notifyAdminOnPickedUpAndPaid ?? true,
+          notifyAdminOnStatusUpdates: data.business.notifyAdminOnStatusUpdates ?? false,
           lastOrderNotified: data.business.lastOrderNotified,
           // Customer notification settings (global)
           customerNotificationEnabled: data.business.customerNotificationEnabled ?? false,
