@@ -145,7 +145,7 @@ export async function sendOrderNotification(
 
 // Helper function to format order status
 function formatStatus(status: string) {
-  return status.toLowerCase().replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+  return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 // Create email template for order notifications
@@ -161,6 +161,9 @@ function createOrderNotificationEmail({
   formatCurrency: (amount: number, currency: string) => string
 }) {
   const orderTypeLabel = formatOrderType(orderData.type, businessData.businessType)
+  const statusColor = getStatusColorBox(orderData.status)
+  const statusLabel = formatStatus(orderData.status)
+  const statusIcon = getStatusIcon(orderData.status)
   
   return `
 <!DOCTYPE html>
@@ -175,11 +178,13 @@ function createOrderNotificationEmail({
     
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 30px 20px; position: relative;">
+      ${isNewOrder ? `
       <div style="position: absolute; top: 20px; right: 20px;">
         <div style="display: inline-flex; align-items: center; padding: 6px 12px; background-color: #059669; border-radius: 20px; font-size: 12px; font-weight: 600; color: white;">
           New
         </div>
       </div>
+      ` : ''}
       <div style="text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
           ${isNewOrder ? 'New Order Received!' : 'Order Update'}
@@ -201,6 +206,15 @@ function createOrderNotificationEmail({
           </p>
         </div>
       </div>
+      
+      ${!isNewOrder ? `
+      <!-- Status Update Box -->
+      <div style="margin-bottom: 30px; padding: 20px; background-color: ${statusColor.background}; border-radius: 8px; border: 2px solid ${statusColor.border}; text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 10px;">${statusIcon}</div>
+        <h3 style="color: ${statusColor.text}; margin: 0 0 10px; font-size: 18px; font-weight: 600;">${statusLabel}</h3>
+        <p style="color: ${statusColor.text}; margin: 0; font-size: 14px; opacity: 0.9;">Order status has been updated</p>
+      </div>
+      ` : ''}
       
       <!-- Customer Info -->
       <div style="margin-bottom: 30px; padding: 20px; background-color: #fef7ff; border-radius: 8px; border: 1px solid #e9d5ff;">
@@ -290,6 +304,43 @@ function getStatusColor(status: string): string {
     case 'cancelled': return '#ef4444'
     case 'refunded': return '#6b7280'
     default: return '#6b7280'
+  }
+}
+
+function getStatusColorBox(status: string): { background: string; border: string; text: string } {
+  switch (status.toUpperCase()) {
+    case 'CONFIRMED':
+      return { background: '#dbeafe', border: '#3b82f6', text: '#1e40af' }
+    case 'PREPARING':
+      return { background: '#fff7ed', border: '#f97316', text: '#9a3412' }
+    case 'READY':
+      return { background: '#f0fdf4', border: '#10b981', text: '#065f46' }
+    case 'PICKED_UP':
+      return { background: '#d1fae5', border: '#059669', text: '#065f46' }
+    case 'OUT_FOR_DELIVERY':
+      return { background: '#ecfeff', border: '#06b6d4', text: '#164e63' }
+    case 'DELIVERED':
+      return { background: '#d1fae5', border: '#059669', text: '#065f46' }
+    case 'CANCELLED':
+      return { background: '#fee2e2', border: '#ef4444', text: '#991b1b' }
+    case 'REFUNDED':
+      return { background: '#f3f4f6', border: '#6b7280', text: '#374151' }
+    default:
+      return { background: '#f3f4f6', border: '#6b7280', text: '#374151' }
+  }
+}
+
+function getStatusIcon(status: string): string {
+  switch (status.toUpperCase()) {
+    case 'CONFIRMED': return '✅'
+    case 'PREPARING': return '👨‍🍳'
+    case 'READY': return '🎉'
+    case 'PICKED_UP': return '✨'
+    case 'OUT_FOR_DELIVERY': return '🚚'
+    case 'DELIVERED': return '📦'
+    case 'CANCELLED': return '❌'
+    case 'REFUNDED': return '↩️'
+    default: return '📋'
   }
 }
 
