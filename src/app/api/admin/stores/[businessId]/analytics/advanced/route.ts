@@ -70,13 +70,25 @@ export async function GET(
     // Calculate overview metrics
     const totalViews = analytics.reduce((sum, a) => sum + a.visitors, 0)
     const totalOrders = orders.length
-    // Revenue calculation: Paid orders that are confirmed/completed
-    // Includes DELIVERED, PICKED_UP, READY, CONFIRMED + PAID (to catch all order types)
+    // Revenue calculation: Paid orders that are completed/fulfilled
+    // - DELIVERY orders: DELIVERED + PAID (final status)
+    // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
+    // - DINE_IN orders: PICKED_UP + PAID (final status - only when actually picked up)
     const totalRevenue = orders
       .filter(o => {
         if (o.paymentStatus !== 'PAID') return false
         if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+        
+        // Order-type specific revenue calculation
+        if (o.type === 'DELIVERY') {
+          return o.status === 'DELIVERED'
+        } else if (o.type === 'PICKUP') {
+          return o.status === 'PICKED_UP'
+        } else if (o.type === 'DINE_IN') {
+          return o.status === 'PICKED_UP'
+        }
+        
+        return false
       })
       .reduce((sum, o) => sum + o.total, 0)
     
@@ -113,7 +125,17 @@ export async function GET(
       .filter(o => {
         if (o.paymentStatus !== 'PAID') return false
         if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(o.status)
+        
+        // Order-type specific revenue calculation
+        if (o.type === 'DELIVERY') {
+          return o.status === 'DELIVERED'
+        } else if (o.type === 'PICKUP') {
+          return o.status === 'PICKED_UP'
+        } else if (o.type === 'DINE_IN') {
+          return o.status === 'PICKED_UP'
+        }
+        
+        return false
       })
       .reduce((sum, o) => sum + o.total, 0)
 

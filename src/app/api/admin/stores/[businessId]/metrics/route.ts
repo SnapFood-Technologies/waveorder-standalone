@@ -53,7 +53,8 @@ export async function GET(
         total: true,
         createdAt: true,
         status: true,
-        paymentStatus: true
+        paymentStatus: true,
+        type: true
       }
     })
 
@@ -87,17 +88,27 @@ export async function GET(
 
     // Get completed orders for revenue calculation
     // Revenue includes orders that are paid and completed/fulfilled:
-    // - DELIVERED + PAID (for delivery orders)
-    // - PICKED_UP + PAID (for pickup/dine-in orders - final status)
-    // - READY + PAID (for pickup/dine-in orders that are ready but not marked picked up)
-    // - CONFIRMED + PAID (for orders that stop at confirmed status)
+    // - DELIVERY orders: DELIVERED + PAID (final status)
+    // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
+    // - DINE_IN orders: PICKED_UP + PAID (final status - only when actually picked up)
     // Note: Excludes CANCELLED and REFUNDED orders
     const revenueOrders = allOrders.filter(order => {
       if (order.paymentStatus !== 'PAID') return false
       if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
       
-      // Count any paid order that's been confirmed or beyond
-      return ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
+      // Order-type specific revenue calculation
+      if (order.type === 'DELIVERY') {
+        // Delivery orders: only DELIVERED counts as revenue
+        return order.status === 'DELIVERED'
+      } else if (order.type === 'PICKUP') {
+        // Pickup orders: only PICKED_UP counts as revenue
+        return order.status === 'PICKED_UP'
+      } else if (order.type === 'DINE_IN') {
+        // Dine-in orders: only PICKED_UP counts as revenue
+        return order.status === 'PICKED_UP'
+      }
+      
+      return false
     })
 
     // Get analytics data for views
@@ -132,8 +143,18 @@ export async function GET(
           lte: prevEndDate
         },
         paymentStatus: 'PAID',
-        status: {
-          in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED']
+        OR: [
+          // Delivery orders: DELIVERED
+          { type: 'DELIVERY', status: 'DELIVERED' },
+          // Pickup orders: PICKED_UP
+          { type: 'PICKUP', status: 'PICKED_UP' },
+          // Dine-in orders: PICKED_UP
+          { type: 'DINE_IN', status: 'PICKED_UP' }
+        ],
+        NOT: {
+          status: {
+            in: ['CANCELLED', 'REFUNDED']
+          }
         }
       },
       select: { total: true }

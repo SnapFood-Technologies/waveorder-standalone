@@ -120,7 +120,8 @@ export async function GET(request: NextRequest) {
             select: { 
               total: true,
               status: true,
-              paymentStatus: true
+              paymentStatus: true,
+              type: true
             }
           },
           _count: {
@@ -179,7 +180,8 @@ export async function GET(request: NextRequest) {
               select: { 
                 total: true,
                 status: true,
-                paymentStatus: true
+                paymentStatus: true,
+                type: true
               }
             },
             _count: {
@@ -261,13 +263,25 @@ export async function GET(request: NextRequest) {
         } : null,
         stats: {
           totalOrders: business._count.orders,
-          // Revenue: Paid orders that are confirmed/completed
-          // Includes CONFIRMED, READY, DELIVERED + PAID (catches pickup orders that stop early)
+          // Revenue: Paid orders that are completed/fulfilled
+          // - DELIVERY orders: DELIVERED + PAID
+          // - PICKUP orders: PICKED_UP + PAID (only when actually picked up)
+          // - DINE_IN orders: PICKED_UP + PAID (only when actually picked up)
           totalRevenue: business.orders
             .filter((order: any) => {
               if (order.paymentStatus !== 'PAID') return false
               if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
-              return ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)
+              
+              // Order-type specific revenue calculation
+              if (order.type === 'DELIVERY') {
+                return order.status === 'DELIVERED'
+              } else if (order.type === 'PICKUP') {
+                return order.status === 'PICKED_UP'
+              } else if (order.type === 'DINE_IN') {
+                return order.status === 'PICKED_UP'
+              }
+              
+              return false
             })
             // @ts-ignore
             .reduce((sum, order) => sum + order.total, 0),
