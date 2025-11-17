@@ -133,7 +133,7 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
       hasTooltip: true,
-      tooltip: 'Total revenue from completed orders with paid status in the selected period. Only orders that are both delivered and have confirmed payment are included. This represents actual money received and includes the final order total after discounts, taxes, delivery fees, and other adjustments.'
+      tooltip: 'Total revenue from completed orders with paid status in the selected period. Delivery orders must be DELIVERED, pickup/dine-in orders must be PICKED_UP. Only orders with PAID payment status are included. This represents actual money received and includes the final order total after discounts, taxes, delivery fees, and other adjustments.'
     },
     {
       name: 'Growth',
@@ -353,13 +353,31 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
                 <strong className="text-gray-900">What's included:</strong>
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Only completed orders (delivered/ready status)</li>
+                <li>Only completed orders with <strong>PAID</strong> payment status</li>
                 <li>Final order total after all adjustments</li>
                 <li>Includes delivery fees and taxes</li>
                 <li>Accounts for any discounts applied</li>
               </ul>
               
-              <p className="pt-2">
+              <div className="pt-2 border-t border-gray-200 mt-3">
+                <p className="font-semibold text-gray-900 mb-2">Order completion status by type:</p>
+                <ul className="space-y-1.5 text-sm">
+                  <li className="flex items-start">
+                    <span className="font-medium text-gray-700 mr-2">• Delivery orders:</span>
+                    <span className="text-gray-600">Must be <strong>DELIVERED</strong> + PAID</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium text-gray-700 mr-2">• Pickup orders:</span>
+                    <span className="text-gray-600">Must be <strong>PICKED_UP</strong> + PAID</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="font-medium text-gray-700 mr-2">• Dine-in orders:</span>
+                    <span className="text-gray-600">Must be <strong>PICKED_UP</strong> + PAID</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <p className="pt-2 border-t border-gray-200">
                 <strong className="text-gray-900">Time period:</strong> {formatDateRange()}
               </p>
             </div>
