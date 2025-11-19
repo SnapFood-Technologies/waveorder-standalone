@@ -91,6 +91,12 @@ body {
 .ProseMirror {
   outline: none;
   min-height: 6rem;
+  line-height: 1.5;
+}
+
+.ProseMirror p {
+  margin: 0.25em 0;
+  line-height: 1.5;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -104,7 +110,7 @@ body {
 .ProseMirror ul,
 .ProseMirror ol {
   padding-left: 1.5rem;
-  margin: 0.5em 0;
+  margin: 0.25em 0;
 }
 
 .ProseMirror ul {
@@ -116,7 +122,8 @@ body {
 }
 
 .ProseMirror li {
-  margin: 0.25em 0;
+  margin: 0.125em 0;
+  line-height: 1.5;
 }
 
 .ProseMirror a {
@@ -138,4 +145,57 @@ body {
 
 .ProseMirror u {
   text-decoration: underline;
+}
+
+.ProseMirror s {
+  text-decoration: line-through;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  margin: 0.5em 0 0.25em 0;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.ProseMirror h1 {
+  font-size: 1.5em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.25em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.1em;
+}
+
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125em 0.25em;
+  border-radius: 0.25rem;
+  font-size: 0.9em;
+  font-family: monospace;
+}
+
+.ProseMirror pre {
+  background-color: #f3f4f6;
+  padding: 0.75em;
+  border-radius: 0.5rem;
+  margin: 0.5em 0;
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: #6b7280;
+  font-style: italic;
 }

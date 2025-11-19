@@ -5,7 +5,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import UnderlineExtension from '@tiptap/extension-underline'
-import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, X } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered, Link as LinkIcon, X, Heading1, Heading2, Heading3, Code, Quote, Strikethrough } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 interface RichTextEditorProps {
@@ -112,7 +112,41 @@ export function RichTextEditor({
   return (
     <div className={`border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500 ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+      <div className="flex items-center gap-1 p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg flex-wrap">
+        {/* Headings */}
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('heading', { level: 1 }) ? 'bg-gray-200' : ''
+          }`}
+          title="Heading 1"
+        >
+          <Heading1 className="w-4 h-4 text-gray-700" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''
+          }`}
+          title="Heading 2"
+        >
+          <Heading2 className="w-4 h-4 text-gray-700" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('heading', { level: 3 }) ? 'bg-gray-200' : ''
+          }`}
+          title="Heading 3"
+        >
+          <Heading3 className="w-4 h-4 text-gray-700" />
+        </button>
+        <div className="w-px h-6 bg-gray-300 mx-1" />
+        
+        {/* Text Formatting */}
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -143,7 +177,19 @@ export function RichTextEditor({
         >
           <Underline className="w-4 h-4 text-gray-700" />
         </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('strike') ? 'bg-gray-200' : ''
+          }`}
+          title="Strikethrough"
+        >
+          <Strikethrough className="w-4 h-4 text-gray-700" />
+        </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
+        
+        {/* Lists */}
         <button
           type="button"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -165,6 +211,31 @@ export function RichTextEditor({
           <ListOrdered className="w-4 h-4 text-gray-700" />
         </button>
         <div className="w-px h-6 bg-gray-300 mx-1" />
+        
+        {/* Other */}
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('code') ? 'bg-gray-200' : ''
+          }`}
+          title="Inline Code"
+        >
+          <Code className="w-4 h-4 text-gray-700" />
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${
+            editor.isActive('blockquote') ? 'bg-gray-200' : ''
+          }`}
+          title="Blockquote"
+        >
+          <Quote className="w-4 h-4 text-gray-700" />
+        </button>
+        <div className="w-px h-6 bg-gray-300 mx-1" />
+        
+        {/* Link */}
         <button
           type="button"
           onClick={insertLink}
