@@ -119,25 +119,114 @@ export function RichTextEditor({
 
   const insertList = (ordered: boolean, e: React.MouseEvent) => {
     e.preventDefault()
-    execCommand(ordered ? 'insertOrderedList' : 'insertUnorderedList')
+    
+    if (!editorRef.current) return
+    
+    // Ensure editor is focused
+    editorRef.current.focus()
+    
+    // Restore selection
+    restoreSelection()
+    
+    // Check if we have a selection
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+      // No selection, place cursor at end and create list
+      const range = document.createRange()
+      range.selectNodeContents(editorRef.current)
+      range.collapse(false)
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    }
+    
+    // Execute list command
+    const command = ordered ? 'insertOrderedList' : 'insertUnorderedList'
+    const success = document.execCommand(command, false, undefined)
+    
+    if (!success) {
+      // If execCommand fails, manually create list HTML
+      const selectedText = selection?.toString() || ''
+      if (selectedText) {
+        const listTag = ordered ? 'ol' : 'ul'
+        const listHtml = `<${listTag}><li>${selectedText}</li></${listTag}>`
+        document.execCommand('insertHTML', false, listHtml)
+      } else {
+        // Insert empty list
+        const listTag = ordered ? 'ol' : 'ul'
+        const listHtml = `<${listTag}><li></li></${listTag}>`
+        document.execCommand('insertHTML', false, listHtml)
+      }
+    }
+    
+    // Update the value
+    handleInput()
+    
+    // Keep focus
+    editorRef.current.focus()
   }
 
   const insertLink = (e: React.MouseEvent) => {
     e.preventDefault()
-    restoreSelection()
+    // Save selection before opening modal
+    saveSelection()
     setShowLinkModal(true)
   }
 
   const handleInsertLink = () => {
-    if (linkUrl.trim()) {
+    if (linkUrl.trim() && editorRef.current) {
       // Validate URL format
       let url = linkUrl.trim()
       if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
         url = 'https://' + url
       }
-      execCommand('createLink', url)
+      
+      // Ensure editor is focused
+      editorRef.current.focus()
+      
+      // Restore selection
+      restoreSelection()
+      
+      // Get current selection
+      const selection = window.getSelection()
+      const hasSelection = selection && selection.rangeCount > 0 && selection.toString().trim() !== ''
+      
+      if (!hasSelection) {
+        // No selection, insert link with URL as text at cursor position
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : document.createRange()
+        if (!selection?.rangeCount) {
+          // No range, create one at cursor position
+          range.selectNodeContents(editorRef.current)
+          range.collapse(false)
+        }
+        
+        // Insert link HTML
+        const linkHtml = `<a href="${url}">${url}</a>`
+        range.deleteContents()
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = linkHtml
+        const linkNode = tempDiv.firstChild
+        if (linkNode) {
+          range.insertNode(linkNode)
+          // Move cursor after the link
+          range.setStartAfter(linkNode)
+          range.collapse(true)
+          selection?.removeAllRanges()
+          selection?.addRange(range)
+        }
+      } else {
+        // We have a selection, wrap it in a link
+        document.execCommand('createLink', false, url)
+      }
+      
+      // Update the value
+      handleInput()
+      
+      // Close modal and reset
       setShowLinkModal(false)
       setLinkUrl('')
+      
+      // Keep focus
+      editorRef.current.focus()
     }
   }
 
