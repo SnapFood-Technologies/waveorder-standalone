@@ -246,9 +246,10 @@ export function MessageThreadList({ businessId }: MessageThreadListProps) {
                         {formatDate(thread.lastMessage.createdAt)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 line-clamp-2">
-                      {thread.lastMessage.content}
-                    </p>
+                    <div 
+                      className="text-sm text-gray-700 line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: thread.lastMessage.content }}
+                    />
                     <div className="flex items-center mt-2 text-xs text-gray-500">
                       <User className="w-3 h-3 mr-1" />
                       From {thread.lastMessage.sender.name}

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Send, User, Building2, Clock, MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
 
 interface Message {
   id: string
@@ -94,7 +95,7 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: newMessage.trim()
+          content: newMessage.trim() || ''
         }),
       })
 
@@ -226,7 +227,10 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
                     {formatDate(message.createdAt)}
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{message.content}</p>
+                <div 
+                  className="text-sm text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: message.content }}
+                />
               </div>
             </div>
           ))}
@@ -239,20 +243,18 @@ export function SuperAdminMessageThread({ threadId }: SuperAdminMessageThreadPro
               <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                 Reply to this conversation
               </label>
-              <textarea
+              <RichTextEditor
                 id="message"
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type your message here..."
+                onChange={setNewMessage}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                required
+                placeholder="Type your message here..."
               />
             </div>
             <div className="flex justify-end">
               <button
                 type="submit"
-                disabled={!newMessage.trim() || sending}
+                disabled={!newMessage || newMessage.replace(/<[^>]*>/g, '').trim() === '' || sending}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {sending ? (

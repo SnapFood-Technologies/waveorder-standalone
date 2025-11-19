@@ -1749,7 +1749,9 @@ export async function sendSupportMessageReceivedEmail({
       <div style="padding: 30px;">
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
           <h2 style="margin: 0 0 15px 0; font-size: 18px; color: #1e293b;">${subject}</h2>
-          <p style="margin: 0; color: #64748b; line-height: 1.6;">${messageContent}</p>
+          <div style="margin: 0; color: #64748b; line-height: 1.6; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            ${messageContent}
+          </div>
         </div>
         
         <div style="background: #f0fdf4; border: 1px solid #22c55e; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
