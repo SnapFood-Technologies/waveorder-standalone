@@ -25,60 +25,49 @@ export function RichTextEditor({
   const [isFocused, setIsFocused] = useState(false)
   const [showLinkModal, setShowLinkModal] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
-  const selectionRef = useRef<Range | null>(null)
+  const savedRangeRef = useRef<Range | null>(null)
 
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
-      // Save cursor position
-      const selection = window.getSelection()
-      const range = selection?.rangeCount ? selection.getRangeAt(0) : null
-      
       editorRef.current.innerHTML = value || ''
-      
-      // Restore cursor position if possible
-      if (range && selection) {
-        try {
-          selection.removeAllRanges()
-          selection.addRange(range)
-        } catch (e) {
-          // If range is invalid, place cursor at end
-          const newRange = document.createRange()
-          newRange.selectNodeContents(editorRef.current)
-          newRange.collapse(false)
-          selection.addRange(newRange)
-        }
-      }
     }
   }, [value])
 
   const saveSelection = () => {
     const selection = window.getSelection()
-    if (selection && selection.rangeCount > 0) {
-      selectionRef.current = selection.getRangeAt(0).cloneRange()
+    if (selection && selection.rangeCount > 0 && editorRef.current) {
+      const range = selection.getRangeAt(0)
+      if (editorRef.current.contains(range.commonAncestorContainer)) {
+        savedRangeRef.current = range.cloneRange()
+      }
     }
   }
 
   const restoreSelection = () => {
-    if (selectionRef.current && editorRef.current) {
+    if (savedRangeRef.current && editorRef.current) {
       const selection = window.getSelection()
       if (selection) {
         try {
           selection.removeAllRanges()
-          selection.addRange(selectionRef.current)
+          selection.addRange(savedRangeRef.current)
+          return true
         } catch (e) {
-          // If selection is invalid, focus the editor
-          editorRef.current.focus()
+          // Invalid range, place cursor at end
+          const range = document.createRange()
+          range.selectNodeContents(editorRef.current)
+          range.collapse(false)
+          selection.removeAllRanges()
+          selection.addRange(range)
+          return false
         }
       }
-    } else if (editorRef.current) {
-      editorRef.current.focus()
     }
+    return false
   }
 
   const handleInput = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML
-      // Check if content is empty (only whitespace or empty tags)
       const textContent = editorRef.current.textContent?.trim() || ''
       onChange(textContent ? html : '')
     }
@@ -92,142 +81,142 @@ export function RichTextEditor({
     saveSelection()
   }
 
-  const execCommand = (command: string, value?: string) => {
-    // Ensure editor is focused
-    editorRef.current?.focus()
-    
-    // Restore selection if we have one
-    restoreSelection()
-    
-    // Execute the command
-    document.execCommand(command, false, value)
-    
-    // Save new selection
-    saveSelection()
-    
-    // Update the value
-    handleInput()
-    
-    // Keep focus on editor
-    editorRef.current?.focus()
-  }
-
   const formatText = (command: string, e: React.MouseEvent) => {
     e.preventDefault()
-    execCommand(command)
+    if (!editorRef.current) return
+    
+    editorRef.current.focus()
+    if (!restoreSelection()) {
+      saveSelection()
+    }
+    
+    document.execCommand(command, false, undefined)
+    handleInput()
+    saveSelection()
   }
 
   const insertList = (ordered: boolean, e: React.MouseEvent) => {
     e.preventDefault()
-    
     if (!editorRef.current) return
     
-    // Ensure editor is focused
     editorRef.current.focus()
-    
-    // Restore selection
-    restoreSelection()
-    
-    // Check if we have a selection
-    const selection = window.getSelection()
-    if (!selection || selection.rangeCount === 0) {
-      // No selection, place cursor at end and create list
+    const restored = restoreSelection()
+    if (!restored) {
+      const selection = window.getSelection()
       const range = document.createRange()
       range.selectNodeContents(editorRef.current)
       range.collapse(false)
       selection?.removeAllRanges()
       selection?.addRange(range)
+      saveSelection()
     }
     
-    // Execute list command
-    const command = ordered ? 'insertOrderedList' : 'insertUnorderedList'
-    const success = document.execCommand(command, false, undefined)
+    const selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) return
     
-    if (!success) {
-      // If execCommand fails, manually create list HTML
-      const selectedText = selection?.toString() || ''
-      if (selectedText) {
-        const listTag = ordered ? 'ol' : 'ul'
-        const listHtml = `<${listTag}><li>${selectedText}</li></${listTag}>`
-        document.execCommand('insertHTML', false, listHtml)
-      } else {
-        // Insert empty list
-        const listTag = ordered ? 'ol' : 'ul'
-        const listHtml = `<${listTag}><li></li></${listTag}>`
-        document.execCommand('insertHTML', false, listHtml)
-      }
+    const range = selection.getRangeAt(0)
+    const selectedText = selection.toString().trim()
+    
+    // Always use direct DOM manipulation for reliability
+    range.deleteContents()
+    
+    const listTag = ordered ? 'ol' : 'ul'
+    const listElement = document.createElement(listTag)
+    
+    if (selectedText) {
+      const lines = selectedText.split('\n').filter(line => line.trim())
+      lines.forEach(line => {
+        const li = document.createElement('li')
+        li.textContent = line.trim()
+        listElement.appendChild(li)
+      })
+    } else {
+      const li = document.createElement('li')
+      listElement.appendChild(li)
     }
     
-    // Update the value
+    range.insertNode(listElement)
+    
+    // Place cursor in first list item
+    const firstLi = listElement.querySelector('li')
+    if (firstLi) {
+      const newRange = document.createRange()
+      newRange.selectNodeContents(firstLi)
+      newRange.collapse(false)
+      selection.removeAllRanges()
+      selection.addRange(newRange)
+    }
+    
     handleInput()
-    
-    // Keep focus
-    editorRef.current.focus()
+    saveSelection()
   }
 
   const insertLink = (e: React.MouseEvent) => {
     e.preventDefault()
-    // Save selection before opening modal
     saveSelection()
     setShowLinkModal(true)
   }
 
   const handleInsertLink = () => {
-    if (linkUrl.trim() && editorRef.current) {
-      // Validate URL format
-      let url = linkUrl.trim()
-      if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
-        url = 'https://' + url
-      }
+    if (!linkUrl.trim() || !editorRef.current) return
+    
+    let url = linkUrl.trim()
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:')) {
+      url = 'https://' + url
+    }
+    
+    setShowLinkModal(false)
+    const urlToInsert = url
+    
+    setTimeout(() => {
+      if (!editorRef.current) return
       
-      // Ensure editor is focused
       editorRef.current.focus()
-      
-      // Restore selection
-      restoreSelection()
-      
-      // Get current selection
       const selection = window.getSelection()
-      const hasSelection = selection && selection.rangeCount > 0 && selection.toString().trim() !== ''
       
-      if (!hasSelection) {
-        // No selection, insert link with URL as text at cursor position
-        const range = selection?.rangeCount ? selection.getRangeAt(0) : document.createRange()
-        if (!selection?.rangeCount) {
-          // No range, create one at cursor position
+      // Try to restore selection
+      let range: Range
+      if (savedRangeRef.current && editorRef.current.contains(savedRangeRef.current.commonAncestorContainer)) {
+        try {
+          selection?.removeAllRanges()
+          selection?.addRange(savedRangeRef.current)
+          range = selection?.getRangeAt(0)!
+        } catch (e) {
+          range = document.createRange()
           range.selectNodeContents(editorRef.current)
           range.collapse(false)
         }
-        
-        // Insert link HTML
-        const linkHtml = `<a href="${url}">${url}</a>`
-        range.deleteContents()
-        const tempDiv = document.createElement('div')
-        tempDiv.innerHTML = linkHtml
-        const linkNode = tempDiv.firstChild
-        if (linkNode) {
-          range.insertNode(linkNode)
-          // Move cursor after the link
-          range.setStartAfter(linkNode)
-          range.collapse(true)
-          selection?.removeAllRanges()
-          selection?.addRange(range)
-        }
       } else {
-        // We have a selection, wrap it in a link
-        document.execCommand('createLink', false, url)
+        range = document.createRange()
+        range.selectNodeContents(editorRef.current)
+        range.collapse(false)
       }
       
-      // Update the value
+      if (selection) {
+        selection.removeAllRanges()
+        selection.addRange(range)
+      }
+      
+      const selectedText = selection?.toString().trim() || urlToInsert
+      
+      // Always use direct DOM manipulation for reliability
+      range.deleteContents()
+      const linkElement = document.createElement('a')
+      linkElement.href = urlToInsert
+      linkElement.textContent = selectedText
+      range.insertNode(linkElement)
+      
+      // Move cursor after the link
+      const newRange = document.createRange()
+      newRange.setStartAfter(linkElement)
+      newRange.collapse(true)
+      selection?.removeAllRanges()
+      selection?.addRange(newRange)
+      
       handleInput()
-      
-      // Close modal and reset
-      setShowLinkModal(false)
+      saveSelection()
       setLinkUrl('')
-      
-      // Keep focus
-      editorRef.current.focus()
-    }
+    }, 50)
   }
 
   const handleCancelLink = () => {
@@ -395,4 +384,3 @@ export function RichTextEditor({
     </div>
   )
 }
-
