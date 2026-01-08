@@ -110,8 +110,11 @@ export default function SetupComponent() {
     
     // No token - require authenticated session
     if (!session) {
-      router.push('/auth/login')
-      return
+      // Use setTimeout to avoid DOM manipulation conflicts with third-party scripts
+      const timer = setTimeout(() => {
+        router.push('/auth/login')
+      }, 0)
+      return () => clearTimeout(timer)
     }
   
     // Authenticated user without token - check existing businesses
@@ -160,7 +163,10 @@ export default function SetupComponent() {
         const business = data.businesses[0]
         
         if (business.setupWizardCompleted) {
-          router.push(`/admin/stores/${business.id}/dashboard`)
+          // Use setTimeout to avoid DOM manipulation conflicts
+          setTimeout(() => {
+            router.push(`/admin/stores/${business.id}/dashboard`)
+          }, 0)
         } else {
           const progressResponse = await fetch('/api/setup/progress')
           if (progressResponse.ok) {
