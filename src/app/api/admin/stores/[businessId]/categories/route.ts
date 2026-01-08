@@ -21,13 +21,33 @@ export async function GET(
     const categories = await prisma.category.findMany({
       where: { businessId },
       include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true
+          }
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            sortOrder: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        },
         _count: {
           select: {
-            products: true
+            products: true,
+            children: true
           }
         }
       },
-      orderBy: { sortOrder: 'asc' }
+      orderBy: [
+        { parentId: 'asc' },
+        { sortOrder: 'asc' }
+      ]
     })
 
     return NextResponse.json({ categories })
@@ -53,8 +73,37 @@ export async function POST(
 
     const categoryData = await request.json()
 
+    // Validate parentId if provided
+    if (categoryData.parentId) {
+      const parentCategory = await prisma.category.findFirst({
+        where: {
+          id: categoryData.parentId,
+          businessId // Ensure parent belongs to same business
+        }
+      })
+
+      if (!parentCategory) {
+        return NextResponse.json(
+          { message: 'Parent category not found or does not belong to this business' },
+          { status: 400 }
+        )
+      }
+
+      // Prevent circular reference: parent can't be a child
+      if (parentCategory.parentId) {
+        return NextResponse.json(
+          { message: 'Cannot set a subcategory as a parent' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Get sort order for the hierarchy level
     const lastCategory = await prisma.category.findFirst({
-      where: { businessId },
+      where: { 
+        businessId,
+        parentId: categoryData.parentId || null // Same parent level
+      },
       orderBy: { sortOrder: 'desc' }
     })
 
@@ -63,16 +112,37 @@ export async function POST(
     const category = await prisma.category.create({
       data: {
         name: categoryData.name,
+        nameAl: categoryData.nameAl || null,
         description: categoryData.description || null,
+        descriptionAl: categoryData.descriptionAl || null,
+        parentId: categoryData.parentId || null,
+        hideParentInStorefront: categoryData.hideParentInStorefront ?? false,
         image: categoryData.image || null,
-        isActive: categoryData.isActive,
+        isActive: categoryData.isActive ?? true,
         sortOrder: nextSortOrder,
         businessId
       },
       include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true
+          }
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            sortOrder: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        },
         _count: {
           select: {
-            products: true
+            products: true,
+            children: true
           }
         }
       }

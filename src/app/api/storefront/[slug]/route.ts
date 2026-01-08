@@ -156,6 +156,29 @@ export async function GET(
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' },
           include: {
+            // @ts-ignore - Parent relation will exist after Prisma client regeneration
+            parent: {
+              select: {
+                id: true,
+                name: true,
+                nameAl: true,
+                hideParentInStorefront: true
+              }
+            },
+            // @ts-ignore - Children relation will exist after Prisma client regeneration
+            children: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+              select: {
+                id: true,
+                name: true,
+                nameAl: true,
+                description: true,
+                descriptionAl: true,
+                image: true,
+                sortOrder: true
+              }
+            },
             products: {
               where: { isActive: true },
               include: {
@@ -170,7 +193,7 @@ export async function GET(
           }
         }
       }
-    })
+    }) as any
 
     if (!business) {
       Sentry.setTag('error_type', 'store_not_found')
@@ -285,13 +308,37 @@ export async function GET(
       openingHoursSchema,
       
       // Menu
-      categories: business.categories.map(category => ({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        image: category.image,
-        sortOrder: category.sortOrder,
-          products: category.products.map(product => ({
+      categories: (() => {
+        // Get storefront language (default to business language or 'en')
+        const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
+        const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
+        
+        // Build all categories with products
+        const allCategories = (business.categories as any[]).map((category: any) => ({
+          id: category.id,
+          name: useAlbanian && category.nameAl ? category.nameAl : category.name,
+          description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
+          nameAl: category.nameAl,
+          descriptionAl: category.descriptionAl,
+          parentId: category.parentId,
+          parent: category.parent ? {
+            id: category.parent.id,
+            name: useAlbanian && category.parent.nameAl ? category.parent.nameAl : category.parent.name,
+            hideParentInStorefront: category.parent.hideParentInStorefront
+          } : null,
+          hideParentInStorefront: category.hideParentInStorefront,
+          image: category.image,
+          sortOrder: category.sortOrder,
+          children: category.children ? (category.children as any[]).map((child: any) => ({
+            id: child.id,
+            name: useAlbanian && child.nameAl ? child.nameAl : child.name,
+            description: useAlbanian && child.descriptionAl ? child.descriptionAl : child.description,
+            nameAl: child.nameAl,
+            descriptionAl: child.descriptionAl,
+            image: child.image,
+            sortOrder: child.sortOrder
+          })) : [],
+          products: (category.products as any[]).map((product: any) => ({
             id: product.id,
             name: product.name,
             description: product.description,
@@ -304,21 +351,47 @@ export async function GET(
             featured: product.featured,
             metaTitle: product.metaTitle,
             metaDescription: product.metaDescription,
-          variants: product.variants.map(variant => ({
-            id: variant.id,
-            name: variant.name,
-            price: variant.price,
-            stock: variant.stock,
-            sku: variant.sku
-          })),
-          modifiers: product.modifiers.map(modifier => ({
-            id: modifier.id,
-            name: modifier.name,
-            price: modifier.price,
-            required: modifier.required
+            variants: (product.variants as any[]).map((variant: any) => ({
+              id: variant.id,
+              name: variant.name,
+              price: variant.price,
+              stock: variant.stock,
+              sku: variant.sku
+            })),
+            modifiers: (product.modifiers as any[]).map((modifier: any) => ({
+              id: modifier.id,
+              name: modifier.name,
+              price: modifier.price,
+              required: modifier.required
+            }))
           }))
         }))
-      }))
+        
+        // Separate parent and child categories
+        const parentCategories = allCategories.filter((cat: any) => !cat.parentId)
+        const childCategories = allCategories.filter((cat: any) => cat.parentId)
+        
+        // Check if we should hide single parent
+        if (parentCategories.length === 1 && parentCategories[0].hideParentInStorefront) {
+          // Return only children of that parent in flat structure
+          // Need to get products from parent category that belong to these children
+          const parentId = parentCategories[0].id
+          return childCategories
+            .filter((child: any) => child.parentId === parentId)
+            .map((child: any) => {
+              // Find the child category in allCategories to get its products
+              const childWithProducts = allCategories.find((c: any) => c.id === child.id)
+              return {
+                ...child,
+                products: childWithProducts?.products || []
+              }
+            })
+            .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+        }
+        
+        // Return parent categories with their children nested
+        return parentCategories.sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+      })()
     }
 
     return NextResponse.json(storeData)

@@ -374,6 +374,19 @@ model Category {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
+  
+  // Multi-language fields
+  nameAl        String?  // Albanian name
+  descriptionAl String?  // Albanian description
+  
+  // Subcategory support
+  parentId   String?  @db.ObjectId  // Parent category ID (null = top-level)
+  parent     Category? @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Category[] @relation("CategoryChildren")
+  
+  // Configuration: Hide parent in storefront if only 1 parent (show only subcategories)
+  hideParentInStorefront Boolean @default(false)
+  
   image       String?
   sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
@@ -384,6 +397,9 @@ model Category {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  @@index([parentId])
+  @@index([businessId, parentId])
 }
 
 model Product {

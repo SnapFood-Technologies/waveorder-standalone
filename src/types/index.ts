@@ -40,7 +40,28 @@ export interface ProductModifier {
 export interface Category {
   id: string
   name: string
+  nameAl?: string
   description?: string
+  descriptionAl?: string
+  parentId?: string
+  parent?: {
+    id: string
+    name: string
+    nameAl?: string
+    hideParentInStorefront?: boolean
+  }
+  children?: Array<{
+    id: string
+    name: string
+    nameAl?: string
+    description?: string
+    descriptionAl?: string
+    image?: string
+    sortOrder: number
+  }>
+  hideParentInStorefront?: boolean
+  image?: string
+  sortOrder?: number
   products: Product[]
 }
 

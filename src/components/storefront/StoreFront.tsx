@@ -1453,7 +1453,25 @@ interface StoreData {
 interface Category {
   id: string
   name: string
+  nameAl?: string
   description?: string
+  descriptionAl?: string
+  parentId?: string
+  parent?: {
+    id: string
+    name: string
+    hideParentInStorefront?: boolean
+  }
+  children?: Array<{
+    id: string
+    name: string
+    nameAl?: string
+    description?: string
+    descriptionAl?: string
+    image?: string
+    sortOrder: number
+  }>
+  hideParentInStorefront?: boolean
   image?: string
   sortOrder: number
   products: Product[]
@@ -1539,6 +1557,7 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart')
@@ -1823,16 +1842,46 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     let products = []
   
     if (selectedCategory === 'all') {
-      // Get all products from all categories
-      products = storeData.categories.flatMap(category => 
-        category.products.map(product => ({ 
+      // Get all products from all categories (including subcategories)
+      products = storeData.categories.flatMap(category => {
+        // If category has subcategories, get products from them too
+        if (category.children && category.children.length > 0) {
+          const subcategoryIds = category.children.map(child => child.id)
+          const subcategoryProducts = storeData.categories
+            .filter(cat => subcategoryIds.includes(cat.id))
+            .flatMap(subcat => 
+              subcat.products.map(product => ({ 
+                ...product, 
+                categoryName: `${category.name} > ${subcat.name}`,
+                categoryId: subcat.id 
+              }))
+            )
+          const parentProducts = category.products.map(product => ({ 
+            ...product, 
+            categoryName: category.name,
+            categoryId: category.id 
+          }))
+          return [...parentProducts, ...subcategoryProducts]
+        }
+        return category.products.map(product => ({ 
           ...product, 
           categoryName: category.name,
           categoryId: category.id 
         }))
-      )
-    } else {
-      // Get products from selected category only
+      })
+    } else if (selectedSubCategory) {
+      // Get products from selected subcategory (when parent is selected but subcategory is chosen)
+      const subcategory = storeData.categories.find(cat => cat.id === selectedSubCategory)
+      if (subcategory) {
+        products = subcategory.products.map(product => ({ 
+          ...product, 
+          categoryName: subcategory.name,
+          categoryId: subcategory.id 
+        }))
+      }
+    } else if (shouldShowOnlySubcategories) {
+      // When hideParentInStorefront is true, categories are already flat (only children)
+      // selectedCategory will be a child category ID
       const category = storeData.categories.find(cat => cat.id === selectedCategory)
       if (category) {
         products = category.products.map(product => ({ 
@@ -1840,6 +1889,36 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           categoryName: category.name,
           categoryId: category.id 
         }))
+      }
+    } else {
+      // Get products from selected category (parent or flat category)
+      const category = storeData.categories.find(cat => cat.id === selectedCategory)
+      if (category) {
+        // If category has subcategories, show all products from parent and children
+        if (category.children && category.children.length > 0) {
+          const subcategoryIds = category.children.map(child => child.id)
+          const subcategoryProducts = storeData.categories
+            .filter(cat => subcategoryIds.includes(cat.id))
+            .flatMap(subcat => 
+              subcat.products.map(product => ({ 
+                ...product, 
+                categoryName: `${category.name} > ${subcat.name}`,
+                categoryId: subcat.id 
+              }))
+            )
+          const parentProducts = category.products.map(product => ({ 
+            ...product, 
+            categoryName: category.name,
+            categoryId: category.id 
+          }))
+          products = [...parentProducts, ...subcategoryProducts]
+        } else {
+          products = category.products.map(product => ({ 
+            ...product, 
+            categoryName: category.name,
+            categoryId: category.id 
+          }))
+        }
       }
     }
   
@@ -1870,6 +1949,20 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   
     return products
   }
+
+  // Separate parent and child categories
+  const parentCategories = storeData.categories.filter(cat => !cat.parentId)
+  const childCategories = storeData.categories.filter(cat => cat.parentId)
+  
+  // Check if we should show only subcategories (hideParentInStorefront case)
+  const shouldShowOnlySubcategories = parentCategories.length === 1 && 
+    parentCategories[0].hideParentInStorefront
+  
+  // Get subcategories for currently selected parent
+  const selectedParentCategory = selectedCategory !== 'all' && !shouldShowOnlySubcategories
+    ? storeData.categories.find(cat => cat.id === selectedCategory && !cat.parentId)
+    : null
+  const currentSubCategories = selectedParentCategory?.children || []
 
   const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = []) => {
     // Check stock availability
@@ -2311,72 +2404,175 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 </div>
 
           {/* Category Tabs */}
-          <div className="flex gap-1 mb-6 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-
-            <button
-                onClick={() => {
-                setSelectedCategory('all')
-                // Keep search term when switching to "All"
-                }}
-                disabled={false}
-                className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
-                selectedCategory === 'all'
-                    ? 'border-b-2'
-                    : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                }`}
-                style={{ 
-                color: selectedCategory === 'all' ? primaryColor : undefined,
-                borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
-                }}
-            >
-                {translations.all || 'All'}
-                {searchTerm && selectedCategory === 'all' && (
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    {getFilteredProducts().length}
-                </span>
-                )}
-            </button>
-            {storeData.categories.map(category => {
-                // Count products in this category that match search
-                const categoryProductCount = searchTerm 
-                ? category.products.filter(product => {
-                    const searchTermLower = searchTerm.toLowerCase().trim()
-                    return product.name.toLowerCase().includes(searchTermLower) ||
+          <div className="space-y-4 mb-6">
+            {/* Parent Category Tabs */}
+            {!shouldShowOnlySubcategories && (
+              <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                <button
+                  onClick={() => {
+                    setSelectedCategory('all')
+                    setSelectedSubCategory(null)
+                    // Keep search term when switching to "All"
+                  }}
+                  disabled={false}
+                  className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                    selectedCategory === 'all'
+                      ? 'border-b-2'
+                      : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                  }`}
+                  style={{ 
+                    color: selectedCategory === 'all' ? primaryColor : undefined,
+                    borderBottomColor: selectedCategory === 'all' ? primaryColor : 'transparent'
+                  }}
+                >
+                  {translations.all || 'All'}
+                  {searchTerm && selectedCategory === 'all' && (
+                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                      {getFilteredProducts().length}
+                    </span>
+                  )}
+                </button>
+                {parentCategories.map(category => {
+                  // Count products in this category (including subcategories) that match search
+                  const categoryProductCount = searchTerm 
+                    ? (() => {
+                        const searchTermLower = searchTerm.toLowerCase().trim()
+                        let count = category.products.filter(product => {
+                          return product.name.toLowerCase().includes(searchTermLower) ||
                             product.description?.toLowerCase().includes(searchTermLower) ||
                             category.name.toLowerCase().includes(searchTermLower)
-                    }).length
-                : category.products.length
-                
-                return (
-                <button
-                    key={category.id}
+                        }).length
+                        // Add subcategory products if any
+                        if (category.children) {
+                          const subcategoryIds = category.children.map(c => c.id)
+                          const subcategoryProducts = storeData.categories
+                            .filter(cat => subcategoryIds.includes(cat.id))
+                            .flatMap(cat => cat.products)
+                          count += subcategoryProducts.filter(product => {
+                            return product.name.toLowerCase().includes(searchTermLower) ||
+                              product.description?.toLowerCase().includes(searchTermLower)
+                          }).length
+                        }
+                        return count
+                      })()
+                    : (() => {
+                        let count = category.products.length
+                        if (category.children) {
+                          const subcategoryIds = category.children.map(c => c.id)
+                          count += storeData.categories
+                            .filter(cat => subcategoryIds.includes(cat.id))
+                            .reduce((sum, cat) => sum + cat.products.length, 0)
+                        }
+                        return count
+                      })()
+                  
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => {
+                        setSelectedCategory(category.id)
+                        setSelectedSubCategory(null)
+                        // Clear search when switching to specific category
+                        if (searchTerm) {
+                          setSearchTerm('')
+                        }
+                      }}
+                      disabled={false}
+                      className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                        selectedCategory === category.id
+                          ? 'border-b-2'
+                          : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                      }`}
+                      style={{ 
+                        color: selectedCategory === category.id ? primaryColor : undefined,
+                        borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                      }}
+                    >
+                      {category.name}
+                      {searchTerm && selectedCategory !== 'all' && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {categoryProductCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Subcategory Tabs - Show when parent is selected OR when hideParentInStorefront is true */}
+            {(shouldShowOnlySubcategories || (selectedParentCategory && currentSubCategories.length > 0)) && (
+              <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                {!shouldShowOnlySubcategories && (
+                  <button
                     onClick={() => {
-                    setSelectedCategory(category.id)
-                    // Clear search when switching to specific category
-                    if (searchTerm) {
+                      setSelectedSubCategory(null)
+                      if (searchTerm) {
                         setSearchTerm('')
-                    }
+                      }
                     }}
-                    disabled={false}
-                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
-                    selectedCategory === category.id
+                    className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                      !selectedSubCategory
                         ? 'border-b-2'
                         : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
                     }`}
                     style={{ 
-                    color: selectedCategory === category.id ? primaryColor : undefined,
-                    borderBottomColor: selectedCategory === category.id ? primaryColor : 'transparent'
+                      color: !selectedSubCategory ? primaryColor : undefined,
+                      borderBottomColor: !selectedSubCategory ? primaryColor : 'transparent'
                     }}
-                >
-                    {category.name}
-                    {searchTerm && selectedCategory !== 'all' && (
-                    <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                        {categoryProductCount}
-                    </span>
-                    )}
-                </button>
-                )
-            })}
+                  >
+                    All
+                  </button>
+                )}
+                {(shouldShowOnlySubcategories 
+                  ? childCategories.filter(child => child.parentId === parentCategories[0].id)
+                  : currentSubCategories
+                ).map(subcategory => {
+                  // Find full subcategory data from storeData
+                  const fullSubcategory = storeData.categories.find(cat => cat.id === subcategory.id)
+                  const subcategoryProductCount = searchTerm && fullSubcategory
+                    ? fullSubcategory.products.filter(product => {
+                        const searchTermLower = searchTerm.toLowerCase().trim()
+                        return product.name.toLowerCase().includes(searchTermLower) ||
+                          product.description?.toLowerCase().includes(searchTermLower) ||
+                          subcategory.name.toLowerCase().includes(searchTermLower)
+                      }).length
+                    : fullSubcategory?.products.length || 0
+                  
+                  return (
+                    <button
+                      key={subcategory.id}
+                      onClick={() => {
+                        if (shouldShowOnlySubcategories) {
+                          setSelectedCategory(subcategory.id)
+                        } else {
+                          setSelectedSubCategory(subcategory.id)
+                        }
+                        if (searchTerm) {
+                          setSearchTerm('')
+                        }
+                      }}
+                      className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                        (shouldShowOnlySubcategories ? selectedCategory === subcategory.id : selectedSubCategory === subcategory.id)
+                          ? 'border-b-2'
+                          : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                      }`}
+                      style={{ 
+                        color: (shouldShowOnlySubcategories ? selectedCategory === subcategory.id : selectedSubCategory === subcategory.id) ? primaryColor : undefined,
+                        borderBottomColor: (shouldShowOnlySubcategories ? selectedCategory === subcategory.id : selectedSubCategory === subcategory.id) ? primaryColor : 'transparent'
+                      }}
+                    >
+                      {subcategory.name}
+                      {searchTerm && fullSubcategory && (
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {subcategoryProductCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <StoreClosure 

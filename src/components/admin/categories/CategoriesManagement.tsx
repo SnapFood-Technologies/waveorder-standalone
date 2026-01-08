@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ChevronRight, ChevronDown } from 'lucide-react'
 import { 
   Plus, 
   Edit2, 
@@ -18,12 +19,28 @@ import {
 interface Category {
   id: string
   name: string
+  nameAl?: string
   description?: string
+  descriptionAl?: string
+  parentId?: string
+  parent?: {
+    id: string
+    name: string
+    nameAl?: string
+  }
+  children?: Array<{
+    id: string
+    name: string
+    nameAl?: string
+    sortOrder: number
+  }>
+  hideParentInStorefront?: boolean
   image?: string
   sortOrder: number
   isActive: boolean
   _count: {
     products: number
+    children?: number
   }
 }
 
@@ -39,6 +56,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [draggedCategory, setDraggedCategory] = useState<string | null>(null)
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchCategories()
@@ -256,96 +274,234 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h3 className="font-semibold text-gray-900">
-              Drag and drop to reorder categories
+              Categories
             </h3>
             <p className="text-sm text-gray-600 mt-1">
-              The order here determines how categories appear to customers
+              Organize categories and subcategories
             </p>
           </div>
           
           <div className="divide-y divide-gray-200">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                draggable
-                onDragStart={() => handleDragStart(category.id)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, category.id)}
-                className={`p-4 hover:bg-gray-50 transition-colors cursor-move ${
-                  draggedCategory === category.id ? 'opacity-50' : ''
-                }`}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Drag Handle */}
-                  <div className="cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-5 h-5 text-gray-400" />
-                  </div>
-
-                  {/* Category Image */}
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                    {category.image ? (
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <ImageIcon className="w-6 h-6 text-gray-400" />
-                    )}
-                  </div>
-
-                  {/* Category Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-gray-900">{category.name}</h4>
-                      {!category.isActive && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
-                          Inactive
-                        </span>
-                      )}
-                    </div>
-                    {category.description && (
-                      <p className="text-sm text-gray-600 mt-1">{category.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <span>{category._count.products} product(s)</span>
-                      <span>Sort order: {category.sortOrder}</span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => toggleCategoryStatus(category.id, !category.isActive)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        category.isActive 
-                          ? 'text-green-600 hover:bg-green-50'
-                          : 'text-gray-400 hover:bg-gray-50'
+            {(() => {
+              // Separate parent and child categories
+              const parentCategories = categories.filter(c => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder)
+              const childCategories = categories.filter(c => c.parentId)
+              
+              return parentCategories.map((category) => {
+                const children = childCategories.filter(c => c.parentId === category.id).sort((a, b) => a.sortOrder - b.sortOrder)
+                const isExpanded = expandedParents.has(category.id)
+                
+                return (
+                  <div key={category.id}>
+                    {/* Parent Category */}
+                    <div
+                      draggable
+                      onDragStart={() => handleDragStart(category.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, category.id)}
+                      className={`p-4 hover:bg-gray-50 transition-colors cursor-move ${
+                        draggedCategory === category.id ? 'opacity-50' : ''
                       }`}
                     >
-                      {category.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                    </button>
+                      <div className="flex items-center space-x-4">
+                        {/* Expand/Collapse & Drag Handle */}
+                        <div className="flex items-center gap-2">
+                          {children.length > 0 && (
+                            <button
+                              onClick={() => {
+                                const newExpanded = new Set(expandedParents)
+                                if (isExpanded) {
+                                  newExpanded.delete(category.id)
+                                } else {
+                                  newExpanded.add(category.id)
+                                }
+                                setExpandedParents(newExpanded)
+                              }}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              )}
+                            </button>
+                          )}
+                          {children.length === 0 && <div className="w-6" />}
+                          <div className="cursor-grab active:cursor-grabbing">
+                            <GripVertical className="w-5 h-5 text-gray-400" />
+                          </div>
+                        </div>
 
-                    <button
-                      onClick={() => {
-                        setEditingCategory(category)
-                        setShowForm(true)
-                      }}
-                      className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
+                        {/* Category Image */}
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                          {category.image ? (
+                            <img
+                              src={category.image}
+                              alt={category.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-gray-400" />
+                          )}
+                        </div>
 
-                    <button
-                      onClick={() => handleDeleteClick(category)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                        {/* Category Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900">{category.name}</h4>
+                            {category.nameAl && (
+                              <span className="text-xs text-gray-500">({category.nameAl})</span>
+                            )}
+                            {!category.isActive && (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                Inactive
+                              </span>
+                            )}
+                            {category.hideParentInStorefront && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded">
+                                Hidden in storefront
+                              </span>
+                            )}
+                          </div>
+                          {category.description && (
+                            <p className="text-sm text-gray-600 mt-1">{category.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span>{category._count.products} product(s)</span>
+                            {category._count.children && category._count.children > 0 && (
+                              <span>{category._count.children} subcategor{category._count.children !== 1 ? 'ies' : 'y'}</span>
+                            )}
+                            <span>Sort order: {category.sortOrder}</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => toggleCategoryStatus(category.id, !category.isActive)}
+                            className={`p-2 rounded-lg transition-colors ${
+                              category.isActive 
+                                ? 'text-green-600 hover:bg-green-50'
+                                : 'text-gray-400 hover:bg-gray-50'
+                            }`}
+                          >
+                            {category.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setEditingCategory(category)
+                              setShowForm(true)
+                            }}
+                            className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteClick(category)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Child Categories */}
+                    {isExpanded && children.length > 0 && (
+                      <div className="bg-gray-50">
+                        {children.map((child) => (
+                          <div
+                            key={child.id}
+                            draggable
+                            onDragStart={() => handleDragStart(child.id)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, child.id)}
+                            className={`pl-12 pr-4 py-3 hover:bg-gray-100 transition-colors cursor-move border-t border-gray-200 ${
+                              draggedCategory === child.id ? 'opacity-50' : ''
+                            }`}
+                          >
+                            <div className="flex items-center space-x-4">
+                              {/* Drag Handle */}
+                              <div className="cursor-grab active:cursor-grabbing">
+                                <GripVertical className="w-4 h-4 text-gray-400" />
+                              </div>
+
+                              {/* Category Image */}
+                              <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                                {child.image ? (
+                                  <img
+                                    src={child.image}
+                                    alt={child.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <ImageIcon className="w-5 h-5 text-gray-400" />
+                                )}
+                              </div>
+
+                              {/* Category Info */}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-700 text-sm">{child.name}</h4>
+                                  {child.nameAl && (
+                                    <span className="text-xs text-gray-500">({child.nameAl})</span>
+                                  )}
+                                  {!child.isActive && (
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
+                                      Inactive
+                                    </span>
+                                  )}
+                                </div>
+                                {child.description && (
+                                  <p className="text-xs text-gray-600 mt-1">{child.description}</p>
+                                )}
+                                <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                                  <span>{child._count.products} product(s)</span>
+                                  <span>Sort: {child.sortOrder}</span>
+                                </div>
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => toggleCategoryStatus(child.id, !child.isActive)}
+                                  className={`p-1.5 rounded-lg transition-colors ${
+                                    child.isActive 
+                                      ? 'text-green-600 hover:bg-green-50'
+                                      : 'text-gray-400 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {child.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setEditingCategory(child)
+                                    setShowForm(true)
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteClick(child)}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            ))}
+                )
+              })
+            })()}
           </div>
         </div>
       )}
@@ -474,14 +630,53 @@ interface CategoryFormProps {
 }
 
 function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormProps) {
+  const [allCategories, setAllCategories] = useState<Category[]>([])
   const [form, setForm] = useState({
     name: category?.name || '',
+    nameAl: category?.nameAl || '',
     description: category?.description || '',
+    descriptionAl: category?.descriptionAl || '',
+    parentId: category?.parentId || '',
+    hideParentInStorefront: category?.hideParentInStorefront ?? false,
     image: category?.image || '',
     isActive: category?.isActive ?? true
   })
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al'>('en')
+
+  // Fetch all categories for parent selector
+  useEffect(() => {
+    const fetchAllCategories = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+        if (response.ok) {
+          const data = await response.json()
+          setAllCategories(data.categories || [])
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      }
+    }
+    fetchAllCategories()
+  }, [businessId])
+
+  // Filter out current category and its descendants from parent options
+  const getAvailableParents = () => {
+    if (!category) return allCategories.filter(c => !c.parentId) // Only top-level categories for new items
+    return allCategories.filter(c => 
+      c.id !== category.id && // Not self
+      c.parentId === null && // Only top-level categories can be parents
+      !isDescendant(c.id, category.id) // Not a descendant of current category
+    )
+  }
+
+  const isDescendant = (categoryId: string, ancestorId: string): boolean => {
+    const cat = allCategories.find(c => c.id === categoryId)
+    if (!cat || !cat.parentId) return false
+    if (cat.parentId === ancestorId) return true
+    return isDescendant(cat.parentId, ancestorId)
+  }
 
  // Fixed handleImageUpload function in CategoryForm component
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -530,19 +725,31 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify({
+          ...form,
+          parentId: form.parentId || null
+        })
       })
 
       if (response.ok) {
         const data = await response.json()
         onSave(data.category)
+      } else {
+        const errorData = await response.json()
+        alert(errorData.message || 'Error saving category')
       }
     } catch (error) {
       console.error('Error saving category:', error)
+      alert('Error saving category. Please try again.')
     } finally {
       setSaving(false)
     }
   }
+
+  const availableParents = getAvailableParents()
+  const isParentCategory = !form.parentId
+  const hasChildren = category?.children && category.children.length > 0
+  const canShowHideParentToggle = isParentCategory && (hasChildren || !category)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -559,33 +766,110 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
+          {/* Language Toggle */}
+          <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setActiveLanguage('en')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                activeLanguage === 'en'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLanguage('al')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                activeLanguage === 'al'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Albanian
+            </button>
+          </div>
+
+          {/* Category Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category Name *
+              Category Name {activeLanguage === 'en' ? '(English)' : '(Albanian)'} *
             </label>
             <input
               type="text"
-              required
-              value={form.name}
-              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+              required={activeLanguage === 'en'}
+              value={activeLanguage === 'en' ? form.name : form.nameAl}
+              onChange={(e) => setForm(prev => ({ 
+                ...prev, 
+                [activeLanguage === 'en' ? 'name' : 'nameAl']: e.target.value 
+              }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              placeholder="e.g., Main Courses"
+              placeholder={activeLanguage === 'en' ? "e.g., Main Courses" : "e.g., Kryesor"}
             />
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
+              Description {activeLanguage === 'en' ? '(English)' : '(Albanian)'}
             </label>
             <textarea
-              value={form.description}
-              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+              value={activeLanguage === 'en' ? form.description : form.descriptionAl}
+              onChange={(e) => setForm(prev => ({ 
+                ...prev, 
+                [activeLanguage === 'en' ? 'description' : 'descriptionAl']: e.target.value 
+              }))}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               placeholder="Optional description"
             />
           </div>
+
+          {/* Parent Category Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Parent Category
+            </label>
+            <select
+              value={form.parentId}
+              onChange={(e) => setForm(prev => ({ ...prev, parentId: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">None (Top-level category)</option>
+              {availableParents.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              {form.parentId ? 'This will be a subcategory' : 'This will be a top-level category'}
+            </p>
+          </div>
+
+          {/* Hide Parent in Storefront Toggle - Only for parent categories */}
+          {canShowHideParentToggle && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <input
+                  type="checkbox"
+                  id="hideParentInStorefront"
+                  checked={form.hideParentInStorefront}
+                  onChange={(e) => setForm(prev => ({ ...prev, hideParentInStorefront: e.target.checked }))}
+                  className="mt-1 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+                <label htmlFor="hideParentInStorefront" className="ml-3 text-sm text-gray-700">
+                  <span className="font-medium">Hide parent category in storefront</span>
+                  <p className="mt-1 text-xs text-gray-600">
+                    When there's only one parent category, hide it and show only subcategories in a flat horizontal layout
+                  </p>
+                </label>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
