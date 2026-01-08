@@ -1881,14 +1881,27 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       }
     } else if (shouldShowOnlySubcategories) {
       // When hideParentInStorefront is true, categories are already flat (only children)
-      // selectedCategory will be a child category ID
-      const category = storeData.categories.find(cat => cat.id === selectedCategory)
-      if (category) {
-        products = category.products.map(product => ({ 
-          ...product, 
-          categoryName: category.name,
-          categoryId: category.id 
-        }))
+      // If "all" is selected, show all products from all subcategories
+      // Otherwise, show products from the selected subcategory
+      if (selectedCategory === 'all') {
+        // Show all products from all subcategories
+        products = childCategories.flatMap(category => 
+          category.products.map(product => ({ 
+            ...product, 
+            categoryName: category.name,
+            categoryId: category.id 
+          }))
+        )
+      } else {
+        // Show products from selected subcategory
+        const category = storeData.categories.find(cat => cat.id === selectedCategory)
+        if (category) {
+          products = category.products.map(product => ({ 
+            ...product, 
+            categoryName: category.name,
+            categoryId: category.id 
+          }))
+        }
       }
     } else {
       // Get products from selected category (parent or flat category)
@@ -1955,8 +1968,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   const childCategories = storeData.categories.filter(cat => cat.parentId)
   
   // Check if we should show only subcategories (hideParentInStorefront case)
-  const shouldShowOnlySubcategories = parentCategories.length === 1 && 
-    parentCategories[0].hideParentInStorefront
+  // When API returns only children (parent is hidden), all categories have parentId
+  // So we check if ALL categories are children (meaning parent was hidden)
+  const allCategoriesAreChildren = parentCategories.length === 0 && childCategories.length > 0
+  const shouldShowOnlySubcategories = allCategoriesAreChildren || 
+    (parentCategories.length === 1 && parentCategories[0].hideParentInStorefront)
   
   // Get subcategories for currently selected parent
   const selectedParentCategory = selectedCategory !== 'all' && !shouldShowOnlySubcategories
@@ -2503,29 +2519,32 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             {/* Subcategory Tabs - Show when parent is selected OR when hideParentInStorefront is true */}
             {(shouldShowOnlySubcategories || (selectedParentCategory && currentSubCategories.length > 0)) && (
               <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-                {!shouldShowOnlySubcategories && (
-                  <button
-                    onClick={() => {
+                {/* "All" button - always visible in subcategory row */}
+                <button
+                  onClick={() => {
+                    if (shouldShowOnlySubcategories) {
+                      setSelectedCategory('all')
+                    } else {
                       setSelectedSubCategory(null)
-                      if (searchTerm) {
-                        setSearchTerm('')
-                      }
-                    }}
-                    className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
-                      !selectedSubCategory
-                        ? 'border-b-2'
-                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                    }`}
-                    style={{ 
-                      color: !selectedSubCategory ? primaryColor : undefined,
-                      borderBottomColor: !selectedSubCategory ? primaryColor : 'transparent'
-                    }}
-                  >
-                    All
-                  </button>
-                )}
+                    }
+                    if (searchTerm) {
+                      setSearchTerm('')
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                    (shouldShowOnlySubcategories ? selectedCategory === 'all' : !selectedSubCategory)
+                      ? 'border-b-2'
+                      : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                  }`}
+                  style={{ 
+                    color: (shouldShowOnlySubcategories ? selectedCategory === 'all' : !selectedSubCategory) ? primaryColor : undefined,
+                    borderBottomColor: (shouldShowOnlySubcategories ? selectedCategory === 'all' : !selectedSubCategory) ? primaryColor : 'transparent'
+                  }}
+                >
+                  All
+                </button>
                 {(shouldShowOnlySubcategories 
-                  ? childCategories.filter(child => child.parentId === parentCategories[0].id)
+                  ? childCategories // When parent is hidden, all categories are already children (no need to filter)
                   : currentSubCategories
                 ).map(subcategory => {
                   // Find full subcategory data from storeData
