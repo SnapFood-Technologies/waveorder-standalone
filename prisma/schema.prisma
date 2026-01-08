@@ -381,7 +381,7 @@ model Category {
   
   // Subcategory support
   parentId   String?  @db.ObjectId  // Parent category ID (null = top-level)
-  parent     Category? @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  parent     Category? @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children   Category[] @relation("CategoryChildren")
   
   // Configuration: Hide parent in storefront if only 1 parent (show only subcategories)

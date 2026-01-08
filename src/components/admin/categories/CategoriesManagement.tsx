@@ -152,21 +152,31 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
     setCategoryToDelete(category)
   }
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (confirmationText?: string) => {
     if (!categoryToDelete) return
 
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/admin/stores/${businessId}/categories/${categoryToDelete.id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: confirmationText || undefined })
       })
 
       if (response.ok) {
-        setCategories(prev => prev.filter(c => c.id !== categoryToDelete.id))
+        // Remove the deleted category and all its children from the list
+        const categoryIdToDelete = categoryToDelete.id
+        setCategories(prev => prev.filter(c => 
+          c.id !== categoryIdToDelete && c.parentId !== categoryIdToDelete
+        ))
         setCategoryToDelete(null)
+      } else {
+        const errorData = await response.json()
+        alert(errorData.message || 'Error deleting category')
       }
     } catch (error) {
       console.error('Error deleting category:', error)
+      alert('Error deleting category. Please try again.')
     } finally {
       setIsDeleting(false)
     }
@@ -546,12 +556,17 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
 interface DeleteConfirmationModalProps {
   category: Category
   isDeleting: boolean
-  onConfirm: () => void
+  onConfirm: (confirmationText?: string) => void
   onCancel: () => void
 }
 
 function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: DeleteConfirmationModalProps) {
+  const [confirmationText, setConfirmationText] = useState('')
   const hasProducts = category._count.products > 0
+  const hasChildren = (category._count.children || 0) > 0
+  const requiresConfirmation = hasChildren
+
+  const canConfirm = !requiresConfirmation || confirmationText === 'DELETE'
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -568,7 +583,41 @@ function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: 
               Are you sure you want to delete the category "{category.name}"?
             </p>
             
-            {hasProducts && (
+            {hasChildren && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-red-800">
+                      ⚠️ This category has {category._count.children} subcategor{(category._count.children || 0) !== 1 ? 'ies' : 'y'}
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Deleting this category will <strong>permanently delete all subcategories and their products</strong>. This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Type <strong>DELETE</strong> to confirm:
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmationText}
+                    onChange={(e) => setConfirmationText(e.target.value)}
+                    placeholder="Type DELETE here"
+                    className="w-full px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    disabled={isDeleting}
+                  />
+                  {confirmationText && confirmationText !== 'DELETE' && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Please type exactly "DELETE" to confirm
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {hasProducts && !hasChildren && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
@@ -584,24 +633,29 @@ function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: 
               </div>
             )}
             
-            <p className="text-sm text-gray-500">
-              This action cannot be undone.
-            </p>
+            {!hasChildren && (
+              <p className="text-sm text-gray-500">
+                This action cannot be undone.
+              </p>
+            )}
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-3">
           <button
-            onClick={onCancel}
+            onClick={() => {
+              setConfirmationText('')
+              onCancel()
+            }}
             disabled={isDeleting}
             className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
           >
             Cancel
           </button>
           <button
-            onClick={onConfirm}
-            disabled={isDeleting}
-            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+            onClick={() => onConfirm(requiresConfirmation ? confirmationText : undefined)}
+            disabled={isDeleting || !canConfirm}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isDeleting ? (
               <>

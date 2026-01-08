@@ -234,6 +234,14 @@ export async function DELETE(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Get request body for confirmation
+    let requestBody = null
+    try {
+      requestBody = await request.json()
+    } catch {
+      // No body provided - that's okay for categories without children
+    }
+
     const category = await prisma.category.findFirst({
       where: {
         id: categoryId,
@@ -253,25 +261,39 @@ export async function DELETE(
       return NextResponse.json({ message: 'Category not found' }, { status: 404 })
     }
 
-    // Check if category has children
+    // Check if category has children - requires confirmation
     if (category._count.children > 0) {
-      return NextResponse.json(
-        { 
-          message: 'Cannot delete category with subcategories. Please delete or move subcategories first.',
-          hasChildren: true,
-          childrenCount: category._count.children
-        },
-        { status: 400 }
-      )
+      // Require confirmation text
+      if (!requestBody || !requestBody.confirmation || requestBody.confirmation !== 'DELETE') {
+        return NextResponse.json(
+          { 
+            message: 'Confirmation required. Please type "DELETE" to confirm deletion of category with subcategories.',
+            requiresConfirmation: true,
+            childrenCount: category._count.children
+          },
+          { status: 400 }
+        )
+      }
+
+      // Since we use NoAction onDelete for self-relations, we need to delete children first
+      // Delete all children categories first (this will also delete their products via Product -> Category relation)
+      await prisma.category.deleteMany({
+        where: { 
+          parentId: categoryId,
+          businessId
+        }
+      })
     }
 
+    // Now delete the parent category
     await prisma.category.delete({
       where: { id: categoryId }
     })
 
     return NextResponse.json({ 
       message: 'Category deleted successfully',
-      deletedProducts: category._count.products
+      deletedProducts: category._count.products,
+      deletedChildren: category._count.children
     })
 
   } catch (error) {
