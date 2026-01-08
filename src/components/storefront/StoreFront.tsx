@@ -1468,6 +1468,7 @@ interface Product {
   originalPrice?: number
   sku?: string
   stock: number
+  trackInventory?: boolean
   featured: boolean
   variants: ProductVariant[]
   modifiers: ProductModifier[]
@@ -1797,9 +1798,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     if (storeData.isTemporarilyClosed) return
     
     // Check if product has any stock available
-    const hasStock = product.variants.length > 0 
-      ? product.variants.some(v => v.stock > 0)
-      : product.stock > 0
+    // If inventory tracking is disabled, product is always available
+    // If it has variants, check if any variant has stock
+    // Otherwise, check product stock
+    const hasStock = !product.trackInventory 
+      ? true 
+      : product.variants.length > 0 
+        ? product.variants.some(v => v.stock > 0)
+        : product.stock > 0
       
     if (!hasStock) return
     
@@ -2954,9 +2960,14 @@ function ProductCard({
     .reduce((sum, item) => sum + item.quantity, 0)
   
   // Check if product has any stock available
-  const hasStock = product.variants.length > 0 
-    ? product.variants.some(v => v.stock > 0)
-    : product.stock > 0
+  // If inventory tracking is disabled, product is always available
+  // If it has variants, check if any variant has stock
+  // Otherwise, check product stock
+  const hasStock = !product.trackInventory 
+    ? true 
+    : product.variants.length > 0 
+      ? product.variants.some(v => v.stock > 0)
+      : product.stock > 0
   
   const isOutOfStock = !hasStock
 
