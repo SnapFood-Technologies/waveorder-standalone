@@ -65,10 +65,12 @@ export async function GET(request: NextRequest) {
     })
 
     // If user has a business, return its data
-    // @ts-ignore
-    if (userWithBusiness?.businesses.length > 0) {
-        // @ts-ignore
+    if (userWithBusiness?.businesses && userWithBusiness.businesses.length > 0) {
       const business = userWithBusiness.businesses[0].business
+      
+      if (!business) {
+        return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+      }
       
       return NextResponse.json({
         currentStep: business.onboardingStep || 1,
@@ -96,18 +98,18 @@ export async function GET(request: NextRequest) {
             messageTemplate: business.messageTemplate
           },
           // NEW: Include categories, products, and team members
-          categories: business.categories.map(cat => ({
+          categories: (business.categories || []).map(cat => ({
             id: cat.id,
             name: cat.name
           })),
-          products: business.products.map(product => ({
+          products: (business.products || []).map(product => ({
             id: product.id,
             name: product.name,
             price: product.price,
-            category: product.category.name,
+            category: product.category?.name || 'Uncategorized',
             description: product.description
           })),
-          teamMembers: business.TeamInvitation.map(invite => ({
+          teamMembers: (business.TeamInvitation || []).map(invite => ({
             email: invite.email,
             role: invite.role
           }))
