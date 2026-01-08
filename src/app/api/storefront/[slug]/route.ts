@@ -136,6 +136,14 @@ export async function GET(
     Sentry.setTag('api_type', 'storefront')
     Sentry.setTag('method', 'GET')
 
+    // Validate slug - reject file extensions and suspicious patterns (bot/scanner protection)
+    const invalidPatterns = /\.(php|asp|aspx|jsp|cgi|xml|txt|html|htm|js|css|json|sql|sh|py|rb|pl)$/i
+    if (invalidPatterns.test(slug) || slug.length > 100 || slug.length < 1) {
+      Sentry.setTag('error_type', 'invalid_slug')
+      Sentry.setTag('status_code', '404')
+      return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
+
     // Find business by slug
     const business = await prisma.business.findUnique({
       where: { 
@@ -315,7 +323,38 @@ export async function GET(
     return NextResponse.json(storeData)
 
   } catch (error) {
-    // Capture error in Sentry
+    // Check if it's a Prisma connection error
+    if (error instanceof Error) {
+      // Prisma connection errors - don't spam Sentry for bot requests
+      if (error.message.includes('Response from the Engine was empty') || 
+          error.message.includes('PrismaClientKnownRequestError') ||
+          error.name === 'PrismaClientUnknownRequestError') {
+        // Only log to Sentry if it's not a suspicious slug (likely bot)
+        const isSuspiciousSlug = /\.(php|asp|jsp|xml|txt)$/i.test(slug)
+        
+        if (!isSuspiciousSlug) {
+          Sentry.captureException(error, {
+            tags: {
+              endpoint: 'storefront_get',
+              method: 'GET',
+              error_type: 'prisma_error',
+            },
+            extra: {
+              slug,
+              url: request.url,
+            },
+          })
+        }
+        
+        // Return 404 for bot requests, 500 for real errors
+        return NextResponse.json(
+          { error: 'Store not found' },
+          { status: isSuspiciousSlug ? 404 : 500 }
+        )
+      }
+    }
+    
+    // Capture other errors in Sentry
     Sentry.captureException(error, {
       tags: {
         endpoint: 'storefront_get',
