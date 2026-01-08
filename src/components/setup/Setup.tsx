@@ -129,7 +129,9 @@ export default function SetupComponent() {
       const progressResponse = await fetch('/api/setup/progress')
       if (progressResponse.ok) {
         const progressData = await progressResponse.json()
-        setSetupData(prev => ({ ...prev, ...progressData.setupData, subscriptionPlan: 'PRO' }))
+        if (progressData.setupData) {
+          setSetupData(prev => ({ ...prev, ...progressData.setupData, subscriptionPlan: 'PRO' }))
+        }
         setCurrentStep(4) // Move to next step after pricing
       }
       
@@ -163,8 +165,12 @@ export default function SetupComponent() {
           const progressResponse = await fetch('/api/setup/progress')
           if (progressResponse.ok) {
             const progressData = await progressResponse.json()
-            setCurrentStep(progressData.currentStep)
-            setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+            if (progressData.currentStep) {
+              setCurrentStep(progressData.currentStep)
+            }
+            if (progressData.setupData) {
+              setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+            }
           }
           setLoading(false)
         }
@@ -200,8 +206,12 @@ export default function SetupComponent() {
       const progressResponse = await fetch(`/api/setup/progress?token=${token}`)
       if (progressResponse.ok) {
         const progressData = await progressResponse.json()
-        setCurrentStep(progressData.currentStep)
-        setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+        if (progressData.currentStep) {
+          setCurrentStep(progressData.currentStep)
+        }
+        if (progressData.setupData) {
+          setSetupData(prev => ({ ...prev, ...progressData.setupData }))
+        }
       }
       
       setLoading(false)
