@@ -405,7 +405,9 @@ model Category {
 model Product {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String
+  nameAl        String?  // Albanian product name
   description   String?
+  descriptionAl String?  // Albanian product description
   images        String[]
   price         Float
   originalPrice Float?
