@@ -68,15 +68,27 @@ export default function RegisterComponent() {
         body: JSON.stringify(formData)
       })
 
-      const data = await response.json()
-
+      // Check if response is ok before parsing JSON
       if (response.ok) {
-        router.push('/auth/verify-email?email=' + encodeURIComponent(formData.email))
+        try {
+          const data = await response.json()
+          router.push('/auth/verify-email?email=' + encodeURIComponent(formData.email))
+        } catch (jsonError) {
+          // If JSON parsing fails but response was ok, still redirect
+          router.push('/auth/verify-email?email=' + encodeURIComponent(formData.email))
+        }
       } else {
-        setError(data.message || 'An error occurred during registration')
+        // Try to parse error message, but handle if it fails
+        try {
+          const data = await response.json()
+          setError(data.message || 'An error occurred during registration')
+        } catch (jsonError) {
+          setError(`Registration failed (${response.status}). Please try again.`)
+        }
       }
     } catch (error) {
-      setError('Network error. Please try again.')
+      // Network error or fetch completely failed
+      setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -111,24 +123,41 @@ export default function RegisterComponent() {
   }
 
   const handleGoogleRegister = async () => {
-    const result = await signIn('google', {
-      redirect: false
-    })
-    
-    if (result?.ok) {
-      // Same business check logic
-      const response = await fetch('/api/user/businesses')
-      const data = await response.json()
+    try {
+      const result = await signIn('google', {
+        redirect: false
+      })
       
-      if (data.businesses?.length > 0) {
-        if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
-          router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
-        } else {
+      if (result?.ok) {
+        // Same business check logic
+        try {
+          const response = await fetch('/api/user/businesses')
+          
+          if (response.ok) {
+            const data = await response.json()
+            
+            if (data.businesses?.length > 0) {
+              if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
+                router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+              } else {
+                router.push('/setup')
+              }
+            } else {
+              router.push('/setup')
+            }
+          } else {
+            // If fetch fails, just redirect to setup
+            router.push('/setup')
+          }
+        } catch (fetchError) {
+          // If business check fails, redirect to setup
+          console.error('Failed to check businesses:', fetchError)
           router.push('/setup')
         }
-      } else {
-        router.push('/setup')
       }
+    } catch (error) {
+      console.error('Google sign-in error:', error)
+      setError('Failed to sign in with Google. Please try again.')
     }
   }
 
