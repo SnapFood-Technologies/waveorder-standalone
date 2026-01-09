@@ -2769,6 +2769,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           removeFromCart={removeFromCart}
           submitOrder={submitOrder}
           isOrderLoading={isOrderLoading}
+          postalPricingOptions={postalPricingOptions}
+          loadingPostalPricing={loadingPostalPricing}
+          selectedPostalPricing={selectedPostalPricing}
+          setSelectedPostalPricing={setSelectedPostalPricing}
+          setCalculatedDeliveryFee={setCalculatedDeliveryFee}
           deliveryOptions={getDeliveryOptions()}
           primaryColor={primaryColor}
           translations={translations}
@@ -2831,6 +2836,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               removeFromCart={removeFromCart}
               submitOrder={submitOrder}
               isOrderLoading={isOrderLoading}
+              postalPricingOptions={postalPricingOptions}
+              loadingPostalPricing={loadingPostalPricing}
+              selectedPostalPricing={selectedPostalPricing}
+              setSelectedPostalPricing={setSelectedPostalPricing}
+              setCalculatedDeliveryFee={setCalculatedDeliveryFee}
               deliveryOptions={getDeliveryOptions()}
               primaryColor={primaryColor}
               translations={translations}
@@ -3748,7 +3758,12 @@ function OrderPanel({
   deliveryError = null,
   onClearDeliveryError,
   canSubmitOrder,
-  forceScheduleMode = false
+  forceScheduleMode = false,
+  postalPricingOptions = [],
+  loadingPostalPricing = false,
+  selectedPostalPricing = null,
+  setSelectedPostalPricing,
+  setCalculatedDeliveryFee
 }: {
   storeData: any
   cart: CartItem[]
@@ -3778,6 +3793,11 @@ function OrderPanel({
   onClearDeliveryError?: () => void
   canSubmitOrder: () => boolean
   forceScheduleMode?: boolean
+  postalPricingOptions?: any[]
+  loadingPostalPricing?: boolean
+  selectedPostalPricing?: any | null
+  setSelectedPostalPricing?: (pricing: any | null) => void
+  setCalculatedDeliveryFee?: (fee: number) => void
 }) {
   
   // Helper function to clear address and delivery error

@@ -1,12 +1,9 @@
 // app/api/storefront/[slug]/order/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import * as Sentry from '@sentry/nextjs'
-
-
-const prisma = new PrismaClient()
 
 // Helper function to calculate distance between two points
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -909,6 +906,7 @@ export async function POST(
       specialInstructions,
       latitude,
       longitude,
+      postalPricingId, // For RETAIL businesses
       items,
       subtotal,
       deliveryFee,
@@ -1082,14 +1080,15 @@ export async function POST(
     let finalDeliveryFee = deliveryFee || 0
     let deliveryZone = 'Default Zone'
     let deliveryDistance = 0
-    let postalPricingId: string | null = null
+    let finalPostalPricingId: string | null = postalPricingId || null
 
     // For RETAIL businesses, use postal pricing instead of distance-based calculation
-    if (business.businessType === 'RETAIL' && deliveryType === 'delivery' && orderData.postalPricingId) {
+    if (business.businessType === 'RETAIL' && deliveryType === 'delivery' && postalPricingId) {
       // Validate postal pricing exists and belongs to business
-      const postalPricing = await prisma.postalPricing.findFirst({
+      // @ts-ignore - PostalPricing model will be available after Prisma generate
+      const postalPricing = await (prisma as any).postalPricing.findFirst({
         where: {
-          id: orderData.postalPricingId,
+          id: postalPricingId,
           businessId: business.id,
           deletedAt: null
         }
@@ -1103,7 +1102,7 @@ export async function POST(
 
       // Use postal pricing fee
       finalDeliveryFee = postalPricing.price
-      postalPricingId = postalPricing.id
+      finalPostalPricingId = postalPricing.id
       deliveryZone = 'Postal Service'
 
       // Validate that frontend fee matches postal pricing
@@ -1297,8 +1296,9 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         customerLatitude: deliveryType === 'delivery' && latitude ? latitude : null,
         customerLongitude: deliveryType === 'delivery' && longitude ? longitude : null,
         // Store postal pricing for RETAIL businesses
-        postalPricingId: postalPricingId || null,
-      }
+        // @ts-ignore - postalPricingId field will be available after Prisma generate
+        postalPricingId: finalPostalPricingId,
+      } as any
     })
 
     // Create order items
