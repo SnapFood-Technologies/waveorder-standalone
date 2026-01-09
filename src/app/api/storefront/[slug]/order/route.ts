@@ -907,6 +907,9 @@ export async function POST(
       latitude,
       longitude,
       postalPricingId, // For RETAIL businesses
+      countryCode, // For RETAIL businesses
+      city, // For RETAIL businesses
+      postalCode, // For RETAIL businesses
       items,
       subtotal,
       deliveryFee,

@@ -22,12 +22,16 @@ export async function GET(
     const postalId = searchParams.get('postalId')
 
     const where: any = {
-      businessId,
-      deletedAt: null
+      businessId
     }
 
+    // Only include non-deleted records
+    // In MongoDB, null or undefined means not deleted
+    where.deletedAt = null
+
     if (cityName) {
-      where.cityName = cityName
+      // Exact match for city name (case-sensitive)
+      where.cityName = cityName.trim()
     }
 
     if (postalId) {
@@ -51,10 +55,14 @@ export async function GET(
         { cityName: 'asc' },
         { postalId: 'asc' },
         { price: 'asc' }
-      ]
+      ],
+      take: 10000 // Limit to prevent huge responses
     })
 
-    return NextResponse.json({ pricing })
+    // Debug logging (remove in production if needed)
+    console.log(`Found ${pricing.length} postal pricing records for business ${businessId}`)
+
+    return NextResponse.json({ pricing: pricing || [] })
   } catch (error) {
     console.error('Error fetching postal pricing:', error)
     return NextResponse.json(

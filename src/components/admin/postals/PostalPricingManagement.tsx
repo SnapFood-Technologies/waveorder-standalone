@@ -169,7 +169,7 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Postal Pricing</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -182,16 +182,16 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
               setShowAddForm(true)
               setEditingPricing(null)
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
-            Add Pricing
+            <span className="whitespace-nowrap">Add Pricing</span>
           </button>
         )}
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Filter by City
@@ -263,25 +263,27 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
             return (
               <div
                 key={p.id}
-                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      {postal?.logo && (
-                        <img
-                          src={postal.logo}
-                          alt={postal.name}
-                          className="w-10 h-10 object-contain rounded"
-                        />
-                      )}
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {postal?.name || 'Unknown Postal'}
-                        </h3>
-                        <p className="text-sm text-gray-600">{p.cityName}</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {postal?.logo && (
+                          <img
+                            src={postal.logo}
+                            alt={postal.name}
+                            className="w-10 h-10 object-contain rounded flex-shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {postal?.name || 'Unknown Postal'}
+                          </h3>
+                          <p className="text-sm text-gray-600 truncate">{p.cityName}</p>
+                        </div>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
+                      <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap flex-shrink-0 ${
                         p.type === 'fast' 
                           ? 'bg-blue-100 text-blue-800' 
                           : 'bg-gray-100 text-gray-800'
@@ -289,7 +291,7 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
                         {p.type === 'fast' ? 'Fast' : 'Normal'}
                       </span>
                     </div>
-                    <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-sm">
                       <div>
                         <span className="text-gray-500">Price:</span>
                         <span className="font-semibold text-gray-900 ml-2">{p.price.toFixed(2)}</span>
@@ -301,14 +303,14 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
                         </div>
                       )}
                       {p.deliveryTime && (
-                        <div>
+                        <div className="break-words">
                           <span className="text-gray-500">Delivery:</span>
                           <span className="font-semibold text-gray-900 ml-2">{p.deliveryTime}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
+                  <div className="flex items-center gap-2 sm:ml-4 flex-shrink-0">
                     <button
                       onClick={() => {
                         setEditingPricing(p)
@@ -354,7 +356,7 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -490,11 +492,11 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
           />
         </div>
       </div>
-      <div className="flex items-center gap-3 pt-4 border-t">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-gray-200">
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
         >
           <Save className="w-4 h-4" />
           {saving ? 'Saving...' : 'Save'}
@@ -503,7 +505,7 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
         >
           <X className="w-4 h-4" />
           Cancel

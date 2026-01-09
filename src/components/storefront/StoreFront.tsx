@@ -1546,6 +1546,10 @@ interface CustomerInfo {
   longitude?: number
   postalPricingId?: string  // Selected postal pricing ID (for RETAIL)
   cityName?: string         // City name for postal pricing lookup
+  // RETAIL postal address fields
+  countryCode?: string      // Country code (e.g., 'AL', 'XK', 'MK')
+  city?: string             // City name (for RETAIL)
+  postalCode?: string       // Postal code (for RETAIL)
 }
 
 const getCurrencySymbol = (currency: string) => {
@@ -1652,7 +1656,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     deliveryTime: 'asap',
     specialInstructions: '',
     postalPricingId: undefined,
-    cityName: undefined
+    cityName: undefined,
+    countryCode: undefined,
+    city: undefined,
+    postalCode: undefined
   })
   
   // Postal pricing state (for RETAIL businesses)
@@ -1660,6 +1667,11 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   const [loadingPostalPricing, setLoadingPostalPricing] = useState(false)
   const [selectedPostalPricing, setSelectedPostalPricing] = useState<any | null>(null)
   const [isOrderLoading, setIsOrderLoading] = useState(false)
+  
+  // Countries and cities state (for RETAIL businesses)
+  const [countries, setCountries] = useState<Array<{ id: string; name: string; code: string }>>([])
+  const [cities, setCities] = useState<Array<{ id: string; name: string }>>([])
+  const [loadingCities, setLoadingCities] = useState(false)
 
   // Save cart to localStorage whenever it changes
     useEffect(() => {
@@ -1668,16 +1680,59 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
         }
     }, [cart])
 
-  // Extract city from address and fetch postal pricing for RETAIL businesses
+  // Fetch countries on mount (for RETAIL businesses)
   useEffect(() => {
-    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery' && customerInfo.address) {
-      const cityName = extractCityFromAddress(customerInfo.address)
-      if (cityName && cityName !== customerInfo.cityName) {
-        setCustomerInfo(prev => ({ ...prev, cityName }))
-        fetchPostalPricing(cityName)
-      }
+    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery') {
+      fetchCountries()
     }
-  }, [customerInfo.address, deliveryType, storeData.businessType])
+  }, [storeData.businessType, deliveryType])
+
+  const fetchCountries = async () => {
+    try {
+      const response = await fetch('/api/storefront/locations/countries')
+      if (response.ok) {
+        const data = await response.json()
+        setCountries(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching countries:', error)
+    }
+  }
+
+  // Fetch cities when country changes (for RETAIL businesses)
+  useEffect(() => {
+    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery' && customerInfo.countryCode) {
+      fetchCities(customerInfo.countryCode)
+    } else {
+      setCities([])
+    }
+  }, [customerInfo.countryCode, storeData.businessType, deliveryType])
+
+  const fetchCities = async (countryCode: string) => {
+    setLoadingCities(true)
+    try {
+      const response = await fetch(`/api/storefront/locations/cities?countryCode=${encodeURIComponent(countryCode)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setCities(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching cities:', error)
+    } finally {
+      setLoadingCities(false)
+    }
+  }
+
+  // Fetch postal pricing when city changes (for RETAIL businesses)
+  useEffect(() => {
+    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery' && customerInfo.city) {
+      setCustomerInfo(prev => ({ ...prev, cityName: prev.city }))
+      fetchPostalPricing(customerInfo.city)
+      // Clear selected postal pricing when city changes
+      setSelectedPostalPricing(null)
+      setCalculatedDeliveryFee(storeData.deliveryFee)
+    }
+  }, [customerInfo.city, storeData.businessType, deliveryType])
 
   const currencySymbol = getCurrencySymbol(storeData.currency)
   const translations = getStorefrontTranslations(storeData.storefrontLanguage || storeData.language || 'en')
@@ -2193,9 +2248,33 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
 
-    if (deliveryType === 'delivery' && !customerInfo.address) {
-      showError(translations.addDeliveryAddress || 'Please provide delivery address')
-      return
+    // Validation for delivery address
+    if (deliveryType === 'delivery') {
+      if (storeData.businessType === 'RETAIL') {
+        // RETAIL businesses require address, country, and city
+        if (!customerInfo.address) {
+          showError(translations.addDeliveryAddress || 'Please provide delivery address')
+          return
+        }
+        if (!customerInfo.countryCode) {
+          showError('Please select a country')
+          return
+        }
+        if (!customerInfo.city) {
+          showError('Please select a city')
+          return
+        }
+        if (!customerInfo.postalPricingId) {
+          showError('Please select a delivery method')
+          return
+        }
+      } else {
+        // Non-RETAIL businesses require address
+        if (!customerInfo.address) {
+          showError(translations.addDeliveryAddress || 'Please provide delivery address')
+          return
+        }
+      }
     }
 
     if (!meetsMinimumOrder) {
@@ -2212,11 +2291,28 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     setIsOrderLoading(true)
   
     try {
+      // Build delivery address based on business type
+      let deliveryAddress = ''
+      if (storeData.businessType === 'RETAIL') {
+        // For RETAIL: combine address, address2, city, country, postal code
+        const parts = [
+          customerInfo.address,
+          customerInfo.address2,
+          customerInfo.city,
+          customerInfo.countryCode,
+          customerInfo.postalCode
+        ].filter(Boolean)
+        deliveryAddress = parts.join(', ')
+      } else {
+        // For non-RETAIL: use existing format
+        deliveryAddress = `${customerInfo.address}${customerInfo.address2 ? `, ${customerInfo.address2}` : ''}`.trim()
+      }
+
       const orderData = {
         customerName: customerInfo.name,
         customerPhone: customerInfo.phone,
         customerEmail: customerInfo.email,
-        deliveryAddress: `${customerInfo.address}${customerInfo.address2 ? `, ${customerInfo.address2}` : ''}`.trim(),
+        deliveryAddress,
         deliveryType,
         deliveryTime: customerInfo.deliveryTime === 'asap' ? null : customerInfo.deliveryTime,
         paymentMethod: storeData.paymentMethods[0] || 'CASH',
@@ -2224,6 +2320,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         latitude: customerInfo.latitude,
         longitude: customerInfo.longitude,
         postalPricingId: customerInfo.postalPricingId, // For RETAIL businesses
+        // RETAIL-specific fields
+        countryCode: customerInfo.countryCode,
+        city: customerInfo.city,
+        postalCode: customerInfo.postalCode,
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -2269,8 +2369,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           deliveryTime: 'asap',
           specialInstructions: '',
           latitude: undefined,
-          longitude: undefined
+          longitude: undefined,
+          postalPricingId: undefined,
+          cityName: undefined,
+          countryCode: undefined,
+          city: undefined,
+          postalCode: undefined
         })
+        // Clear postal pricing state
+        setSelectedPostalPricing(null)
+        setPostalPricingOptions([])
         
         // Clear any delivery errors
         setDeliveryError(null)
@@ -2818,6 +2926,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           selectedPostalPricing={selectedPostalPricing}
           setSelectedPostalPricing={setSelectedPostalPricing}
           setCalculatedDeliveryFee={setCalculatedDeliveryFee}
+          countries={countries}
+          cities={cities}
+          loadingCities={loadingCities}
           deliveryOptions={getDeliveryOptions()}
           primaryColor={primaryColor}
           translations={translations}
@@ -3807,7 +3918,10 @@ function OrderPanel({
   loadingPostalPricing = false,
   selectedPostalPricing = null,
   setSelectedPostalPricing = () => {},
-  setCalculatedDeliveryFee = () => {}
+  setCalculatedDeliveryFee = () => {},
+  countries = [],
+  cities = [],
+  loadingCities = false
 }: {
   storeData: any
   cart: CartItem[]
@@ -3842,6 +3956,9 @@ function OrderPanel({
   selectedPostalPricing?: any | null
   setSelectedPostalPricing: (pricing: any | null) => void
   setCalculatedDeliveryFee: (fee: number) => void
+  countries?: Array<{ id: string; name: string; code: string }>
+  cities?: Array<{ id: string; name: string }>
+  loadingCities?: boolean
 }) {
   
   // Helper function to clear address and delivery error
@@ -3941,99 +4058,218 @@ function OrderPanel({
           {/* Conditional Fields based on delivery type */}
           {deliveryType === 'delivery' ? (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
-                <AddressAutocomplete
-                  value={customerInfo.address}
-                  onChange={(address) => setCustomerInfo({ ...customerInfo, address })}
-                  placeholder={translations.streetAddress || 'Street address'}
-                  required
-                  primaryColor={primaryColor}
-                  onLocationChange={onLocationChange}
-                  storeData={storeData}
-                />
-              </div>
+              {/* RETAIL businesses - Postal address form */}
+              {storeData.businessType === 'RETAIL' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      placeholder={translations.streetAddress || 'Street address'}
+                    />
+                  </div>
 
-              {/* SHOW DELIVERY ERROR MESSAGE HERE */}
-              {deliveryError && (
-                <DeliveryErrorMessage
-                  error={deliveryError}
-                  primaryColor={primaryColor}
-                  translations={translations}
-                  onClearAddress={handleClearAddress}
-                  currencySymbol={currencySymbol}
-                />
-              )}
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
-                <input
-                  type="text"
-                  value={customerInfo.address2}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                  disabled={false}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                  onFocus={(e) => e.target.style.borderColor = primaryColor}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                  placeholder={translations.apartment || 'Apartment, suite, etc.'}
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Notes'}</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address2}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      placeholder={translations.apartment || 'Apartment, suite, etc.'}
+                    />
+                  </div>
 
-              {/* Postal Method Selection for RETAIL businesses */}
-              {storeData.businessType === 'RETAIL' && customerInfo.cityName && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {translations.deliveryMethod || 'Delivery Method'} *
-                  </label>
-                  {loadingPostalPricing ? (
-                    <div className="text-sm text-gray-500 py-3">Loading delivery options...</div>
-                  ) : postalPricingOptions.length > 0 ? (
-                    <div className="space-y-2">
-                      {postalPricingOptions.map((option) => (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPostalPricing(option)
-                            setCalculatedDeliveryFee(option.price)
-                            setCustomerInfo((prev: CustomerInfo) => ({ ...prev, postalPricingId: option.id }))
-                          }}
-                          className={`w-full p-3 border-2 rounded-xl text-left transition-colors ${
-                            selectedPostalPricing?.id === option.id
-                              ? 'border-teal-500 bg-teal-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {option.logo && (
-                                <img src={option.logo} alt={option.postal_name} className="w-10 h-10 object-contain" />
-                              )}
-                              <div>
-                                <div className="font-medium text-gray-900">{option.postal_name}</div>
-                                {(option.delivery_time_al || option.delivery_time) && (
-                                  <div className="text-sm text-gray-600">
-                                    {option.delivery_time_al || option.delivery_time}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-gray-900">
-                                {currencySymbol}{option.price.toFixed(2)}
-                              </div>
-                            </div>
-                          </div>
-                        </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                    <select
+                      required
+                      value={customerInfo.countryCode || ''}
+                      onChange={(e) => {
+                        setCustomerInfo({ 
+                          ...customerInfo, 
+                          countryCode: e.target.value,
+                          city: undefined, // Reset city when country changes
+                          postalPricingId: undefined // Reset postal pricing
+                        })
+                        setSelectedPostalPricing(null)
+                        setCalculatedDeliveryFee(storeData.deliveryFee)
+                      }}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map((country) => (
+                        <option key={country.id} value={country.code}>
+                          {country.name}
+                        </option>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500 py-3">
-                      No delivery options available for this city
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                    {loadingCities ? (
+                      <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-500">
+                        Loading cities...
+                      </div>
+                    ) : (
+                      <select
+                        required
+                        value={customerInfo.city || ''}
+                        onChange={(e) => {
+                          setCustomerInfo({ 
+                            ...customerInfo, 
+                            city: e.target.value,
+                            cityName: e.target.value,
+                            postalPricingId: undefined // Reset postal pricing when city changes
+                          })
+                          setSelectedPostalPricing(null)
+                          setCalculatedDeliveryFee(storeData.deliveryFee)
+                        }}
+                        disabled={!customerInfo.countryCode}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                        onFocus={(e) => e.target.style.borderColor = primaryColor}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      >
+                        <option value="">{customerInfo.countryCode ? 'Select City' : 'Select Country first'}</option>
+                        {cities.map((city) => (
+                          <option key={city.id} value={city.name}>
+                            {city.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                    <input
+                      type="text"
+                      value={customerInfo.postalCode || ''}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, postalCode: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      placeholder="Postal code"
+                    />
+                  </div>
+
+                  {/* Postal Method Selection for RETAIL businesses */}
+                  {customerInfo.city && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {translations.deliveryMethod || 'Delivery Method'} *
+                      </label>
+                      {loadingPostalPricing ? (
+                        <div className="text-sm text-gray-500 py-3 flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
+                          Loading delivery options...
+                        </div>
+                      ) : postalPricingOptions.length > 0 ? (
+                        <div className="space-y-2">
+                          {postalPricingOptions.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPostalPricing(option)
+                                setCalculatedDeliveryFee(option.price)
+                                setCustomerInfo((prev: CustomerInfo) => ({ ...prev, postalPricingId: option.id }))
+                              }}
+                              className={`w-full p-3 border-2 rounded-xl text-left transition-colors ${
+                                selectedPostalPricing?.id === option.id
+                                  ? 'border-teal-500 bg-teal-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {option.logo && (
+                                    <img src={option.logo} alt={option.postal_name} className="w-10 h-10 object-contain" />
+                                  )}
+                                  <div>
+                                    <div className="font-medium text-gray-900">{option.postal_name}</div>
+                                    {(option.delivery_time_al || option.delivery_time) && (
+                                      <div className="text-sm text-gray-600">
+                                        {option.delivery_time_al || option.delivery_time}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-gray-900">
+                                    {currencySymbol}{option.price.toFixed(2)}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 py-3">
+                          No delivery options available for this city
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
+                </>
+              ) : (
+                /* Non-RETAIL businesses - Google autocomplete address form */
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
+                    <AddressAutocomplete
+                      value={customerInfo.address}
+                      onChange={(address) => setCustomerInfo({ ...customerInfo, address })}
+                      placeholder={translations.streetAddress || 'Street address'}
+                      required
+                      primaryColor={primaryColor}
+                      onLocationChange={onLocationChange}
+                      storeData={storeData}
+                    />
+                  </div>
+
+                  {/* SHOW DELIVERY ERROR MESSAGE HERE */}
+                  {deliveryError && (
+                    <DeliveryErrorMessage
+                      error={deliveryError}
+                      primaryColor={primaryColor}
+                      translations={translations}
+                      onClearAddress={handleClearAddress}
+                      currencySymbol={currencySymbol}
+                    />
+                  )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Line 2'}</label>
+                    <input
+                      type="text"
+                      value={customerInfo.address2}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
+                      disabled={false}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      placeholder={translations.apartment || 'Apartment, suite, etc.'}
+                    />
+                  </div>
+                </>
               )}
             </>
           ) : (
