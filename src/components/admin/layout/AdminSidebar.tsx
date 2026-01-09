@@ -212,12 +212,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: UserPlus, 
         requiredPlan: 'PRO' as Plan
       },
-      { 
-        name: 'Domain Management', 
-        href: `${baseUrl}/domains`, 
-        icon: Globe, 
-        requiredPlan: 'PRO' as Plan
-      },
+      // Temporarily commented out - Domain Management not yet implemented
+      // { 
+      //   name: 'Domain Management', 
+      //   href: `${baseUrl}/domains`, 
+      //   icon: Globe, 
+      //   requiredPlan: 'PRO' as Plan
+      // },
     ] : []),
     
     { 

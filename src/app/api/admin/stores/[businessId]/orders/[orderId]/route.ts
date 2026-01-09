@@ -135,6 +135,7 @@ export async function GET(
         customerLatitude: true,
         customerLongitude: true,
         whatsappMessageId: true,
+        postalPricingId: true,
         createdAt: true,
         updatedAt: true,
         customer: {
@@ -228,6 +229,47 @@ export async function GET(
       })
     )
 
+    // Fetch postal pricing details if postalPricingId exists
+    let postalPricing = null
+    if (order.postalPricingId) {
+      try {
+        // @ts-ignore - PostalPricing model will be available after Prisma generate
+        const allPostalPricing = await (prisma as any).postalPricing.findMany({
+          where: {
+            id: order.postalPricingId,
+            businessId: businessId
+          },
+          include: {
+            postal: {
+              select: {
+                id: true,
+                name: true,
+                nameAl: true,
+                deliveryTime: true,
+                deliveryTimeAl: true
+              }
+            }
+          }
+        })
+
+        // Filter out deleted records (deletedAt is null or undefined)
+        const foundPostalPricing = allPostalPricing.find((p: any) => !p.deletedAt || p.deletedAt === null)
+        
+        if (foundPostalPricing) {
+          postalPricing = {
+            name: foundPostalPricing.postal?.name || 'Postal Service',
+            nameAl: foundPostalPricing.postal?.nameAl || null,
+            deliveryTime: foundPostalPricing.deliveryTime || foundPostalPricing.postal?.deliveryTime || null,
+            deliveryTimeAl: foundPostalPricing.deliveryTimeAl || foundPostalPricing.postal?.deliveryTimeAl || null,
+            price: foundPostalPricing.price
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching postal pricing:', error)
+        // Continue without postal pricing if there's an error
+      }
+    }
+
     return NextResponse.json({
       order: {
         id: order.id,
@@ -259,6 +301,8 @@ export async function GET(
         customerLatitude: order.customerLatitude,
         customerLongitude: order.customerLongitude,
         whatsappMessageId: order.whatsappMessageId,
+        postalPricingId: order.postalPricingId,
+        postalPricing: postalPricing,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt
       },
@@ -470,6 +514,7 @@ export async function PUT(
               currency: updatedOrder.business.currency,
               language: updatedOrder.business.language || 'en',
               translateContentToBusinessLanguage: updatedOrder.business.translateContentToBusinessLanguage ?? true,
+              businessType: updatedOrder.business.businessType || undefined,
               items: updatedOrder.items.map(item => ({
                 name: item.product.name,
                 quantity: item.quantity,

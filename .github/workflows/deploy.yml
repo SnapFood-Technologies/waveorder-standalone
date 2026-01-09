@@ -78,6 +78,18 @@ jobs:
           }
           echo "✅ Locations populated successfully"
 
+      # 💎 UPDATE BUSINESS SUBSCRIPTION TO PRO
+      - name: 💎 Update Business Subscription to PRO
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Updating business subscription to PRO..."
+          npx tsx scripts/update-business-subscription.ts || {
+            echo "⚠️ Subscription update failed or business is already PRO (this is OK)"
+            exit 0
+          }
+          echo "✅ Business subscription updated successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:

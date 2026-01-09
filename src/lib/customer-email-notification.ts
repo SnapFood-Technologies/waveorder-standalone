@@ -19,6 +19,7 @@ interface CustomerOrderData {
   currency: string
   language?: string
   translateContentToBusinessLanguage?: boolean
+  businessType?: string
   items: {
     name: string
     quantity: number
@@ -61,7 +62,7 @@ export async function sendCustomerOrderStatusEmail(
     const language = useBusinessLanguage ? (orderData.language || 'en') : 'en'
 
     // Get status message in the appropriate language
-    const statusMessage = getStatusMessage(orderData.status, orderData.type, language)
+    const statusMessage = getStatusMessage(orderData.status, orderData.type, language, orderData.businessType)
 
     // Create email content
     const emailContent = createCustomerOrderStatusEmail({
@@ -102,11 +103,12 @@ export async function sendCustomerOrderStatusEmail(
 /**
  * Get status-specific message for customer in the specified language
  */
-function getStatusMessage(status: string, orderType: string, language: string = 'en'): string {
+function getStatusMessage(status: string, orderType: string, language: string = 'en', businessType?: string): string {
+  const isRetail = businessType === 'RETAIL'
   const messages: Record<string, Record<string, string>> = {
     en: {
       CONFIRMED: 'Your order has been confirmed and we\'re preparing it for you!',
-      PREPARING: 'Your order is being prepared with care!',
+      PREPARING: isRetail ? 'Your order is being prepared for shipment!' : 'Your order is being prepared with care!',
       READY_PICKUP: 'Your order is ready for pickup! Please come to our store to collect it.',
       READY_DINE_IN: 'Your order is ready! Please come to our restaurant.',
       READY_DELIVERY: 'Your order is ready and will be delivered soon!',
@@ -120,7 +122,7 @@ function getStatusMessage(status: string, orderType: string, language: string = 
     },
     es: {
       CONFIRMED: '¡Tu pedido ha sido confirmado y lo estamos preparando para ti!',
-      PREPARING: '¡Tu pedido se está preparando con cuidado!',
+      PREPARING: isRetail ? '¡Tu pedido se está preparando para el envío!' : '¡Tu pedido se está preparando con cuidado!',
       READY_PICKUP: '¡Tu pedido está listo para recoger! Por favor, ven a nuestra tienda a recogerlo.',
       READY_DINE_IN: '¡Tu pedido está listo! Por favor, ven a nuestro restaurante.',
       READY_DELIVERY: '¡Tu pedido está listo y será entregado pronto!',
@@ -134,7 +136,7 @@ function getStatusMessage(status: string, orderType: string, language: string = 
     },
     sq: {
       CONFIRMED: 'Porosia juaj është konfirmuar dhe po e përgatisim për ju!',
-      PREPARING: 'Porosia juaj po përgatitet me kujdes!',
+      PREPARING: isRetail ? 'Porosia juaj po përgatitet për dërgim!' : 'Porosia juaj po përgatitet me kujdes!',
       READY_PICKUP: 'Porosia juaj është gati për marrje! Ju lutemi vini në dyqanin tonë për ta marrë.',
       READY_DINE_IN: 'Porosia juaj është gati! Ju lutemi vini në restorantin tonë.',
       READY_DELIVERY: 'Porosia juaj është gati dhe do të dorëzohet së shpejti!',
@@ -266,7 +268,7 @@ function createCustomerOrderStatusEmail({
                         labels.dineIn
 
   const statusColor = getStatusColor(orderData.status)
-  const statusLabel = formatStatusLabel(orderData.status, language)
+  const statusLabel = formatStatusLabel(orderData.status, language, orderData.businessType)
 
   return `
 <!DOCTYPE html>
@@ -427,12 +429,13 @@ function getStatusIcon(status: string): string {
   }
 }
 
-function formatStatusLabel(status: string, language: string = 'en'): string {
+function formatStatusLabel(status: string, language: string = 'en', businessType?: string): string {
+  const isRetail = businessType === 'RETAIL'
   const statusLabels: Record<string, Record<string, string>> = {
     en: {
       PENDING: 'Pending',
       CONFIRMED: 'Confirmed',
-      PREPARING: 'Preparing',
+      PREPARING: isRetail ? 'Preparing Shipment' : 'Preparing',
       READY: 'Ready',
       PICKED_UP: 'Picked Up',
       OUT_FOR_DELIVERY: 'Out for Delivery',
@@ -443,7 +446,7 @@ function formatStatusLabel(status: string, language: string = 'en'): string {
     es: {
       PENDING: 'Pendiente',
       CONFIRMED: 'Confirmado',
-      PREPARING: 'Preparando',
+      PREPARING: isRetail ? 'Preparando Envío' : 'Preparando',
       READY: 'Listo',
       PICKED_UP: 'Recogido',
       OUT_FOR_DELIVERY: 'En Camino',
@@ -454,7 +457,7 @@ function formatStatusLabel(status: string, language: string = 'en'): string {
     sq: {
       PENDING: 'Në Pritje',
       CONFIRMED: 'E Konfirmuar',
-      PREPARING: 'Duke U Përgatitur',
+      PREPARING: isRetail ? 'Duke U Përgatitur Dërgimin' : 'Duke U Përgatitur',
       READY: 'Gati',
       PICKED_UP: 'Marrë',
       OUT_FOR_DELIVERY: 'Në Rrugë',

@@ -503,6 +503,14 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </ul>
               </div>
 
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <p className="text-xs text-blue-700">
+                  {business.businessType === 'RETAIL' && (
+                    <>💡 <strong>Note for Retail:</strong> "Preparing Shipment" means your items are being packed and prepared for delivery via postal service.</>
+                  )}
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {settings.orderNotificationLastUpdate && (
                   <div className="flex items-center text-sm text-gray-600">
@@ -551,7 +559,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
             <div className="pl-7 space-y-6 border-l-2 border-teal-200">
               <p className="text-sm text-gray-600 mb-4">
                 {business.businessType === 'RETAIL' 
-                  ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY or DINE_IN.'
+                  ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY.'
                   : 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.'
                 }
               </p>
@@ -567,7 +575,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                     <input type="checkbox" name="notifyDeliveryOnConfirmed" checked={settings.notifyDeliveryOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Preparing</label>
+                    <label className="text-sm text-gray-700">
+                      {business.businessType === 'RETAIL' ? 'Preparing Shipment' : 'Preparing'}
+                    </label>
                     <input type="checkbox" name="notifyDeliveryOnPreparing" checked={settings.notifyDeliveryOnPreparing} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
                   </div>
                   <div className="flex items-center justify-between p-2 bg-white rounded">
@@ -608,30 +618,32 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </div>
               )}
 
-              {/* Dine-in Orders */}
-              <div className="space-y-3 border border-purple-200 rounded-lg p-4 bg-purple-50">
-                <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
-                  🍽️ Dine-in Orders
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Confirmed</label>
-                    <input type="checkbox" name="notifyDineInOnConfirmed" checked={settings.notifyDineInOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Preparing</label>
-                    <input type="checkbox" name="notifyDineInOnPreparing" checked={settings.notifyDineInOnPreparing} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Ready</label>
-                    <input type="checkbox" name="notifyDineInOnReady" checked={settings.notifyDineInOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Picked Up</label>
-                    <input type="checkbox" name="notifyDineInOnDelivered" checked={settings.notifyDineInOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+              {/* Dine-in Orders - Hidden for RETAIL */}
+              {business.businessType !== 'RETAIL' && (
+                <div className="space-y-3 border border-purple-200 rounded-lg p-4 bg-purple-50">
+                  <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
+                    🍽️ Dine-in Orders
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Confirmed</label>
+                      <input type="checkbox" name="notifyDineInOnConfirmed" checked={settings.notifyDineInOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Preparing</label>
+                      <input type="checkbox" name="notifyDineInOnPreparing" checked={settings.notifyDineInOnPreparing} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Ready</label>
+                      <input type="checkbox" name="notifyDineInOnReady" checked={settings.notifyDineInOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Picked Up</label>
+                      <input type="checkbox" name="notifyDineInOnDelivered" checked={settings.notifyDineInOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Global Settings */}
               <div className="space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -647,7 +659,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   <strong>Note:</strong> Customers will only receive email notifications if they have an email address on file. 
                   Notifications are sent automatically when you update order status in the order details page.
                   {business.businessType === 'RETAIL' 
-                    ? ' Settings are applied based on the order type (DELIVERY or DINE_IN).'
+                    ? ' Settings are applied based on the order type (DELIVERY).'
                     : ' Settings are applied based on the order type (DELIVERY, PICKUP, or DINE_IN).'
                   }
                 </p>

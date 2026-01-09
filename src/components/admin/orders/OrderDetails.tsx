@@ -24,7 +24,8 @@ import {
   Truck,
   Store,
   UtensilsCrossed,
-  Trash2
+  Trash2,
+  Receipt
 } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
@@ -94,6 +95,14 @@ interface Order {
   customerLatitude: number | null
   customerLongitude: number | null
   whatsappMessageId: string | null
+  postalPricingId: string | null
+  postalPricing: {
+    name: string
+    nameAl: string | null
+    deliveryTime: string | null
+    deliveryTimeAl: string | null
+    price: number
+  } | null
   createdAt: string
   updatedAt: string
 }
@@ -588,11 +597,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
     // Get WhatsApp message translations
     const whatsappLabels = getWhatsAppLabels(language)
-    const statusMessages = getWhatsAppStatusMessages(language)
+    const statusMessages = getWhatsAppStatusMessages(language, business?.businessType)
 
     // Use statusOverride if provided (for when status was just updated), otherwise use current order status
     const currentStatus = statusOverride || order.status || 'PENDING'
-    const statusLabel = getStatusLabel(currentStatus, language)
+    const statusLabel = getStatusLabel(currentStatus, language, business?.businessType)
     
     let message = `${whatsappLabels.hello} ${order.customer.name}!\n\n`
     message += `${whatsappLabels.orderStatusUpdate} #${order.orderNumber} ${whatsappLabels.hasBeenUpdatedTo}: *${statusLabel}*\n\n`
@@ -740,11 +749,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   }
 
   // Helper function to get WhatsApp status messages
-  const getWhatsAppStatusMessages = (language: string = 'en'): Record<string, string> => {
-    const messages: Record<string, Record<string, string>> = {
+  const getWhatsAppStatusMessages = (language: string = 'en', businessType?: string): Record<string, string> => {
+    const isRetail = businessType === 'RETAIL'
+    const baseMessages: Record<string, Record<string, string>> = {
       en: {
         CONFIRMED: '✅ Your order has been confirmed and we\'re preparing it for you!',
         PREPARING: '👨‍🍳 Your order is being prepared with care!',
+        PREPARING_RETAIL: '📦 Your order is being prepared for shipment!',
         READY_PICKUP: '🎉 Your order is ready for pickup!',
         READY_DINE_IN: '🎉 Your table is ready!',
         READY_DELIVERY: '🎉 Your order is ready!',
@@ -757,6 +768,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       es: {
         CONFIRMED: '✅ ¡Tu pedido ha sido confirmado y lo estamos preparando para ti!',
         PREPARING: '👨‍🍳 ¡Tu pedido se está preparando con cuidado!',
+        PREPARING_RETAIL: '📦 ¡Tu pedido se está preparando para el envío!',
         READY_PICKUP: '🎉 ¡Tu pedido está listo para recoger!',
         READY_DINE_IN: '🎉 ¡Tu mesa está lista!',
         READY_DELIVERY: '🎉 ¡Tu pedido está listo!',
@@ -769,6 +781,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       sq: {
         CONFIRMED: '✅ Porosia juaj është konfirmuar dhe po e përgatisim për ju!',
         PREPARING: '👨‍🍳 Porosia juaj po përgatitet me kujdes!',
+        PREPARING_RETAIL: '📦 Porosia juaj po përgatitet për dërgim!',
         READY_PICKUP: '🎉 Porosia juaj është gati për marrje!',
         READY_DINE_IN: '🎉 Tavolina juaj është gati!',
         READY_DELIVERY: '🎉 Porosia juaj është gati!',
@@ -779,16 +792,20 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         DELIVERED: '✨ Porosia juaj është dorëzuar. Shijoni!'
       }
     }
-    return messages[language] || messages.en
+    const messages = baseMessages[language] || baseMessages.en
+    return {
+      ...messages,
+      PREPARING: isRetail ? messages.PREPARING_RETAIL : messages.PREPARING
+    }
   }
 
   // Helper function to get status label
-  const getStatusLabel = (status: string, language: string = 'en'): string => {
+  const getStatusLabel = (status: string, language: string = 'en', businessType?: string): string => {
     const statusLabels: Record<string, Record<string, string>> = {
       en: {
         PENDING: 'Pending',
         CONFIRMED: 'Confirmed',
-        PREPARING: 'Preparing',
+        PREPARING: businessType === 'RETAIL' ? 'Preparing Shipment' : 'Preparing',
         READY: 'Ready',
         PICKED_UP: 'Picked Up',
         OUT_FOR_DELIVERY: 'Out for Delivery',
@@ -799,7 +816,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       es: {
         PENDING: 'Pendiente',
         CONFIRMED: 'Confirmado',
-        PREPARING: 'Preparando',
+        PREPARING: businessType === 'RETAIL' ? 'Preparando Envío' : 'Preparando',
         READY: 'Listo',
         PICKED_UP: 'Recogido',
         OUT_FOR_DELIVERY: 'En Camino',
@@ -810,7 +827,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       sq: {
         PENDING: 'Në Pritje',
         CONFIRMED: 'E Konfirmuar',
-        PREPARING: 'Duke U Përgatitur',
+        PREPARING: businessType === 'RETAIL' ? 'Duke U Përgatitur Dërgimin' : 'Duke U Përgatitur',
         READY: 'Gati',
         PICKED_UP: 'Marrë',
         OUT_FOR_DELIVERY: 'Në Rrugë',
@@ -954,7 +971,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Order #{order.orderNumber}</h1>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border w-fit mt-2 sm:mt-0 ${getStatusColor(order.status)}`}>
-                {order.status.replace(/_/g, ' ')}
+                {getStatusLabel(order.status, adminLanguage, business?.businessType)}
               </span>
             </div>
             <p className="text-gray-600 text-sm">Order details and management</p>
@@ -1012,7 +1029,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     >
       {getValidStatusOptions(order.status, order.type).map(status => (
         <option key={status} value={status}>
-          {status.replace(/_/g, ' ')}
+          {getStatusLabel(status, business?.language || 'en', business?.businessType)}
         </option>
       ))}
     </select>
@@ -1123,7 +1140,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-emerald-100 rounded-lg">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+              <Receipt className="w-5 h-5 text-emerald-600" />
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Amount</p>
@@ -1214,12 +1231,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 Delivery Information
               </h3>
               
-              <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                 <div className="space-y-2 text-sm">
                   <div className="font-medium text-gray-900">
                     {order.deliveryAddress}
                   </div>
-                  {order.customerLatitude && order.customerLongitude && (
+                  {order.customerLatitude && order.customerLongitude && business?.businessType !== 'RETAIL' && (
                     <div>
                       <a
                         href={`https://maps.google.com/?q=${order.customerLatitude},${order.customerLongitude}`}
@@ -1232,6 +1249,41 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     </div>
                   )}
                 </div>
+                
+                {/* Delivery Method (for RETAIL businesses) */}
+                {business?.businessType === 'RETAIL' && order.postalPricing && (
+                  <div className="border-t border-gray-200 pt-3 mt-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                          Delivery Method
+                        </p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {business?.language === 'sq' && order.postalPricing.nameAl 
+                            ? order.postalPricing.nameAl 
+                            : order.postalPricing.name}
+                        </p>
+                        {business?.language === 'sq' && order.postalPricing.deliveryTimeAl ? (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {order.postalPricing.deliveryTimeAl}
+                          </p>
+                        ) : order.postalPricing.deliveryTime ? (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {order.postalPricing.deliveryTime}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                          Fee
+                        </p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {formatCurrency(order.postalPricing.price)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -69,6 +69,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
   })
   const [currency, setCurrency] = useState('USD')
   const [timeFormat, setTimeFormat] = useState('24')
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   const [showFilters, setShowFilters] = useState(false)
 
   // Debounce search query for user typing
@@ -101,6 +102,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
         setPagination(data.pagination)
         setCurrency(data.currency || 'USD')
         setTimeFormat(data.timeFormat || '24')
+        setBusinessType(data.businessType || 'RESTAURANT')
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -139,6 +141,13 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
     // Clear URL params
     const newUrl = window.location.pathname
     window.history.replaceState({}, '', newUrl)
+  }
+
+  const formatStatusLabel = (status: string): string => {
+    if (status === 'PREPARING' && businessType === 'RETAIL') {
+      return 'Preparing Shipment'
+    }
+    return status.replace('_', ' ')
   }
 
   const getStatusColor = (status: string) => {
@@ -334,7 +343,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                   <option value="all">All Statuses</option>
                   <option value="PENDING">Pending</option>
                   <option value="CONFIRMED">Confirmed</option>
-                  <option value="PREPARING">Preparing</option>
+                  <option value="PREPARING">{businessType === 'RETAIL' ? 'Preparing Shipment' : 'Preparing'}</option>
                   <option value="READY">Ready</option>
                   <option value="PICKED_UP">Picked Up</option>
                   <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
@@ -510,7 +519,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                       <td className="px-6 py-4 text-center">
                         <div className="space-y-1">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                            {order.status.replace('_', ' ')}
+                            {formatStatusLabel(order.status)}
                           </span>
                         </div>
                       </td>

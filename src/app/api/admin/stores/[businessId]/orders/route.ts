@@ -184,7 +184,7 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { currency: true, timeFormat: true }
+      select: { currency: true, timeFormat: true, businessType: true }
     })
 
     return NextResponse.json({
@@ -235,7 +235,8 @@ export async function GET(
         pages: Math.ceil(total / limit)
       },
       currency: business?.currency || 'USD',
-      timeFormat: business?.timeFormat || '24'
+      timeFormat: business?.timeFormat || '24',
+      businessType: business?.businessType || 'RESTAURANT'
     })
 
   } catch (error) {
