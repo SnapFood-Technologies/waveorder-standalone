@@ -84,6 +84,34 @@ const COUNTRY_CONFIGS = {
       return clean
     }
   },
+  XK: { // Kosovo - 8 digits after +383
+    prefix: '+383',
+    placeholder: '44 123 456',
+    pattern: /^(\+383|383)0?[4-9]\d{7}$/,
+    flag: '🇽🇰',
+    name: 'Kosovo',
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3')
+      }
+      return clean
+    }
+  },
+  MK: { // North Macedonia - 8 digits after +389
+    prefix: '+389',
+    placeholder: '70 123 456',
+    pattern: /^(\+389|389)0?[2-7]\d{7}$/,
+    flag: '🇲🇰',
+    name: 'North Macedonia',
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3')
+      }
+      return clean
+    }
+  },
   DEFAULT: {
     prefix: '+1',
     placeholder: 'Enter phone number',
@@ -121,6 +149,16 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
       return 'ES'
     }
     
+    // Kosovo boundaries: approximately 42.2-43.3°N, 20.0-21.8°E
+    if (lat >= 42.2 && lat <= 43.3 && lng >= 20.0 && lng <= 21.8) {
+      return 'XK'
+    }
+    
+    // North Macedonia boundaries: approximately 40.8-42.4°N, 20.4-23.0°E
+    if (lat >= 40.8 && lat <= 42.4 && lng >= 20.4 && lng <= 23.0) {
+      return 'MK'
+    }
+    
     // United States boundaries: approximately 24-71°N, -180 to -66°W
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
       return 'US'
@@ -132,6 +170,8 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
   if (storeData?.whatsappNumber?.startsWith('+30')) return 'GR'
   if (storeData?.whatsappNumber?.startsWith('+39')) return 'IT'
   if (storeData?.whatsappNumber?.startsWith('+34')) return 'ES'
+  if (storeData?.whatsappNumber?.startsWith('+383')) return 'XK'
+  if (storeData?.whatsappNumber?.startsWith('+389')) return 'MK'
   if (storeData?.whatsappNumber?.startsWith('+1')) return 'US'
   
   // TERTIARY: Check business indicators
@@ -150,6 +190,8 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('+30')) return 'GR'
   if (phoneValue.startsWith('+39')) return 'IT'
   if (phoneValue.startsWith('+34')) return 'ES'
+  if (phoneValue.startsWith('+383')) return 'XK'
+  if (phoneValue.startsWith('+389')) return 'MK'
   if (phoneValue.startsWith('+1')) return 'US'
   
   // If no + but starts with country code
@@ -157,6 +199,8 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('30')) return 'GR'
   if (phoneValue.startsWith('39')) return 'IT'
   if (phoneValue.startsWith('34')) return 'ES'
+  if (phoneValue.startsWith('383')) return 'XK'
+  if (phoneValue.startsWith('389')) return 'MK'
   if (phoneValue.startsWith('1')) return 'US'
   
   return 'DEFAULT'
@@ -274,6 +318,10 @@ export function PhoneInput({
         return 'Format: +39 34 3123 4567'
       case 'ES':
         return 'Format: +34 612 345 678'
+      case 'XK':
+        return 'Format: +383 44 123 456'
+      case 'MK':
+        return 'Format: +389 70 123 456'
       case 'US':
         return 'Format: +1 (555) 123-4567'
       default:

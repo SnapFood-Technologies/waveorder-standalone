@@ -577,7 +577,7 @@ function AddressAutocomplete({
   
 
 // Detect country from user's location and business data
-function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'DEFAULT' {
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'DEFAULT' {
     // TESTING OVERRIDE: Check user's location first for Greece testing
     if (typeof window !== 'undefined') {
       const browserLanguage = navigator.language.toLowerCase()
@@ -620,6 +620,16 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         return 'ES'
       }
       
+      // Kosovo boundaries: approximately 42.2-43.3°N, 20.0-21.8°E
+      if (lat >= 42.2 && lat <= 43.3 && lng >= 20.0 && lng <= 21.8) {
+        return 'XK'
+      }
+      
+      // North Macedonia boundaries: approximately 40.8-42.4°N, 20.4-23.0°E
+      if (lat >= 40.8 && lat <= 42.4 && lng >= 20.4 && lng <= 23.0) {
+        return 'MK'
+      }
+      
       // United States boundaries: approximately 24-71°N, -180 to -66°W
       if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
         return 'US'
@@ -631,6 +641,8 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.whatsappNumber?.startsWith('+30')) return 'GR'
     if (storeData.whatsappNumber?.startsWith('+39')) return 'IT'
     if (storeData.whatsappNumber?.startsWith('+34')) return 'ES'
+    if (storeData.whatsappNumber?.startsWith('+383')) return 'XK'
+    if (storeData.whatsappNumber?.startsWith('+389')) return 'MK'
     if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
     
     // TERTIARY: Check other user location indicators
@@ -651,6 +663,8 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         if (timezone === 'Europe/Tirane') return 'AL'
         if (timezone === 'Europe/Rome') return 'IT'
         if (timezone === 'Europe/Madrid') return 'ES'
+        if (timezone === 'Europe/Belgrade' || timezone === 'Europe/Pristina') return 'XK'
+        if (timezone === 'Europe/Skopje') return 'MK'
       } catch (error) {
         // Timezone detection failed
       }
@@ -1696,6 +1710,12 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       return cleanPhone.length >= 12
     } else if (cleanPhone.startsWith('+34')) {
       // Spain: +34 + 9 digits = 12 characters
+      return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+383')) {
+      // Kosovo: +383 + 8 digits = 12 characters
+      return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+389')) {
+      // North Macedonia: +389 + 8 digits = 12 characters
       return cleanPhone.length >= 12
     } else if (cleanPhone.startsWith('+1')) {
       // US: +1 + 10 digits = 12 characters

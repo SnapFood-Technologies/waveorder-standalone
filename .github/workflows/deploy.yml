@@ -109,6 +109,30 @@ jobs:
           yarn build
           echo "✅ Build completed successfully"
 
+      # 📦 UPDATE PRODUCTS FROM CSV
+      - name: 📦 Update Products from CSV
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Checking for products CSV file..."
+          CSV_FILE="products-export-2026-01-094.csv"
+          BUSINESS_ID="${{ secrets.PRODUCTS_BUSINESS_ID }}"
+          
+          if [ -f "$CSV_FILE" ] && [ -n "$BUSINESS_ID" ]; then
+            echo "📦 Running product update script..."
+            echo "CSV File: $CSV_FILE"
+            echo "Business ID: $BUSINESS_ID"
+            npx tsx scripts/update-products.ts "$CSV_FILE" "$BUSINESS_ID"
+            echo "✅ Product update completed"
+          else
+            if [ ! -f "$CSV_FILE" ]; then
+              echo "⚠️ CSV file not found: $CSV_FILE (skipping product update)"
+            fi
+            if [ -z "$BUSINESS_ID" ]; then
+              echo "⚠️ PRODUCTS_BUSINESS_ID secret not set (skipping product update)"
+            fi
+          fi
+
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |

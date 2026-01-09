@@ -118,6 +118,36 @@ const COUNTRY_CONFIGS = {
       }
       return clean
     }
+  },
+  XK: {
+    prefix: '+383',
+    placeholder: '44 123 456',
+    pattern: /^(\+383|383)0?[4-9]\d{7}$/,
+    flag: '🇽🇰',
+    name: 'Kosovo',
+    allowedAddressCountries: ['xk'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3')
+      }
+      return clean
+    }
+  },
+  MK: {
+    prefix: '+389',
+    placeholder: '70 123 456',
+    pattern: /^(\+389|389)0?[2-7]\d{7}$/,
+    flag: '🇲🇰',
+    name: 'North Macedonia',
+    allowedAddressCountries: ['mk'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3')
+      }
+      return clean
+    }
   }
 }
 

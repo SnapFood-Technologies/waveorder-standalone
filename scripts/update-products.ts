@@ -66,6 +66,43 @@ function parseCSV(csvPath: string): CSVRow[] {
   return result.data
 }
 
+// Get or create category
+async function getOrCreateCategory(
+  businessId: string,
+  categoryName: string
+): Promise<string> {
+  if (!categoryName || !categoryName.trim()) {
+    throw new Error('Category name is required')
+  }
+
+  // Handle categories that might be separated by semicolons (e.g., "Cookware" or "Utensils & Tools; Cookware")
+  const categoryNames = categoryName.split(';').map(c => c.trim()).filter(c => c)
+  const primaryCategory = categoryNames[0] // Use first category
+
+  // Find existing category
+  let category = await prisma.category.findFirst({
+    where: {
+      businessId,
+      name: primaryCategory
+    }
+  })
+
+  if (!category) {
+    // Create new category
+    category = await prisma.category.create({
+      data: {
+        name: primaryCategory,
+        businessId,
+        isActive: true,
+        sortOrder: 0
+      }
+    })
+    console.log(`✓ Created category: ${primaryCategory}`)
+  }
+
+  return category.id
+}
+
 async function updateProducts(
   csvPath: string,
   businessId: string
@@ -73,12 +110,11 @@ async function updateProducts(
   console.log(`Reading CSV from: ${csvPath}`)
   const rows = parseCSV(csvPath)
 
-  console.log(`\nFound ${rows.length} products to update\n`)
+  console.log(`\nFound ${rows.length} products to process (update existing or create new)\n`)
 
-  let successCount = 0
-  let notFoundCount = 0
+  let updatedCount = 0
+  let createdCount = 0
   let errorCount = 0
-  const notFound: string[] = []
   const errors: string[] = []
 
   for (let i = 0; i < rows.length; i++) {
@@ -104,12 +140,6 @@ async function updateProducts(
           sku: row.SKU.trim()
         }
       })
-
-      if (!existingProduct) {
-        notFoundCount++
-        notFound.push(`${row.Title} (SKU: ${row.SKU.trim()})`)
-        continue
-      }
 
       // Parse price (remove any non-numeric characters except decimal point)
       const price = parseFloat(row['Price (ALL)'].replace(/[^0-9.]/g, ''))
@@ -147,25 +177,82 @@ async function updateProducts(
       // Parse Albanian product name
       const nameAl = row['Title (AL)']?.trim() || null
 
-      // Update product
-      const updatedProduct = await prisma.product.update({
-        where: { id: existingProduct.id },
-        data: {
-          name: row.Title.trim(),
-          nameAl: nameAl || existingProduct.nameAl, // Keep existing if not provided
-          description: description || existingProduct.description,
-          descriptionAl: descriptionAl || existingProduct.descriptionAl, // Keep existing if not provided
-          price: finalPrice,
-          originalPrice: originalPrice,
-        }
-      })
+      if (existingProduct) {
+        // UPDATE existing product
+        const updatedProduct = await prisma.product.update({
+          where: { id: existingProduct.id },
+          data: {
+            name: row.Title.trim(),
+            nameAl: nameAl || existingProduct.nameAl, // Keep existing if not provided
+            description: description || existingProduct.description,
+            descriptionAl: descriptionAl || existingProduct.descriptionAl, // Keep existing if not provided
+            price: finalPrice,
+            originalPrice: originalPrice,
+          }
+        })
 
-      successCount++
-      console.log(`✓ [${i + 1}/${rows.length}] Updated: ${updatedProduct.name} (SKU: ${row.SKU.trim()}) - Price: ${finalPrice}${originalPrice ? ` (was ${price})` : ''}`)
+        updatedCount++
+        console.log(`✓ [${i + 1}/${rows.length}] Updated: ${updatedProduct.name} (SKU: ${row.SKU.trim()}) - Price: ${finalPrice}${originalPrice ? ` (was ${price})` : ''}`)
+      } else {
+        // CREATE new product
+        // Get or create category
+        const categoryId = await getOrCreateCategory(businessId, row.Categories || 'Uncategorized')
+
+        // Parse stock
+        const trackInventory = row['Enable Stock']?.toLowerCase() === 'yes'
+        const stock = trackInventory ? parseInt(row['Stock Quantity'] || '0') : 0
+        const lowStockAlert = row['Low Stock Threshold'] ? parseInt(row['Low Stock Threshold']) : null
+
+        // Parse images
+        const images: string[] = []
+        if (row['Image Path'] && row['Image Path'].trim()) {
+          images.push(row['Image Path'].trim())
+        }
+
+        // Create product
+        const newProduct = await prisma.product.create({
+          data: {
+            name: row.Title.trim(),
+            nameAl: nameAl,
+            description: description,
+            descriptionAl: descriptionAl,
+            images: images,
+            price: finalPrice,
+            originalPrice: originalPrice,
+            sku: row.SKU.trim(),
+            stock: stock,
+            trackInventory: trackInventory,
+            lowStockAlert: lowStockAlert,
+            enableLowStockNotification: row['Enable Low Stock Alert']?.toLowerCase() === 'yes',
+            isActive: row['Product Status'] === '1',
+            featured: row.Featured?.toLowerCase() === 'yes',
+            businessId,
+            categoryId,
+          }
+        })
+
+        // Create inventory activity if stock > 0
+        if (trackInventory && stock > 0) {
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: newProduct.id,
+              businessId,
+              type: 'RESTOCK',
+              quantity: stock,
+              oldStock: 0,
+              newStock: stock,
+              reason: 'Initial stock from CSV update'
+            }
+          })
+        }
+
+        createdCount++
+        console.log(`✓ [${i + 1}/${rows.length}] Created: ${newProduct.name} (SKU: ${row.SKU.trim()}) - Price: ${finalPrice}`)
+      }
 
     } catch (error) {
       errorCount++
-      const errorMsg = `✗ [${i + 1}/${rows.length}] Error updating "${row.Title || 'Unknown'}": ${error instanceof Error ? error.message : String(error)}`
+      const errorMsg = `✗ [${i + 1}/${rows.length}] Error processing "${row.Title || 'Unknown'}": ${error instanceof Error ? error.message : String(error)}`
       errors.push(errorMsg)
       console.error(errorMsg)
     }
@@ -173,14 +260,9 @@ async function updateProducts(
 
   console.log(`\n${'='.repeat(50)}`)
   console.log(`Update Complete!`)
-  console.log(`✓ Successfully Updated: ${successCount}`)
-  console.log(`⚠ Not Found (no matching SKU): ${notFoundCount}`)
-  console.log(`✗ Errors: ${errors.length}`)
-  
-  if (notFound.length > 0) {
-    console.log(`\nProducts Not Found (will need to be created manually):`)
-    notFound.forEach(item => console.log(`  - ${item}`))
-  }
+  console.log(`✓ Successfully Updated: ${updatedCount}`)
+  console.log(`✓ Successfully Created: ${createdCount}`)
+  console.log(`✗ Errors: ${errorCount}`)
   
   if (errors.length > 0) {
     console.log(`\nErrors:`)
