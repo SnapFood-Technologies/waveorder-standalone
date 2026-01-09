@@ -494,45 +494,45 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                     />
                   </div>
                 </div>
-                
-                {/* Retail-specific custom texts */}
-                {business.businessType === 'RETAIL' && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h4 className="font-medium text-gray-900 mb-3">Custom Display Texts (Retail Only)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Custom Delivery Time Text
-                          <span className="text-xs text-gray-500 ml-1">(overrides "Estimated Delivery Time" in storefront)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={config.deliveryMethods.deliveryTimeText || ''}
-                          onChange={(e) => updateDeliveryMethods({ 
-                            deliveryTimeText: e.target.value 
-                          })}
-                          placeholder="e.g., 3-4 Hours"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Custom Free Delivery Text
-                          <span className="text-xs text-gray-500 ml-1">(overrides "Free Delivery" in storefront)</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={config.deliveryMethods.freeDeliveryText || ''}
-                          onChange={(e) => updateDeliveryMethods({ 
-                            freeDeliveryText: e.target.value 
-                          })}
-                          placeholder="e.g., Transport Falas"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                        />
-                      </div>
-                    </div>
+              </div>
+            )}
+
+            {/* Retail-specific custom texts - Always show for RETAIL when delivery is enabled */}
+            {config.deliveryMethods.delivery && business.businessType === 'RETAIL' && (
+              <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Custom Display Texts (Retail Only)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Custom Delivery Time Text
+                      <span className="text-xs text-gray-500 ml-1">(overrides "Estimated Delivery Time" in storefront)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={config.deliveryMethods.deliveryTimeText || ''}
+                      onChange={(e) => updateDeliveryMethods({ 
+                        deliveryTimeText: e.target.value 
+                      })}
+                      placeholder="e.g., 3-4 Hours"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    />
                   </div>
-                )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Custom Free Delivery Text
+                      <span className="text-xs text-gray-500 ml-1">(overrides "Free Delivery" in storefront)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={config.deliveryMethods.freeDeliveryText || ''}
+                      onChange={(e) => updateDeliveryMethods({ 
+                        freeDeliveryText: e.target.value 
+                      })}
+                      placeholder="e.g., Transport Falas"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+                </div>
               </div>
             )}
 
