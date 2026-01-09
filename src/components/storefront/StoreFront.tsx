@@ -1450,7 +1450,6 @@ interface StoreData {
   mobileCartStyle?: 'bar' | 'badge'
   cartBadgeColor?: string      // NEW
   featuredBadgeColor?: string  // NEW
-  businessType?: string         // Business type (RETAIL, RESTAURANT, etc.)
 }
 
 interface Category {
