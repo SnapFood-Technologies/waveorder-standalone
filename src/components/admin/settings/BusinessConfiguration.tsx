@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { DeliveryZonesManagement } from '../delivery/DeliveryZonesManagement'
 import { BusinessHoursManagement } from './BusinessHoursManagement'
+import { PostalsManagement } from '../postals/PostalsManagement'
+import { PostalPricingManagement } from '../postals/PostalPricingManagement'
 
 interface BusinessConfigurationProps {
   businessId: string
@@ -306,7 +308,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
         { id: 'delivery', name: 'Delivery Methods', icon: Truck },
         { id: 'payment', name: 'Payment Methods', icon: CreditCard },
         { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
-        // Delivery Zones not shown for RETAIL
+        { id: 'postals', name: 'Postal Services', icon: MapPin },
+        { id: 'pricing', name: 'Postal Pricing', icon: Settings },
         { id: 'hours', name: 'Business Hours', icon: Calendar }
       ]
     : [
@@ -425,22 +428,25 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                 <p className="text-sm text-gray-600">Orders delivered to customer location</p>
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Pickup</h4>
-                  <input
-                    type="checkbox"
-                    checked={config.deliveryMethods.pickup}
-                    onChange={(e) => updateDeliveryMethods({ pickup: e.target.checked })}
-                    className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                  />
+              {/* Hide Pickup for RETAIL businesses */}
+              {business.businessType !== 'RETAIL' && (
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900">Pickup</h4>
+                    <input
+                      type="checkbox"
+                      checked={config.deliveryMethods.pickup}
+                      onChange={(e) => updateDeliveryMethods({ pickup: e.target.checked })}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600">Customers collect orders from store</p>
                 </div>
-                <p className="text-sm text-gray-600">Customers collect orders from store</p>
-              </div>
+              )}
             </div>
 
-            {/* Delivery Settings */}
-            {config.deliveryMethods.delivery && (
+            {/* Delivery Settings - Hide for RETAIL businesses */}
+            {config.deliveryMethods.delivery && business.businessType !== 'RETAIL' && (
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900">Delivery Settings</h4>
                 
@@ -530,8 +536,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               </div>
             )}
 
-            {/* Pickup Settings */}
-            {config.deliveryMethods.pickup && (
+            {/* Pickup Settings - Hide for RETAIL businesses */}
+            {config.deliveryMethods.pickup && business.businessType !== 'RETAIL' && (
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-medium text-gray-900">Pickup Settings</h4>
                 
@@ -721,6 +727,14 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
         {activeSection === 'zones' && business.businessType !== 'RETAIL' && (
           <DeliveryZonesManagement businessId={businessId} />
+        )}
+
+        {activeSection === 'postals' && business.businessType === 'RETAIL' && (
+          <PostalsManagement businessId={businessId} />
+        )}
+
+        {activeSection === 'pricing' && business.businessType === 'RETAIL' && (
+          <PostalPricingManagement businessId={businessId} />
         )}
 
         {activeSection === 'hours' && (
