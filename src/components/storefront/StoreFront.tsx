@@ -2461,7 +2461,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
     <input
       type="text"
-      placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (translations.search || "Search for dishes, ingredients...")}
+      placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (storeData.businessType === 'RETAIL' ? (translations.searchProducts || "Search products") : (translations.search || "Search for dishes, ingredients..."))}
       value={searchTerm}
       onChange={(e) => {
         setSearchTerm(e.target.value)

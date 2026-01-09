@@ -3,6 +3,7 @@
 export interface StorefrontTranslations {
     // Navigation & Search
     search: string
+    searchProducts: string
     allCategories: string
     all: string
     
@@ -196,6 +197,7 @@ close: string
   const englishTranslations: StorefrontTranslations = {
     // Navigation & Search
     search: "Search menu items...",
+    searchProducts: "Search products",
     allCategories: "All Categories",
     all: "All",
     
@@ -392,6 +394,7 @@ canBeAdded: "more can be added to cart",
   const albanianTranslations: StorefrontTranslations = {
     // Navigation & Search
     search: "Kërko në menu...",
+    searchProducts: "Kerko produkte",
     allCategories: "Të gjitha kategoritë",
     all: "Të gjitha",
     
@@ -583,6 +586,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   const spanishTranslations: StorefrontTranslations = {
     // Navigation & Search
     search: "Buscar en el menú...",
+    searchProducts: "Buscar productos",
     allCategories: "Todas las categorías",
     all: "Todas",
     
