@@ -201,6 +201,8 @@ model Business {
   featuredBadgeColor String @default("#EF4444")
 
   deliveryZones DeliveryZone[]
+  postals       Postal[]
+  postalPricing PostalPricing[]
 
   // Settings
   currency                           String  @default("USD")
@@ -571,6 +573,55 @@ model DeliveryZone {
   @@index([businessId])
 }
 
+model Postal {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId   String   @db.ObjectId
+  name         String   // e.g., "Posta Shqiptare"
+  nameAl       String?   // Albanian name
+  type         String   @default("normal") // "normal" or "fast"
+  description  String?
+  descriptionAl String?
+  deliveryTime String?  // e.g., "3-5 days"
+  deliveryTimeAl String? // Albanian delivery time
+  logo         String?  // Logo path
+  isActive     Boolean  @default(true)
+  
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pricing      PostalPricing[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([businessId, name])
+  @@index([businessId, isActive])
+}
+
+model PostalPricing {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId      String    @db.ObjectId
+  postalId        String    @db.ObjectId
+  cityName        String    // City name (e.g., "Tirana", "Durrës")
+  type            String    @default("normal") // "normal" or "fast"
+  price            Float
+  priceWithoutTax Float?
+  minOrderValue   Float?    // Minimum order for this pricing
+  maxOrderValue   Float?    // Maximum order for this pricing
+  deliveryTime    String?   // Override postal default
+  deliveryTimeAl  String?   // Albanian override
+  notes           String?
+  deletedAt       DateTime?
+  
+  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  postal          Postal    @relation(fields: [postalId], references: [id], onDelete: Cascade)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([businessId, postalId, cityName, type])
+  @@index([businessId, cityName])
+  @@index([postalId])
+}
+
 model Order {
   id          String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber String      @unique
@@ -599,6 +650,10 @@ model Order {
   deliveryAddress String?
   deliveryTime    DateTime?
   notes           String?
+  
+  // Postal service (for RETAIL businesses)
+  postalPricingId String?        @db.ObjectId
+  postalPricing   PostalPricing? @relation(fields: [postalPricingId], references: [id])
 
   createdByAdmin Boolean @default(false)
   createdBy      String? @db.ObjectId

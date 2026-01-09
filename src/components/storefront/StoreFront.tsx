@@ -1450,6 +1450,7 @@ interface StoreData {
   mobileCartStyle?: 'bar' | 'badge'
   cartBadgeColor?: string      // NEW
   featuredBadgeColor?: string  // NEW
+  businessType?: string         // Business type (RETAIL, RESTAURANT, etc.)
 }
 
 interface Category {
@@ -1530,6 +1531,8 @@ interface CustomerInfo {
   specialInstructions: string
   latitude?: number
   longitude?: number
+  postalPricingId?: string  // Selected postal pricing ID (for RETAIL)
+  cityName?: string         // City name for postal pricing lookup
 }
 
 const getCurrencySymbol = (currency: string) => {
@@ -1634,8 +1637,15 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     address: '',
     address2: '',
     deliveryTime: 'asap',
-    specialInstructions: ''
+    specialInstructions: '',
+    postalPricingId: undefined,
+    cityName: undefined
   })
+  
+  // Postal pricing state (for RETAIL businesses)
+  const [postalPricingOptions, setPostalPricingOptions] = useState<any[]>([])
+  const [loadingPostalPricing, setLoadingPostalPricing] = useState(false)
+  const [selectedPostalPricing, setSelectedPostalPricing] = useState<any | null>(null)
   const [isOrderLoading, setIsOrderLoading] = useState(false)
 
   // Save cart to localStorage whenever it changes
@@ -1746,6 +1756,36 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   }
 }
 
+  // Fetch postal pricing for RETAIL businesses when city is available
+  const fetchPostalPricing = async (cityName: string) => {
+    if (storeData.businessType !== 'RETAIL' || !cityName) return
+    
+    setLoadingPostalPricing(true)
+    try {
+      const response = await fetch(`/api/storefront/${storeData.slug}/postal-pricing?cityName=${encodeURIComponent(cityName)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPostalPricingOptions(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching postal pricing:', error)
+    } finally {
+      setLoadingPostalPricing(false)
+    }
+  }
+
+  // Extract city from address for RETAIL businesses
+  const extractCityFromAddress = (address: string): string | null => {
+    if (!address) return null
+    // Try to extract city from address (simple approach - can be enhanced)
+    const parts = address.split(',').map(p => p.trim())
+    // City is usually in the second or third part
+    if (parts.length >= 2) {
+      return parts[1] || parts[0] || null
+    }
+    return null
+  }
+
   // Update the handleLocationChange function:
   const handleLocationChange = async (lat: number, lng: number, address: string) => {
     setCustomerInfo(prev => ({ 
@@ -1757,6 +1797,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
     // Clear any previous delivery errors
     setDeliveryError(null)
+
+    // For RETAIL businesses, fetch postal pricing when address is set
+    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery') {
+      const cityName = extractCityFromAddress(address)
+      if (cityName) {
+        setCustomerInfo(prev => ({ ...prev, cityName }))
+        await fetchPostalPricing(cityName)
+      }
+    }
 
     if (deliveryType === 'delivery') {
       try {
@@ -2136,6 +2185,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         specialInstructions: customerInfo.specialInstructions,
         latitude: customerInfo.latitude,
         longitude: customerInfo.longitude,
+        postalPricingId: customerInfo.postalPricingId, // For RETAIL businesses
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -2327,33 +2377,59 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 </div>
               )}
               
-              {/* Time and Fee - Dynamic based on delivery type */}
-              <div className="flex items-center gap-4 sm:gap-5 text-gray-500">
-                {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
-                    <span className="text-md">
-                      {deliveryType === 'delivery' 
-                        ? (storeData.deliveryTimeText || storeData.estimatedDeliveryTime)  // Use custom text if available
-                        : storeData.estimatedPickupTime || '15-20 min'}
-                    </span>
-                  </div>
-                )}
-                {deliveryType === 'delivery' ? (
-              <div className="flex items-center gap-1">
-                <Package className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
-                <span className="text-md">
-                  {calculatedDeliveryFee > 0 
-                    ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
-                    : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery')}  {/* Use custom text if available */}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <Store className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
-                <span className="text-md">{translations.pickupAvailable || 'Pickup available'}</span>
-              </div>
-            )}
+              {/* For RETAIL: Show postal methods, for others: Show time and fee */}
+              {storeData.businessType === 'RETAIL' && deliveryType === 'delivery' ? (
+                <div className="space-y-2">
+                  {selectedPostalPricing ? (
+                    <div className="flex items-center gap-2 text-gray-700">
+                      {selectedPostalPricing.logo && (
+                        <img src={selectedPostalPricing.logo} alt={selectedPostalPricing.postal_name} className="w-6 h-6 object-contain" />
+                      )}
+                      <span className="text-sm font-medium">{selectedPostalPricing.postal_name}</span>
+                      <span className="text-sm text-gray-500">
+                        {selectedPostalPricing.delivery_time_al || selectedPostalPricing.delivery_time || ''}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {currencySymbol}{selectedPostalPricing.price.toFixed(2)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500">
+                      {customerInfo.cityName 
+                        ? (loadingPostalPricing ? 'Loading options...' : 'Select delivery method below')
+                        : 'Enter address to see delivery options'}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-4 sm:gap-5 text-gray-500">
+                  {(deliveryType === 'delivery' ? storeData.estimatedDeliveryTime : storeData.estimatedPickupTime) && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                      <span className="text-md">
+                        {deliveryType === 'delivery' 
+                          ? (storeData.deliveryTimeText || storeData.estimatedDeliveryTime)  // Use custom text if available
+                          : storeData.estimatedPickupTime || '15-20 min'}
+                      </span>
+                    </div>
+                  )}
+                  {deliveryType === 'delivery' ? (
+                    <div className="flex items-center gap-1">
+                      <Package className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                      <span className="text-md">
+                        {calculatedDeliveryFee > 0 
+                          ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
+                          : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery')}  {/* Use custom text if available */}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <Store className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                      <span className="text-md">{translations.pickupAvailable || 'Pickup available'}</span>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
               </div>
             </div>
@@ -3841,6 +3917,62 @@ function OrderPanel({
                   placeholder={translations.apartment || 'Apartment, suite, etc.'}
                 />
               </div>
+
+              {/* Postal Method Selection for RETAIL businesses */}
+              {storeData.businessType === 'RETAIL' && customerInfo.cityName && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {translations.deliveryMethod || 'Delivery Method'} *
+                  </label>
+                  {loadingPostalPricing ? (
+                    <div className="text-sm text-gray-500 py-3">Loading delivery options...</div>
+                  ) : postalPricingOptions.length > 0 ? (
+                    <div className="space-y-2">
+                      {postalPricingOptions.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPostalPricing(option)
+                            setCalculatedDeliveryFee(option.price)
+                            setCustomerInfo(prev => ({ ...prev, postalPricingId: option.id }))
+                          }}
+                          className={`w-full p-3 border-2 rounded-xl text-left transition-colors ${
+                            selectedPostalPricing?.id === option.id
+                              ? 'border-teal-500 bg-teal-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {option.logo && (
+                                <img src={option.logo} alt={option.postal_name} className="w-10 h-10 object-contain" />
+                              )}
+                              <div>
+                                <div className="font-medium text-gray-900">{option.postal_name}</div>
+                                {(option.delivery_time_al || option.delivery_time) && (
+                                  <div className="text-sm text-gray-600">
+                                    {option.delivery_time_al || option.delivery_time}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-semibold text-gray-900">
+                                {currencySymbol}{option.price.toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 py-3">
+                      No delivery options available for this city
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             /* Show store location for pickup */

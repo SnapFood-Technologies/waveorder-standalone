@@ -1082,8 +1082,40 @@ export async function POST(
     let finalDeliveryFee = deliveryFee || 0
     let deliveryZone = 'Default Zone'
     let deliveryDistance = 0
+    let postalPricingId: string | null = null
 
-    if (deliveryType === 'delivery' && latitude && longitude) {
+    // For RETAIL businesses, use postal pricing instead of distance-based calculation
+    if (business.businessType === 'RETAIL' && deliveryType === 'delivery' && orderData.postalPricingId) {
+      // Validate postal pricing exists and belongs to business
+      const postalPricing = await prisma.postalPricing.findFirst({
+        where: {
+          id: orderData.postalPricingId,
+          businessId: business.id,
+          deletedAt: null
+        }
+      })
+
+      if (!postalPricing) {
+        return NextResponse.json({ 
+          error: 'Invalid postal pricing selected'
+        }, { status: 400 })
+      }
+
+      // Use postal pricing fee
+      finalDeliveryFee = postalPricing.price
+      postalPricingId = postalPricing.id
+      deliveryZone = 'Postal Service'
+
+      // Validate that frontend fee matches postal pricing
+      if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
+        return NextResponse.json({ 
+          error: 'Delivery fee mismatch with selected postal service',
+          calculatedFee: finalDeliveryFee,
+          providedFee: deliveryFee
+        }, { status: 400 })
+      }
+    } else if (deliveryType === 'delivery' && latitude && longitude && business.businessType !== 'RETAIL') {
+      // For non-RETAIL businesses, use distance-based calculation
       try {
         const deliveryResult = await calculateDeliveryFee(business.id, latitude, longitude)
         finalDeliveryFee = deliveryResult.fee
@@ -1264,6 +1296,10 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         // Store coordinates for delivery orders
         customerLatitude: deliveryType === 'delivery' && latitude ? latitude : null,
         customerLongitude: deliveryType === 'delivery' && longitude ? longitude : null,
+        // Store postal pricing for RETAIL businesses
+        postalPricingId: postalPricingId || null,
+        // Store postal pricing for RETAIL businesses
+        postalPricingId: postalPricingId || null,
       }
     })
 

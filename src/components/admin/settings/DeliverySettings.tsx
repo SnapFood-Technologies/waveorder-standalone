@@ -1,9 +1,11 @@
 // src/components/admin/settings/DeliverySettings.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BusinessConfiguration } from './BusinessConfiguration'
 import { DeliveryZonesManagement } from '../delivery/DeliveryZonesManagement'
+import { PostalsManagement } from '../postals/PostalsManagement'
+import { PostalPricingManagement } from '../postals/PostalPricingManagement'
 
 interface DeliverySettingsProps {
   businessId: string
@@ -11,11 +13,31 @@ interface DeliverySettingsProps {
 
 export function DeliverySettings({ businessId }: DeliverySettingsProps) {
   const [activeSection, setActiveSection] = useState('methods')
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
 
-  const sections = [
-    { id: 'methods', name: 'Delivery Methods' },
-    { id: 'zones', name: 'Delivery Zones' }
-  ]
+  useEffect(() => {
+    // Fetch business type to determine if delivery zones should be shown
+    fetch(`/api/admin/stores/${businessId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.business?.businessType) {
+          setBusinessType(data.business.businessType)
+        }
+      })
+      .catch(err => console.error('Error fetching business type:', err))
+  }, [businessId])
+
+  // For RETAIL businesses, show postal services instead of delivery zones
+  const sections = businessType === 'RETAIL'
+    ? [
+        { id: 'methods', name: 'Delivery Methods' },
+        { id: 'postals', name: 'Postal Services' },
+        { id: 'pricing', name: 'Postal Pricing' }
+      ]
+    : [
+        { id: 'methods', name: 'Delivery Methods' },
+        { id: 'zones', name: 'Delivery Zones' }
+      ]
 
   return (
     <div className="p-6 space-y-6">
@@ -49,8 +71,14 @@ export function DeliverySettings({ businessId }: DeliverySettingsProps) {
         <BusinessConfiguration businessId={businessId} initialTab="delivery" />
       )}
 
-      {activeSection === 'zones' && (
+      {activeSection === 'zones' && businessType !== 'RETAIL' && (
         <DeliveryZonesManagement businessId={businessId} />
+      )}
+      {activeSection === 'postals' && businessType === 'RETAIL' && (
+        <PostalsManagement businessId={businessId} />
+      )}
+      {activeSection === 'pricing' && businessType === 'RETAIL' && (
+        <PostalPricingManagement businessId={businessId} />
       )}
     </div>
   )

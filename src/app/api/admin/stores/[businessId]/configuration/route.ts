@@ -28,6 +28,8 @@ export async function GET(
         deliveryRadius: true,
         estimatedDeliveryTime: true,
         estimatedPickupTime: true,
+        deliveryTimeText: true,
+        freeDeliveryText: true,
         paymentMethods: true,
         paymentInstructions: true,
         whatsappNumber: true,

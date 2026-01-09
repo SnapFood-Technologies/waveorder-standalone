@@ -300,13 +300,22 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   const { availablePaymentMethods, comingSoonPaymentMethods } = getCurrencyPaymentMethods()
 
-  const sections = [
-    { id: 'delivery', name: 'Delivery Methods', icon: Truck },
-    { id: 'payment', name: 'Payment Methods', icon: CreditCard },
-    { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
-    { id: 'zones', name: 'Delivery Zones', icon: MapPin },
-    { id: 'hours', name: 'Business Hours', icon: Calendar }
-  ]
+  // For RETAIL businesses, hide delivery zones (they use postal services instead)
+  const sections = business.businessType === 'RETAIL'
+    ? [
+        { id: 'delivery', name: 'Delivery Methods', icon: Truck },
+        { id: 'payment', name: 'Payment Methods', icon: CreditCard },
+        { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
+        // Delivery Zones not shown for RETAIL
+        { id: 'hours', name: 'Business Hours', icon: Calendar }
+      ]
+    : [
+        { id: 'delivery', name: 'Delivery Methods', icon: Truck },
+        { id: 'payment', name: 'Payment Methods', icon: CreditCard },
+        { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
+        { id: 'zones', name: 'Delivery Zones', icon: MapPin },
+        { id: 'hours', name: 'Business Hours', icon: Calendar }
+      ]
 
   if (loading) {
     return (
@@ -710,7 +719,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
-        {activeSection === 'zones' && (
+        {activeSection === 'zones' && business.businessType !== 'RETAIL' && (
           <DeliveryZonesManagement businessId={businessId} />
         )}
 
