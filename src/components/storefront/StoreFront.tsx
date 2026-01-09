@@ -3762,8 +3762,8 @@ function OrderPanel({
   postalPricingOptions = [],
   loadingPostalPricing = false,
   selectedPostalPricing = null,
-  setSelectedPostalPricing,
-  setCalculatedDeliveryFee
+  setSelectedPostalPricing = () => {},
+  setCalculatedDeliveryFee = () => {}
 }: {
   storeData: any
   cart: CartItem[]
@@ -3796,8 +3796,8 @@ function OrderPanel({
   postalPricingOptions?: any[]
   loadingPostalPricing?: boolean
   selectedPostalPricing?: any | null
-  setSelectedPostalPricing?: (pricing: any | null) => void
-  setCalculatedDeliveryFee?: (fee: number) => void
+  setSelectedPostalPricing: (pricing: any | null) => void
+  setCalculatedDeliveryFee: (fee: number) => void
 }) {
   
   // Helper function to clear address and delivery error
