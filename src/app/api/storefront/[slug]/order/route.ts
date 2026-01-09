@@ -1390,6 +1390,46 @@ try {
       }
     })
 
+    // Fetch postal pricing details if it exists (for RETAIL businesses)
+    let postalPricingDetails: any = null
+    // @ts-ignore - postalPricingId field will be available after Prisma generate
+    const orderPostalPricingId = (order as any).postalPricingId
+    if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+      try {
+        // @ts-ignore - PostalPricing model will be available after Prisma generate
+        const postalPricing = await (prisma as any).postalPricing.findUnique({
+          where: { id: orderPostalPricingId },
+          include: {
+            postal: {
+              select: {
+                name: true,
+                nameAl: true,
+                deliveryTime: true,
+                deliveryTimeAl: true
+              }
+            }
+          }
+        })
+
+        if (postalPricing) {
+          const isAlbanian = business.language === 'sq' || business.language === 'al'
+          postalPricingDetails = {
+            name: isAlbanian
+              ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
+              : (postalPricing.postal?.name || 'Postal Service'),
+            nameEn: postalPricing.postal?.name || 'Postal Service',
+            nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+            deliveryTime: isAlbanian
+              ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+              : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+            price: postalPricing.price
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching postal pricing details for email:', error)
+      }
+    }
+
     // Call the order notification service
     await sendOrderNotification(
       {
@@ -1402,7 +1442,11 @@ try {
         notes: order.notes,
         customer: { name: customer.name, phone: customer.phone },
         items: orderItemsForEmail,
-        businessId: business.id
+        businessId: business.id,
+        postalPricingDetails: postalPricingDetails,
+        countryCode: countryCode || null,
+        city: city || null,
+        postalCode: postalCode || null
       },
       {
         name: business.name,

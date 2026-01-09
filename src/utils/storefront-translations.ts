@@ -93,6 +93,24 @@ onlyStockAvailable: string
     postalCode: string
     postalCodePlaceholder: string
     
+    // Phone Validation
+    invalidAlbanianPhone: string
+    invalidGreekPhone: string
+    invalidItalianPhone: string
+    invalidSpanishPhone: string
+    invalidUSPhone: string
+    invalidKosovoPhone: string
+    invalidNorthMacedoniaPhone: string
+    invalidPhone: string
+    phoneFormatAlbania: string
+    phoneFormatGreece: string
+    phoneFormatItaly: string
+    phoneFormatSpain: string
+    phoneFormatKosovo: string
+    phoneFormatNorthMacedonia: string
+    phoneFormatUS: string
+    phoneFormatGeneric: string
+    
     // Footer
     poweredBy: string
     
@@ -317,6 +335,24 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     selectCity: "Select City",
     postalCode: "Postal Code",
     postalCodePlaceholder: "Postal code",
+    
+    // Phone Validation
+    invalidAlbanianPhone: "Please enter a valid Albanian phone number",
+    invalidGreekPhone: "Please enter a valid Greek phone number",
+    invalidItalianPhone: "Please enter a valid Italian phone number",
+    invalidSpanishPhone: "Please enter a valid Spanish phone number",
+    invalidUSPhone: "Please enter a valid US phone number",
+    invalidKosovoPhone: "Please enter a valid Kosovo phone number",
+    invalidNorthMacedoniaPhone: "Please enter a valid North Macedonia phone number",
+    invalidPhone: "Please enter a valid phone number",
+    phoneFormatAlbania: "Format: +355 68 123 4567",
+    phoneFormatGreece: "Format: +30 694 123 4567",
+    phoneFormatItaly: "Format: +39 34 3123 4567",
+    phoneFormatSpain: "Format: +34 612 345 678",
+    phoneFormatKosovo: "Format: +383 44 123 456",
+    phoneFormatNorthMacedonia: "Format: +389 70 123 456",
+    phoneFormatUS: "Format: +1 (555) 123-4567",
+    phoneFormatGeneric: "Enter your WhatsApp number with country code",
 
 
     inCartAvailable: "{inCart} in cart, {available} available",
@@ -526,6 +562,24 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     selectCity: "Zgjidh Qytetin",
     postalCode: "Kodi Postar",
     postalCodePlaceholder: "Kodi postar",
+    
+    // Phone Validation
+    invalidAlbanianPhone: "Ju lutem shkruani një numër telefoni shqiptar të vlefshëm",
+    invalidGreekPhone: "Ju lutem shkruani një numër telefoni grek të vlefshëm",
+    invalidItalianPhone: "Ju lutem shkruani një numër telefoni italian të vlefshëm",
+    invalidSpanishPhone: "Ju lutem shkruani një numër telefoni spanjoll të vlefshëm",
+    invalidUSPhone: "Ju lutem shkruani një numër telefoni amerikan të vlefshëm",
+    invalidKosovoPhone: "Ju lutem shkruani një numër telefoni kosovar të vlefshëm",
+    invalidNorthMacedoniaPhone: "Ju lutem shkruani një numër telefoni maqedonas të vlefshëm",
+    invalidPhone: "Ju lutem shkruani një numër telefoni të vlefshëm",
+    phoneFormatAlbania: "Formati: +355 68 123 4567",
+    phoneFormatGreece: "Formati: +30 694 123 4567",
+    phoneFormatItaly: "Formati: +39 34 3123 4567",
+    phoneFormatSpain: "Formati: +34 612 345 678",
+    phoneFormatKosovo: "Formati: +383 44 123 456",
+    phoneFormatNorthMacedonia: "Formati: +389 70 123 456",
+    phoneFormatUS: "Formati: +1 (555) 123-4567",
+    phoneFormatGeneric: "Shkruani numrin tuaj të WhatsApp me kodin e shtetit",
 
     inCartAvailable: "{inCart} në shportë, {available} të disponueshme", 
 onlyStockAvailable: "Vetëm {stock} të disponueshme",
@@ -722,6 +776,24 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     selectCity: "Seleccionar Ciudad",
     postalCode: "Código Postal",
     postalCodePlaceholder: "Código postal",
+    
+    // Phone Validation
+    invalidAlbanianPhone: "Por favor, ingresa un número de teléfono albanés válido",
+    invalidGreekPhone: "Por favor, ingresa un número de teléfono griego válido",
+    invalidItalianPhone: "Por favor, ingresa un número de teléfono italiano válido",
+    invalidSpanishPhone: "Por favor, ingresa un número de teléfono español válido",
+    invalidUSPhone: "Por favor, ingresa un número de teléfono estadounidense válido",
+    invalidKosovoPhone: "Por favor, ingresa un número de teléfono kosovar válido",
+    invalidNorthMacedoniaPhone: "Por favor, ingresa un número de teléfono macedonio válido",
+    invalidPhone: "Por favor, ingresa un número de teléfono válido",
+    phoneFormatAlbania: "Formato: +355 68 123 4567",
+    phoneFormatGreece: "Formato: +30 694 123 4567",
+    phoneFormatItaly: "Formato: +39 34 3123 4567",
+    phoneFormatSpain: "Formato: +34 612 345 678",
+    phoneFormatKosovo: "Formato: +383 44 123 456",
+    phoneFormatNorthMacedonia: "Formato: +389 70 123 456",
+    phoneFormatUS: "Formato: +1 (555) 123-4567",
+    phoneFormatGeneric: "Ingresa tu número de WhatsApp con el código de país",
 
     inCartAvailable: "{inCart} en carrito, {available} disponibles",
     onlyStockAvailable: "Solo {stock} disponibles",

@@ -289,43 +289,51 @@ export function PhoneInput({
 
   const config = COUNTRY_CONFIGS[country]
 
-  // Get validation message based on detected country
+  // Get validation message based on detected country (localized)
   const getValidationMessage = () => {
+    if (!translations) return 'Please enter a valid phone number'
+    
     switch (country) {
       case 'AL':
-        return 'Please enter a valid Albanian phone number'
+        return translations.invalidAlbanianPhone || 'Please enter a valid Albanian phone number'
       case 'GR':
-        return 'Please enter a valid Greek phone number'
+        return translations.invalidGreekPhone || 'Please enter a valid Greek phone number'
       case 'IT':
-        return 'Please enter a valid Italian phone number'
+        return translations.invalidItalianPhone || 'Please enter a valid Italian phone number'
       case 'ES':
-        return 'Please enter a valid Spanish phone number'
+        return translations.invalidSpanishPhone || 'Please enter a valid Spanish phone number'
       case 'US':
-        return 'Please enter a valid US phone number'
+        return translations.invalidUSPhone || 'Please enter a valid US phone number'
+      case 'XK':
+        return translations.invalidKosovoPhone || 'Please enter a valid Kosovo phone number'
+      case 'MK':
+        return translations.invalidNorthMacedoniaPhone || 'Please enter a valid North Macedonia phone number'
       default:
-        return 'Please enter a valid phone number'
+        return translations.invalidPhone || 'Please enter a valid phone number'
     }
   }
 
-  // Get format example based on detected country
+  // Get format example based on detected country (localized)
   const getFormatExample = () => {
+    if (!translations) return 'Enter your WhatsApp number with country code'
+    
     switch (country) {
       case 'AL':
-        return 'Format: +355 68 123 4567'
+        return translations.phoneFormatAlbania || 'Format: +355 68 123 4567'
       case 'GR':
-        return 'Format: +30 694 123 4567'
+        return translations.phoneFormatGreece || 'Format: +30 694 123 4567'
       case 'IT':
-        return 'Format: +39 34 3123 4567'
+        return translations.phoneFormatItaly || 'Format: +39 34 3123 4567'
       case 'ES':
-        return 'Format: +34 612 345 678'
+        return translations.phoneFormatSpain || 'Format: +34 612 345 678'
       case 'XK':
-        return 'Format: +383 44 123 456'
+        return translations.phoneFormatKosovo || 'Format: +383 44 123 456'
       case 'MK':
-        return 'Format: +389 70 123 456'
+        return translations.phoneFormatNorthMacedonia || 'Format: +389 70 123 456'
       case 'US':
-        return 'Format: +1 (555) 123-4567'
+        return translations.phoneFormatUS || 'Format: +1 (555) 123-4567'
       default:
-        return 'Enter your WhatsApp number with country code'
+        return translations.phoneFormatGeneric || 'Enter your WhatsApp number with country code'
     }
   }
 

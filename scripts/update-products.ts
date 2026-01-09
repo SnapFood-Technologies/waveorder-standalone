@@ -177,8 +177,16 @@ async function updateProducts(
       // Parse Albanian product name
       const nameAl = row['Title (AL)']?.trim() || null
 
+      // Parse stock (for both UPDATE and CREATE)
+      const trackInventory = row['Enable Stock']?.toLowerCase() === 'yes'
+      const stock = trackInventory ? parseInt(row['Stock Quantity'] || '0') : 0
+      const lowStockAlert = row['Low Stock Threshold'] ? parseInt(row['Low Stock Threshold']) : null
+
       if (existingProduct) {
         // UPDATE existing product
+        const oldStock = existingProduct.stock
+        const stockChanged = oldStock !== stock
+        
         const updatedProduct = await prisma.product.update({
           where: { id: existingProduct.id },
           data: {
@@ -188,20 +196,39 @@ async function updateProducts(
             descriptionAl: descriptionAl || existingProduct.descriptionAl, // Keep existing if not provided
             price: finalPrice,
             originalPrice: originalPrice,
+            // Update inventory fields
+            stock: stock,
+            trackInventory: trackInventory,
+            lowStockAlert: lowStockAlert,
+            enableLowStockNotification: row['Enable Low Stock Alert']?.toLowerCase() === 'yes',
+            isActive: row['Product Status'] === '1',
+            featured: row.Featured?.toLowerCase() === 'yes',
           }
         })
 
+        // Create inventory activity if stock changed
+        if (stockChanged && trackInventory) {
+          const quantityChange = stock - oldStock
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: updatedProduct.id,
+              businessId,
+              type: quantityChange > 0 ? 'MANUAL_INCREASE' : 'MANUAL_DECREASE',
+              quantity: quantityChange,
+              oldStock: oldStock,
+              newStock: stock,
+              reason: 'Stock updated from CSV'
+            }
+          })
+        }
+
         updatedCount++
-        console.log(`✓ [${i + 1}/${rows.length}] Updated: ${updatedProduct.name} (SKU: ${row.SKU.trim()}) - Price: ${finalPrice}${originalPrice ? ` (was ${price})` : ''}`)
+        const stockInfo = stockChanged ? ` - Stock: ${oldStock} → ${stock}` : ` - Stock: ${stock}`
+        console.log(`✓ [${i + 1}/${rows.length}] Updated: ${updatedProduct.name} (SKU: ${row.SKU.trim()}) - Price: ${finalPrice}${originalPrice ? ` (was ${price})` : ''}${stockInfo}`)
       } else {
         // CREATE new product
         // Get or create category
         const categoryId = await getOrCreateCategory(businessId, row.Categories || 'Uncategorized')
-
-        // Parse stock
-        const trackInventory = row['Enable Stock']?.toLowerCase() === 'yes'
-        const stock = trackInventory ? parseInt(row['Stock Quantity'] || '0') : 0
-        const lowStockAlert = row['Low Stock Threshold'] ? parseInt(row['Low Stock Threshold']) : null
 
         // Parse images
         const images: string[] = []

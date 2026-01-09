@@ -16,7 +16,7 @@ import {
   RefreshCw,
   ExternalLink,
   User,
-  DollarSign,
+  Receipt,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
@@ -753,7 +753,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                             <span className="truncate" title={notification.customerName}>{notification.customerName}</span>
                           </div>
                           <div className="flex items-center">
-                            <DollarSign className="w-3 h-3 mr-1" />
+                            <Receipt className="w-3 h-3 mr-1" />
                             <span className="font-medium">{formatCurrency(notification.total)}</span>
                           </div>
                         </div>

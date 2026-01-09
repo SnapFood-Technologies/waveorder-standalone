@@ -28,6 +28,17 @@ interface OrderData {
     price: number
   }[]
   businessId: string
+  // For RETAIL businesses
+  postalPricingDetails?: {
+    name: string // Localized postal service name
+    nameEn: string
+    nameAl: string
+    deliveryTime: string | null // Localized delivery time
+    price: number
+  } | null
+  countryCode?: string | null
+  city?: string | null
+  postalCode?: string | null
 }
 
 interface BusinessData {
@@ -148,6 +159,20 @@ function formatStatus(status: string) {
   return status.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
+// Helper function to get localized country name
+function getLocalizedCountryName(countryCode: string | null | undefined, language: string): string {
+  if (!countryCode) return ''
+  
+  const countryNames: Record<string, Record<string, string>> = {
+    AL: { en: 'Albania', sq: 'Shqipëri', al: 'Shqipëri' },
+    XK: { en: 'Kosovo', sq: 'Kosovë', al: 'Kosovë' },
+    MK: { en: 'North Macedonia', sq: 'Maqedonia e Veriut', al: 'Maqedonia e Veriut' }
+  }
+  
+  const lang = language.toLowerCase()
+  return countryNames[countryCode]?.[lang] || countryNames[countryCode]?.en || countryCode
+}
+
 // Create email template for order notifications
 function createOrderNotificationEmail({ 
   orderData, 
@@ -234,6 +259,20 @@ function createOrderNotificationEmail({
         <div style="margin-top: 15px;">
           <strong style="color: #374151;">Delivery Address:</strong><br>
           <a href="https://maps.google.com/maps?q=${encodeURIComponent(orderData.deliveryAddress)}" style="color: #0d9488; text-decoration: none;">${orderData.deliveryAddress}</a>
+        </div>
+        ` : ''}
+        
+        ${businessData.businessType === 'RETAIL' && orderData.postalPricingDetails ? `
+        <div style="margin-top: 15px; padding: 12px; background-color: #eff6ff; border-radius: 6px; border: 1px solid #bfdbfe;">
+          <strong style="color: #374151;">Delivery Method:</strong><br>
+          <div style="margin-top: 8px; font-size: 14px; color: #374151;">
+            <div style="margin-bottom: 4px;"><strong>Postal Service:</strong> ${orderData.postalPricingDetails.name}</div>
+            ${orderData.postalPricingDetails.deliveryTime ? `<div style="margin-bottom: 4px;"><strong>Delivery Time:</strong> ${orderData.postalPricingDetails.deliveryTime}</div>` : ''}
+            <div style="margin-bottom: 4px;"><strong>Delivery Fee:</strong> ${formatCurrency(orderData.postalPricingDetails.price, businessData.currency)}</div>
+            ${orderData.city ? `<div style="margin-bottom: 4px;"><strong>City:</strong> ${orderData.city}</div>` : ''}
+            ${orderData.countryCode ? `<div style="margin-bottom: 4px;"><strong>Country:</strong> ${getLocalizedCountryName(orderData.countryCode, businessData.language)}</div>` : ''}
+            ${orderData.postalCode ? `<div><strong>Postal Code:</strong> ${orderData.postalCode}</div>` : ''}
+          </div>
         </div>
         ` : ''}
       </div>
