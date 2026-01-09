@@ -2379,26 +2379,31 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               {/* For RETAIL: Show postal methods, for others: Show time and fee */}
               {storeData.businessType === 'RETAIL' && deliveryType === 'delivery' ? (
                 <div className="space-y-2">
-                  {selectedPostalPricing ? (
-                    <div className="flex items-center gap-2 text-gray-700">
-                      {selectedPostalPricing.logo && (
-                        <img src={selectedPostalPricing.logo} alt={selectedPostalPricing.postal_name} className="w-6 h-6 object-contain" />
-                      )}
-                      <span className="text-sm font-medium">{selectedPostalPricing.postal_name}</span>
-                      <span className="text-sm text-gray-500">
-                        {selectedPostalPricing.delivery_time_al || selectedPostalPricing.delivery_time || ''}
-                      </span>
-                      <span className="text-sm font-semibold">
-                        {currencySymbol}{typeof selectedPostalPricing.price === 'number' ? selectedPostalPricing.price.toFixed(2) : '0.00'}
+                  {/* Always show clock and package icons with custom text by default, replace with postal values when selected */}
+                  <div className="flex items-center gap-4 sm:gap-5 text-gray-500">
+                    {/* Clock icon - custom text by default, postal delivery time when selected */}
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                      <span className="text-md">
+                        {selectedPostalPricing 
+                          ? (selectedPostalPricing.delivery_time_al || selectedPostalPricing.delivery_time || storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min')
+                          : (storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min')}
                       </span>
                     </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">
-                      {customerInfo.cityName 
-                        ? (loadingPostalPricing ? 'Loading options...' : 'Select delivery method below')
-                        : 'Enter address to see delivery options'}
+                    {/* Package icon - custom text by default, postal price when selected */}
+                    <div className="flex items-center gap-1">
+                      <Package className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
+                      <span className="text-md">
+                        {selectedPostalPricing 
+                          ? (calculatedDeliveryFee > 0 
+                              ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
+                              : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery'))
+                          : (calculatedDeliveryFee > 0 
+                              ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
+                              : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery'))}
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-4 sm:gap-5 text-gray-500">

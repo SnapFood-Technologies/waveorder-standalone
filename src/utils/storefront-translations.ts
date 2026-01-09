@@ -185,8 +185,12 @@ close: string
  items: string
  maximumQuantityInCart: string
  canBeAdded: string
- stock: string
- max: string
+    stock: string
+    max: string
+    loading: string
+    selectDeliveryMethod: string
+    enterAddressForDelivery: string
+    deliveryMethod: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -376,8 +380,12 @@ item: "item",
 items: "items",
 maximumQuantityInCart: "Maximum quantity ({count}) already in cart",
 canBeAdded: "more can be added to cart",
-stock: "Stock",
-max: "Max",
+    stock: "Stock",
+    max: "Max",
+    loading: "Loading options...",
+    selectDeliveryMethod: "Select delivery method below",
+    enterAddressForDelivery: "Enter address to see delivery options",
+    deliveryMethod: "Delivery Method",
 
   }
   
@@ -563,8 +571,12 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   items: "artikuj",
   maximumQuantityInCart: "Sasia maksimale ({count}) tashmë në shportë",
   canBeAdded: "më shumë mund të shtohen në shportë",
-  stock: "Stoku",
-  max: "Maks",
+    stock: "Stoku",
+    max: "Maks",
+    loading: "Duke ngarkuar opsionet...",
+    selectDeliveryMethod: "Zgjidh metodën e dërgesës më poshtë",
+    enterAddressForDelivery: "Shkruani adresën për të parë opsionet e dërgesës",
+    deliveryMethod: "Metoda e Dërgesës",
 
   }
 
@@ -750,8 +762,12 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   items: "artículos",
   maximumQuantityInCart: "Cantidad máxima ({count}) ya en carrito",
   canBeAdded: "más se pueden añadir al carrito",
-  stock: "Stock",
-  max: "Máx",
+    stock: "Stock",
+    max: "Máx",
+    loading: "Cargando opciones...",
+    selectDeliveryMethod: "Selecciona el método de entrega a continuación",
+    enterAddressForDelivery: "Ingresa la dirección para ver las opciones de entrega",
+    deliveryMethod: "Método de Entrega",
 
   }
 
