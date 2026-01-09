@@ -904,7 +904,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
                       <span className="font-medium text-gray-800">{translations.delivery || 'Delivery'}</span>
                     </div>
                     <span className="text-sm text-green-700 font-medium">
-                      {storeData.estimatedDeliveryTime || '30-45 min'}
+                      {storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min'}
                     </span>
                   </div>
                 )}
@@ -1189,7 +1189,7 @@ function TimeSelection({
         return {
           timeLabel: translations.deliveryTime || 'Delivery Time',
           nowLabel: translations.now || 'Now',
-          estimatedTime: storeData.estimatedDeliveryTime || '30-45 min'
+          estimatedTime: storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min'
         }
       case 'pickup':
         return {
@@ -1431,6 +1431,8 @@ interface StoreData {
   dineInEnabled: boolean
   estimatedDeliveryTime?: string
   estimatedPickupTime?: string
+  deliveryTimeText?: string  // Custom delivery time text for RETAIL (overrides estimatedDeliveryTime)
+  freeDeliveryText?: string  // Custom free delivery text for RETAIL (overrides "Free Delivery")
   paymentMethods: string[]
   paymentInstructions?: string
   greetingMessage?: string
@@ -2332,7 +2334,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
                     <span className="text-md">
                       {deliveryType === 'delivery' 
-                        ? storeData.estimatedDeliveryTime 
+                        ? (storeData.deliveryTimeText || storeData.estimatedDeliveryTime)  // Use custom text if available
                         : storeData.estimatedPickupTime || '15-20 min'}
                     </span>
                   </div>
@@ -2343,7 +2345,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <span className="text-md">
                   {calculatedDeliveryFee > 0 
                     ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
-                    : translations.freeDelivery || 'Free Delivery'}
+                    : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery')}  {/* Use custom text if available */}
                 </span>
               </div>
             ) : (

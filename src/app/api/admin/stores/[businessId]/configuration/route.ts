@@ -51,7 +51,9 @@ export async function GET(
         deliveryFee: business.deliveryFee,
         deliveryRadius: business.deliveryRadius,
         estimatedDeliveryTime: business.estimatedDeliveryTime || '30-45 minutes',
-        estimatedPickupTime: business.estimatedPickupTime || '15-20 minutes'
+        estimatedPickupTime: business.estimatedPickupTime || '15-20 minutes',
+        deliveryTimeText: business.deliveryTimeText || '',
+        freeDeliveryText: business.freeDeliveryText || ''
       },
       paymentMethods: business.paymentMethods,
       paymentInstructions: business.paymentInstructions || '',
@@ -99,6 +101,13 @@ export async function PUT(
         updateData.deliveryFee = config.deliveryMethods.deliveryFee || 0
         updateData.deliveryRadius = config.deliveryMethods.deliveryRadius || 10
         updateData.estimatedDeliveryTime = config.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
+        // Retail-specific custom texts
+        if (config.deliveryMethods.deliveryTimeText !== undefined) {
+          updateData.deliveryTimeText = config.deliveryMethods.deliveryTimeText || null
+        }
+        if (config.deliveryMethods.freeDeliveryText !== undefined) {
+          updateData.freeDeliveryText = config.deliveryMethods.freeDeliveryText || null
+        }
       }
       
       if (config.deliveryMethods.pickup) {

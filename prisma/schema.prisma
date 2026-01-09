@@ -237,6 +237,10 @@ model Business {
   estimatedPickupTime   String?
   greetingMessage       String?
   orderNumberFormat     String         @default("WO-{number}")
+  
+  // Retail-specific custom texts
+  deliveryTimeText      String?  // Custom delivery time text for RETAIL (overrides estimatedDeliveryTime)
+  freeDeliveryText      String?  // Custom free delivery text for RETAIL (overrides default "Free Delivery")
 
   // Store Closure Fields
   isTemporarilyClosed Boolean   @default(false)

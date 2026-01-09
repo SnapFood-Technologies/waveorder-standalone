@@ -30,6 +30,8 @@ interface DeliveryMethod {
   deliveryRadius: number | string
   estimatedDeliveryTime: string
   estimatedPickupTime: string
+  deliveryTimeText?: string  // Custom delivery time text for RETAIL
+  freeDeliveryText?: string  // Custom free delivery text for RETAIL
 }
 
 interface PaymentMethod {
@@ -58,6 +60,7 @@ interface BusinessConfig {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
 interface SuccessMessage {
@@ -74,7 +77,9 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       deliveryFee: 0,
       deliveryRadius: 10,
       estimatedDeliveryTime: '30-45 minutes',
-      estimatedPickupTime: '15-20 minutes'
+      estimatedPickupTime: '15-20 minutes',
+      deliveryTimeText: '',
+      freeDeliveryText: ''
     },
     paymentMethods: ['CASH'],
     paymentInstructions: '',
@@ -88,7 +93,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     whatsappNumber: ''
   })
   
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('delivery')
@@ -112,7 +117,10 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       if (businessResponse.ok) {
         const data = await businessResponse.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ 
+          currency: data.business.currency,
+          businessType: data.business.businessType || 'RESTAURANT'
+        })
       }
     } catch (error) {
       console.error('Error fetching configuration:', error)
@@ -471,6 +479,45 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                     />
                   </div>
                 </div>
+                
+                {/* Retail-specific custom texts */}
+                {business.businessType === 'RETAIL' && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="font-medium text-gray-900 mb-3">Custom Display Texts (Retail Only)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Custom Delivery Time Text
+                          <span className="text-xs text-gray-500 ml-1">(overrides "Estimated Delivery Time" in storefront)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={config.deliveryMethods.deliveryTimeText || ''}
+                          onChange={(e) => updateDeliveryMethods({ 
+                            deliveryTimeText: e.target.value 
+                          })}
+                          placeholder="e.g., 3-4 Hours"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Custom Free Delivery Text
+                          <span className="text-xs text-gray-500 ml-1">(overrides "Free Delivery" in storefront)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={config.deliveryMethods.freeDeliveryText || ''}
+                          onChange={(e) => updateDeliveryMethods({ 
+                            freeDeliveryText: e.target.value 
+                          })}
+                          placeholder="e.g., Transport Falas"
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

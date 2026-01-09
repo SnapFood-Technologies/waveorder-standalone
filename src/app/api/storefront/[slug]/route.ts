@@ -266,6 +266,8 @@ export async function GET(
       dineInEnabled: business.dineInEnabled,
       estimatedDeliveryTime: business.estimatedDeliveryTime,
       estimatedPickupTime: business.estimatedPickupTime,
+      deliveryTimeText: business.deliveryTimeText,  // Custom delivery time text for RETAIL
+      freeDeliveryText: business.freeDeliveryText,  // Custom free delivery text for RETAIL
       
       // Payment
       paymentMethods: business.paymentMethods,
