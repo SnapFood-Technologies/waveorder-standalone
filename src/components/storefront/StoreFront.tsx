@@ -2390,7 +2390,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         {selectedPostalPricing.delivery_time_al || selectedPostalPricing.delivery_time || ''}
                       </span>
                       <span className="text-sm font-semibold">
-                        {currencySymbol}{selectedPostalPricing.price.toFixed(2)}
+                        {currencySymbol}{typeof selectedPostalPricing.price === 'number' ? selectedPostalPricing.price.toFixed(2) : '0.00'}
                       </span>
                     </div>
                   ) : (
@@ -2419,7 +2419,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       <span className="text-md">
                         {calculatedDeliveryFee > 0 
                           ? `${currencySymbol}${calculatedDeliveryFee.toFixed(2)}`
-                          : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery')}  {/* Use custom text if available */}
+                          : (storeData.freeDeliveryText || translations.freeDelivery || 'Free Delivery')}
                       </span>
                     </div>
                   ) : (
@@ -2430,7 +2430,6 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   )}
                 </div>
               )}
-          </div>
               </div>
             </div>
           </div>
