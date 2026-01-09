@@ -1853,11 +1853,29 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     if (storeData.businessType !== 'RETAIL' || !cityName) return
     
     setLoadingPostalPricing(true)
+    setPostalPricingOptions([]) // Clear previous options
     try {
-      const response = await fetch(`/api/storefront/${storeData.slug}/postal-pricing?cityName=${encodeURIComponent(cityName)}`)
+      console.log('Fetching postal pricing for city:', cityName)
+      const url = `/api/storefront/${storeData.slug}/postal-pricing?cityName=${encodeURIComponent(cityName)}`
+      console.log('Fetching postal pricing from:', url)
+      const response = await fetch(url)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('Postal pricing API response:', data)
+        console.log('Number of pricing options:', data.data?.length || 0)
+        
         setPostalPricingOptions(data.data || [])
+        
+        if (!data.data || data.data.length === 0) {
+          console.warn(`⚠️ No postal pricing found for city: "${cityName}"`)
+          console.warn(`Business ID: ${storeData.id}, Slug: ${storeData.slug}`)
+        } else {
+          console.log('✅ Postal pricing options loaded:', data.data.map((p: any) => ({ id: p.id, name: p.postal_name, price: p.price })))
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+        console.error('❌ Failed to fetch postal pricing:', response.status, errorData)
       }
     } catch (error) {
       console.error('Error fetching postal pricing:', error)
@@ -3004,6 +3022,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               selectedPostalPricing={selectedPostalPricing}
               setSelectedPostalPricing={setSelectedPostalPricing}
               setCalculatedDeliveryFee={setCalculatedDeliveryFee}
+              countries={countries}
+              cities={cities}
+              loadingCountries={loadingCountries}
+              loadingCities={loadingCities}
               deliveryOptions={getDeliveryOptions()}
               primaryColor={primaryColor}
               translations={translations}

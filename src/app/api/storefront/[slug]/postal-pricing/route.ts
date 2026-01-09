@@ -53,12 +53,24 @@ export async function GET(
       )
     }
 
+    const trimmedCityName = cityName.trim()
+    console.log(`🔍 Looking for postal pricing - Business: ${business.id}, City: "${trimmedCityName}"`)
+
+    // Debug: Check what city names exist in the database for this business
+    const sampleRecords = await prisma.postalPricing.findMany({
+      where: { businessId: business.id },
+      select: { cityName: true },
+      take: 5,
+      distinct: ['cityName']
+    })
+    console.log(`📋 Sample city names in database:`, sampleRecords.map(r => r.cityName))
+
     // Get postal pricing for this city
-    const pricing = await prisma.postalPricing.findMany({
+    // Fetch all records and filter in memory to handle MongoDB null/undefined issues
+    const allPricing = await prisma.postalPricing.findMany({
       where: {
         businessId: business.id,
-        cityName: cityName.trim(),
-        deletedAt: null
+        cityName: trimmedCityName
       },
       include: {
         postal: {
@@ -81,8 +93,19 @@ export async function GET(
       ]
     })
 
-    // Filter out inactive postals
-    const activePricing = pricing.filter(p => p.postal.isActive)
+    console.log(`Postal pricing query for city "${cityName.trim()}" - Found ${allPricing.length} total records`)
+
+    // Filter out deleted records (deletedAt is null or undefined) and inactive postals
+    // A record is considered deleted only if deletedAt is explicitly set to a Date
+    const activePricing = allPricing.filter(p => {
+      // Not deleted (deletedAt is null, undefined, or falsy)
+      const notDeleted = !p.deletedAt || p.deletedAt === null
+      // Postal service is active
+      const postalActive = p.postal.isActive
+      return notDeleted && postalActive
+    })
+
+    console.log(`Active postal pricing records: ${activePricing.length} (out of ${allPricing.length} total)`)
 
     // Format response
     const data = activePricing.map(p => {
