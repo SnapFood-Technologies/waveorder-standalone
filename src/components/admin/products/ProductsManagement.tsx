@@ -113,6 +113,11 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     total: 0,
     pages: 0
   })
+  const [stats, setStats] = useState({
+    active: 0,
+    lowStock: 0,
+    featured: 0
+  })
 
   const { isPro } = useSubscription()
 
@@ -174,6 +179,9 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
         const productsData = await productsRes.json()
         setProducts(productsData.products || [])
         setPagination(productsData.pagination)
+        if (productsData.stats) {
+          setStats(productsData.stats)
+        }
       }
 
       if (categoriesRes.ok) {
@@ -308,12 +316,10 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     }
   }
 
-  // Calculate filtered stats
-  const activeProducts = products.filter(p => p.isActive).length
-  const lowStockProducts = products.filter(p => 
-    p.trackInventory && p.lowStockAlert && p.stock <= p.lowStockAlert
-  ).length
-  const featuredProducts = products.filter(p => p.featured).length
+  // Use stats from API (not calculated from current page)
+  const activeProducts = stats.active
+  const lowStockProducts = stats.lowStock
+  const featuredProducts = stats.featured
 
   if (loading && products.length === 0) {
     return (

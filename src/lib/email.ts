@@ -215,7 +215,7 @@ const createEmailTemplate = (content: string, title: string) => `
         <a href="mailto:hello@waveorder.app" style="color: #0d9488; text-decoration: none;">hello@waveorder.app</a>
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
-        © 2025 WaveOrder. All rights reserved.
+        © 2026 WaveOrder. All rights reserved.
       </p>
     </div>
   </div>

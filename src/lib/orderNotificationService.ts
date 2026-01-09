@@ -282,7 +282,7 @@ function createOrderNotificationEmail({
         <a href="${process.env.NEXTAUTH_URL}/auth/login" style="color: #0d9488; text-decoration: none;">Manage notification settings</a>
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
-        © 2025 Electral Shpk. All rights reserved.
+        © 2026 Electral Shpk. All rights reserved.
       </p>
     </div>
     

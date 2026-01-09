@@ -126,6 +126,54 @@ export async function GET(
 
     const pages = Math.ceil(total / limit)
 
+    // Get stats for all products (not filtered by current page)
+    const statsWhereClause: any = { businessId }
+    
+    // Apply search and category filters to stats if they exist
+    if (search) {
+      statsWhereClause.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
+    if (category) {
+      statsWhereClause.categoryId = category
+    }
+
+    // Get total counts for stats (only if no status filter is applied, or if status is 'all')
+    const [activeCount, lowStockCount, featuredCount] = await Promise.all([
+      // Active products count
+      prisma.product.count({
+        where: {
+          ...statsWhereClause,
+          isActive: true
+        }
+      }),
+      // Low stock products count
+      (async () => {
+        const lowStockProducts = await prisma.product.findMany({
+          where: {
+            ...statsWhereClause,
+            trackInventory: true,
+            lowStockAlert: { not: null }
+          },
+          select: { id: true, stock: true, lowStockAlert: true }
+        })
+        return lowStockProducts.filter(p => 
+          p.lowStockAlert && p.stock <= p.lowStockAlert
+        ).length
+      })(),
+      // Featured products count
+      prisma.product.count({
+        where: {
+          ...statsWhereClause,
+          featured: true
+        }
+      })
+    ])
+
     return NextResponse.json({
       products,
       pagination: {
@@ -133,6 +181,11 @@ export async function GET(
         limit,
         total,
         pages
+      },
+      stats: {
+        active: activeCount,
+        lowStock: lowStockCount,
+        featured: featuredCount
       }
     })
 
