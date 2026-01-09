@@ -21,16 +21,14 @@ export async function GET(
     const cityName = searchParams.get('cityName')
     const postalId = searchParams.get('postalId')
 
+    // Build where clause
+    // Note: Records might not have deletedAt field at all (undefined) or it could be null
+    // In MongoDB, missing fields are undefined, so we need to handle both cases
     const where: any = {
       businessId
     }
 
-    // Only include non-deleted records
-    // In MongoDB, null or undefined means not deleted
-    where.deletedAt = null
-
     if (cityName) {
-      // Exact match for city name (case-sensitive)
       where.cityName = cityName.trim()
     }
 
@@ -38,7 +36,9 @@ export async function GET(
       where.postalId = postalId
     }
 
-    const pricing = await prisma.postalPricing.findMany({
+    // Fetch all records matching the criteria (deletedAt might not exist on older records)
+    // We'll filter out deleted records in memory to handle both null and undefined cases
+    const allPricing = await prisma.postalPricing.findMany({
       where,
       include: {
         postal: {
@@ -56,11 +56,18 @@ export async function GET(
         { postalId: 'asc' },
         { price: 'asc' }
       ],
-      take: 10000 // Limit to prevent huge responses
+      take: 10000
     })
 
-    // Debug logging (remove in production if needed)
-    console.log(`Found ${pricing.length} postal pricing records for business ${businessId}`)
+    // Filter out deleted records in memory
+    // A record is considered deleted only if deletedAt is explicitly set to a Date
+    // If deletedAt is null or undefined, the record is not deleted
+    const pricing = allPricing.filter(p => {
+      // Record is deleted only if deletedAt is a valid Date object
+      return !p.deletedAt || p.deletedAt === null
+    })
+
+    console.log(`Found ${pricing.length} non-deleted postal pricing records (out of ${allPricing.length} total) for business ${businessId}`)
 
     return NextResponse.json({ pricing: pricing || [] })
   } catch (error) {
