@@ -1671,6 +1671,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   // Countries and cities state (for RETAIL businesses)
   const [countries, setCountries] = useState<Array<{ id: string; name: string; code: string }>>([])
   const [cities, setCities] = useState<Array<{ id: string; name: string }>>([])
+  const [loadingCountries, setLoadingCountries] = useState(false)
   const [loadingCities, setLoadingCities] = useState(false)
 
   // Save cart to localStorage whenever it changes
@@ -1688,6 +1689,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   }, [storeData.businessType, deliveryType])
 
   const fetchCountries = async () => {
+    setLoadingCountries(true)
     try {
       const response = await fetch('/api/storefront/locations/countries')
       if (response.ok) {
@@ -1699,6 +1701,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       }
     } catch (error) {
       console.error('Error fetching countries:', error)
+    } finally {
+      setLoadingCountries(false)
     }
   }
 
@@ -2931,6 +2935,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           setCalculatedDeliveryFee={setCalculatedDeliveryFee}
           countries={countries}
           cities={cities}
+          loadingCountries={loadingCountries}
           loadingCities={loadingCities}
           deliveryOptions={getDeliveryOptions()}
           primaryColor={primaryColor}
@@ -3924,6 +3929,7 @@ function OrderPanel({
   setCalculatedDeliveryFee = () => {},
   countries = [],
   cities = [],
+  loadingCountries = false,
   loadingCities = false
 }: {
   storeData: any
@@ -3961,6 +3967,7 @@ function OrderPanel({
   setCalculatedDeliveryFee: (fee: number) => void
   countries?: Array<{ id: string; name: string; code: string }>
   cities?: Array<{ id: string; name: string }>
+  loadingCountries?: boolean
   loadingCities?: boolean
 }) {
   
@@ -4095,42 +4102,44 @@ function OrderPanel({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">{translations.selectCountry || 'Country'} *</label>
-                    <select
-                      required
-                      value={customerInfo.countryCode || ''}
-                      onChange={(e) => {
-                        setCustomerInfo({ 
-                          ...customerInfo, 
-                          countryCode: e.target.value,
-                          city: undefined, // Reset city when country changes
-                          postalPricingId: undefined // Reset postal pricing
-                        })
-                        setSelectedPostalPricing(null)
-                        setCalculatedDeliveryFee(storeData.deliveryFee)
-                      }}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
-                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                      onFocus={(e) => e.target.style.borderColor = primaryColor}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                    >
-                      <option value="">{translations.selectCountry || 'Select Country'}</option>
-                      {countries.length > 0 ? (
-                        countries.map((country) => (
+                    {loadingCountries ? (
+                      <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-500">
+                        {translations.loadingCountries || 'Loading countries...'}
+                      </div>
+                    ) : (
+                      <select
+                        required
+                        value={customerInfo.countryCode || ''}
+                        onChange={(e) => {
+                          setCustomerInfo({ 
+                            ...customerInfo, 
+                            countryCode: e.target.value,
+                            city: undefined, // Reset city when country changes
+                            postalPricingId: undefined // Reset postal pricing
+                          })
+                          setSelectedPostalPricing(null)
+                          setCalculatedDeliveryFee(storeData.deliveryFee)
+                        }}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                        onFocus={(e) => e.target.style.borderColor = primaryColor}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      >
+                        <option value="">{translations.selectCountry || 'Select Country'}</option>
+                        {countries.map((country) => (
                           <option key={country.id} value={country.code}>
                             {country.name}
                           </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>Loading countries...</option>
-                      )}
-                    </select>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">{translations.selectCity || 'City'} *</label>
                     {loadingCities ? (
                       <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-500">
-                        {translations.loading || 'Loading cities...'}
+                        {translations.loadingCities || 'Loading cities...'}
                       </div>
                     ) : (
                       <select
@@ -4229,7 +4238,7 @@ function OrderPanel({
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500 py-3">
-                          No delivery options available for this city
+                          {translations.noDeliveryOptions || 'No delivery options available for this city'}
                         </div>
                       )}
                     </div>

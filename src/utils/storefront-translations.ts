@@ -194,9 +194,12 @@ close: string
     stock: string
     max: string
     loading: string
+    loadingCountries: string
+    loadingCities: string
     selectDeliveryMethod: string
     enterAddressForDelivery: string
     deliveryMethod: string
+    noDeliveryOptions: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -395,9 +398,12 @@ canBeAdded: "more can be added to cart",
     stock: "Stock",
     max: "Max",
     loading: "Loading options...",
+    loadingCountries: "Loading countries...",
+    loadingCities: "Loading cities...",
     selectDeliveryMethod: "Select delivery method below",
     enterAddressForDelivery: "Enter address to see delivery options",
     deliveryMethod: "Delivery Method",
+    noDeliveryOptions: "No delivery options available for this city",
 
   }
   
@@ -592,9 +598,12 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     stock: "Stoku",
     max: "Maks",
     loading: "Duke ngarkuar opsionet...",
+    loadingCountries: "Duke ngarkuar shtetet...",
+    loadingCities: "Duke ngarkuar qytetet...",
     selectDeliveryMethod: "Zgjidh metodën e dërgesës më poshtë",
     enterAddressForDelivery: "Shkruani adresën për të parë opsionet e dërgesës",
     deliveryMethod: "Metoda e Dërgesës",
+    noDeliveryOptions: "Nuk ka opsione dërgese të disponueshme për këtë qytet",
 
   }
 
@@ -789,9 +798,12 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     stock: "Stock",
     max: "Máx",
     loading: "Cargando opciones...",
+    loadingCountries: "Cargando países...",
+    loadingCities: "Cargando ciudades...",
     selectDeliveryMethod: "Selecciona el método de entrega a continuación",
     enterAddressForDelivery: "Ingresa la dirección para ver las opciones de entrega",
     deliveryMethod: "Método de Entrega",
+    noDeliveryOptions: "No hay opciones de entrega disponibles para esta ciudad",
 
   }
 
