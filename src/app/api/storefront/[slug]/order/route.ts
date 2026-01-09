@@ -964,8 +964,20 @@ export async function POST(
     }
 
     // Validate required fields based on delivery type
-    if (deliveryType === 'delivery' && (!deliveryAddress || !latitude || !longitude)) {
-      return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
+    // RETAIL businesses don't need coordinates (they use postal pricing)
+    // Non-RETAIL businesses need coordinates for distance calculation
+    if (deliveryType === 'delivery') {
+      if (!deliveryAddress) {
+        return NextResponse.json({ error: 'Delivery address is required' }, { status: 400 })
+      }
+      // Only require coordinates for non-RETAIL businesses
+      if (business.businessType !== 'RETAIL' && (!latitude || !longitude)) {
+        return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
+      }
+      // For RETAIL businesses, require postal pricing selection
+      if (business.businessType === 'RETAIL' && !postalPricingId) {
+        return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+      }
     }
 
     // STOCK VALIDATION - Check product availability before proceeding

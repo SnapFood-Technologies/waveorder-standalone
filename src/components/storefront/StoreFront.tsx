@@ -2613,7 +2613,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       </div>
 
       {/* Main Content */}
-      <div className="max-w-[75rem] mx-auto px-4 md:px-0 py-6 grid lg:grid-cols-3 gap-8">
+      <div className="max-w-[75rem] mx-auto px-4 md:px-0 py-6 grid lg:grid-cols-3 gap-8 relative">
         {/* Left Side - Menu */}
         <div className="lg:col-span-2 overflow-hidden">
         {/* Mobile Delivery Type Switcher */}
@@ -2927,8 +2927,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             </div>
         </div>
 
-        {/* Right Side - Order Panel (Desktop) */}
-        <div className="hidden lg:block">
+        {/* Right Side - Order Panel (Desktop) - Fixed and Scrollable */}
+        <div className="hidden lg:block lg:sticky lg:top-8 lg:self-start lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
           
         <OrderPanel 
           storeData={storeData}
@@ -3918,6 +3918,110 @@ function ProductModal({
   )
 }
 
+// Searchable City Select Component
+function SearchableCitySelect({
+  cities,
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  primaryColor,
+  translations
+}: {
+  cities: Array<{ id: string; name: string }>
+  value: string
+  onChange: (cityName: string) => void
+  disabled: boolean
+  placeholder: string
+  primaryColor: string
+  translations: any
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const selectRef = useRef<HTMLDivElement>(null)
+
+  // Filter cities based on search term
+  const filteredCities = cities.filter(city =>
+    city.name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        setSearchTerm('')
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const selectedCity = cities.find(c => c.name === value)
+
+  return (
+    <div className="relative" ref={selectRef}>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left flex items-center justify-between"
+        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+        onFocus={(e) => e.target.style.borderColor = primaryColor}
+        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+      >
+        <span className={selectedCity ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedCity ? selectedCity.name : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && !disabled && (
+        <div className="absolute z-50 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-lg max-h-60 overflow-hidden">
+          <div className="p-2 border-b border-gray-200">
+            <input
+              type="text"
+              placeholder={translations.search || 'Search...'}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="overflow-y-auto max-h-48">
+            {filteredCities.length > 0 ? (
+              filteredCities.map((city) => (
+                <button
+                  key={city.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(city.name)
+                    setIsOpen(false)
+                    setSearchTerm('')
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                    value === city.name ? 'bg-teal-50 text-teal-900' : 'text-gray-900'
+                  }`}
+                >
+                  {city.name}
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-2 text-gray-500 text-sm">
+                {translations.noResultsFor || 'No results found'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Update the OrderPanel component props to include delivery error handling:
 function OrderPanel({
   storeData,
@@ -4011,7 +4115,7 @@ function OrderPanel({
   }
 
   return (
-    <div className={`${isMobile ? 'p-4' : 'sticky top-8'}`}>
+    <div className={`${isMobile ? 'p-4' : ''}`}>
       <div>
         <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
         
@@ -4148,11 +4252,36 @@ function OrderPanel({
                         onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                       >
                         <option value="">{translations.selectCountry || 'Select Country'}</option>
-                        {countries.map((country) => (
-                          <option key={country.id} value={country.code}>
-                            {country.name}
-                          </option>
-                        ))}
+                        {countries.map((country) => {
+                          // Localize country name based on storefront language
+                          const getLocalizedCountryName = (code: string, language: string) => {
+                            const countryNames: Record<string, Record<string, string>> = {
+                              'AL': {
+                                'sq': 'Shqipëri',
+                                'en': 'Albania',
+                                'es': 'Albania'
+                              },
+                              'XK': {
+                                'sq': 'Kosovë',
+                                'en': 'Kosovo',
+                                'es': 'Kosovo'
+                              },
+                              'MK': {
+                                'sq': 'Maqedonia e Veriut',
+                                'en': 'North Macedonia',
+                                'es': 'Macedonia del Norte'
+                              }
+                            }
+                            return countryNames[code]?.[language] || country.name
+                          }
+                          const language = storeData.storefrontLanguage || storeData.language || 'en'
+                          const localizedName = getLocalizedCountryName(country.code, language)
+                          return (
+                            <option key={country.id} value={country.code}>
+                              {localizedName}
+                            </option>
+                          )
+                        })}
                       </select>
                     )}
                   </div>
@@ -4164,32 +4293,24 @@ function OrderPanel({
                         {translations.loadingCities || 'Loading cities...'}
                       </div>
                     ) : (
-                      <select
-                        required
+                      <SearchableCitySelect
+                        cities={cities}
                         value={customerInfo.city || ''}
-                        onChange={(e) => {
+                        onChange={(cityName: string) => {
                           setCustomerInfo({ 
                             ...customerInfo, 
-                            city: e.target.value,
-                            cityName: e.target.value,
+                            city: cityName,
+                            cityName: cityName,
                             postalPricingId: undefined // Reset postal pricing when city changes
                           })
                           setSelectedPostalPricing(null)
                           setCalculatedDeliveryFee(storeData.deliveryFee)
                         }}
                         disabled={!customerInfo.countryCode}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                        onFocus={(e) => e.target.style.borderColor = primaryColor}
-                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                      >
-                        <option value="">{customerInfo.countryCode ? (translations.selectCity || 'Select City') : (translations.selectCountry || 'Select Country first')}</option>
-                        {cities.map((city) => (
-                          <option key={city.id} value={city.name}>
-                            {city.name}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder={customerInfo.countryCode ? (translations.selectCity || 'Select City') : (translations.selectCountry || 'Select Country first')}
+                        primaryColor={primaryColor}
+                        translations={translations}
+                      />
                     )}
                   </div>
 
