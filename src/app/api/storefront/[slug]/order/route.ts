@@ -1098,6 +1098,7 @@ export async function POST(
     let finalPostalPricingId: string | null = postalPricingId || null
 
     // For RETAIL businesses, use postal pricing instead of distance-based calculation
+    let postalPricingDetails: any = null
     if (business.businessType === 'RETAIL' && deliveryType === 'delivery' && postalPricingId) {
       // Validate postal pricing exists and belongs to business
       // @ts-ignore - PostalPricing model will be available after Prisma generate
@@ -1105,6 +1106,17 @@ export async function POST(
         where: {
           id: postalPricingId,
           businessId: business.id
+        },
+        include: {
+          postal: {
+            select: {
+              id: true,
+              name: true,
+              nameAl: true,
+              deliveryTime: true,
+              deliveryTimeAl: true
+            }
+          }
         }
       })
 
@@ -1118,10 +1130,24 @@ export async function POST(
         }, { status: 400 })
       }
 
+      // Store postal pricing details for WhatsApp message
+      // Use Albanian name if language is Albanian, otherwise use English name
+      const useAlbanianName = (business.language || 'en') === 'sq'
+      postalPricingDetails = {
+        name: useAlbanianName 
+          ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
+          : (postalPricing.postal?.name || 'Postal Service'),
+        nameEn: postalPricing.postal?.name || 'Postal Service',
+        nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+        deliveryTime: useAlbanianName
+          ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+          : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null)
+      }
+
       // Use postal pricing fee
       finalDeliveryFee = postalPricing.price
       finalPostalPricingId = postalPricing.id
-      deliveryZone = 'Postal Service'
+      deliveryZone = postalPricingDetails.name
 
       // Validate that frontend fee matches postal pricing
       if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
@@ -1417,7 +1443,10 @@ try {
         deliveryZone,
         deliveryDistance,
         latitude,
-        longitude
+        longitude,
+        postalPricingDetails, // Include postal pricing details for RETAIL
+        countryCode: orderData.countryCode, // Include country code for localization
+        postalCode: orderData.postalCode // Include postal code
       }
     })
 
@@ -1547,7 +1576,13 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
     }
   
   if (orderData.deliveryFee > 0) {
-    const deliveryLabel = orderData.deliveryZone ? `${terms.delivery} (${orderData.deliveryZone})` : terms.delivery
+    // For RETAIL, show postal service name; for others, show delivery zone
+    let deliveryLabel = terms.delivery
+    if (businessType === 'RETAIL' && orderData.postalPricingDetails) {
+      deliveryLabel = `${terms.delivery} (${orderData.postalPricingDetails.name})`
+    } else if (orderData.deliveryZone) {
+      deliveryLabel = `${terms.delivery} (${orderData.deliveryZone})`
+    }
     message += `${deliveryLabel}: ${currencySymbol}${orderData.deliveryFee.toFixed(2)}\n`
   }
   
@@ -1559,25 +1594,74 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   
   // Enhanced location/time handling based on delivery type
   if (orderData.deliveryType === 'delivery') {
-    message += `📍 ${terms.deliveryAddress}: ${orderData.deliveryAddress}\n`
+    // Format delivery address with localized country and postal code
+    let formattedAddress = orderData.deliveryAddress || ''
     
-    // Add coordinates for delivery (helpful for delivery tracking)
-    if (orderData.latitude && orderData.longitude) {
+    // Localize country code if present
+    if (orderData.countryCode) {
+      const countryNames: Record<string, Record<string, string>> = {
+        'AL': {
+          'sq': 'Shqipëri',
+          'en': 'Albania',
+          'es': 'Albania'
+        },
+        'XK': {
+          'sq': 'Kosovë',
+          'en': 'Kosovo',
+          'es': 'Kosovo'
+        },
+        'MK': {
+          'sq': 'Maqedonia e Veriut',
+          'en': 'North Macedonia',
+          'es': 'Macedonia del Norte'
+        }
+      }
+      
+      const localizedCountry = countryNames[orderData.countryCode]?.[language] || orderData.countryCode
+      
+      // Replace country code with localized name in address
+      formattedAddress = formattedAddress.replace(/\b(AL|XK|MK)\b/g, localizedCountry)
+      
+      // Add postal code if provided and not already in address
+      if (orderData.postalCode && !formattedAddress.includes(orderData.postalCode)) {
+        formattedAddress += `, ${orderData.postalCode}`
+      }
+    } else if (orderData.postalCode && !formattedAddress.includes(orderData.postalCode)) {
+      // Add postal code even if no country code
+      formattedAddress += `, ${orderData.postalCode}`
+    }
+    
+    message += `📍 ${terms.deliveryAddress}: ${formattedAddress}\n`
+    
+    // Add coordinates for delivery (helpful for delivery tracking) - only for non-RETAIL
+    if (orderData.latitude && orderData.longitude && businessType !== 'RETAIL') {
       message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
     }
     
-    // Add distance if available
-    if (orderData.deliveryDistance) {
+    // Add distance if available (only for non-RETAIL)
+    if (orderData.deliveryDistance && businessType !== 'RETAIL') {
       message += `📏 Distance: ${orderData.deliveryDistance}km\n`
     }
     
+    // Delivery time with postal pricing details for RETAIL
     const timeLabel = terms.deliveryTime
-    const locale = language === 'sq' ? 'sq-AL' : 
-                   language === 'es' ? 'es-ES' : 
-                   'en-US'
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(locale) 
-      : terms.asap}\n`
+    if (businessType === 'RETAIL' && orderData.postalPricingDetails) {
+      // For RETAIL: Show postal service name and delivery time
+      const postalServiceName = orderData.postalPricingDetails.name || 'Postal Service'
+      const deliveryTimeText = orderData.postalPricingDetails.deliveryTime || terms.asap
+      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : language === 'es' ? 'es-ES' : 'en-US') 
+        : terms.asap}\n`
+      message += `📦 ${postalServiceName}: ${deliveryTimeText}\n`
+    } else {
+      // For non-RETAIL: Standard delivery time
+      const locale = language === 'sq' ? 'sq-AL' : 
+                     language === 'es' ? 'es-ES' : 
+                     'en-US'
+      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+        new Date(orderData.deliveryTime).toLocaleString(locale) 
+        : terms.asap}\n`
+    }
   } else if (orderData.deliveryType === 'pickup') {
     // Use business address instead of null
     const pickupAddress = business.address || (language === 'es' ? 'Ubicación de la tienda' : 'Store location')
