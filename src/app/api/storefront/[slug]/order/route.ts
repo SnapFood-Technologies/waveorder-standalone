@@ -1298,8 +1298,6 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         customerLongitude: deliveryType === 'delivery' && longitude ? longitude : null,
         // Store postal pricing for RETAIL businesses
         postalPricingId: postalPricingId || null,
-        // Store postal pricing for RETAIL businesses
-        postalPricingId: postalPricingId || null,
       }
     })
 
