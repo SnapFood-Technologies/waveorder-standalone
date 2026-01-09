@@ -50,7 +50,8 @@ export async function GET(
         notifyDineInOnDelivered: true,
         email: true,
         currency: true,
-        timeFormat: true
+        timeFormat: true,
+        businessType: true
       }
     })
 
@@ -150,7 +151,8 @@ export async function PUT(
         notifyDineInOnDelivered: true,
         email: true,
         currency: true,
-        timeFormat: true
+        timeFormat: true,
+        businessType: true
       }
     })
 

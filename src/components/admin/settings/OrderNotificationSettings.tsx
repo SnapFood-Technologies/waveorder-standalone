@@ -70,6 +70,7 @@ interface OrderNotification {
 interface Business {
   currency: string
   timeFormat?: string
+  businessType?: string
 }
 
 interface Pagination {
@@ -114,7 +115,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     notifyDineInOnDelivered: false
   })
   
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
   const [notifications, setNotifications] = useState<OrderNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -173,7 +174,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         })
         setBusiness({ 
           currency: data.business.currency,
-          timeFormat: data.business.timeFormat || '24'
+          timeFormat: data.business.timeFormat || '24',
+          businessType: data.business.businessType || 'RESTAURANT'
         })
       } else {
         setError('Failed to load notification settings')
@@ -427,21 +429,44 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </label>
               </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="notifyAdminOnPickedUpAndPaid"
-                  checked={settings.notifyAdminOnPickedUpAndPaid}
-                  onChange={handleInputChange}
-                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                />
-                <label className="ml-3 text-sm font-medium text-gray-700">
-                  Notify me when customer picks up order and payment is received
-                </label>
-              </div>
-              <p className="text-xs text-gray-500 ml-7 mt-1">
-                You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.
-              </p>
+              {business.businessType !== 'RETAIL' && (
+                <>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="notifyAdminOnPickedUpAndPaid"
+                      checked={settings.notifyAdminOnPickedUpAndPaid}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label className="ml-3 text-sm font-medium text-gray-700">
+                      Notify me when customer picks up order and payment is received
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7 mt-1">
+                    You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.
+                  </p>
+                </>
+              )}
+              {business.businessType === 'RETAIL' && (
+                <>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="notifyAdminOnPickedUpAndPaid"
+                      checked={settings.notifyAdminOnPickedUpAndPaid}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label className="ml-3 text-sm font-medium text-gray-700">
+                      Notify me when order is delivered and payment is received
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7 mt-1">
+                    You will receive an email notification when an order is delivered (status is DELIVERED) and payment is marked as PAID.
+                  </p>
+                </>
+              )}
 
               <div className="flex items-center">
                 <input
@@ -466,8 +491,11 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   {settings.notifyOnAdminCreatedOrders && (
                     <li>• Orders you create from the admin panel</li>
                   )}
-                  {settings.notifyAdminOnPickedUpAndPaid && (
+                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && (
                     <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
+                  )}
+                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType === 'RETAIL' && (
+                    <li>• Orders delivered and paid (DELIVERED status with PAID payment)</li>
                   )}
                   {settings.notifyAdminOnStatusUpdates && (
                     <li>• All order status updates (same notifications as customers receive)</li>
@@ -522,7 +550,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           {settings.customerNotificationEnabled && (
             <div className="pl-7 space-y-6 border-l-2 border-teal-200">
               <p className="text-sm text-gray-600 mb-4">
-                Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.
+                {business.businessType === 'RETAIL' 
+                  ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY or DINE_IN.'
+                  : 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.'
+                }
               </p>
 
               {/* Delivery Orders */}
@@ -550,30 +581,32 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </div>
               </div>
 
-              {/* Pickup Orders */}
-              <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
-                <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
-                  🏪 Pickup Orders
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Confirmed</label>
-                    <input type="checkbox" name="notifyPickupOnConfirmed" checked={settings.notifyPickupOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Preparing</label>
-                    <input type="checkbox" name="notifyPickupOnPreparing" checked={settings.notifyPickupOnPreparing} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Ready</label>
-                    <input type="checkbox" name="notifyPickupOnReady" checked={settings.notifyPickupOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-white rounded">
-                    <label className="text-sm text-gray-700">Picked Up</label>
-                    <input type="checkbox" name="notifyPickupOnDelivered" checked={settings.notifyPickupOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+              {/* Pickup Orders - Hidden for RETAIL */}
+              {business.businessType !== 'RETAIL' && (
+                <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
+                  <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
+                    🏪 Pickup Orders
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Confirmed</label>
+                      <input type="checkbox" name="notifyPickupOnConfirmed" checked={settings.notifyPickupOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Preparing</label>
+                      <input type="checkbox" name="notifyPickupOnPreparing" checked={settings.notifyPickupOnPreparing} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Ready</label>
+                      <input type="checkbox" name="notifyPickupOnReady" checked={settings.notifyPickupOnReady} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Picked Up</label>
+                      <input type="checkbox" name="notifyPickupOnDelivered" checked={settings.notifyPickupOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Dine-in Orders */}
               <div className="space-y-3 border border-purple-200 rounded-lg p-4 bg-purple-50">
@@ -613,7 +646,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 <p className="text-sm text-blue-700">
                   <strong>Note:</strong> Customers will only receive email notifications if they have an email address on file. 
                   Notifications are sent automatically when you update order status in the order details page.
-                  Settings are applied based on the order type (DELIVERY, PICKUP, or DINE_IN).
+                  {business.businessType === 'RETAIL' 
+                    ? ' Settings are applied based on the order type (DELIVERY or DINE_IN).'
+                    : ' Settings are applied based on the order type (DELIVERY, PICKUP, or DINE_IN).'
+                  }
                 </p>
               </div>
             </div>
