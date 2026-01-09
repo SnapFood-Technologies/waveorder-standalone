@@ -109,20 +109,6 @@ jobs:
           yarn build
           echo "✅ Build completed successfully"
 
-      # 📦 UPDATE PRODUCTS FROM CSV
-      - name: 📦 Update Products from CSV
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "📦 Starting product update..."
-          if [ -f "products-export-2026-01-09.csv" ]; then
-            echo "✅ CSV file found, updating products..."
-            npx tsx scripts/update-products.ts products-export-2026-01-09.csv 695fe009d364dfb42d4c3bfc
-            echo "✅ Product update completed"
-          else
-            echo "⚠️ Warning: CSV file not found at project root, skipping update"
-          fi
-
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |
