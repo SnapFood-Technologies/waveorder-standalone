@@ -25,10 +25,12 @@ export async function GET(
     const daysBack = range === '1d' ? 1 : range === '7d' ? 7 : range === '30d' ? 30 : 90
     const startDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000))
 
-    const products = await prisma.product.findMany({
+    // Fetch all products for inventory value calculation (matching other systems)
+    // But only show trackInventory products for other metrics
+    const allProducts = await prisma.product.findMany({
       where: {
         businessId,
-        trackInventory: true
+        isActive: true
       },
       include: {
         category: {
@@ -39,14 +41,19 @@ export async function GET(
       }
     })
 
-    const totalProducts = products.length
-    const totalValue = products.reduce((sum, product) => sum + (product.stock * product.price), 0)
-    const lowStockProducts = products.filter(p => 
+    // Products with inventory tracking enabled (for low stock alerts, etc.)
+    const trackedProducts = allProducts.filter(p => p.trackInventory)
+
+    const totalProducts = trackedProducts.length
+    // Calculate inventory value for ALL active products (regardless of trackInventory setting)
+    // This matches other systems that include all products in inventory value
+    const totalValue = allProducts.reduce((sum, product) => sum + (product.stock * product.price), 0)
+    const lowStockProducts = trackedProducts.filter(p => 
       p.lowStockAlert && p.stock <= p.lowStockAlert && p.stock > 0
     ).length
-    const outOfStockProducts = products.filter(p => p.stock === 0).length
+    const outOfStockProducts = trackedProducts.filter(p => p.stock === 0).length
 
-    const lowStockAlerts = products
+    const lowStockAlerts = trackedProducts
       .filter(p => p.lowStockAlert && p.stock <= p.lowStockAlert)
       .sort((a, b) => a.stock - b.stock)
       .slice(0, 10)
