@@ -299,7 +299,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -310,7 +310,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             type="text"
             value={formData.nameAl || ''}
             onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -321,7 +321,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           >
             <option value="normal">Normal</option>
             <option value="fast">Fast</option>
@@ -336,7 +336,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.logo || ''}
             onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
             placeholder="https://example.com/logo.png"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -347,7 +347,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -358,7 +358,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.descriptionAl || ''}
             onChange={(e) => setFormData({ ...formData, descriptionAl: e.target.value })}
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -370,7 +370,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.deliveryTime || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
             placeholder="e.g., 3-5 days"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
@@ -382,7 +382,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.deliveryTimeAl || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
             placeholder="e.g., 3-5 ditë"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
       </div>
@@ -398,7 +398,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
           Active
         </label>
       </div>
-      <div className="flex items-center gap-3 pt-4 border-t">
+      <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
         <button
           type="submit"
           disabled={saving}
@@ -411,7 +411,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <X className="w-4 h-4" />
           Cancel

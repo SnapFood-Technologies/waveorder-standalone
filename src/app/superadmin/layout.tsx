@@ -64,7 +64,7 @@ export default function SuperAdminLayout({
         
         <footer className="bg-white border-t border-gray-200 px-4 lg:px-6 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600">
-            <div className="mb-2 sm:mb-0">© 2025 WaveOrder SuperAdmin. All rights reserved.</div>
+            <div className="mb-2 sm:mb-0">© 2026 WaveOrder SuperAdmin. All rights reserved.</div>
             <div className="flex space-x-4">
               <span className="text-red-600 font-medium">System Status: Operational</span>
             </div>

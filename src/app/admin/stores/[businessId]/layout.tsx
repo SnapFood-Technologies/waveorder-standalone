@@ -51,7 +51,7 @@ function AdminLayoutContent({
         
         <footer className="bg-white border-t border-gray-200 px-4 lg:px-6 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-center text-sm text-gray-600">
-            <div className="mb-2 sm:mb-0">© 2025 WaveOrder. All rights reserved.</div>
+            <div className="mb-2 sm:mb-0">© 2026 WaveOrder. All rights reserved.</div>
             <div className="flex space-x-4">
               <a href="/privacy" className="hover:text-teal-600 transition-colors">Privacy</a>
               <a href="/terms" className="hover:text-teal-600 transition-colors">Terms</a>
