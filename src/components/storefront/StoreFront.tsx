@@ -1668,6 +1668,17 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
         }
     }, [cart])
 
+  // Extract city from address and fetch postal pricing for RETAIL businesses
+  useEffect(() => {
+    if (storeData.businessType === 'RETAIL' && deliveryType === 'delivery' && customerInfo.address) {
+      const cityName = extractCityFromAddress(customerInfo.address)
+      if (cityName && cityName !== customerInfo.cityName) {
+        setCustomerInfo(prev => ({ ...prev, cityName }))
+        fetchPostalPricing(cityName)
+      }
+    }
+  }, [customerInfo.address, deliveryType, storeData.businessType])
+
   const currencySymbol = getCurrencySymbol(storeData.currency)
   const translations = getStorefrontTranslations(storeData.storefrontLanguage || storeData.language || 'en')
   const primaryColor = storeData.primaryColor || '#0D9488'
@@ -1796,11 +1807,19 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   // Extract city from address for RETAIL businesses
   const extractCityFromAddress = (address: string): string | null => {
     if (!address) return null
-    // Try to extract city from address (simple approach - can be enhanced)
+    // Try to extract city from address
     const parts = address.split(',').map(p => p.trim())
-    // City is usually in the second or third part
+    // City is usually in the second or third part (after street address)
     if (parts.length >= 2) {
-      return parts[1] || parts[0] || null
+      // Return the second part (most common: "Street, City")
+      return parts[1] || null
+    } else if (parts.length === 1) {
+      // If only one part, check if it contains common city indicators
+      const addressLower = parts[0].toLowerCase()
+      // If it looks like just a city name (no street numbers), return it
+      if (!/\d/.test(parts[0])) {
+        return parts[0]
+      }
     }
     return null
   }

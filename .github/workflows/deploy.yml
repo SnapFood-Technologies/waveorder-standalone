@@ -57,6 +57,15 @@ jobs:
           yarn install --frozen-lockfile
           echo "✅ Dependencies installed successfully"
 
+      # 🗄️ GENERATE PRISMA CLIENT
+      - name: 🗄️ Generate Prisma Client
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Generating Prisma client..."
+          npx prisma generate
+          echo "✅ Prisma client generated successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:

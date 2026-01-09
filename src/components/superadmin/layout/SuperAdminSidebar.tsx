@@ -16,7 +16,8 @@ import {
   Ticket,
   MessageSquare,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  MapPin
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -50,6 +51,17 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
         { 
           name: 'Settings', 
           href: '/superadmin/support/settings', 
+          icon: Settings
+        }
+      ]
+    },
+    { 
+      name: 'Locations', 
+      icon: MapPin,
+      children: [
+        { 
+          name: 'Configurations', 
+          href: '/superadmin/locations/configurations', 
           icon: Settings
         }
       ]
