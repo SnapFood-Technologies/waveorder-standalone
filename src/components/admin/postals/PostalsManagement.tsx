@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Package, Plus, Edit2, Trash2, Save, X, Upload, Image as ImageIcon } from 'lucide-react'
+import { Package, Plus, Edit2, Trash2, Save, X, Upload, Image as ImageIcon, AlertTriangle } from 'lucide-react'
 
 interface Postal {
   id?: string
@@ -32,6 +32,10 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; postal: Postal | null }>({
+    isOpen: false,
+    postal: null
+  })
 
   useEffect(() => {
     fetchPostals()
@@ -88,10 +92,16 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
     }
   }
 
-  const handleDelete = async (postalId: string) => {
-    if (!confirm('Are you sure you want to delete this postal service? This action cannot be undone.')) {
-      return
+  const handleDeleteClick = (postal: Postal) => {
+    if (postal.id) {
+      setDeleteModal({ isOpen: true, postal })
     }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.postal?.id) return
+
+    const postalId = deleteModal.postal.id
 
     try {
       const response = await fetch(`/api/admin/stores/${businessId}/postals/${postalId}`, {
@@ -100,16 +110,23 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
 
       if (response.ok) {
         setSuccessMessage('Postal service deleted successfully')
+        setDeleteModal({ isOpen: false, postal: null })
         fetchPostals()
         setTimeout(() => setSuccessMessage(null), 3000)
       } else {
         const data = await response.json()
         setError(data.message || 'Failed to delete postal service')
+        setDeleteModal({ isOpen: false, postal: null })
       }
     } catch (error) {
       console.error('Error deleting postal:', error)
       setError('Failed to delete postal service')
+      setDeleteModal({ isOpen: false, postal: null })
     }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteModal({ isOpen: false, postal: null })
   }
 
   if (loading) {
@@ -140,7 +157,7 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Postal Services</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -153,10 +170,10 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
               setShowAddForm(true)
               setEditingPostal(null)
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
           >
             <Plus className="w-4 h-4" />
-            Add Postal Service
+            <span className="whitespace-nowrap">Add Postal Service</span>
           </button>
         )}
       </div>
@@ -196,44 +213,48 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
           postals.map((postal) => (
             <div
               key={postal.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3">
-                    {postal.logo && (
-                      <img
-                        src={postal.logo}
-                        alt={postal.name}
-                        className="w-12 h-12 object-contain rounded"
-                      />
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{postal.name}</h3>
-                      {postal.nameAl && (
-                        <p className="text-sm text-gray-600">{postal.nameAl}</p>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {postal.logo && (
+                        <img
+                          src={postal.logo}
+                          alt={postal.name}
+                          className="w-12 h-12 object-contain rounded flex-shrink-0"
+                        />
                       )}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-gray-900 truncate">{postal.name}</h3>
+                        {postal.nameAl && (
+                          <p className="text-sm text-gray-600 truncate">{postal.nameAl}</p>
+                        )}
+                      </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      postal.type === 'fast' 
-                        ? 'bg-blue-100 text-blue-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {postal.type === 'fast' ? 'Fast' : 'Normal'}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      postal.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {postal.isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
+                        postal.type === 'fast' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {postal.type === 'fast' ? 'Fast' : 'Normal'}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${
+                        postal.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {postal.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
                   </div>
                   {postal.description && (
-                    <p className="text-sm text-gray-600 mt-2">{postal.description}</p>
+                    <p className="text-sm text-gray-600 mt-2 break-words">{postal.description}</p>
                   )}
                   {postal.deliveryTime && (
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1 break-words">
                       Delivery: {postal.deliveryTime}
                     </p>
                   )}
@@ -243,7 +264,7 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 ml-4">
+                <div className="flex items-center gap-2 sm:ml-4 flex-shrink-0">
                   <button
                     onClick={() => {
                       setEditingPostal(postal)
@@ -255,8 +276,8 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => postal.id && handleDelete(postal.id)}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    onClick={() => handleDeleteClick(postal)}
+                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Delete"
                     disabled={postal._count && postal._count.pricing > 0}
                   >
@@ -267,6 +288,78 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
             </div>
           ))
         )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal.isOpen && deleteModal.postal && (
+        <DeleteConfirmationModal
+          postal={deleteModal.postal}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      )}
+    </div>
+  )
+}
+
+// Delete Confirmation Modal Component
+interface DeleteConfirmationModalProps {
+  postal: Postal
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function DeleteConfirmationModal({ postal, onConfirm, onCancel }: DeleteConfirmationModalProps) {
+  const hasPricing = postal._count && postal._count.pricing > 0
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+        <div className="p-6">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Delete Postal Service
+              </h3>
+              <p className="text-sm text-gray-600">
+                This action cannot be undone.
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="text-gray-700 mb-3">
+              Are you sure you want to delete <strong>"{postal.name}"</strong>?
+            </p>
+            {hasPricing && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ This postal service has {postal._count?.pricing} pricing {postal._count?.pricing === 1 ? 'record' : 'records'}. 
+                  Deleting it may affect existing orders.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Postal Service
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -288,7 +381,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -398,11 +491,11 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
           Active
         </label>
       </div>
-      <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-4 border-t border-gray-200">
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
         >
           <Save className="w-4 h-4" />
           {saving ? 'Saving...' : 'Save'}
@@ -411,7 +504,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
         >
           <X className="w-4 h-4" />
           Cancel
