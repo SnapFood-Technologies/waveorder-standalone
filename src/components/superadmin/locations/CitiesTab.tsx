@@ -149,53 +149,60 @@ export function CitiesTab() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search cities by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          />
-        </div>
-        <div>
-          <select
-            value={selectedCountryId}
-            onChange={(e) => {
-              setSelectedCountryId(e.target.value)
-              setCurrentPage(1)
-            }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-          >
-            <option value="">All Countries</option>
-            {countries.map((country) => (
-              <option key={country.id} value={country.id}>
-                {country.name} ({country.code})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <select
-            value={selectedStateId}
-            onChange={(e) => {
-              setSelectedStateId(e.target.value)
-              setCurrentPage(1)
-            }}
-            disabled={!selectedCountryId}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <option value="">All States</option>
-            {states.map((state) => (
-              <option key={state.id} value={state.id}>
-                {state.name}
-              </option>
-            ))}
-          </select>
+      <div className="bg-white border border-gray-200 rounded-lg p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search cities by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <select
+              value={selectedCountryId}
+              onChange={(e) => {
+                setSelectedCountryId(e.target.value)
+                setCurrentPage(1)
+              }}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            >
+              <option value="">All Countries</option>
+              {countries.map((country) => (
+                <option key={country.id} value={country.id}>
+                  {country.name} ({country.code})
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedStateId}
+              onChange={(e) => {
+                setSelectedStateId(e.target.value)
+                setCurrentPage(1)
+              }}
+              disabled={!selectedCountryId}
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All States</option>
+              {states.map((state) => (
+                <option key={state.id} value={state.id}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="text-sm text-gray-600 flex items-center">
+              {pagination.total} cities
+            </div>
+          </div>
         </div>
       </div>
 
@@ -214,8 +221,8 @@ export function CitiesTab() {
         </div>
       ) : (
         <>
-          {/* Cities Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Cities Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
