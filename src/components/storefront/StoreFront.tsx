@@ -1692,7 +1692,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       const response = await fetch('/api/storefront/locations/countries')
       if (response.ok) {
         const data = await response.json()
+        console.log('Fetched countries:', data.data)
         setCountries(data.data || [])
+      } else {
+        console.error('Failed to fetch countries:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching countries:', error)
@@ -4091,7 +4094,7 @@ function OrderPanel({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.selectCountry || 'Country'} *</label>
                     <select
                       required
                       value={customerInfo.countryCode || ''}
@@ -4110,20 +4113,24 @@ function OrderPanel({
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                     >
-                      <option value="">Select Country</option>
-                      {countries.map((country) => (
-                        <option key={country.id} value={country.code}>
-                          {country.name}
-                        </option>
-                      ))}
+                      <option value="">{translations.selectCountry || 'Select Country'}</option>
+                      {countries.length > 0 ? (
+                        countries.map((country) => (
+                          <option key={country.id} value={country.code}>
+                            {country.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>Loading countries...</option>
+                      )}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.selectCity || 'City'} *</label>
                     {loadingCities ? (
                       <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-500">
-                        Loading cities...
+                        {translations.loading || 'Loading cities...'}
                       </div>
                     ) : (
                       <select
@@ -4145,7 +4152,7 @@ function OrderPanel({
                         onFocus={(e) => e.target.style.borderColor = primaryColor}
                         onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                       >
-                        <option value="">{customerInfo.countryCode ? 'Select City' : 'Select Country first'}</option>
+                        <option value="">{customerInfo.countryCode ? (translations.selectCity || 'Select City') : (translations.selectCountry || 'Select Country first')}</option>
                         {cities.map((city) => (
                           <option key={city.id} value={city.name}>
                             {city.name}
@@ -4156,7 +4163,7 @@ function OrderPanel({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.postalCode || 'Postal Code'}</label>
                     <input
                       type="text"
                       value={customerInfo.postalCode || ''}
@@ -4165,7 +4172,7 @@ function OrderPanel({
                       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                      placeholder="Postal code"
+                      placeholder={translations.postalCodePlaceholder || 'Postal code'}
                     />
                   </div>
 
@@ -4281,22 +4288,29 @@ function OrderPanel({
             />
           )}
 
-          {/* Enhanced Time Selection */}
-          <TimeSelection
-  deliveryType={deliveryType}
-  selectedTime={customerInfo.deliveryTime}
-  onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
-  storeData={storeData}
-  primaryColor={primaryColor}
-  translations={translations}
-  forceScheduleMode={forceScheduleMode}
-/>
+          {/* Enhanced Time Selection - Hide for RETAIL businesses */}
+          {storeData.businessType !== 'RETAIL' && (
+            <TimeSelection
+              deliveryType={deliveryType}
+              selectedTime={customerInfo.deliveryTime}
+              onTimeChange={(time) => setCustomerInfo({ ...customerInfo, deliveryTime: time })}
+              storeData={storeData}
+              primaryColor={primaryColor}
+              translations={translations}
+              forceScheduleMode={forceScheduleMode}
+            />
+          )}
         </div>
 
         {/* Cart Items */}
         {cart.length > 0 && (
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
-            <h3 className="font-semibold mb-4">{translations.cartItems || 'Cart Items'}</h3>
+            <h3 className="font-semibold mb-4">
+              {storeData.businessType === 'RETAIL' 
+                ? (translations.productsInCart || 'Products in Cart')
+                : (translations.cartItems || 'Cart Items')
+              }
+            </h3>
             <div className="space-y-3 max-h-60 overflow-y-auto">
               {cart.map(item => {
                 // Find the original product to check for discount

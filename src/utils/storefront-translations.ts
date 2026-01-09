@@ -52,6 +52,7 @@ inCartLabel: string
     
     // Cart & Checkout
     cartItems: string
+    productsInCart: string // For RETAIL businesses
     subtotal: string
     deliveryFee: string
     total: string
@@ -87,6 +88,10 @@ onlyStockAvailable: string
     // Placeholders
     streetAddress: string
     apartment: string
+    selectCountry: string
+    selectCity: string
+    postalCode: string
+    postalCodePlaceholder: string
     
     // Footer
     poweredBy: string
@@ -278,6 +283,7 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     
     // Cart & Checkout
     cartItems: "Cart Items",
+    productsInCart: "Products in Cart", // For RETAIL businesses
     subtotal: "Subtotal",
     deliveryFee: "Delivery Fee",
     total: "Total",
@@ -304,6 +310,10 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     // Placeholders
     streetAddress: "Street address",
     apartment: "Apartment, suite, etc.",
+    selectCountry: "Select Country",
+    selectCity: "Select City",
+    postalCode: "Postal Code",
+    postalCodePlaceholder: "Postal code",
 
 
     inCartAvailable: "{inCart} in cart, {available} available",
@@ -474,6 +484,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     
     // Cart & Checkout
     cartItems: "Artikujt në Shportë",
+    productsInCart: "Produkte në Shportë", // For RETAIL businesses
     subtotal: "Nëntotali",
     deliveryFee: "Kostoja e Dërgesës",
     total: "Totali",
@@ -505,6 +516,10 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     // Placeholders
     streetAddress: "Adresa e rrugës",
     apartment: "Apartamenti, suitë, etj.",
+    selectCountry: "Zgjidh Shtetin",
+    selectCity: "Zgjidh Qytetin",
+    postalCode: "Kodi Postar",
+    postalCodePlaceholder: "Kodi postar",
 
     inCartAvailable: "{inCart} në shportë, {available} të disponueshme", 
 onlyStockAvailable: "Vetëm {stock} të disponueshme",
