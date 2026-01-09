@@ -78,6 +78,18 @@ jobs:
           }
           echo "✅ Locations populated successfully"
 
+      # 📦 POPULATE POSTAL PRICING
+      - name: 📦 Populate Postal Pricing
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Populating postal pricing for business..."
+          npx tsx scripts/populate-postal-pricing.ts || {
+            echo "⚠️ Postal pricing population failed or data already exists (this is OK)"
+            exit 0
+          }
+          echo "✅ Postal pricing populated successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
