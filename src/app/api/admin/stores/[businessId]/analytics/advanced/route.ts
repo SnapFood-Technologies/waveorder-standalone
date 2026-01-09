@@ -69,31 +69,36 @@ export async function GET(
 
     // Calculate overview metrics
     const totalViews = analytics.reduce((sum, a) => sum + a.visitors, 0)
-    const totalOrders = orders.length
-    // Revenue calculation: Paid orders that are completed/fulfilled
-    // - DELIVERY orders: DELIVERED + PAID (final status)
-    // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
-    // - DINE_IN orders: PICKED_UP + PAID (final status - only when actually picked up)
-    const totalRevenue = orders
-      .filter(o => {
-        if (o.paymentStatus !== 'PAID') return false
-        if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        
-        // Order-type specific revenue calculation
-        if (o.type === 'DELIVERY') {
-          return o.status === 'DELIVERED'
-        } else if (o.type === 'PICKUP') {
-          return o.status === 'PICKED_UP'
-        } else if (o.type === 'DINE_IN') {
-          return o.status === 'PICKED_UP'
-        }
-        
-        return false
-      })
-      .reduce((sum, o) => sum + o.total, 0)
     
-    const conversionRate = totalViews > 0 ? ((totalOrders / totalViews) * 100).toFixed(2) : 0
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+    // Filter only DELIVERED + PAID orders (completed orders)
+    // - DELIVERY orders: DELIVERED + PAID
+    // - PICKUP orders: PICKED_UP + PAID  
+    // - DINE_IN orders: PICKED_UP + PAID
+    const completedOrders = orders.filter(o => {
+      if (o.paymentStatus !== 'PAID') return false
+      if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
+      
+      // Order-type specific completion check
+      if (o.type === 'DELIVERY') {
+        return o.status === 'DELIVERED'
+      } else if (o.type === 'PICKUP') {
+        return o.status === 'PICKED_UP'
+      } else if (o.type === 'DINE_IN') {
+        return o.status === 'PICKED_UP'
+      }
+      
+      return false
+    })
+    
+    // Total orders count (all orders including cancelled for tracking)
+    const totalOrders = orders.length
+    // Revenue only from completed (DELIVERED + PAID) orders
+    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0)
+    // Completed orders count for metrics
+    const completedOrdersCount = completedOrders.length
+    
+    const conversionRate = totalViews > 0 ? ((completedOrdersCount / totalViews) * 100).toFixed(2) : 0
+    const avgOrderValue = completedOrdersCount > 0 ? totalRevenue / completedOrdersCount : 0
 
     // Calculate previous period for comparison
     const periodDuration = endDate.getTime() - startDate.getTime()
@@ -117,43 +122,52 @@ export async function GET(
           gte: prevStartDate,
           lte: prevEndDate
         }
+      },
+      include: {
+        items: {
+          include: {
+            product: true
+          }
+        }
       }
     })
 
+    const prevCompletedOrders = prevOrders.filter(o => {
+      if (o.paymentStatus !== 'PAID') return false
+      if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
+      
+      if (o.type === 'DELIVERY') {
+        return o.status === 'DELIVERED'
+      } else if (o.type === 'PICKUP') {
+        return o.status === 'PICKED_UP'
+      } else if (o.type === 'DINE_IN') {
+        return o.status === 'PICKED_UP'
+      }
+      
+      return false
+    })
+
     const prevViews = prevAnalytics.reduce((sum, a) => sum + a.visitors, 0)
-    const prevRevenue = prevOrders
-      .filter(o => {
-        if (o.paymentStatus !== 'PAID') return false
-        if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return false
-        
-        // Order-type specific revenue calculation
-        if (o.type === 'DELIVERY') {
-          return o.status === 'DELIVERED'
-        } else if (o.type === 'PICKUP') {
-          return o.status === 'PICKED_UP'
-        } else if (o.type === 'DINE_IN') {
-          return o.status === 'PICKED_UP'
-        }
-        
-        return false
-      })
-      .reduce((sum, o) => sum + o.total, 0)
+    const prevRevenue = prevCompletedOrders.reduce((sum, o) => sum + o.total, 0)
 
     const viewsGrowth = prevViews > 0 ? (((totalViews - prevViews) / prevViews) * 100).toFixed(1) : 0
     const revenueGrowth = prevRevenue > 0 ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : 0
 
-    // Traffic trends (daily breakdown)
-    const trafficTrends = analytics.map(a => ({
-      date: a.date.toISOString().split('T')[0],
-      visitors: a.visitors,
-      orders: orders.filter(o => 
-        o.createdAt.toISOString().split('T')[0] === a.date.toISOString().split('T')[0]
-      ).length
-    }))
+    // Traffic trends (daily breakdown) - only count completed orders
+    const trafficTrends = analytics.map(a => {
+      const dateStr = a.date.toISOString().split('T')[0]
+      return {
+        date: dateStr,
+        visitors: a.visitors,
+        orders: completedOrders.filter(o => 
+          o.createdAt.toISOString().split('T')[0] === dateStr
+        ).length
+      }
+    })
 
-    // Top products by views/orders
+    // Top products - only from DELIVERED + PAID orders
     const productStats = new Map()
-    orders.forEach(order => {
+    completedOrders.forEach(order => {
       order.items.forEach(item => {
         const existing = productStats.get(item.productId) || {
           id: item.productId,
@@ -173,7 +187,8 @@ export async function GET(
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10)
 
-    // Order status breakdown
+    // Order status breakdown (all orders including cancelled for status tracking)
+    const allOrdersCount = orders.length
     const ordersByStatus = orders.reduce((acc, order) => {
       acc[order.status] = (acc[order.status] || 0) + 1
       return acc
@@ -187,12 +202,11 @@ export async function GET(
       revenue: 0
     }))
 
-    orders.forEach(order => {
+    // Hourly breakdown - only count completed orders
+    completedOrders.forEach(order => {
       const hour = order.createdAt.getHours()
       hourlyData[hour].orders++
-      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
-        hourlyData[hour].revenue += order.total
-      }
+      hourlyData[hour].revenue += order.total
     })
 
     // Daily breakdown
@@ -203,13 +217,12 @@ export async function GET(
       revenue: 0
     }))
 
-    orders.forEach(order => {
+    // Daily breakdown - only count completed orders
+    completedOrders.forEach(order => {
       const dayOfWeek = order.createdAt.getDay()
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Convert Sunday from 0 to 6
       dailyData[adjustedDay].orders++
-      if (order.paymentStatus === 'PAID' && ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status)) {
-        dailyData[adjustedDay].revenue += order.total
-      }
+      dailyData[adjustedDay].revenue += order.total
     })
 
     analytics.forEach(a => {
@@ -231,8 +244,8 @@ export async function GET(
         overview: {
           totalViews,
           uniqueVisitors: totalViews, // Using visitors as unique for now
-          totalOrders,
-          revenue: totalRevenue,
+          totalOrders: completedOrdersCount, // Only count completed (DELIVERED + PAID) orders
+          revenue: totalRevenue, // Only revenue from completed orders
           conversionRate: parseFloat(conversionRate as string),
           avgOrderValue,
           bounceRate: 35, // Placeholder - would need session tracking
@@ -252,6 +265,7 @@ export async function GET(
           hourly: hourlyData,
           daily: dailyData,
           peakHours: hourlyData
+            .filter(h => h.orders > 0)
             .sort((a, b) => b.orders - a.orders)
             .slice(0, 3)
             .map(h => h.hour)
@@ -266,7 +280,7 @@ export async function GET(
         ordersByStatus: Object.entries(ordersByStatus).map(([status, count]) => ({
           status,
           count,
-          percentage: ((count / totalOrders) * 100).toFixed(1)
+          percentage: allOrdersCount > 0 ? ((count / allOrdersCount) * 100).toFixed(1) : '0.0'
         }))
       },
       period: {
