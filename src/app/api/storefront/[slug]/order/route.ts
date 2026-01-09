@@ -1101,15 +1101,18 @@ export async function POST(
     if (business.businessType === 'RETAIL' && deliveryType === 'delivery' && postalPricingId) {
       // Validate postal pricing exists and belongs to business
       // @ts-ignore - PostalPricing model will be available after Prisma generate
-      const postalPricing = await (prisma as any).postalPricing.findFirst({
+      const allPostalPricing = await (prisma as any).postalPricing.findMany({
         where: {
           id: postalPricingId,
-          businessId: business.id,
-          deletedAt: null
+          businessId: business.id
         }
       })
 
+      // Filter out deleted records (deletedAt is null or undefined)
+      const postalPricing = allPostalPricing.find((p: any) => !p.deletedAt || p.deletedAt === null)
+
       if (!postalPricing) {
+        console.error(`Postal pricing not found - ID: ${postalPricingId}, Business: ${business.id}, Found records: ${allPostalPricing.length}`)
         return NextResponse.json({ 
           error: 'Invalid postal pricing selected'
         }, { status: 400 })
