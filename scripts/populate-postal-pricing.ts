@@ -213,14 +213,15 @@ const DELIVERY_TIMES = {
 }
 
 /**
- * Find city by name (case-insensitive, matches any state in Albania, Kosovo, or North Macedonia)
+ * Find city by name and return both ID and actual name from database
  */
-async function findCityByName(cityName: string): Promise<string | null> {
+async function findCityByName(cityName: string): Promise<{ id: string; name: string } | null> {
   try {
+    // Try exact match first for each country
     // First try Albania
-    const albaniaCity = await prisma.city.findFirst({
+    let city = await prisma.city.findFirst({
       where: {
-        name: { equals: cityName, mode: 'insensitive' },
+        name: cityName, // Exact match
         state: {
           country: {
             code: 'AL'
@@ -229,12 +230,12 @@ async function findCityByName(cityName: string): Promise<string | null> {
       }
     })
 
-    if (albaniaCity) return albaniaCity.id
+    if (city) return { id: city.id, name: city.name }
 
     // Try Kosovo
-    const kosovoCity = await prisma.city.findFirst({
+    city = await prisma.city.findFirst({
       where: {
-        name: { equals: cityName, mode: 'insensitive' },
+        name: cityName, // Exact match
         state: {
           country: {
             code: 'XK'
@@ -243,12 +244,12 @@ async function findCityByName(cityName: string): Promise<string | null> {
       }
     })
 
-    if (kosovoCity) return kosovoCity.id
+    if (city) return { id: city.id, name: city.name }
 
     // Try North Macedonia
-    const macedoniaCity = await prisma.city.findFirst({
+    city = await prisma.city.findFirst({
       where: {
-        name: { equals: cityName, mode: 'insensitive' },
+        name: cityName, // Exact match
         state: {
           country: {
             code: 'MK'
@@ -257,7 +258,7 @@ async function findCityByName(cityName: string): Promise<string | null> {
       }
     })
 
-    if (macedoniaCity) return macedoniaCity.id
+    if (city) return { id: city.id, name: city.name }
 
     return null
   } catch (error) {
@@ -279,12 +280,13 @@ async function upsertPostalPricing(
   deliveryTimeAl?: string
 ): Promise<{ created: boolean; updated: boolean; error?: string }> {
   try {
-    // Check if record exists (not deleted)
+    // MongoDB doesn't support mode: 'insensitive', so use exact match
+    // Try to find existing record with exact cityName match
     const existing = await prisma.postalPricing.findFirst({
       where: {
         businessId: BUSINESS_ID,
         postalId: postalId,
-        cityName: { equals: cityName, mode: 'insensitive' },
+        cityName: cityName, // Exact match (case-sensitive)
         type: type,
         deletedAt: null
       }
@@ -303,23 +305,54 @@ async function upsertPostalPricing(
       })
       return { created: false, updated: true }
     } else {
-      // Create new record
-      await prisma.postalPricing.create({
-        data: {
-          businessId: BUSINESS_ID,
-          postalId: postalId,
-          cityName: cityName,
-          type: type,
-          price,
-          priceWithoutTax,
-          deliveryTime: deliveryTime || null,
-          deliveryTimeAl: deliveryTimeAl || null
+      // Try to create new record - if it fails due to unique constraint, find and update
+      try {
+        await prisma.postalPricing.create({
+          data: {
+            businessId: BUSINESS_ID,
+            postalId: postalId,
+            cityName: cityName,
+            type: type,
+            price,
+            priceWithoutTax,
+            deliveryTime: deliveryTime || null,
+            deliveryTimeAl: deliveryTimeAl || null
+          }
+        })
+        return { created: true, updated: false }
+      } catch (createError: any) {
+        // If unique constraint violation, the record exists (possibly soft-deleted or case mismatch)
+        // Try to find it without deletedAt filter
+        if (createError.code === 'P2002') {
+          const existingRecord = await prisma.postalPricing.findFirst({
+            where: {
+              businessId: BUSINESS_ID,
+              postalId: postalId,
+              cityName: cityName,
+              type: type
+            }
+          })
+
+          if (existingRecord) {
+            // Update existing record (including undelete if soft-deleted)
+            await prisma.postalPricing.update({
+              where: { id: existingRecord.id },
+              data: {
+                price,
+                priceWithoutTax,
+                deliveryTime: deliveryTime || null,
+                deliveryTimeAl: deliveryTimeAl || null,
+                deletedAt: null // Undelete if it was soft-deleted
+              }
+            })
+            return { created: false, updated: true }
+          }
         }
-      })
-      return { created: true, updated: false }
+        throw createError // Re-throw if it's a different error
+      }
     }
   } catch (error: any) {
-    return { created: false, updated: false, error: error.message }
+    return { created: false, updated: false, error: error.message || 'Unknown error' }
   }
 }
 
@@ -343,17 +376,20 @@ async function processPricingBatch(
   }
 
   for (const cityName of cityNames) {
-    // Validate city exists (optional - for validation only)
-    const cityId = await findCityByName(cityName)
+    // Find city and get actual name from database
+    const cityInfo = await findCityByName(cityName)
     
-    if (!cityId) {
+    if (!cityInfo) {
       results.notFound++
       results.errors.push({ city: cityName, error: 'City not found in database' })
       continue
     }
 
+    // Use the actual city name from the database to ensure exact match
+    const actualCityName = cityInfo.name
+
     const result = await upsertPostalPricing(
-      cityName,
+      actualCityName, // Use actual name from database
       postalId,
       type,
       price,
