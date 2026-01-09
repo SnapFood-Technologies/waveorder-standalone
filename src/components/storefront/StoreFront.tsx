@@ -3770,7 +3770,7 @@ function OrderPanel({
   deliveryType: 'delivery' | 'pickup' | 'dineIn'
   setDeliveryType: (type: 'delivery' | 'pickup' | 'dineIn') => void
   customerInfo: CustomerInfo
-  setCustomerInfo: (info: CustomerInfo) => void
+  setCustomerInfo: React.Dispatch<React.SetStateAction<CustomerInfo>>
   cartSubtotal: number
   cartDeliveryFee: number
   cartTotal: number
@@ -3953,7 +3953,7 @@ function OrderPanel({
                           onClick={() => {
                             setSelectedPostalPricing(option)
                             setCalculatedDeliveryFee(option.price)
-                            setCustomerInfo(prev => ({ ...prev, postalPricingId: option.id }))
+                            setCustomerInfo((prev: CustomerInfo) => ({ ...prev, postalPricingId: option.id }))
                           }}
                           className={`w-full p-3 border-2 rounded-xl text-left transition-colors ${
                             selectedPostalPricing?.id === option.id
