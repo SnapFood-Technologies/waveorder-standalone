@@ -682,6 +682,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Cart & Checkout
     cartItems: "Artículos en el Carrito",
+    productsInCart: "Productos en el Carrito", // For RETAIL businesses
     subtotal: "Subtotal",
     deliveryFee: "Tarifa de Entrega",
     total: "Total",
@@ -708,6 +709,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Placeholders
     streetAddress: "Dirección",
     apartment: "Apartamento, suite, etc.",
+    selectCountry: "Seleccionar País",
+    selectCity: "Seleccionar Ciudad",
+    postalCode: "Código Postal",
+    postalCodePlaceholder: "Código postal",
 
     inCartAvailable: "{inCart} en carrito, {available} disponibles",
     onlyStockAvailable: "Solo {stock} disponibles",
