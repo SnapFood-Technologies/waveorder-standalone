@@ -16,14 +16,15 @@ WaveOrder is a comprehensive WhatsApp ordering platform that enables businesses 
 
 1. [Customer Storefront Features](#customer-storefront-features)
 2. [Business Admin Features](#business-admin-features)
-3. [SuperAdmin Features](#superadmin-features)
-4. [Authentication & User Management](#authentication--user-management)
-5. [Payment & Subscription](#payment--subscription)
-6. [Support & Communication](#support--communication)
-7. [Inventory Management](#inventory-management)
-8. [Analytics & Reporting](#analytics--reporting)
-9. [Notifications](#notifications)
-10. [API Features](#api-features)
+3. [Retail Business Type Features](#retail-business-type-features)
+4. [SuperAdmin Features](#superadmin-features)
+5. [Authentication & User Management](#authentication--user-management)
+6. [Payment & Subscription](#payment--subscription)
+7. [Support & Communication](#support--communication)
+8. [Inventory Management](#inventory-management)
+9. [Analytics & Reporting](#analytics--reporting)
+10. [Notifications](#notifications)
+11. [API Features](#api-features)
 
 ---
 
@@ -53,17 +54,19 @@ WaveOrder is a comprehensive WhatsApp ordering platform that enables businesses 
 
 ### Checkout & Orders
 - ✅ **Customer Information**: Name, phone, email collection
-- ✅ **Delivery Address**: Address collection with Google Places autocomplete
+- ✅ **Delivery Address**: Address collection with Google Places autocomplete (for non-RETAIL businesses)
+- ✅ **Retail Address Input**: Manual address fields (country, city, postal code) for RETAIL businesses
 - ✅ **Delivery Type Selection**: Choose between delivery, pickup, or dine-in
 - ✅ **Scheduled Orders**: Schedule orders for future date/time
 - ✅ **ASAP Orders**: Order for immediate processing
-- ✅ **Delivery Fee Calculation**: Dynamic delivery fee based on distance and zones
-- ✅ **Delivery Zone Validation**: Check if customer is within delivery area
-- ✅ **Distance Calculation**: Calculate distance between store and customer
+- ✅ **Delivery Fee Calculation**: Dynamic delivery fee based on distance and zones (non-RETAIL) or postal pricing (RETAIL)
+- ✅ **Delivery Zone Validation**: Check if customer is within delivery area (non-RETAIL)
+- ✅ **Postal Pricing Selection**: City-based postal service selection (RETAIL)
+- ✅ **Distance Calculation**: Calculate distance between store and customer (non-RETAIL)
 - ✅ **Special Instructions**: Add special instructions to orders
 - ✅ **Order Summary**: Review order details before submission
 - ✅ **Order Number Generation**: Unique order numbers per business
-- ✅ **WhatsApp Integration**: Orders sent via WhatsApp with formatted message
+- ✅ **WhatsApp Integration**: Orders sent via WhatsApp with formatted message (includes postal details for RETAIL)
 - ✅ **Order Confirmation**: Success page after order placement
 - ✅ **WhatsApp Redirect**: Automatic redirect to WhatsApp after order
 
@@ -230,7 +233,7 @@ WaveOrder is a comprehensive WhatsApp ordering platform that enables businesses 
 - ✅ **Delivery Fee Configuration**: Set base delivery fee
 - ✅ **Minimum Order**: Set minimum order amount for delivery
 - ✅ **Delivery Radius**: Set maximum delivery distance
-- ✅ **Delivery Zones**: Create multiple delivery zones with different fees
+- ✅ **Delivery Zones**: Create multiple delivery zones with different fees (hidden for RETAIL businesses)
 - ✅ **Zone-Based Pricing**: Different fees per delivery zone
 - ✅ **Distance-Based Calculation**: Automatic fee calculation based on distance
 
@@ -281,6 +284,64 @@ WaveOrder is a comprehensive WhatsApp ordering platform that enables businesses 
 - ✅ **Password Management**: Change password securely
 - ✅ **Login Activity**: View login history and activity
 - ✅ **Security Settings**: Manage account security
+
+---
+
+## Retail Business Type Features
+
+### Postal Services Management
+- ✅ **Postal Services List**: View all postal services with search and filtering
+- ✅ **Create Postal Services**: Add new postal services (e.g., "Posta Shqiptare", "GED Normal")
+- ✅ **Edit Postal Services**: Update postal service information
+- ✅ **Delete Postal Services**: Remove postal services (with confirmation modal)
+- ✅ **Postal Service Details**: Name, Albanian name, type (normal/express), description, logo
+- ✅ **Delivery Time Configuration**: Set delivery time per service (English and Albanian)
+- ✅ **Service Logo Upload**: Upload logos for postal services
+- ✅ **Active/Inactive Status**: Enable/disable postal services
+- ✅ **Multi-language Support**: Albanian name and delivery time support
+
+### Postal Pricing Management
+- ✅ **Postal Pricing List**: View all postal pricing configurations by city
+- ✅ **Create Postal Pricing**: Add pricing for specific cities and postal services
+- ✅ **Edit Postal Pricing**: Update pricing, delivery time, and city assignments
+- ✅ **Delete Postal Pricing**: Soft delete pricing records
+- ✅ **City-Based Pricing**: Different prices per city
+- ✅ **Service Type Pricing**: Normal and Express pricing options
+- ✅ **Price Configuration**: Set price, price without tax, minimum/maximum order value
+- ✅ **Delivery Time Override**: Override default delivery time per city
+- ✅ **Bulk City Assignment**: Assign pricing to multiple cities at once
+- ✅ **Search and Filter**: Filter by city, postal service, type
+- ✅ **Mobile Responsive**: Fully responsive pricing management interface
+
+### Retail Storefront Features
+- ✅ **Manual Address Input**: Country, city, postal code input fields (no Google Autocomplete for RETAIL)
+- ✅ **Country Dropdown**: Localized country selection (Albania → Shqipëri, etc.)
+- ✅ **City Selection**: Searchable city dropdown based on selected country
+- ✅ **Postal Code Input**: Postal code field for RETAIL orders
+- ✅ **City-Based Postal Pricing**: Dynamic postal pricing options based on selected city
+- ✅ **Postal Service Selection**: Select postal service with logo, name, delivery time, and price
+- ✅ **Dynamic Delivery Fee**: Delivery fee calculated from selected postal pricing
+- ✅ **Loading States**: Loading indicators for countries, cities, and postal pricing
+- ✅ **Localized Labels**: All labels and placeholders translated based on storefront language
+- ✅ **Address Format**: Address stored as "Address, City, Country Code, Postal Code" for RETAIL
+- ✅ **Validation**: City selection required before postal pricing options appear
+
+### Retail Order Workflow
+- ✅ **Postal Pricing Integration**: Orders store `postalPricingId` for RETAIL businesses
+- ✅ **Address Structure**: Country, city, postal code stored separately in order data
+- ✅ **WhatsApp Messages**: Includes postal service name, delivery time, localized country, and postal code
+- ✅ **Email Notifications**: Order emails include postal pricing details for RETAIL
+- ✅ **Order Status Labels**: "Preparing Shipment" instead of "Preparing" for RETAIL businesses
+- ✅ **Order Details Display**: Shows delivery method (postal service), delivery time, and fee
+- ✅ **Customer Notifications**: Customer emails include postal pricing details
+
+### Retail-Specific Settings
+- ✅ **Delivery Zones Hidden**: Delivery zones management hidden for RETAIL businesses
+- ✅ **Postal Services Tab**: Dedicated tab for postal services management
+- ✅ **Postal Pricing Tab**: Dedicated tab for postal pricing management
+- ✅ **Custom Display Texts**: Custom text fields for delivery time and free delivery messages
+- ✅ **Pickup/Dine-in Hidden**: Pickup and dine-in options hidden for RETAIL businesses
+- ✅ **Address Input Configuration**: Separate address fields (address, address notes, country, city, postal code)
 
 ---
 
@@ -338,6 +399,20 @@ WaveOrder is a comprehensive WhatsApp ordering platform that enables businesses 
 - ✅ **Reply to Messages**: Send replies to business messages
 - ✅ **Support Settings**: Configure support team name and settings
 - ✅ **Email Notifications**: Receive emails for new tickets/messages
+
+### Location Management
+- ✅ **Countries Management**: View, create, edit, and manage countries
+- ✅ **Countries List**: List all countries with search and pagination
+- ✅ **States/Provinces Management**: View, create, edit, and manage states/provinces
+- ✅ **States List**: List states filtered by country with search and pagination
+- ✅ **Cities Management**: View, create, edit, and manage cities
+- ✅ **Cities List**: List cities filtered by country/state with search and pagination
+- ✅ **Location Data Population**: Scripts to populate location data (Kosovo, Albania, North Macedonia)
+- ✅ **Geoname IDs**: Support for GeoNames identifiers for location data
+- ✅ **Country-State-City Hierarchy**: Proper relational structure for locations
+- ✅ **Location Configurations UI**: Tabbed interface for managing countries, states, and cities
+- ✅ **Search Functionality**: Search locations by name across all levels
+- ✅ **Pagination**: Efficient pagination for large location datasets
 
 ### Analytics
 - ✅ **Platform Analytics**: Comprehensive platform-wide analytics
@@ -711,6 +786,6 @@ All features listed in this document are confirmed to be built and operational i
 
 ---
 
-**Last Updated**: 1 November, 2025  
+**Last Updated**: 10 January, 2026  
 **Lead Developer**: Griseld Gerveni
 
