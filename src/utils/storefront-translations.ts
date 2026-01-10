@@ -556,7 +556,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     for: 'për',
 
     // Placeholders
-    streetAddress: "Adresa e rrugës",
+    streetAddress: "Rruga",
     apartment: "Apartamenti, suitë, etj.",
     selectCountry: "Zgjidh Shtetin",
     selectCity: "Zgjidh Qytetin",

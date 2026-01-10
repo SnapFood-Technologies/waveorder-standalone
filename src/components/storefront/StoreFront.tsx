@@ -4198,35 +4198,6 @@ function OrderPanel({
               {storeData.businessType === 'RETAIL' ? (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine1 || 'Address'} *</label>
-                    <input
-                      type="text"
-                      required
-                      value={customerInfo.address}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
-                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                      onFocus={(e) => e.target.style.borderColor = primaryColor}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                      placeholder={translations.streetAddress || 'Street address'}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.addressLine2 || 'Address Notes'}</label>
-                    <input
-                      type="text"
-                      value={customerInfo.address2}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
-                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-                      onFocus={(e) => e.target.style.borderColor = primaryColor}
-                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                      placeholder={translations.apartment || 'Apartment, suite, etc.'}
-                    />
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">{translations.selectCountry || 'Country'} *</label>
                     {loadingCountries ? (
                       <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-500">
@@ -4312,6 +4283,21 @@ function OrderPanel({
                         translations={translations}
                       />
                     )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{translations.streetAddress || 'Street'} *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      placeholder={translations.streetAddress || 'Street address'}
+                    />
                   </div>
 
                   <div>
