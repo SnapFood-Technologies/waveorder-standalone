@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import * as Sentry from '@sentry/nextjs'
 
@@ -1368,7 +1369,135 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
     // Create inventory activities for the order (after order creation)
     await createInventoryActivities(order.id, business.id, items);
 
-  // Send order notification email
+  // Send customer order placed confirmation email (if customer has email)
+  try {
+    if (customer.email && customer.email.trim()) {
+      // Get order items with product details for email
+      const orderItemsForCustomerEmail = await prisma.orderItem.findMany({
+        where: { orderId: order.id },
+        include: {
+          product: { select: { name: true } },
+          variant: { select: { name: true } }
+        }
+      })
+
+      // Fetch postal pricing details if it exists (for RETAIL businesses)
+      let postalPricingDetails: any = null
+      // @ts-ignore - postalPricingId field will be available after Prisma generate
+      const orderPostalPricingId = (order as any).postalPricingId
+      if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+        try {
+          // @ts-ignore - PostalPricing model will be available after Prisma generate
+          const postalPricing = await (prisma as any).postalPricing.findUnique({
+            where: { id: orderPostalPricingId },
+            include: {
+              postal: {
+                select: {
+                  name: true,
+                  nameAl: true,
+                  deliveryTime: true,
+                  deliveryTimeAl: true
+                }
+              }
+            }
+          })
+
+          if (postalPricing) {
+            const isAlbanian = business.language === 'sq' || business.language === 'al'
+            postalPricingDetails = {
+              name: isAlbanian
+                ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
+                : (postalPricing.postal?.name || 'Postal Service'),
+              nameEn: postalPricing.postal?.name || 'Postal Service',
+              nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+              deliveryTime: isAlbanian
+                ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+              price: postalPricing.price
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching postal pricing details for customer email:', error)
+        }
+      }
+
+      // Extract city/country/postalCode from deliveryAddress for RETAIL
+      let countryCode: string | null = null
+      let city: string | null = null
+      let postalCode: string | null = null
+      
+      if (business.businessType === 'RETAIL' && order.deliveryAddress) {
+        // Format: "Address, City, Country Code, Postal Code"
+        const addressParts = order.deliveryAddress.split(',').map((p: string) => p.trim())
+        if (addressParts.length >= 3) {
+          city = addressParts[addressParts.length - 3] || null
+          countryCode = addressParts[addressParts.length - 2] || null
+          postalCode = addressParts[addressParts.length - 1] || null
+        }
+      }
+
+      // Send customer order placed email
+      sendCustomerOrderPlacedEmail(
+        {
+          name: customer.name,
+          email: customer.email
+        },
+        {
+          orderNumber: order.orderNumber,
+          status: order.status,
+          type: order.type,
+          total: order.total,
+          deliveryAddress: order.deliveryAddress || undefined,
+          businessName: business.name,
+          businessAddress: business.address || undefined,
+          businessPhone: business.whatsappNumber || undefined,
+          currency: business.currency,
+          language: business.language || 'en',
+          translateContentToBusinessLanguage: business.translateContentToBusinessLanguage ?? true,
+          businessType: business.businessType || undefined,
+          items: orderItemsForCustomerEmail.map(item => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.price,
+            variant: item.variant?.name || null
+          })),
+          postalPricingDetails: postalPricingDetails,
+          countryCode: countryCode || orderData.countryCode || undefined,
+          city: city || orderData.city || undefined,
+          postalCode: postalCode || orderData.postalCode || undefined
+        }
+      ).catch((error) => {
+        // Log error but don't fail the request
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'send_customer_order_placed_email',
+            businessId: business.id,
+          },
+          extra: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerId: customer.id,
+          },
+        })
+        console.error('Failed to send customer order placed email:', error)
+      })
+    }
+  } catch (emailError) {
+    // Don't fail order creation if customer email fails
+    Sentry.captureException(emailError, {
+      tags: {
+        operation: 'send_customer_order_placed_email_error',
+        businessId: business.id,
+      },
+      extra: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+      },
+    })
+    console.error('Customer order placed email failed:', emailError)
+  }
+
+  // Send order notification email to business
 try {
   // First, get business notification settings
   const businessWithNotifications = await prisma.business.findUnique({
