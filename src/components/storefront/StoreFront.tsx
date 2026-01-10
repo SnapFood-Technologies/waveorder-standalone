@@ -4278,7 +4278,7 @@ function OrderPanel({
                           setCalculatedDeliveryFee(storeData.deliveryFee)
                         }}
                         disabled={!customerInfo.countryCode}
-                        placeholder={customerInfo.countryCode ? (translations.selectCity || 'Select City') : (translations.selectCountry || 'Select Country first')}
+                        placeholder={translations.selectCity || 'Select City'}
                         primaryColor={primaryColor}
                         translations={translations}
                       />

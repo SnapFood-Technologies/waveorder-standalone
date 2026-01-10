@@ -89,6 +89,7 @@ onlyStockAvailable: string
     streetAddress: string
     apartment: string
     selectCountry: string
+    selectCountryFirst: string
     selectCity: string
     postalCode: string
     postalCodePlaceholder: string
@@ -332,6 +333,7 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     streetAddress: "Street address",
     apartment: "Apartment, suite, etc.",
     selectCountry: "Select Country",
+    selectCountryFirst: "Select Country first",
     selectCity: "Select City",
     postalCode: "Postal Code",
     postalCodePlaceholder: "Postal code",
@@ -559,6 +561,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     streetAddress: "Rruga",
     apartment: "Apartamenti, suitë, etj.",
     selectCountry: "Zgjidh Shtetin",
+    selectCountryFirst: "Zgjidhni shtetin së pari",
     selectCity: "Zgjidh Qytetin",
     postalCode: "Kodi Postar",
     postalCodePlaceholder: "Kodi postar",
@@ -773,6 +776,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     streetAddress: "Dirección",
     apartment: "Apartamento, suite, etc.",
     selectCountry: "Seleccionar País",
+    selectCountryFirst: "Seleccione el país primero",
     selectCity: "Seleccionar Ciudad",
     postalCode: "Código Postal",
     postalCodePlaceholder: "Código postal",
