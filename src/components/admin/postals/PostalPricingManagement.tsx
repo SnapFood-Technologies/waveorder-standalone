@@ -1,8 +1,8 @@
 // src/components/admin/postals/PostalPricingManagement.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MapPin, Plus, Edit2, Trash2, Save, X, Package } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MapPin, Plus, Edit2, Trash2, Save, X, Package, ChevronDown, Search } from 'lucide-react'
 
 interface Postal {
   id: string
@@ -196,16 +196,12 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Filter by City
           </label>
-          <select
+          <SearchableCityFilter
+            cities={cities}
             value={filterCity}
-            onChange={(e) => setFilterCity(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          >
-            <option value="">All Cities</option>
-            {cities.map(city => (
-              <option key={city} value={city}>{city}</option>
-            ))}
-          </select>
+            onChange={setFilterCity}
+            placeholder="All Cities"
+          />
         </div>
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -512,5 +508,115 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
         </button>
       </div>
     </form>
+  )
+}
+
+// Searchable City Filter Component
+function SearchableCityFilter({
+  cities,
+  value,
+  onChange,
+  placeholder = 'All Cities'
+}: {
+  cities: string[]
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const selectRef = useRef<HTMLDivElement>(null)
+
+  // Filter cities based on search term
+  const filteredCities = cities.filter(city =>
+    city.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        setSearchTerm('')
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const selectedCity = value ? cities.find(c => c === value) : null
+
+  return (
+    <div className="relative" ref={selectRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-left flex items-center justify-between bg-white hover:border-gray-400 transition-colors"
+      >
+        <span className={selectedCity ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedCity || placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+          <div className="p-2 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search cities..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto max-h-48">
+            <button
+              type="button"
+              onClick={() => {
+                onChange('')
+                setIsOpen(false)
+                setSearchTerm('')
+              }}
+              className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                !value ? 'bg-teal-50 text-teal-900 font-medium' : 'text-gray-900'
+              }`}
+            >
+              {placeholder}
+            </button>
+            {filteredCities.length > 0 ? (
+              filteredCities.map((city) => (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => {
+                    onChange(city)
+                    setIsOpen(false)
+                    setSearchTerm('')
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                    value === city ? 'bg-teal-50 text-teal-900 font-medium' : 'text-gray-900'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))
+            ) : searchTerm ? (
+              <div className="px-4 py-2 text-gray-500 text-sm">
+                No cities found
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
