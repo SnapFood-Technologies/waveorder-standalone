@@ -56,22 +56,36 @@ function parseAndCleanAddress(addressString: string, latitude?: number, longitud
     
     if (parts.length >= 3) {
       const lastPart = parts[parts.length - 1];
-      const lastPartLower = lastPart.toLowerCase();
+      const lastPartLower = lastPart.toLowerCase().trim();
       
-      // Detect country and extract additional
-      if (lastPartLower.includes('albania') || lastPartLower.includes('al')) {
+      // Check if last part is just a country code (2-3 letters, no spaces, all caps or lowercase)
+      const isCountryCodeOnly = /^[A-Z]{2,3}$/i.test(lastPart) && 
+                                (lastPartLower === 'al' || lastPartLower === 'gr' || lastPartLower === 'it' || 
+                                 lastPartLower === 'es' || lastPartLower === 'us' || lastPartLower === 'xk' || 
+                                 lastPartLower === 'mk' || lastPartLower === 'gb' || lastPartLower === 'fr' ||
+                                 lastPartLower === 'de' || lastPartLower === 'nl');
+      
+      if (isCountryCodeOnly) {
+        // Last part is just a country code, no additional info
+        country = lastPart.toUpperCase();
+        additional = ''; // Empty because it's just the country code
+      } else if (lastPartLower.includes('albania') || (lastPartLower.includes(' al') && lastPartLower.length > 3)) {
         country = 'AL';
-        // Extract everything after "albania"
-        additional = lastPart.replace(/albania/i, '').trim();
-      } else if (lastPartLower.includes('greece') || lastPartLower.includes('gr')) {
+        // Extract everything after "albania" or "al" (but only if it's not just "AL")
+        const cleaned = lastPart.replace(/albania/i, '').trim();
+        additional = cleaned && cleaned !== 'AL' ? cleaned : '';
+      } else if (lastPartLower.includes('greece') || (lastPartLower.includes(' gr') && lastPartLower.length > 3)) {
         country = 'GR';
-        additional = lastPart.replace(/greece/i, '').trim();
-      } else if (lastPartLower.includes('italy') || lastPartLower.includes('it')) {
+        const cleaned = lastPart.replace(/greece/i, '').trim();
+        additional = cleaned && cleaned !== 'GR' ? cleaned : '';
+      } else if (lastPartLower.includes('italy') || (lastPartLower.includes(' it') && lastPartLower.length > 3)) {
         country = 'IT';
-        additional = lastPart.replace(/italy/i, '').trim();
-      } else if (lastPartLower.includes('spain') || lastPartLower.includes('es')) {
+        const cleaned = lastPart.replace(/italy/i, '').trim();
+        additional = cleaned && cleaned !== 'IT' ? cleaned : '';
+      } else if (lastPartLower.includes('spain') || (lastPartLower.includes(' es') && lastPartLower.length > 3)) {
         country = 'ES';
-        additional = lastPart.replace(/spain/i, '').trim();
+        const cleaned = lastPart.replace(/spain/i, '').trim();
+        additional = cleaned && cleaned !== 'ES' ? cleaned : '';
       } else {
         // No country detected, treat entire last part as additional
         additional = lastPart;
@@ -1273,6 +1287,7 @@ export async function POST(
     } else {
       // Customer exists - Update with most recent information
       // Strategy: Always update name/email if different (customer knows their info best)
+      // Update address if it's a delivery order and address is different or missing
       let updateData: any = {};
       
       // Update name if different (trust the most recent order)
@@ -1288,6 +1303,54 @@ export async function POST(
         const newEmail = customerEmail.trim()
         if (newEmail !== currentEmail) {
           updateData.email = newEmail;
+        }
+      }
+      
+      // Update address if delivery order and address is provided
+      if (deliveryType === 'delivery' && deliveryAddress) {
+        let addressJson = null;
+        let backwardCompatibleAddress = null;
+        
+        addressJson = parseAndCleanAddress(deliveryAddress, latitude, longitude);
+        
+        // For RETAIL orders, use postal code from orderData if provided
+        if (addressJson && business.businessType === 'RETAIL' && orderData.postalCode) {
+          addressJson.zipCode = orderData.postalCode.trim();
+        }
+        
+        if (addressJson) {
+          const addressParts = [
+            addressJson.street,
+            addressJson.additional,
+            addressJson.city,
+            addressJson.zipCode
+          ].filter(Boolean);
+          backwardCompatibleAddress = addressParts.join(', ');
+          
+          // Check if address is different from current address
+          const currentAddress = customer.address?.trim() || ''
+          const currentAddressJson = customer.addressJson ? (typeof customer.addressJson === 'string' ? JSON.parse(customer.addressJson) : customer.addressJson) : null
+          
+          // Update if:
+          // 1. Customer has no address stored, OR
+          // 2. The new address is significantly different (different street or city)
+          const shouldUpdateAddress = !currentAddress || 
+            !currentAddressJson ||
+            !currentAddressJson.street ||
+            currentAddressJson.street.toLowerCase().trim() !== addressJson.street.toLowerCase().trim() ||
+            (addressJson.city && currentAddressJson.city && 
+             currentAddressJson.city.toLowerCase().trim() !== addressJson.city.toLowerCase().trim())
+          
+          if (shouldUpdateAddress) {
+            updateData.address = backwardCompatibleAddress;
+            updateData.addressJson = addressJson;
+          }
+        } else {
+          // Fallback: use delivery address as-is if parsing fails
+          const currentAddress = customer.address?.trim() || ''
+          if (!currentAddress || currentAddress !== deliveryAddress.trim()) {
+            updateData.address = deliveryAddress.trim();
+          }
         }
       }
       
