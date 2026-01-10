@@ -354,7 +354,7 @@ export function PhoneInput({
           onChange={handleChange}
           onBlur={handleBlur}
           disabled={disabled}
-          className={`w-full pl-16 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+          className={`w-full pl-16 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-500 ${
             !isValid && value && (hasUserInput || isTouched) ? 'border-red-300' : 'border-gray-200'
           }`}
           style={{ 

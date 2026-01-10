@@ -560,7 +560,7 @@ function AddressAutocomplete({
           required={required}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
           style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
           onFocus={(e) => e.target.style.borderColor = primaryColor}
           onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -2992,7 +2992,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
           <div className="bg-white w-full max-h-[85vh] rounded-t-3xl overflow-hidden">
             <div className="p-4  flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{translations.yourOrder}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{translations.yourOrder}</h2>
               <button
                 onClick={() => setShowCartModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-full"
@@ -4117,7 +4117,7 @@ function OrderPanel({
   return (
     <div className={`${isMobile ? 'p-4' : ''}`}>
       <div>
-        <h2 className="text-xl font-bold mb-6">{translations.orderDetails || 'Your Order'}</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900">{translations.orderDetails || 'Your Order'}</h2>
         
         {/* Desktop Delivery Type Toggle */}
         {deliveryOptions.length > 1 && (
@@ -4158,7 +4158,7 @@ function OrderPanel({
               required
               value={customerInfo.name}
               onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-500"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
               onFocus={(e) =>  e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4183,7 +4183,7 @@ function OrderPanel({
               value={customerInfo.email}
               onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
               disabled={false}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-500"
               style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
               onFocus={(e) => e.target.style.borderColor = primaryColor}
               onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4204,7 +4204,7 @@ function OrderPanel({
                       required
                       value={customerInfo.address}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
                       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4218,7 +4218,7 @@ function OrderPanel({
                       type="text"
                       value={customerInfo.address2}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
                       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4320,7 +4320,7 @@ function OrderPanel({
                       type="text"
                       value={customerInfo.postalCode || ''}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, postalCode: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
                       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4421,7 +4421,7 @@ function OrderPanel({
                       value={customerInfo.address2}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, address2: e.target.value })}
                       disabled={false}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-500"
                       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                       onFocus={(e) => e.target.style.borderColor = primaryColor}
                       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -4557,12 +4557,12 @@ function OrderPanel({
             value={customerInfo.specialInstructions}
             onChange={(e) => setCustomerInfo({ ...customerInfo, specialInstructions: e.target.value })}
             disabled={false}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-            onFocus={(e) => e.target.style.borderColor = primaryColor}
-            onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-            rows={3}
-            placeholder={translations.anySpecialRequests || 'Any special requests...'}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-500"
+                      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                      onFocus={(e) => e.target.style.borderColor = primaryColor}
+                      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      rows={3}
+                      placeholder={translations.anySpecialRequests || 'Any special requests...'}
           />
         </div>
 
