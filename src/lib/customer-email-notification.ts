@@ -262,6 +262,7 @@ function getEmailLabels(language: string = 'en'): Record<string, string> {
       orderReceived: 'Order Received',
       thankYouForOrder: 'Thank you for your order!',
       orderPlacedMessage: 'We\'ve received your order and it\'s being reviewed by our team.',
+      nextSteps: 'What\'s Next?',
       orderConfirmedEmail: 'Once your order is confirmed, you\'ll receive another email with the confirmation details and estimated preparation/delivery time.',
       orderNumberLabel: 'Order Number',
       weWillNotifyYou: 'We\'ll notify you via email when your order status updates. You can track your order using the order number above.',
@@ -288,6 +289,7 @@ function getEmailLabels(language: string = 'en'): Record<string, string> {
       orderReceived: 'Pedido Recibido',
       thankYouForOrder: '¡Gracias por tu pedido!',
       orderPlacedMessage: 'Hemos recibido tu pedido y nuestro equipo lo está revisando.',
+      nextSteps: '¿Qué sigue?',
       orderConfirmedEmail: 'Una vez que tu pedido sea confirmado, recibirás otro correo electrónico con los detalles de confirmación y el tiempo estimado de preparación/entrega.',
       orderNumberLabel: 'Número de Pedido',
       weWillNotifyYou: 'Te notificaremos por correo electrónico cuando se actualice el estado de tu pedido. Puedes rastrear tu pedido usando el número de pedido anterior.',
@@ -314,6 +316,7 @@ function getEmailLabels(language: string = 'en'): Record<string, string> {
       orderReceived: 'Porosi e Marrë',
       thankYouForOrder: 'Faleminderit për porosinë tuaj!',
       orderPlacedMessage: 'Kemi marrë porosinë tuaj dhe ekipi ynë po e shqyrton.',
+      nextSteps: 'Ç\'ndodh Tjetër?',
       orderConfirmedEmail: 'Pasi porosia juaj të konfirmohet, do të merrni një email tjetër me detajet e konfirmimit dhe kohën e vlerësuar të përgatitjes/dorëzimit.',
       orderNumberLabel: 'Numri i Porosisë',
       weWillNotifyYou: 'Do t\'ju njoftojmë me email kur statusi i porosisë suaj të përditësohet. Mund ta ndiqni porosinë tuaj duke përdorur numrin e porosisë më sipër.',
@@ -583,7 +586,7 @@ function createCustomerOrderPlacedEmail({
 
       <!-- What's Next -->
       <div style="margin-bottom: 30px; padding: 20px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #3b82f6;">
-        <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📧 ${labels.orderConfirmedEmail || 'What\'s Next?'}</h3>
+        <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px; font-weight: 600;">${labels.nextSteps || 'What\'s Next?'}</h3>
         <p style="color: #1e40af; margin: 0 0 12px; font-size: 14px; line-height: 1.6;">${labels.orderConfirmedEmail || 'Once your order is confirmed, you\'ll receive another email with the confirmation details and estimated preparation/delivery time.'}</p>
         <p style="color: #1e40af; margin: 0; font-size: 14px; line-height: 1.6;">${labels.weWillNotifyYou || 'We\'ll notify you via email when your order status updates. You can track your order using the order number above.'}</p>
       </div>

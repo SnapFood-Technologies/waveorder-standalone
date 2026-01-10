@@ -1935,7 +1935,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   
   // Add order type prominently
   const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
-  message += `📋 ${terms.orderType}: *${deliveryTypeLabel}*\n\n`
+  message += `${terms.orderType}: *${deliveryTypeLabel}*\n\n`
   
   // Items
   items.forEach((item: any) => {
@@ -1973,8 +1973,8 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   message += `*${terms.total}: ${currencySymbol}${orderData.total.toFixed(2)}*\n\n`
   
   message += `---\n`
-  message += `👤 ${terms.customer}: ${customer.name}\n`
-  message += `📞 ${terms.phone}: ${customer.phone}\n`
+  message += `${terms.customer}: ${customer.name}\n`
+  message += `${terms.phone}: ${customer.phone}\n`
   
   // Enhanced location/time handling based on delivery type
   if (orderData.deliveryType === 'delivery') {
@@ -2015,72 +2015,69 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
       formattedAddress += `, ${orderData.postalCode}`
     }
     
-    message += `📍 ${terms.deliveryAddress}: ${formattedAddress}\n`
+    message += `${terms.deliveryAddress}: ${formattedAddress}\n`
     
     // Add coordinates for delivery (helpful for delivery tracking) - only for non-RETAIL
     if (orderData.latitude && orderData.longitude && businessType !== 'RETAIL') {
-      message += `🗺️ Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
+      message += `Location: https://maps.google.com/?q=${orderData.latitude},${orderData.longitude}\n`
     }
     
     // Add distance if available (only for non-RETAIL)
     if (orderData.deliveryDistance && businessType !== 'RETAIL') {
-      message += `📏 Distance: ${orderData.deliveryDistance}km\n`
+      message += `Distance: ${orderData.deliveryDistance}km\n`
     }
     
     // Delivery time with postal pricing details for RETAIL
     const timeLabel = terms.deliveryTime
     if (businessType === 'RETAIL' && orderData.postalPricingDetails) {
-      // For RETAIL: Show postal service name and delivery time
+      // For RETAIL: Only show postal service with delivery time (no separate "Delivery Time" line)
       const postalServiceName = orderData.postalPricingDetails.name || 'Postal Service'
       const deliveryTimeText = orderData.postalPricingDetails.deliveryTime || terms.asap
-      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-        new Date(orderData.deliveryTime).toLocaleString(language === 'sq' ? 'sq-AL' : language === 'es' ? 'es-ES' : 'en-US') 
-        : terms.asap}\n`
-      message += `📦 ${postalServiceName}: ${deliveryTimeText}\n`
+      message += `${postalServiceName}: ${deliveryTimeText}\n`
     } else {
       // For non-RETAIL: Standard delivery time
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
                    'en-US'
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+    message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
     }
   } else if (orderData.deliveryType === 'pickup') {
     // Use business address instead of null
     const pickupAddress = business.address || (language === 'es' ? 'Ubicación de la tienda' : 'Store location')
-    message += `🏪 ${terms.pickupLocation}: ${pickupAddress}\n`
+    message += `${terms.pickupLocation}: ${pickupAddress}\n`
     
     const timeLabel = terms.pickupTime
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
                    'en-US'
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+    message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
   } else if (orderData.deliveryType === 'dineIn') {
     const dineInAddress = business.address || (language === 'es' ? 'Ubicación del restaurante' : 'Restaurant location')
-    message += `🍽️ ${dineInAddress}\n`
+    message += `${dineInAddress}\n`
     
     const timeLabel = terms.arrivalTime
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
                    'en-US'
-    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+    message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 
       : terms.asap}\n`
   }
   
-  message += `💳 ${terms.payment}: ${orderData.paymentMethod}\n`
+  message += `${terms.payment}: ${orderData.paymentMethod}\n`
   
   if (orderData.specialInstructions) {
-    message += `📝 ${terms.notes}: ${orderData.specialInstructions}\n`
+    message += `${terms.notes}: ${orderData.specialInstructions}\n`
   }
   
   message += `\n---\n`
-  message += `🏪 ${business.name}\n`
+  message += `${business.name}\n`
   if (business.website) {
-    message += `🌐 ${business.website}\n`
+    message += `${business.website}\n`
   }
   
   return message
