@@ -515,7 +515,7 @@ function createCustomerOrderStatusEmail({
         ${labels.automatedNotification} ${orderData.businessName}. ${labels.doNotReply}
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
-        © 2026 Electral Shpk. All rights reserved.
+        © 2026 ${orderData.businessName}. All rights reserved.
       </p>
     </div>
     
@@ -685,7 +685,7 @@ function createCustomerOrderPlacedEmail({
         ${labels.automatedNotification} ${orderData.businessName}. ${labels.doNotReply}
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
-        © 2026 Electral Shpk. All rights reserved.
+        © 2026 ${orderData.businessName}. All rights reserved.
       </p>
     </div>
     
