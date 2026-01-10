@@ -249,13 +249,13 @@ This document contains all translation keys used in the storefront, organized by
 
 | Key | English | Albanian (sq/al) |
 |-----|---------|------------------|
-| `orderPrepared` | Order Prepared! | Porosia u Përgatit! |
+| `orderPrepared` | Order Sent! | Porosia u Dërgua! |
 | `orderNumber` | Order Number | Numri i Porosisë |
-| `orderOpenedWhatsApp` | Your order details have been prepared and WhatsApp should now be open. Please send the message to complete your order (if you haven't already sent it). | Detajet e porosisë tënde janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Të lutem dërgo mesazhin për të përfunduar porosinë tënde (nëse nuk e ke dërguar ende). |
-| `nextSteps` | Next Steps | Hapat e Ardhshëm |
-| `sendWhatsAppMessage` | Send the WhatsApp message (if not sent yet) | Dërgo mesazhin në WhatsApp (nëse nuk është dërguar ende) |
-| `awaitConfirmation` | Wait for our confirmation | Prit konfirmimin tonë |
-| `weWillPrepareOrder` | We'll prepare your order once confirmed | Do ta përgatisim porosinë tënde pasi të konfirmohet |
+| `orderOpenedWhatsApp` | Your order has been sent successfully. The store has been notified, but you can also send a WhatsApp message if you want to communicate directly with the store. | Porosia juaj u dërgua me sukses. Dyqani është njoftuar, por mundeni edhe të dërgoni një mesazh WhatsApp nëse dëshironi të komunikoni drejtpërdrejt me dyqanin. |
+| `nextSteps` | What's Next? | Ç'ndodh Tjetër? |
+| `sendWhatsAppMessage` | Optional: Send WhatsApp message to communicate with store | Opsionale: Dërgoni mesazh WhatsApp për të komunikuar me dyqanin |
+| `awaitConfirmation` | You will receive order status updates via email or WhatsApp | Do të merrni përditësime për statusin e porosisë me email ose WhatsApp |
+| `weWillPrepareOrder` | The store will process your order and notify you of any status changes | Dyqani do ta përpunojë porosinë tuaj dhe do t'ju njoftojë për çdo ndryshim statusi |
 | `storeCurrentlyClosed` | Store is currently closed | Dyqani është aktualisht i mbyllur |
 | `wouldYouLikeToSchedule` | Would you like to schedule your order for later instead? | A dëshiron të planifikosh porosinë tënde për më vonë në vend të kësaj? |
 | `cannotPlaceNowOrder` | We're currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we're open! | Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikosh porosinë tënde për kur të jemi të hapur! |

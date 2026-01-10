@@ -400,6 +400,23 @@ export async function PUT(
           updateData.deliveryTime = new Date()
         }
       }
+
+      // Automatically update payment status when order is canceled
+      if (body.status === 'CANCELLED') {
+        // Only auto-update if payment status is not explicitly being changed in the request
+        if (!body.paymentStatus) {
+          const currentPaymentStatus = existingOrder.paymentStatus || 'PENDING'
+          
+          if (currentPaymentStatus === 'PENDING') {
+            // Payment was never captured, mark as failed
+            updateData.paymentStatus = 'FAILED'
+          } else if (currentPaymentStatus === 'PAID') {
+            // Payment was already captured, mark as refunded (admin should process actual refund)
+            updateData.paymentStatus = 'REFUNDED'
+          }
+          // If already FAILED or REFUNDED, leave as is
+        }
+      }
     }
 
     if (body.paymentStatus && body.paymentStatus !== existingOrder.paymentStatus) {

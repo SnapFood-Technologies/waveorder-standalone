@@ -399,13 +399,13 @@ onlyStockAvailable: "Only {stock} available",
 
 
   // Success Message & Scheduling
-  orderPrepared: "Order Prepared!",
+  orderPrepared: "Order Sent!",
   orderNumber: "Order Number",
-  orderOpenedWhatsApp: "Your order details have been prepared and WhatsApp should now be open. Please send the message to complete your order (if you haven't already sent it).",
-  nextSteps: "Next Steps",
-  sendWhatsAppMessage: "Send the WhatsApp message (if not sent yet)",
-  awaitConfirmation: "Wait for our confirmation",
-  weWillPrepareOrder: "We'll prepare your order once confirmed",
+  orderOpenedWhatsApp: "Your order has been sent successfully. The store has been notified, but you can also send a WhatsApp message if you want to communicate directly with the store.",
+  nextSteps: "What's Next?",
+  sendWhatsAppMessage: "Optional: Send WhatsApp message to communicate with store",
+  awaitConfirmation: "You will receive order status updates via email or WhatsApp",
+  weWillPrepareOrder: "The store will process your order and notify you of any status changes",
   storeCurrentlyClosed: "Store is currently closed",
   wouldYouLikeToSchedule: "Would you like to schedule your order for later instead?",
 
@@ -619,13 +619,13 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
 
 
     // Success Message & Scheduling
-    orderPrepared: "Porosia u Përgatit!",
+    orderPrepared: "Porosia u Dërgua!",
     orderNumber: "Numri i Porosisë",
-    orderOpenedWhatsApp: "Detajet e porosisë tënde janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Të lutem dërgo mesazhin për të përfunduar porosinë tënde (nëse nuk e ke dërguar ende).",
-    nextSteps: "Hapat e Ardhshëm",
-    sendWhatsAppMessage: "Dërgo mesazhin në WhatsApp (nëse nuk është dërguar ende)",
-    awaitConfirmation: "Prit konfirmimin tonë",
-    weWillPrepareOrder: "Do ta përgatisim porosinë tënde pasi të konfirmohet",
+    orderOpenedWhatsApp: "Porosia juaj u dërgua me sukses. Dyqani është njoftuar, por mundeni edhe të dërgoni një mesazh WhatsApp nëse dëshironi të komunikoni drejtpërdrejt me dyqanin.",
+    nextSteps: "Ç'ndodh Tjetër?",
+    sendWhatsAppMessage: "Opsionale: Dërgoni mesazh WhatsApp për të komunikuar me dyqanin",
+    awaitConfirmation: "Do të merrni përditësime për statusin e porosisë me email ose WhatsApp",
+    weWillPrepareOrder: "Dyqani do ta përpunojë porosinë tuaj dhe do t'ju njoftojë për çdo ndryshim statusi",
     storeCurrentlyClosed: "Dyqani është aktualisht i mbyllur",
     wouldYouLikeToSchedule: "A dëshiron të planifikosh porosinë tënde për më vonë në vend të kësaj?",
 
