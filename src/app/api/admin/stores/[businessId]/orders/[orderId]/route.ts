@@ -424,7 +424,16 @@ export async function PUT(
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: updateData,
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        type: true,
+        total: true,
+        deliveryAddress: true,
+        deliveryTime: true,
+        // @ts-ignore - postalPricingId field will be available after Prisma generate
+        postalPricingId: true,
         customer: {
           select: {
             id: true,
@@ -486,7 +495,7 @@ export async function PUT(
           }
         }
       }
-    })
+    }) as any
 
     // Send customer email notification if status changed and settings allow it
     if (body.status && body.status !== existingOrder.status && updatedOrder.customer.email) {
@@ -495,6 +504,109 @@ export async function PUT(
         const shouldNotify = shouldNotifyCustomer(updatedOrder.business, body.status, updatedOrder.type)
         
         if (shouldNotify) {
+          // Fetch postal pricing details if postalPricingId exists (for RETAIL businesses)
+          let fetchedPostalPricing = null
+          if (updatedOrder.business.businessType === 'RETAIL' && (updatedOrder as any).postalPricingId) {
+            try {
+              // @ts-ignore - PostalPricing model will be available after Prisma generate
+              const allPostalPricing = await (prisma as any).postalPricing.findMany({
+                where: {
+                  id: (updatedOrder as any).postalPricingId,
+                  businessId: businessId
+                },
+                include: {
+                  postal: {
+                    select: {
+                      id: true,
+                      name: true,
+                      nameAl: true,
+                      deliveryTime: true,
+                      deliveryTimeAl: true
+                    }
+                  }
+                }
+              })
+
+              // Filter out deleted records (deletedAt is null or undefined)
+              const foundPostalPricing = allPostalPricing.find((p: any) => !p.deletedAt || p.deletedAt === null)
+              
+              if (foundPostalPricing) {
+                fetchedPostalPricing = {
+                  name: foundPostalPricing.postal?.name || 'Postal Service',
+                  nameAl: foundPostalPricing.postal?.nameAl || null,
+                  deliveryTime: foundPostalPricing.deliveryTime || foundPostalPricing.postal?.deliveryTime || null,
+                  deliveryTimeAl: foundPostalPricing.deliveryTimeAl || foundPostalPricing.postal?.deliveryTimeAl || null,
+                  price: foundPostalPricing.price
+                }
+              }
+            } catch (error) {
+              console.error('Error fetching postal pricing for customer email:', error)
+              // Continue without postal pricing if there's an error
+            }
+          }
+          
+          // Prepare postal pricing details for RETAIL businesses
+          let postalPricingDetails = null
+          let countryCode = null
+          let city = null
+          let postalCode = null
+          
+          if (updatedOrder.business.businessType === 'RETAIL' && fetchedPostalPricing) {
+            // Get localized postal service name
+            const language = updatedOrder.business.language || 'en'
+            const postalName = (language === 'sq' || language === 'al') && fetchedPostalPricing.nameAl 
+              ? fetchedPostalPricing.nameAl 
+              : fetchedPostalPricing.name || 'Postal Service'
+            
+            // Get localized delivery time
+            const postalDeliveryTime = (language === 'sq' || language === 'al') && fetchedPostalPricing.deliveryTimeAl
+              ? fetchedPostalPricing.deliveryTimeAl
+              : fetchedPostalPricing.deliveryTime || null
+            
+            postalPricingDetails = {
+              name: postalName,
+              nameEn: fetchedPostalPricing.name || 'Postal Service',
+              nameAl: fetchedPostalPricing.nameAl || null,
+              deliveryTime: postalDeliveryTime,
+              price: fetchedPostalPricing.price || 0
+            }
+            
+            // Extract country/city/postalCode from deliveryAddress for RETAIL
+            // Format: "Address, City, Country Code, Postal Code"
+            if (updatedOrder.deliveryAddress) {
+              const addressParts = updatedOrder.deliveryAddress.split(',').map(p => p.trim())
+              if (addressParts.length >= 3) {
+                city = addressParts[addressParts.length - 3] || null
+                countryCode = addressParts[addressParts.length - 2] || null
+                postalCode = addressParts[addressParts.length - 1] || null
+              }
+            }
+            
+            // Also check customer's addressJson if available
+            // First, fetch the full customer data with addressJson
+            try {
+              const fullCustomer = await prisma.customer.findUnique({
+                where: { id: updatedOrder.customer.id },
+                select: { addressJson: true }
+              })
+              
+              if (fullCustomer?.addressJson && !city) {
+                try {
+                  const addressJson = typeof fullCustomer.addressJson === 'string'
+                    ? JSON.parse(fullCustomer.addressJson)
+                    : fullCustomer.addressJson
+                  city = city || addressJson.city || null
+                  countryCode = countryCode || addressJson.country || null
+                  postalCode = postalCode || addressJson.zipCode || null
+                } catch (e) {
+                  // Ignore parsing errors
+                }
+              }
+            } catch (e) {
+              // Ignore errors when fetching customer data
+            }
+          }
+          
           // Send email notification (don't await to avoid blocking response)
           sendCustomerOrderStatusEmail(
             {
@@ -520,7 +632,11 @@ export async function PUT(
                 quantity: item.quantity,
                 price: item.price,
                 variant: item.variant?.name || null
-              }))
+              })),
+              postalPricingDetails: postalPricingDetails,
+              countryCode: countryCode,
+              city: city,
+              postalCode: postalCode
             }
           ).catch((error) => {
             // Log error but don't fail the request

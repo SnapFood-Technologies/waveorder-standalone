@@ -26,6 +26,17 @@ interface CustomerOrderData {
     price: number
     variant?: string | null
   }[]
+  // For RETAIL businesses
+  postalPricingDetails?: {
+    name: string // Localized postal service name
+    nameEn: string
+    nameAl: string
+    deliveryTime: string | null // Localized delivery time
+    price: number
+  } | null
+  countryCode?: string | null
+  city?: string | null
+  postalCode?: string | null
 }
 
 interface CustomerData {
@@ -337,7 +348,42 @@ function createCustomerOrderStatusEmail({
       <div style="margin-bottom: 30px; padding: 15px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #3b82f6;">
         <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📍 ${labels.deliveryAddress}</h3>
         <p style="color: #1e40af; margin: 0; font-size: 14px;">${orderData.deliveryAddress}</p>
-        ${orderData.deliveryTime ? `
+        
+        ${orderData.businessType === 'RETAIL' && orderData.postalPricingDetails ? `
+        <!-- Postal Pricing Details for RETAIL -->
+        <div style="margin-top: 15px; padding: 12px; background-color: #dbeafe; border-radius: 6px; border: 1px solid #93c5fd;">
+          <div style="margin-bottom: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">${labels.deliveryMethod || 'Delivery Method'}:</strong>
+            <span style="color: #1e40af; font-size: 14px; margin-left: 8px;">${orderData.postalPricingDetails.name}</span>
+          </div>
+          ${orderData.postalPricingDetails.deliveryTime ? `
+          <div style="margin-bottom: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">${labels.expectedDelivery}:</strong>
+            <span style="color: #1e40af; font-size: 14px; margin-left: 8px;">${orderData.postalPricingDetails.deliveryTime}</span>
+          </div>
+          ` : ''}
+          ${orderData.city ? `
+          <div style="margin-bottom: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">${getLocalizedLabel('city', language)}:</strong>
+            <span style="color: #1e40af; font-size: 14px; margin-left: 8px;">${orderData.city}</span>
+          </div>
+          ` : ''}
+          ${orderData.countryCode ? `
+          <div style="margin-bottom: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">${getLocalizedLabel('country', language)}:</strong>
+            <span style="color: #1e40af; font-size: 14px; margin-left: 8px;">${getLocalizedCountryName(orderData.countryCode, language)}</span>
+          </div>
+          ` : ''}
+          ${orderData.postalCode ? `
+          <div>
+            <strong style="color: #1e40af; font-size: 14px;">${getLocalizedLabel('postalCode', language)}:</strong>
+            <span style="color: #1e40af; font-size: 14px; margin-left: 8px;">${orderData.postalCode}</span>
+          </div>
+          ` : ''}
+        </div>
+        ` : ''}
+        
+        ${orderData.deliveryTime && (!orderData.businessType || orderData.businessType !== 'RETAIL' || !orderData.postalPricingDetails?.deliveryTime) ? `
         <p style="color: #1e40af; margin: 10px 0 0; font-size: 14px;">
           <strong>${labels.expectedDelivery}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale)}
         </p>
@@ -475,3 +521,53 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
     .join(' ')
 }
 
+/**
+ * Get localized country name
+ */
+function getLocalizedCountryName(countryCode: string | null | undefined, language: string): string {
+  if (!countryCode) return ''
+  
+  const countryNames: Record<string, Record<string, string>> = {
+    AL: { en: 'Albania', sq: 'Shqipëri', al: 'Shqipëri', es: 'Albania' },
+    XK: { en: 'Kosovo', sq: 'Kosovë', al: 'Kosovë', es: 'Kosovo' },
+    MK: { en: 'North Macedonia', sq: 'Maqedonia e Veriut', al: 'Maqedonia e Veriut', es: 'Macedonia del Norte' }
+  }
+  
+  const lang = language.toLowerCase()
+  return countryNames[countryCode]?.[lang] || countryNames[countryCode]?.en || countryCode
+}
+
+/**
+ * Get localized labels for additional fields
+ */
+function getLocalizedLabel(field: string, language: string): string {
+  const labels: Record<string, Record<string, string>> = {
+    city: {
+      en: 'City',
+      sq: 'Qyteti',
+      al: 'Qyteti',
+      es: 'Ciudad'
+    },
+    country: {
+      en: 'Country',
+      sq: 'Shteti',
+      al: 'Shteti',
+      es: 'País'
+    },
+    postalCode: {
+      en: 'Postal Code',
+      sq: 'Kodi Postar',
+      al: 'Kodi Postar',
+      es: 'Código Postal'
+    },
+    deliveryMethod: {
+      en: 'Delivery Method',
+      sq: 'Metoda e Dërgesës',
+      al: 'Metoda e Dërgesës',
+      es: 'Método de Entrega'
+    }
+  }
+  
+  const lang = language.toLowerCase()
+  return labels[field]?.[lang] || labels[field]?.en || field
+}
