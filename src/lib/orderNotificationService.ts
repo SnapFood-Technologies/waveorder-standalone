@@ -308,6 +308,17 @@ function getLocalizedCountryName(countryCode: string | null | undefined, languag
   return countryNames[countryCode]?.[lang] || countryNames[countryCode]?.en || countryCode
 }
 
+// Helper function to format delivery address for display (replace country codes with names)
+function formatDeliveryAddressForDisplay(deliveryAddress: string, countryCode: string | null | undefined, language: string = 'en'): string {
+  if (!deliveryAddress || !countryCode) return deliveryAddress
+  
+  const countryName = getLocalizedCountryName(countryCode, language)
+  
+  // Replace country code with country name in the address string
+  // Match country code as a word boundary to avoid partial matches
+  return deliveryAddress.replace(new RegExp(`\\b${countryCode}\\b`, 'gi'), countryName)
+}
+
 // Create email template for order notifications
 function createOrderNotificationEmail({ 
   orderData, 
@@ -396,7 +407,7 @@ function createOrderNotificationEmail({
         ${orderData.deliveryAddress ? `
         <div style="margin-top: 15px;">
           <strong style="color: #374151;">${labels.deliveryAddress}:</strong><br>
-          <a href="https://maps.google.com/maps?q=${encodeURIComponent(orderData.deliveryAddress)}" style="color: #0d9488; text-decoration: none;">${orderData.deliveryAddress}</a>
+          <a href="https://maps.google.com/maps?q=${encodeURIComponent(orderData.deliveryAddress)}" style="color: #0d9488; text-decoration: none;">${formatDeliveryAddressForDisplay(orderData.deliveryAddress, orderData.countryCode, language)}</a>
         </div>
         ` : ''}
         

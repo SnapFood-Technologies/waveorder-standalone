@@ -446,7 +446,7 @@ canBeAdded: "more can be added to cart",
   const albanianTranslations: StorefrontTranslations = {
     // Navigation & Search
     search: "Kërko në menu...",
-    searchProducts: "Kerko produkte",
+    searchProducts: "Kërko produkte",
     allCategories: "Të gjitha kategoritë",
     all: "Të gjitha",
     

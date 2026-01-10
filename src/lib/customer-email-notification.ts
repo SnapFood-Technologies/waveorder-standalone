@@ -431,7 +431,7 @@ function createCustomerOrderStatusEmail({
       <!-- Delivery Info -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #3b82f6;">
         <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📍 ${labels.deliveryAddress}</h3>
-        <p style="color: #1e40af; margin: 0; font-size: 14px;">${orderData.deliveryAddress}</p>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">${formatDeliveryAddressForDisplay(orderData.deliveryAddress, orderData.countryCode, language)}</p>
         
         ${orderData.businessType === 'RETAIL' && orderData.postalPricingDetails ? `
         <!-- Postal Pricing Details for RETAIL -->
@@ -621,7 +621,7 @@ function createCustomerOrderPlacedEmail({
       <!-- Delivery Info -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #eff6ff; border-radius: 8px; border: 1px solid #3b82f6;">
         <h3 style="color: #1e40af; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📍 ${labels.deliveryAddress}</h3>
-        <p style="color: #1e40af; margin: 0; font-size: 14px;">${orderData.deliveryAddress}</p>
+        <p style="color: #1e40af; margin: 0; font-size: 14px;">${formatDeliveryAddressForDisplay(orderData.deliveryAddress, orderData.countryCode, language)}</p>
         
         ${orderData.businessType === 'RETAIL' && orderData.postalPricingDetails ? `
         <!-- Postal Pricing Details for RETAIL -->
@@ -789,6 +789,17 @@ function getLocalizedCountryName(countryCode: string | null | undefined, languag
   
   const lang = language.toLowerCase()
   return countryNames[countryCode]?.[lang] || countryNames[countryCode]?.en || countryCode
+}
+
+// Helper function to format delivery address for display (replace country codes with names)
+function formatDeliveryAddressForDisplay(deliveryAddress: string, countryCode: string | null | undefined, language: string = 'en'): string {
+  if (!deliveryAddress || !countryCode) return deliveryAddress
+  
+  const countryName = getLocalizedCountryName(countryCode, language)
+  
+  // Replace country code with country name in the address string
+  // Match country code as a word boundary to avoid partial matches
+  return deliveryAddress.replace(new RegExp(`\\b${countryCode}\\b`, 'gi'), countryName)
 }
 
 /**

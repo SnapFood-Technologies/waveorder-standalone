@@ -988,7 +988,7 @@ export async function POST(
       }
       // Only require coordinates for non-RETAIL businesses
       if (business.businessType !== 'RETAIL' && (!latitude || !longitude)) {
-        return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
+      return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
       }
       // For RETAIL businesses, require postal pricing selection
       if (business.businessType === 'RETAIL' && !postalPricingId) {
@@ -1257,7 +1257,67 @@ export async function POST(
 
       // Only set address for delivery orders
       if (deliveryType === 'delivery' && deliveryAddress) {
+        // For RETAIL businesses: Use structured fields directly, don't parse string
+        if (business.businessType === 'RETAIL' && (city || countryCode || postalCode)) {
+          // Extract street and additional from deliveryAddress string
+          // Format for RETAIL: "street, address2, city, countryCode, postalCode"
+          const parts = deliveryAddress.split(',').map((p: string) => p.trim());
+          
+          let street = '';
+          let additional = '';
+          
+          // Work backwards from known fields to extract street and additional
+          // We know: city, countryCode, postalCode are at the end
+          // So everything before city is street + additional
+          
+          // Find where city starts in the string
+          let streetAndAdditional = deliveryAddress;
+          if (city && deliveryAddress.includes(city)) {
+            // Find the last occurrence of city (in case city name appears in street)
+            const cityIndex = deliveryAddress.lastIndexOf(city);
+            if (cityIndex > 0) {
+              streetAndAdditional = deliveryAddress.substring(0, cityIndex).trim();
+              // Remove trailing comma if present
+              if (streetAndAdditional.endsWith(',')) {
+                streetAndAdditional = streetAndAdditional.slice(0, -1).trim();
+              }
+            }
+          } else if (countryCode && deliveryAddress.includes(countryCode)) {
+            // Fallback: use countryCode to split
+            const countryIndex = deliveryAddress.lastIndexOf(countryCode);
+            if (countryIndex > 0) {
+              streetAndAdditional = deliveryAddress.substring(0, countryIndex).trim();
+              if (streetAndAdditional.endsWith(',')) {
+                streetAndAdditional = streetAndAdditional.slice(0, -1).trim();
+              }
+            }
+          }
+          
+          // Split street and additional (if address2 field was provided)
+          if (streetAndAdditional.includes(',')) {
+            const streetParts = streetAndAdditional.split(',').map((p: string) => p.trim());
+            street = streetParts[0] || '';
+            // If more than one part, join the rest as additional (address2 might have commas)
+            if (streetParts.length > 1) {
+              additional = streetParts.slice(1).join(', ').trim();
+            }
+          } else {
+            street = streetAndAdditional;
+          }
+          
+          addressJson = {
+            street: street,
+            additional: additional,
+            city: city || '',
+            country: countryCode || 'US',
+            zipCode: postalCode || '',
+            latitude: latitude || null,
+            longitude: longitude || null
+          };
+        } else {
+          // For non-RETAIL businesses: Use existing parsing logic
         addressJson = parseAndCleanAddress(deliveryAddress, latitude, longitude);
+        }
         
         // Create backward-compatible address string
         if (addressJson) {
@@ -1312,11 +1372,59 @@ export async function POST(
         let addressJson = null;
         let backwardCompatibleAddress = null;
         
-        addressJson = parseAndCleanAddress(deliveryAddress, latitude, longitude);
-        
-        // For RETAIL orders, use postal code from orderData if provided
-        if (addressJson && business.businessType === 'RETAIL' && orderData.postalCode) {
-          addressJson.zipCode = orderData.postalCode.trim();
+        // For RETAIL businesses: Use structured fields directly, don't parse string
+        if (business.businessType === 'RETAIL' && (city || countryCode || postalCode)) {
+          // Extract street and additional from deliveryAddress string
+          // Format for RETAIL: "street, address2, city, countryCode, postalCode"
+          const parts = deliveryAddress.split(',').map((p: string) => p.trim());
+          
+          let street = '';
+          let additional = '';
+          
+          // Work backwards from known fields to extract street and additional
+          // Find where city starts in the string
+          let streetAndAdditional = deliveryAddress;
+          if (city && deliveryAddress.includes(city)) {
+            const cityIndex = deliveryAddress.lastIndexOf(city);
+            if (cityIndex > 0) {
+              streetAndAdditional = deliveryAddress.substring(0, cityIndex).trim();
+              if (streetAndAdditional.endsWith(',')) {
+                streetAndAdditional = streetAndAdditional.slice(0, -1).trim();
+              }
+            }
+          } else if (countryCode && deliveryAddress.includes(countryCode)) {
+            const countryIndex = deliveryAddress.lastIndexOf(countryCode);
+            if (countryIndex > 0) {
+              streetAndAdditional = deliveryAddress.substring(0, countryIndex).trim();
+              if (streetAndAdditional.endsWith(',')) {
+                streetAndAdditional = streetAndAdditional.slice(0, -1).trim();
+              }
+            }
+          }
+          
+          // Split street and additional (address2 might have commas)
+          if (streetAndAdditional.includes(',')) {
+            const streetParts = streetAndAdditional.split(',').map((p: string) => p.trim());
+            street = streetParts[0] || '';
+            if (streetParts.length > 1) {
+              additional = streetParts.slice(1).join(', ').trim();
+            }
+          } else {
+            street = streetAndAdditional;
+          }
+          
+          addressJson = {
+            street: street,
+            additional: additional,
+            city: city || '',
+            country: countryCode || 'US',
+            zipCode: postalCode || '',
+            latitude: latitude || null,
+            longitude: longitude || null
+          };
+        } else {
+          // For non-RETAIL businesses: Use existing parsing logic
+          addressJson = parseAndCleanAddress(deliveryAddress, latitude, longitude);
         }
         
         if (addressJson) {
@@ -1485,18 +1593,47 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         }
       }
 
-      // Extract city/country/postalCode from deliveryAddress for RETAIL
-      let countryCode: string | null = null
-      let city: string | null = null
-      let postalCode: string | null = null
+      // For RETAIL: Use structured fields directly (don't parse string)
+      // The structured fields are already available from orderData
+      const countryCode = orderData.countryCode || null
+      const cityFromOrder = orderData.city || null
+      const postalCode = orderData.postalCode || null
+      
+      // Extract from deliveryAddress only if structured fields are missing (fallback)
+      let city = cityFromOrder
+      let extractedCountryCode = countryCode
+      let extractedPostalCode = postalCode
       
       if (business.businessType === 'RETAIL' && order.deliveryAddress) {
-        // Format: "Address, City, Country Code, Postal Code"
-        const addressParts = order.deliveryAddress.split(',').map((p: string) => p.trim())
-        if (addressParts.length >= 3) {
-          city = addressParts[addressParts.length - 3] || null
-          countryCode = addressParts[addressParts.length - 2] || null
-          postalCode = addressParts[addressParts.length - 1] || null
+        // If structured fields are missing, try to extract from string as fallback
+        if (!city || !countryCode || !postalCode) {
+          // Format: "street, address2, city, countryCode, postalCode"
+          // Work backwards from known patterns
+          const addressParts = order.deliveryAddress.split(',').map((p: string) => p.trim())
+          
+          // Check last part for postal code (numeric)
+          if (!extractedPostalCode && addressParts.length > 0) {
+            const lastPart = addressParts[addressParts.length - 1]
+            if (/^\d{3,6}$/.test(lastPart)) {
+              extractedPostalCode = lastPart
+            }
+          }
+          
+          // Check second-to-last for country code (2-3 letter code)
+          if (!extractedCountryCode && addressParts.length > 1) {
+            const secondLast = addressParts[addressParts.length - 2]
+            if (/^[A-Z]{2,3}$/i.test(secondLast)) {
+              extractedCountryCode = secondLast.toUpperCase()
+            }
+          }
+          
+          // If we found country code, city should be before it
+          if (!city && extractedCountryCode && addressParts.length > 2) {
+            const countryIndex = addressParts.findIndex(p => p.toUpperCase() === extractedCountryCode)
+            if (countryIndex > 0) {
+              city = addressParts[countryIndex - 1]
+            }
+          }
         }
       }
 
@@ -1526,9 +1663,9 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             variant: item.variant?.name || null
           })),
           postalPricingDetails: postalPricingDetails,
-          countryCode: countryCode || orderData.countryCode || undefined,
-          city: city || orderData.city || undefined,
-          postalCode: postalCode || orderData.postalCode || undefined
+          countryCode: extractedCountryCode || countryCode || orderData.countryCode || undefined,
+          city: city || cityFromOrder || orderData.city || undefined,
+          postalCode: extractedPostalCode || postalCode || orderData.postalCode || undefined
         }
       ).catch((error) => {
         // Log error but don't fail the request
@@ -1892,12 +2029,12 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
       message += `📦 ${postalServiceName}: ${deliveryTimeText}\n`
     } else {
       // For non-RETAIL: Standard delivery time
-      const locale = language === 'sq' ? 'sq-AL' : 
-                     language === 'es' ? 'es-ES' : 
-                     'en-US'
-      message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
-        new Date(orderData.deliveryTime).toLocaleString(locale) 
-        : terms.asap}\n`
+    const locale = language === 'sq' ? 'sq-AL' : 
+                   language === 'es' ? 'es-ES' : 
+                   'en-US'
+    message += `⏰ ${timeLabel}: ${orderData.deliveryTime ? 
+      new Date(orderData.deliveryTime).toLocaleString(locale) 
+      : terms.asap}\n`
     }
   } else if (orderData.deliveryType === 'pickup') {
     // Use business address instead of null
