@@ -881,6 +881,7 @@ export async function POST(
         isTemporarilyClosed: true,
         closureReason: true,
         closureMessage: true,
+        translateContentToBusinessLanguage: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
