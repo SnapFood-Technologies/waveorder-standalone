@@ -205,7 +205,23 @@ export async function GET(
 
     // Fetch modifier details for each item
     const itemsWithModifiers = await Promise.all(
-      order.items.map(async (item) => {
+      order.items.map(async (item: {
+        id: string;
+        quantity: number;
+        price: number;
+        modifiers?: string[] | null;
+        product: {
+          id: string;
+          name: string;
+          description: string | null;
+          images: string[];
+          modifiers: Array<{ id: string; name: string; price: number; required: boolean }>;
+        };
+        variant: {
+          id: string;
+          name: string;
+        } | null;
+      }) => {
         let modifierDetails: Array<{ id: string; name: string; price: number; required: boolean }> = []
         
         if (item.modifiers && item.modifiers.length > 0) {
@@ -214,7 +230,7 @@ export async function GET(
           
           if (modifierIds.length > 0) {
             // Fetch modifier details from product's modifiers
-            modifierDetails = item.product.modifiers.filter(mod => modifierIds.includes(mod.id))
+            modifierDetails = item.product.modifiers.filter((mod: { id: string; name: string; price: number; required: boolean }) => modifierIds.includes(mod.id))
           }
         }
         
@@ -644,7 +660,7 @@ export async function PUT(
               language: updatedOrder.business.language || 'en',
               translateContentToBusinessLanguage: updatedOrder.business.translateContentToBusinessLanguage ?? true,
               businessType: updatedOrder.business.businessType || undefined,
-              items: updatedOrder.items.map(item => ({
+              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number }) => ({
                 name: item.product.name,
                 quantity: item.quantity,
                 price: item.price,
@@ -712,7 +728,7 @@ export async function PUT(
                 name: updatedOrder.customer.name,
                 phone: updatedOrder.customer.phone
               },
-              items: updatedOrder.items.map(item => ({
+              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number }) => ({
                 product: { name: item.product.name },
                 variant: item.variant ? { name: item.variant.name } : null,
                 quantity: item.quantity,
@@ -778,7 +794,7 @@ export async function PUT(
                   name: updatedOrder.customer.name,
                   phone: updatedOrder.customer.phone
                 },
-                items: updatedOrder.items.map(item => ({
+                items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number }) => ({
                   product: { name: item.product.name },
                   variant: item.variant ? { name: item.variant.name } : null,
                   quantity: item.quantity,
