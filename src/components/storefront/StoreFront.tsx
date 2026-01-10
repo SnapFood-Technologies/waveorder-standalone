@@ -2415,10 +2415,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           orderNumber: result.orderNumber
         })
         
-        // Open WhatsApp after 2.5 second delay
+        // Open WhatsApp after 5 second delay to give users time to read the success message
         setTimeout(() => {
           window.location.href = result.whatsappUrl
-        }, 2500)
+        }, 5000)
         
         // Hide success message after 10 seconds
         setTimeout(() => {
