@@ -307,7 +307,7 @@ function createOrderNotificationEmail({
       
       <!-- Quick Actions -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXTAUTH_URL}/admin/orders/${orderData.id}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXTAUTH_URL}/admin/stores/${orderData.businessId}/orders/${orderData.id}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
           View Order Details
         </a>
       </div>

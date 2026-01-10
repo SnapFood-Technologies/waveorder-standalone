@@ -574,7 +574,7 @@ export async function PUT(
             // Extract country/city/postalCode from deliveryAddress for RETAIL
             // Format: "Address, City, Country Code, Postal Code"
             if (updatedOrder.deliveryAddress) {
-              const addressParts = updatedOrder.deliveryAddress.split(',').map(p => p.trim())
+              const addressParts = updatedOrder.deliveryAddress.split(',').map((p: string) => p.trim())
               if (addressParts.length >= 3) {
                 city = addressParts[addressParts.length - 3] || null
                 countryCode = addressParts[addressParts.length - 2] || null

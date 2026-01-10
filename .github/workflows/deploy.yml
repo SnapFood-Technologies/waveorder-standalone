@@ -66,18 +66,6 @@ jobs:
           npx prisma generate
           echo "✅ Prisma client generated successfully"
 
-      # 🌍 POPULATE LOCATIONS
-      - name: 🌍 Populate Locations Data
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "Populating locations data (Kosovo, North Macedonia, Albania)..."
-          npx tsx scripts/populate-locations.ts all || {
-            echo "⚠️ Location population failed or data already exists (this is OK)"
-            exit 0
-          }
-          echo "✅ Locations populated successfully"
-
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
