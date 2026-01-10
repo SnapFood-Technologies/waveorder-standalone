@@ -1593,46 +1593,56 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         }
       }
 
-      // For RETAIL: Use structured fields directly (don't parse string)
-      // The structured fields are already available from orderData
-      const countryCode = orderData.countryCode || null
-      const cityFromOrder = orderData.city || null
-      const postalCode = orderData.postalCode || null
+      // For RETAIL: Use structured fields directly from request (don't parse string)
+      // These fields come directly from the customer's form input
+      // Priority: Use structured fields from request > fallback to extraction if missing
+      let finalCity = city || null
+      let finalCountryCode = countryCode || null
+      let finalPostalCode = postalCode || null
       
-      // Extract from deliveryAddress only if structured fields are missing (fallback)
-      let city = cityFromOrder
-      let extractedCountryCode = countryCode
-      let extractedPostalCode = postalCode
-      
-      if (business.businessType === 'RETAIL' && order.deliveryAddress) {
-        // If structured fields are missing, try to extract from string as fallback
-        if (!city || !countryCode || !postalCode) {
-          // Format: "street, address2, city, countryCode, postalCode"
-          // Work backwards from known patterns
-          const addressParts = order.deliveryAddress.split(',').map((p: string) => p.trim())
-          
-          // Check last part for postal code (numeric)
-          if (!extractedPostalCode && addressParts.length > 0) {
-            const lastPart = addressParts[addressParts.length - 1]
-            if (/^\d{3,6}$/.test(lastPart)) {
-              extractedPostalCode = lastPart
+      // Only try extraction if structured fields are missing (fallback)
+      if (business.businessType === 'RETAIL' && order.deliveryAddress && (!finalCity || !finalCountryCode)) {
+        // Format: "street, address2, city, countryCode, postalCode"
+        // Work backwards from known patterns
+        const addressParts = order.deliveryAddress.split(',').map((p: string) => p.trim())
+        
+        // Check last part for postal code (numeric)
+        if (!finalPostalCode && addressParts.length > 0) {
+          const lastPart = addressParts[addressParts.length - 1]
+          if (/^\d{3,6}$/.test(lastPart)) {
+            finalPostalCode = lastPart
+          }
+        }
+        
+        // Check last or second-to-last for country code (2-3 letter code)
+        if (!finalCountryCode && addressParts.length > 0) {
+          // Try last part first
+          const lastPart = addressParts[addressParts.length - 1].toUpperCase()
+          if (/^[A-Z]{2,3}$/.test(lastPart) && 
+              (lastPart === 'AL' || lastPart === 'XK' || lastPart === 'MK' || 
+               lastPart === 'GR' || lastPart === 'IT' || lastPart === 'ES' || 
+               lastPart === 'US' || lastPart === 'GB' || lastPart === 'FR' || 
+               lastPart === 'DE' || lastPart === 'NL')) {
+            finalCountryCode = lastPart
+          }
+          // If last part was postal code, try second-to-last for country code
+          else if (addressParts.length > 1) {
+            const secondLast = addressParts[addressParts.length - 2].toUpperCase()
+            if (/^[A-Z]{2,3}$/.test(secondLast) && 
+                (secondLast === 'AL' || secondLast === 'XK' || secondLast === 'MK' || 
+                 secondLast === 'GR' || secondLast === 'IT' || secondLast === 'ES' || 
+                 secondLast === 'US' || secondLast === 'GB' || secondLast === 'FR' || 
+                 secondLast === 'DE' || secondLast === 'NL')) {
+              finalCountryCode = secondLast
             }
           }
-          
-          // Check second-to-last for country code (2-3 letter code)
-          if (!extractedCountryCode && addressParts.length > 1) {
-            const secondLast = addressParts[addressParts.length - 2]
-            if (/^[A-Z]{2,3}$/i.test(secondLast)) {
-              extractedCountryCode = secondLast.toUpperCase()
-            }
-          }
-          
-          // If we found country code, city should be before it
-          if (!city && extractedCountryCode && addressParts.length > 2) {
-            const countryIndex = addressParts.findIndex(p => p.toUpperCase() === extractedCountryCode)
-            if (countryIndex > 0) {
-              city = addressParts[countryIndex - 1]
-            }
+        }
+        
+        // If we found country code, city should be the part immediately before it
+        if (!finalCity && finalCountryCode && addressParts.length > 1) {
+          const countryIndex = addressParts.findIndex(p => p.toUpperCase() === finalCountryCode)
+          if (countryIndex > 0) {
+            finalCity = addressParts[countryIndex - 1]
           }
         }
       }
@@ -1663,9 +1673,9 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             variant: item.variant?.name || null
           })),
           postalPricingDetails: postalPricingDetails,
-          countryCode: extractedCountryCode || countryCode || orderData.countryCode || undefined,
-          city: city || cityFromOrder || orderData.city || undefined,
-          postalCode: extractedPostalCode || postalCode || orderData.postalCode || undefined
+          countryCode: finalCountryCode || undefined,
+          city: finalCity || undefined,
+          postalCode: finalPostalCode || undefined
         }
       ).catch((error) => {
         // Log error but don't fail the request

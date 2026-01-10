@@ -2642,7 +2642,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           setSelectedCategory('all')
         }
       }}
-      className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors"
+      className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
       style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
       onFocus={(e) => e.target.style.borderColor = primaryColor}
       onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
@@ -3987,7 +3987,7 @@ function SearchableCitySelect({
               placeholder={translations.search || 'Search...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 placeholder:text-gray-500 bg-white"
               autoFocus
               onClick={(e) => e.stopPropagation()}
             />
@@ -4246,7 +4246,7 @@ function OrderPanel({
                           setSelectedPostalPricing(null)
                           setCalculatedDeliveryFee(storeData.deliveryFee)
                         }}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
                         style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                         onFocus={(e) => e.target.style.borderColor = primaryColor}
                         onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
