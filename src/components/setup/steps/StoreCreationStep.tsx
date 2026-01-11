@@ -53,6 +53,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     storeSlug: data.storeSlug || ''
   })
   const [showAlbanianCode, setShowAlbanianCode] = useState(false)
+  const [isOtherCountry, setIsOtherCountry] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
@@ -74,17 +75,20 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
 
   // Get visible country codes based on detection
   const getVisibleCountryCodes = () => {
-    if (showAlbanianCode) {
-      return [
-        { code: '+355', country: 'AL', flag: '🇦🇱' },
-        { code: '+34', country: 'ES', flag: '🇪🇸' },
-        { code: '+1', country: 'US', flag: '🇺🇸' }
-      ]
-    }
-    return [
-      { code: '+1', country: 'US', flag: '🇺🇸' },
-      { code: '+34', country: 'ES', flag: '🇪🇸' }
-    ]
+    const codes = showAlbanianCode
+      ? [
+          { code: '+355', country: 'AL', flag: '🇦🇱' },
+          { code: '+34', country: 'ES', flag: '🇪🇸' },
+          { code: '+1', country: 'US', flag: '🇺🇸' }
+        ]
+      : [
+          { code: '+1', country: 'US', flag: '🇺🇸' },
+          { code: '+34', country: 'ES', flag: '🇪🇸' }
+        ]
+    
+    // Add "Other" option
+    codes.push({ code: 'OTHER', country: 'OTHER', flag: '🌍' })
+    return codes
   }
 
   // Generate slug from business name
@@ -109,18 +113,29 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
           countryCode: '+355',
           whatsappNumber: data.whatsappNumber.replace('+355', '')
         }))
+        setIsOtherCountry(false)
       } else if (data.whatsappNumber.startsWith('+34')) {
         setFormData(prev => ({
           ...prev,
           countryCode: '+34',
           whatsappNumber: data.whatsappNumber.replace('+34', '')
         }))
+        setIsOtherCountry(false)
       } else if (data.whatsappNumber.startsWith('+1')) {
         setFormData(prev => ({
           ...prev,
           countryCode: '+1',
           whatsappNumber: data.whatsappNumber.replace('+1', '')
         }))
+        setIsOtherCountry(false)
+      } else {
+        // Number doesn't match known country codes, use "Other"
+        setFormData(prev => ({
+          ...prev,
+          countryCode: 'OTHER',
+          whatsappNumber: data.whatsappNumber
+        }))
+        setIsOtherCountry(true)
       }
     }
   }, [data.whatsappNumber])
@@ -170,10 +185,25 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
       
       setFormData(prev => ({ ...prev, [name]: cleanSlug }))
       
+    } else if (name === 'countryCode') {
+      // Handle country code selection
+      if (value === 'OTHER') {
+        setIsOtherCountry(true)
+        setFormData(prev => ({ ...prev, countryCode: 'OTHER', whatsappNumber: '' }))
+      } else {
+        setIsOtherCountry(false)
+        setFormData(prev => ({ ...prev, countryCode: value, whatsappNumber: '' }))
+      }
     } else if (name === 'whatsappNumber') {
-      // Only allow numbers
-      const cleanNumber = value.replace(/[^0-9]/g, '')
-      setFormData(prev => ({ ...prev, [name]: cleanNumber }))
+      if (isOtherCountry) {
+        // Allow + and numbers for "Other" option (full phone number with country code)
+        const cleanNumber = value.replace(/[^+\d\s-]/g, '')
+        setFormData(prev => ({ ...prev, [name]: cleanNumber }))
+      } else {
+        // Only allow numbers for specific country codes
+        const cleanNumber = value.replace(/[^0-9]/g, '')
+        setFormData(prev => ({ ...prev, [name]: cleanNumber }))
+      }
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
@@ -193,15 +223,23 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     
     const finalSlug = formData.storeSlug.replace(/^-|-$/g, '') // Clean edges only on submit
 
+    // For "Other" option, whatsappNumber already includes the country code
+    // For specific country codes, we need to prepend the country code
+    const finalWhatsAppNumber = isOtherCountry
+      ? formData.whatsappNumber.trim()
+      : `${formData.countryCode}${formData.whatsappNumber}`
+
     onComplete({
       businessName: formData.businessName,
-      whatsappNumber: `${formData.countryCode}${formData.whatsappNumber}`,
+      whatsappNumber: finalWhatsAppNumber,
       storeSlug: finalSlug
     })
     setLoading(false)
   }
 
-  const fullWhatsAppNumber = `${formData.countryCode}${formData.whatsappNumber}`
+  const fullWhatsAppNumber = isOtherCountry
+    ? formData.whatsappNumber
+    : `${formData.countryCode}${formData.whatsappNumber}`
   const storeUrl = `waveorder.app/${formData.storeSlug}`
 
   return (
@@ -249,11 +287,11 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                   name="countryCode"
                   value={formData.countryCode}
                   onChange={handleInputChange}
-                  className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base sm:min-w-[100px]"
+                  className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base sm:min-w-[120px]"
                 >
                   {getVisibleCountryCodes().map(country => (
                     <option key={country.code} value={country.code}>
-                      {country.flag} {country.code}
+                      {country.code === 'OTHER' ? '🌍 Other' : `${country.flag} ${country.code}`}
                     </option>
                   ))}
                 </select>
@@ -267,10 +305,15 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                     value={formData.whatsappNumber}
                     onChange={handleInputChange}
                     className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-l-none sm:border-l-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
-                    placeholder="123456789"
+                    placeholder={isOtherCountry ? "+55 11 987654321" : "123456789"}
                   />
                 </div>
               </div>
+              {isOtherCountry && (
+                <p className="mt-2 text-sm text-gray-600">
+                  Can't find your country code? Enter your full WhatsApp number including the country code (e.g., +55 11 987654321)
+                </p>
+              )}
             </div>
 
             {/* Store URL */}

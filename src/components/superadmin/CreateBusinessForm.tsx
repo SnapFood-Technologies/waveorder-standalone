@@ -227,6 +227,7 @@ export function CreateBusinessForm() {
     sendEmail: true,
     createdByAdmin: true
   })
+  const [isOtherCountry, setIsOtherCountry] = useState(false)
 
   const totalSteps = 6
 
@@ -283,6 +284,7 @@ export function CreateBusinessForm() {
   }, [formData.businessName, manualSlug])
 
   const validatePhoneNumber = (number: string, prefix: string): boolean => {
+    if (prefix === 'OTHER') return true // Skip validation for "Other" option
     const prefixData = phonePrefixes.find(p => p.code === prefix)
     if (!prefixData) return false
     
@@ -292,6 +294,12 @@ export function CreateBusinessForm() {
 
   useEffect(() => {
     if (formData.whatsappNumber && formData.phonePrefix) {
+      // Skip validation for "Other" option
+      if (formData.phonePrefix === 'OTHER') {
+        setPhoneError(null)
+        return
+      }
+      
       const isValid = validatePhoneNumber(formData.whatsappNumber, formData.phonePrefix)
       const prefixData = phonePrefixes.find(p => p.code === formData.phonePrefix)
       
@@ -334,7 +342,11 @@ export function CreateBusinessForm() {
     }
 
     try {
-      const completeWhatsappNumber = `${formData.phonePrefix}${formData.whatsappNumber.replace(/[^\d]/g, '')}`
+      // For "Other" option, whatsappNumber already includes the country code
+      // For specific country codes, we need to prepend the country code
+      const completeWhatsappNumber = isOtherCountry
+        ? formData.whatsappNumber.trim()
+        : `${formData.phonePrefix}${formData.whatsappNumber.replace(/[^\d]/g, '')}`
 
       const response = await fetch('/api/superadmin/businesses', {
         method: 'POST',
@@ -773,11 +785,22 @@ export function CreateBusinessForm() {
                           <select
                             value={formData.phonePrefix}
                             onChange={(e) => {
-                              setFormData(prev => ({ 
-                                ...prev, 
-                                phonePrefix: e.target.value,
-                                whatsappNumber: ''
-                              }))
+                              const newPrefix = e.target.value
+                              if (newPrefix === 'OTHER') {
+                                setIsOtherCountry(true)
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  phonePrefix: 'OTHER',
+                                  whatsappNumber: ''
+                                }))
+                              } else {
+                                setIsOtherCountry(false)
+                                setFormData(prev => ({ 
+                                  ...prev, 
+                                  phonePrefix: newPrefix,
+                                  whatsappNumber: ''
+                                }))
+                              }
                               setPhoneError(null)
                             }}
                             className="w-40 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
@@ -787,24 +810,40 @@ export function CreateBusinessForm() {
                                 {prefix.flag} {prefix.code}
                               </option>
                             ))}
+                            <option value="OTHER">🌍 Other</option>
                           </select>
                           <input
                             type="tel"
                             required
                             value={formData.whatsappNumber}
-                            onChange={(e) => setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+                            onChange={(e) => {
+                              if (isOtherCountry) {
+                                // Allow + and numbers for "Other" option (full phone number with country code)
+                                const cleanNumber = e.target.value.replace(/[^+\d\s-]/g, '')
+                                setFormData(prev => ({ ...prev, whatsappNumber: cleanNumber }))
+                              } else {
+                                // Only allow numbers for specific country codes
+                                setFormData(prev => ({ ...prev, whatsappNumber: e.target.value }))
+                              }
+                            }}
                             className={`flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent ${
                               phoneError ? 'border-red-300' : 'border-gray-300'
                             }`}
-                            placeholder={phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+                            placeholder={isOtherCountry ? "+55 11 987654321" : phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
                           />
                         </div>
                         {phoneError && (
                           <p className="text-red-600 text-sm mt-1">{phoneError}</p>
                         )}
-                        <p className="text-gray-500 text-xs mt-1">
-                          Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
-                        </p>
+                        {isOtherCountry ? (
+                          <p className="text-gray-600 text-xs mt-1">
+                            Can't find your country code? Enter your full WhatsApp number including the country code (e.g., +55 11 987654321)
+                          </p>
+                        ) : (
+                          <p className="text-gray-500 text-xs mt-1">
+                            Format: {phonePrefixes.find(p => p.code === formData.phonePrefix)?.placeholder}
+                          </p>
+                        )}
                       </div>
 
                       <div>

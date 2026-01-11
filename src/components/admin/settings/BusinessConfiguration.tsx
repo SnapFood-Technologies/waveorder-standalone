@@ -656,6 +656,9 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                     className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                   />
                 </div>
+                <p className="text-xs text-gray-600 mt-1.5">
+                  Enter your WhatsApp number with country code prefix (e.g., +55 11 987654321 for Brazil, +1 5551234567 for US)
+                </p>
               </div>
 
               <div>
