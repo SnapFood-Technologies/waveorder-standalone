@@ -317,11 +317,16 @@ export async function PUT(
       }
       updateData.categoryId = categoryId
     } else if (categoryName !== undefined && categoryName !== null) {
-      // Try to find or create category by name
+      // Try to find category by name (check both English and Albanian)
+      const categoryNameStr = String(categoryName)
+      // @ts-ignore - Prisma types may not be up to date, but nameAl exists in schema
       let category = await prisma.category.findFirst({
         where: {
           businessId,
-          name: String(categoryName)
+          OR: [
+            { name: categoryNameStr },
+            { nameAl: categoryNameStr }
+          ]
         }
       })
       
@@ -329,7 +334,7 @@ export async function PUT(
         // Create category if it doesn't exist
         category = await prisma.category.create({
           data: {
-            name: String(categoryName),
+            name: categoryNameStr, // Store as English name (since nameAl is used for English in API)
             businessId,
             isActive: true
           }
