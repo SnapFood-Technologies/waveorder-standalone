@@ -227,19 +227,37 @@ export async function PUT(
     }
     
     // Title/Name
-    if (name !== undefined && name !== null) {
-      updateData.name = String(name)
-    }
+    // For now: use nameAl for English (external platform uses 'name' internally)
+    // nameAl maps to 'name' (English) in our database
     if (nameAl !== undefined && nameAl !== null) {
-      updateData.nameAl = String(nameAl)
+      updateData.name = String(nameAl) // nameAl in API = name (English) in database
     }
+    // Note: name field in API is not used for now, use nameAl instead
     
-    // Description
+    // Description (filter out <p><br></p>)
     if (description !== undefined && description !== null) {
-      updateData.description = description === '' ? null : String(description)
+      let descValue = description === '' ? null : String(description)
+      // Remove <p><br></p> and empty paragraph tags
+      if (descValue) {
+        descValue = descValue.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
+        descValue = descValue.replace(/<p>\s*<\/p>/gi, '')
+        descValue = descValue.trim()
+        updateData.description = descValue === '' ? null : descValue
+      } else {
+        updateData.description = null
+      }
     }
     if (descriptionAl !== undefined && descriptionAl !== null) {
-      updateData.descriptionAl = descriptionAl === '' ? null : String(descriptionAl)
+      let descAlValue = descriptionAl === '' ? null : String(descriptionAl)
+      // Remove <p><br></p> and empty paragraph tags
+      if (descAlValue) {
+        descAlValue = descAlValue.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
+        descAlValue = descAlValue.replace(/<p>\s*<\/p>/gi, '')
+        descAlValue = descAlValue.trim()
+        updateData.descriptionAl = descAlValue === '' ? null : descAlValue
+      } else {
+        updateData.descriptionAl = null
+      }
     }
     
     // Images/Gallery (Option 1: Replace entire array)
