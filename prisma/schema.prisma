@@ -239,10 +239,10 @@ model Business {
   estimatedPickupTime   String?
   greetingMessage       String?
   orderNumberFormat     String         @default("WO-{number}")
-  
+
   // Retail-specific custom texts
-  deliveryTimeText      String?  // Custom delivery time text for RETAIL (overrides estimatedDeliveryTime)
-  freeDeliveryText      String?  // Custom free delivery text for RETAIL (overrides default "Free Delivery")
+  deliveryTimeText String? // Custom delivery time text for RETAIL (overrides estimatedDeliveryTime)
+  freeDeliveryText String? // Custom free delivery text for RETAIL (overrides default "Free Delivery")
 
   // Store Closure Fields
   isTemporarilyClosed Boolean   @default(false)
@@ -274,12 +274,12 @@ model Business {
   isIndexable Boolean @default(false)
 
   // Order Notification Settings (to business)
-  orderNotificationsEnabled   Boolean   @default(false)
-  orderNotificationEmail      String?
-  orderNotificationLastUpdate DateTime?
-  notifyOnAdminCreatedOrders  Boolean   @default(false)
-  notifyAdminOnPickedUpAndPaid Boolean  @default(true)
-  notifyAdminOnStatusUpdates  Boolean   @default(false) // Admin receives same status updates as customers
+  orderNotificationsEnabled    Boolean   @default(false)
+  orderNotificationEmail       String?
+  orderNotificationLastUpdate  DateTime?
+  notifyOnAdminCreatedOrders   Boolean   @default(false)
+  notifyAdminOnPickedUpAndPaid Boolean   @default(true)
+  notifyAdminOnStatusUpdates   Boolean   @default(false) // Admin receives same status updates as customers
 
   // Customer Notification Settings (per status and order type)
   customerNotificationEnabled Boolean @default(false)
@@ -380,30 +380,30 @@ model Category {
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  
+
   // Multi-language fields
-  nameAl        String?  // Albanian name
-  descriptionAl String?  // Albanian description
-  
+  nameAl        String? // Albanian name
+  descriptionAl String? // Albanian description
+
   // Subcategory support
-  parentId   String?  @db.ObjectId  // Parent category ID (null = top-level)
-  parent     Category? @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  children   Category[] @relation("CategoryChildren")
-  
+  parentId String?    @db.ObjectId // Parent category ID (null = top-level)
+  parent   Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Category[] @relation("CategoryChildren")
+
   // Configuration: Hide parent in storefront if only 1 parent (show only subcategories)
   hideParentInStorefront Boolean @default(false)
-  
-  image       String?
-  sortOrder   Int     @default(0)
-  isActive    Boolean @default(true)
-  businessId  String  @db.ObjectId
+
+  image      String?
+  sortOrder  Int     @default(0)
+  isActive   Boolean @default(true)
+  businessId String  @db.ObjectId
 
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   products Product[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([parentId])
   @@index([businessId, parentId])
 }
@@ -411,9 +411,9 @@ model Category {
 model Product {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  nameAl        String?  // Albanian product name
+  nameAl        String? // Albanian product name
   description   String?
-  descriptionAl String?  // Albanian product description
+  descriptionAl String? // Albanian product description
   images        String[]
   price         Float
   originalPrice Float?
@@ -441,6 +441,7 @@ model Product {
 
   metaTitle       String?
   metaDescription String?
+  metadata        Json? // For storing external system data (e.g., external product IDs)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -574,24 +575,24 @@ model DeliveryZone {
 }
 
 model Postal {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  businessId   String   @db.ObjectId
-  name         String   // e.g., "Posta Shqiptare"
-  nameAl       String?   // Albanian name
-  type         String   @default("normal") // "normal" or "fast"
-  description  String?
-  descriptionAl String?
-  deliveryTime String?  // e.g., "3-5 days"
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId     String  @db.ObjectId
+  name           String // e.g., "Posta Shqiptare"
+  nameAl         String? // Albanian name
+  type           String  @default("normal") // "normal" or "fast"
+  description    String?
+  descriptionAl  String?
+  deliveryTime   String? // e.g., "3-5 days"
   deliveryTimeAl String? // Albanian delivery time
-  logo         String?  // Logo path
-  isActive     Boolean  @default(true)
-  
-  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  pricing      PostalPricing[]
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  logo           String? // Logo path
+  isActive       Boolean @default(true)
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pricing  PostalPricing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([businessId, name])
   @@index([businessId, isActive])
 }
@@ -600,24 +601,24 @@ model PostalPricing {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   businessId      String    @db.ObjectId
   postalId        String    @db.ObjectId
-  cityName        String    // City name (e.g., "Tirana", "Durrës")
+  cityName        String // City name (e.g., "Tirana", "Durrës")
   type            String    @default("normal") // "normal" or "fast"
-  price            Float
+  price           Float
   priceWithoutTax Float?
-  minOrderValue   Float?    // Minimum order for this pricing
-  maxOrderValue   Float?    // Maximum order for this pricing
-  deliveryTime    String?   // Override postal default
-  deliveryTimeAl  String?   // Albanian override
+  minOrderValue   Float? // Minimum order for this pricing
+  maxOrderValue   Float? // Maximum order for this pricing
+  deliveryTime    String? // Override postal default
+  deliveryTimeAl  String? // Albanian override
   notes           String?
   deletedAt       DateTime?
-  
-  business        Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  postal          Postal    @relation(fields: [postalId], references: [id], onDelete: Cascade)
-  orders          Order[]
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  postal   Postal   @relation(fields: [postalId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([businessId, postalId, cityName, type])
   @@index([businessId, cityName])
   @@index([postalId])
@@ -651,7 +652,7 @@ model Order {
   deliveryAddress String?
   deliveryTime    DateTime?
   notes           String?
-  
+
   // Postal service (for RETAIL businesses)
   postalPricingId String?        @db.ObjectId
   postalPricing   PostalPricing? @relation(fields: [postalPricingId], references: [id])
@@ -1041,45 +1042,45 @@ enum EmailFrequency {
 }
 
 model Country {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  code      String   @unique
+  code      String @unique
   geonameId Int
-  
-  states    State[]
-  
+
+  states State[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model State {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   code      String
-  countryId String   @db.ObjectId
+  countryId String @db.ObjectId
   geonameId Int
-  
-  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  cities    City[]
-  
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  cities  City[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([countryId, code])
   @@index([countryId])
 }
 
 model City {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  stateId   String   @db.ObjectId
+  stateId   String @db.ObjectId
   geonameId Int
-  
-  state     State    @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  
+
+  state State @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([stateId])
   @@index([stateId, name])
 }
