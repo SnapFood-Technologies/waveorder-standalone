@@ -189,7 +189,7 @@ export async function PUT(
     // Create inventory activity
     const activityType = quantityChange > 0 ? 'MANUAL_INCREASE' : 'MANUAL_DECREASE'
     // Use reason from external system if provided, otherwise use default message
-    const externalReason = reason ? `External system: ${reason}` : 'External system stock sync'
+    const externalReason = reason ? `OmniStack Gateway: ${reason}` : 'OmniStack Gateway stock sync'
     
     await prisma.inventoryActivity.create({
       data: {
@@ -200,7 +200,7 @@ export async function PUT(
         oldStock,
         newStock,
         reason: externalReason,
-        changedBy: 'External System'
+        changedBy: 'OmniStack Gateway'
       }
     })
     
