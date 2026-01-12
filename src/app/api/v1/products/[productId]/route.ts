@@ -234,30 +234,37 @@ export async function PUT(
     }
     // Note: name field in API is not used for now, use nameAl instead
     
-    // Description (filter out <p><br></p>)
-    if (description !== undefined && description !== null) {
-      let descValue = description === '' ? null : String(description)
+    // Helper function to clean HTML from descriptions
+    const cleanDescription = (desc: string | null | undefined): string | null => {
+      if (!desc || desc === '') return null
+      
+      let cleaned = String(desc)
+      
       // Remove <p><br></p> and empty paragraph tags
-      if (descValue) {
-        descValue = descValue.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
-        descValue = descValue.replace(/<p>\s*<\/p>/gi, '')
-        descValue = descValue.trim()
-        updateData.description = descValue === '' ? null : descValue
-      } else {
-        updateData.description = null
+      cleaned = cleaned.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
+      cleaned = cleaned.replace(/<p>\s*<\/p>/gi, '')
+      
+      // Strip wrapping <p> tags if content is just plain text (no other HTML tags)
+      // Matches: <p>content</p> where content has no other HTML tags
+      const singlePTagMatch = cleaned.match(/^<p>(.*?)<\/p>$/i)
+      if (singlePTagMatch) {
+        const innerContent = singlePTagMatch[1].trim()
+        // Check if inner content has no other HTML tags (just text)
+        if (!/<[^>]+>/.test(innerContent)) {
+          cleaned = innerContent
+        }
       }
+      
+      cleaned = cleaned.trim()
+      return cleaned === '' ? null : cleaned
+    }
+    
+    // Description (clean HTML tags)
+    if (description !== undefined && description !== null) {
+      updateData.description = cleanDescription(description)
     }
     if (descriptionAl !== undefined && descriptionAl !== null) {
-      let descAlValue = descriptionAl === '' ? null : String(descriptionAl)
-      // Remove <p><br></p> and empty paragraph tags
-      if (descAlValue) {
-        descAlValue = descAlValue.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
-        descAlValue = descAlValue.replace(/<p>\s*<\/p>/gi, '')
-        descAlValue = descAlValue.trim()
-        updateData.descriptionAl = descAlValue === '' ? null : descAlValue
-      } else {
-        updateData.descriptionAl = null
-      }
+      updateData.descriptionAl = cleanDescription(descriptionAl)
     }
     
     // Images/Gallery (Option 1: Replace entire array)
