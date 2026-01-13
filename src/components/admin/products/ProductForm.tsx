@@ -589,7 +589,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     required
                     value={form.name}
                     onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="Enter product name"
                   />
                 </div>
@@ -602,7 +602,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     value={form.description}
                     onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="Describe your product..."
                   />
                 </div>
@@ -681,7 +681,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                             setForm(prev => ({ ...prev, originalPrice: value }))
                           }
                         }}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                         placeholder="0.00"
                       />
                     </div>
@@ -723,7 +723,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               }))
                             }
                           }}
-                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                           placeholder="0.00"
                         />
                       </div>
@@ -741,7 +741,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       required
                       value={form.categoryId}
                       onChange={(e) => setForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     >
                       <option value="">Select category</option>
                       {categories.map(category => (
@@ -784,7 +784,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     type="text"
                     value={form.sku}
                     onChange={(e) => setForm(prev => ({ ...prev, sku: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="e.g., PROD-001"
                   />
                 </div>
@@ -826,7 +826,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                           required={form.trackInventory}
                           value={form.stock || ''}
                           onChange={(e) => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                           placeholder="0"
                         />
                       </div>
@@ -843,7 +843,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                             ...prev, 
                             lowStockAlert: e.target.value ? parseInt(e.target.value) : undefined 
                           }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                           placeholder="5"
                         />
                       </div>
@@ -941,7 +941,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               required
                               value={variant.name}
                               onChange={(e) => updateVariant(index, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="e.g., Large, Red"
                             />
                           </div>
@@ -960,7 +960,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                                 required
                                 value={variant.price || ''}
                                 onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
-                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                                 placeholder="0.00"
                               />
                             </div>
@@ -975,7 +975,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               min="0"
                               value={variant.stock || ''}
                               onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="0"
                             />
                           </div>
@@ -988,7 +988,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               type="text"
                               value={variant.sku || ''}
                               onChange={(e) => updateVariant(index, 'sku', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="VARIANT-001"
                             />
                           </div>
@@ -1049,7 +1049,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               required
                               value={modifier.name}
                               onChange={(e) => updateModifier(index, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="e.g., Extra Cheese"
                             />
                           </div>
@@ -1068,7 +1068,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                                 required
                                 value={modifier.price || ''}
                                 onChange={(e) => updateModifier(index, 'price', parseFloat(e.target.value) || 0)}
-                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                                 placeholder="0.00"
                               />
                             </div>
@@ -1106,7 +1106,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       type="text"
                       value={form.metaTitle}
                       onChange={(e) => setForm(prev => ({ ...prev, metaTitle: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                       placeholder={form.name || "Product title for search engines"}
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1122,7 +1122,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       value={form.metaDescription}
                       onChange={(e) => setForm(prev => ({ ...prev, metaDescription: e.target.value }))}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                       placeholder={form.description || "Product description for search engines"}
                     />
                     <p className="text-xs text-gray-500 mt-1">

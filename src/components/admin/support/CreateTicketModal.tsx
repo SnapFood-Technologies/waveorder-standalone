@@ -105,7 +105,7 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated }: Crea
               value={formData.subject}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
               placeholder="Brief description of your issue"
             />
           </div>
@@ -120,7 +120,7 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated }: Crea
               value={formData.type}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
             >
               {getTypeOptions().map(option => (
                 <option key={option.value} value={option.value}>
@@ -140,7 +140,7 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated }: Crea
               value={formData.priority}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
             >
               {getPriorityOptions().map(option => (
                 <option key={option.value} value={option.value}>
@@ -161,7 +161,7 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated }: Crea
               onChange={handleChange}
               required
               rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
               placeholder="Please provide detailed information about your issue, including steps to reproduce if applicable..."
             />
             <p className="text-sm text-gray-500 mt-1">

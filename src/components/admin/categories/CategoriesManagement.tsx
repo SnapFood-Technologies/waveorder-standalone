@@ -860,7 +860,7 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
                 ...prev, 
                 [activeLanguage === 'en' ? 'name' : 'nameAl']: e.target.value 
               }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
               placeholder={activeLanguage === 'en' ? "e.g., Main Courses" : "e.g., Kryesor"}
             />
           </div>
@@ -877,7 +877,7 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
                 [activeLanguage === 'en' ? 'description' : 'descriptionAl']: e.target.value 
               }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
               placeholder="Optional description"
             />
           </div>
@@ -890,7 +890,7 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
             <select
               value={form.parentId}
               onChange={(e) => setForm(prev => ({ ...prev, parentId: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             >
               <option value="">None (Top-level category)</option>
               {availableParents.map(cat => (

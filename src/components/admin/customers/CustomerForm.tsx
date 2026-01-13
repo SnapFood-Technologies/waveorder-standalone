@@ -449,7 +449,7 @@ function PhoneInput({ value, onChange, storeData, error, onErrorChange }: {
           type="tel"
           value={value}
           onChange={handleInputChange}
-          className={`w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+          className={`w-full pl-16 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
             error || (!isValid && value.length > 5) ? 'border-red-300' : 'border-gray-300'
           }`}
           placeholder={getPlaceholder()}
@@ -642,7 +642,7 @@ function AddressAutocomplete({
           required={required}
           value={value}
           onChange={handleInputChange}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
             error ? 'border-red-300' : 'border-gray-300'
           }`}
           placeholder={placeholder}
@@ -998,7 +998,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                         setFormData(prev => ({ ...prev, name: e.target.value }))
                         clearFieldError('name', undefined)
                       }}
-                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
                         errors.name ? 'border-red-300' : 'border-gray-300'
                       }`}
                       placeholder="Enter customer's full name"
@@ -1029,7 +1029,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                           setFormData(prev => ({ ...prev, email: e.target.value }))
                           clearFieldError('email', undefined)
                         }}
-                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+                        className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
                           errors.email ? 'border-red-300' : 'border-gray-300'
                         }`}
                         placeholder="customer@example.com"
@@ -1224,7 +1224,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                         value={currentTag}
                         onChange={(e) => setCurrentTag(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                         placeholder="Add tags like 'vip', 'frequent', 'wholesale'..."
                       />
                       <button
@@ -1245,7 +1245,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                       value={formData.notes}
                       onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                       rows={4}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                       placeholder="Add any special notes about this customer..."
                     />
                     <p className="text-xs text-gray-500 mt-1">

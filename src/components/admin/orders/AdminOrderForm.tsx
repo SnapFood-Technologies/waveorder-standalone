@@ -183,7 +183,7 @@ function AddressAutocomplete({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
           error ? 'border-red-300' : 'border-gray-300'
         }`}
         placeholder={placeholder}
@@ -248,7 +248,7 @@ function CustomerSearch({
             setShowDropdown(true)
           }}
           onFocus={() => setShowDropdown(true)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           placeholder="Search by name, phone, or email..."
         />
         {selectedCustomer && (
@@ -377,7 +377,7 @@ function ProductSearch({
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           placeholder="Search products..."
         />
       </div>
@@ -490,7 +490,7 @@ function ProductSearch({
               min="1"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-              className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+              className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 placeholder:text-gray-500"
             />
           </div>
 
@@ -873,7 +873,7 @@ export default function AdminOrderForm({
           ...prev,
           newCustomer: { ...prev.newCustomer, name: e.target.value, phone: prev.newCustomer?.phone || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
         }))}
-        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
           errors.newCustomerName ? 'border-red-300' : 'border-gray-300'
         }`}
         placeholder="Enter customer name"
@@ -892,7 +892,7 @@ export default function AdminOrderForm({
           ...prev,
           newCustomer: { ...prev.newCustomer, phone: e.target.value, name: prev.newCustomer?.name || '', email: prev.newCustomer?.email || '', tier: prev.newCustomer?.tier || 'REGULAR' }
         }))}
-        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
           errors.newCustomerPhone ? 'border-red-300' : 'border-gray-300'
         }`}
         placeholder="Enter phone number"
@@ -911,7 +911,7 @@ export default function AdminOrderForm({
           ...prev,
           newCustomer: { ...prev.newCustomer, email: e.target.value, name: prev.newCustomer?.name || '', phone: prev.newCustomer?.phone || '', tier: prev.newCustomer?.tier || 'REGULAR' }
         }))}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
         placeholder="customer@example.com"
       />
     </div>
@@ -1088,7 +1088,7 @@ export default function AdminOrderForm({
                     value={formData.notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                     placeholder="Special instructions, allergies, preferences..."
                   />
                 </div>

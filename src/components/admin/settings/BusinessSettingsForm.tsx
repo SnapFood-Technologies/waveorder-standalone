@@ -273,7 +273,7 @@ function AddressAutocomplete({
       required={required}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
       placeholder={placeholder}
     />
   )
@@ -650,7 +650,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="name"
                   value={settings.name}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="Your Business Name"
                   required
                 />
@@ -696,7 +696,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   value={settings.description || ''}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="Tell customers about your business..."
                 />
               </div>
@@ -712,7 +712,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                     value={settings.descriptionAl || ''}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     placeholder="Përshkrini biznesin tuaj në shqip..."
                   />
                 </div>
@@ -726,7 +726,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="businessType"
                   value={settings.businessType}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 >
                   {businessTypes.map(type => (
                     <option key={type.value} value={type.value}>
@@ -744,7 +744,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="currency"
                   value={settings.currency}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 >
                   {currencies.map(currency => (
                     <option key={currency.value} value={currency.value}>
@@ -762,7 +762,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="language"
                   value={settings.language}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 >
                   <option value="en">English</option>
                   <option value="es">Spanish (Español)</option>
@@ -787,7 +787,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="storefrontLanguage"
                   value={settings.storefrontLanguage}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 >
                   <option value="en">English</option>
                   <option value="es">Spanish (Español)</option>
@@ -907,7 +907,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="timeFormat"
                   value={settings.timeFormat}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 >
                   <option value="24">24-hour format (14:30)</option>
                   <option value="12">12-hour format (2:30 PM)</option>
@@ -985,7 +985,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 name="phone"
                 value={settings.phone || ''}
                 onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 placeholder="Enter your business phone number"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -1001,7 +1001,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="email"
                   value={settings.email || ''}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="business@example.com"
                 />
               </div>
@@ -1015,7 +1015,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="website"
                   value={settings.website || ''}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="https://www.yourbusiness.com"
                 />
               </div>
@@ -1056,7 +1056,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="closureReason"
                       value={settings.closureReason || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     >
                       <option value="">Select a reason</option>
                       {closureReasons.map(reason => (
@@ -1076,7 +1076,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.closureMessage || ''}
                       onChange={handleInputChange}
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                       placeholder="e.g., We're temporarily closed for maintenance. We'll be back soon!"
                     />
                   </div>
@@ -1090,7 +1090,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="closureStartDate"
                       value={settings.closureStartDate || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
 
@@ -1103,7 +1103,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="closureEndDate"
                       value={settings.closureEndDate || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -1138,7 +1138,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="seoTitle"
                   value={settings.seoTitle || ''}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="Custom page title for search engines"
                   maxLength={60}
                 />
@@ -1156,7 +1156,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   value={settings.seoDescription || ''}
                   onChange={handleInputChange}
                   rows={2}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="Brief description for search engines (150-160 characters)"
                   maxLength={160}
                 />
@@ -1174,7 +1174,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   name="seoKeywords"
                   value={settings.seoKeywords || ''}
                   onChange={handleInputChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   placeholder="restaurant, delivery, local business (comma-separated)"
                 />
               </div>
@@ -1193,7 +1193,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="seoTitleAl"
                       value={settings.seoTitleAl || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                       placeholder="Titulli për motorët e kërkimit në shqip"
                       maxLength={60}
                     />
@@ -1211,7 +1211,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.seoDescriptionAl || ''}
                       onChange={handleInputChange}
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                       placeholder="Përshkrimi i shkurtër për motorët e kërkimit"
                       maxLength={160}
                     />
@@ -1229,7 +1229,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="seoKeywordsAl"
                       value={settings.seoKeywordsAl || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                       placeholder="restorant, dërgesë, biznes lokal (të ndara me presje)"
                     />
                   </div>
@@ -1296,7 +1296,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="canonicalUrl"
                       value={settings.canonicalUrl || ''}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                       placeholder="https://waveorder.app/your-store"
                     />
                     <p className="text-xs text-gray-500 mt-1">
@@ -1312,7 +1312,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       name="schemaType"
                       value={settings.schemaType || 'LocalBusiness'}
                       onChange={handleInputChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     >
                       {schemaTypes.map(type => (
                         <option key={type.value} value={type.value}>

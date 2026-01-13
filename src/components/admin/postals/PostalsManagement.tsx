@@ -392,7 +392,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -403,7 +403,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             type="text"
             value={formData.nameAl || ''}
             onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -414,7 +414,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value })}
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           >
             <option value="normal">Normal</option>
             <option value="fast">Fast</option>
@@ -429,7 +429,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.logo || ''}
             onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
             placeholder="https://example.com/logo.png"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -440,7 +440,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -451,7 +451,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.descriptionAl || ''}
             onChange={(e) => setFormData({ ...formData, descriptionAl: e.target.value })}
             rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -463,7 +463,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.deliveryTime || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTime: e.target.value })}
             placeholder="e.g., 3-5 days"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
         <div>
@@ -475,7 +475,7 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.deliveryTimeAl || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
             placeholder="e.g., 3-5 ditë"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
       </div>
