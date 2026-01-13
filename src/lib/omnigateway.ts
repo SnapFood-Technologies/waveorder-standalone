@@ -161,13 +161,14 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
 
   // Prepare update payload
   // At this point, productId is guaranteed to be a string (not null)
+  // Note: Admin has only one input for name/description, so we send the same value for both
   const updateData: OmniGatewayProductUpdate = {
     productId: productId as string,
     sku: product.sku || undefined,
     name: product.name || undefined,
-    nameAl: product.nameAl || product.name || undefined,
+    nameAl: product.name || undefined, // Same as name (admin has only one input)
     description: product.description || undefined,
-    descriptionAl: product.descriptionAl || product.description || undefined,
+    descriptionAl: product.description || undefined, // Same as description (admin has only one input)
     price: price,
     salePrice: salePrice,
     originalPrice: originalPrice,
