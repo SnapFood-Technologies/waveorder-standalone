@@ -1,6 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 
 // Static configuration for OmniStack Gateway
+// TODO: Replace static credentials with environment variables
+// - NEXT_PUBLIC_OMNI_GATEWAY_URL for BASE_URL
+// - NEXT_PUBLIC_OMNI_GATEWAY_API_KEY for API_KEY
+// - Store CLIENT_API_KEY per business/client (not static)
 const BASE_URL = 'https://apigtw.omnistackhub.xyz/';
 const API_KEY = 'gwy_3kjg9KdJ37sdL4hF8Tk2sXnY5LzW8Rv';
 const CLIENT_API_KEY = 'sk_3c577716586da676b0ded8530b6df92288f70c1275a687d45306c3c71c0f53b3';
@@ -108,14 +112,34 @@ export async function updateProductInOmniGateway(
 /**
  * Helper function to prepare WaveOrder product data for OmniStack Gateway sync
  * Converts WaveOrder product format to OmniGateway format
+ * 
+ * Product identification priority:
+ * 1. metadata.externalProductId (if product is linked)
+ * 2. SKU (OmniStack Gateway can find products by SKU)
+ * 3. WaveOrder internal ID (fallback)
  */
 export function prepareProductForOmniGateway(product: any): OmniGatewayProductUpdate | null {
-  // Check if product is linked to OmniStack (has externalProductId in metadata)
   const metadata = product.metadata as any;
-  const externalProductId = metadata?.externalProductId;
   
-  if (!externalProductId) {
-    // Product not linked to OmniStack, skip sync
+  // Determine productId for OmniStack Gateway
+  // Priority: externalProductId > SKU > WaveOrder ID
+  // TODO: Investigate why externalProductId is not working/populated
+  // - Check if externalProductId is being stored correctly when products are synced from OmniStack
+  // - Verify metadata structure and how externalProductId is saved
+  // - Ensure externalProductId is preserved during product updates
+  let productId: string | null = null;
+  
+  if (metadata?.externalProductId) {
+    // Product is linked - use external ID
+    productId = metadata.externalProductId;
+  } else if (product.sku) {
+    // Use SKU as identifier (OmniStack Gateway can find by SKU)
+    productId = product.sku;
+  } else if (product.id) {
+    // Fallback to WaveOrder internal ID
+    productId = product.id;
+  } else {
+    // No way to identify the product (no ID, no SKU)
     return null;
   }
 
@@ -136,8 +160,9 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
   }
 
   // Prepare update payload
+  // At this point, productId is guaranteed to be a string (not null)
   const updateData: OmniGatewayProductUpdate = {
-    productId: externalProductId,
+    productId: productId as string,
     sku: product.sku || undefined,
     name: product.name || undefined,
     nameAl: product.nameAl || product.name || undefined,
@@ -165,11 +190,11 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
 
 /**
  * Syncs a WaveOrder product to OmniStack Gateway
- * Only syncs if product has externalProductId in metadata
+ * Syncs products even without externalProductId - uses SKU or WaveOrder ID for matching
  * 
  * @param product - WaveOrder product object (with category relation)
  * @param clientApiKey - Optional client API key
- * @returns Promise resolving to sync result, or null if product not linked
+ * @returns Promise resolving to sync result, or null if product cannot be identified
  */
 export async function syncProductToOmniGateway(
   product: any,
@@ -179,7 +204,7 @@ export async function syncProductToOmniGateway(
     const updateData = prepareProductForOmniGateway(product);
     
     if (!updateData) {
-      // Product not linked to OmniStack
+      // Product cannot be identified (no ID, no SKU, no externalProductId)
       return null;
     }
 
