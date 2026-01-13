@@ -1,6 +1,7 @@
 // app/api/admin/stores/[businessId]/products/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { syncProductToOmniGateway } from '@/lib/omnigateway'
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
@@ -140,6 +141,12 @@ export async function PUT(
         }))
       })
     }
+
+    // Sync to OmniStack Gateway (if product is linked)
+    // Run in background - don't block the response
+    syncProductToOmniGateway(product).catch(err => {
+      console.error('[OmniGateway] Background sync failed:', err);
+    });
 
     return NextResponse.json({ product })
 
