@@ -883,11 +883,233 @@ addDeliveryAddress: "Shto adresën e dërgesës",
 
   }
 
+  const greekTranslations: StorefrontTranslations = {
+    // Navigation & Search
+    search: "Αναζήτηση στο μενού...",
+    searchProducts: "Αναζήτηση προϊόντων",
+    allCategories: "Όλες οι κατηγορίες",
+    all: "Όλα",
+    
+    // Status
+    open: "● Ανοιχτό",
+    closed: "● Κλειστό",
+    
+    // General
+    welcome: "Καλώς ήρθατε!",
+    deliveryIn: "Παράδοση σε",
+    customize: "Προσαρμογή",
+    add: "Προσθήκη",
+    outOfStock: "Εκτός αποθέματος",
+    onlyLeft: "Μόνο",
+    left: "απομένουν!",
+
+    onlyMoreCanBeAdded: "Μόνο {count} ακόμη μπορούν να προστεθούν στο καλάθι",
+    stockLabel: "Απόθεμα",
+    inCartLabel: "Στο καλάθι",
+
+    itemOutOfStockOrMaxQuantity: "Λυπάμαι, αυτό το προϊόν είναι εκτός αποθέματος ή ήδη στη μέγιστη ποσότητα στο καλάθι σας",
+
+    
+    // Order Details
+    orderDetails: "Λεπτομέρειες Παραγγελίας",
+    delivery: "Παράδοση",
+    pickup: "Παραλαβή",
+    dineIn: "Στο εστιατόριο",
+    
+    // Form Fields
+    name: "Όνομα",
+    whatsappNumber: "Αριθμός WhatsApp",
+    email: "Email",
+    addressLine1: "Διεύθυνση Γραμμή 1",
+    addressLine2: "Διεύθυνση Γραμμή 2",
+    deliveryTime: "Ώρα Παράδοσης",
+    pickupTime: "Ώρα Παραλαβής",
+    arrivalTime: "Ώρα Άφιξης",
+    asap: "Όσο πιο γρήγορα",
+    mins: "λεπτά",
+    
+    // Cart & Checkout
+    cartItems: "Προϊόντα στο Καλάθι",
+    productsInCart: "Προϊόντα στο Καλάθι", // For RETAIL businesses
+    subtotal: "Υποσύνολο",
+    deliveryFee: "Κόστος Παράδοσης",
+    total: "Σύνολο",
+    minimumOrder: "Η ελάχιστη παραγγελία είναι",
+    forDelivery: "για παράδοση. Προσθέστε",
+    moreTo: "περισσότερα για να ολοκληρώσετε την παραγγελία σας.",
+    specialInstructions: "Ειδικές Οδηγίες",
+    anySpecialRequests: "Οποιεσδήποτε ειδικές αιτήσεις...",
+    orderViaWhatsapp: "Παραγγελία μέσω WhatsApp",
+    placingOrder: "Δημιουργία Παραγγελίας...",
+    clickingButton: "Κάνοντας κλικ σε αυτό το κουμπί θα ανοίξει το WhatsApp με τις λεπτομέρειες της παραγγελίας σας",
+    yourOrder: "Η Παραγγελία σας",
+
+    sorryOnlyStockAvailable: "Λυπάμαι, μόνο {count} {itemWord} διαθέσιμα σε απόθεμα",
+
+    
+    // Product Modal
+    chooseSize: "Επιλέξτε Επιλογή",
+    addExtras: "Προσθήκη Επιπλέον",
+    required: "(Υποχρεωτικό)",
+    quantity: "Ποσότητα",
+    addToCart: "Προσθήκη στο Καλάθι",
+    
+
+    website: "Ιστοσελίδα",
+    yourFullName: "Το πλήρες όνομά σας",
+    emailPlaceholder: "το.email@παράδειγμα.com",
+    linkCopied: "Ο σύνδεσμος αντιγράφηκε στο πρόχειρο!",
+    moreSharingOptions: "Περισσότερες επιλογές κοινοποίησης",
+
+    // Greek translations:
+    now: "Τώρα",
+    schedule: "Προγραμματισμός",
+    selectDate: "Επιλέξτε Ημερομηνία",
+    selectTime: "Επιλέξτε Ώρα",
+    today: "Σήμερα",
+    tomorrow: "Αύριο",
+    noTimeSlots: "Δεν υπάρχουν διαθέσιμες ώρες για αυτή την ημερομηνία",
+    address: "Διεύθυνση",
+    pickupLocation: "Τοποθεσία Παραλαβής",
+    directions: "Οδηγίες",
+    tapForDirections: "Πατήστε για οδηγίες",
+    pickupInstructions: "Παρακαλώ ελάτε σε αυτή την τοποθεσία για να παραλάβετε την παραγγελία σας.",
+    mapView: "Προβολή Χάρτη",
+    businessInfo: "Πληροφορίες Επιχείρησης",
+    about: "Σχετικά",
+    contact: "Επικοινωνία",
+    hours: "Ώρες",
+    serviceOptions: "Επιλογές Υπηρεσίας",
+    share: "Κοινοποίηση",
+    copyLink: "Αντιγραφή Συνδέσμου",
+    shareVia: "Κοινοποίηση μέσω",
+    temporarilyClosed: "Προσωρινά Κλειστό",
+    expectedReopen: "Αναμένεται να ανοίξει",
+    storeTemporarilyClosed: "Το Κατάστημα είναι Προσωρινά Κλειστό",
+    storeClosedMessage: "Ζητούμε συγγνώμη για οποιαδήποτε αναστάτωση.",
+    time: "Ώρα",
+    serviceFee: "Χρέωση Υπηρεσίας",
+    popular: "Δημοφιλές",
+    
+    noResultsFor: 'Δεν υπάρχουν αποτελέσματα για',
+    result: 'αποτέλεσμα',
+    results: 'αποτελέσματα',
+    for: 'για',
+
+    // Placeholders
+    streetAddress: "Οδός",
+    apartment: "Διαμέρισμα, σουίτα, κλπ.",
+    selectCountry: "Επιλέξτε Χώρα",
+    selectCountryFirst: "Επιλέξτε πρώτα τη χώρα",
+    selectCity: "Επιλέξτε Πόλη",
+    postalCode: "Ταχυδρομικός Κώδικας",
+    postalCodePlaceholder: "Ταχυδρομικός κώδικας",
+    
+    // Phone Validation
+    invalidAlbanianPhone: "Παρακαλώ εισάγετε έγκυρο αλβανικό αριθμό τηλεφώνου",
+    invalidGreekPhone: "Παρακαλώ εισάγετε έγκυρο ελληνικό αριθμό τηλεφώνου",
+    invalidItalianPhone: "Παρακαλώ εισάγετε έγκυρο ιταλικό αριθμό τηλεφώνου",
+    invalidSpanishPhone: "Παρακαλώ εισάγετε έγκυρο ισπανικό αριθμό τηλεφώνου",
+    invalidUSPhone: "Παρακαλώ εισάγετε έγκυρο αμερικανικό αριθμό τηλεφώνου",
+    invalidKosovoPhone: "Παρακαλώ εισάγετε έγκυρο κοσοβιανό αριθμό τηλεφώνου",
+    invalidNorthMacedoniaPhone: "Παρακαλώ εισάγετε έγκυρο μακεδονικό αριθμό τηλεφώνου",
+    invalidPhone: "Παρακαλώ εισάγετε έγκυρο αριθμό τηλεφώνου",
+    phoneFormatAlbania: "Μορφή: +355 68 123 4567",
+    phoneFormatGreece: "Μορφή: +30 694 123 4567",
+    phoneFormatItaly: "Μορφή: +39 34 3123 4567",
+    phoneFormatSpain: "Μορφή: +34 612 345 678",
+    phoneFormatKosovo: "Μορφή: +383 44 123 456",
+    phoneFormatNorthMacedonia: "Μορφή: +389 70 123 456",
+    phoneFormatUS: "Μορφή: +1 (555) 123-4567",
+    phoneFormatGeneric: "Εισάγετε τον αριθμό WhatsApp σας με τον κωδικό χώρας",
+
+    inCartAvailable: "{inCart} στο καλάθι, {available} διαθέσιμα",
+    onlyStockAvailable: "Μόνο {stock} διαθέσιμα",
+    
+    // Footer
+    poweredBy: "Με την υποστήριξη",
+    
+    // Empty States
+    noProductsFound: "Δεν βρέθηκαν προϊόντα",
+    noProductsFoundDescription: "Δεν μπορέσαμε να βρούμε προϊόντα που να ταιριάζουν με την αναζήτησή σας. Δοκιμάστε να προσαρμόσετε τους όρους αναζήτησης.",
+    noProductsInCategory: "Δεν υπάρχουν προϊόντα σε αυτή την κατηγορία",
+    noProductsInCategoryDescription: "Αυτή η κατηγορία δεν έχει ακόμη προϊόντα. Ελέγξτε αργότερα ή περιηγηθείτε σε άλλες κατηγορίες.",
+    tryDifferentSearch: "Δοκιμάστε μια διαφορετική αναζήτηση",
+    browseAllProducts: "Περιηγηθείτε σε όλα τα προϊόντα",
+    comingSoon: "Σύντομα!",
+    checkBackLater: "Εργαζόμαστε για να προσθέσουμε προϊόντα σε αυτή την ενότητα. Παρακαλώ ελέγξτε αργότερα.",
+    freeDelivery: "Δωρεάν Παράδοση",
+    pickupAvailable: "Διαθέσιμη Παραλαβή",
+    // Closure Messages
+    maintenanceMessage: "Εκτελούμε προσωρινά συντήρηση και θα επιστρέψουμε σύντομα.",
+    holidayMessage: "Είμαστε κλειστά για τις διακοπές.",
+    emergencyMessage: "Είμαστε προσωρινά κλειστά λόγω απρόβλεπτων συνθηκών.",
+    staffShortageMessage: "Είμαστε προσωρινά κλειστά λόγω προβλημάτων προσωπικού.",
+    supplyIssuesMessage: "Είμαστε προσωρινά κλειστά λόγω προβλημάτων προμήθειας.",
+    temporaryClosureMessage: "Είμαστε προσωρινά κλειστά και θα ανοίξουμε σύντομα.",
+
+     // Delivery Zone Errors
+  outsideDeliveryArea: "Η διεύθυνση είναι εκτός της περιοχής παράδοσης",
+  outsideDeliveryAreaDesc: "Δυστυχώς, δεν παραδίδουμε σε αυτή τη διεύθυνση. Η μέγιστη απόσταση παράδοσης είναι",
+  deliveryNotAvailable: "Η παράδοση δεν είναι διαθέσιμη",
+  deliveryCalculationFailed: "Αδυναμία υπολογισμού του κόστους παράδοσης",
+  tryDifferentAddress: "Δοκιμάστε μια διαφορετική διεύθυνση",
+  selectDifferentArea: "Παρακαλώ επιλέξτε μια διεύθυνση εντός της περιοχής παράδοσής μας",
+  maxDeliveryDistance: "Μέγιστη απόσταση παράδοσης",
+  failedToCreateOrder: "Αποτυχία δημιουργίας παραγγελίας. Παρακαλώ δοκιμάστε ξανά.",
+  failedToSubmitOrder: "Αποτυχία υποβολής παραγγελίας. Παρακαλώ δοκιμάστε ξανά.",
+
+
+  // Success Message & Scheduling
+  orderPrepared: "Η Παραγγελία Στάλθηκε!",
+  orderNumber: "Αριθμός Παραγγελίας",
+  orderOpenedWhatsApp: "Η παραγγελία σας στάλθηκε με επιτυχία. Το κατάστημα έχει ειδοποιηθεί, αλλά μπορείτε επίσης να στείλετε ένα μήνυμα WhatsApp αν θέλετε να επικοινωνήσετε απευθείας με το κατάστημα.",
+  nextSteps: "Τι Επόμενο;",
+  sendWhatsAppMessage: "Προαιρετικό: Στείλτε μήνυμα WhatsApp για επικοινωνία με το κατάστημα",
+  awaitConfirmation: "Θα λάβετε ενημερώσεις κατάστασης παραγγελίας μέσω email ή WhatsApp",
+  weWillPrepareOrder: "Το κατάστημα θα επεξεργαστεί την παραγγελία σας και θα σας ειδοποιήσει για οποιαδήποτε αλλαγή κατάστασης",
+  storeCurrentlyClosed: "Το κατάστημα είναι προσωρινά κλειστό",
+  wouldYouLikeToSchedule: "Θα θέλατε να προγραμματίσετε την παραγγελία σας για αργότερα;",
+
+  cannotPlaceNowOrder: "Είμαστε προσωρινά κλειστά και δεν μπορούμε να δεχτούμε παραγγελίες για άμεση παράδοση/παραλαβή. Ωστόσο, μπορείτε να προγραμματίσετε την παραγγελία σας για όταν είμαστε ανοιχτά!",
+  schedulingBenefits: "Γιατί να προγραμματίσετε την παραγγελία σας;",
+  guaranteedPreparation: "Εγγυημένη προετοιμασία όταν είμαστε ανοιχτά",
+  noWaitingTime: "Χωρίς αναμονή - έτοιμο όταν φτάσετε",
+  secureYourOrder: "Κατασφαλίστε την προτιμώμενη ώρα σας",
+  continueAnyway: "Συνέχεια Ούτως ή Άλλως",
+  scheduleOrder: "Προγραμματισμός Παραγγελίας",
+  close: "Κλείσιμο",
+  selectTimeForSchedule: "Παρακαλώ επιλέξτε μια ώρα για την παραγγελία σας",
+  addItemsToCart: "Προσθέστε προϊόντα στο καλάθι",
+  fillRequiredInfo: "Συμπληρώστε τις απαιτούμενες πληροφορίες",
+  addDeliveryAddress: "Προσθέστε διεύθυνση παράδοσης",
+  // NEW STOCK-RELATED TRANSLATIONS
+  inCart: "στο καλάθι",
+  available: "διαθέσιμα",
+  onlyAvailable: "Μόνο διαθέσιμα",
+  item: "προϊόν",
+  items: "προϊόντα",
+  maximumQuantityInCart: "Μέγιστη ποσότητα ({count}) ήδη στο καλάθι",
+  canBeAdded: "περισσότερα μπορούν να προστεθούν στο καλάθι",
+    stock: "Απόθεμα",
+    max: "Μέγ",
+    loading: "Φόρτωση επιλογών...",
+    loadingCountries: "Φόρτωση χωρών...",
+    loadingCities: "Φόρτωση πόλεων...",
+    selectDeliveryMethod: "Επιλέξτε τη μέθοδο παράδοσης παρακάτω",
+    enterAddressForDelivery: "Εισάγετε διεύθυνση για να δείτε τις επιλογές παράδοσης",
+    deliveryMethod: "Μέθοδος Παράδοσης",
+    noDeliveryOptions: "Δεν υπάρχουν επιλογές παράδοσης διαθέσιμες για αυτή την πόλη",
+
+  }
+
   export const getStorefrontTranslations = (language: string): StorefrontTranslations => {
     if (language === 'sq' || language === 'al') {
       return albanianTranslations
     } else if (language === 'es') {
       return spanishTranslations
+    } else if (language === 'el' || language === 'gr') {
+      return greekTranslations
     }
     return englishTranslations
   }

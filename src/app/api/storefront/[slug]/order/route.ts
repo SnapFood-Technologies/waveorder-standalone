@@ -834,6 +834,168 @@ const messageTerms = {
       pickup_type: 'Recogida',
       dineIn_type: 'Visita'
     }
+  },
+  el: {
+    RESTAURANT: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Άφιξης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Στο Εστιατόριο'
+    },
+    CAFE: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Άφιξης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Στο Εστιατόριο'
+    },
+    RETAIL: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Αποστολή',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Αποστολής',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Αποστολής',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Επίσκεψης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Αποστολή',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Επίσκεψη'
+    },
+    GROCERY: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Επίσκεψης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Επίσκεψη'
+    },
+    JEWELRY: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Αποστολή',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Αποστολής',
+      pickupLocation: 'Τοποθεσία Καταστήματος',
+      deliveryTime: 'Ώρα Αποστολής',
+      pickupTime: 'Ώρα Ραντεβού',
+      arrivalTime: 'Ώρα Ραντεβού',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Υπηρεσίας',
+      delivery_type: 'Αποστολή',
+      pickup_type: 'Επίσκεψη Καταστήματος',
+      dineIn_type: 'Συμβουλευτική'
+    },
+    FLORIST: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Επίσκεψης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Επίσκεψη'
+    },
+    HEALTH_BEAUTY: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Ραντεβού',
+      arrivalTime: 'Ώρα Ραντεβού',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Υπηρεσίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Επίσκεψη Καταστήματος',
+      dineIn_type: 'Συμβουλευτική'
+    },
+    OTHER: {
+      order: 'Παραγγελία',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Παράδοση',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      deliveryTime: 'Ώρα Παράδοσης',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Επίσκεψης',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Παραγγελίας',
+      delivery_type: 'Παράδοση',
+      pickup_type: 'Παραλαβή',
+      dineIn_type: 'Επίσκεψη'
+    }
   }
 }
 
@@ -1987,17 +2149,26 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
         'AL': {
           'sq': 'Shqipëri',
           'en': 'Albania',
-          'es': 'Albania'
+          'es': 'Albania',
+          'el': 'Αλβανία'
         },
         'XK': {
           'sq': 'Kosovë',
           'en': 'Kosovo',
-          'es': 'Kosovo'
+          'es': 'Kosovo',
+          'el': 'Κοσσυφοπέδιο'
         },
         'MK': {
           'sq': 'Maqedonia e Veriut',
           'en': 'North Macedonia',
-          'es': 'Macedonia del Norte'
+          'es': 'Macedonia del Norte',
+          'el': 'Βόρεια Μακεδονία'
+        },
+        'GR': {
+          'sq': 'Greqia',
+          'en': 'Greece',
+          'es': 'Grecia',
+          'el': 'Ελλάδα'
         }
       }
       
@@ -2038,6 +2209,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
       // For non-RETAIL: Standard delivery time
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
+                   language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 
@@ -2051,6 +2223,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
     const timeLabel = terms.pickupTime
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
+                   language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 
@@ -2062,6 +2235,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
     const timeLabel = terms.arrivalTime
     const locale = language === 'sq' ? 'sq-AL' : 
                    language === 'es' ? 'es-ES' : 
+                   language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
       new Date(orderData.deliveryTime).toLocaleString(locale) 

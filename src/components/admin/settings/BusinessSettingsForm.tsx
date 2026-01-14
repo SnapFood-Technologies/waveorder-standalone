@@ -794,6 +794,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   {(detectedCountry === 'AL' || detectedCountry === 'GR') && (
                     <option value="sq">Albanian (Shqip)</option>
                   )}
+                  {(detectedCountry === 'GR') && (
+                    <option value="el">Greek (Ελληνικά)</option>
+                  )}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
                   This language is used for the storefront UI (buttons, labels, messages). Defaults to your business language but can be changed separately.

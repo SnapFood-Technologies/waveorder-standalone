@@ -221,6 +221,20 @@ function getStatusMessage(status: string, orderType: string, language: string = 
       DELIVERED: 'Porosia juaj është dorëzuar! Faleminderit për porosinë tuaj.',
       CANCELLED: 'Porosia juaj është anuluar. Nëse keni ndonjë pyetje, ju lutemi na kontaktoni.',
       DEFAULT: 'Statusi i porosisë tuaj është përditësuar në {status}.'
+    },
+    el: {
+      CONFIRMED: 'Η παραγγελία σας έχει επιβεβαιωθεί και την προετοιμάζουμε για εσάς!',
+      PREPARING: isRetail ? 'Η παραγγελία σας προετοιμάζεται για αποστολή!' : 'Η παραγγελία σας προετοιμάζεται προσεκτικά!',
+      READY_PICKUP: 'Η παραγγελία σας είναι έτοιμη για παραλαβή! Παρακαλώ ελάτε στο κατάστημά μας για να την παραλάβετε.',
+      READY_DINE_IN: 'Η παραγγελία σας είναι έτοιμη! Παρακαλώ ελάτε στο εστιατόριό μας.',
+      READY_DELIVERY: 'Η παραγγελία σας είναι έτοιμη και θα παραδοθεί σύντομα!',
+      PICKED_UP_PICKUP: 'Η παραγγελία σας έχει παραληφθεί! Ευχαριστούμε για την παραγγελία σας.',
+      PICKED_UP_DINE_IN: 'Απολαύστε το γεύμα σας! Ευχαριστούμε που μας επισκεφτήκατε.',
+      PICKED_UP_DELIVERY: 'Η παραγγελία σας έχει ολοκληρωθεί! Ευχαριστούμε για την παραγγελία σας.',
+      OUT_FOR_DELIVERY: 'Η παραγγελία σας είναι στο δρόμο και θα φτάσει σύντομα!',
+      DELIVERED: 'Η παραγγελία σας έχει παραδοθεί! Ευχαριστούμε για την παραγγελία σας.',
+      CANCELLED: 'Η παραγγελία σας έχει ακυρωθεί. Εάν έχετε οποιεσδήποτε ερωτήσεις, παρακαλώ επικοινωνήστε μαζί μας.',
+      DEFAULT: 'Η κατάσταση της παραγγελίας σας έχει ενημερωθεί σε {status}.'
     }
   }
 
@@ -359,7 +373,7 @@ function createCustomerOrderStatusEmail({
   language?: string
 }): string {
   const labels = getEmailLabels(language)
-  const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : 'en-US'
+  const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
   
   const orderTypeLabel = orderData.type === 'DELIVERY' ? labels.delivery :
                         orderData.type === 'PICKUP' ? labels.pickup :
@@ -543,7 +557,7 @@ function createCustomerOrderPlacedEmail({
   language?: string
 }): string {
   const labels = getEmailLabels(language)
-  const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : 'en-US'
+  const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
   
   const orderTypeLabel = orderData.type === 'DELIVERY' ? labels.delivery :
                         orderData.type === 'PICKUP' ? labels.pickup :
@@ -767,6 +781,17 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       DELIVERED: 'Dorëzuar',
       CANCELLED: 'Anuluar',
       REFUNDED: 'Rimbursuar'
+    },
+    el: {
+      PENDING: 'Σε Εκκρεμότητα',
+      CONFIRMED: 'Επιβεβαιωμένη',
+      PREPARING: isRetail ? 'Προετοιμασία Αποστολής' : 'Προετοιμασία',
+      READY: 'Έτοιμη',
+      PICKED_UP: 'Παραληφθείσα',
+      OUT_FOR_DELIVERY: 'Στο Δρόμο',
+      DELIVERED: 'Παραδομένη',
+      CANCELLED: 'Ακυρωμένη',
+      REFUNDED: 'Επιστροφή Χρημάτων'
     }
   }
 
@@ -785,9 +810,10 @@ function getLocalizedCountryName(countryCode: string | null | undefined, languag
   if (!countryCode) return ''
   
   const countryNames: Record<string, Record<string, string>> = {
-    AL: { en: 'Albania', sq: 'Shqipëri', al: 'Shqipëri', es: 'Albania' },
-    XK: { en: 'Kosovo', sq: 'Kosovë', al: 'Kosovë', es: 'Kosovo' },
-    MK: { en: 'North Macedonia', sq: 'Maqedonia e Veriut', al: 'Maqedonia e Veriut', es: 'Macedonia del Norte' }
+    AL: { en: 'Albania', sq: 'Shqipëri', al: 'Shqipëri', es: 'Albania', el: 'Αλβανία' },
+    XK: { en: 'Kosovo', sq: 'Kosovë', al: 'Kosovë', es: 'Kosovo', el: 'Κοσσυφοπέδιο' },
+    MK: { en: 'North Macedonia', sq: 'Maqedonia e Veriut', al: 'Maqedonia e Veriut', es: 'Macedonia del Norte', el: 'Βόρεια Μακεδονία' },
+    GR: { en: 'Greece', sq: 'Greqia', al: 'Greqia', es: 'Grecia', el: 'Ελλάδα' }
   }
   
   const lang = language.toLowerCase()
@@ -814,25 +840,29 @@ function getLocalizedLabel(field: string, language: string): string {
       en: 'City',
       sq: 'Qyteti',
       al: 'Qyteti',
-      es: 'Ciudad'
+      es: 'Ciudad',
+      el: 'Πόλη'
     },
     country: {
       en: 'Country',
       sq: 'Shteti',
       al: 'Shteti',
-      es: 'País'
+      es: 'País',
+      el: 'Χώρα'
     },
     postalCode: {
       en: 'Postal Code',
       sq: 'Kodi Postar',
       al: 'Kodi Postar',
-      es: 'Código Postal'
+      es: 'Código Postal',
+      el: 'Ταχυδρομικός Κώδικας'
     },
     deliveryMethod: {
       en: 'Delivery Method',
       sq: 'Metoda e Dërgesës',
       al: 'Metoda e Dërgesës',
-      es: 'Método de Entrega'
+      es: 'Método de Entrega',
+      el: 'Μέθοδος Παράδοσης'
     }
   }
   

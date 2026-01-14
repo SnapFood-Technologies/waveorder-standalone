@@ -34,6 +34,29 @@ function detectAlbanianUser(): boolean {
   return false
 }
 
+// Function to detect if user is from Greece
+function detectGreekUser(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  // Check browser language
+  const browserLanguage = navigator.language.toLowerCase()
+  if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
+    return true
+  }
+  
+  // Check timezone (Greece uses Europe/Athens)
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    if (timezone === 'Europe/Athens') {
+      return true
+    }
+  } catch (error) {
+    // Timezone detection failed, ignore
+  }
+  
+  return false
+}
+
 // Currency symbol helper (same as Store Ready Step)
 const getCurrencySymbol = (currency: string) => {
   switch (currency) {
