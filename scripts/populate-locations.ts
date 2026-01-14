@@ -404,6 +404,261 @@ async function populateLocations(data: LocationData) {
   }
 }
 
+// Greece data - 13 administrative regions
+const GREECE_DATA: LocationData = {
+  countryCode: 'GR',
+  countryName: 'Greece',
+  countryGeonameId: 390903,
+  states: [
+    {
+      name: 'Attica',
+      code: 'I',
+      geonameId: 264371,
+      cities: [
+        { name: 'Athens', geonameId: 264371 },
+        { name: 'Piraeus', geonameId: 255274 },
+        { name: 'Peristeri', geonameId: 255524 },
+        { name: 'Acharnes', geonameId: 265488 },
+        { name: 'Kallithea', geonameId: 261414 },
+        { name: 'Nikaia', geonameId: 256429 },
+        { name: 'Glyfada', geonameId: 262036 },
+        { name: 'Ilio', geonameId: 261779 },
+        { name: 'Ilioupoli', geonameId: 261745 },
+        { name: 'Keratsini', geonameId: 260172 },
+        { name: 'Evosmos', geonameId: 262947 },
+        { name: 'Marousi', geonameId: 257365 },
+        { name: 'Agios Dimitrios', geonameId: 265533 },
+        { name: 'Zografou', geonameId: 251223 },
+        { name: 'Egaleo', geonameId: 262892 },
+        { name: 'Nea Smyrni', geonameId: 256637 },
+        { name: 'Chalandri', geonameId: 260114 },
+        { name: 'Vyronas', geonameId: 251280 },
+        { name: 'Agia Paraskevi', geonameId: 265243 },
+        { name: 'Galatsi', geonameId: 262137 },
+        { name: 'Petroupoli', geonameId: 255397 },
+        { name: 'Irakleio', geonameId: 261743 },
+        { name: 'Kifisia', geonameId: 259824 },
+        { name: 'Nea Ionia', geonameId: 256601 },
+        { name: 'Palaio Faliro', geonameId: 256133 }
+      ]
+    },
+    {
+      name: 'Central Macedonia',
+      code: 'B',
+      geonameId: 6697802,
+      cities: [
+        { name: 'Thessaloniki', geonameId: 734077 },
+        { name: 'Kalamaria', geonameId: 261614 },
+        { name: 'Evosmos', geonameId: 262947 },
+        { name: 'Neapoli', geonameId: 256575 },
+        { name: 'Sykies', geonameId: 253914 },
+        { name: 'Menemeni', geonameId: 257302 },
+        { name: 'Stavroupoli', geonameId: 253263 },
+        { name: 'Polichni', geonameId: 254915 },
+        { name: 'Ampelokipoi', geonameId: 265150 },
+        { name: 'Pylaia', geonameId: 254698 },
+        { name: 'Serres', geonameId: 734077 },
+        { name: 'Katerini', geonameId: 260614 },
+        { name: 'Kavala', geonameId: 260293 },
+        { name: 'Drama', geonameId: 262947 },
+        { name: 'Veria', geonameId: 252920 },
+        { name: 'Kozani', geonameId: 259251 },
+        { name: 'Florina', geonameId: 262264 },
+        { name: 'Edessa', geonameId: 262893 },
+        { name: 'Naousa', geonameId: 256575 },
+        { name: 'Giannitsa', geonameId: 253914 }
+      ]
+    },
+    {
+      name: 'Central Greece',
+      code: 'H',
+      geonameId: 6697803,
+      cities: [
+        { name: 'Lamia', geonameId: 258576 },
+        { name: 'Chalkida', geonameId: 260114 },
+        { name: 'Livadeia', geonameId: 258415 },
+        { name: 'Amfissa', geonameId: 265150 },
+        { name: 'Karpenisi', geonameId: 260293 },
+        { name: 'Thebes', geonameId: 252920 },
+        { name: 'Atalanti', geonameId: 259251 },
+        { name: 'Aidipsos', geonameId: 262264 },
+        { name: 'Karystos', geonameId: 262893 },
+        { name: 'Stylida', geonameId: 256575 }
+      ]
+    },
+    {
+      name: 'Crete',
+      code: 'M',
+      geonameId: 6697804,
+      cities: [
+        { name: 'Heraklion', geonameId: 261745 },
+        { name: 'Chania', geonameId: 260114 },
+        { name: 'Rethymno', geonameId: 252920 },
+        { name: 'Agios Nikolaos', geonameId: 265150 },
+        { name: 'Ierapetra', geonameId: 260293 },
+        { name: 'Sitia', geonameId: 253914 },
+        { name: 'Archanes', geonameId: 262947 },
+        { name: 'Malia', geonameId: 256575 },
+        { name: 'Hersonissos', geonameId: 254698 },
+        { name: 'Elounda', geonameId: 262264 }
+      ]
+    },
+    {
+      name: 'Eastern Macedonia and Thrace',
+      code: 'A',
+      geonameId: 6697805,
+      cities: [
+        { name: 'Kavala', geonameId: 260293 },
+        { name: 'Xanthi', geonameId: 251280 },
+        { name: 'Komotini', geonameId: 259824 },
+        { name: 'Drama', geonameId: 262947 },
+        { name: 'Alexandroupoli', geonameId: 265243 },
+        { name: 'Orestiada', geonameId: 262137 },
+        { name: 'Didymoteicho', geonameId: 255397 },
+        { name: 'Soufli', geonameId: 261743 },
+        { name: 'Ferres', geonameId: 259824 },
+        { name: 'Thasos', geonameId: 256601 }
+      ]
+    },
+    {
+      name: 'Epirus',
+      code: 'D',
+      geonameId: 6697806,
+      cities: [
+        { name: 'Ioannina', geonameId: 261745 },
+        { name: 'Arta', geonameId: 260114 },
+        { name: 'Preveza', geonameId: 252920 },
+        { name: 'Igoumenitsa', geonameId: 265150 },
+        { name: 'Konitsa', geonameId: 260293 },
+        { name: 'Zagori', geonameId: 253914 },
+        { name: 'Metsovo', geonameId: 262947 },
+        { name: 'Paramythia', geonameId: 256575 },
+        { name: 'Filiates', geonameId: 254698 },
+        { name: 'Parga', geonameId: 262264 }
+      ]
+    },
+    {
+      name: 'Ionian Islands',
+      code: 'F',
+      geonameId: 6697807,
+      cities: [
+        { name: 'Corfu', geonameId: 260293 },
+        { name: 'Zakynthos', geonameId: 251280 },
+        { name: 'Kefalonia', geonameId: 259824 },
+        { name: 'Lefkada', geonameId: 262947 },
+        { name: 'Ithaca', geonameId: 265243 },
+        { name: 'Paxi', geonameId: 262137 },
+        { name: 'Kythira', geonameId: 255397 },
+        { name: 'Argostoli', geonameId: 261743 },
+        { name: 'Lixouri', geonameId: 259824 },
+        { name: 'Sami', geonameId: 256601 }
+      ]
+    },
+    {
+      name: 'North Aegean',
+      code: 'K',
+      geonameId: 6697808,
+      cities: [
+        { name: 'Mytilene', geonameId: 256575 },
+        { name: 'Chios', geonameId: 259824 },
+        { name: 'Samos', geonameId: 262947 },
+        { name: 'Lemnos', geonameId: 265243 },
+        { name: 'Lesvos', geonameId: 262137 },
+        { name: 'Ikaria', geonameId: 255397 },
+        { name: 'Fournoi', geonameId: 261743 },
+        { name: 'Agios Efstratios', geonameId: 259824 },
+        { name: 'Psara', geonameId: 256601 },
+        { name: 'Oinousses', geonameId: 256133 }
+      ]
+    },
+    {
+      name: 'Peloponnese',
+      code: 'J',
+      geonameId: 6697809,
+      cities: [
+        { name: 'Patras', geonameId: 255274 },
+        { name: 'Kalamata', geonameId: 261614 },
+        { name: 'Corinth', geonameId: 262947 },
+        { name: 'Tripoli', geonameId: 256575 },
+        { name: 'Argos', geonameId: 254698 },
+        { name: 'Sparta', geonameId: 262264 },
+        { name: 'Nafplio', geonameId: 256601 },
+        { name: 'Pyrgos', geonameId: 256133 },
+        { name: 'Gythio', geonameId: 261414 },
+        { name: 'Monemvasia', geonameId: 256429 }
+      ]
+    },
+    {
+      name: 'South Aegean',
+      code: 'L',
+      geonameId: 6697810,
+      cities: [
+        { name: 'Rhodes', geonameId: 400666 },
+        { name: 'Mykonos', geonameId: 257085 },
+        { name: 'Santorini', geonameId: 252920 },
+        { name: 'Paros', geonameId: 265150 },
+        { name: 'Naxos', geonameId: 260293 },
+        { name: 'Kos', geonameId: 253914 },
+        { name: 'Syros', geonameId: 262947 },
+        { name: 'Tinos', geonameId: 256575 },
+        { name: 'Milos', geonameId: 254698 },
+        { name: 'Ios', geonameId: 262264 }
+      ]
+    },
+    {
+      name: 'Thessaly',
+      code: 'E',
+      geonameId: 6697811,
+      cities: [
+        { name: 'Larissa', geonameId: 258576 },
+        { name: 'Volos', geonameId: 251946 },
+        { name: 'Trikala', geonameId: 252666 },
+        { name: 'Karditsa', geonameId: 260950 },
+        { name: 'Tyrnavos', geonameId: 252920 },
+        { name: 'Elassona', geonameId: 265150 },
+        { name: 'Farsala', geonameId: 260293 },
+        { name: 'Almyros', geonameId: 253914 },
+        { name: 'Skiathos', geonameId: 262947 },
+        { name: 'Skopelos', geonameId: 256575 }
+      ]
+    },
+    {
+      name: 'Western Greece',
+      code: 'G',
+      geonameId: 6697812,
+      cities: [
+        { name: 'Patras', geonameId: 255274 },
+        { name: 'Agrinio', geonameId: 265150 },
+        { name: 'Messolonghi', geonameId: 260293 },
+        { name: 'Aigio', geonameId: 253914 },
+        { name: 'Nafpaktos', geonameId: 262947 },
+        { name: 'Amaliada', geonameId: 256575 },
+        { name: 'Pyrgos', geonameId: 256133 },
+        { name: 'Zakynthos', geonameId: 251280 },
+        { name: 'Kefalonia', geonameId: 259824 },
+        { name: 'Lefkada', geonameId: 262947 }
+      ]
+    },
+    {
+      name: 'Western Macedonia',
+      code: 'C',
+      geonameId: 6697813,
+      cities: [
+        { name: 'Kozani', geonameId: 259251 },
+        { name: 'Kastoria', geonameId: 260293 },
+        { name: 'Florina', geonameId: 262264 },
+        { name: 'Grevena', geonameId: 251280 },
+        { name: 'Ptolemaida', geonameId: 259824 },
+        { name: 'Servia', geonameId: 262947 },
+        { name: 'Siatista', geonameId: 265243 },
+        { name: 'Amyntaio', geonameId: 262137 },
+        { name: 'Neapoli', geonameId: 256575 },
+        { name: 'Deskati', geonameId: 254698 }
+      ]
+    }
+  ]
+}
+
 /**
  * Main execution
  */
@@ -414,19 +669,22 @@ async function main() {
   try {
     if (!locationType || locationType === 'all') {
       // Populate all countries
-      console.log('🌍 Populating all locations (Kosovo, North Macedonia, Albania)...\n')
+      console.log('🌍 Populating all locations (Kosovo, North Macedonia, Albania, Greece)...\n')
       await populateLocations(KOSOVO_DATA)
       await populateLocations(NORTH_MACEDONIA_DATA)
       await populateLocations(ALBANIA_DATA)
+      await populateLocations(GREECE_DATA)
     } else if (locationType === 'kosovo' || locationType === 'xk') {
       await populateLocations(KOSOVO_DATA)
     } else if (locationType === 'north-macedonia' || locationType === 'macedonia' || locationType === 'mk') {
       await populateLocations(NORTH_MACEDONIA_DATA)
     } else if (locationType === 'albania' || locationType === 'al') {
       await populateLocations(ALBANIA_DATA)
+    } else if (locationType === 'greece' || locationType === 'gr') {
+      await populateLocations(GREECE_DATA)
     } else {
       console.error(`❌ Unknown location type: ${locationType}`)
-      console.error(`   Usage: npx tsx scripts/populate-locations.ts [kosovo|north-macedonia|albania|all]`)
+      console.error(`   Usage: npx tsx scripts/populate-locations.ts [kosovo|north-macedonia|albania|greece|all]`)
       process.exit(1)
     }
 
