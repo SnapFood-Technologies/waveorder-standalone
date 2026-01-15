@@ -94,7 +94,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left Side - Forms (3/5 width) */}
           <div className="lg:col-span-3 space-y-6">
-            {/* Download Sample */}
+            {/* Download Sample CSV*/}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 1: Download Sample CSV</h3>
               <p className="text-gray-600 mb-2">
