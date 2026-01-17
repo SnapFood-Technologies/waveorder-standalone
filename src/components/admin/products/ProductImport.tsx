@@ -109,7 +109,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
               </button>
             </div>
 
-            {/* File Upload */}
+            {/* File Uploads */}
             <div className="bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Upload Your CSV File</h3>
               
