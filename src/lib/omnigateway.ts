@@ -1,13 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
 
-// Static configuration for OmniStack Gateway
-// TODO: Replace static credentials with environment variables
-// - NEXT_PUBLIC_OMNI_GATEWAY_URL for BASE_URL
-// - NEXT_PUBLIC_OMNI_GATEWAY_API_KEY for API_KEY
-// - Store CLIENT_API_KEY per business/client (not static)
-const BASE_URL = 'https://apigtw.omnistackhub.xyz/';
-const API_KEY = 'gwy_3kjg9KdJ37sdL4hF8Tk2sXnY5LzW8Rv';
-const CLIENT_API_KEY = 'sk_3c577716586da676b0ded8530b6df92288f70c1275a687d45306c3c71c0f53b3';
+// OmniStack Gateway configuration from environment variables
+// Environment variables:
+// - NEXT_PUBLIC_OMNI_GATEWAY_URL: Base URL for OmniStack Gateway API
+// - NEXT_PUBLIC_OMNI_GATEWAY_API_KEY: Gateway API key (x-api-key header)
+// - NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY: Client API key (client-x-api-key header)
+const OMNISTACK_BASE_URL = process.env.NEXT_PUBLIC_OMNI_GATEWAY_URL!;
+const OMNISTACK_API_KEY = process.env.NEXT_PUBLIC_OMNI_GATEWAY_API_KEY!;
+const OMNISTACK_CLIENT_API_KEY = process.env.NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY!;
 
 /**
  * Creates an OmniStack Gateway axios instance with authentication headers
@@ -23,17 +23,17 @@ const CLIENT_API_KEY = 'sk_3c577716586da676b0ded8530b6df92288f70c1275a687d45306c
  */
 export const createOmniGateway = (clientApiKey?: string): AxiosInstance => {
   return axios.create({
-    baseURL: BASE_URL,
+    baseURL: OMNISTACK_BASE_URL,
     headers: {
-      'x-api-key': API_KEY,
-      'client-x-api-key': clientApiKey || CLIENT_API_KEY,
+      'x-api-key': OMNISTACK_API_KEY,
+      'client-x-api-key': clientApiKey || OMNISTACK_CLIENT_API_KEY,
       'Content-Type': 'application/json'
     }
   });
 };
 
 /**
- * Default OmniStack Gateway instance with static credentials
+ * Default OmniStack Gateway instance with environment variable credentials
  * Use this for most operations where the default client API key is sufficient
  */
 export const omniGateway = createOmniGateway();

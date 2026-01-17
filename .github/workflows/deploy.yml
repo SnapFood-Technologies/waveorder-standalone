@@ -102,6 +102,11 @@ jobs:
           NEXT_PUBLIC_GA_ID: ${{ secrets.NEXT_PUBLIC_GA_ID }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
           
+          # 🔗 OmniStack Gateway
+          NEXT_PUBLIC_OMNI_GATEWAY_URL: ${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_URL }}
+          NEXT_PUBLIC_OMNI_GATEWAY_API_KEY: ${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_API_KEY }}
+          NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY: ${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY }}
+          
           # 📧 Email Configuration
           CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
@@ -165,6 +170,11 @@ jobs:
           NEXT_PUBLIC_CLARITY_ID=${{ secrets.NEXT_PUBLIC_CLARITY_ID }}
           NEXT_PUBLIC_GA_ID=${{ secrets.NEXT_PUBLIC_GA_ID }}
           NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}
+
+          # 🔗 OmniStack Gateway
+          NEXT_PUBLIC_OMNI_GATEWAY_URL=${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_URL }}
+          NEXT_PUBLIC_OMNI_GATEWAY_API_KEY=${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_API_KEY }}
+          NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY=${{ secrets.NEXT_PUBLIC_OMNI_GATEWAY_CLIENT_API_KEY }}
 
           # 📧 Email Configuration
           CONTACT_EMAIL=${{ secrets.CONTACT_EMAIL }}
