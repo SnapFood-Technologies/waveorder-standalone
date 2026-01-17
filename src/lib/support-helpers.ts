@@ -1,6 +1,12 @@
 // src/lib/support-helpers.ts
 import { prisma } from '@/lib/prisma'
 import { NotificationType } from '@prisma/client'
+import {
+  sendSupportTicketCreatedEmail,
+  sendSupportTicketUpdatedEmail,
+  sendSupportTicketCommentEmail,
+  sendSupportMessageReceivedEmail
+} from '@/lib/email'
 
 /**
  * Generate a unique ticket number in format TKT-YYYY-NNNNN
@@ -62,7 +68,14 @@ export async function sendTicketNotification({
   recipientId,
   businessName,
   ticketNumber,
-  subject
+  subject,
+  description,
+  priority,
+  ticketType,
+  status,
+  updatedBy,
+  comment,
+  commentAuthor
 }: {
   ticketId: string
   type: 'created' | 'updated' | 'resolved' | 'commented'
@@ -70,6 +83,13 @@ export async function sendTicketNotification({
   businessName: string
   ticketNumber: string
   subject: string
+  description?: string
+  priority?: string
+  ticketType?: string
+  status?: string
+  updatedBy?: string
+  comment?: string
+  commentAuthor?: string
 }) {
   try {
     // Create in-app notification
@@ -94,8 +114,66 @@ export async function sendTicketNotification({
       link: `/admin/stores/tickets/${ticketId}`
     })
 
-    // TODO: Send email notification (will be implemented in email.ts)
-    console.log(`Ticket notification sent for ${type} ticket ${ticketNumber}`)
+    // Send email notification
+    try {
+      const recipient = await prisma.user.findUnique({
+        where: { id: recipientId },
+        select: { email: true, name: true }
+      })
+
+      if (!recipient || !recipient.email) {
+        console.warn(`User ${recipientId} not found or has no email for ticket notification`)
+        return
+      }
+
+      const ticketUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/stores/tickets/${ticketId}`
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+
+      if (type === 'created') {
+        await sendSupportTicketCreatedEmail({
+          to: recipient.email,
+          // @ts-ignore
+          superadminName: recipient.name || 'Support Team',
+          ticketNumber,
+          subject,
+          description: description || '',
+          businessName,
+          // @ts-ignore
+          createdBy: recipient.name || 'Unknown',
+          priority: priority || 'MEDIUM',
+          type: ticketType || 'GENERAL',
+          ticketUrl: `${baseUrl}/superadmin/support/tickets/${ticketId}`
+        })
+      } else if (type === 'commented' && comment && commentAuthor) {
+        await sendSupportTicketCommentEmail({
+          to: recipient.email,
+          recipientName: recipient.name || 'User',
+          ticketNumber,
+          subject,
+          comment,
+          commentAuthor,
+          businessName,
+          ticketUrl: `${baseUrl}/admin/stores/tickets/${ticketId}`
+        })
+      } else if (type === 'updated' || type === 'resolved') {
+        await sendSupportTicketUpdatedEmail({
+          to: recipient.email,
+          // @ts-ignore
+          adminName: recipient.name || 'User',
+          ticketNumber,
+          subject,
+          status: status || (type === 'resolved' ? 'RESOLVED' : 'UPDATED'),
+          businessName,
+          updatedBy: updatedBy || 'Support Team',
+          ticketUrl: `${baseUrl}/admin/stores/tickets/${ticketId}`
+        })
+      }
+
+      console.log(`Ticket notification email sent for ${type} ticket ${ticketNumber}`)
+    } catch (emailError) {
+      console.error('Failed to send ticket email notification:', emailError)
+      // Don't throw - in-app notification was successful
+    }
   } catch (error) {
     console.error('Failed to send ticket notification:', error)
     throw new Error('Failed to send ticket notification')
@@ -110,13 +188,17 @@ export async function sendMessageNotification({
   recipientId,
   senderName,
   businessName,
-  subject
+  subject,
+  content,
+  threadId
 }: {
   messageId: string
   recipientId: string
   senderName: string
   businessName: string
   subject?: string
+  content?: string
+  threadId?: string
 }) {
   try {
     // Create in-app notification
@@ -125,11 +207,41 @@ export async function sendMessageNotification({
       type: 'MESSAGE_RECEIVED',
       title: 'New Message Received',
       message: `You have received a new message from ${senderName}${businessName ? ` (${businessName})` : ''}${subject ? `: ${subject}` : ''}`,
-      link: `/admin/stores/messages/${messageId}`
+      link: threadId ? `/admin/stores/messages/${threadId}` : `/admin/stores/messages/${messageId}`
     })
 
-    // TODO: Send email notification (will be implemented in email.ts)
-    console.log(`Message notification sent to user ${recipientId}`)
+    // Send email notification
+    try {
+      const recipient = await prisma.user.findUnique({
+        where: { id: recipientId },
+        select: { email: true, name: true }
+      })
+
+      if (!recipient || !recipient.email) {
+        console.warn(`User ${recipientId} not found or has no email for message notification`)
+        return
+      }
+
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const messageUrl = threadId 
+        ? `${baseUrl}/admin/stores/messages/${threadId}`
+        : `${baseUrl}/admin/stores/messages/${messageId}`
+
+      await sendSupportMessageReceivedEmail({
+        to: recipient.email,
+        recipientName: recipient.name || 'User',
+        senderName,
+        subject: subject || 'New Message',
+        content: content || 'You have received a new message.',
+        businessName,
+        messageUrl
+      })
+
+      console.log(`Message notification email sent to user ${recipientId}`)
+    } catch (emailError) {
+      console.error('Failed to send message email notification:', emailError)
+      // Don't throw - in-app notification was successful
+    }
   } catch (error) {
     console.error('Failed to send message notification:', error)
     throw new Error('Failed to send message notification')
