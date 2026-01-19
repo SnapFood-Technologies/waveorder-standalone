@@ -1695,7 +1695,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     const handleScroll = () => {
       // Use multiple methods for better mobile compatibility
       const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
-      setShowScrollToTop(scrollY > 300) // Show after scrolling 300px
+      setShowScrollToTop(scrollY > 800) // Show after scrolling 800px
     }
 
     // Initial check
@@ -3281,7 +3281,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
-          className={`fixed ${cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'} left-5 lg:left-auto lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
+          className={`fixed ${cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'} right-5 lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
           style={{ backgroundColor: primaryColor }}
           aria-label="Scroll to top"
         >
