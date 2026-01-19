@@ -1586,7 +1586,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [priceMin, setPriceMin] = useState<number | ''>('')
   const [priceMax, setPriceMax] = useState<number | ''>('')
-  const [selectedFilterCategories, setSelectedFilterCategories] = useState<string[]>([])
+  const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -2168,11 +2168,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     }
 
     // Apply category filter (from filter modal)
-    if (selectedFilterCategories.length > 0) {
+    if (selectedFilterCategory) {
       // @ts-ignore
       products = products.filter(product => {
         // @ts-ignore
-        return selectedFilterCategories.includes(product.categoryId)
+        return product.categoryId === selectedFilterCategory
       })
     }
 
@@ -2730,7 +2730,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       onClick={() => setShowFilterModal(true)}
       className="flex items-center justify-center px-3 py-3 border-2 border-gray-200 rounded-xl text-base transition-colors hover:border-gray-300 flex-shrink-0"
       style={{ 
-        borderColor: (priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') ? primaryColor : undefined
+        borderColor: (priceMin !== '' || priceMax !== '' || selectedFilterCategory !== null || sortBy !== 'name-asc') ? primaryColor : undefined
       }}
     >
       <SlidersHorizontal className="w-5 h-5 text-gray-600" />
@@ -2738,7 +2738,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   </div>
   
   {/* Active Filters Badges */}
-  {(priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') && (
+  {(priceMin !== '' || priceMax !== '' || selectedFilterCategory !== null || sortBy !== 'name-asc') && (
     <div className="py-3">
       <div className="flex flex-wrap gap-2">
         {/* Price Range Badge */}
@@ -2764,16 +2764,17 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           </div>
         )}
 
-        {/* Category Badges */}
-        {selectedFilterCategories.map(categoryId => {
-          const category = storeData.categories.find(cat => cat.id === categoryId)
+        {/* Category Badge */}
+        {selectedFilterCategory && (() => {
+          const category = storeData.categories.find(cat => cat.id === selectedFilterCategory)
           if (!category) return null
           return (
-            <div key={categoryId} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
               <span className="text-gray-700">{category.name}</span>
               <button
                 onClick={() => {
-                  setSelectedFilterCategories(selectedFilterCategories.filter(id => id !== categoryId))
+                  setSelectedFilterCategory(null)
+                  setSelectedCategory('all')
                 }}
                 className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
               >
@@ -2781,7 +2782,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               </button>
             </div>
           )
-        })}
+        })()}
 
         {/* Sort By Badge */}
         {sortBy !== 'name-asc' && (
@@ -3379,19 +3380,33 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
+                  <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                    <input
+                      type="radio"
+                      name="filterCategory"
+                      value=""
+                      checked={selectedFilterCategory === null}
+                      onChange={() => {
+                        setSelectedFilterCategory(null)
+                        setSelectedCategory('all')
+                      }}
+                      className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                      style={{ accentColor: primaryColor }}
+                    />
+                    <span className="ml-3 text-sm text-gray-700">{translations.all || 'All'}</span>
+                  </label>
                   {storeData.categories.map(category => (
                     <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input
-                        type="checkbox"
-                        checked={selectedFilterCategories.includes(category.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedFilterCategories([...selectedFilterCategories, category.id])
-                          } else {
-                            setSelectedFilterCategories(selectedFilterCategories.filter(id => id !== category.id))
-                          }
+                        type="radio"
+                        name="filterCategory"
+                        value={category.id}
+                        checked={selectedFilterCategory === category.id}
+                        onChange={() => {
+                          setSelectedFilterCategory(category.id)
+                          setSelectedCategory(category.id)
                         }}
-                        className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                        className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
                         style={{ accentColor: primaryColor }}
                       />
                       <span className="ml-3 text-sm text-gray-700">{category.name}</span>
@@ -3433,7 +3448,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 onClick={() => {
                   setPriceMin('')
                   setPriceMax('')
-                  setSelectedFilterCategories([])
+                  setSelectedFilterCategory(null)
+                  setSelectedCategory('all')
                   setSortBy('name-asc')
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
