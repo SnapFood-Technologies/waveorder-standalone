@@ -29,21 +29,21 @@ async function main() {
   // Update Users - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const usersUpdated = await prisma.user.updateMany({
     where: { plan: 'FREE' as any },
-    data: { plan: 'STARTER' }
+    data: { plan: 'STARTER' as any }
   })
   console.log(`   ✅ Updated ${usersUpdated.count} users`)
 
   // Update Businesses - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const businessesUpdated = await prisma.business.updateMany({
     where: { subscriptionPlan: 'FREE' as any },
-    data: { subscriptionPlan: 'STARTER' }
+    data: { subscriptionPlan: 'STARTER' as any }
   })
   console.log(`   ✅ Updated ${businessesUpdated.count} businesses`)
 
   // Update Subscriptions in database - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const subscriptionsUpdated = await prisma.subscription.updateMany({
     where: { plan: 'FREE' as any },
-    data: { plan: 'STARTER' }
+    data: { plan: 'STARTER' as any }
   })
   console.log(`   ✅ Updated ${subscriptionsUpdated.count} subscriptions in database`)
   console.log('')
@@ -52,17 +52,20 @@ async function main() {
   console.log('💳 Step 2: Updating Stripe subscriptions...')
   
   // Find all subscriptions that were FREE (now STARTER) and have Stripe IDs
+  // Using type assertion and filtering for non-null stripeId
   const subscriptions = await prisma.subscription.findMany({
     where: {
-      plan: 'STARTER',
-      stripeId: { not: null }
+      plan: 'STARTER' as any
     },
     include: {
       users: true
     }
   })
+  
+  // Filter out any subscriptions without stripeId
+  const subscriptionsWithStripe = subscriptions.filter(sub => sub.stripeId && sub.stripeId.trim() !== '')
 
-  console.log(`   Found ${subscriptions.length} subscriptions to check in Stripe`)
+  console.log(`   Found ${subscriptionsWithStripe.length} subscriptions to check in Stripe`)
 
   const oldFreePriceId = process.env.STRIPE_FREE_PRICE_ID
   if (oldFreePriceId) {
@@ -77,7 +80,7 @@ async function main() {
   let skippedCount = 0
   let errorCount = 0
 
-  for (const subscription of subscriptions) {
+  for (const subscription of subscriptionsWithStripe) {
     try {
       if (!subscription.stripeId) continue
 
