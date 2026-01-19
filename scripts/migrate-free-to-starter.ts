@@ -26,23 +26,23 @@ async function main() {
   // Step 1: Update Database
   console.log('📊 Step 1: Updating database...')
   
-  // Update Users
+  // Update Users - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const usersUpdated = await prisma.user.updateMany({
-    where: { plan: 'FREE' },
+    where: { plan: 'FREE' as any },
     data: { plan: 'STARTER' }
   })
   console.log(`   ✅ Updated ${usersUpdated.count} users`)
 
-  // Update Businesses
+  // Update Businesses - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const businessesUpdated = await prisma.business.updateMany({
-    where: { subscriptionPlan: 'FREE' },
+    where: { subscriptionPlan: 'FREE' as any },
     data: { subscriptionPlan: 'STARTER' }
   })
   console.log(`   ✅ Updated ${businessesUpdated.count} businesses`)
 
-  // Update Subscriptions in database
+  // Update Subscriptions in database - using type assertion since 'FREE' is no longer in the enum but may exist in DB
   const subscriptionsUpdated = await prisma.subscription.updateMany({
-    where: { plan: 'FREE' },
+    where: { plan: 'FREE' as any },
     data: { plan: 'STARTER' }
   })
   console.log(`   ✅ Updated ${subscriptionsUpdated.count} subscriptions in database`)
@@ -128,13 +128,13 @@ async function main() {
   console.log('🔍 Step 3: Verification...')
   
   const remainingFreeUsers = await prisma.user.count({
-    where: { plan: 'FREE' }
+    where: { plan: 'FREE' as any }
   })
   const remainingFreeBusinesses = await prisma.business.count({
-    where: { subscriptionPlan: 'FREE' }
+    where: { subscriptionPlan: 'FREE' as any }
   })
   const remainingFreeSubscriptions = await prisma.subscription.count({
-    where: { plan: 'FREE' }
+    where: { plan: 'FREE' as any }
   })
 
   if (remainingFreeUsers === 0 && remainingFreeBusinesses === 0 && remainingFreeSubscriptions === 0) {
