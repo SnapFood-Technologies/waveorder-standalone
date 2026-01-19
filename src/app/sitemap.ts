@@ -1,6 +1,6 @@
 // src/app/sitemap.ts
 import { MetadataRoute } from 'next'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, SubscriptionPlan } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -106,6 +106,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         slug: {
           // not: null,
           not: undefined
+        },
+        // Only include businesses with valid subscription plans (exclude any remaining 'FREE' values)
+        subscriptionPlan: {
+          in: ['STARTER', 'PRO'] as SubscriptionPlan[]
         }
       },
       select: {
