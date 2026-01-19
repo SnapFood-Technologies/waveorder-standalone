@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { sendBusinessCreatedEmail } from '@/lib/email'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import { createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
+import { createStripeCustomer, createSubscriptionByPlan, getPriceId } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -382,25 +382,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create Stripe customer and STARTER subscription
+    // Create Stripe customer and subscription based on selected plan
     let stripeCustomerId: string | undefined
     let subscriptionId: string | undefined
+    
+    const subscriptionPlan = data.subscriptionPlan || 'STARTER'
+    const billingType = data.billingType || 'free'
 
     try {
       console.log('Creating Stripe customer for:', data.ownerEmail)
       const stripeCustomer = await createStripeCustomer(data.ownerEmail, data.ownerName)
       stripeCustomerId = stripeCustomer.id
       
-      console.log('Creating STARTER subscription for customer:', stripeCustomerId)
-      const stripeSubscription = await createFreeSubscription(stripeCustomerId)
+      console.log(`Creating ${subscriptionPlan} subscription (${billingType}) for customer:`, stripeCustomerId)
+      const stripeSubscription = await createSubscriptionByPlan(
+        stripeCustomerId,
+        subscriptionPlan,
+        billingType
+      )
+      
+      const priceId = getPriceId(subscriptionPlan, billingType)
       
       // Create subscription in database
       const subscription = await prisma.subscription.create({
         data: {
           stripeId: stripeSubscription.id,
           status: stripeSubscription.status,
-          priceId: process.env.STRIPE_STARTER_PRICE_ID!,
-          plan: 'STARTER',
+          priceId: priceId,
+          plan: subscriptionPlan as any,
           // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
           // @ts-ignore
@@ -421,7 +430,7 @@ export async function POST(request: NextRequest) {
       email: data.ownerEmail.toLowerCase(),
       role: 'BUSINESS_OWNER',
       emailVerified: new Date(),
-      plan: 'STARTER',
+      plan: subscriptionPlan as any,
       stripeCustomerId,
       subscriptionId,
     }
@@ -480,7 +489,7 @@ export async function POST(request: NextRequest) {
         name: data.businessName,
         slug: slug,
         businessType: data.businessType,
-        subscriptionPlan: 'STARTER',
+        subscriptionPlan: subscriptionPlan as any,
         subscriptionStatus: 'ACTIVE',
         currency: data.currency || 'USD',
         language: data.language || 'en',
