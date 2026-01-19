@@ -103,7 +103,7 @@ export function SuperAdminSettings() {
                 <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
                   <ShoppingCart className="w-4 h-4 text-teal-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Free</h3>
+                <h3 className="text-xl font-bold text-gray-900">Starter</h3>
               </div>
               <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-semibold rounded-full">
                 Default
@@ -181,7 +181,7 @@ export function SuperAdminSettings() {
             <div className="space-y-3 mb-4">
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-gray-700 font-medium">Everything in Free, plus:</span>
+                <span className="text-sm text-gray-700 font-medium">Everything in Starter, plus:</span>
               </div>
               <div className="flex items-start gap-2">
                 <Check className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />

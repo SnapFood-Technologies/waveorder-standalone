@@ -341,7 +341,7 @@ export default function PricingComponent() {
               href="/auth/register"
               className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Get Started Free
+              Get Started
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

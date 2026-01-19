@@ -358,7 +358,7 @@ export default function Features() {
               href="/auth/register"
               className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Start Free
+              Get Started
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

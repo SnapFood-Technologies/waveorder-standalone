@@ -257,7 +257,7 @@ export default function Demo() {
               href="/auth/register"
               className="inline-flex items-center px-8 py-4 bg-white text-teal-600 text-lg font-semibold rounded-lg hover:bg-gray-100 transition-colors"
             >
-              Start Free
+              Get Started
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

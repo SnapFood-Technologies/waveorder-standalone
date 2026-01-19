@@ -18,7 +18,7 @@ export default function Sitemap() {
         { 
           title: "Pricing", 
           href: "/pricing", 
-          description: "Transparent pricing plans for businesses of all sizes with free and premium options" 
+          description: "Transparent pricing plans for businesses of all sizes with Starter and Pro options" 
         },
         { 
           title: "Demo", 
@@ -28,7 +28,7 @@ export default function Sitemap() {
         { 
           title: "Get Started", 
           href: "/auth/register", 
-          description: "Sign up for your free WaveOrder account and create your first WhatsApp catalog" 
+          description: "Sign up for your WaveOrder account and create your first WhatsApp catalog. Starter plan at $6/month." 
         }
       ]
     },
@@ -65,7 +65,7 @@ export default function Sitemap() {
         { 
           title: "Sign Up", 
           href: "/auth/register", 
-          description: "Create your free WaveOrder account to start building WhatsApp catalogs" 
+          description: "Create your WaveOrder account to start building WhatsApp catalogs. Starter plan at $6/month." 
         },
         { 
           title: "Log In", 
@@ -103,7 +103,7 @@ export default function Sitemap() {
   ]
 
   const quickLinks = [
-    { title: "Get Started Free", href: "/auth/register", type: "primary" },
+    { title: "Get Started", href: "/auth/register", type: "primary" },
     { title: "View Pricing", href: "/pricing", type: "secondary" },
     { title: "Schedule Demo", href: "/contact", type: "secondary" },
     { title: "See Features", href: "/features", type: "secondary" }

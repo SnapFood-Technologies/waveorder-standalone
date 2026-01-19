@@ -382,7 +382,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 ) : planKey === 'PRO' ? (
                   'Upgrade to PRO'
                 ) : (
-                  'Downgrade to Free'
+                  'Downgrade to Starter'
                 )}
               </button>
             </div>
@@ -400,27 +400,27 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feature</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Free</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Starter</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pro</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {[
-                { feature: 'Products', free: '30', pro: 'Unlimited' },
-                { feature: 'Categories', free: '10', pro: 'Unlimited' },
-                { feature: 'WhatsApp Orders', free: '✅', pro: '✅' },
-                { feature: 'Basic Branding', free: '✅', pro: '✅' },
-                { feature: 'CSV Import', free: '✅', pro: '✅' },
-                { feature: 'Basic Analytics', free: '✅', pro: '✅' },
-                { feature: 'Advanced Branding', free: '❌', pro: '✅' },
-                { feature: 'Advanced Analytics', free: '❌', pro: '✅' },
-                { feature: 'Inventory Management', free: '❌', pro: '✅' },
-                { feature: 'Custom Domains', free: '❌', pro: '✅' },
-                { feature: 'Priority Support', free: '❌', pro: '✅' },
+                { feature: 'Products', starter: '30', pro: 'Unlimited' },
+                { feature: 'Categories', starter: '10', pro: 'Unlimited' },
+                { feature: 'WhatsApp Orders', starter: '✅', pro: '✅' },
+                { feature: 'Basic Branding', starter: '✅', pro: '✅' },
+                { feature: 'CSV Import', starter: '✅', pro: '✅' },
+                { feature: 'Basic Analytics', starter: '✅', pro: '✅' },
+                { feature: 'Advanced Branding', starter: '❌', pro: '✅' },
+                { feature: 'Advanced Analytics', starter: '❌', pro: '✅' },
+                { feature: 'Inventory Management', starter: '❌', pro: '✅' },
+                { feature: 'Custom Domains', starter: '❌', pro: '✅' },
+                { feature: 'Priority Support', starter: '❌', pro: '✅' },
               ].map((row, index) => (
                 <tr key={index}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.feature}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.free}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.starter}</td>
                   <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.pro}</td>
                 </tr>
               ))}

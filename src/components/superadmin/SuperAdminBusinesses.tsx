@@ -513,7 +513,7 @@ export function SuperAdminBusinesses() {
     className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
   >
     <option value="all">All Plans</option>
-    <option value="free">Free</option>
+    <option value="starter">Starter</option>
     <option value="pro">Pro</option>
   </select>
 

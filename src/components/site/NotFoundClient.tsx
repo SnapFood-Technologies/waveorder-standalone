@@ -24,7 +24,7 @@ export default function NotFoundClient() {
     {
       title: "Get Started",
       href: "/auth/register",
-      description: "Create your free account"
+      description: "Create your account"
     }
   ]
 

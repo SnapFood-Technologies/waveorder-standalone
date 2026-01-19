@@ -26,26 +26,50 @@ async function main() {
   // Step 1: Update Database
   console.log('📊 Step 1: Updating database...')
   
-  // Update Users - using type assertion since 'FREE' is no longer in the enum but may exist in DB
-  const usersUpdated = await prisma.user.updateMany({
-    where: { plan: 'FREE' as any },
-    data: { plan: 'STARTER' as any }
+  // Use raw MongoDB queries since Prisma validates enum values at runtime
+  // and 'FREE' is no longer a valid enum value
+  
+  // Update Users
+  const usersResult = await prisma.$runCommandRaw({
+    update: 'User',
+    updates: [
+      {
+        q: { plan: 'FREE' },
+        u: { $set: { plan: 'STARTER' } },
+        multi: true
+      }
+    ]
   })
-  console.log(`   ✅ Updated ${usersUpdated.count} users`)
+  const usersUpdated = (usersResult as any).nModified || 0
+  console.log(`   ✅ Updated ${usersUpdated} users`)
 
-  // Update Businesses - using type assertion since 'FREE' is no longer in the enum but may exist in DB
-  const businessesUpdated = await prisma.business.updateMany({
-    where: { subscriptionPlan: 'FREE' as any },
-    data: { subscriptionPlan: 'STARTER' as any }
+  // Update Businesses
+  const businessesResult = await prisma.$runCommandRaw({
+    update: 'Business',
+    updates: [
+      {
+        q: { subscriptionPlan: 'FREE' },
+        u: { $set: { subscriptionPlan: 'STARTER' } },
+        multi: true
+      }
+    ]
   })
-  console.log(`   ✅ Updated ${businessesUpdated.count} businesses`)
+  const businessesUpdated = (businessesResult as any).nModified || 0
+  console.log(`   ✅ Updated ${businessesUpdated} businesses`)
 
-  // Update Subscriptions in database - using type assertion since 'FREE' is no longer in the enum but may exist in DB
-  const subscriptionsUpdated = await prisma.subscription.updateMany({
-    where: { plan: 'FREE' as any },
-    data: { plan: 'STARTER' as any }
+  // Update Subscriptions
+  const subscriptionsResult = await prisma.$runCommandRaw({
+    update: 'Subscription',
+    updates: [
+      {
+        q: { plan: 'FREE' },
+        u: { $set: { plan: 'STARTER' } },
+        multi: true
+      }
+    ]
   })
-  console.log(`   ✅ Updated ${subscriptionsUpdated.count} subscriptions in database`)
+  const subscriptionsUpdated = (subscriptionsResult as any).nModified || 0
+  console.log(`   ✅ Updated ${subscriptionsUpdated} subscriptions in database`)
   console.log('')
 
   // Step 2: Update Stripe Subscriptions
@@ -148,15 +172,24 @@ async function main() {
   // Step 3: Verification
   console.log('🔍 Step 3: Verification...')
   
-  const remainingFreeUsers = await prisma.user.count({
-    where: { plan: 'FREE' as any }
+  // Use raw MongoDB queries for verification too
+  const remainingFreeUsersResult = await prisma.$runCommandRaw({
+    count: 'User',
+    query: { plan: 'FREE' }
   })
-  const remainingFreeBusinesses = await prisma.business.count({
-    where: { subscriptionPlan: 'FREE' as any }
+  const remainingFreeUsers = (remainingFreeUsersResult as any).n || 0
+
+  const remainingFreeBusinessesResult = await prisma.$runCommandRaw({
+    count: 'Business',
+    query: { subscriptionPlan: 'FREE' }
   })
-  const remainingFreeSubscriptions = await prisma.subscription.count({
-    where: { plan: 'FREE' as any }
+  const remainingFreeBusinesses = (remainingFreeBusinessesResult as any).n || 0
+
+  const remainingFreeSubscriptionsResult = await prisma.$runCommandRaw({
+    count: 'Subscription',
+    query: { plan: 'FREE' }
   })
+  const remainingFreeSubscriptions = (remainingFreeSubscriptionsResult as any).n || 0
 
   if (remainingFreeUsers === 0 && remainingFreeBusinesses === 0 && remainingFreeSubscriptions === 0) {
     console.log('   ✅ All database records migrated successfully!')
