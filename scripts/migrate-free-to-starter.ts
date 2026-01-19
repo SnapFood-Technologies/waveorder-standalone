@@ -62,9 +62,19 @@ async function main() {
     }
   })
 
-  console.log(`   Found ${subscriptions.length} subscriptions to update in Stripe`)
+  console.log(`   Found ${subscriptions.length} subscriptions to check in Stripe`)
+
+  const oldFreePriceId = process.env.STRIPE_FREE_PRICE_ID
+  if (oldFreePriceId) {
+    console.log(`   Using STRIPE_FREE_PRICE_ID: ${oldFreePriceId}`)
+    console.log(`   Will update subscriptions using this old price ID`)
+  } else {
+    console.log(`   ⚠️  STRIPE_FREE_PRICE_ID not set - will check ALL Starter subscriptions`)
+    console.log(`   Will update any subscription NOT using the new Starter price ID`)
+  }
 
   let updatedCount = 0
+  let skippedCount = 0
   let errorCount = 0
 
   for (const subscription of subscriptions) {
@@ -74,12 +84,18 @@ async function main() {
       // Retrieve current subscription from Stripe
       const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeId)
       
-      // Check if it's using the old FREE price ID
+      // Get current price ID from Stripe
       const currentPriceId = stripeSubscription.items.data[0]?.price?.id
-      const oldFreePriceId = process.env.STRIPE_FREE_PRICE_ID
+      const newStarterPriceId = STARTER_MONTHLY_PRICE_ID
 
-      // Only update if it's using the old FREE price ID
-      if (oldFreePriceId && currentPriceId === oldFreePriceId) {
+      // Determine if we need to update:
+      // 1. If STRIPE_FREE_PRICE_ID is set, only update subscriptions using that old price
+      // 2. If STRIPE_FREE_PRICE_ID is NOT set, update any subscription NOT using the new Starter price
+      const needsUpdate = oldFreePriceId
+        ? currentPriceId === oldFreePriceId
+        : currentPriceId !== newStarterPriceId
+
+      if (needsUpdate) {
         console.log(`   🔄 Updating subscription ${subscription.stripeId}...`)
 
         // Update subscription to use new Starter price ID
@@ -106,8 +122,9 @@ async function main() {
         })
 
         updatedCount++
-        console.log(`   ✅ Updated subscription ${subscription.stripeId}`)
+        console.log(`   ✅ Updated subscription ${subscription.stripeId} from ${currentPriceId} to ${newStarterPriceId}`)
       } else {
+        skippedCount++
         console.log(`   ⏭️  Subscription ${subscription.stripeId} already using correct price (${currentPriceId})`)
       }
     } catch (error: any) {
@@ -119,6 +136,7 @@ async function main() {
 
   console.log('')
   console.log(`   ✅ Successfully updated ${updatedCount} Stripe subscriptions`)
+  console.log(`   ⏭️  Skipped ${skippedCount} subscriptions (already using correct price)`)
   if (errorCount > 0) {
     console.log(`   ⚠️  ${errorCount} subscriptions had errors (check logs above)`)
   }
