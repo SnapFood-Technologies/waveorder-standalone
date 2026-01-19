@@ -1693,12 +1693,23 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   // Scroll to top button visibility
   useEffect(() => {
     const handleScroll = () => {
-      const scrollY = window.scrollY || document.documentElement.scrollTop
+      // Use multiple methods for better mobile compatibility
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
       setShowScrollToTop(scrollY > 300) // Show after scrolling 300px
     }
 
+    // Initial check
+    handleScroll()
+
+    // Add scroll listener with passive for better performance
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    // Also listen on document for mobile Safari compatibility
+    document.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      document.removeEventListener('scroll', handleScroll)
+    }
   }, [])
 
   const scrollToTop = () => {
@@ -3270,7 +3281,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-10 left-5 lg:left-auto lg:right-[21px] w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40 transition-all duration-300 hover:scale-110"
+          className={`fixed ${cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'} left-5 lg:left-auto lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
           style={{ backgroundColor: primaryColor }}
           aria-label="Scroll to top"
         >
@@ -3379,7 +3390,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               {/* Categories */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
-                <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
+                <div className="space-y-2 max-h-[260px] overflow-y-auto scrollbar-hide">
                   <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                     <input
                       type="radio"
