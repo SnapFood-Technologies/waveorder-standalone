@@ -219,6 +219,22 @@ close: string
     enterAddressForDelivery: string
     deliveryMethod: string
     noDeliveryOptions: string
+    
+    // Filter
+    filterProducts: string
+    priceRange: string
+    minPrice: string
+    maxPrice: string
+    noLimit: string
+    categories: string
+    sortBy: string
+    sortByNameAsc: string
+    sortByNameDesc: string
+    sortByPriceAsc: string
+    sortByPriceDesc: string
+    clearAll: string
+    applyFilters: string
+    sort: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -442,6 +458,22 @@ canBeAdded: "more can be added to cart",
     enterAddressForDelivery: "Enter address to see delivery options",
     deliveryMethod: "Delivery Method",
     noDeliveryOptions: "No delivery options available for this city",
+    
+    // Filter
+    filterProducts: "Filter Products",
+    priceRange: "Price Range",
+    minPrice: "Min Price",
+    maxPrice: "Max Price",
+    noLimit: "No limit",
+    categories: "Categories",
+    sortBy: "Sort By",
+    sortByNameAsc: "Name (A-Z)",
+    sortByNameDesc: "Name (Z-A)",
+    sortByPriceAsc: "Price (Low to High)",
+    sortByPriceDesc: "Price (High to Low)",
+    clearAll: "Clear All",
+    applyFilters: "Apply Filters",
+    sort: "Sort",
 
   }
   
@@ -661,6 +693,22 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Shkruani adresën për të parë opsionet e dërgesës",
     deliveryMethod: "Metoda e Dërgesës",
     noDeliveryOptions: "Nuk ka opsione dërgese të disponueshme për këtë qytet",
+    
+    // Filter
+    filterProducts: "Filtro Produktet",
+    priceRange: "Gama e Çmimeve",
+    minPrice: "Çmimi Minimal",
+    maxPrice: "Çmimi Maksimal",
+    noLimit: "Pa limit",
+    categories: "Kategoritë",
+    sortBy: "Rendit Sipas",
+    sortByNameAsc: "Emri (A-Z)",
+    sortByNameDesc: "Emri (Z-A)",
+    sortByPriceAsc: "Çmimi (Nga më i ulët)",
+    sortByPriceDesc: "Çmimi (Nga më i lartë)",
+    clearAll: "Pastro Të Gjitha",
+    applyFilters: "Apliko Filtra",
+    sort: "Rendit",
 
   }
 
@@ -880,6 +928,22 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Ingresa la dirección para ver las opciones de entrega",
     deliveryMethod: "Método de Entrega",
     noDeliveryOptions: "No hay opciones de entrega disponibles para esta ciudad",
+    
+    // Filter
+    filterProducts: "Filtrar Productos",
+    priceRange: "Rango de Precios",
+    minPrice: "Precio Mínimo",
+    maxPrice: "Precio Máximo",
+    noLimit: "Sin límite",
+    categories: "Categorías",
+    sortBy: "Ordenar Por",
+    sortByNameAsc: "Nombre (A-Z)",
+    sortByNameDesc: "Nombre (Z-A)",
+    sortByPriceAsc: "Precio (Menor a Mayor)",
+    sortByPriceDesc: "Precio (Mayor a Menor)",
+    clearAll: "Limpiar Todo",
+    applyFilters: "Aplicar Filtros",
+    sort: "Ordenar",
 
   }
 
@@ -1100,6 +1164,22 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Εισάγετε διεύθυνση για να δείτε τις επιλογές παράδοσης",
     deliveryMethod: "Μέθοδος Παράδοσης",
     noDeliveryOptions: "Δεν υπάρχουν επιλογές παράδοσης διαθέσιμες για αυτή την πόλη",
+    
+    // Filter
+    filterProducts: "Φιλτράρισμα Προϊόντων",
+    priceRange: "Εύρος Τιμής",
+    minPrice: "Ελάχιστη Τιμή",
+    maxPrice: "Μέγιστη Τιμή",
+    noLimit: "Χωρίς όριο",
+    categories: "Κατηγορίες",
+    sortBy: "Ταξινόμηση",
+    sortByNameAsc: "Όνομα (Α-Ω)",
+    sortByNameDesc: "Όνομα (Ω-Α)",
+    sortByPriceAsc: "Τιμή (Χαμηλή προς Υψηλή)",
+    sortByPriceDesc: "Τιμή (Υψηλή προς Χαμηλή)",
+    clearAll: "Καθαρισμός Όλων",
+    applyFilters: "Εφαρμογή Φίλτρων",
+    sort: "Ταξινόμηση",
 
   }
 

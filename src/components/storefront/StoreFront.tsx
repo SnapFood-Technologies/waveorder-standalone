@@ -20,6 +20,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Phone,
   Mail,
   Globe,
@@ -1587,6 +1588,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [priceMax, setPriceMax] = useState<number | ''>('')
   const [selectedFilterCategories, setSelectedFilterCategories] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart')
@@ -1687,6 +1689,24 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
         localStorage.setItem('cart', JSON.stringify(cart))
         }
     }, [cart])
+
+  // Scroll to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop
+      setShowScrollToTop(scrollY > 300) // Show after scrolling 300px
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
 
   // Fetch countries on mount (for RETAIL businesses)
   useEffect(() => {
@@ -2673,9 +2693,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
-  <div className="flex gap-2 p-2">
-    {/* Search Input - 3/4 width */}
-    <div className="relative flex-1" style={{ flex: '3' }}>
+  <div className="flex gap-2">
+    {/* Search Input - takes most space */}
+    <div className="relative flex-1">
       <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
       <input
         type="text"
@@ -2705,12 +2725,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       )}
     </div>
     
-    {/* Filter Button - 1/4 width */}
+    {/* Filter Button - smaller width */}
     <button
       onClick={() => setShowFilterModal(true)}
-      className="flex items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-xl text-base transition-colors hover:border-gray-300"
+      className="flex items-center justify-center px-3 py-3 border-2 border-gray-200 rounded-xl text-base transition-colors hover:border-gray-300 flex-shrink-0"
       style={{ 
-        flex: '1',
         borderColor: (priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') ? primaryColor : undefined
       }}
     >
@@ -2720,7 +2739,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   
   {/* Active Filters Badges */}
   {(priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') && (
-    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+    <div className="py-3">
       <div className="flex flex-wrap gap-2">
         {/* Price Range Badge */}
         {(priceMin !== '' || priceMax !== '') && (
@@ -2768,11 +2787,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         {sortBy !== 'name-asc' && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
             <span className="text-gray-700">
-              Sort: {
-                sortBy === 'name-desc' ? 'Name (Z-A)' :
-                sortBy === 'price-asc' ? 'Price (Low-High)' :
-                sortBy === 'price-desc' ? 'Price (High-Low)' :
-                'Name (A-Z)'
+              {translations.sort || 'Sort'}: {
+                sortBy === 'name-desc' ? (translations.sortByNameDesc || 'Name (Z-A)') :
+                sortBy === 'price-asc' ? (translations.sortByPriceAsc || 'Price (Low-High)') :
+                sortBy === 'price-desc' ? (translations.sortByPriceDesc || 'Price (High-Low)') :
+                (translations.sortByNameAsc || 'Name (A-Z)')
               }
             </span>
             <button
@@ -3246,6 +3265,18 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         </div>
       )}
 
+      {/* Scroll to Top Button */}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-10 left-5 lg:left-auto lg:right-5 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-30 transition-all duration-300 hover:scale-110"
+          style={{ backgroundColor: primaryColor }}
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="w-6 h-6 text-white" />
+        </button>
+      )}
+
          {/* Add this before the closing div */}
     <OrderSuccessMessage
       isVisible={orderSuccessMessage?.visible || false}
@@ -3292,7 +3323,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           <div className="fixed inset-y-0 right-0 lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 w-full max-w-md lg:max-w-lg bg-white z-50 lg:z-50 lg:rounded-2xl shadow-2xl flex flex-col max-h-screen lg:max-h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Filter Products</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{translations.filterProducts || 'Filter Products'}</h2>
               <button
                 onClick={() => setShowFilterModal(false)}
                 className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
@@ -3305,10 +3336,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             <div className="flex-1 overflow-y-auto p-4 space-y-6">
               {/* Price Range */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Price Range</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.priceRange || 'Price Range'}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Min Price</label>
+                    <label className="block text-xs text-gray-600 mb-1">{translations.minPrice || 'Min Price'}</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{currencySymbol}</span>
                       <input
@@ -3325,14 +3356,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-600 mb-1">Max Price</label>
+                    <label className="block text-xs text-gray-600 mb-1">{translations.maxPrice || 'Max Price'}</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{currencySymbol}</span>
                       <input
                         type="number"
                         value={priceMax}
                         onChange={(e) => setPriceMax(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="No limit"
+                        placeholder={translations.noLimit || 'No limit'}
                         min="0"
                         className="w-full pl-8 pr-3 py-2 border-2 border-gray-200 rounded-lg text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
                         style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
@@ -3346,7 +3377,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
               {/* Categories */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Categories</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {storeData.categories.map(category => (
                     <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
@@ -3371,13 +3402,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
               {/* Sort By */}
               <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Sort By</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.sortBy || 'Sort By'}</h3>
                 <div className="space-y-2">
                   {[
-                    { value: 'name-asc', label: 'Name (A-Z)' },
-                    { value: 'name-desc', label: 'Name (Z-A)' },
-                    { value: 'price-asc', label: 'Price (Low to High)' },
-                    { value: 'price-desc', label: 'Price (High to Low)' }
+                    { value: 'name-asc', label: translations.sortByNameAsc || 'Name (A-Z)' },
+                    { value: 'name-desc', label: translations.sortByNameDesc || 'Name (Z-A)' },
+                    { value: 'price-asc', label: translations.sortByPriceAsc || 'Price (Low to High)' },
+                    { value: 'price-desc', label: translations.sortByPriceDesc || 'Price (High to Low)' }
                   ].map(option => (
                     <label key={option.value} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input
@@ -3407,14 +3438,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
-                Clear All
+                {translations.clearAll || 'Clear All'}
               </button>
               <button
                 onClick={() => setShowFilterModal(false)}
                 className="flex-1 px-4 py-3 rounded-xl text-white font-medium transition-colors hover:opacity-90"
                 style={{ backgroundColor: primaryColor }}
               >
-                Apply Filters
+                {translations.applyFilters || 'Apply Filters'}
               </button>
             </div>
           </div>
