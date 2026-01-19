@@ -9,6 +9,7 @@ import {
   getPriceId, 
   updateSubscription, 
   cancelSubscription,
+  cancelSubscriptionImmediately,
   createPaidSubscription
 } from '@/lib/stripe'
 
@@ -75,20 +76,27 @@ export async function PATCH(
 
     const owner = ownerRelation.user
     const currentPlan = business.subscriptionPlan as 'STARTER' | 'PRO'
-    const currentBillingType = billingType
-
-    // Check if plan is actually changing
-    if (currentPlan === subscriptionPlan && currentBillingType === billingType) {
-      return NextResponse.json({ 
-        message: `Business is already on ${subscriptionPlan} plan (${billingType})` 
-      }, { status: 400 })
+    
+    // Check if plan is actually changing (we can't easily compare billing type without fetching from Stripe)
+    if (currentPlan === subscriptionPlan) {
+      // Note: We're not checking billing type change since we don't store it separately
+      // The API will still update it if it's different
     }
 
     // Handle Stripe subscription update
     let stripeSubscription: Stripe.Subscription
-    const newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO', billingType)
-
+    let newPriceId: string
+    
     try {
+      // Validate price ID exists
+      newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO', billingType)
+      
+      if (!newPriceId) {
+        return NextResponse.json({ 
+          message: `Price ID not configured for ${subscriptionPlan} plan (${billingType}). Please check environment variables.` 
+        }, { status: 400 })
+      }
+
       if (!owner.stripeCustomerId) {
         return NextResponse.json({ 
           message: 'Business owner does not have a Stripe customer ID. Cannot update subscription.' 
@@ -106,12 +114,15 @@ export async function PATCH(
         // Existing subscription - update it
         const existingSubscription = owner.subscription
         
-        // Cancel old subscription first
+        // Cancel old subscription immediately (we're replacing it)
         try {
-          await cancelSubscription(existingSubscription.stripeId)
-        } catch (error) {
+          await cancelSubscriptionImmediately(existingSubscription.stripeId)
+        } catch (error: any) {
           console.error('Error canceling old subscription:', error)
-          // Continue anyway
+          // If subscription doesn't exist in Stripe, continue anyway
+          if (error?.code !== 'resource_missing') {
+            throw new Error(`Failed to cancel existing subscription: ${error?.message || 'Unknown error'}`)
+          }
         }
 
         // Create new subscription with new plan/billing type
@@ -197,12 +208,23 @@ export async function PATCH(
       }, { status: 500 })
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating business subscription:', error)
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+      code: error?.code
+    })
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { 
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
 
@@ -276,11 +298,21 @@ export async function GET(
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching business subscription:', error)
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name
+    })
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { 
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
