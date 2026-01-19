@@ -13,7 +13,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 
-type Plan = 'FREE' | 'PRO'
+type Plan = 'STARTER' | 'PRO'
 
 interface UserSubscription {
   plan: Plan
@@ -26,9 +26,10 @@ interface UserSubscription {
 }
 
 const PLANS = {
-  FREE: {
-    name: 'Free',
-    price: 0,
+  STARTER: {
+    name: 'Starter',
+    price: 6,
+    annualPrice: 5,
     description: 'Perfect for getting started',
     icon: Package,
     features: [
@@ -100,7 +101,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   const handleUpgrade = async (planId: Plan) => {
     if (!subscription) return
 
-    if (planId === 'FREE') {
+    if (planId === 'STARTER') {
       // Show downgrade confirmation modal
       setShowDowngradeModal(true)
       return
@@ -139,7 +140,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   }
 
   const confirmDowngrade = async () => {
-    setIsUpgrading('FREE')
+    setIsUpgrading('STARTER')
     setError(null)
     setShowDowngradeModal(false)
     
@@ -250,15 +251,15 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               </h2>
             </div>
             <p className="text-teal-100">
-              {subscription.plan === 'FREE' 
-                ? 'You are currently on the free plan'
+              {subscription.plan === 'STARTER' 
+                ? 'You are currently on the Starter plan'
                 : subscription.cancelAtPeriodEnd
                 ? `Your PRO plan will end on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}`
                 : `Your PRO plan is active${subscription.currentPeriodEnd ? ` until ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}`
               }
             </p>
           </div>
-          {subscription.plan !== 'FREE' && (
+          {subscription.plan !== 'STARTER' && (
             <button
               onClick={handleManageBilling}
               className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
@@ -304,7 +305,9 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
           const planKey = key as Plan
           const isCurrentPlan = subscription.plan === planKey
           const PlanIcon = plan.icon
-          const displayPrice = planKey === 'PRO' ? price : 0
+          const displayPrice = planKey === 'PRO' 
+            ? (billingInterval === 'annual' ? plan.annualPrice : plan.price)
+            : (billingInterval === 'annual' ? (plan.annualPrice || plan.price) : plan.price)
           
           return (
             <div
@@ -340,6 +343,11 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 {billingInterval === 'annual' && planKey === 'PRO' && (
                   <p className="text-sm text-green-600 font-medium mt-1">
                     Billed annually (${displayPrice * 12}/year)
+                  </p>
+                )}
+                {billingInterval === 'annual' && planKey === 'STARTER' && (
+                  <p className="text-sm text-green-600 font-medium mt-1">
+                    Billed annually (${displayPrice * 12}/year) - Save $12/year
                   </p>
                 )}
               </div>
@@ -430,7 +438,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Downgrade to Free Plan?
+                Downgrade to Starter Plan?
               </h3>
             </div>
             
@@ -457,10 +465,10 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               </button>
               <button
                 onClick={confirmDowngrade}
-                disabled={isUpgrading === 'FREE'}
+                disabled={isUpgrading === 'STARTER'}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
               >
-                {isUpgrading === 'FREE' ? 'Processing...' : 'Confirm Downgrade'}
+                {isUpgrading === 'STARTER' ? 'Processing...' : 'Confirm Downgrade'}
               </button>
             </div>
           </div>

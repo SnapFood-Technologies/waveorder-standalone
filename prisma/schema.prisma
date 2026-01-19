@@ -62,7 +62,7 @@ model User {
   passwordSetupExpiry DateTime?
 
   // Subscription and Stripe fields
-  plan             SubscriptionPlan @default(FREE)
+  plan             SubscriptionPlan @default(STARTER)
   stripeCustomerId String?
   subscriptionId   String?          @db.ObjectId
   subscription     Subscription?    @relation(fields: [subscriptionId], references: [id])
@@ -185,7 +185,7 @@ model Business {
   website            String?
   whatsappNumber     String
   businessType       BusinessType       @default(RESTAURANT)
-  subscriptionPlan   SubscriptionPlan   @default(FREE)
+  subscriptionPlan   SubscriptionPlan   @default(STARTER)
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
 
   createdByAdmin Boolean @default(false)
@@ -753,7 +753,7 @@ enum BusinessType {
 }
 
 enum SubscriptionPlan {
-  FREE
+  STARTER
   PRO
 }
 

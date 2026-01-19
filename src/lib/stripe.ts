@@ -7,12 +7,12 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 export const PLANS = {
-  FREE: {
-    name: 'Free',
-    price: 0,
-    annualPrice: 0,
-    priceId: process.env.STRIPE_FREE_PRICE_ID!,
-    annualPriceId: process.env.STRIPE_FREE_PRICE_ID!,
+  STARTER: {
+    name: 'Starter',
+    price: 6,
+    annualPrice: 5,
+    priceId: process.env.STRIPE_STARTER_PRICE_ID!,
+    annualPriceId: process.env.STRIPE_STARTER_ANNUAL_PRICE_ID!,
     description: 'Perfect for getting started',
     features: [
       'Up to 30 products',
@@ -112,11 +112,11 @@ export async function createFreeSubscription(customerId: string) {
     customer: customerId,
     items: [
       {
-        price: PLANS.FREE.priceId,
+        price: PLANS.STARTER.priceId,
       },
     ],
     metadata: {
-      plan: 'FREE',
+      plan: 'STARTER',
       source: 'waveorder_platform'
     }
   })
@@ -179,5 +179,5 @@ export function mapStripePlanToDb(stripePriceId: string): PlanId {
       return planId as PlanId
     }
   }
-  return 'FREE' // fallback
+  return 'STARTER' // fallback
 }

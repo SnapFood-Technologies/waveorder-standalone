@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         const stripeCustomer = await createStripeCustomer(user.email, user.name || 'User')
         stripeCustomerId = stripeCustomer.id
         
-        // Create FREE subscription in Stripe
+        // Create STARTER subscription in Stripe
         const stripeSubscription = await createFreeSubscription(stripeCustomerId)
         
         // Create subscription in database
@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
           data: {
             stripeId: stripeSubscription.id,
             status: stripeSubscription.status,
-            priceId: PLANS.FREE.priceId,
-            plan: 'FREE',
+            priceId: PLANS.STARTER.priceId,
+            plan: 'STARTER',
             // @ts-ignore
             currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
             // @ts-ignore
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
           data: {
             stripeCustomerId: stripeCustomerId,
             subscriptionId: subscription.id,
-            plan: 'FREE'
+            plan: 'STARTER'
           }
         })
         

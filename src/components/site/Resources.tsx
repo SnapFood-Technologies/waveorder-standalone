@@ -23,8 +23,8 @@ export default function Resources() {
           answer: "No! WaveOrder works with your regular WhatsApp or WhatsApp Business number. Orders come directly to your existing WhatsApp without any expensive API setup or monthly fees."
         },
         {
-          question: "What's included in the free plan?",
-          answer: "The free plan includes up to 30 products, 10 categories, basic WhatsApp orders, mobile catalog, manual product entry, basic branding, CSV import, and basic order analytics. Perfect for getting started."
+          question: "What's included in the Starter plan?",
+          answer: "The Starter plan ($6/month) includes up to 30 products, 10 categories, basic WhatsApp orders, mobile catalog, manual product entry, basic branding, CSV import, and basic order analytics. Perfect for getting started."
         },
         {
           question: "Can I import my existing menu?",
@@ -169,7 +169,7 @@ export default function Resources() {
             <Link href="/auth/register" className="group bg-white border-2 border-gray-100 rounded-xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
               <ArrowRight className="w-8 h-8 text-teal-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-teal-600">Get Started</h3>
-              <p className="text-gray-600 text-sm">Start free and set up in minutes</p>
+              <p className="text-gray-600 text-sm">Start with Starter plan ($6/month) and set up in minutes</p>
             </Link>
           </div>
         </div>

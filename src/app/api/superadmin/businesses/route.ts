@@ -382,7 +382,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create Stripe customer and FREE subscription
+    // Create Stripe customer and STARTER subscription
     let stripeCustomerId: string | undefined
     let subscriptionId: string | undefined
 
@@ -391,7 +391,7 @@ export async function POST(request: NextRequest) {
       const stripeCustomer = await createStripeCustomer(data.ownerEmail, data.ownerName)
       stripeCustomerId = stripeCustomer.id
       
-      console.log('Creating FREE subscription for customer:', stripeCustomerId)
+      console.log('Creating STARTER subscription for customer:', stripeCustomerId)
       const stripeSubscription = await createFreeSubscription(stripeCustomerId)
       
       // Create subscription in database
@@ -399,8 +399,8 @@ export async function POST(request: NextRequest) {
         data: {
           stripeId: stripeSubscription.id,
           status: stripeSubscription.status,
-          priceId: process.env.STRIPE_FREE_PRICE_ID!,
-          plan: 'FREE',
+          priceId: process.env.STRIPE_STARTER_PRICE_ID!,
+          plan: 'STARTER',
           // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
           // @ts-ignore
@@ -421,7 +421,7 @@ export async function POST(request: NextRequest) {
       email: data.ownerEmail.toLowerCase(),
       role: 'BUSINESS_OWNER',
       emailVerified: new Date(),
-      plan: 'FREE',
+      plan: 'STARTER',
       stripeCustomerId,
       subscriptionId,
     }
@@ -480,7 +480,7 @@ export async function POST(request: NextRequest) {
         name: data.businessName,
         slug: slug,
         businessType: data.businessType,
-        subscriptionPlan: 'FREE',
+        subscriptionPlan: 'STARTER',
         subscriptionStatus: 'ACTIVE',
         currency: data.currency || 'USD',
         language: data.language || 'en',
@@ -533,7 +533,7 @@ export async function POST(request: NextRequest) {
           businessName: data.businessName,
           setupUrl,
           dashboardUrl,
-          subscriptionPlan: 'FREE' // Add this
+          subscriptionPlan: 'STARTER' // Add this
         })
       } catch (emailError) {
         console.error('Failed to send email:', emailError)
@@ -550,7 +550,7 @@ export async function POST(request: NextRequest) {
           owner: business.users[0]?.user,
           createdByAdmin: business.createdByAdmin,
           setupMethod: data.sendEmail ? 'email' : 'password',
-          subscriptionPlan: 'FREE',
+          subscriptionPlan: 'STARTER',
           stripeCustomerId,
         }
       },

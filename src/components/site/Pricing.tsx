@@ -10,9 +10,9 @@ export default function Pricing() {
 
   const plans = [
     {
-      name: "Free",
-      monthlyPrice: 0,
-      yearlyPrice: 0,
+      name: "Starter",
+      monthlyPrice: 6,
+      yearlyPrice: 5,
       description: "Perfect for getting started",
       features: [
         "Up to 30 products",
@@ -24,7 +24,7 @@ export default function Pricing() {
         "CSV import",
         "Basic order analytics",
       ],
-      buttonText: "Start Free",
+      buttonText: "Get Started",
       buttonStyle: "border-2 border-teal-600 text-teal-600 hover:bg-teal-50"
     },
     {
@@ -108,7 +108,7 @@ export default function Pricing() {
                     ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
                   </span>
                   <span className="text-gray-600 ml-2">
-                    {plan.monthlyPrice === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                    {`per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                   </span>
                 </div>
                 {billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
@@ -129,15 +129,15 @@ export default function Pricing() {
               
               <div className="space-y-3">
                 <Link
-                  href={plan.name === 'Free' ? '/auth/register' : '/auth/register'}
+                  href="/auth/register"
                   className={`block text-center px-6 py-3 rounded-lg font-semibold transition-colors ${plan.buttonStyle}`}
                 >
                   {plan.buttonText}
                 </Link>
                 
-                {plan.name === 'Free' && (
+                {plan.name === 'Starter' && (
                   <p className="text-center text-sm text-gray-500">
-                    No credit card required
+                    Cancel anytime
                   </p>
                 )}
                 

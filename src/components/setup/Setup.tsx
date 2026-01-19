@@ -22,7 +22,7 @@ export interface SetupData {
   businessType: string
   currency: string
   businessGoals: string[]
-  subscriptionPlan: 'FREE' | 'PRO'
+  subscriptionPlan: 'STARTER' | 'PRO'
   businessName: string
   language?: string
   primaryColor?: string
@@ -67,7 +67,7 @@ export default function SetupComponent() {
     businessType: '',
     currency: 'USD',
     businessGoals: [],
-    subscriptionPlan: 'FREE',
+    subscriptionPlan: 'STARTER',
     businessName: '',
     whatsappNumber: '',
     storeSlug: '',

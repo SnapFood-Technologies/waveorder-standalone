@@ -90,7 +90,7 @@ export function SuperAdminSettings() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Free Plan */}
+          {/* Starter Plan */}
           <div className="border-2 border-teal-500 rounded-lg p-6 relative bg-gradient-to-br from-teal-50 to-white">
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
               <span className="px-3 py-1 bg-teal-500 text-white text-xs font-bold rounded-full">
@@ -111,8 +111,8 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="mb-6">
-              <p className="text-3xl font-bold text-gray-900">$0</p>
-              <p className="text-sm text-gray-600">Forever free</p>
+              <p className="text-3xl font-bold text-gray-900">$6</p>
+              <p className="text-sm text-gray-600">per month</p>
             </div>
 
             <div className="space-y-3 mb-4">
@@ -267,7 +267,7 @@ export function SuperAdminSettings() {
                 Subscription Information
               </h4>
               <p className="text-sm text-teal-700">
-                All businesses start with the Free plan by default. Pro plan is available at $12/month 
+                All businesses start with the Starter plan ($6/month) by default. Pro plan is available at $12/month 
                 or $10/month with annual billing (save $24/year). Payment processing is handled securely 
                 through Stripe. Users can upgrade, downgrade, or cancel anytime from their dashboard.
               </p>

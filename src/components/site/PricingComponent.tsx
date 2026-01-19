@@ -10,9 +10,9 @@ export default function PricingComponent() {
 
   const plans = [
     {
-      name: "Free",
-      monthlyPrice: 0,
-      yearlyPrice: 0,
+      name: "Starter",
+      monthlyPrice: 6,
+      yearlyPrice: 5,
       description: "Perfect for getting started",
       features: [
         "Up to 30 products",
@@ -24,10 +24,10 @@ export default function PricingComponent() {
         "CSV import",
         "Basic order analytics",
       ],
-      buttonText: "Start Free",
+      buttonText: "Get Started",
       buttonStyle: "border-2 border-gray-300 text-gray-700 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50",
       icon: MessageSquare,
-      highlight: "Always Free",
+      highlight: "",
       popular: false
     },
     {
@@ -78,8 +78,8 @@ export default function PricingComponent() {
 
   const faqs = [
     {
-      question: "Is the Free plan really free forever?",
-      answer: "Yes! Our Free plan includes core WhatsApp ordering features for up to 30 products and will always be free. It's perfect for small businesses getting started."
+      question: "What's included in the Starter plan?",
+      answer: "Our Starter plan includes core WhatsApp ordering features for up to 30 products, 10 categories, basic branding, CSV import, and basic order analytics. It's perfect for small businesses getting started at just $6/month."
     },
     {
       question: "Can I upgrade or downgrade anytime?",
@@ -96,12 +96,10 @@ export default function PricingComponent() {
   ]
 
   const getPrice = (plan: typeof plans[0]) => {
-    if (plan.monthlyPrice === 0) return 0
     return billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice
   }
 
   const getSavings = (plan: typeof plans[0]) => {
-    if (plan.monthlyPrice === 0) return 0
     return (plan.monthlyPrice * 12) - (plan.yearlyPrice * 12)
   }
 
@@ -115,7 +113,7 @@ export default function PricingComponent() {
               Simple, Transparent Pricing
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-              Choose the plan that fits your business needs. Start free and upgrade when you're ready. 
+              Choose the plan that fits your business needs. Start with Starter at $6/month and upgrade when you're ready. 
               No hidden fees, no setup costs, no transaction fees.
             </p>
             
@@ -194,7 +192,7 @@ export default function PricingComponent() {
                           ${price}
                         </span>
                         <span className="text-gray-600 ml-2">
-                          {price === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                          {`per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                         </span>
                       </div>
                       {billingCycle === 'yearly' && savings > 0 && (
@@ -223,9 +221,9 @@ export default function PricingComponent() {
                       <ArrowRight className="w-5 h-5 ml-2 inline" />
                     </Link>
                     
-                    {plan.name === 'Free' && (
+                    {plan.name === 'Starter' && (
                       <p className="text-center text-sm text-gray-500">
-                        No credit card required
+                        Cancel anytime
                       </p>
                     )}
                     

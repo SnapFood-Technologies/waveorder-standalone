@@ -40,13 +40,13 @@ export async function POST(request: NextRequest) {
 
     // Handle subscription plan selection (Step 3)
     if (step === 3 && data.subscriptionPlan) {
-      // If user chose FREE or skipped, create Stripe customer + FREE subscription
-      if (data.subscriptionPlan === 'FREE' && !user.stripeCustomerId) {
+      // If user chose STARTER or skipped, create Stripe customer + STARTER subscription
+      if (data.subscriptionPlan === 'STARTER' && !user.stripeCustomerId) {
         try {
           // Create Stripe customer
           const stripeCustomer = await createStripeCustomer(user.email, user.name || 'User')
           
-          // Create FREE subscription in Stripe
+          // Create STARTER subscription in Stripe
           const stripeSubscription = await createFreeSubscription(stripeCustomer.id)
           
           // Create subscription in database
@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
             data: {
               stripeId: stripeSubscription.id,
               status: stripeSubscription.status,
-              priceId: process.env.STRIPE_FREE_PRICE_ID!,
-              plan: 'FREE',
+              priceId: process.env.STRIPE_STARTER_PRICE_ID!,
+              plan: 'STARTER',
               // @ts-ignore
               currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
               // @ts-ignore
@@ -69,12 +69,12 @@ export async function POST(request: NextRequest) {
             data: {
               stripeCustomerId: stripeCustomer.id,
               subscriptionId: subscription.id,
-              plan: 'FREE'
+              plan: 'STARTER'
             }
           })
 
         } catch (stripeError) {
-          console.error('❌ Stripe error during FREE subscription:', stripeError)
+          console.error('❌ Stripe error during STARTER subscription:', stripeError)
           // Continue with setup even if Stripe fails
         }
       }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
           language: data.language || 'en',
           storefrontLanguage: data.language || 'en', // Defaults to business language
           whatsappNumber: data.whatsappNumber || '',
-          subscriptionPlan: data.subscriptionPlan || 'FREE',
+          subscriptionPlan: data.subscriptionPlan || 'STARTER',
           subscriptionStatus: 'ACTIVE',
           onboardingStep: step,
           users: {

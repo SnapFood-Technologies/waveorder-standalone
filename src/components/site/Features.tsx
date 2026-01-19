@@ -139,7 +139,7 @@ export default function Features() {
                 href="/auth/register"
                 className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
               >
-                Start Free
+                Get Started
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 

@@ -328,7 +328,7 @@ Add `userRole` to context:
 ```typescript
 interface BusinessContextValue {
   businesses: Business[]
-  subscription: { plan: 'FREE' | 'PRO'; isActive: boolean }
+  subscription: { plan: 'STARTER' | 'PRO'; isActive: boolean }
   loading: boolean
   currentBusiness: Business | null
   accessChecked: boolean

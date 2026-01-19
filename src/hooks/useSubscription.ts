@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 interface SubscriptionData {
   businessId: string
   businessName: string
-  subscriptionPlan: 'FREE' | 'PRO'
+  subscriptionPlan: 'STARTER' | 'PRO'
   subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED'
   hasProAccess: boolean
   userRole: 'OWNER' | 'MANAGER' | 'STAFF'
@@ -45,6 +45,6 @@ export function useSubscription() {
     loading,
     error,
     isPro: subscription?.hasProAccess || false,
-    isFree: subscription?.subscriptionPlan === 'FREE'
+    isStarter: subscription?.subscriptionPlan === 'STARTER'
   }
 }

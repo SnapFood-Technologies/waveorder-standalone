@@ -43,7 +43,7 @@ interface AdminSidebarProps {
   businessId: string
 }
 
-type Plan = 'FREE' | 'PRO'
+type Plan = 'STARTER' | 'PRO'
 
 interface NavigationItem {
   name: string
@@ -85,36 +85,36 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       name: 'Dashboard', 
       href: `${baseUrl}/dashboard`, 
       icon: LayoutDashboard, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'STARTER'
     },
     { 
       name: 'Orders', 
       href: `${baseUrl}/orders`, 
       icon: ShoppingBag, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'STARTER'
     },
     { 
       name: 'Products', 
       icon: Package, 
-      requiredPlan: 'FREE',
+      requiredPlan: 'STARTER',
       children: [
         { 
           name: 'List', 
           href: `${baseUrl}/products`, 
           icon: List, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
         { 
           name: 'Categories', 
           href: `${baseUrl}/product-categories`, 
           icon: Boxes, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
         { 
           name: 'Import', 
           href: `${baseUrl}/products/import`, 
           icon: Upload, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
       ]
     },
@@ -122,19 +122,19 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       name: 'Customers', 
       href: `${baseUrl}/customers`, 
       icon: Users, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'STARTER'
     },
     { 
       name: 'Appearance', 
       href: `${baseUrl}/appearance`, 
       icon: Palette, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'STARTER'
     },
     { 
       name: 'Marketing', 
       href: `${baseUrl}/marketing`, 
       icon: Megaphone, 
-      requiredPlan: 'FREE'
+      requiredPlan: 'STARTER'
     },
     
     // Help & Support (only show when not impersonating)
@@ -143,25 +143,25 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       { 
         name: 'Help & Support', 
         icon: HelpCircle,
-        requiredPlan: 'FREE',
+        requiredPlan: 'STARTER',
         children: [
           { 
             name: 'Help Center', 
             href: `${baseUrl}/help`, 
             icon: BookOpen, 
-            requiredPlan: 'FREE'
+            requiredPlan: 'STARTER'
           },
           { 
             name: 'Support Tickets', 
             href: `${baseUrl}/support/tickets`, 
             icon: Ticket, 
-            requiredPlan: 'FREE'
+            requiredPlan: 'STARTER'
           },
           { 
             name: 'Messages', 
             href: `${baseUrl}/support/messages`, 
             icon: MessageSquare, 
-            requiredPlan: 'FREE'
+            requiredPlan: 'STARTER'
           },
         ]
       }
@@ -225,32 +225,32 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       name: 'Settings', 
       icon: Settings, 
       // @ts-ignore
-      requiredPlan: 'FREE' as Plan,
+      requiredPlan: 'STARTER' as Plan,
       // @ts-ignore
       children: [
         { 
           name: 'Business', 
           href: `${baseUrl}/settings/business`, 
           icon: User, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
         { 
           name: 'Billing', 
           href: `${baseUrl}/settings/billing`, 
           icon: CreditCard, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
         { 
           name: 'Order Notifications', 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
         { 
           name: 'Configurations', 
           href: `${baseUrl}/settings/configurations`, 
           icon: Cog, 
-          requiredPlan: 'FREE'
+          requiredPlan: 'STARTER'
         },
       ]
     },
@@ -258,7 +258,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
 
   const isFeatureAvailable = (requiredPlan: Plan): boolean => {
     const planHierarchy: Record<Plan, number> = {
-      'FREE': 0,
+      'STARTER': 0,
       'PRO': 1
     }
     
@@ -406,10 +406,10 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           <div className="p-4 border-t border-gray-200">
             <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-4 text-white">
               <h3 className="font-semibold text-sm mb-1">
-                {subscription.plan === 'FREE' ? 'Pro Features Available' : 'Pro Plan Active'}
+                {subscription.plan === 'STARTER' ? 'Pro Features Available' : 'Pro Plan Active'}
               </h3>
               <p className="text-xs text-teal-100 mb-3">
-                {subscription.plan === 'FREE' 
+                {subscription.plan === 'STARTER' 
                   ? 'Unlock inventory, discounts, analytics, team & domain management' 
                   : 'Enjoying advanced features and analytics'}
               </p>

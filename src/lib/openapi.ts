@@ -749,7 +749,7 @@ export const openApiSpec = {
             },
             subscriptionPlan: {
               type: 'string',
-              enum: ['FREE', 'BASIC', 'PREMIUM', 'PRO', 'ENTERPRISE']
+              enum: ['STARTER', 'BASIC', 'PREMIUM', 'PRO', 'ENTERPRISE']
             },
             currency: { type: 'string', default: 'USD' },
             deliveryFee: { type: 'number', default: 0 },

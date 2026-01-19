@@ -46,7 +46,7 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'store-link',
       question: 'How do customers access my store?',
-      answer: 'Your store has a unique link that you can share with customers. For free plans, your link will be: waveorder.app/your-store-name. For paid plans, you can set up a custom domain. You can find this link in your dashboard and share it via social media, business cards, or any other marketing channels.',
+      answer: 'Your store has a unique link that you can share with customers. For Starter plans, your link will be: waveorder.app/your-store-name. For PRO plans, you can set up a custom domain. You can find this link in your dashboard and share it via social media, business cards, or any other marketing channels.',
       links: [
         { text: 'Share Store Link', href: '/admin/stores/[businessId]/marketing' }
       ]
@@ -176,7 +176,7 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'subscription-plans',
       question: 'What subscription plans are available?',
-      answer: 'WaveOrder offers FREE and PRO plans. FREE plan includes up to 30 products and basic features. PRO plan includes unlimited products, advanced analytics, inventory management, team collaboration, and custom domains.',
+      answer: 'WaveOrder offers Starter and PRO plans. Starter plan ($6/month) includes up to 30 products and basic features. PRO plan ($12/month) includes unlimited products, advanced analytics, inventory management, team collaboration, and custom domains.',
       links: [
         { text: 'View Plans', href: '/pricing' },
         { text: 'Upgrade Plan', href: '/admin/stores/[businessId]/settings/billing' }

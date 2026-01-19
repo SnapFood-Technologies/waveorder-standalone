@@ -69,7 +69,8 @@ This document lists all third-party services and APIs integrated into the WaveOr
 - **Environment Variables**: 
   - `STRIPE_SECRET_KEY`
   - `STRIPE_WEBHOOK_SECRET`
-  - `STRIPE_FREE_PRICE_ID`
+  - `STRIPE_STARTER_PRICE_ID`
+  - `STRIPE_STARTER_ANNUAL_PRICE_ID`
   - `STRIPE_PRO_PRICE_ID`
   - `STRIPE_PRO_ANNUAL_PRICE_ID`
   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`

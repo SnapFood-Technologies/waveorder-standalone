@@ -12,10 +12,12 @@ interface PricingStepProps {
 
 const plans = [
   {
-    id: 'FREE',
-    name: 'Free Plan',
-    price: '$0',
-    billing: 'Forever free',
+    id: 'STARTER',
+    name: 'Starter Plan',
+    price: '$6',
+    billing: 'per month',
+    annualPrice: '$5/mo',
+    annualBilling: 'billed annually',
     features: [
       'Up to 30 products',
       '10 categories',
@@ -26,7 +28,7 @@ const plans = [
       'CSV import',
       'Basic order analytics'
     ],
-    buttonText: 'Choose Free Plan',
+    buttonText: 'Choose Starter Plan',
     popular: false
   },
   {
@@ -52,20 +54,20 @@ const plans = [
 ]
 
 export default function PricingStep({ data, onComplete, onBack }: PricingStepProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'FREE' | 'PRO'>(data.subscriptionPlan || 'FREE')
+  const [selectedPlan, setSelectedPlan] = useState<'STARTER' | 'PRO'>(data.subscriptionPlan || 'STARTER')
   const [loading, setLoading] = useState(false)
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
 
-  const handleSubmit = async (planId: 'FREE' | 'PRO') => {
+  const handleSubmit = async (planId: 'STARTER' | 'PRO') => {
     setSelectedPlan(planId)
     setLoading(true)
 
     try {
-      if (planId === 'FREE') {
-        // FREE plan - no Stripe checkout needed
-        // The Stripe customer and FREE subscription will be created in save-progress API
+      if (planId === 'STARTER') {
+        // STARTER plan - no Stripe checkout needed
+        // The Stripe customer and STARTER subscription will be created in save-progress API
         await new Promise(resolve => setTimeout(resolve, 500))
-        onComplete({ subscriptionPlan: 'FREE' })
+        onComplete({ subscriptionPlan: 'STARTER' })
       } else {
         // PRO plan - redirect to Stripe checkout
         const response = await fetch('/api/setup/checkout', {
@@ -130,10 +132,10 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
 
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-8">
         {plans.map((plan) => {
-          const displayPrice = plan.id === 'PRO' && billingInterval === 'annual' 
+          const displayPrice = (plan.id === 'PRO' || plan.id === 'STARTER') && billingInterval === 'annual' 
             ? plan.annualPrice 
             : plan.price
-          const displayBilling = plan.id === 'PRO' && billingInterval === 'annual'
+          const displayBilling = (plan.id === 'PRO' || plan.id === 'STARTER') && billingInterval === 'annual'
             ? plan.annualBilling
             : plan.billing
 
@@ -160,9 +162,14 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
                   <span className="text-4xl font-bold text-gray-900">{displayPrice}</span>
                   <span className="text-gray-600 ml-2">{displayBilling}</span>
                 </div>
-                {plan.id === 'PRO' && billingInterval === 'annual' && (
+                {billingInterval === 'annual' && plan.id === 'PRO' && (
                   <p className="text-sm text-emerald-600 font-medium">
                     Save $24 per year
+                  </p>
+                )}
+                {billingInterval === 'annual' && plan.id === 'STARTER' && (
+                  <p className="text-sm text-emerald-600 font-medium">
+                    Save $12 per year
                   </p>
                 )}
               </div>
@@ -180,7 +187,7 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
 
               <div className="space-y-3">
                 <button
-                  onClick={() => handleSubmit(plan.id as 'FREE' | 'PRO')}
+                  onClick={() => handleSubmit(plan.id as 'STARTER' | 'PRO')}
                   disabled={loading}
                   className={`w-full px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     plan.popular
@@ -197,7 +204,7 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
                   </p>
                 )}
 
-                {plan.id === 'FREE' && (
+                {plan.id === 'STARTER' && (
                   <p className="text-center text-sm text-gray-500">
                     No credit card required
                   </p>
@@ -211,11 +218,11 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
       {/* Skip Option */}
       <div className="text-center space-y-4">
         <button
-          onClick={() => handleSubmit('FREE')}
+          onClick={() => handleSubmit('STARTER')}
           disabled={loading}
           className="text-gray-600 hover:text-gray-800 font-medium transition-colors"
         >
-          Skip and continue with Free plan
+          Skip and continue with Starter plan
         </button>
       </div>
 

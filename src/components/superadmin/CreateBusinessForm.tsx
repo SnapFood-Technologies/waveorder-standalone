@@ -364,7 +364,7 @@ export function CreateBusinessForm() {
           currency: formData.currency,
           language: formData.language,
           timezone: formData.timezone,
-          subscriptionPlan: 'FREE',
+          subscriptionPlan: 'STARTER',
           deliveryEnabled: formData.deliveryEnabled,
           pickupEnabled: formData.pickupEnabled,
           deliveryFee: parseFloat(formData.deliveryFee),
@@ -1102,7 +1102,7 @@ export function CreateBusinessForm() {
 
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-800">
-                          <strong>Note:</strong> Currently only FREE plan is available. Stripe integration for paid plans is coming soon.
+                          <strong>Note:</strong> Businesses start with the Starter plan by default. Stripe integration for subscription management is available.
                         </p>
                       </div>
                     </div>
@@ -1292,7 +1292,7 @@ export function CreateBusinessForm() {
                     Payment Methods
                   </h4>
                   <p className="text-xs text-green-700">
-                    Currently only FREE plan with cash payment is available. Online payment integrations (Stripe, PayPal) will be available with paid subscription plans in future releases.
+                    Businesses start with the Starter plan. Online payment integrations (Stripe, PayPal) are available for subscription management.
                   </p>
                 </div>
               )}
