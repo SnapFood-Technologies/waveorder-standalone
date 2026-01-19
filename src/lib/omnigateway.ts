@@ -176,7 +176,9 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
     stockQuantity: product.stock || 0,
     stockStatus: stockStatus,
     featured: product.featured || false,
-    images: product.images && product.images.length > 0 ? product.images : undefined,
+    // Send images array: empty array clears images in OmniStack, undefined keeps existing images
+    // Always send the array (even if empty) to ensure image removal is synced
+    images: Array.isArray(product.images) ? product.images : [],
     categoryName: product.category?.name || undefined,
     categoryNameAl: product.category?.nameAl || product.category?.name || undefined,
     metadata: {
