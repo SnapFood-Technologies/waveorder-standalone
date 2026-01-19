@@ -169,7 +169,7 @@ export default function Resources() {
             <Link href="/auth/register" className="group bg-white border-2 border-gray-100 rounded-xl p-6 hover:border-teal-200 hover:shadow-md transition-all">
               <ArrowRight className="w-8 h-8 text-teal-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-teal-600">Get Started</h3>
-              <p className="text-gray-600 text-sm">Start free and set up in minutes</p>
+              <p className="text-gray-600 text-sm">Start with Starter plan ($6/month) and set up in minutes</p>
             </Link>
           </div>
         </div>

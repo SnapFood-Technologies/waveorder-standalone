@@ -113,7 +113,7 @@ export default function PricingComponent() {
               Simple, Transparent Pricing
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed">
-              Choose the plan that fits your business needs. Start free and upgrade when you're ready. 
+              Choose the plan that fits your business needs. Start with Starter at $6/month and upgrade when you're ready. 
               No hidden fees, no setup costs, no transaction fees.
             </p>
             
@@ -192,7 +192,7 @@ export default function PricingComponent() {
                           ${price}
                         </span>
                         <span className="text-gray-600 ml-2">
-                          {price === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                          {`per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                         </span>
                       </div>
                       {billingCycle === 'yearly' && savings > 0 && (
@@ -223,7 +223,7 @@ export default function PricingComponent() {
                     
                     {plan.name === 'Starter' && (
                       <p className="text-center text-sm text-gray-500">
-                        No credit card required
+                        Cancel anytime
                       </p>
                     )}
                     

@@ -116,7 +116,7 @@ export default function Demo() {
                 href="/auth/register"
                 className="px-8 py-4 bg-teal-600 text-white text-lg font-semibold rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center justify-center"
               >
-                Start Free
+                Get Started
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 
@@ -250,7 +250,7 @@ export default function Demo() {
           </h2>
           <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
             Start with our Starter plan ($6/month) and have your WhatsApp ordering system ready in minutes. 
-            No credit card required.
+            Cancel anytime.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 

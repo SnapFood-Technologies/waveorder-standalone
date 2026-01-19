@@ -397,14 +397,14 @@ export default function About() {
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Join businesses worldwide who are already streamlining their WhatsApp ordering with WaveOrder. 
-            Start free today.
+            Start with Starter plan today ($6/month).
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link 
               href="/auth/register"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
-              Start Free
+              Get Started
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

@@ -108,7 +108,7 @@ export default function Pricing() {
                     ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
                   </span>
                   <span className="text-gray-600 ml-2">
-                    {plan.monthlyPrice === 0 ? 'forever' : `per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                    {`per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                   </span>
                 </div>
                 {billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
@@ -137,7 +137,7 @@ export default function Pricing() {
                 
                 {plan.name === 'Starter' && (
                   <p className="text-center text-sm text-gray-500">
-                    No credit card required
+                    Cancel anytime
                   </p>
                 )}
                 

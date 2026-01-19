@@ -45,6 +45,6 @@ export function useSubscription() {
     loading,
     error,
     isPro: subscription?.hasProAccess || false,
-    isFree: subscription?.subscriptionPlan === 'STARTER'
+    isStarter: subscription?.subscriptionPlan === 'STARTER'
   }
 }
