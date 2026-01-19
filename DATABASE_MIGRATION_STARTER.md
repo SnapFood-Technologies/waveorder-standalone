@@ -46,56 +46,39 @@ db.subscriptions.updateMany(
    - `businesses` - Find documents with `subscriptionPlan: "FREE"` and change to `"STARTER"`
    - `subscriptions` - Find documents with `plan: "FREE"` and change to `"STARTER"`
 
-### Option 3: Using a Migration Script
+### Option 3: Using the Migration Script (Recommended - Handles Database + Stripe)
 
-Create a script file `scripts/migrate-free-to-starter.ts`:
+A comprehensive migration script has been created at `scripts/migrate-free-to-starter.ts` that:
+- Updates all database records (users, businesses, subscriptions)
+- Updates existing Stripe subscriptions to use the new Starter price IDs
+- Provides detailed logging and error handling
+- Verifies the migration was successful
 
-```typescript
-import { PrismaClient } from '@prisma/client'
+**Prerequisites:**
+1. Set environment variables in your `.env` file:
+   ```bash
+   STRIPE_STARTER_PRICE_ID="price_xxxxx"  # Your new Starter monthly price ID
+   STRIPE_STARTER_ANNUAL_PRICE_ID="price_xxxxx"  # Your new Starter annual price ID (optional)
+   STRIPE_SECRET_KEY="sk_xxxxx"  # Your Stripe secret key
+   DATABASE_URL="mongodb://..."  # Your database URL
+   ```
 
-const prisma = new PrismaClient()
+2. Optional: If you have the old FREE price ID, set it to help identify subscriptions to update:
+   ```bash
+   STRIPE_FREE_PRICE_ID="price_old_free_id"  # Only needed if you want to update existing Stripe subscriptions
+   ```
 
-async function main() {
-  console.log('Starting migration: FREE → STARTER')
-  
-  // Update Users
-  const usersUpdated = await prisma.user.updateMany({
-    where: { plan: 'FREE' },
-    data: { plan: 'STARTER' }
-  })
-  console.log(`Updated ${usersUpdated.count} users`)
-  
-  // Update Businesses
-  const businessesUpdated = await prisma.business.updateMany({
-    where: { subscriptionPlan: 'FREE' },
-    data: { subscriptionPlan: 'STARTER' }
-  })
-  console.log(`Updated ${businessesUpdated.count} businesses`)
-  
-  // Update Subscriptions
-  const subscriptionsUpdated = await prisma.subscription.updateMany({
-    where: { plan: 'FREE' },
-    data: { plan: 'STARTER' }
-  })
-  console.log(`Updated ${subscriptionsUpdated.count} subscriptions`)
-  
-  console.log('Migration completed!')
-}
-
-main()
-  .catch((e) => {
-    console.error('Migration failed:', e)
-    process.exit(1)
-  })
-  .finally(async () => {
-    await prisma.$disconnect()
-  })
-```
-
-Then run:
+**Run the migration:**
 ```bash
 npx tsx scripts/migrate-free-to-starter.ts
 ```
+
+The script will:
+- ✅ Update all database records from FREE to STARTER
+- ✅ Update Stripe subscriptions to use new Starter price IDs
+- ✅ Skip subscriptions that are already using the correct price
+- ✅ Provide detailed progress and error reporting
+- ✅ Verify the migration was successful
 
 ## After Migration
 
