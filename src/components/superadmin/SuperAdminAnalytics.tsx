@@ -312,12 +312,12 @@ export function SuperAdminAnalytics() {
                 <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
                   plan.plan === 'PRO' ? 'bg-purple-100' : 'bg-gray-100'
                 }`}>
-                  <span className={`font-bold ${plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'}`}>
-                    {plan.plan}
+                  <span className={`text-xs font-bold ${plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'}`}>
+                    {plan.plan === 'PRO' ? 'PRO' : 'START'}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{plan.plan} Plan</p>
+                  <p className="text-sm font-medium text-gray-900">{plan.plan}</p>
                   <p className="text-xs text-gray-500">{plan.businesses} businesses</p>
                 </div>
               </div>

@@ -124,38 +124,6 @@ jobs:
           yarn build
           echo "✅ Build completed successfully"
 
-      # 🔄 RUN DATABASE MIGRATION (FREE → STARTER)
-      - name: 🔄 Run Database Migration
-        env:
-          # 🗄️ Database
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          
-          # 💳 Stripe (for updating existing subscriptions)
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-          STRIPE_STARTER_PRICE_ID: ${{ secrets.STRIPE_STARTER_PRICE_ID }}
-          STRIPE_STARTER_ANNUAL_PRICE_ID: ${{ secrets.STRIPE_STARTER_ANNUAL_PRICE_ID }}
-          
-          # Optional: Old FREE price ID (if you had one in Stripe)
-          STRIPE_FREE_PRICE_ID: ${{ secrets.STRIPE_FREE_PRICE_ID }}
-        run: |
-          echo "🔄 Running database migration: FREE → STARTER"
-          echo "This will update all existing users, businesses, and subscriptions"
-          
-          # Check if migration script exists
-          if [ ! -f "scripts/migrate-free-to-starter.ts" ]; then
-            echo "⚠️ Migration script not found, skipping migration"
-            exit 0
-          fi
-          
-          # Run migration script
-          npx tsx scripts/migrate-free-to-starter.ts || {
-            echo "⚠️ Migration encountered errors, but continuing deployment..."
-            echo "⚠️ You may need to run the migration manually"
-            exit 0  # Don't fail deployment if migration has issues
-          }
-          
-          echo "✅ Migration completed successfully"
-
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |
