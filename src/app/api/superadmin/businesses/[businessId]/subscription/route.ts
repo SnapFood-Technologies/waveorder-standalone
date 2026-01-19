@@ -154,6 +154,9 @@ export async function PATCH(
         throw new Error('Failed to create Stripe subscription')
       }
 
+      // TypeScript type guard - stripeSubscription is guaranteed to be non-null here
+      const subscriptionData = stripeSubscription
+
       // Update database in transaction
       console.log('Updating database records...')
       const result = await prisma.$transaction(async (tx) => {
@@ -163,14 +166,14 @@ export async function PATCH(
           subscription = await tx.subscription.update({
             where: { id: owner.subscription.id },
             data: {
-              stripeId: stripeSubscription.id,
-              status: stripeSubscription.status,
+              stripeId: subscriptionData.id,
+              status: subscriptionData.status,
               priceId: newPriceId,
               plan: subscriptionPlan as any,
               // @ts-ignore
-              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+              currentPeriodStart: new Date(subscriptionData.current_period_start * 1000),
               // @ts-ignore
-              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+              currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
               cancelAtPeriodEnd: false,
               canceledAt: null
             }
@@ -178,14 +181,14 @@ export async function PATCH(
         } else {
           subscription = await tx.subscription.create({
             data: {
-              stripeId: stripeSubscription.id,
-              status: stripeSubscription.status,
+              stripeId: subscriptionData.id,
+              status: subscriptionData.status,
               priceId: newPriceId,
               plan: subscriptionPlan as any,
               // @ts-ignore
-              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+              currentPeriodStart: new Date(subscriptionData.current_period_start * 1000),
               // @ts-ignore
-              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+              currentPeriodEnd: new Date(subscriptionData.current_period_end * 1000),
             }
           })
         }
@@ -204,7 +207,7 @@ export async function PATCH(
           where: { id: businessId },
           data: {
             subscriptionPlan: subscriptionPlan as any,
-            subscriptionStatus: stripeSubscription.status === 'active' ? 'ACTIVE' : 'INACTIVE'
+            subscriptionStatus: subscriptionData.status === 'active' ? 'ACTIVE' : 'INACTIVE'
           }
         })
 
