@@ -3147,7 +3147,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[calc(85vh-180px)]">
+            <div className="overflow-y-auto max-h-[calc(85vh-180px)] scrollbar-hide">
             <OrderPanel 
               storeData={storeData}
               cart={cart}
@@ -3269,7 +3269,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {showScrollToTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-10 left-5 lg:left-auto lg:right-5 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-30 transition-all duration-300 hover:scale-110"
+          className="fixed bottom-10 left-5 lg:left-auto lg:right-[21px] w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-40 transition-all duration-300 hover:scale-110"
           style={{ backgroundColor: primaryColor }}
           aria-label="Scroll to top"
         >
@@ -3378,7 +3378,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               {/* Categories */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
                   {storeData.categories.map(category => (
                     <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input
@@ -4750,7 +4750,7 @@ function OrderPanel({
                 : (translations.cartItems || 'Cart Items')
               }
             </h3>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
+            <div className="space-y-3 max-h-60 overflow-y-auto scrollbar-hide">
               {cart.map(item => {
                 // Find the original product to check for discount
                 const originalProduct = storeData.categories
