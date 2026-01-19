@@ -27,7 +27,9 @@ import {
   Check,
   Navigation,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  Filter,
+  SlidersHorizontal
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -1580,6 +1582,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null)
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [priceMin, setPriceMin] = useState<number | ''>('')
+  const [priceMax, setPriceMax] = useState<number | ''>('')
+  const [selectedFilterCategories, setSelectedFilterCategories] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined') {
       const savedCart = localStorage.getItem('cart')
@@ -2128,6 +2135,43 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         return nameMatch || descriptionMatch || categoryMatch || modifierMatch || variantMatch
       })
     }
+
+    // Apply price filter
+    if (priceMin !== '' || priceMax !== '') {
+      // @ts-ignore
+      products = products.filter(product => {
+        const productPrice = product.price || 0
+        const minPrice = priceMin !== '' ? Number(priceMin) : 0
+        const maxPrice = priceMax !== '' ? Number(priceMax) : Infinity
+        return productPrice >= minPrice && productPrice <= maxPrice
+      })
+    }
+
+    // Apply category filter (from filter modal)
+    if (selectedFilterCategories.length > 0) {
+      // @ts-ignore
+      products = products.filter(product => {
+        // @ts-ignore
+        return selectedFilterCategories.includes(product.categoryId)
+      })
+    }
+
+    // Apply sorting
+    // @ts-ignore
+    products = [...products].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name)
+        case 'name-desc':
+          return b.name.localeCompare(a.name)
+        case 'price-asc':
+          return (a.price || 0) - (b.price || 0)
+        case 'price-desc':
+          return (b.price || 0) - (a.price || 0)
+        default:
+          return 0
+      }
+    })
   
     return products
   }
@@ -2629,36 +2673,120 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
-  <div className="relative">
-    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-    <input
-      type="text"
-      placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (storeData.businessType === 'RETAIL' ? (translations.searchProducts || "Search products") : (translations.search || "Search for dishes, ingredients..."))}
-      value={searchTerm}
-      onChange={(e) => {
-        setSearchTerm(e.target.value)
-        // Auto-switch to "All" category when searching to show all results
-        if (e.target.value.trim() && selectedCategory !== 'all') {
-          setSelectedCategory('all')
-        }
+  <div className="flex gap-2 p-2">
+    {/* Search Input - 3/4 width */}
+    <div className="relative flex-1" style={{ flex: '3' }}>
+      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <input
+        type="text"
+        placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (storeData.businessType === 'RETAIL' ? (translations.searchProducts || "Search products") : (translations.search || "Search for dishes, ingredients..."))}
+        value={searchTerm}
+        onChange={(e) => {
+          setSearchTerm(e.target.value)
+          // Auto-switch to "All" category when searching to show all results
+          if (e.target.value.trim() && selectedCategory !== 'all') {
+            setSelectedCategory('all')
+          }
+        }}
+        className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
+        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+        onFocus={(e) => e.target.style.borderColor = primaryColor}
+        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+        disabled={false}
+      />
+      {/* Clear search button */}
+      {searchTerm && (
+        <button
+          onClick={() => setSearchTerm('')}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+        >
+          <X className="w-3 h-3 text-gray-600" />
+        </button>
+      )}
+    </div>
+    
+    {/* Filter Button - 1/4 width */}
+    <button
+      onClick={() => setShowFilterModal(true)}
+      className="flex items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-xl text-base transition-colors hover:border-gray-300"
+      style={{ 
+        flex: '1',
+        borderColor: (priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') ? primaryColor : undefined
       }}
-      className="search-input w-full pl-11 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
-      style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
-      onFocus={(e) => e.target.style.borderColor = primaryColor}
-      onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-      disabled={false}
-    />
-    {/* Clear search button */}
-    {searchTerm && (
-      <button
-        onClick={() => setSearchTerm('')}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
-      >
-        <X className="w-3 h-3 text-gray-600" />
-      </button>
-    )}
+    >
+      <SlidersHorizontal className="w-5 h-5 text-gray-600" />
+    </button>
   </div>
   
+  {/* Active Filters Badges */}
+  {(priceMin !== '' || priceMax !== '' || selectedFilterCategories.length > 0 || sortBy !== 'name-asc') && (
+    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+      <div className="flex flex-wrap gap-2">
+        {/* Price Range Badge */}
+        {(priceMin !== '' || priceMax !== '') && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+            <span className="text-gray-700">
+              {priceMin !== '' && priceMax !== '' 
+                ? `${currencySymbol}${priceMin} - ${currencySymbol}${priceMax}`
+                : priceMin !== '' 
+                ? `Min: ${currencySymbol}${priceMin}`
+                : `Max: ${currencySymbol}${priceMax}`
+              }
+            </span>
+            <button
+              onClick={() => {
+                setPriceMin('')
+                setPriceMax('')
+              }}
+              className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+            >
+              <X className="w-2.5 h-2.5 text-gray-600" />
+            </button>
+          </div>
+        )}
+
+        {/* Category Badges */}
+        {selectedFilterCategories.map(categoryId => {
+          const category = storeData.categories.find(cat => cat.id === categoryId)
+          if (!category) return null
+          return (
+            <div key={categoryId} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+              <span className="text-gray-700">{category.name}</span>
+              <button
+                onClick={() => {
+                  setSelectedFilterCategories(selectedFilterCategories.filter(id => id !== categoryId))
+                }}
+                className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+              >
+                <X className="w-2.5 h-2.5 text-gray-600" />
+              </button>
+            </div>
+          )
+        })}
+
+        {/* Sort By Badge */}
+        {sortBy !== 'name-asc' && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+            <span className="text-gray-700">
+              Sort: {
+                sortBy === 'name-desc' ? 'Name (Z-A)' :
+                sortBy === 'price-asc' ? 'Price (Low-High)' :
+                sortBy === 'price-desc' ? 'Price (High-Low)' :
+                'Name (A-Z)'
+              }
+            </span>
+            <button
+              onClick={() => setSortBy('name-asc')}
+              className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+            >
+              <X className="w-2.5 h-2.5 text-gray-600" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+
   {/* Search suggestions/results count */}
   {searchTerm && (
     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
@@ -3150,6 +3278,148 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   primaryColor={primaryColor}
   translations={translations}
 />
+
+      {/* Filter Modal - Side Drawer on Mobile */}
+      {showFilterModal && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:z-40"
+            onClick={() => setShowFilterModal(false)}
+          />
+          
+          {/* Modal Content - Side drawer on mobile, centered on desktop */}
+          <div className="fixed inset-y-0 right-0 lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 w-full max-w-md lg:max-w-lg bg-white z-50 lg:z-50 lg:rounded-2xl shadow-2xl flex flex-col max-h-screen lg:max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">Filter Products</h2>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Price Range */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Price Range</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Min Price</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{currencySymbol}</span>
+                      <input
+                        type="number"
+                        value={priceMin}
+                        onChange={(e) => setPriceMin(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder="0"
+                        min="0"
+                        className="w-full pl-8 pr-3 py-2 border-2 border-gray-200 rounded-lg text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
+                        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                        onFocus={(e) => e.target.style.borderColor = primaryColor}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Max Price</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">{currencySymbol}</span>
+                      <input
+                        type="number"
+                        value={priceMax}
+                        onChange={(e) => setPriceMax(e.target.value === '' ? '' : Number(e.target.value))}
+                        placeholder="No limit"
+                        min="0"
+                        className="w-full pl-8 pr-3 py-2 border-2 border-gray-200 rounded-lg text-base outline-none focus:border-2 transition-colors text-gray-900 placeholder:text-gray-500"
+                        style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                        onFocus={(e) => e.target.style.borderColor = primaryColor}
+                        onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Categories</h3>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {storeData.categories.map(category => (
+                    <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedFilterCategories.includes(category.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedFilterCategories([...selectedFilterCategories, category.id])
+                          } else {
+                            setSelectedFilterCategories(selectedFilterCategories.filter(id => id !== category.id))
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                        style={{ accentColor: primaryColor }}
+                      />
+                      <span className="ml-3 text-sm text-gray-700">{category.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Sort By</h3>
+                <div className="space-y-2">
+                  {[
+                    { value: 'name-asc', label: 'Name (A-Z)' },
+                    { value: 'name-desc', label: 'Name (Z-A)' },
+                    { value: 'price-asc', label: 'Price (Low to High)' },
+                    { value: 'price-desc', label: 'Price (High to Low)' }
+                  ].map(option => (
+                    <label key={option.value} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                      <input
+                        type="radio"
+                        name="sortBy"
+                        value={option.value}
+                        checked={sortBy === option.value}
+                        onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                        className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                        style={{ accentColor: primaryColor }}
+                      />
+                      <span className="ml-3 text-sm text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer - Action Buttons */}
+            <div className="p-4 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setPriceMin('')
+                  setPriceMax('')
+                  setSelectedFilterCategories([])
+                  setSortBy('name-asc')
+                }}
+                className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Clear All
+              </button>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl text-white font-medium transition-colors hover:opacity-90"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   )
