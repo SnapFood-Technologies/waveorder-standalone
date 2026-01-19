@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
+import Stripe from 'stripe'
 import { 
   createSubscriptionByPlan, 
   getPriceId, 
@@ -84,7 +85,7 @@ export async function PATCH(
     }
 
     // Handle Stripe subscription update
-    let stripeSubscription
+    let stripeSubscription: Stripe.Subscription
     const newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO', billingType)
 
     try {
