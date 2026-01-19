@@ -85,7 +85,7 @@ interface PasswordResetParams extends BaseEmailParams {
 interface WelcomeEmailParams extends BaseEmailParams {
   businessName?: string
   dashboardUrl: string
-  subscriptionPlan?: 'FREE' | 'PRO' // Add this
+  subscriptionPlan?: 'STARTER' | 'PRO' // Add this
 }
 
 interface TeamInvitationParams extends BaseEmailParams {
@@ -113,8 +113,8 @@ interface SubscriptionChangeEmailParams {
   to: string
   name: string
   changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed'
-  oldPlan?: 'FREE' | 'PRO'
-  newPlan: 'FREE' | 'PRO'
+  oldPlan?: 'STARTER' | 'PRO'
+  newPlan: 'STARTER' | 'PRO'
   billingInterval?: 'monthly' | 'annual'
   amount?: number
   nextBillingDate?: Date
@@ -144,7 +144,7 @@ interface BusinessCreatedEmailParams {
   businessName: string
   setupUrl: string
   dashboardUrl: string
-  subscriptionPlan?: 'FREE' | 'PRO' // Add this
+  subscriptionPlan?: 'STARTER' | 'PRO' // Add this
 }
 
 
@@ -229,7 +229,7 @@ const createBusinessCreatedEmailContent = (
   businessName: string, 
   setupUrl: string,
   dashboardUrl: string,
-  subscriptionPlan: 'FREE' | 'PRO' = 'FREE'
+  subscriptionPlan: 'STARTER' | 'PRO' = 'STARTER'
 ) => `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
@@ -242,7 +242,7 @@ const createBusinessCreatedEmailContent = (
   <!-- Subscription Plan Badge -->
   <div style="text-align: center; margin: 24px 0;">
     <div style="display: inline-block; background: ${subscriptionPlan === 'PRO' ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'}; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan' : '🆓 FREE Plan'}
+      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan' : '⭐ Starter Plan'}
     </div>
   </div>
   
@@ -258,7 +258,7 @@ const createBusinessCreatedEmailContent = (
   ` : `
   <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 16px; margin: 24px 0; border-radius: 0 8px 8px 0;">
     <p style="color: #0c4a6e; margin: 0 0 8px; font-size: 14px; font-weight: 600;">
-      🆓 Your account is on the FREE plan
+      ⭐ Your account is on the Starter plan ($6/month)
     </p>
     <p style="color: #0369a1; margin: 0; font-size: 14px;">
       Get started with up to 30 products and 10 categories. Upgrade to PRO anytime for unlimited products, advanced features, and priority support.
@@ -349,8 +349,8 @@ const createVerificationEmailContent = (name: string, verificationUrl: string) =
 const createSubscriptionChangeEmailContent = (
   name: string,
   changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed',
-  oldPlan: 'FREE' | 'PRO' | undefined,
-  newPlan: 'FREE' | 'PRO',
+  oldPlan: 'STARTER' | 'PRO' | undefined,
+  newPlan: 'STARTER' | 'PRO',
   billingInterval: 'monthly' | 'annual' | undefined,
   amount: number | undefined,
   nextBillingDate: Date | undefined
@@ -372,7 +372,7 @@ const createSubscriptionChangeEmailContent = (
     badgeText = '👑 PRO Plan Active'
   } else if (isDowngrade || isCanceled) {
     title = 'Subscription Changed'
-    message = `Your PRO subscription has been canceled. You'll continue to have access to all PRO features until ${nextBillingDate?.toLocaleDateString() || 'the end of your billing period'}, after which your account will be downgraded to the FREE plan.`
+    message = `Your PRO subscription has been canceled. You'll continue to have access to all PRO features until ${nextBillingDate?.toLocaleDateString() || 'the end of your billing period'}, after which your account will be downgraded to the Starter plan.`
     badgeColor = 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'
     badgeText = 'Subscription Ending'
   } else if (isRenewed) {
@@ -864,7 +864,7 @@ export async function sendBusinessCreatedEmail({
   businessName,
   setupUrl,
   dashboardUrl,
-  subscriptionPlan = 'FREE'
+  subscriptionPlan = 'STARTER'
 }: BusinessCreatedEmailParams) {
   const content = createBusinessCreatedEmailContent(name, businessName, setupUrl, dashboardUrl, subscriptionPlan)
   const html = createEmailTemplate(content, 'Welcome to WaveOrder')
@@ -985,7 +985,7 @@ const createWelcomeEmailContent = (
   name: string, 
   businessName: string, 
   dashboardUrl: string,
-  subscriptionPlan: 'FREE' | 'PRO' = 'FREE'
+  subscriptionPlan: 'STARTER' | 'PRO' = 'STARTER'
 ) => `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">Welcome to WaveOrder! 🎉</h2>
@@ -996,7 +996,7 @@ const createWelcomeEmailContent = (
   <!-- Subscription Plan Badge -->
   <div style="text-align: center; margin: 24px 0;">
     <div style="display: inline-block; background: ${subscriptionPlan === 'PRO' ? 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)' : 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'}; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 16px;">
-      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan Active' : '🆓 FREE Plan'}
+      ${subscriptionPlan === 'PRO' ? '👑 PRO Plan Active' : '⭐ Starter Plan'}
     </div>
   </div>
   
@@ -1034,7 +1034,7 @@ const createWelcomeEmailContent = (
   ` : `
   <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
     <h3 style="color: #0c4a6e; margin: 0 0 12px; font-size: 16px; font-weight: 600;">
-      🆓 You're on the FREE Plan
+      ⭐ You're on the Starter Plan ($6/month)
     </h3>
     <p style="color: #0369a1; margin: 0 0 12px; font-size: 14px;">
       Get started with essential features:
@@ -1171,7 +1171,7 @@ export async function sendWelcomeEmail({
   name = 'there', 
   businessName, 
   dashboardUrl,
-  subscriptionPlan = 'FREE'
+  subscriptionPlan = 'STARTER'
 }: WelcomeEmailParams) {
   const content = createWelcomeEmailContent(name, businessName || '', dashboardUrl, subscriptionPlan)
   const html = createEmailTemplate(content, 'Welcome to WaveOrder')

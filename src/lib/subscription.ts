@@ -24,7 +24,7 @@ export async function createUserWithSubscription({
   name,
   email,
   password,
-  plan = 'FREE',
+  plan = 'STARTER',
   provider = 'credentials'
 }: CreateUserWithSubscriptionParams) {
   try {
@@ -41,8 +41,8 @@ export async function createUserWithSubscription({
         data: {
           stripeId: stripeSubscription.id,
           status: stripeSubscription.status,
-          priceId: PLANS.FREE.priceId,
-          plan: 'FREE',
+          priceId: PLANS.STARTER.priceId,
+          plan: 'STARTER',
           // @ts-ignore
           currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
           // @ts-ignore
@@ -56,7 +56,7 @@ export async function createUserWithSubscription({
           name,
           email: email.toLowerCase(),
           password,
-          plan: 'FREE',
+          plan: 'STARTER',
           stripeCustomerId: stripeCustomer.id,
           subscriptionId: subscription.id,
           emailVerified: provider !== 'credentials' ? new Date() : null,
@@ -73,7 +73,7 @@ export async function createUserWithSubscription({
           }
         },
         data: {
-          subscriptionPlan: 'FREE',
+          subscriptionPlan: 'STARTER',
           subscriptionStatus: 'ACTIVE'
         }
       })
@@ -108,13 +108,13 @@ export async function upgradeUserSubscription(
 
     let stripeSubscription
 
-    if (newPlan === 'FREE') {
+    if (newPlan === 'STARTER') {
       // Downgrade to free - cancel current subscription and create free one
       await cancelSubscription(user.subscription.stripeId)
       stripeSubscription = await createFreeSubscription(user.stripeCustomerId)
     } else {
       // Upgrade/change to paid plan
-      if (user.subscription.plan === 'FREE') {
+      if (user.subscription.plan === 'STARTER') {
         // From free to paid - create new paid subscription
         await cancelSubscription(user.subscription.stripeId)
         stripeSubscription = await createPaidSubscription(
@@ -205,7 +205,7 @@ export async function cancelUserSubscription(userId: string) {
       }
     })
 
-    // Sync all user's businesses to FREE plan (will take effect at period end)
+    // Sync all user's businesses to STARTER plan (will take effect at period end)
     await prisma.business.updateMany({
       where: {
         users: {
@@ -215,7 +215,7 @@ export async function cancelUserSubscription(userId: string) {
         }
       },
       data: {
-        subscriptionPlan: 'FREE',
+        subscriptionPlan: 'STARTER',
         subscriptionStatus: 'CANCELLED'
       }
     })

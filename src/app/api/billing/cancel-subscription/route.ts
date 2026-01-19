@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
           name: user.name || 'there',
           changeType: 'canceled',
           oldPlan: 'PRO',
-          newPlan: 'FREE',
+          newPlan: 'STARTER',
           nextBillingDate: user.subscription.currentPeriodEnd || undefined
         })
       } catch (emailError) {

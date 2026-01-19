@@ -249,7 +249,7 @@ export default function Demo() {
             Ready to Create Your Own Catalog?
           </h2>
           <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            Start with our free plan and have your WhatsApp ordering system ready in minutes. 
+            Start with our Starter plan ($6/month) and have your WhatsApp ordering system ready in minutes. 
             No credit card required.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

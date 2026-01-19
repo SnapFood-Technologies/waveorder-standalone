@@ -256,12 +256,12 @@ export async function GET(request: NextRequest) {
     // - Track actual subscription payments from Stripe
     // - Calculate MRR (Monthly Recurring Revenue) = active Pro businesses × Pro plan price
     // - Show historical subscription revenue over time
-    // For now, showing $0 since all businesses are on FREE plan
+    // Subscription revenue calculation
     const revenueByPlan = [
       {
-        plan: 'FREE',
-        revenue: 0, // FREE plan = $0 subscription revenue
-        businesses: businesses.filter(b => b.subscriptionPlan === 'FREE').length
+        plan: 'STARTER',
+        revenue: 0, // Subscription revenue
+        businesses: businesses.filter(b => b.subscriptionPlan === 'STARTER').length
       },
       {
         plan: 'PRO',

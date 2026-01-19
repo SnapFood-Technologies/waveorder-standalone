@@ -29,7 +29,7 @@ interface UserProfile {
   email: string
   emailVerified: boolean
   image: string | null
-  plan: 'FREE' | 'PRO'
+  plan: 'STARTER' | 'PRO'
   pendingEmail?: string | null
 }
 
@@ -47,7 +47,7 @@ export default function UserProfileForm() {
     email: '',
     emailVerified: false,
     image: null,
-    plan: 'FREE',
+    plan: 'STARTER',
     pendingEmail: null
   })
 
@@ -471,7 +471,7 @@ export default function UserProfileForm() {
                       <span className={`font-medium text-sm ${
                         profile.plan === 'PRO' ? 'text-purple-900' : 'text-gray-900'
                       }`}>
-                        {profile.plan === 'PRO' ? 'PRO Plan' : 'FREE Plan'}
+                        {profile.plan === 'PRO' ? 'PRO Plan' : 'Starter Plan'}
                       </span>
                     </div>
                   </div>

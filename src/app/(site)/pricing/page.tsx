@@ -4,14 +4,14 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Pricing - WaveOrder WhatsApp Ordering Platform | Simple & Transparent',
-  description: 'Choose the perfect WaveOrder plan for your business. Start free forever or upgrade to Pro for advanced features. No setup fees, no transaction fees, cancel anytime.',
+  description: 'Choose the perfect WaveOrder plan for your business. Starter plan at $6/month or upgrade to Pro for advanced features. No setup fees, no transaction fees, cancel anytime.',
   keywords: 'waveorder pricing, whatsapp ordering cost, restaurant ordering platform price, free whatsapp ordering, pro business plan',
   alternates: {
     canonical: 'https://waveorder.app/pricing',
   },
   openGraph: {
     title: 'WaveOrder Pricing - Simple & Transparent Plans',
-    description: 'Start free forever or upgrade to Pro for advanced WhatsApp ordering features. No hidden fees, no setup costs.',
+    description: 'Starter plan at $6/month or upgrade to Pro for advanced WhatsApp ordering features. No hidden fees, no setup costs.',
     type: 'website',
     url: 'https://waveorder.app/pricing',
     images: [{
@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'WaveOrder Pricing - Start Free Forever',
-    description: 'Simple, transparent pricing for WhatsApp ordering. Free plan available forever.',
+    title: 'WaveOrder Pricing - Starter & Pro Plans',
+    description: 'Simple, transparent pricing for WhatsApp ordering. Starter plan at $6/month.',
     images: ['https://waveorder.app/images/pricing-twitter.png'],
   },
   robots: {
@@ -36,27 +36,47 @@ export const metadata: Metadata = {
 export default function PricingPage() {
   return (
     <>
-      {/* Product Schema for Free Plan */}
+      {/* Product Schema for Starter Plan */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Product",
-            "name": "WaveOrder Free Plan",
-            "description": "Free WhatsApp ordering platform for small businesses. Up to 30 products, basic branding, and mobile catalog.",
+            "name": "WaveOrder Starter Plan",
+            "description": "WhatsApp ordering platform for small businesses. Up to 30 products, basic branding, and mobile catalog.",
             "brand": {
               "@type": "Brand",
               "name": "WaveOrder"
             },
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD",
-              "availability": "https://schema.org/InStock",
-              "validFrom": "2025-09-01",
-              "priceValidUntil": "2026-12-31"
-            },
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Monthly Billing",
+                "price": "6",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "validFrom": "2025-09-01",
+                "priceValidUntil": "2026-12-31",
+                "eligibleQuantity": {
+                  "@type": "QuantitativeValue",
+                  "unitText": "MON"
+                }
+              },
+              {
+                "@type": "Offer",
+                "name": "Annual Billing",
+                "price": "5",
+                "priceCurrency": "USD",
+                "availability": "https://schema.org/InStock",
+                "validFrom": "2025-09-01",
+                "priceValidUntil": "2026-12-31",
+                "eligibleQuantity": {
+                  "@type": "QuantitativeValue",
+                  "unitText": "MON"
+                }
+              }
+            ],
             "aggregateRating": {
               "@type": "AggregateRating",
               "ratingValue": "5",
@@ -126,10 +146,10 @@ export default function PricingPage() {
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "Is the Free plan really free forever?",
+                "name": "What's included in the Starter plan?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes! Our Free plan includes core WhatsApp ordering features for up to 30 products and will always be free. It's perfect for small businesses getting started."
+                  "text": "Our Starter plan ($6/month) includes core WhatsApp ordering features for up to 30 products, 10 categories, basic branding, CSV import, and basic order analytics. It's perfect for small businesses getting started."
                 }
               },
               {
@@ -184,9 +204,9 @@ export default function PricingPage() {
                   "@type": "Offer",
                   "itemOffered": {
                     "@type": "Service",
-                    "name": "Free Plan"
+                    "name": "Starter Plan"
                   },
-                  "price": "0",
+                  "price": "6",
                   "priceCurrency": "USD"
                 },
                 {

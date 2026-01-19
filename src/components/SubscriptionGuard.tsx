@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 
 interface SubscriptionGuardProps {
   children: React.ReactNode
-  requiredPlan: 'FREE' | 'PRO'
+  requiredPlan: 'STARTER' | 'PRO'
   fallback?: React.ReactNode
 }
 
@@ -19,7 +19,7 @@ export function SubscriptionGuard({ children, requiredPlan, fallback }: Subscrip
 
   useEffect(() => {
     if (!loading && subscription) {
-      const planHierarchy = { FREE: 0, PRO: 1 }
+      const planHierarchy = { STARTER: 0, PRO: 1 }
       const hasAccess = planHierarchy[subscription.subscriptionPlan] >= planHierarchy[requiredPlan]
       
       if (!hasAccess) {
@@ -40,7 +40,7 @@ export function SubscriptionGuard({ children, requiredPlan, fallback }: Subscrip
     return fallback || <div>Error loading subscription data</div>
   }
 
-  const planHierarchy = { FREE: 0, PRO: 1 }
+  const planHierarchy = { STARTER: 0, PRO: 1 }
   const hasAccess = planHierarchy[subscription.subscriptionPlan] >= planHierarchy[requiredPlan]
 
   if (!hasAccess) {

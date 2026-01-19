@@ -552,7 +552,7 @@ export function SuperAdminAnalytics() {
               </div>
               <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
                 <p className="text-sm font-medium text-gray-900 mb-1">Revenue</p>
-                <p className="text-xs text-gray-600">Platform subscription revenue from each plan. Currently $0 as all businesses are on the FREE plan.</p>
+                <p className="text-xs text-gray-600">Platform subscription revenue from each plan.</p>
               </div>
               <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <div className="flex items-start gap-2">

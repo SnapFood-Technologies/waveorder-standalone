@@ -341,12 +341,12 @@ export default function Terms() {
               </div>
 
               <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">Free Plan</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">Starter Plan</h3>
                 <div className="space-y-4">
                   {[
-                    'Free plan users have access to limited features and usage quotas',
-                    'We reserve the right to modify free plan limitations with notice',
-                    'No payment information required for free plan usage and evaluation'
+                    'Starter plan users have access to limited features and usage quotas',
+                    'We reserve the right to modify Starter plan limitations with notice',
+                    'Starter plan is billed monthly at $6/month or annually at $5/month ($60/year)'
                   ].map((item, index) => (
                     <div key={index} className="flex items-start">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-2.5 mr-3 flex-shrink-0"></div>

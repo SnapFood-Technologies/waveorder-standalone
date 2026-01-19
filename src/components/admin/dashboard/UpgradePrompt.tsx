@@ -10,7 +10,7 @@ interface UpgradePromptProps {
 }
 
 export function UpgradePrompt({ businessId }: UpgradePromptProps) {
-  const [subscription, setSubscription] = useState<{ plan: string }>({ plan: 'FREE' })
+  const [subscription, setSubscription] = useState<{ plan: string }>({ plan: 'STARTER' })
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function UpgradePrompt({ businessId }: UpgradePromptProps) {
     localStorage.setItem('upgrade-prompt-dismissed', 'true')
   }
 
-  if (subscription.plan !== 'FREE' || dismissed) {
+  if (subscription.plan !== 'STARTER' || dismissed) {
     return null
   }
 

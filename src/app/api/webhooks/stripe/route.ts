@@ -125,7 +125,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       throw new Error(`User not found for Stripe customer: ${customerId}`)
     }
 
-    const oldPlan = user.plan || 'FREE'
+    const oldPlan = user.plan || 'STARTER'
 
     await prisma.$transaction(async (tx) => {
       // Create subscription record
@@ -175,7 +175,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
           to: user.email,
           name: user.name || 'there',
           changeType: 'upgraded',
-          oldPlan: oldPlan as 'FREE' | 'PRO',
+          oldPlan: oldPlan as 'STARTER' | 'PRO',
           newPlan: 'PRO',
           billingInterval: isAnnual ? 'annual' : 'monthly',
           amount: isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price,
@@ -262,8 +262,8 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
           to: user.email,
           name: user.name || 'there',
           changeType: changeType,
-          oldPlan: oldPlan as 'FREE' | 'PRO',
-          newPlan: plan as 'FREE' | 'PRO',
+          oldPlan: oldPlan as 'STARTER' | 'PRO',
+          newPlan: plan as 'STARTER' | 'PRO',
           billingInterval: isAnnual ? 'annual' : 'monthly',
           amount: plan === 'PRO' ? (isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price) : undefined,
           // @ts-ignore
@@ -306,13 +306,13 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
         }
       })
 
-      // Downgrade all users to FREE plan
+      // Downgrade all users to Starter plan
       await tx.user.updateMany({
         where: { subscriptionId: subscription.id },
-        data: { plan: 'FREE' }
+        data: { plan: 'STARTER' }
       })
 
-      // Sync all businesses to FREE plan
+      // Sync all businesses to Starter plan
       const userIds = subscription.users.map(u => u.id)
       await tx.business.updateMany({
         where: {
@@ -323,7 +323,7 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
           }
         },
         data: {
-          subscriptionPlan: 'FREE',
+          subscriptionPlan: 'STARTER',
           subscriptionStatus: 'CANCELLED'
         }
       })
@@ -337,7 +337,7 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
           name: user.name || 'there',
           changeType: 'canceled',
           oldPlan: 'PRO',
-          newPlan: 'FREE',
+          newPlan: 'STARTER',
           // @ts-ignore
           nextBillingDate: new Date(sub.current_period_end * 1000)
         })

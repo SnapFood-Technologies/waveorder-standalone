@@ -9,7 +9,7 @@ interface Business {
   id: string
   name: string
   slug: string
-  subscriptionPlan: 'FREE' | 'PRO'
+  subscriptionPlan: 'STARTER' | 'PRO'
   setupWizardCompleted: boolean
   onboardingCompleted: boolean
   role: 'OWNER' | 'MANAGER' | 'STAFF'
@@ -17,7 +17,7 @@ interface Business {
 
 interface BusinessContextValue {
   businesses: Business[]
-  subscription: { plan: 'FREE' | 'PRO'; isActive: boolean }
+  subscription: { plan: 'STARTER' | 'PRO'; isActive: boolean }
   loading: boolean
   currentBusiness: Business | null
   accessChecked: boolean
@@ -38,7 +38,7 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [businesses, setBusinesses] = useState<Business[]>([])
-  const [subscription, setSubscription] = useState({ plan: 'FREE' as const, isActive: true })
+  const [subscription, setSubscription] = useState({ plan: 'STARTER' as const, isActive: true })
   const [loading, setLoading] = useState(true)
   const [accessChecked, setAccessChecked] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
