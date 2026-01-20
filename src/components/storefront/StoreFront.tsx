@@ -1427,6 +1427,9 @@ interface StoreData {
   descriptionAl?: string
   logo?: string
   coverImage?: string
+  coverBackgroundSize?: string
+  coverBackgroundPosition?: string
+  coverHeight?: string
   phone?: string
   email?: string
   address?: string
