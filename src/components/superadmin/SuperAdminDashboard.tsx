@@ -46,6 +46,7 @@ interface RecentBusiness {
   address: string | null;
   createdAt: string;
   subscriptionPlan: string;
+  billingType?: 'monthly' | 'yearly' | 'free' | null;
   businessType: string;
   logo?: string;
   createdByAdmin: boolean;
@@ -510,6 +511,11 @@ export function SuperAdminDashboard() {
                           : 'bg-gray-100 text-gray-700'
                       }`}>
                         {business.subscriptionPlan}
+                        {business.billingType && (
+                          <span className="ml-1 text-gray-600">
+                            ({business.billingType === 'free' ? 'Free' : business.billingType === 'monthly' ? 'Monthly' : 'Yearly'})
+                          </span>
+                        )}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right">

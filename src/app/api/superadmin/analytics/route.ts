@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
+import { getBillingTypeFromPriceId } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -106,6 +107,23 @@ export async function GET(request: NextRequest) {
           subscriptionPlan: true,
           isActive: true,
           createdAt: true, // Needed for business growth calculation
+          users: {
+            where: {
+              role: 'OWNER'
+            },
+            select: {
+              role: true,
+              user: {
+                select: {
+                  subscription: {
+                    select: {
+                      priceId: true
+                    }
+                  }
+                }
+              }
+            }
+          },
           orders: {
             where: {
               paymentStatus: 'PAID',
@@ -250,25 +268,49 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10)
 
-    // Platform subscription revenue by plan
+    // Platform subscription revenue by plan and billing type
     // Note: Only counting ACTIVE businesses for each plan (businesses array is already filtered to active only)
     // Once Pro plan pricing is set and Stripe integration is implemented:
     // - Track actual subscription payments from Stripe
     // - Calculate MRR (Monthly Recurring Revenue) = active Pro businesses × Pro plan price
     // - Show historical subscription revenue over time
-    // Subscription revenue calculation
-    const revenueByPlan = [
-      {
-        plan: 'STARTER',
-        revenue: 0, // Subscription revenue
-        businesses: businesses.filter(b => b.subscriptionPlan === 'STARTER').length
-      },
-      {
-        plan: 'PRO',
-        revenue: 0, // TODO: Will calculate once Pro pricing and Stripe are implemented
-        businesses: businesses.filter(b => b.subscriptionPlan === 'PRO').length
+    // Subscription revenue calculation - group by plan and billing type
+    const planBillingGroups: Record<string, { plan: string; billingType: string; businesses: number }> = {}
+    
+    businesses.forEach(business => {
+      const owner = business.users.find(u => u.role === 'OWNER')?.user
+      const subscriptionPriceId = owner?.subscription?.priceId
+      const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+      const billingTypeKey = billingType || 'unknown'
+      
+      const key = `${business.subscriptionPlan}_${billingTypeKey}`
+      if (!planBillingGroups[key]) {
+        planBillingGroups[key] = {
+          plan: business.subscriptionPlan,
+          billingType: billingTypeKey,
+          businesses: 0
+        }
       }
-    ].filter(item => item.businesses > 0) // Only show plans that have active businesses
+      planBillingGroups[key].businesses++
+    })
+    
+    const revenueByPlan = Object.values(planBillingGroups)
+      .map(item => ({
+        plan: item.plan,
+        billingType: item.billingType,
+        revenue: 0, // Subscription revenue - TODO: Calculate actual revenue from Stripe
+        businesses: item.businesses
+      }))
+      .filter(item => item.businesses > 0) // Only show plans that have active businesses
+      .sort((a, b) => {
+        // Sort by plan first (STARTER before PRO), then by billing type
+        if (a.plan !== b.plan) {
+          return a.plan === 'STARTER' ? -1 : 1
+        }
+        const billingOrder = { free: 0, monthly: 1, yearly: 2, unknown: 3 }
+        return (billingOrder[a.billingType as keyof typeof billingOrder] || 3) - 
+               (billingOrder[b.billingType as keyof typeof billingOrder] || 3)
+      })
 
     // Format cumulative growth data
     const formatCumulativeGrowth = (data: any[]) => {

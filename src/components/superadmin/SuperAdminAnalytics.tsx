@@ -49,6 +49,7 @@ interface AnalyticsData {
   }[]
   revenueByPlan: {
     plan: string
+    billingType?: string
     revenue: number
     businesses: number
   }[]
@@ -306,27 +307,44 @@ export function SuperAdminAnalytics() {
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Subscription Plan</h3>
         <div className="space-y-4">
-          {data.revenueByPlan.map((plan) => (
-            <div key={plan.plan} className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                  plan.plan === 'PRO' ? 'bg-purple-100' : 'bg-gray-100'
-                }`}>
-                  <span className={`text-xs font-bold ${plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'}`}>
-                    {plan.plan === 'PRO' ? 'PRO' : 'START'}
-                  </span>
+          {data.revenueByPlan.map((plan, index) => {
+            const billingTypeDisplay = plan.billingType 
+              ? plan.billingType === 'free' ? 'Free' 
+                : plan.billingType === 'monthly' ? 'Monthly' 
+                : plan.billingType === 'yearly' ? 'Yearly' 
+                : 'Unknown'
+              : null
+            const displayKey = `${plan.plan}_${plan.billingType || 'unknown'}_${index}`
+            
+            return (
+              <div key={displayKey} className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    plan.plan === 'PRO' ? 'bg-purple-100' : 'bg-gray-100'
+                  }`}>
+                    <span className={`text-xs font-bold ${plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'}`}>
+                      {plan.plan === 'PRO' ? 'PRO' : 'START'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {plan.plan}
+                      {billingTypeDisplay && (
+                        <span className="ml-2 text-gray-600 font-normal">
+                          ({billingTypeDisplay})
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-500">{plan.businesses} businesses</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{plan.plan}</p>
-                  <p className="text-xs text-gray-500">{plan.businesses} businesses</p>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(plan.revenue)}</p>
+                  <p className="text-xs text-gray-500">Total revenue</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-gray-900">{formatCurrency(plan.revenue)}</p>
-                <p className="text-xs text-gray-500">Total revenue</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

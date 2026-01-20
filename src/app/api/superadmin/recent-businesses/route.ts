@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
+import { getBillingTypeFromPriceId } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -47,6 +48,11 @@ export async function GET() {
                     provider: true,
                     type: true
                   }
+                },
+                subscription: {
+                  select: {
+                    priceId: true
+                  }
                 }
               }
             }
@@ -72,6 +78,10 @@ export async function GET() {
         authMethod = 'magic-link'
       }
 
+      // Get billing type from subscription priceId
+      const subscriptionPriceId = owner?.subscription?.priceId
+      const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+
       return {
         id: business.id,
         name: business.name,
@@ -81,6 +91,7 @@ export async function GET() {
         address: business.address || null,
         createdAt: business.createdAt.toISOString(),
         subscriptionPlan: business.subscriptionPlan,
+        billingType: billingType,
         businessType: business.businessType,
         logo: business.logo,
         createdByAdmin: business.createdByAdmin,

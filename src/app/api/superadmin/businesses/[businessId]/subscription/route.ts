@@ -10,7 +10,8 @@ import {
   updateSubscription, 
   cancelSubscription,
   cancelSubscriptionImmediately,
-  createPaidSubscription
+  createPaidSubscription,
+  createStripeCustomer
 } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
@@ -120,17 +121,34 @@ export async function PATCH(
         }, { status: 400 })
       }
 
-      if (!owner.stripeCustomerId || owner.stripeCustomerId.trim() === '') {
-        return NextResponse.json({ 
-          message: 'Business owner does not have a Stripe customer ID. Cannot update subscription.' 
-        }, { status: 400 })
+      // Create Stripe customer if it doesn't exist
+      let stripeCustomerId = owner.stripeCustomerId
+      if (!stripeCustomerId || stripeCustomerId.trim() === '') {
+        console.log(`Creating Stripe customer for owner: ${owner.email}`)
+        try {
+          const stripeCustomer = await createStripeCustomer(owner.email, owner.name || undefined)
+          stripeCustomerId = stripeCustomer.id
+          console.log('✅ Stripe customer created:', stripeCustomerId)
+          
+          // Update owner's Stripe customer ID in database
+          await prisma.user.update({
+            where: { id: owner.id },
+            data: { stripeCustomerId: stripeCustomerId }
+          })
+          console.log('✅ Updated owner with Stripe customer ID')
+        } catch (error: any) {
+          console.error('Error creating Stripe customer:', error)
+          return NextResponse.json({ 
+            message: `Failed to create Stripe customer: ${error?.message || 'Unknown error'}` 
+          }, { status: 500 })
+        }
       }
 
       if (!owner.subscription || !owner.subscription.stripeId) {
         // No existing subscription - create new one
         console.log(`Creating new subscription for business ${businessId}: ${subscriptionPlan} (${billingType})`)
         stripeSubscription = await createSubscriptionByPlan(
-          owner.stripeCustomerId,
+          stripeCustomerId,
           subscriptionPlan as 'STARTER' | 'PRO',
           billingType
         )
@@ -155,7 +173,7 @@ export async function PATCH(
 
         // Create new subscription with new plan/billing type
         stripeSubscription = await createSubscriptionByPlan(
-          owner.stripeCustomerId,
+          stripeCustomerId,
           subscriptionPlan as 'STARTER' | 'PRO',
           billingType
         )
