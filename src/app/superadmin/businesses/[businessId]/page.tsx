@@ -273,6 +273,63 @@ export default function BusinessDetailsPage() {
             </div>
           </div>
 
+          {/* Contact Information */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.whatsappNumber || 'Not provided'}</p>
+                  <p className="text-xs text-gray-500">WhatsApp</p>
+                </div>
+              </div>
+              {business.phone && (
+                <div className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.phone}</p>
+                    <p className="text-xs text-gray-500">Phone</p>
+                  </div>
+                </div>
+              )}
+              {business.email && (
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.email}</p>
+                    <p className="text-xs text-gray-500">Business Email</p>
+                  </div>
+                </div>
+              )}
+              {business.address && (
+                <div className="flex items-start gap-3 md:col-span-2">
+                  <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.address}</p>
+                    <p className="text-xs text-gray-500">Business Address</p>
+                  </div>
+                </div>
+              )}
+              {business.website && (
+                <div className="flex items-center gap-3">
+                  <Globe className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <a
+                      href={business.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      {business.website}
+                    </a>
+                    <p className="text-xs text-gray-500">Website</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Business Statistics */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Statistics</h2>
@@ -301,6 +358,227 @@ export default function BusinessDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Business Details */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{formatDate(business.createdAt)}</p>
+                  <p className="text-xs text-gray-500">Created</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{formatDate(business.updatedAt)}</p>
+                  <p className="text-xs text-gray-500">Last Updated</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Globe className="w-5 h-5 text-gray-400" />
+                <div>
+                  <a
+                    href={`/${business.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    /{business.slug}
+                  </a>
+                  <p className="text-xs text-gray-500">Store URL</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Package className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{business.currency}</p>
+                  <p className="text-xs text-gray-500">Currency</p>
+                </div>
+              </div>
+              {business.timezone && (
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.timezone}</p>
+                    <p className="text-xs text-gray-500">Timezone</p>
+                  </div>
+                </div>
+              )}
+              {business.language && (
+                <div className="flex items-center gap-3">
+                  <Globe className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{business.language}</p>
+                    <p className="text-xs text-gray-500">Language</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {business.onboardingCompleted ? 'Completed' : 'Pending'}
+                  </p>
+                  <p className="text-xs text-gray-500">Onboarding</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-gray-400" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {business.setupWizardCompleted ? 'Completed' : 'Pending'}
+                  </p>
+                  <p className="text-xs text-gray-500">Setup Wizard</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Settings */}
+          {(business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Settings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className={`w-5 h-5 ${business.deliveryEnabled ? 'text-green-500' : 'text-gray-300'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {business.deliveryEnabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                    <p className="text-xs text-gray-500">Delivery</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className={`w-5 h-5 ${business.pickupEnabled ? 'text-green-500' : 'text-gray-300'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {business.pickupEnabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                    <p className="text-xs text-gray-500">Pickup</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className={`w-5 h-5 ${business.dineInEnabled ? 'text-green-500' : 'text-gray-300'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {business.dineInEnabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                    <p className="text-xs text-gray-500">Dine In</p>
+                  </div>
+                </div>
+                {business.deliveryFee !== undefined && (
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.currency} {business.deliveryFee.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">Delivery Fee</p>
+                    </div>
+                  </div>
+                )}
+                {business.minimumOrder !== undefined && (
+                  <div className="flex items-center gap-3">
+                    <ShoppingBag className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.currency} {business.minimumOrder.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">Minimum Order</p>
+                    </div>
+                  </div>
+                )}
+                {business.deliveryRadius !== undefined && (
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{business.deliveryRadius} km</p>
+                      <p className="text-xs text-gray-500">Delivery Radius</p>
+                    </div>
+                  </div>
+                )}
+                {business.estimatedDeliveryTime && (
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{business.estimatedDeliveryTime}</p>
+                      <p className="text-xs text-gray-500">Estimated Delivery Time</p>
+                    </div>
+                  </div>
+                )}
+                {business.estimatedPickupTime && (
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{business.estimatedPickupTime}</p>
+                      <p className="text-xs text-gray-500">Estimated Pickup Time</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* External System Integration */}
+          {(business.externalSystemName || business.externalSystemBaseUrl) && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">External System Integration</h2>
+                <Link
+                  href={`/superadmin/businesses/${business.id}/external-syncs`}
+                  className="inline-flex items-center px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                >
+                  Manage Syncs
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {business.externalSystemName && (
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{business.externalSystemName}</p>
+                      <p className="text-xs text-gray-500">System Name</p>
+                    </div>
+                  </div>
+                )}
+                {business.externalSystemBaseUrl && (
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 break-all">{business.externalSystemBaseUrl}</p>
+                      <p className="text-xs text-gray-500">Base URL</p>
+                    </div>
+                  </div>
+                )}
+                {business.externalSystemApiKey && (
+                  <div className="flex items-center gap-3">
+                    <Info className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.externalSystemApiKey.substring(0, 8)}...
+                      </p>
+                      <p className="text-xs text-gray-500">API Key</p>
+                    </div>
+                  </div>
+                )}
+                {business.externalBrandIds && (
+                  <div className="flex items-start gap-3 md:col-span-2">
+                    <Info className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.externalBrandIds}
+                      </p>
+                      <p className="text-xs text-gray-500">Brand IDs</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
