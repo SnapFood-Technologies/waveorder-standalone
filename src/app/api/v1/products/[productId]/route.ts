@@ -85,6 +85,8 @@ export async function PUT(
       gallery,
       categoryId,
       categoryName,
+      productType,
+      variations,
       reason 
     } = body
     
@@ -356,7 +358,177 @@ export async function PUT(
       data: updateData
     })
     
-    // Create inventory activity if stock changed
+    // Handle variations if provided
+    if (variations !== undefined && Array.isArray(variations)) {
+      // Fetch existing variants to match by SKU
+      const existingVariants = await prisma.productVariant.findMany({
+        where: { productId: product.id }
+      })
+      
+      const variantSkuMap = new Map(existingVariants.map(v => [v.sku || '', v]))
+      
+      // Process each variation from the request
+      for (const variation of variations) {
+        const {
+          sku: variationSku,
+          articleNo,
+          price: variationPrice,
+          salePrice: variationSalePrice,
+          originalPrice: variationOriginalPrice,
+          stockQuantity: variationStockQuantity,
+          stockStatus: variationStockStatus,
+          image: variationImage,
+          attributes,
+          dateSaleStart,
+          dateSaleEnd
+        } = variation
+        
+        // Validate required fields
+        if (!variationSku) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Variation SKU is required',
+              code: 'VALIDATION_ERROR'
+            },
+            { status: 400 }
+          )
+        }
+        
+        if (variationPrice === undefined || variationPrice === null) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: `Variation price is required for SKU: ${variationSku}`,
+              code: 'VALIDATION_ERROR'
+            },
+            { status: 400 }
+          )
+        }
+        
+        if (variationStockQuantity === undefined || variationStockQuantity === null) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: `Variation stockQuantity is required for SKU: ${variationSku}`,
+              code: 'VALIDATION_ERROR'
+            },
+            { status: 400 }
+          )
+        }
+        
+        // Build variant metadata
+        const variantMetadata: any = {}
+        if (articleNo !== undefined) variantMetadata.articleNo = articleNo
+        if (variationImage !== undefined) variantMetadata.image = variationImage
+        if (attributes !== undefined && typeof attributes === 'object') variantMetadata.attributes = attributes
+        if (dateSaleStart !== undefined) variantMetadata.dateSaleStart = dateSaleStart
+        if (dateSaleEnd !== undefined) variantMetadata.dateSaleEnd = dateSaleEnd
+        if (variationSalePrice !== undefined) variantMetadata.salePrice = variationSalePrice
+        if (variationOriginalPrice !== undefined) variantMetadata.originalPrice = variationOriginalPrice
+        
+        // Determine variant name from attributes or use SKU
+        let variantName = variationSku
+        if (attributes && typeof attributes === 'object') {
+          const attributeValues = Object.values(attributes).filter(v => v)
+          if (attributeValues.length > 0) {
+            variantName = attributeValues.join(' - ')
+          }
+        }
+        
+        // Determine variant price (use salePrice if on sale, otherwise regular price)
+        const finalVariantPrice = variationOriginalPrice && variationPrice < variationOriginalPrice
+          ? variationPrice // Sale price
+          : variationPrice // Regular price
+        
+        const existingVariant = variantSkuMap.get(variationSku)
+        
+        if (existingVariant) {
+          // Update existing variant
+          const oldVariantStock = existingVariant.stock
+          const newVariantStock = Math.max(0, Math.floor(variationStockQuantity))
+          
+          await prisma.productVariant.update({
+            where: { id: existingVariant.id },
+            data: {
+              name: variantName,
+              price: finalVariantPrice,
+              stock: newVariantStock,
+              sku: variationSku,
+              metadata: variantMetadata
+            }
+          })
+          
+          // Create inventory activity if stock changed
+          if (oldVariantStock !== newVariantStock) {
+            const quantityChange = newVariantStock - oldVariantStock
+            const activityType = quantityChange > 0 ? 'MANUAL_INCREASE' : 'MANUAL_DECREASE'
+            const externalReason = reason ? `OmniStack Gateway: ${reason}` : 'OmniStack Gateway variation update'
+            
+            await prisma.inventoryActivity.create({
+              data: {
+                productId: product.id,
+                variantId: existingVariant.id,
+                businessId,
+                type: activityType,
+                quantity: quantityChange,
+                oldStock: oldVariantStock,
+                newStock: newVariantStock,
+                reason: externalReason,
+                changedBy: 'OmniStack Gateway'
+              }
+            })
+          }
+        } else {
+          // Create new variant
+          const newVariantStock = Math.max(0, Math.floor(variationStockQuantity))
+          
+          const newVariant = await prisma.productVariant.create({
+            data: {
+              productId: product.id,
+              name: variantName,
+              price: finalVariantPrice,
+              stock: newVariantStock,
+              sku: variationSku,
+              metadata: variantMetadata
+            }
+          })
+          
+          // Create inventory activity for new variant
+          const externalReason = reason ? `OmniStack Gateway: ${reason}` : 'OmniStack Gateway variation creation'
+          await prisma.inventoryActivity.create({
+            data: {
+              productId: product.id,
+              variantId: newVariant.id,
+              businessId,
+              type: 'MANUAL_INCREASE',
+              quantity: newVariantStock,
+              oldStock: 0,
+              newStock: newVariantStock,
+              reason: externalReason,
+              changedBy: 'OmniStack Gateway'
+            }
+          })
+        }
+      }
+      
+      // Delete variants that are not in the request (if productType is variable)
+      // Note: We only delete if productType is explicitly 'variable' to avoid accidental deletions
+      if (productType === 'variable') {
+        const requestedSkus = new Set(variations.map((v: any) => v.sku).filter(Boolean))
+        const variantsToDelete = existingVariants.filter(v => v.sku && !requestedSkus.has(v.sku))
+        
+        if (variantsToDelete.length > 0) {
+          await prisma.productVariant.deleteMany({
+            where: {
+              id: { in: variantsToDelete.map(v => v.id) }
+            }
+          })
+        }
+      }
+    }
+    
+    // Create inventory activity if stock changed (for main product)
     if (stockChanged && product.trackInventory) {
       const newStock = updateData.stock || updatedProduct.stock
       const quantityChange = newStock - oldStock
@@ -377,6 +549,14 @@ export async function PUT(
       })
     }
     
+    // Fetch updated product with variants
+    const productWithVariants = await prisma.product.findUnique({
+      where: { id: updatedProduct.id },
+      include: {
+        variants: true
+      }
+    })
+    
     return NextResponse.json({
       success: true,
       message: 'Product updated successfully',
@@ -389,7 +569,26 @@ export async function PUT(
         stock: updatedProduct.stock,
         isActive: updatedProduct.isActive,
         sku: updatedProduct.sku,
-        images: updatedProduct.images
+        images: updatedProduct.images,
+        productType: productType || (productWithVariants?.variants && productWithVariants.variants.length > 0 ? 'variable' : 'simple'),
+        variations: productWithVariants?.variants?.map(v => {
+          const vMetadata = (v.metadata as any) || {}
+          return {
+            id: v.id,
+            sku: v.sku,
+            name: v.name,
+            price: v.price,
+            stockQuantity: v.stock,
+            stockStatus: v.stock > 0 ? 'instock' : 'outofstock',
+            articleNo: vMetadata.articleNo,
+            salePrice: vMetadata.salePrice,
+            originalPrice: vMetadata.originalPrice,
+            image: vMetadata.image,
+            attributes: vMetadata.attributes,
+            dateSaleStart: vMetadata.dateSaleStart,
+            dateSaleEnd: vMetadata.dateSaleEnd
+          }
+        }) || []
       }
     })
     

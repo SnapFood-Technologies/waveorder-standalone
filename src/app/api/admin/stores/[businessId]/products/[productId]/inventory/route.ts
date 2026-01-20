@@ -66,10 +66,13 @@ export async function POST(
     })
 
     // Sync stock update to OmniStack Gateway (if product is linked)
-    // Fetch full product with category for sync
+    // Fetch full product with category and variants for sync
     const updatedProduct = await prisma.product.findFirst({
       where: { id: productId, businessId },
-      include: { category: true }
+      include: { 
+        category: true,
+        variants: true
+      }
     });
     
     if (updatedProduct) {

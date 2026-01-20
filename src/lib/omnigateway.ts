@@ -39,11 +39,29 @@ export const createOmniGateway = (clientApiKey?: string): AxiosInstance => {
 export const omniGateway = createOmniGateway();
 
 /**
+ * Interface for variation update payload sent to OmniStack Gateway
+ */
+export interface OmniGatewayVariation {
+  sku: string;
+  articleNo?: string;
+  price: number;
+  salePrice?: number | null;
+  originalPrice?: number | null;
+  stockQuantity: number;
+  stockStatus: 'instock' | 'outofstock';
+  image?: string;
+  attributes: Record<string, string>; // e.g., { "Size": "Small", "Color": "Red" }
+  dateSaleStart?: string | null; // ISO date string
+  dateSaleEnd?: string | null; // ISO date string
+}
+
+/**
  * Interface for product update payload sent to OmniStack Gateway
  */
 export interface OmniGatewayProductUpdate {
   productId: string;
   sku?: string;
+  productType?: 'simple' | 'variable';
   name?: string;
   nameAl?: string;
   description?: string;
@@ -58,6 +76,7 @@ export interface OmniGatewayProductUpdate {
   images?: string[];
   categoryName?: string;
   categoryNameAl?: string;
+  variations?: OmniGatewayVariation[];
   metadata?: {
     _id: string;
     clientId?: string;
@@ -187,6 +206,73 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
       updatedAt: product.updatedAt?.toISOString() || new Date().toISOString()
     }
   };
+
+  // Handle variations if product has variants
+  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+    updateData.productType = 'variable';
+    updateData.variations = product.variants.map((variant: any) => {
+      const variantMetadata = (variant.metadata as any) || {};
+      
+      // Extract attributes from metadata or parse from variant name
+      let attributes: Record<string, string> = {};
+      if (variantMetadata.attributes && typeof variantMetadata.attributes === 'object') {
+        attributes = variantMetadata.attributes;
+      } else if (variant.name) {
+        // Try to parse attributes from variant name (e.g., "Small - Red" or "Size: Small, Color: Red")
+        // This is a fallback - ideally attributes should be stored in metadata
+        const nameParts = variant.name.split(/[-–—,]/).map((s: string) => s.trim());
+        if (nameParts.length >= 2) {
+          // Simple heuristic: assume first part is Size, second is Color
+          attributes = {
+            Size: nameParts[0],
+            Color: nameParts[1]
+          };
+        } else {
+          // Single attribute value
+          attributes = {
+            Variant: variant.name
+          };
+        }
+      }
+
+      // Calculate stock status for variant
+      const variantStockStatus: 'instock' | 'outofstock' = 
+        variant.stock > 0 ? 'instock' : 'outofstock';
+
+      // Determine price logic for variant
+      let variantPrice = Math.round(variant.price);
+      let variantSalePrice: number | null = null;
+      let variantOriginalPrice: number | null = null;
+
+      if (variantMetadata.originalPrice && variantMetadata.originalPrice !== variant.price) {
+        // Variant is on sale
+        variantOriginalPrice = Math.round(variantMetadata.originalPrice);
+        variantSalePrice = Math.round(variant.price);
+        variantPrice = variantOriginalPrice; // Regular price
+      } else if (variantMetadata.salePrice) {
+        variantSalePrice = Math.round(variantMetadata.salePrice);
+        variantOriginalPrice = variantPrice;
+      }
+
+      const variation: OmniGatewayVariation = {
+        sku: variant.sku || `${product.sku || product.id}-${variant.id}`,
+        articleNo: variantMetadata.articleNo || undefined,
+        price: variantPrice,
+        salePrice: variantSalePrice,
+        originalPrice: variantOriginalPrice,
+        stockQuantity: variant.stock || 0,
+        stockStatus: variantStockStatus,
+        image: variantMetadata.image || undefined,
+        attributes: attributes,
+        dateSaleStart: variantMetadata.dateSaleStart || null,
+        dateSaleEnd: variantMetadata.dateSaleEnd || null
+      };
+
+      return variation;
+    });
+  } else {
+    updateData.productType = 'simple';
+  }
 
   return updateData;
 }
