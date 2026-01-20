@@ -47,30 +47,21 @@ export async function PATCH(
     }
 
     // Find business with owner user and subscription
-    let business
-    try {
-      business = await prisma.business.findUnique({
-        where: { id: businessId },
-        include: {
-          users: {
-            where: { role: 'OWNER' },
-            include: {
-              user: {
-                include: {
-                  subscription: true
-                }
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          include: {
+            user: {
+              include: {
+                subscription: true
               }
             }
           }
         }
-      })
-    } catch (dbError: any) {
-      console.error('Database error finding business:', dbError)
-      return NextResponse.json({ 
-        message: 'Failed to find business',
-        error: process.env.NODE_ENV === 'development' ? dbError?.message : undefined
-      }, { status: 500 })
-    }
+      }
+    })
 
     if (!business) {
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
