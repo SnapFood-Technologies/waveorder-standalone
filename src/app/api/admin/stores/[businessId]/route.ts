@@ -49,6 +49,8 @@ export async function GET(
         coverBackgroundSize: true,
         coverBackgroundPosition: true,
         coverHeight: true,
+        coverHeightMobile: true,
+        coverHeightDesktop: true,
         logoPadding: true,
         logoObjectFit: true,
         

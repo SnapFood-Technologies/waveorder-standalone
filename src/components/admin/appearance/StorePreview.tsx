@@ -28,7 +28,9 @@ interface StorePreviewProps {
     featuredBadgeColor: string  // NEW
     coverBackgroundSize?: string
     coverBackgroundPosition?: string
-    coverHeight?: string
+    coverHeight?: string              // legacy / default
+    coverHeightMobile?: string
+    coverHeightDesktop?: string
     logoPadding?: string
     logoObjectFit?: string
   }
@@ -257,7 +259,7 @@ if (isMobile && device === 'mobile') {
             className="relative"
             style={{
               ...getCoverImageStyle(),
-              height: settings.coverHeight || '200px'
+              height: settings.coverHeightDesktop || settings.coverHeight || '220px'
             }}
           >
             <div className="absolute top-4 right-4 flex gap-3">
@@ -288,10 +290,7 @@ if (isMobile && device === 'mobile') {
                   <img 
                     src={businessData.logo} 
                     alt={businessData.name} 
-                    className="w-full h-full rounded-full" 
-                    style={{
-                      objectFit: settings.logoObjectFit || 'cover'
-                    }}
+                    className="w-full h-full rounded-full object-cover" 
                   />
                 ) : (
                   businessData.name?.charAt(0).toUpperCase() || 'S'
@@ -648,7 +647,7 @@ if (isMobile && device === 'mobile') {
             className="relative"
             style={{
               ...getCoverImageStyle(),
-              height: settings.coverHeight || '200px'
+              height: settings.coverHeightMobile || settings.coverHeight || '160px'
             }}
           >
             {/* Status Bar */}
@@ -689,10 +688,7 @@ if (isMobile && device === 'mobile') {
                 <img 
                   src={businessData.logo} 
                   alt={businessData.name} 
-                  className="w-full h-full rounded-full" 
-                  style={{
-                    objectFit: settings.logoObjectFit || 'cover'
-                  }}
+                  className="w-full h-full rounded-full object-cover" 
                 />
               ) : (
                 businessData.name?.charAt(0).toUpperCase() || 'S'

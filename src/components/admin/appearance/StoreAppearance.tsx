@@ -57,7 +57,9 @@ interface AppearanceSettings {
   featuredBadgeColor: string
   coverBackgroundSize?: string
   coverBackgroundPosition?: string
-  coverHeight?: string
+  coverHeight?: string              // legacy / default
+  coverHeightMobile?: string
+  coverHeightDesktop?: string
   logoPadding?: string
   logoObjectFit?: string
 }
@@ -110,7 +112,11 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     featuredBadgeColor: '#EF4444',
     coverBackgroundSize: 'cover',
     coverBackgroundPosition: 'center',
-    coverHeight: '200px'
+    coverHeight: '200px',
+    coverHeightMobile: '160px',
+    coverHeightDesktop: '220px',
+    logoPadding: '0px',
+    logoObjectFit: 'cover'
   })
   const [originalSettings, setOriginalSettings] = useState<AppearanceSettings>({
     primaryColor: '#0D9488',
@@ -122,7 +128,11 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     featuredBadgeColor: '#EF4444',
     coverBackgroundSize: 'cover',
     coverBackgroundPosition: 'center',
-    coverHeight: '200px'
+    coverHeight: '200px',
+    coverHeightMobile: '160px',
+    coverHeightDesktop: '220px',
+    logoPadding: '0px',
+    logoObjectFit: 'cover'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -156,6 +166,8 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           coverBackgroundSize: data.business.coverBackgroundSize || 'cover',
           coverBackgroundPosition: data.business.coverBackgroundPosition || 'center',
           coverHeight: data.business.coverHeight || '200px',
+          coverHeightMobile: data.business.coverHeightMobile || data.business.coverHeight || '160px',
+          coverHeightDesktop: data.business.coverHeightDesktop || data.business.coverHeight || '220px',
           logoPadding: data.business.logoPadding || '0px',
           logoObjectFit: data.business.logoObjectFit || 'cover'
         }
@@ -616,22 +628,34 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                 </p>
               </div>
 
-              {/* Height */}
+              {/* Height - Desktop & Mobile */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cover Height
+                  Cover Height (Desktop)
+                </label>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={settings.coverHeightDesktop || settings.coverHeight || '220px'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, coverHeightDesktop: e.target.value }))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    placeholder="220px"
+                  />
+                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 mt-3">
+                  Cover Height (Mobile)
                 </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={settings.coverHeight || '200px'}
-                    onChange={(e) => setSettings(prev => ({ ...prev, coverHeight: e.target.value }))}
+                    value={settings.coverHeightMobile || settings.coverHeight || '160px'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, coverHeightMobile: e.target.value }))}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
-                    placeholder="200px"
+                    placeholder="160px"
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Height of the cover section (e.g., "200px", "250px", "300px", "auto")
+                  Height of the cover section (e.g., "200px", "250px", "300px", "auto"). Desktop and mobile can use different values.
                 </p>
               </div>
             </div>

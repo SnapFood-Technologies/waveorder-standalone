@@ -15,6 +15,8 @@ const appearanceSchema = z.object({
   coverBackgroundSize: z.string().optional(),
   coverBackgroundPosition: z.string().optional(),
   coverHeight: z.string().optional(),
+  coverHeightMobile: z.string().optional(),
+  coverHeightDesktop: z.string().optional(),
   logoPadding: z.string().optional(),
   logoObjectFit: z.string().optional()
 })
@@ -66,6 +68,8 @@ export async function PUT(
         coverBackgroundSize: validatedData.coverBackgroundSize || null,
         coverBackgroundPosition: validatedData.coverBackgroundPosition || null,
         coverHeight: validatedData.coverHeight || null,
+        coverHeightMobile: validatedData.coverHeightMobile || null,
+        coverHeightDesktop: validatedData.coverHeightDesktop || null,
         logoPadding: validatedData.logoPadding || null,
         logoObjectFit: validatedData.logoObjectFit || null,
         updatedAt: new Date()
@@ -150,6 +154,8 @@ export async function GET(
         coverBackgroundSize: true,
         coverBackgroundPosition: true,
         coverHeight: true,
+        coverHeightMobile: true,
+        coverHeightDesktop: true,
         logoPadding: true,
         logoObjectFit: true,
         currency: true,

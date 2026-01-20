@@ -203,7 +203,9 @@ model Business {
   // Cover image CSS settings
   coverBackgroundSize     String? // 'cover', 'contain', '100% 100%', etc.
   coverBackgroundPosition String? // 'center', 'top', 'bottom', 'left', 'right', etc.
-  coverHeight             String? // e.g., '200px', '250px', '300px', 'auto'
+  coverHeight             String? // e.g., '200px', '250px', '300px', 'auto' (legacy / default)
+  coverHeightMobile       String? // mobile-specific height
+  coverHeightDesktop      String? // desktop-specific height
 
   // Logo CSS settings
   logoPadding             String? // e.g., '0px', '4px', '6px', '8px'

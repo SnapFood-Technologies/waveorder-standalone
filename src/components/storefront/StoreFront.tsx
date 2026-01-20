@@ -1429,7 +1429,9 @@ interface StoreData {
   coverImage?: string
   coverBackgroundSize?: string
   coverBackgroundPosition?: string
-  coverHeight?: string
+  coverHeight?: string              // legacy / default
+  coverHeightMobile?: string
+  coverHeightDesktop?: string
   logoPadding?: string
   logoObjectFit?: string
   phone?: string
@@ -1624,6 +1626,18 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   } | null>(null)
 
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect mobile/desktop screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 1024) // lg breakpoint
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   
   // Fixed delivery type initialization
@@ -2544,7 +2558,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             className="relative md:rounded-xl overflow-hidden"
             style={{
               ...getCoverImageStyle(storeData, primaryColor),
-              height: storeData.coverHeight || '200px'
+              height: isMobile 
+                ? (storeData.coverHeightMobile || storeData.coverHeight || '160px')
+                : (storeData.coverHeightDesktop || storeData.coverHeight || '220px')
             }}
           >
          {/* Icons in top right */}
@@ -2587,7 +2603,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   alt={storeData.name} 
                   className="w-full h-full rounded-full" 
                   style={{
-                    objectFit: storeData.logoObjectFit || 'cover'
+                    objectFit: (storeData.logoObjectFit || 'cover') as 'fill' | 'contain' | 'cover' | 'none' | 'scale-down'
                   }}
                 />
               ) : (
