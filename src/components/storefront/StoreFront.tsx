@@ -1542,6 +1542,7 @@ interface CartItem {
   quantity: number
   modifiers: ProductModifier[]
   totalPrice: number
+  businessId: string // Store which business this cart item belongs to
 }
 
 interface CustomerInfo {
@@ -1691,12 +1692,43 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   const [loadingCountries, setLoadingCountries] = useState(false)
   const [loadingCities, setLoadingCities] = useState(false)
 
-  // Save cart to localStorage whenever it changes
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-        localStorage.setItem('cart', JSON.stringify(cart))
+  // Filter cart when storeData changes (user navigates to different store)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('cart')
+      if (savedCart) {
+        const allCartItems: CartItem[] = JSON.parse(savedCart)
+        // Filter to only show items from current business
+        // Exclude old items without businessId (backward compatibility - they'll be cleared)
+        const currentBusinessCart = allCartItems.filter(item => item.businessId === storeData.id)
+        
+        // Clean up old items without businessId from localStorage
+        const itemsWithBusinessId = allCartItems.filter(item => item.businessId)
+        if (itemsWithBusinessId.length !== allCartItems.length) {
+          localStorage.setItem('cart', JSON.stringify(itemsWithBusinessId))
         }
-    }, [cart])
+        
+        setCart(currentBusinessCart)
+      } else {
+        setCart([])
+      }
+    }
+  }, [storeData.id])
+
+  // Save cart to localStorage whenever it changes
+  // Save all cart items (from all businesses) to preserve carts when switching stores
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('cart')
+      let allCartItems: CartItem[] = savedCart ? JSON.parse(savedCart) : []
+      
+      // Remove items from current business and add updated ones
+      allCartItems = allCartItems.filter(item => item.businessId !== storeData.id)
+      allCartItems = [...allCartItems, ...cart]
+      
+      localStorage.setItem('cart', JSON.stringify(allCartItems))
+    }
+  }, [cart, storeData.id])
 
   // Scroll to top button visibility
   useEffect(() => {
@@ -2259,7 +2291,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       price: basePrice,
       quantity: 1,
       modifiers,
-      totalPrice
+      totalPrice,
+      businessId: storeData.id // Store which business this item belongs to
     }
   
     setCart(prev => {
@@ -2463,7 +2496,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       }
   
       if (response.ok && result.success) {
-        // Clear cart and close modal first
+        // Clear cart for current business only and close modal
+        // Remove items from localStorage for this business
+        if (typeof window !== 'undefined') {
+          const savedCart = localStorage.getItem('cart')
+          if (savedCart) {
+            const allCartItems: CartItem[] = JSON.parse(savedCart)
+            const otherBusinessItems = allCartItems.filter(item => item.businessId !== storeData.id)
+            localStorage.setItem('cart', JSON.stringify(otherBusinessItems))
+          }
+        }
         setCart([])
         setShowCartModal(false)
         

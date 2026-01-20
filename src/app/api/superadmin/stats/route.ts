@@ -59,10 +59,23 @@ export async function GET(request: NextRequest) {
         where: { isActive: true }
       }),
       
-      // Total users (all time)
-      prisma.user.count({
+      // Total users (all time) - fetch to filter by active businesses
+      prisma.user.findMany({
         where: {
           role: { not: 'SUPER_ADMIN' }
+        },
+        include: {
+          businesses: {
+            include: {
+              business: {
+                select: {
+                  id: true,
+                  isActive: true,
+                  deactivatedAt: true
+                }
+              }
+            }
+          }
         }
       }),
 
@@ -79,14 +92,27 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Users created in selected period (exclude SUPER_ADMIN)
-      prisma.user.count({
+      // Users created in selected period (exclude SUPER_ADMIN) - fetch to filter by active businesses
+      prisma.user.findMany({
         where: {
           createdAt: {
             gte: startDate,
             lte: endDate
           },
           role: { not: 'SUPER_ADMIN' }
+        },
+        include: {
+          businesses: {
+            include: {
+              business: {
+                select: {
+                  id: true,
+                  isActive: true,
+                  deactivatedAt: true
+                }
+              }
+            }
+          }
         }
       }),
       
@@ -115,13 +141,26 @@ export async function GET(request: NextRequest) {
         }
       }),
       
-      // Recent signups (this week) - EXCLUDE SUPER_ADMIN
-      prisma.user.count({
+      // Recent signups (this week) - EXCLUDE SUPER_ADMIN - fetch to filter by active businesses
+      prisma.user.findMany({
         where: {
           createdAt: {
             gte: thisWeek
           },
           role: { not: 'SUPER_ADMIN' }
+        },
+        include: {
+          businesses: {
+            include: {
+              business: {
+                select: {
+                  id: true,
+                  isActive: true,
+                  deactivatedAt: true
+                }
+              }
+            }
+          }
         }
       }),
 
@@ -144,6 +183,26 @@ export async function GET(request: NextRequest) {
     const activeCurrentMonthBusinesses = currentMonthBusinesses.filter((b: any) => !b.deactivatedAt || b.deactivatedAt === null)
     const activeLastMonthBusinesses = lastMonthBusinesses.filter((b: any) => !b.deactivatedAt || b.deactivatedAt === null)
 
+    // Filter users: must have at least one active, non-deactivated business
+    const filterUsersWithActiveBusinesses = (users: any[]) => {
+      return users.filter(user => {
+        if (!user.businesses || user.businesses.length === 0) {
+          return false
+        }
+        
+        const hasActiveBusiness = user.businesses.some((bu: any) => 
+          bu.business.isActive && 
+          (!bu.business.deactivatedAt || bu.business.deactivatedAt === null)
+        )
+        
+        return hasActiveBusiness
+      })
+    }
+
+    const activeUsersAllTime = filterUsersWithActiveBusinesses(totalUsersAllTime as unknown as any[])
+    const activeUsersInPeriod = filterUsersWithActiveBusinesses(usersInPeriod as unknown as any[])
+    const activeRecentSignups = filterUsersWithActiveBusinesses(recentSignups as unknown as any[])
+
     // Calculate monthly growth
     const monthlyGrowth = activeLastMonthBusinesses.length > 0 
       ? ((activeCurrentMonthBusinesses.length - activeLastMonthBusinesses.length) / activeLastMonthBusinesses.length * 100)
@@ -154,13 +213,13 @@ export async function GET(request: NextRequest) {
       totalBusinesses: activeBusinessesInPeriod.length,
       // Show all-time active businesses (not affected by date filter)
       activeBusinesses,
-      // Show users created in selected period for "New Users"
-      totalUsers: usersInPeriod,
+      // Show users created in selected period for "New Users" (only with active businesses)
+      totalUsers: activeUsersInPeriod.length,
       // Monthly growth comparison (not affected by date filter)
       monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
-      // Recent signups this week (not affected by date filter)
-      recentSignups,
-      totalPageViews: totalPageViews?._sum.visitors || 0 // Add this line
+      // Recent signups this week (not affected by date filter, only with active businesses)
+      recentSignups: activeRecentSignups.length,
+      totalPageViews: totalPageViews?._sum.visitors || 0
     }
 
     return NextResponse.json(stats)
