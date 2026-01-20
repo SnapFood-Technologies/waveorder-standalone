@@ -15,7 +15,9 @@ import {
   ShoppingCart,
   Settings,
   Star,
-  Badge
+  Badge,
+  Image,
+  AlertTriangle
 } from 'lucide-react'
 import { StorePreview } from './StorePreview'
 
@@ -53,6 +55,9 @@ interface AppearanceSettings {
   mobileCartStyle: 'bar' | 'badge'
   cartBadgeColor: string
   featuredBadgeColor: string
+  coverBackgroundSize?: string
+  coverBackgroundPosition?: string
+  coverHeight?: string
 }
 
 const defaultColors = [
@@ -100,7 +105,10 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     whatsappButtonColor: '#25D366',
     mobileCartStyle: 'bar',
     cartBadgeColor: '#EF4444',
-    featuredBadgeColor: '#EF4444'
+    featuredBadgeColor: '#EF4444',
+    coverBackgroundSize: 'cover',
+    coverBackgroundPosition: 'center',
+    coverHeight: '200px'
   })
   const [originalSettings, setOriginalSettings] = useState<AppearanceSettings>({
     primaryColor: '#0D9488',
@@ -109,7 +117,10 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     whatsappButtonColor: '#25D366',
     mobileCartStyle: 'bar',
     cartBadgeColor: '#EF4444',
-    featuredBadgeColor: '#EF4444'
+    featuredBadgeColor: '#EF4444',
+    coverBackgroundSize: 'cover',
+    coverBackgroundPosition: 'center',
+    coverHeight: '200px'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -139,7 +150,10 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           whatsappButtonColor: data.business.whatsappButtonColor || data.business.primaryColor,
           mobileCartStyle: data.business.mobileCartStyle,
           cartBadgeColor: data.business.cartBadgeColor || '#EF4444',
-          featuredBadgeColor: data.business.featuredBadgeColor || '#EF4444'
+          featuredBadgeColor: data.business.featuredBadgeColor || '#EF4444',
+          coverBackgroundSize: data.business.coverBackgroundSize || 'cover',
+          coverBackgroundPosition: data.business.coverBackgroundPosition || 'center',
+          coverHeight: data.business.coverHeight || '200px'
         }
         
         setSettings(appearanceSettings)
@@ -530,6 +544,94 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
               </div>
             </div>
           </div>
+
+          {/* Cover Image CSS Settings */}
+          {businessData?.coverImage && (
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center mb-4">
+                <Image className="w-5 h-5 text-teal-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Cover Image CSS Override</h3>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Use with Caution</p>
+                    <p className="text-xs">
+                      These CSS settings directly override the cover image styling. Incorrect values may break the layout. 
+                      Test your changes on the live store before saving.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Background Size */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Background Size
+                </label>
+                <select
+                  value={settings.coverBackgroundSize || 'cover'}
+                  onChange={(e) => setSettings(prev => ({ ...prev, coverBackgroundSize: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                >
+                  <option value="cover">cover (default - fills area, may crop)</option>
+                  <option value="contain">contain (shows full image, may have empty space)</option>
+                  <option value="100% 100%">100% 100% (fills area, may distort)</option>
+                  <option value="auto">auto (original size)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Controls how the image scales to fit the container
+                </p>
+              </div>
+
+              {/* Background Position */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Background Position
+                </label>
+                <select
+                  value={settings.coverBackgroundPosition || 'center'}
+                  onChange={(e) => setSettings(prev => ({ ...prev, coverBackgroundPosition: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                >
+                  <option value="center">center (default)</option>
+                  <option value="top">top</option>
+                  <option value="bottom">bottom</option>
+                  <option value="left">left</option>
+                  <option value="right">right</option>
+                  <option value="top left">top left</option>
+                  <option value="top right">top right</option>
+                  <option value="bottom left">bottom left</option>
+                  <option value="bottom right">bottom right</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Controls where the image is positioned within the container
+                </p>
+              </div>
+
+              {/* Height */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cover Height
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={settings.coverHeight || '200px'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, coverHeight: e.target.value }))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    placeholder="200px"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Height of the cover section (e.g., "200px", "250px", "300px", "auto")
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Tips */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

@@ -11,7 +11,10 @@ const appearanceSchema = z.object({
   whatsappButtonColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
   mobileCartStyle: z.enum(['bar', 'badge']),
   cartBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
-  featuredBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format')
+  featuredBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
+  coverBackgroundSize: z.string().optional(),
+  coverBackgroundPosition: z.string().optional(),
+  coverHeight: z.string().optional()
 })
 
 export async function PUT(
@@ -58,6 +61,9 @@ export async function PUT(
         mobileCartStyle: validatedData.mobileCartStyle,
         cartBadgeColor: validatedData.cartBadgeColor,
         featuredBadgeColor: validatedData.featuredBadgeColor,
+        coverBackgroundSize: validatedData.coverBackgroundSize || null,
+        coverBackgroundPosition: validatedData.coverBackgroundPosition || null,
+        coverHeight: validatedData.coverHeight || null,
         updatedAt: new Date()
       },
       select: {
@@ -71,6 +77,9 @@ export async function PUT(
         mobileCartStyle: true,
         cartBadgeColor: true,
         featuredBadgeColor: true,
+        coverBackgroundSize: true,
+        coverBackgroundPosition: true,
+        coverHeight: true,
         updatedAt: true
       }
     })
@@ -132,6 +141,9 @@ export async function GET(
         mobileCartStyle: true,
         cartBadgeColor: true,
         featuredBadgeColor: true,
+        coverBackgroundSize: true,
+        coverBackgroundPosition: true,
+        coverHeight: true,
         currency: true,
         language: true,
         description: true,

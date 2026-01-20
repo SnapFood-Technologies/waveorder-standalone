@@ -46,6 +46,9 @@ export async function GET(
         mobileCartStyle: true,
         cartBadgeColor: true,
         featuredBadgeColor: true,
+        coverBackgroundSize: true,
+        coverBackgroundPosition: true,
+        coverHeight: true,
         
         // Business settings
         currency: true,

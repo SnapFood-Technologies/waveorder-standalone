@@ -26,6 +26,9 @@ interface StorePreviewProps {
     mobileCartStyle: 'bar' | 'badge'
     cartBadgeColor: string      // NEW
     featuredBadgeColor: string  // NEW
+    coverBackgroundSize?: string
+    coverBackgroundPosition?: string
+    coverHeight?: string
   }
   device: 'mobile' | 'desktop'
 }
@@ -226,8 +229,9 @@ if (isMobile && device === 'mobile') {
     if (businessData.coverImage) {
       return {
         backgroundImage: `url(${businessData.coverImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundSize: settings.coverBackgroundSize || 'cover',
+        backgroundPosition: settings.coverBackgroundPosition || 'center',
+        backgroundRepeat: 'no-repeat'
       }
     } else {
       return {
@@ -248,8 +252,11 @@ if (isMobile && device === 'mobile') {
         <div className="bg-white rounded-xl overflow-hidden shadow-sm" style={{ fontFamily: `${settings.fontFamily} !important` }}>
           {/* Header with Cover Image - FIXED: No double background */}
           <div 
-            className="relative h-48"
-            style={getCoverImageStyle()}
+            className="relative"
+            style={{
+              ...getCoverImageStyle(),
+              height: settings.coverHeight || '200px'
+            }}
           >
             <div className="absolute top-4 right-4 flex gap-3">
               <div className="w-8 h-8 bg-black bg-opacity-20 rounded-full flex items-center justify-center">
@@ -626,8 +633,11 @@ if (isMobile && device === 'mobile') {
           
           {/* Cover Image Header - FIXED: No double background */}
           <div 
-            className="relative h-32"
-            style={getCoverImageStyle()}
+            className="relative"
+            style={{
+              ...getCoverImageStyle(),
+              height: settings.coverHeight || '200px'
+            }}
           >
             {/* Status Bar */}
             <div className="absolute top-2 left-4 right-4 flex justify-between items-center text-white text-xs">

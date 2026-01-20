@@ -1569,8 +1569,9 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
   if (storeData.coverImage) {
     return {
       backgroundImage: `url(${storeData.coverImage})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center'
+      backgroundSize: storeData.coverBackgroundSize || 'cover',
+      backgroundPosition: storeData.coverBackgroundPosition || 'center',
+      backgroundRepeat: 'no-repeat'
     }
   } else {
     return {
@@ -2535,8 +2536,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         <div className="max-w-[75rem] mx-auto">
           {/* Cover Image Section - FIXED: No gradient overlay when cover image exists */}
           <div 
-            className="relative h-[200px] sm:h-[250px] md:h-[280px] md:rounded-xl overflow-hidden"
-            style={getCoverImageStyle(storeData, primaryColor)}
+            className="relative md:rounded-xl overflow-hidden"
+            style={{
+              ...getCoverImageStyle(storeData, primaryColor),
+              height: storeData.coverHeight || '200px'
+            }}
           >
          {/* Icons in top right */}
 <div className="absolute top-4 sm:top-5 right-4 sm:right-5 flex gap-2 sm:gap-3">

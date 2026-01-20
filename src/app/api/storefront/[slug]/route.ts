@@ -234,6 +234,9 @@ export async function GET(
       descriptionAl: business.descriptionAl, // ALBANIAN
       logo: business.logo,
       coverImage: business.coverImage,
+      coverBackgroundSize: business.coverBackgroundSize,
+      coverBackgroundPosition: business.coverBackgroundPosition,
+      coverHeight: business.coverHeight,
       phone: business.phone,
       email: business.email,
       address: business.address,
