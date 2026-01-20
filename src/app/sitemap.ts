@@ -100,18 +100,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Fetch published business catalogs from database
   try {
-    const publishedBusinesses = await prisma.business.findMany({
+    // Fetch all businesses matching criteria (excluding deactivatedAt check - will filter in memory)
+    const allBusinesses = await prisma.business.findMany({
       where: {
         isActive: true,
-        deactivatedAt: null, // Must not be deactivated
-        isIndexable: true, // Must be indexable
-        noIndex: false, // Must not have noIndex set
-        onboardingCompleted: true, // Must have completed onboarding
-        setupWizardCompleted: true, // Must have completed setup wizard
+        isIndexable: true,
+        noIndex: false,
+        onboardingCompleted: true,
+        setupWizardCompleted: true,
         slug: {
           not: undefined
         },
-        // Only include businesses with valid subscription plans (exclude any remaining 'FREE' values)
         subscriptionPlan: {
           in: ['STARTER', 'PRO'] as SubscriptionPlan[]
         }
@@ -123,6 +122,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         subscriptionPlan: true,
         canonicalUrl: true,
         language: true,
+        deactivatedAt: true,
         users: {
           select: {
             role: true
@@ -132,6 +132,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       orderBy: [
         { updatedAt: 'desc' }   // Recently updated businesses first
       ]
+    })
+
+    // Filter out deactivated businesses in memory (handles both null and undefined)
+    // A business is deactivated only if deactivatedAt is explicitly set to a Date
+    const publishedBusinesses = allBusinesses.filter(business => {
+      // Business is not deactivated if deactivatedAt is null, undefined, or falsy
+      return !business.deactivatedAt || business.deactivatedAt === null
     })
 
     // Generate business catalog URLs
