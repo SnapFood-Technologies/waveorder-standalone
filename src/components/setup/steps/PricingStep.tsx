@@ -63,29 +63,22 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
     setLoading(true)
 
     try {
-      if (planId === 'STARTER') {
-        // STARTER plan - no Stripe checkout needed
-        // The Stripe customer and STARTER subscription will be created in save-progress API
-        await new Promise(resolve => setTimeout(resolve, 500))
-        onComplete({ subscriptionPlan: 'STARTER' })
-      } else {
-        // PRO plan - redirect to Stripe checkout
-        const response = await fetch('/api/setup/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            planId: 'PRO',
-            isAnnual: billingInterval === 'annual'
-          })
+      // Both STARTER and PRO require payment - redirect to Stripe checkout
+      const response = await fetch('/api/setup/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: planId,
+          isAnnual: billingInterval === 'annual'
         })
+      })
 
-        if (response.ok) {
-          const { checkoutUrl } = await response.json()
-          // Redirect to Stripe checkout
-          window.location.href = checkoutUrl
-        } else {
-          throw new Error('Failed to create checkout session')
-        }
+      if (response.ok) {
+        const { checkoutUrl } = await response.json()
+        // Redirect to Stripe checkout
+        window.location.href = checkoutUrl
+      } else {
+        throw new Error('Failed to create checkout session')
       }
     } catch (error) {
       console.error('Error selecting plan:', error)
@@ -198,33 +191,15 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
                   {loading && selectedPlan === plan.id ? 'Processing...' : plan.buttonText}
                 </button>
 
-                {plan.id === 'PRO' && (
-                  <p className="text-center text-sm text-gray-500">
-                    Cancel anytime, no questions asked
-                  </p>
-                )}
-
-                {plan.id === 'STARTER' && (
-                  <p className="text-center text-sm text-gray-500">
-                    No credit card required
-                  </p>
-                )}
+                <p className="text-center text-sm text-gray-500">
+                  Cancel anytime, no questions asked
+                </p>
               </div>
             </div>
           )
         })}
       </div>
 
-      {/* Skip Option */}
-      <div className="text-center space-y-4">
-        <button
-          onClick={() => handleSubmit('STARTER')}
-          disabled={loading}
-          className="text-gray-600 hover:text-gray-800 font-medium transition-colors"
-        >
-          Skip and continue with Starter plan
-        </button>
-      </div>
 
       <div className="flex justify-between mt-8">
         <button

@@ -39,49 +39,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle subscription plan selection (Step 3)
-    if (step === 3 && data.subscriptionPlan) {
-      // If user chose STARTER or skipped, create Stripe customer + STARTER subscription
-      if (data.subscriptionPlan === 'STARTER' && !user.stripeCustomerId) {
-        try {
-          // Create Stripe customer
-          const stripeCustomer = await createStripeCustomer(user.email, user.name || 'User')
-          
-          // Create STARTER subscription in Stripe
-          const stripeSubscription = await createFreeSubscription(stripeCustomer.id)
-          
-          // Create subscription in database
-          const subscription = await prisma.subscription.create({
-            data: {
-              stripeId: stripeSubscription.id,
-              status: stripeSubscription.status,
-              priceId: process.env.STRIPE_STARTER_PRICE_ID!,
-              plan: 'STARTER',
-              // @ts-ignore
-              currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-              // @ts-ignore
-              currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-            }
-          })
-
-          // Update user with Stripe info
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              stripeCustomerId: stripeCustomer.id,
-              subscriptionId: subscription.id,
-              plan: 'STARTER'
-            }
-          })
-
-        } catch (stripeError) {
-          console.error('❌ Stripe error during STARTER subscription:', stripeError)
-          // Continue with setup even if Stripe fails
-        }
-      }
-      
-      // If user chose PRO, we'll handle it in the checkout flow
-      // Just save the selection for now
-    }
+    // Note: Payment is handled via Stripe checkout, not here
+    // This step just saves the progress - subscription is created via webhook after payment
 
     // Find or create business for this user
     let business = await prisma.business.findFirst({

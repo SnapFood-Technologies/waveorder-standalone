@@ -85,6 +85,7 @@ export async function PATCH(
       // Validate price ID exists
       try {
         newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO', billingType)
+        console.log(`Price ID for ${subscriptionPlan} (${billingType}): ${newPriceId ? 'FOUND' : 'MISSING'}`)
       } catch (priceError: any) {
         console.error('Error getting price ID:', priceError)
         return NextResponse.json({ 
@@ -93,9 +94,17 @@ export async function PATCH(
         }, { status: 400 })
       }
       
-      if (!newPriceId || newPriceId.trim() === '') {
+      if (!newPriceId || newPriceId.trim() === '' || newPriceId.includes('undefined')) {
+        const envVarName = billingType === 'free' 
+          ? `STRIPE_${subscriptionPlan}_FREE_PRICE_ID`
+          : billingType === 'yearly'
+          ? `STRIPE_${subscriptionPlan}_ANNUAL_PRICE_ID`
+          : `STRIPE_${subscriptionPlan}_PRICE_ID`
+        
+        console.error(`Missing environment variable: ${envVarName}`)
         return NextResponse.json({ 
-          message: `Price ID not configured for ${subscriptionPlan} plan (${billingType}). Please check environment variables.` 
+          message: `Price ID not configured for ${subscriptionPlan} plan (${billingType}). Missing environment variable: ${envVarName}`,
+          error: `Environment variable ${envVarName} is not set`
         }, { status: 400 })
       }
 

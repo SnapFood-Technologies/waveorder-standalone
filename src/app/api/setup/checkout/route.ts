@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const { planId, isAnnual = false } = await req.json()
     
-    if (planId !== 'PRO') {
+    if (!['STARTER', 'PRO'].includes(planId)) {
       return NextResponse.json(
         { message: 'Invalid plan selected' },
         { status: 400 }

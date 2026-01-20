@@ -114,11 +114,12 @@ export async function createFreeSubscription(customerId: string) {
     customer: customerId,
     items: [
       {
-        price: PLANS.STARTER.priceId,
+        price: PLANS.STARTER.freePriceId, // Use free price ID for skipped onboarding
       },
     ],
     metadata: {
       plan: 'STARTER',
+      billingType: 'free',
       source: 'waveorder_platform'
     }
   })
@@ -219,11 +220,24 @@ export function mapStripePlanToDb(stripePriceId: string): PlanId {
 }
 
 export function getPriceId(plan: PlanId, billingType: 'monthly' | 'yearly' | 'free'): string {
+  let priceId: string | undefined
+  
   if (billingType === 'free') {
-    return plan === 'STARTER' ? PLANS.STARTER.freePriceId : PLANS.PRO.freePriceId
+    priceId = plan === 'STARTER' ? PLANS.STARTER.freePriceId : PLANS.PRO.freePriceId
   } else if (billingType === 'yearly') {
-    return plan === 'STARTER' ? PLANS.STARTER.annualPriceId : PLANS.PRO.annualPriceId
+    priceId = plan === 'STARTER' ? PLANS.STARTER.annualPriceId : PLANS.PRO.annualPriceId
   } else {
-    return plan === 'STARTER' ? PLANS.STARTER.priceId : PLANS.PRO.priceId
+    priceId = plan === 'STARTER' ? PLANS.STARTER.priceId : PLANS.PRO.priceId
   }
+  
+  if (!priceId || priceId.trim() === '') {
+    const envVarName = billingType === 'free' 
+      ? `STRIPE_${plan}_FREE_PRICE_ID`
+      : billingType === 'yearly'
+      ? `STRIPE_${plan}_ANNUAL_PRICE_ID`
+      : `STRIPE_${plan}_PRICE_ID`
+    throw new Error(`Price ID not configured. Missing environment variable: ${envVarName}`)
+  }
+  
+  return priceId
 }
