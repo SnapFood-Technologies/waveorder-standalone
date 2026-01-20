@@ -241,3 +241,24 @@ export function getPriceId(plan: PlanId, billingType: 'monthly' | 'yearly' | 'fr
   
   return priceId
 }
+
+export function getBillingTypeFromPriceId(priceId: string): 'monthly' | 'yearly' | 'free' | null {
+  if (!priceId || priceId.trim() === '') return null
+  
+  // Check free price IDs
+  if (PLANS.STARTER.freePriceId === priceId || PLANS.PRO.freePriceId === priceId) {
+    return 'free'
+  }
+  
+  // Check yearly price IDs
+  if (PLANS.STARTER.annualPriceId === priceId || PLANS.PRO.annualPriceId === priceId) {
+    return 'yearly'
+  }
+  
+  // Check monthly price IDs
+  if (PLANS.STARTER.priceId === priceId || PLANS.PRO.priceId === priceId) {
+    return 'monthly'
+  }
+  
+  return null
+}

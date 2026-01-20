@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { sendBusinessCreatedEmail } from '@/lib/email'
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import { createStripeCustomer, createSubscriptionByPlan, getPriceId } from '@/lib/stripe'
+import { createStripeCustomer, createSubscriptionByPlan, getPriceId, getBillingTypeFromPriceId } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -111,6 +111,11 @@ export async function GET(request: NextRequest) {
                       provider: true,
                       type: true
                     }
+                  },
+                  subscription: {
+                    select: {
+                      priceId: true
+                    }
                   }
                 }
               }
@@ -157,24 +162,29 @@ export async function GET(request: NextRequest) {
           where: whereConditions,
           include: {
             users: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    role: true,
-                    createdAt: true,
-                    password: true,
-                    accounts: {
-                      select: {
-                        provider: true,
-                        type: true
-                      }
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  role: true,
+                  createdAt: true,
+                  password: true,
+                  accounts: {
+                    select: {
+                      provider: true,
+                      type: true
+                    }
+                  },
+                  subscription: {
+                    select: {
+                      priceId: true
                     }
                   }
                 }
               }
+            }
             },
             orders: {
               select: { 
@@ -233,12 +243,18 @@ export async function GET(request: NextRequest) {
         role: businessUser.user.role
       }))
 
+      // Get billing type from subscription priceId
+      // @ts-ignore
+      const subscriptionPriceId = owner?.subscription?.priceId
+      const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+
       return {
         id: business.id,
         name: business.name,
         slug: business.slug,
         businessType: business.businessType,
         subscriptionPlan: business.subscriptionPlan,
+        billingType: billingType,
         subscriptionStatus: business.subscriptionStatus,
         isActive: business.isActive,
         deactivatedAt: business.deactivatedAt,

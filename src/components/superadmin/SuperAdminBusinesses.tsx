@@ -44,6 +44,7 @@ interface Business {
   slug: string;
   businessType: string;
   subscriptionPlan: string;
+  billingType?: 'monthly' | 'yearly' | 'free' | null;
   subscriptionStatus: string;
   isActive: boolean;
   deactivatedAt?: string | null;
@@ -716,6 +717,11 @@ export function SuperAdminBusinesses() {
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {business.subscriptionPlan}
+                            {business.billingType && (
+                              <span className="ml-1 text-xs font-normal opacity-75">
+                                ({business.billingType === 'free' ? 'Free' : business.billingType === 'yearly' ? 'Yearly' : 'Monthly'})
+                              </span>
+                            )}
                           </span>
                           <button
                             onClick={(e) => {
@@ -1016,6 +1022,11 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
                 : 'bg-gray-100 text-gray-800'
             }`}>
               {business.subscriptionPlan} Plan
+              {business.billingType && (
+                <span className="ml-1.5 text-xs font-normal opacity-75">
+                  ({business.billingType === 'free' ? 'Free' : business.billingType === 'yearly' ? 'Yearly' : 'Monthly'})
+                </span>
+              )}
             </span>
             {!canImpersonate && (
               <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
