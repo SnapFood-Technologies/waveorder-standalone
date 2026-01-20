@@ -443,7 +443,7 @@ export function SuperAdminBusinesses() {
         <img 
           src={business.logo} 
           alt={`${business.name} logo`}
-          className="w-full h-full object-cover rounded-lg"
+          className="w-full h-full object-contain rounded-lg"
         />
       );
     }
