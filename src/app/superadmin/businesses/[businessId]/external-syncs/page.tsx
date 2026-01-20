@@ -141,63 +141,61 @@ export default function ExternalSyncsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href={`/superadmin/businesses/${businessId}`}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">External Syncs</h1>
-                <p className="text-sm text-gray-600">{business?.name}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/superadmin/businesses/${businessId}`}
+              className="text-gray-400 hover:text-gray-600"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add External Sync
-            </button>
+              <ChevronLeft className="w-6 h-6" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">External Syncs</h1>
+              <p className="text-gray-600 mt-1">Manage product synchronization with external systems</p>
+            </div>
           </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add External Sync
+          </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
-        {loading ? (
+      {loading ? (
           <div className="text-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">Loading external syncs...</p>
           </div>
         ) : syncs.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No External Syncs</h3>
             <p className="text-gray-600 mb-6">Get started by adding your first external sync configuration.</p>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add External Sync
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -300,6 +298,7 @@ export default function ExternalSyncsPage() {
         )}
       </div>
 
+      {/* Modals */}
       {/* Add/Edit Modal */}
       {(showAddModal || editingSync) && (
         <ExternalSyncModal
@@ -525,7 +524,7 @@ function ExternalSyncModal({ businessId, sync, onClose, onSuccess }: ExternalSyn
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
