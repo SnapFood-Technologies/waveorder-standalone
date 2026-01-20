@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     const folder = formData.get('folder') as string
     const businessId = formData.get('businessId') as string
+    const crop = formData.get('crop') as string | null
 
     if (!file || !folder || !businessId) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 })
@@ -52,7 +53,8 @@ export async function POST(request: NextRequest) {
       file, 
       businessId, 
       folder as 'logo' | 'cover' | 'favicon' | 'ogImage',
-      oldImageUrl || undefined
+      oldImageUrl || undefined,
+      folder === 'cover' ? { crop: crop !== 'false' } : undefined
     )
 
     if (!result.success) {

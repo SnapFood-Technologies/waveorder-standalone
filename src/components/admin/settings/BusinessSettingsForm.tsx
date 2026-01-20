@@ -308,6 +308,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
   const [coverUploading, setCoverUploading] = useState(false)
   const [faviconUploading, setFaviconUploading] = useState(false)
   const [ogImageUploading, setOgImageUploading] = useState(false)
+  const [cropCoverImage, setCropCoverImage] = useState(true)
   const [detectedCountry, setDetectedCountry] = useState<string>('US')
   // const [showAlbanianFields, setShowAlbanianFields] = useState(false)
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
@@ -430,11 +431,18 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     }
   }, [settings.name, originalSlug, settings.slug])
 
-  const uploadImageToSupabase = async (file: File, folder: string): Promise<string> => {
+  const uploadImageToSupabase = async (
+    file: File,
+    folder: string,
+    options?: { crop?: boolean }
+  ): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('folder', folder)
     formData.append('businessId', businessId)
+    if (folder === 'cover') {
+      formData.append('crop', String(options?.crop ?? true))
+    }
 
     const response = await fetch('/api/admin/upload', {
       method: 'POST',
@@ -460,7 +468,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     setUploading(true)
     
     try {
-      const url = await uploadImageToSupabase(file, type)
+      const url = type === 'cover'
+        ? await uploadImageToSupabase(file, type, { crop: cropCoverImage })
+        : await uploadImageToSupabase(file, type)
       
       const fieldMap = {
         logo: 'logo',
@@ -1405,6 +1415,16 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
           {/* Cover Image Upload */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Cover Image</h3>
+
+            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
+              <input
+                type="checkbox"
+                checked={cropCoverImage}
+                onChange={(e) => setCropCoverImage(e.target.checked)}
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+              />
+              <span>Crop to fit (recommended)</span>
+            </label>
             
             {settings.coverImage ? (
               <div className="relative">

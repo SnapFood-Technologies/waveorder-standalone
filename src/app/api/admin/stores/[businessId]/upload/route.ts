@@ -23,6 +23,7 @@ export async function POST(
     const file = formData.get('image') as File
     const folder = formData.get('folder') as string || 'categories'
     const oldImageUrl = formData.get('oldImageUrl') as string | null
+    const crop = formData.get('crop') as string | null
 
     if (!file) {
       return NextResponse.json({ message: 'No file provided' }, { status: 400 })
@@ -32,7 +33,8 @@ export async function POST(
       file, 
       businessId, 
       folder as 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products',
-      oldImageUrl || undefined
+      oldImageUrl || undefined,
+      folder === 'cover' ? { crop: crop !== 'false' } : undefined
     )
 
     if (!result.success) {

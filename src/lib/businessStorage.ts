@@ -15,7 +15,8 @@ export async function uploadBusinessImage(
   file: File, 
   businessId: string,
   folder: 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products',
-  oldImageUrl?: string
+  oldImageUrl?: string,
+  options?: { crop?: boolean }
 ): Promise<BusinessImageUploadResult> {
   try {
     // Validate file first
@@ -46,15 +47,27 @@ export async function uploadBusinessImage(
         break;
 
       case 'cover':
-        processedBuffer = await sharp(buffer)
-          .resize({
-            width: 1200,
-            height: 600,
-            fit: 'cover',
-            position: 'center'
-          })
-          .jpeg({ quality: 85, progressive: true })
-          .toBuffer();
+        if (options?.crop === false) {
+          // No crop: keep aspect ratio, just constrain width for performance
+          processedBuffer = await sharp(buffer)
+            .resize({
+              width: 1200,
+              withoutEnlargement: true
+            })
+            .jpeg({ quality: 85, progressive: true })
+            .toBuffer();
+        } else {
+          // Default: crop to fixed hero ratio for consistent UI
+          processedBuffer = await sharp(buffer)
+            .resize({
+              width: 1200,
+              height: 600,
+              fit: 'cover',
+              position: 'center'
+            })
+            .jpeg({ quality: 85, progressive: true })
+            .toBuffer();
+        }
         break;
 
       case 'favicon':
