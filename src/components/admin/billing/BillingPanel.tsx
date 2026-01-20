@@ -357,6 +357,13 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                       Free Plan
                     </p>
                   </>
+                ) : isFreePlan ? (
+                  <>
+                    <span className="text-3xl font-bold text-gray-900">—</span>
+                    <p className="text-sm text-gray-600 font-medium mt-1">
+                      Paid pricing (contact support)
+                    </p>
+                  </>
                 ) : (
                   <>
                     <span className="text-3xl font-bold text-gray-900">${displayPrice}</span>
@@ -384,7 +391,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 ))}
               </div>
 
-              {isCurrentPlan && isFreePlan ? (
+              {isFreePlan ? (
                 <div className="w-full py-2.5 px-4 rounded-lg bg-blue-50 border border-blue-200">
                   <p className="text-sm text-blue-800 text-center font-medium">
                     Contact Support to Change Plan
@@ -396,12 +403,10 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               ) : (
                 <button
                   onClick={() => handleUpgrade(planKey)}
-                  disabled={isCurrentPlan || isUpgrading === planKey || isFreePlan}
+                  disabled={isCurrentPlan || isUpgrading === planKey}
                   className={`w-full py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                     isCurrentPlan
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : isFreePlan
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : planKey === 'PRO'
                       ? 'bg-purple-600 hover:bg-purple-700 text-white'
                       : 'bg-gray-600 hover:bg-gray-700 text-white'
