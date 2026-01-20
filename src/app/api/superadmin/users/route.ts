@@ -39,131 +39,95 @@ export async function GET(request: NextRequest) {
       whereConditions.role = role
     }
 
-    // Get users with pagination
-    const [users, totalCount] = await Promise.all([
-      prisma.user.findMany({
-        where: whereConditions,
-        include: {
-          accounts: {
-            select: {
-              provider: true,
-              type: true
-            }
-          },
-          businesses: {
-            include: {
-              business: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  isActive: true,
-                  deactivatedAt: true
-                }
-              }
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: offset,
-        take: limit
-      }),
-      prisma.user.count({ where: whereConditions })
-    ])
-
-    // Format response with auth method detection and filter users
-    const formattedUsers = users
-      .map(user => {
-        // Determine auth method
-        let authMethod: 'google' | 'email' | 'magic-link' | 'oauth' = 'email'
-        
-        if (user.accounts?.length > 0) {
-          const googleAccount = user.accounts.find(acc => acc.provider === 'google')
-          if (googleAccount) {
-            authMethod = 'google'
-          } else {
-            authMethod = 'oauth'
-          }
-        } else if (user.password) {
-          authMethod = 'email'
-        } else {
-          authMethod = 'magic-link'
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          authMethod,
-          createdAt: user.createdAt,
-          businesses: user.businesses.map(bu => ({
-            businessId: bu.business.id,
-            businessName: bu.business.name,
-            businessSlug: bu.business.slug,
-            role: bu.role,
-            isActive: bu.business.isActive
-          }))
-        }
-      })
-      .filter(user => {
-        // Filter out users with no businesses or only inactive/deactivated businesses
-        if (user.businesses.length === 0) {
-          return false
-        }
-        
-        // Find the original user to check deactivatedAt
-        const originalUser = users.find(u => u.id === user.id)
-        if (!originalUser) return false
-        
-        // Check if user has at least one active, non-deactivated business
-        const hasActiveBusiness = originalUser.businesses.some(bu => 
-          bu.business.isActive && 
-          (!bu.business.deactivatedAt || bu.business.deactivatedAt === null)
-        )
-        
-        return hasActiveBusiness
-      })
-
-    // Recalculate total count after filtering
-    // We need to fetch all users and filter to get accurate count
+    // Get ALL users first (without pagination) to filter properly
     const allUsers = await prisma.user.findMany({
       where: whereConditions,
       include: {
+        accounts: {
+          select: {
+            provider: true,
+            type: true
+          }
+        },
         businesses: {
           include: {
             business: {
               select: {
                 id: true,
+                name: true,
+                slug: true,
                 isActive: true,
                 deactivatedAt: true
               }
             }
           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     })
 
-    const filteredTotalCount = allUsers.filter(user => {
-      if (user.businesses.length === 0) {
+    // Filter users first (before formatting and pagination) to ensure we only process users with active businesses
+    const filteredUsers = allUsers.filter(user => {
+      // Filter out users with no businesses or only inactive/deactivated businesses
+      if (!user.businesses || user.businesses.length === 0) {
         return false
       }
       
+      // Check if user has at least one active, non-deactivated business
       const hasActiveBusiness = user.businesses.some(bu => 
         bu.business.isActive && 
         (!bu.business.deactivatedAt || bu.business.deactivatedAt === null)
       )
       
       return hasActiveBusiness
-    }).length
+    })
+
+    // Apply pagination after filtering
+    const totalCount = filteredUsers.length
+    const paginatedUsers = filteredUsers.slice(offset, offset + limit)
+
+    // Format response with auth method detection
+    const formattedUsers = paginatedUsers.map(user => {
+      // Determine auth method
+      let authMethod: 'google' | 'email' | 'magic-link' | 'oauth' = 'email'
+      
+      if (user.accounts?.length > 0) {
+        const googleAccount = user.accounts.find(acc => acc.provider === 'google')
+        if (googleAccount) {
+          authMethod = 'google'
+        } else {
+          authMethod = 'oauth'
+        }
+      } else if (user.password) {
+        authMethod = 'email'
+      } else {
+        authMethod = 'magic-link'
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        authMethod,
+        createdAt: user.createdAt,
+        businesses: user.businesses.map(bu => ({
+          businessId: bu.business.id,
+          businessName: bu.business.name,
+          businessSlug: bu.business.slug,
+          role: bu.role,
+          isActive: bu.business.isActive
+        }))
+      }
+    })
 
     return NextResponse.json({
       users: formattedUsers,
       pagination: {
         page,
         limit,
-        total: filteredTotalCount,
-        pages: Math.ceil(filteredTotalCount / limit)
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
       }
     })
 

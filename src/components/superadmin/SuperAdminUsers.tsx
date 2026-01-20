@@ -75,7 +75,8 @@ export function SuperAdminUsers() {
 
       const params = new URLSearchParams({
         search: debouncedSearchQuery,
-        role: roleFilter,
+        // role: roleFilter, // Commented out - role filter removed
+        role: 'all', // Always use 'all' since role filter is disabled
         page: currentPage.toString(),
         limit: pagination.limit.toString()
       })
@@ -168,7 +169,7 @@ export function SuperAdminUsers() {
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -181,7 +182,8 @@ export function SuperAdminUsers() {
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <select
+            {/* Role filter - commented out */}
+            {/* <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
@@ -189,7 +191,7 @@ export function SuperAdminUsers() {
               <option value="all">All Roles</option>
               <option value="SUPER_ADMIN">Super Admin</option>
               <option value="BUSINESS_OWNER">Business Owner</option>
-            </select>
+            </select> */}
 
             <div className="text-sm text-gray-600">
               {pagination.total} users
@@ -214,9 +216,10 @@ export function SuperAdminUsers() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {/* Role column - commented out */}
+                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
-                    </th>
+                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Businesses
                     </th>
@@ -244,11 +247,12 @@ export function SuperAdminUsers() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      {/* Role column - commented out */}
+                      {/* <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
                           {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Business Owner'}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-6 py-4">
                         {user.businesses.length > 0 ? (
                           <div className="space-y-1">
