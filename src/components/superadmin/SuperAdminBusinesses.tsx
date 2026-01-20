@@ -1188,14 +1188,14 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             <div className="flex space-x-3">
               <Link
                 href={`/superadmin/businesses/${business.id}`}
-                className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 View Full Details
               </Link>
               <button
                 onClick={() => window.open(`/${business.slug}`, '_blank')}
-                className="inline-flex items-center px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Visit Store
@@ -1205,7 +1205,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
                 disabled={!canImpersonate}
                 className={`inline-flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
                   canImpersonate
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-teal-600 text-white hover:bg-teal-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >

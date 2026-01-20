@@ -29,7 +29,8 @@ import {
   Trash2,
   Power,
   PowerOff,
-  Truck
+  Truck,
+  TrendingUp
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -227,24 +228,6 @@ export default function BusinessDetailsPage() {
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/${business.slug}`}
-            target="_blank"
-            className="inline-flex items-center px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Visit Store
-          </Link>
-          <button
-            onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
-            disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
-            className="inline-flex items-center px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700"
-          >
-            <UserCheck className="w-4 h-4 mr-2" />
-            Impersonate
-          </button>
-        </div>
       </div>
 
       {/* Content */}
@@ -407,7 +390,7 @@ export default function BusinessDetailsPage() {
                 <p className="text-xs text-gray-500">Products</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <DollarSign className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <TrendingUp className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">
                   {business.currency} {business.stats.totalRevenue.toFixed(2)}
                 </p>
@@ -868,7 +851,7 @@ export default function BusinessDetailsPage() {
             <div className="space-y-2">
               <button
                 onClick={() => window.open(`/${business.slug}`, '_blank')}
-                className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100"
+                className="w-full flex items-center justify-between px-4 py-2 text-sm text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100"
               >
                 <span className="flex items-center">
                   <ExternalLink className="w-4 h-4 mr-2" />
@@ -878,7 +861,7 @@ export default function BusinessDetailsPage() {
               <button
                 onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
                 disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
-                className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100"
+                className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100"
               >
                 <span className="flex items-center">
                   <UserCheck className="w-4 h-4 mr-2" />
