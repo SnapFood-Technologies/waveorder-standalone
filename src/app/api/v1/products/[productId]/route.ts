@@ -358,13 +358,20 @@ export async function PUT(
       data: updateData
     })
     
-    // Handle variations if provided
-    if (variations !== undefined && Array.isArray(variations)) {
-      // Fetch existing variants to match by SKU
-      const existingVariants = await prisma.productVariant.findMany({
+    // Fetch existing variants to check if we need to clear them
+    const existingVariants = await prisma.productVariant.findMany({
+      where: { productId: product.id }
+    })
+    
+    // Handle product type change: if productType is 'simple', clear all variations
+    if (productType === 'simple' && existingVariants.length > 0) {
+      await prisma.productVariant.deleteMany({
         where: { productId: product.id }
       })
-      
+    }
+    
+    // Handle variations if provided
+    if (variations !== undefined && Array.isArray(variations)) {
       const variantSkuMap = new Map(existingVariants.map(v => [v.sku || '', v]))
       
       // Process each variation from the request
@@ -525,6 +532,14 @@ export async function PUT(
             }
           })
         }
+      }
+    } else if (variations !== undefined && Array.isArray(variations) && variations.length === 0) {
+      // Explicitly clear variations: variations: [] means delete all variations
+      // This handles the case where OmniStack sends variations: [] to clear variations
+      if (existingVariants.length > 0) {
+        await prisma.productVariant.deleteMany({
+          where: { productId: product.id }
+        })
       }
     }
     
