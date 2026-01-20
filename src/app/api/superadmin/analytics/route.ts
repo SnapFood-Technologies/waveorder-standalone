@@ -256,12 +256,17 @@ export async function GET(request: NextRequest) {
     const topBusinesses = businesses
       .map(business => {
         const businessOrderRevenue = business.orders.reduce((sum, order) => sum + order.total, 0)
+        const owner = business.users.find(u => u.role === 'OWNER')?.user
+        const subscriptionPriceId = owner?.subscription?.priceId
+        const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+        
         return {
           id: business.id,
           name: business.name,
           orders: business._count.orders,
           revenue: businessOrderRevenue, // Business sales from delivered + paid orders
-          plan: business.subscriptionPlan
+          plan: business.subscriptionPlan,
+          billingType: billingType
         }
       })
       .filter(b => b.revenue > 0)

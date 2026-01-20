@@ -46,6 +46,7 @@ interface AnalyticsData {
     orders: number
     revenue: number
     plan: string
+    billingType?: 'monthly' | 'yearly' | 'free' | null
   }[]
   revenueByPlan: {
     plan: string
@@ -290,6 +291,11 @@ export function SuperAdminAnalytics() {
                       business.plan === 'PRO' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
                     }`}>
                       {business.plan}
+                      {business.billingType && (
+                        <span className="ml-1 text-gray-600 font-normal">
+                          ({business.billingType === 'free' ? 'Free' : business.billingType === 'monthly' ? 'Monthly' : 'Yearly'})
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-600 text-right">{formatNumber(business.orders)}</td>
