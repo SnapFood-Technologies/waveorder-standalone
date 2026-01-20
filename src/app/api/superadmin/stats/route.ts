@@ -66,13 +66,16 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Businesses created in selected period
-      prisma.business.count({
+      // Businesses created in selected period (fetch to filter deactivated in memory)
+      prisma.business.findMany({
         where: {
           createdAt: {
             gte: startDate,
             lte: endDate
           }
+        },
+        select: {
+          deactivatedAt: true
         }
       }),
 
@@ -87,22 +90,28 @@ export async function GET(request: NextRequest) {
         }
       }),
       
-      // Current month businesses (for growth calculation)
-      prisma.business.count({
+      // Current month businesses (for growth calculation - fetch to filter deactivated)
+      prisma.business.findMany({
         where: {
           createdAt: {
             gte: currentMonth
           }
+        },
+        select: {
+          deactivatedAt: true
         }
       }),
       
-      // Last month businesses (for growth calculation)
-      prisma.business.count({
+      // Last month businesses (for growth calculation - fetch to filter deactivated)
+      prisma.business.findMany({
         where: {
           createdAt: {
             gte: lastMonth,
             lt: currentMonth
           }
+        },
+        select: {
+          deactivatedAt: true
         }
       }),
       
@@ -130,14 +139,19 @@ export async function GET(request: NextRequest) {
   })
     ])
 
+    // Filter out deactivated businesses in memory (handles both null and undefined)
+    const activeBusinessesInPeriod = businessesInPeriod.filter((b: any) => !b.deactivatedAt || b.deactivatedAt === null)
+    const activeCurrentMonthBusinesses = currentMonthBusinesses.filter((b: any) => !b.deactivatedAt || b.deactivatedAt === null)
+    const activeLastMonthBusinesses = lastMonthBusinesses.filter((b: any) => !b.deactivatedAt || b.deactivatedAt === null)
+
     // Calculate monthly growth
-    const monthlyGrowth = lastMonthBusinesses > 0 
-      ? ((currentMonthBusinesses - lastMonthBusinesses) / lastMonthBusinesses * 100)
-      : currentMonthBusinesses > 0 ? 100 : 0
+    const monthlyGrowth = activeLastMonthBusinesses.length > 0 
+      ? ((activeCurrentMonthBusinesses.length - activeLastMonthBusinesses.length) / activeLastMonthBusinesses.length * 100)
+      : activeCurrentMonthBusinesses.length > 0 ? 100 : 0
 
     const stats = {
-      // Show businesses created in selected period for "New Businesses"
-      totalBusinesses: businessesInPeriod,
+      // Show businesses created in selected period for "New Businesses" (excluding deactivated)
+      totalBusinesses: activeBusinessesInPeriod.length,
       // Show all-time active businesses (not affected by date filter)
       activeBusinesses,
       // Show users created in selected period for "New Users"
