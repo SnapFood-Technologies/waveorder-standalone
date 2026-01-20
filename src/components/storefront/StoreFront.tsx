@@ -1626,15 +1626,26 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   } | null>(null)
 
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024 // lg breakpoint (1024px)
+    }
+    return false // Default to desktop on SSR
+  })
 
   // Detect mobile/desktop screen size
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const checkMobile = () => {
-      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 1024) // lg breakpoint
+      const width = window.innerWidth
+      setIsMobile(width < 1024) // lg breakpoint (1024px)
     }
     
+    // Check immediately on mount
     checkMobile()
+    
+    // Listen for resize events
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])

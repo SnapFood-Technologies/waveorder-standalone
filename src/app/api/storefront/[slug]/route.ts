@@ -237,6 +237,8 @@ export async function GET(
       coverBackgroundSize: business.coverBackgroundSize,
       coverBackgroundPosition: business.coverBackgroundPosition,
       coverHeight: business.coverHeight,
+      coverHeightMobile: business.coverHeightMobile,
+      coverHeightDesktop: business.coverHeightDesktop,
       logoPadding: business.logoPadding,
       logoObjectFit: business.logoObjectFit,
       phone: business.phone,

@@ -290,7 +290,10 @@ if (isMobile && device === 'mobile') {
                   <img 
                     src={businessData.logo} 
                     alt={businessData.name} 
-                    className="w-full h-full rounded-full object-cover" 
+                    className="w-full h-full rounded-full" 
+                    style={{
+                      objectFit: (settings.logoObjectFit || 'cover') as 'fill' | 'contain' | 'cover' | 'none' | 'scale-down'
+                    }}
                   />
                 ) : (
                   businessData.name?.charAt(0).toUpperCase() || 'S'
@@ -688,7 +691,10 @@ if (isMobile && device === 'mobile') {
                 <img 
                   src={businessData.logo} 
                   alt={businessData.name} 
-                  className="w-full h-full rounded-full object-cover" 
+                  className="w-full h-full rounded-full" 
+                  style={{
+                    objectFit: (settings.logoObjectFit || 'cover') as 'fill' | 'contain' | 'cover' | 'none' | 'scale-down'
+                  }}
                 />
               ) : (
                 businessData.name?.charAt(0).toUpperCase() || 'S'
