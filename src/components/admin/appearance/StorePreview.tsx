@@ -29,6 +29,8 @@ interface StorePreviewProps {
     coverBackgroundSize?: string
     coverBackgroundPosition?: string
     coverHeight?: string
+    logoPadding?: string
+    logoObjectFit?: string
   }
   device: 'mobile' | 'desktop'
 }
@@ -277,10 +279,20 @@ if (isMobile && device === 'mobile') {
               {/* Logo positioned over cover image */}
               <div 
                 className="absolute -top-16 left-0 w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold shadow-xl bg-white"
-                style={{ color: settings.primaryColor }}
+                style={{ 
+                  color: settings.primaryColor,
+                  padding: settings.logoPadding || '0px'
+                }}
               >
                 {businessData.logo ? (
-                  <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
+                  <img 
+                    src={businessData.logo} 
+                    alt={businessData.name} 
+                    className="w-full h-full rounded-full" 
+                    style={{
+                      objectFit: settings.logoObjectFit || 'cover'
+                    }}
+                  />
                 ) : (
                   businessData.name?.charAt(0).toUpperCase() || 'S'
                 )}
@@ -668,10 +680,20 @@ if (isMobile && device === 'mobile') {
             {/* Logo */}
             <div 
               className="absolute -top-6 left-4 w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shadow-lg bg-white"
-              style={{ color: settings.primaryColor }}
+              style={{ 
+                color: settings.primaryColor,
+                padding: settings.logoPadding || '0px'
+              }}
             >
               {businessData.logo ? (
-                <img src={businessData.logo} alt={businessData.name} className="w-full h-full rounded-full object-cover" />
+                <img 
+                  src={businessData.logo} 
+                  alt={businessData.name} 
+                  className="w-full h-full rounded-full" 
+                  style={{
+                    objectFit: settings.logoObjectFit || 'cover'
+                  }}
+                />
               ) : (
                 businessData.name?.charAt(0).toUpperCase() || 'S'
               )}

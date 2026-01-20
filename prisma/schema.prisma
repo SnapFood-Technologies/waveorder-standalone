@@ -205,6 +205,10 @@ model Business {
   coverBackgroundPosition String? // 'center', 'top', 'bottom', 'left', 'right', etc.
   coverHeight             String? // e.g., '200px', '250px', '300px', 'auto'
 
+  // Logo CSS settings
+  logoPadding             String? // e.g., '0px', '4px', '6px', '8px'
+  logoObjectFit           String? // 'cover' or 'contain', default 'cover'
+
   deliveryZones DeliveryZone[]
   postals       Postal[]
   postalPricing PostalPricing[]

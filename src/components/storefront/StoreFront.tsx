@@ -1430,6 +1430,8 @@ interface StoreData {
   coverBackgroundSize?: string
   coverBackgroundPosition?: string
   coverHeight?: string
+  logoPadding?: string
+  logoObjectFit?: string
   phone?: string
   email?: string
   address?: string
@@ -2575,11 +2577,19 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               className="absolute -top-8 sm:-top-10 left-6 sm:left-6 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold shadow-xl"
               style={{ 
                 backgroundColor: 'white',
-                color: primaryColor
+                color: primaryColor,
+                padding: storeData.logoPadding || '0px'
               }}
             >
               {storeData.logo ? (
-                <img src={storeData.logo} alt={storeData.name} className="w-full h-full rounded-full object-cover" />
+                <img 
+                  src={storeData.logo} 
+                  alt={storeData.name} 
+                  className="w-full h-full rounded-full" 
+                  style={{
+                    objectFit: storeData.logoObjectFit || 'cover'
+                  }}
+                />
               ) : (
                 storeData.name.charAt(0)
               )}

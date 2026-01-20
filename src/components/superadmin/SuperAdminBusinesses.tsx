@@ -954,10 +954,10 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
   const getBusinessIcon = (business: Business) => {
     if (business.logo) {
       return (
-        <img 
+        <img
           src={business.logo} 
           alt={`${business.name} logo`}
-          className="w-full h-full object-cover rounded-lg"
+          className="w-full h-full object-contain rounded-lg"
         />
       );
     }

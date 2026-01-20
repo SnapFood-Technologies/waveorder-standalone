@@ -58,6 +58,8 @@ interface AppearanceSettings {
   coverBackgroundSize?: string
   coverBackgroundPosition?: string
   coverHeight?: string
+  logoPadding?: string
+  logoObjectFit?: string
 }
 
 const defaultColors = [
@@ -153,7 +155,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           featuredBadgeColor: data.business.featuredBadgeColor || '#EF4444',
           coverBackgroundSize: data.business.coverBackgroundSize || 'cover',
           coverBackgroundPosition: data.business.coverBackgroundPosition || 'center',
-          coverHeight: data.business.coverHeight || '200px'
+          coverHeight: data.business.coverHeight || '200px',
+          logoPadding: data.business.logoPadding || '0px',
+          logoObjectFit: data.business.logoObjectFit || 'cover'
         }
         
         setSettings(appearanceSettings)
@@ -628,6 +632,67 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
                   Height of the cover section (e.g., "200px", "250px", "300px", "auto")
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Logo CSS Settings */}
+          {businessData?.logo && (
+            <div className="bg-white p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center mb-4">
+                <Image className="w-5 h-5 text-teal-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Logo CSS Override</h3>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                <div className="flex items-start">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Use with Caution</p>
+                    <p className="text-xs">
+                      These CSS settings directly override the logo styling. Incorrect values may break the layout. 
+                      Test your changes on the live store before saving.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Logo Padding */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Logo Padding
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={settings.logoPadding || '0px'}
+                    onChange={(e) => setSettings(prev => ({ ...prev, logoPadding: e.target.value }))}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    placeholder="0px"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Padding inside the logo circle (e.g., "0px", "4px", "6px", "8px"). Default: 0px (no padding)
+                </p>
+              </div>
+
+              {/* Logo Object Fit */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Logo Fit
+                </label>
+                <select
+                  value={settings.logoObjectFit || 'cover'}
+                  onChange={(e) => setSettings(prev => ({ ...prev, logoObjectFit: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                >
+                  <option value="cover">cover (default - fills circle, may crop)</option>
+                  <option value="contain">contain (shows full logo, may have empty space)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Controls how the logo image fits within the circle
                 </p>
               </div>
             </div>

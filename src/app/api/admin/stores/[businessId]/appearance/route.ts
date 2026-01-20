@@ -14,7 +14,9 @@ const appearanceSchema = z.object({
   featuredBadgeColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color format'),
   coverBackgroundSize: z.string().optional(),
   coverBackgroundPosition: z.string().optional(),
-  coverHeight: z.string().optional()
+  coverHeight: z.string().optional(),
+  logoPadding: z.string().optional(),
+  logoObjectFit: z.string().optional()
 })
 
 export async function PUT(
@@ -64,6 +66,8 @@ export async function PUT(
         coverBackgroundSize: validatedData.coverBackgroundSize || null,
         coverBackgroundPosition: validatedData.coverBackgroundPosition || null,
         coverHeight: validatedData.coverHeight || null,
+        logoPadding: validatedData.logoPadding || null,
+        logoObjectFit: validatedData.logoObjectFit || null,
         updatedAt: new Date()
       },
       select: {
@@ -80,6 +84,8 @@ export async function PUT(
         coverBackgroundSize: true,
         coverBackgroundPosition: true,
         coverHeight: true,
+        logoPadding: true,
+        logoObjectFit: true,
         updatedAt: true
       }
     })
@@ -144,6 +150,8 @@ export async function GET(
         coverBackgroundSize: true,
         coverBackgroundPosition: true,
         coverHeight: true,
+        logoPadding: true,
+        logoObjectFit: true,
         currency: true,
         language: true,
         description: true,
