@@ -465,6 +465,7 @@ model ProductVariant {
   stock     Int     @default(0)
   sku       String?
   productId String  @db.ObjectId
+  metadata  Json?   // For storing external system data (e.g., articleNo, attributes, images, sale dates)
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
