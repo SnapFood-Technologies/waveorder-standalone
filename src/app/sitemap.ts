@@ -4,6 +4,8 @@ import { PrismaClient, SubscriptionPlan } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+export const dynamic = 'force-dynamic'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://waveorder.app'
   
@@ -107,7 +109,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         onboardingCompleted: true, // Must have completed onboarding
         setupWizardCompleted: true, // Must have completed setup wizard
         slug: {
-          // not: null,
           not: undefined
         },
         // Only include businesses with valid subscription plans (exclude any remaining 'FREE' values)
