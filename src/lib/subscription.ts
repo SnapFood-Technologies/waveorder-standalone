@@ -7,6 +7,7 @@ import {
   updateSubscription,
   cancelSubscription,
   PLANS,
+  getBillingTypeFromPriceId,
   type PlanId 
 } from './stripe'
 
@@ -237,6 +238,9 @@ export async function getUserSubscriptionStatus(userId: string) {
     throw new Error('User not found')
   }
 
+  const subscriptionPriceId = user.subscription?.priceId
+  const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+
   return {
     plan: user.plan,
     isActive: user.subscription?.status === 'active',
@@ -244,7 +248,8 @@ export async function getUserSubscriptionStatus(userId: string) {
     currentPeriodEnd: user.subscription?.currentPeriodEnd,
     cancelAtPeriodEnd: user.subscription?.cancelAtPeriodEnd || false,
     stripeCustomerId: user.stripeCustomerId,
-    subscriptionId: user.subscription?.stripeId
+    subscriptionId: user.subscription?.stripeId,
+    billingType: billingType
   }
 }
 

@@ -23,6 +23,7 @@ interface UserSubscription {
   cancelAtPeriodEnd?: boolean
   stripeCustomerId?: string
   subscriptionId?: string
+  billingType?: 'monthly' | 'yearly' | 'free' | null
 }
 
 const PLANS = {
@@ -219,6 +220,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   const currentPlan = PLANS[subscription.plan]
   const price = billingInterval === 'annual' ? (PLANS.PRO.annualPrice || 12) : PLANS.PRO.price
   const savings = (PLANS.PRO.price * 12) - ((PLANS.PRO.annualPrice || 10) * 12)
+  const isFreePlan = subscription.billingType === 'free'
 
   return (
     <div className="space-y-6">
@@ -251,15 +253,22 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               </h2>
             </div>
             <p className="text-teal-100">
-              {subscription.plan === 'STARTER' 
+              {isFreePlan
+                ? 'You are currently on a special free plan'
+                : subscription.plan === 'STARTER' 
                 ? 'You are currently on the Starter plan'
                 : subscription.cancelAtPeriodEnd
                 ? `Your PRO plan will end on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}`
                 : `Your PRO plan is active${subscription.currentPeriodEnd ? ` until ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}`
               }
             </p>
+            {isFreePlan && (
+              <p className="text-teal-100 text-sm mt-2">
+                To change your plan, please contact our support team through the Help & Support module.
+              </p>
+            )}
           </div>
-          {subscription.plan !== 'STARTER' && (
+          {subscription.plan !== 'STARTER' && !isFreePlan && (
             <button
               onClick={handleManageBilling}
               className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
@@ -272,32 +281,34 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
       </div>
 
       {/* Billing Interval Toggle */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-gray-700">Billing cycle:</span>
-        <div className="bg-gray-100 rounded-lg p-1 flex">
-          <button
-            onClick={() => setBillingInterval('monthly')}
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-              billingInterval === 'monthly'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setBillingInterval('annual')}
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
-              billingInterval === 'annual'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Annual
-            <span className="ml-1.5 text-xs text-green-600">(Save ${savings}/year)</span>
-          </button>
+      {!isFreePlan && (
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-700">Billing cycle:</span>
+          <div className="bg-gray-100 rounded-lg p-1 flex">
+            <button
+              onClick={() => setBillingInterval('monthly')}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                billingInterval === 'monthly'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBillingInterval('annual')}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                billingInterval === 'annual'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Annual
+              <span className="ml-1.5 text-xs text-green-600">(Save ${savings}/year)</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Plans Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -338,17 +349,29 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               </div>
 
               <div className="mb-6">
-                <span className="text-3xl font-bold text-gray-900">${displayPrice}</span>
-                <span className="text-gray-600">/month</span>
-                {billingInterval === 'annual' && planKey === 'PRO' && (
-                  <p className="text-sm text-green-600 font-medium mt-1">
-                    Billed annually (${displayPrice * 12}/year)
-                  </p>
-                )}
-                {billingInterval === 'annual' && planKey === 'STARTER' && (
-                  <p className="text-sm text-green-600 font-medium mt-1">
-                    Billed annually (${displayPrice * 12}/year) - Save $12/year
-                  </p>
+                {isCurrentPlan && isFreePlan ? (
+                  <>
+                    <span className="text-3xl font-bold text-gray-900">$0</span>
+                    <span className="text-gray-600">/month</span>
+                    <p className="text-sm text-gray-600 font-medium mt-1">
+                      Free Plan
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold text-gray-900">${displayPrice}</span>
+                    <span className="text-gray-600">/month</span>
+                    {billingInterval === 'annual' && planKey === 'PRO' && (
+                      <p className="text-sm text-green-600 font-medium mt-1">
+                        Billed annually (${displayPrice * 12}/year)
+                      </p>
+                    )}
+                    {billingInterval === 'annual' && planKey === 'STARTER' && (
+                      <p className="text-sm text-green-600 font-medium mt-1">
+                        Billed annually (${displayPrice * 12}/year) - Save $12/year
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -361,30 +384,43 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 ))}
               </div>
 
-              <button
-                onClick={() => handleUpgrade(planKey)}
-                disabled={isCurrentPlan || isUpgrading === planKey}
-                className={`w-full py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  isCurrentPlan
-                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                    : planKey === 'PRO'
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : 'bg-gray-600 hover:bg-gray-700 text-white'
-                } ${isUpgrading === planKey ? 'opacity-50' : ''}`}
-              >
-                {isUpgrading === planKey ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : isCurrentPlan ? (
-                  'Current Plan'
-                ) : planKey === 'PRO' ? (
-                  'Upgrade to PRO'
-                ) : (
-                  'Downgrade to Starter'
-                )}
-              </button>
+              {isCurrentPlan && isFreePlan ? (
+                <div className="w-full py-2.5 px-4 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-sm text-blue-800 text-center font-medium">
+                    Contact Support to Change Plan
+                  </p>
+                  <p className="text-xs text-blue-600 text-center mt-1">
+                    Available in Help & Support
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleUpgrade(planKey)}
+                  disabled={isCurrentPlan || isUpgrading === planKey || isFreePlan}
+                  className={`w-full py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                    isCurrentPlan
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : isFreePlan
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : planKey === 'PRO'
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-600 hover:bg-gray-700 text-white'
+                  } ${isUpgrading === planKey ? 'opacity-50' : ''}`}
+                >
+                  {isUpgrading === planKey ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : isCurrentPlan ? (
+                    'Current Plan'
+                  ) : planKey === 'PRO' ? (
+                    'Upgrade to PRO'
+                  ) : (
+                    'Downgrade to Starter'
+                  )}
+                </button>
+              )}
             </div>
           )
         })}
