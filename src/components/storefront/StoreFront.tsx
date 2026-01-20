@@ -1626,29 +1626,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   } | null>(null)
 
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.innerWidth < 1024 // lg breakpoint (1024px)
-    }
-    return false // Default to desktop on SSR
-  })
-
-  // Detect mobile/desktop screen size
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    const checkMobile = () => {
-      const width = window.innerWidth
-      setIsMobile(width < 1024) // lg breakpoint (1024px)
-    }
-    
-    // Check immediately on mount
-    checkMobile()
-    
-    // Listen for resize events
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
 
   
   // Fixed delivery type initialization
@@ -2558,6 +2535,33 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     return options
   }
 
+  // Inject CSS for responsive cover height
+  useEffect(() => {
+    const styleId = 'cover-height-responsive-style'
+    if (document.getElementById(styleId)) return
+    
+    const style = document.createElement('style')
+    style.id = styleId
+    style.textContent = `
+      .cover-image-responsive {
+        height: var(--cover-height-mobile) !important;
+      }
+      @media (min-width: 768px) {
+        .cover-image-responsive {
+          height: var(--cover-height-desktop) !important;
+        }
+      }
+    `
+    document.head.appendChild(style)
+    
+    return () => {
+      const existingStyle = document.getElementById(styleId)
+      if (existingStyle) {
+        existingStyle.remove()
+      }
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
 
@@ -2566,13 +2570,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         <div className="max-w-[75rem] mx-auto">
           {/* Cover Image Section - FIXED: No gradient overlay when cover image exists */}
           <div 
-            className="relative md:rounded-xl overflow-hidden"
+            className="cover-image-responsive relative md:rounded-xl overflow-hidden"
             style={{
               ...getCoverImageStyle(storeData, primaryColor),
-              height: isMobile 
-                ? (storeData.coverHeightMobile || storeData.coverHeight || '160px')
-                : (storeData.coverHeightDesktop || storeData.coverHeight || '220px')
-            }}
+              '--cover-height-mobile': storeData.coverHeightMobile || storeData.coverHeight || '160px',
+              '--cover-height-desktop': storeData.coverHeightDesktop || storeData.coverHeight || '220px'
+            } as React.CSSProperties & { '--cover-height-mobile': string; '--cover-height-desktop': string }}
           >
          {/* Icons in top right */}
 <div className="absolute top-4 sm:top-5 right-4 sm:right-5 flex gap-2 sm:gap-3">
