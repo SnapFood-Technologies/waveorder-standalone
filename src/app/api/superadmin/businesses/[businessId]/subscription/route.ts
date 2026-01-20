@@ -47,34 +47,46 @@ export async function PATCH(
     }
 
     // Find business with owner user and subscription
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      include: {
-        users: {
-          where: { role: 'OWNER' },
-          include: {
-            user: {
-              include: {
-                subscription: true
+    console.log(`Looking for business: ${businessId}`)
+    let business
+    try {
+      business = await prisma.business.findUnique({
+        where: { id: businessId },
+        include: {
+          users: {
+            where: { role: 'OWNER' },
+            include: {
+              user: {
+                include: {
+                  subscription: true
+                }
               }
             }
           }
         }
-      }
-    })
+      })
+    } catch (dbError: any) {
+      console.error('❌ Database query error:', dbError)
+      throw new Error(`Database error: ${dbError?.message || 'Failed to query business'}`)
+    }
 
     if (!business) {
+      console.error(`Business not found: ${businessId}`)
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
+    console.log(`Business found: ${business.name}`)
+    
     const ownerRelation = business.users.find(u => u.role === 'OWNER')
     if (!ownerRelation || !ownerRelation.user) {
+      console.error(`Owner not found for business: ${businessId}`)
       return NextResponse.json({ 
         message: 'Business owner not found' 
       }, { status: 404 })
     }
 
     const owner = ownerRelation.user
+    console.log(`Owner found: ${owner.email}, Has Stripe Customer: ${!!owner.stripeCustomerId}`)
     const currentPlan = business.subscriptionPlan as 'STARTER' | 'PRO'
 
     // Handle Stripe subscription update
@@ -236,17 +248,21 @@ export async function PATCH(
     }
 
   } catch (error: any) {
-    console.error('Error updating business subscription:', error)
+    console.error('❌ Error updating business subscription:', error)
     console.error('Error details:', {
       message: error?.message,
       stack: error?.stack,
       name: error?.name,
-      code: error?.code
+      code: error?.code,
+      type: error?.constructor?.name
     })
+    
+    // Return the actual error message in production too, for debugging
     return NextResponse.json(
       { 
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error?.message : undefined
+        message: error?.message || 'Internal server error',
+        error: error?.message,
+        code: error?.code
       },
       { status: 500 }
     )
