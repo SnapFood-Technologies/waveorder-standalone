@@ -5,13 +5,13 @@ const prisma = new PrismaClient()
 /**
  * Business ID
  */
-const BUSINESS_ID = '696f49c772d13834089b0ab4'
+const BUSINESS_ID = '696f5ed5c7c3665511837ece'
 
 /**
  * Postal Service ID (Normal only)
  * TODO: Update this with the actual postal service ID for this business
  */
-const POSTAL_SERVICE_ID_NORMAL = '696f7e4bc80062c87ef483f4' // GED Normal
+const POSTAL_SERVICE_ID_NORMAL = '696f8157e07f47c0fe32eeef' // GED Normal
 
 /**
  * City names organized by region (same as first script)

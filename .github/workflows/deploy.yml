@@ -71,7 +71,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          echo "Running postal pricing population script for business 696f49c772d13834089b0ab4..."
+          echo "Running postal pricing population script for business 696f5ed5c7c3665511837ece..."
           npx tsx scripts/populate-postal-pricing-business2.ts || {
             echo "⚠️ Postal pricing script failed or postal service ID not configured"
             echo "⚠️ Continuing deployment..."
