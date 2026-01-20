@@ -101,8 +101,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const publishedBusinesses = await prisma.business.findMany({
       where: {
         isActive: true,
+        deactivatedAt: null, // Must not be deactivated
         isIndexable: true, // Must be indexable
         noIndex: false, // Must not have noIndex set
+        onboardingCompleted: true, // Must have completed onboarding
+        setupWizardCompleted: true, // Must have completed setup wizard
         slug: {
           // not: null,
           not: undefined
