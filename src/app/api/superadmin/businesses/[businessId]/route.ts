@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
+import { getBillingTypeFromPriceId } from '@/lib/stripe'
 
 const prisma = new PrismaClient()
 
@@ -29,9 +30,36 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                email: true
+                email: true,
+                createdAt: true,
+                password: true,
+                accounts: {
+                  select: {
+                    provider: true
+                  }
+                },
+                subscription: {
+                  select: {
+                    priceId: true
+                  }
+                }
               }
             }
+          }
+        },
+        _count: {
+          select: {
+            orders: true,
+            products: true,
+            customers: true
+          }
+        },
+        orders: {
+          select: {
+            total: true,
+            paymentStatus: true,
+            status: true,
+            type: true
           }
         }
       }
@@ -41,12 +69,100 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
+    // Calculate total revenue (only paid orders that are completed/fulfilled)
+    const totalRevenue = business.orders
+      .filter((order: any) => {
+        if (order.paymentStatus !== 'PAID') return false
+        if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+        
+        // Order-type specific revenue calculation
+        if (order.type === 'DELIVERY') {
+          return order.status === 'DELIVERED'
+        } else if (order.type === 'PICKUP') {
+          return order.status === 'PICKED_UP'
+        } else if (order.type === 'DINE_IN') {
+          return order.status === 'PICKED_UP'
+        }
+        
+        return false
+      })
+      .reduce((sum: number, order: any) => sum + order.total, 0)
+
+    // Get owner info
+    const ownerRelation = business.users.find(u => u.role === 'OWNER')
+    const owner = ownerRelation?.user
+    let authMethod: 'google' | 'email' | 'magic-link' | 'oauth' = 'email'
+    if (owner?.accounts && owner.accounts.length > 0) {
+      const googleAccount = owner.accounts.find((acc: any) => acc.provider === 'google')
+      if (googleAccount) {
+        authMethod = 'google'
+      } else {
+        authMethod = 'oauth'
+      }
+    } else if (owner?.password) {
+      authMethod = 'email'
+    } else {
+      authMethod = 'magic-link'
+    }
+
+    // Get billing type from subscription
+    const subscriptionPriceId = owner?.subscription?.priceId
+    const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+
     return NextResponse.json({
       business: {
         id: business.id,
         name: business.name,
         slug: business.slug,
-        owner: business.users[0]?.user || null
+        description: business.description,
+        businessType: business.businessType,
+        subscriptionPlan: business.subscriptionPlan,
+        billingType: billingType,
+        subscriptionStatus: business.subscriptionStatus,
+        isActive: business.isActive,
+        deactivatedAt: business.deactivatedAt,
+        deactivationReason: business.deactivationReason,
+        currency: business.currency,
+        whatsappNumber: business.whatsappNumber,
+        address: business.address,
+        email: business.email,
+        phone: business.phone,
+        website: business.website,
+        logo: business.logo,
+        createdAt: business.createdAt.toISOString(),
+        updatedAt: business.updatedAt.toISOString(),
+        onboardingCompleted: business.onboardingCompleted,
+        setupWizardCompleted: business.setupWizardCompleted,
+        createdByAdmin: business.createdByAdmin,
+        timezone: business.timezone,
+        language: business.language,
+        storefrontLanguage: business.storefrontLanguage,
+        deliveryEnabled: business.deliveryEnabled,
+        pickupEnabled: business.pickupEnabled,
+        dineInEnabled: business.dineInEnabled,
+        deliveryFee: business.deliveryFee,
+        minimumOrder: business.minimumOrder,
+        deliveryRadius: business.deliveryRadius,
+        estimatedDeliveryTime: business.estimatedDeliveryTime,
+        estimatedPickupTime: business.estimatedPickupTime,
+        externalSystemName: business.externalSystemName,
+        externalSystemBaseUrl: business.externalSystemBaseUrl,
+        externalSystemApiKey: business.externalSystemApiKey,
+        externalSystemEndpoints: business.externalSystemEndpoints,
+        externalBrandIds: business.externalBrandIds,
+        owner: owner ? {
+          id: owner.id,
+          name: owner.name,
+          email: owner.email,
+          createdAt: owner.createdAt.toISOString(),
+          authMethod
+        } : null,
+        stats: {
+          totalOrders: business._count.orders,
+          totalRevenue,
+          totalCustomers: business._count.customers,
+          totalProducts: business._count.products
+        }
       }
     })
   } catch (error) {

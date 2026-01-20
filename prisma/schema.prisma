@@ -214,6 +214,7 @@ model Business {
   deliveryZones DeliveryZone[]
   postals       Postal[]
   postalPricing PostalPricing[]
+  externalSyncs ExternalSync[]
 
   // Settings
   currency                           String  @default("USD")
@@ -261,6 +262,13 @@ model Business {
   closureMessage      String?
   closureStartDate    DateTime?
   closureEndDate      DateTime?
+
+  // External System Integration
+  externalSystemName    String? // Name of the external system (e.g., "OmniStack", "Shopify", "WooCommerce")
+  externalSystemBaseUrl String? // Base URL for external product system API
+  externalSystemApiKey  String? // API key for external system authentication
+  externalSystemEndpoints Json? // Endpoint paths (e.g., { products: "/products", categories: "/categories" })
+  externalBrandIds       Json? // External brand ID(s) - can be string or array of strings
 
   // SEO Configuration (English/Default)
   seoTitle       String?
@@ -1095,4 +1103,28 @@ model City {
 
   @@index([stateId])
   @@index([stateId, name])
+}
+
+model ExternalSync {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId            String   @db.ObjectId
+  name                  String   // Name/description of this sync configuration
+  externalSystemName    String?  // Name of the external system
+  externalSystemBaseUrl String?  // Base URL for external product system API
+  externalSystemApiKey  String?  // API key for external system authentication
+  externalSystemEndpoints Json?  // Endpoint paths (e.g., { products: "/products", categories: "/categories" })
+  externalBrandIds      Json?   // External brand ID(s) - can be string or array of strings
+  isActive              Boolean  @default(true)
+  lastSyncAt            DateTime?
+  lastSyncStatus        String?  // 'success', 'failed', 'partial'
+  lastSyncError         String?
+  syncFrequency         String?  // Optional: 'manual', 'hourly', 'daily', etc. (for future use)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
 }
