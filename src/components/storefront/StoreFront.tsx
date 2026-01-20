@@ -1599,9 +1599,21 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [cart, setCart] = useState<CartItem[]>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && storeData?.id) {
       const savedCart = localStorage.getItem('cart')
-      return savedCart ? JSON.parse(savedCart) : []
+      if (savedCart) {
+        try {
+          const allCartItems: CartItem[] = JSON.parse(savedCart)
+          // Filter to only show items from current business on initial load
+          // Exclude items without businessId or with different businessId
+          return allCartItems.filter(item => 
+            item.businessId && item.businessId === storeData.id
+          )
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error)
+          return []
+        }
+      }
     }
     return []
   })
@@ -1693,38 +1705,52 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   const [loadingCities, setLoadingCities] = useState(false)
 
   // Filter cart when storeData changes (user navigates to different store)
+  // This ensures cart is filtered even if storeData.id changes after initial mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && storeData?.id) {
       const savedCart = localStorage.getItem('cart')
       if (savedCart) {
-        const allCartItems: CartItem[] = JSON.parse(savedCart)
-        // Filter to only show items from current business
-        // Exclude old items without businessId (backward compatibility - they'll be cleared)
-        const currentBusinessCart = allCartItems.filter(item => item.businessId === storeData.id)
-        
-        // Clean up old items without businessId from localStorage
-        const itemsWithBusinessId = allCartItems.filter(item => item.businessId)
-        if (itemsWithBusinessId.length !== allCartItems.length) {
-          localStorage.setItem('cart', JSON.stringify(itemsWithBusinessId))
+        try {
+          const allCartItems: CartItem[] = JSON.parse(savedCart)
+          // Filter to only show items from current business
+          // Exclude items without businessId or with different businessId
+          const currentBusinessCart = allCartItems.filter(item => 
+            item.businessId && item.businessId === storeData.id
+          )
+          
+          // Clean up old items without businessId from localStorage
+          const itemsWithBusinessId = allCartItems.filter(item => item.businessId)
+          if (itemsWithBusinessId.length !== allCartItems.length) {
+            localStorage.setItem('cart', JSON.stringify(itemsWithBusinessId))
+          }
+          
+          setCart(currentBusinessCart)
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error)
+          setCart([])
         }
-        
-        setCart(currentBusinessCart)
       } else {
         setCart([])
       }
+    } else if (typeof window !== 'undefined' && !storeData?.id) {
+      // If storeData.id is not available, clear cart to be safe
+      setCart([])
     }
-  }, [storeData.id])
+  }, [storeData?.id])
 
   // Save cart to localStorage whenever it changes
   // Save all cart items (from all businesses) to preserve carts when switching stores
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && cart.length >= 0) {
       const savedCart = localStorage.getItem('cart')
       let allCartItems: CartItem[] = savedCart ? JSON.parse(savedCart) : []
       
       // Remove items from current business and add updated ones
       allCartItems = allCartItems.filter(item => item.businessId !== storeData.id)
-      allCartItems = [...allCartItems, ...cart]
+      
+      // Only add cart items that belong to current business (safety check)
+      const currentBusinessCartItems = cart.filter(item => item.businessId === storeData.id)
+      allCartItems = [...allCartItems, ...currentBusinessCartItems]
       
       localStorage.setItem('cart', JSON.stringify(allCartItems))
     }
