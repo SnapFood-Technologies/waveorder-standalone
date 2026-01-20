@@ -28,7 +28,8 @@ import {
   Edit,
   Trash2,
   Power,
-  PowerOff
+  PowerOff,
+  Truck
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -68,6 +69,8 @@ interface BusinessDetails {
   deliveryRadius?: number
   estimatedDeliveryTime?: string
   estimatedPickupTime?: string
+  deliveryTimeText?: string | null
+  freeDeliveryText?: string | null
   owner: {
     id: string
     name: string
@@ -106,10 +109,20 @@ export default function BusinessDetailsPage() {
   const [business, setBusiness] = useState<BusinessDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [postals, setPostals] = useState<any[]>([])
+  const [postalPricing, setPostalPricing] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<'delivery' | 'postals' | 'pricing'>('delivery')
 
   useEffect(() => {
     fetchBusinessDetails()
   }, [businessId])
+
+  useEffect(() => {
+    if (business && business.businessType === 'RETAIL') {
+      fetchPostalData()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [business?.businessType, businessId])
 
   const fetchBusinessDetails = async () => {
     try {
@@ -124,6 +137,27 @@ export default function BusinessDetailsPage() {
       setError(err.message || 'Failed to load business details')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPostalData = async () => {
+    try {
+      const [postalsRes, pricingRes] = await Promise.all([
+        fetch(`/api/superadmin/businesses/${businessId}/postals`),
+        fetch(`/api/superadmin/businesses/${businessId}/postal-pricing`)
+      ])
+
+      if (postalsRes.ok) {
+        const data = await postalsRes.json()
+        setPostals(data.postals || [])
+      }
+
+      if (pricingRes.ok) {
+        const data = await pricingRes.json()
+        setPostalPricing(data.pricing || [])
+      }
+    } catch (err) {
+      console.error('Error fetching postal data:', err)
     }
   }
 
@@ -184,22 +218,14 @@ export default function BusinessDetailsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center gap-4 mb-4">
           <Link
             href="/superadmin/businesses"
             className="text-gray-400 hover:text-gray-600"
           >
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-            {getBusinessIcon(business)}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
-            <p className="text-gray-600 mt-1">
-              {business.businessType.toLowerCase().replace('_', ' ')} • Store URL: {business.slug}
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -225,6 +251,37 @@ export default function BusinessDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Business Logo & Info */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Information</h2>
+            <div className="flex items-start gap-4">
+              <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                {getBusinessIcon(business)}
+              </div>
+              <div className="flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Business Type</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">
+                      {business.businessType.toLowerCase().replace('_', ' ')}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Store URL</p>
+                    <a
+                      href={`/${business.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                    >
+                      /{business.slug}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Status and Plan */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Status & Subscription</h2>
@@ -441,84 +498,287 @@ export default function BusinessDetailsPage() {
           {(business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Settings</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className={`w-5 h-5 ${business.deliveryEnabled ? 'text-green-500' : 'text-gray-300'}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {business.deliveryEnabled ? 'Enabled' : 'Disabled'}
-                    </p>
-                    <p className="text-xs text-gray-500">Delivery</p>
+              
+              {/* Tabs for RETAIL businesses */}
+              {business.businessType === 'RETAIL' ? (
+                <>
+                  {/* Tab Navigation */}
+                  <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
+                    <button
+                      onClick={() => setActiveTab('delivery')}
+                      className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'delivery'
+                          ? 'bg-white text-teal-700 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Truck className="w-4 h-4 mr-2" />
+                      Delivery Methods
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('postals')}
+                      className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'postals'
+                          ? 'bg-white text-teal-700 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Package className="w-4 h-4 mr-2" />
+                      Postal Services ({postals.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('pricing')}
+                      className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeTab === 'pricing'
+                          ? 'bg-white text-teal-700 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Postal Pricing ({postalPricing.length})
+                    </button>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className={`w-5 h-5 ${business.pickupEnabled ? 'text-green-500' : 'text-gray-300'}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {business.pickupEnabled ? 'Enabled' : 'Disabled'}
-                    </p>
-                    <p className="text-xs text-gray-500">Pickup</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className={`w-5 h-5 ${business.dineInEnabled ? 'text-green-500' : 'text-gray-300'}`} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {business.dineInEnabled ? 'Enabled' : 'Disabled'}
-                    </p>
-                    <p className="text-xs text-gray-500">Dine In</p>
-                  </div>
-                </div>
-                {business.deliveryFee !== undefined && (
+
+                  {/* Tab Content */}
+                  {activeTab === 'delivery' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className={`w-5 h-5 ${business.deliveryEnabled ? 'text-green-500' : 'text-gray-300'}`} />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {business.deliveryEnabled ? 'Enabled' : 'Disabled'}
+                          </p>
+                          <p className="text-xs text-gray-500">Delivery</p>
+                        </div>
+                      </div>
+                      
+                      {/* Custom Texts for RETAIL */}
+                      {(business.deliveryTimeText || business.freeDeliveryText) && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-900 mb-3">Custom Display Texts</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {business.deliveryTimeText && (
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Custom Delivery Time Text</p>
+                                <p className="text-sm font-medium text-gray-900">{business.deliveryTimeText}</p>
+                              </div>
+                            )}
+                            {business.freeDeliveryText && (
+                              <div>
+                                <p className="text-xs text-gray-500 mb-1">Custom Free Delivery Text</p>
+                                <p className="text-sm font-medium text-gray-900">{business.freeDeliveryText}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'postals' && (
+                    <div className="space-y-4">
+                      {postals.length === 0 ? (
+                        <p className="text-sm text-gray-500 text-center py-8">No postal services configured</p>
+                      ) : (
+                        postals.map((postal) => (
+                          <div key={postal.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start gap-4">
+                              {postal.logo && (
+                                <img
+                                  src={postal.logo}
+                                  alt={postal.name}
+                                  className="w-12 h-12 object-contain rounded flex-shrink-0"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="font-semibold text-gray-900">{postal.name}</h3>
+                                  {postal.nameAl && (
+                                    <p className="text-sm text-gray-600">{postal.nameAl}</p>
+                                  )}
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    postal.type === 'fast'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {postal.type === 'fast' ? 'Fast' : 'Normal'}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    postal.isActive
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {postal.isActive ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                                {postal.description && (
+                                  <p className="text-sm text-gray-600 mb-2">{postal.description}</p>
+                                )}
+                                {postal.deliveryTime && (
+                                  <p className="text-sm text-gray-500">
+                                    Delivery Time: {postal.deliveryTime}
+                                  </p>
+                                )}
+                                {postal._count?.pricing !== undefined && (
+                                  <p className="text-xs text-gray-500 mt-2">
+                                    {postal._count.pricing} pricing rule{postal._count.pricing !== 1 ? 's' : ''}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'pricing' && (
+                    <div className="space-y-4">
+                      {postalPricing.length === 0 ? (
+                        <p className="text-sm text-gray-500 text-center py-8">No postal pricing configured</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Postal Service</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">City</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Min Order</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Max Order</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery Time</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                              {postalPricing.map((pricing) => (
+                                <tr key={pricing.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2">
+                                      {pricing.postal?.logo && (
+                                        <img
+                                          src={pricing.postal.logo}
+                                          alt={pricing.postal.name}
+                                          className="w-6 h-6 object-contain rounded"
+                                        />
+                                      )}
+                                      <span className="text-sm font-medium text-gray-900">
+                                        {pricing.postal?.name || 'Unknown'}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">{pricing.cityName}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      pricing.type === 'fast'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {pricing.type === 'fast' ? 'Fast' : 'Normal'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-900">
+                                    {business.currency} {pricing.price.toFixed(2)}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {pricing.minOrderValue ? `${business.currency} ${pricing.minOrderValue.toFixed(2)}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {pricing.maxOrderValue ? `${business.currency} ${pricing.maxOrderValue.toFixed(2)}` : '-'}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-500">
+                                    {pricing.deliveryTime || '-'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Non-RETAIL businesses - show all delivery settings */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-3">
-                    <DollarSign className="w-5 h-5 text-gray-400" />
+                    <CheckCircle className={`w-5 h-5 ${business.deliveryEnabled ? 'text-green-500' : 'text-gray-300'}`} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {business.currency} {business.deliveryFee.toFixed(2)}
+                        {business.deliveryEnabled ? 'Enabled' : 'Disabled'}
                       </p>
-                      <p className="text-xs text-gray-500">Delivery Fee</p>
+                      <p className="text-xs text-gray-500">Delivery</p>
                     </div>
                   </div>
-                )}
-                {business.minimumOrder !== undefined && (
                   <div className="flex items-center gap-3">
-                    <ShoppingBag className="w-5 h-5 text-gray-400" />
+                    <CheckCircle className={`w-5 h-5 ${business.pickupEnabled ? 'text-green-500' : 'text-gray-300'}`} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {business.currency} {business.minimumOrder.toFixed(2)}
+                        {business.pickupEnabled ? 'Enabled' : 'Disabled'}
                       </p>
-                      <p className="text-xs text-gray-500">Minimum Order</p>
+                      <p className="text-xs text-gray-500">Pickup</p>
                     </div>
                   </div>
-                )}
-                {business.deliveryRadius !== undefined && (
                   <div className="flex items-center gap-3">
-                    <MapPin className="w-5 h-5 text-gray-400" />
+                    <CheckCircle className={`w-5 h-5 ${business.dineInEnabled ? 'text-green-500' : 'text-gray-300'}`} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{business.deliveryRadius} km</p>
-                      <p className="text-xs text-gray-500">Delivery Radius</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.dineInEnabled ? 'Enabled' : 'Disabled'}
+                      </p>
+                      <p className="text-xs text-gray-500">Dine In</p>
                     </div>
                   </div>
-                )}
-                {business.estimatedDeliveryTime && (
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{business.estimatedDeliveryTime}</p>
-                      <p className="text-xs text-gray-500">Estimated Delivery Time</p>
+                  {business.deliveryFee !== undefined && (
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {business.currency} {business.deliveryFee.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">Delivery Fee</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {business.estimatedPickupTime && (
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{business.estimatedPickupTime}</p>
-                      <p className="text-xs text-gray-500">Estimated Pickup Time</p>
+                  )}
+                  {business.minimumOrder !== undefined && (
+                    <div className="flex items-center gap-3">
+                      <ShoppingBag className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {business.currency} {business.minimumOrder.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-gray-500">Minimum Order</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                  {business.deliveryRadius !== undefined && (
+                    <div className="flex items-center gap-3">
+                      <MapPin className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{business.deliveryRadius} km</p>
+                        <p className="text-xs text-gray-500">Delivery Radius</p>
+                      </div>
+                    </div>
+                  )}
+                  {business.estimatedDeliveryTime && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{business.estimatedDeliveryTime}</p>
+                        <p className="text-xs text-gray-500">Estimated Delivery Time</p>
+                      </div>
+                    </div>
+                  )}
+                  {business.estimatedPickupTime && (
+                    <div className="flex items-center gap-3">
+                      <Clock className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{business.estimatedPickupTime}</p>
+                        <p className="text-xs text-gray-500">Estimated Pickup Time</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

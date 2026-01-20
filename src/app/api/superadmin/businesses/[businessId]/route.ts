@@ -145,6 +145,8 @@ export async function GET(
         deliveryRadius: business.deliveryRadius,
         estimatedDeliveryTime: business.estimatedDeliveryTime,
         estimatedPickupTime: business.estimatedPickupTime,
+        deliveryTimeText: business.deliveryTimeText,
+        freeDeliveryText: business.freeDeliveryText,
         externalSystemName: business.externalSystemName,
         externalSystemBaseUrl: business.externalSystemBaseUrl,
         externalSystemApiKey: business.externalSystemApiKey,
