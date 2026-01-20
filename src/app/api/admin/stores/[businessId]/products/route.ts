@@ -230,12 +230,20 @@ export async function POST(
         businessId,
         categoryId: productData.categoryId,
         variants: {
-          create: productData.variants?.map((variant: any) => ({
-            name: variant.name,
-            price: variant.price,
-            stock: variant.stock || 0,
-            sku: variant.sku || null
-          })) || []
+          create: productData.variants?.map((variant: any) => {
+            const metadata: any = {}
+            if (variant.image) {
+              metadata.image = variant.image
+            }
+            
+            return {
+              name: variant.name,
+              price: variant.price,
+              stock: variant.stock || 0,
+              sku: variant.sku || null,
+              metadata: Object.keys(metadata).length > 0 ? metadata : undefined
+            }
+          }) || []
         },
         modifiers: {
           create: productData.modifiers?.map((modifier: any) => ({

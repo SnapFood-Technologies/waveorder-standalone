@@ -38,6 +38,7 @@ interface ProductVariant {
   price: number
   stock: number
   sku?: string
+  image?: string
 }
 
 interface ProductModifier {
@@ -151,8 +152,18 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       const response = await fetch(`/api/admin/stores/${businessId}/products/${productId}`)
       if (response.ok) {
         const data = await response.json()
+        // Extract image from variant metadata
+        const variantsWithImage = data.product.variants?.map((variant: any) => {
+          const metadata = variant.metadata as any
+          return {
+            ...variant,
+            image: metadata?.image || undefined
+          }
+        }) || []
+        
         setForm({
           ...data.product,
+          variants: variantsWithImage,
           originalPrice: data.product.originalPrice || undefined,
           lowStockAlert: data.product.lowStockAlert || undefined
         })
@@ -232,9 +243,43 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       ...prev,
       variants: [
         ...prev.variants,
-        { name: '', price: 0, stock: 0, sku: '' }
+        { name: '', price: 0, stock: 0, sku: '', image: undefined }
       ]
     }))
+  }
+
+  const handleVariantImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    setUploadingImage(true)
+    try {
+      const file = files[0]
+      const formData = new FormData()
+      formData.append('image', file)
+      formData.append('folder', 'products')
+
+      const response = await fetch(`/api/admin/stores/${businessId}/upload`, {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        updateVariant(index, 'image', data.imageUrl)
+      } else {
+        const errorData = await response.json()
+        console.error('Upload failed:', errorData.message)
+      }
+    } catch (error) {
+      console.error('Error uploading variant image:', error)
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const removeVariantImage = (index: number) => {
+    updateVariant(index, 'image', undefined)
   }
 
   const updateVariant = (index: number, field: keyof ProductVariant, value: any) => {
@@ -931,66 +976,116 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-4">
+                          {/* Variant Image */}
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Name *
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Variant Image
                             </label>
-                            <input
-                              type="text"
-                              required
-                              value={variant.name}
-                              onChange={(e) => updateVariant(index, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                              placeholder="e.g., Large, Red"
-                            />
+                            {variant.image ? (
+                              <div className="flex items-center gap-4">
+                                <img
+                                  src={variant.image}
+                                  alt={variant.name || 'Variant'}
+                                  className="w-20 h-20 object-cover rounded-lg border border-gray-300"
+                                />
+                                <div className="flex gap-2">
+                                  <label className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 cursor-pointer text-sm">
+                                    Change Image
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleVariantImageUpload(index, e)}
+                                      className="hidden"
+                                      disabled={uploadingImage}
+                                    />
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeVariantImage(index)}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="block w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-500 cursor-pointer text-center">
+                                <span className="text-sm text-gray-600">
+                                  {uploadingImage ? 'Uploading...' : 'Click to upload variant image'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleVariantImageUpload(index, e)}
+                                  className="hidden"
+                                  disabled={uploadingImage}
+                                />
+                              </label>
+                            )}
                           </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Price * ({business.currency})
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
-                                {getCurrencySymbol()}
-                              </span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Name *
+                              </label>
                               <input
-                                type="number"
-                                step="0.01"
+                                type="text"
                                 required
-                                value={variant.price || ''}
-                                onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
-                                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                placeholder="0.00"
+                                value={variant.name}
+                                onChange={(e) => updateVariant(index, 'name', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                placeholder="e.g., Large, Red"
                               />
                             </div>
-                          </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Stock
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={variant.stock || ''}
-                              onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                              placeholder="0"
-                            />
-                          </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Price * ({business.currency})
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                                  {getCurrencySymbol()}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  required
+                                  value={variant.price || ''}
+                                  onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                  placeholder="0.00"
+                                />
+                              </div>
+                            </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              SKU
-                            </label>
-                            <input
-                              type="text"
-                              value={variant.sku || ''}
-                              onChange={(e) => updateVariant(index, 'sku', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                              placeholder="VARIANT-001"
-                            />
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Stock
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={variant.stock || ''}
+                                onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                placeholder="0"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                SKU
+                              </label>
+                              <input
+                                type="text"
+                                value={variant.sku || ''}
+                                onChange={(e) => updateVariant(index, 'sku', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                placeholder="VARIANT-001"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

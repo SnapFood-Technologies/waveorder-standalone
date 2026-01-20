@@ -117,13 +117,21 @@ export async function PUT(
 
     if (productData.variants && productData.variants.length > 0) {
       await prisma.productVariant.createMany({
-        data: productData.variants.map((variant: any) => ({
-          productId,
-          name: variant.name,
-          price: variant.price,
-          stock: variant.stock || 0,
-          sku: variant.sku || null
-        }))
+        data: productData.variants.map((variant: any) => {
+          const metadata: any = {}
+          if (variant.image) {
+            metadata.image = variant.image
+          }
+          
+          return {
+            productId,
+            name: variant.name,
+            price: variant.price,
+            stock: variant.stock || 0,
+            sku: variant.sku || null,
+            metadata: Object.keys(metadata).length > 0 ? metadata : undefined
+          }
+        })
       })
     }
 
