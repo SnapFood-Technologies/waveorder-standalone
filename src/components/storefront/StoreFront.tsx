@@ -1522,6 +1522,7 @@ interface ProductVariant {
   id: string
   name: string
   price: number
+  originalPrice?: number
   stock: number
   sku?: string
 }
@@ -4219,7 +4220,7 @@ function ProductModal({
                   {translations.chooseSize || 'Choose Size'}
                 </h3>
                 <div className="space-y-3">
-                  {product.variants.map(variant => {
+                  {product.variants.map((variant: ProductVariant) => {
                     const variantCartItemId = `${product.id}-${variant.id}-${selectedModifiers.map(m => m.id).join(',')}`
                     const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
                     const variantAvailable = variant.stock - variantInCart
