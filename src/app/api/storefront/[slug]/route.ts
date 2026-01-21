@@ -318,6 +318,28 @@ export async function GET(
       
       // Menu
       categories: (() => {
+        // Helper function to calculate effective price based on sale dates
+        const calculateEffectivePrice = (price: number, originalPrice: number | null, saleStartDate: Date | null, saleEndDate: Date | null): { effectivePrice: number; effectiveOriginalPrice: number | null } => {
+          const now = new Date()
+          
+          // Check if sale is currently active
+          const isSaleActive = (!saleStartDate || now >= saleStartDate) && (!saleEndDate || now <= saleEndDate)
+          
+          if (isSaleActive && originalPrice && originalPrice > price) {
+            // Sale is active, use sale price
+            return {
+              effectivePrice: price,
+              effectiveOriginalPrice: originalPrice
+            }
+          } else {
+            // Sale is not active, use regular price
+            return {
+              effectivePrice: originalPrice && originalPrice > price ? originalPrice : price,
+              effectiveOriginalPrice: null
+            }
+          }
+        }
+        
         // Get storefront language (default to business language or 'en')
         const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
         const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
@@ -347,33 +369,54 @@ export async function GET(
             image: child.image,
             sortOrder: child.sortOrder
           })) : [],
-          products: (category.products as any[]).map((product: any) => ({
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            images: product.images,
-            price: product.price,
-            originalPrice: product.originalPrice,
-            sku: product.sku,
-            stock: product.stock,
-            trackInventory: product.trackInventory,
-            featured: product.featured,
-            metaTitle: product.metaTitle,
-            metaDescription: product.metaDescription,
-            variants: (product.variants as any[]).map((variant: any) => ({
-              id: variant.id,
-              name: variant.name,
-              price: variant.price,
-              stock: variant.stock,
-              sku: variant.sku
-            })),
-            modifiers: (product.modifiers as any[]).map((modifier: any) => ({
-              id: modifier.id,
-              name: modifier.name,
-              price: modifier.price,
-              required: modifier.required
-            }))
-          }))
+          products: (category.products as any[]).map((product: any) => {
+            // Calculate effective price for product
+            const productPricing = calculateEffectivePrice(
+              product.price,
+              product.originalPrice,
+              product.saleStartDate,
+              product.saleEndDate
+            )
+            
+            return {
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              images: product.images,
+              price: productPricing.effectivePrice,
+              originalPrice: productPricing.effectiveOriginalPrice,
+              sku: product.sku,
+              stock: product.stock,
+              trackInventory: product.trackInventory,
+              featured: product.featured,
+              metaTitle: product.metaTitle,
+              metaDescription: product.metaDescription,
+              variants: (product.variants as any[]).map((variant: any) => {
+                // Calculate effective price for variant
+                const variantPricing = calculateEffectivePrice(
+                  variant.price,
+                  variant.originalPrice,
+                  variant.saleStartDate,
+                  variant.saleEndDate
+                )
+                
+                return {
+                  id: variant.id,
+                  name: variant.name,
+                  price: variantPricing.effectivePrice,
+                  originalPrice: variantPricing.effectiveOriginalPrice,
+                  stock: variant.stock,
+                  sku: variant.sku
+                }
+              }),
+              modifiers: (product.modifiers as any[]).map((modifier: any) => ({
+                id: modifier.id,
+                name: modifier.name,
+                price: modifier.price,
+                required: modifier.required
+              }))
+            }
+          })
         }))
         
         // Separate parent and child categories

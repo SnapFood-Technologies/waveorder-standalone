@@ -4259,9 +4259,16 @@ function ProductModal({
                             </span>
                           )}
                         </div>
-                          <span className="font-bold" style={{ color: primaryColor }}>
-                            {currencySymbol}{variant.price.toFixed(2)}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold" style={{ color: primaryColor }}>
+                              {currencySymbol}{variant.price.toFixed(2)}
+                            </span>
+                            {variant.originalPrice && variant.originalPrice > variant.price && (
+                              <span className="text-gray-500 line-through text-sm">
+                                {currencySymbol}{variant.originalPrice.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </button>
                     )

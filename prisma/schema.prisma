@@ -417,6 +417,8 @@ model Category {
   isActive   Boolean @default(true)
   businessId String  @db.ObjectId
 
+  metadata Json? // For storing external system data (e.g., external category IDs)
+
   business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   products Product[]
 
@@ -446,6 +448,10 @@ model Product {
 
   enableLowStockNotification Boolean @default(false)
 
+  // Sale date fields
+  saleStartDate DateTime? // When the sale price becomes active
+  saleEndDate   DateTime? // When the sale price expires
+
   categoryId String @db.ObjectId
   businessId String @db.ObjectId
 
@@ -467,13 +473,18 @@ model Product {
 }
 
 model ProductVariant {
-  id        String  @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  price     Float
-  stock     Int     @default(0)
-  sku       String?
-  productId String  @db.ObjectId
-  metadata  Json? // For storing external system data (e.g., articleNo, attributes, images, sale dates)
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  price         Float
+  originalPrice Float? // Regular price before sale
+  stock         Int      @default(0)
+  sku           String?
+  productId     String   @db.ObjectId
+  metadata      Json? // For storing external system data (e.g., articleNo, attributes, images, sale dates)
+
+  // Sale date fields
+  saleStartDate DateTime? // When the sale price becomes active
+  saleEndDate   DateTime? // When the sale price expires
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]

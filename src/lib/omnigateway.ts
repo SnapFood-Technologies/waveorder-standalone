@@ -76,6 +76,8 @@ export interface OmniGatewayProductUpdate {
   images?: string[];
   categoryName?: string;
   categoryNameAl?: string;
+  dateSaleStart?: string | null; // ISO date string for product-level sale start
+  dateSaleEnd?: string | null; // ISO date string for product-level sale end
   variations?: OmniGatewayVariation[];
   metadata?: {
     _id: string;
@@ -178,6 +180,29 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
     price = originalPrice; // Regular price
   }
 
+  // Handle product-level sale dates
+  // Read from database fields first, fallback to metadata for backward compatibility
+  let dateSaleStart: string | null = null
+  let dateSaleEnd: string | null = null
+  
+  if (product.saleStartDate) {
+    dateSaleStart = new Date(product.saleStartDate).toISOString()
+  } else if (metadata?.dateSaleStart) {
+    // Fallback to metadata for backward compatibility
+    dateSaleStart = typeof metadata.dateSaleStart === 'string' 
+      ? metadata.dateSaleStart 
+      : new Date(metadata.dateSaleStart).toISOString()
+  }
+  
+  if (product.saleEndDate) {
+    dateSaleEnd = new Date(product.saleEndDate).toISOString()
+  } else if (metadata?.dateSaleEnd) {
+    // Fallback to metadata for backward compatibility
+    dateSaleEnd = typeof metadata.dateSaleEnd === 'string' 
+      ? metadata.dateSaleEnd 
+      : new Date(metadata.dateSaleEnd).toISOString()
+  }
+
   // Prepare update payload
   // At this point, productId is guaranteed to be a string (not null)
   // Note: Admin has only one input for name/description, so we send the same value for both
@@ -200,6 +225,8 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
     images: Array.isArray(product.images) ? product.images : [],
     categoryName: product.category?.name || undefined,
     categoryNameAl: product.category?.nameAl || product.category?.name || undefined,
+    dateSaleStart: dateSaleStart || undefined,
+    dateSaleEnd: dateSaleEnd || undefined,
     metadata: {
       _id: product.id,
       clientId: metadata?.clientId || undefined,
@@ -244,14 +271,39 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
       let variantSalePrice: number | null = null;
       let variantOriginalPrice: number | null = null;
 
-      if (variantMetadata.originalPrice && variantMetadata.originalPrice !== variant.price) {
+      // Check database originalPrice field first, then metadata
+      const variantOriginalPriceValue = variant.originalPrice || variantMetadata.originalPrice
+      
+      if (variantOriginalPriceValue && variantOriginalPriceValue !== variant.price) {
         // Variant is on sale
-        variantOriginalPrice = Math.round(variantMetadata.originalPrice);
+        variantOriginalPrice = Math.round(variantOriginalPriceValue);
         variantSalePrice = Math.round(variant.price);
         variantPrice = variantOriginalPrice; // Regular price
       } else if (variantMetadata.salePrice) {
         variantSalePrice = Math.round(variantMetadata.salePrice);
         variantOriginalPrice = variantPrice;
+      }
+
+      // Handle variant sale dates - read from database fields first, fallback to metadata
+      let variantDateSaleStart: string | null = null
+      let variantDateSaleEnd: string | null = null
+      
+      if (variant.saleStartDate) {
+        variantDateSaleStart = new Date(variant.saleStartDate).toISOString()
+      } else if (variantMetadata.dateSaleStart) {
+        // Fallback to metadata for backward compatibility
+        variantDateSaleStart = typeof variantMetadata.dateSaleStart === 'string' 
+          ? variantMetadata.dateSaleStart 
+          : new Date(variantMetadata.dateSaleStart).toISOString()
+      }
+      
+      if (variant.saleEndDate) {
+        variantDateSaleEnd = new Date(variant.saleEndDate).toISOString()
+      } else if (variantMetadata.dateSaleEnd) {
+        // Fallback to metadata for backward compatibility
+        variantDateSaleEnd = typeof variantMetadata.dateSaleEnd === 'string' 
+          ? variantMetadata.dateSaleEnd 
+          : new Date(variantMetadata.dateSaleEnd).toISOString()
       }
 
       const variation: OmniGatewayVariation = {
@@ -264,8 +316,8 @@ export function prepareProductForOmniGateway(product: any): OmniGatewayProductUp
         stockStatus: variantStockStatus,
         image: variantMetadata.image || undefined,
         attributes: attributes,
-        dateSaleStart: variantMetadata.dateSaleStart || null,
-        dateSaleEnd: variantMetadata.dateSaleEnd || null
+        dateSaleStart: variantDateSaleStart,
+        dateSaleEnd: variantDateSaleEnd
       };
 
       return variation;

@@ -87,7 +87,9 @@ export async function PUT(
       categoryName,
       productType,
       variations,
-      reason 
+      reason,
+      dateSaleStart, // Product-level sale start date
+      dateSaleEnd    // Product-level sale end date
     } = body
     
     // Find product by external product ID (stored in metadata) or SKU
@@ -204,6 +206,35 @@ export async function PUT(
     // Product status (isActive)
     if (isActive !== undefined) {
       updateData.isActive = Boolean(isActive)
+    }
+    
+    // Handle product-level sale dates
+    if (dateSaleStart !== undefined && dateSaleStart !== null) {
+      try {
+        const saleStart = new Date(dateSaleStart)
+        if (!isNaN(saleStart.getTime())) {
+          updateData.saleStartDate = saleStart
+        }
+      } catch {
+        // Invalid date, skip
+      }
+    } else if (dateSaleStart === null) {
+      // Explicitly clear sale start date
+      updateData.saleStartDate = null
+    }
+    
+    if (dateSaleEnd !== undefined && dateSaleEnd !== null) {
+      try {
+        const saleEnd = new Date(dateSaleEnd)
+        if (!isNaN(saleEnd.getTime())) {
+          updateData.saleEndDate = saleEnd
+        }
+      } catch {
+        // Invalid date, skip
+      }
+    } else if (dateSaleEnd === null) {
+      // Explicitly clear sale end date
+      updateData.saleEndDate = null
     }
     
     // Stock quantity
@@ -429,10 +460,36 @@ export async function PUT(
         if (articleNo !== undefined) variantMetadata.articleNo = articleNo
         if (variationImage !== undefined) variantMetadata.image = variationImage
         if (attributes !== undefined && typeof attributes === 'object') variantMetadata.attributes = attributes
-        if (dateSaleStart !== undefined) variantMetadata.dateSaleStart = dateSaleStart
-        if (dateSaleEnd !== undefined) variantMetadata.dateSaleEnd = dateSaleEnd
+        if (dateSaleStart !== undefined) variantMetadata.dateSaleStart = dateSaleStart // Keep in metadata for backward compatibility
+        if (dateSaleEnd !== undefined) variantMetadata.dateSaleEnd = dateSaleEnd // Keep in metadata for backward compatibility
         if (variationSalePrice !== undefined) variantMetadata.salePrice = variationSalePrice
         if (variationOriginalPrice !== undefined) variantMetadata.originalPrice = variationOriginalPrice
+        
+        // Parse and store sale dates in database fields
+        let variantSaleStartDate: Date | null = null
+        let variantSaleEndDate: Date | null = null
+        
+        if (dateSaleStart !== undefined && dateSaleStart !== null) {
+          try {
+            const saleStart = new Date(dateSaleStart)
+            if (!isNaN(saleStart.getTime())) {
+              variantSaleStartDate = saleStart
+            }
+          } catch {
+            // Invalid date, skip
+          }
+        }
+        
+        if (dateSaleEnd !== undefined && dateSaleEnd !== null) {
+          try {
+            const saleEnd = new Date(dateSaleEnd)
+            if (!isNaN(saleEnd.getTime())) {
+              variantSaleEndDate = saleEnd
+            }
+          } catch {
+            // Invalid date, skip
+          }
+        }
         
         // Determine variant name from attributes or use SKU
         let variantName = variationSku
@@ -455,13 +512,16 @@ export async function PUT(
           const oldVariantStock = existingVariant.stock
           const newVariantStock = Math.max(0, Math.floor(variationStockQuantity))
           
-          await prisma.productVariant.update({
+          await (prisma.productVariant.update as any)({
             where: { id: existingVariant.id },
             data: {
               name: variantName,
               price: finalVariantPrice,
+              originalPrice: variationOriginalPrice && variationOriginalPrice > finalVariantPrice ? variationOriginalPrice : null,
               stock: newVariantStock,
               sku: variationSku,
+              saleStartDate: variantSaleStartDate,
+              saleEndDate: variantSaleEndDate,
               metadata: variantMetadata
             }
           })
@@ -490,13 +550,16 @@ export async function PUT(
           // Create new variant
           const newVariantStock = Math.max(0, Math.floor(variationStockQuantity))
           
-          const newVariant = await prisma.productVariant.create({
+          const newVariant = await (prisma.productVariant.create as any)({
             data: {
               productId: product.id,
               name: variantName,
               price: finalVariantPrice,
+              originalPrice: variationOriginalPrice && variationOriginalPrice > finalVariantPrice ? variationOriginalPrice : null,
               stock: newVariantStock,
               sku: variationSku,
+              saleStartDate: variantSaleStartDate,
+              saleEndDate: variantSaleEndDate,
               metadata: variantMetadata
             }
           })
@@ -570,7 +633,7 @@ export async function PUT(
       include: {
         variants: true
       }
-    })
+    }) as any
     
     return NextResponse.json({
       success: true,
@@ -586,7 +649,7 @@ export async function PUT(
         sku: updatedProduct.sku,
         images: updatedProduct.images,
         productType: productType || (productWithVariants?.variants && productWithVariants.variants.length > 0 ? 'variable' : 'simple'),
-        variations: productWithVariants?.variants?.map(v => {
+        variations: productWithVariants?.variants?.map((v: any) => {
           const vMetadata = (v.metadata as any) || {}
           return {
             id: v.id,

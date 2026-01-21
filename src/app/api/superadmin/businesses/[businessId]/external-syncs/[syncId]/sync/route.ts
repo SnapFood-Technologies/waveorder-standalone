@@ -230,30 +230,150 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     throw new Error('Product missing name')
   }
 
-  // Find or create category
+  // Handle categories - ByBest provides array, we use first category
+  // Store external category ID in metadata for matching
   let categoryId: string
-  const categoryName = externalProduct.categoryName || 'Uncategorized'
+  let categoryName = 'Uncategorized'
+  let externalCategoryId: string | null = null
   
-  let category = await prisma.category.findFirst({
-    where: {
-      businessId,
-      name: categoryName
+  if (Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0) {
+    const firstCategory = externalProduct.categories[0]
+    categoryName = firstCategory.name || 'Uncategorized'
+    externalCategoryId = firstCategory.id?.toString() || null
+  } else if (externalProduct.categoryName) {
+    categoryName = externalProduct.categoryName
+  }
+  
+  // Find category by external ID in metadata first, then fallback to name
+  const categories = await prisma.category.findMany({
+    where: { businessId }
+  }) as any[]
+  
+  let category = categories.find((c: any) => {
+    if (externalCategoryId && c.metadata && typeof c.metadata === 'object' && 'externalCategoryId' in c.metadata) {
+      const metadata = c.metadata as { externalCategoryId?: string }
+      return metadata.externalCategoryId === externalCategoryId.toString()
     }
+    return false
   })
+  
+  // If not found by external ID, try by name
+  if (!category) {
+    category = categories.find((c: any) => c.name === categoryName)
+  }
 
   if (!category) {
-    category = await prisma.category.create({
+    // Create new category with external ID in metadata
+    category = await (prisma.category.create as any)({
       data: {
         businessId,
         name: categoryName,
         nameAl: externalProduct.categoryNameAl || null,
         sortOrder: 0,
-        isActive: true
+        isActive: true,
+        ...(externalCategoryId ? {
+          metadata: {
+            externalCategoryId: externalCategoryId.toString(),
+            externalSyncId: syncId,
+            externalData: Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0 
+              ? externalProduct.categories[0] 
+              : null
+          }
+        } : {})
       }
     })
+  } else if (externalCategoryId) {
+    // Update category metadata if external ID is missing or different
+    const currentMetadata = (category.metadata as any) || {}
+    if (currentMetadata.externalCategoryId !== externalCategoryId.toString()) {
+      await (prisma.category.update as any)({
+        where: { id: category.id },
+        data: {
+          metadata: {
+            ...currentMetadata,
+            externalCategoryId: externalCategoryId.toString(),
+            externalSyncId: syncId,
+            externalData: Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0 
+              ? externalProduct.categories[0] 
+              : currentMetadata.externalData || null
+          }
+        }
+      })
+    }
   }
 
   categoryId = category.id
+
+  // Map ByBest fields to WaveOrder format
+  // Handle stock - ByBest uses stock.quantity
+  const stockQuantity = externalProduct.stock?.quantity || externalProduct.stock_quantity || externalProduct.stockQuantity || externalProduct.stock || 0
+  const stockValue = parseInt(stockQuantity.toString()) || 0
+  
+  // Handle price - ByBest uses sale_price for current price, price for regular price
+  const currentPrice = externalProduct.sale_price || externalProduct.salePrice || externalProduct.price || 0
+  const regularPrice = externalProduct.price || externalProduct.regular_price || currentPrice
+  
+  // Handle sale dates - ByBest format: "2024-01-15 00:00:00"
+  let saleStartDate: Date | null = null
+  let saleEndDate: Date | null = null
+  
+  if (externalProduct.date_sale_start) {
+    try {
+      saleStartDate = new Date(externalProduct.date_sale_start)
+      if (isNaN(saleStartDate.getTime())) {
+        saleStartDate = null
+      }
+    } catch {
+      saleStartDate = null
+    }
+  }
+  
+  if (externalProduct.date_sale_end) {
+    try {
+      saleEndDate = new Date(externalProduct.date_sale_end)
+      if (isNaN(saleEndDate.getTime())) {
+        saleEndDate = null
+      }
+    } catch {
+      saleEndDate = null
+    }
+  }
+  
+  // Handle images - ByBest uses featured_image + gallery_images
+  const images: string[] = []
+  if (externalProduct.featured_image) {
+    images.push(externalProduct.featured_image)
+  }
+  if (Array.isArray(externalProduct.gallery_images)) {
+    images.push(...externalProduct.gallery_images)
+  }
+  // Fallback to images array if no featured_image/gallery_images
+  if (images.length === 0 && Array.isArray(externalProduct.images)) {
+    images.push(...externalProduct.images)
+  }
+
+  // Prepare product metadata with all unmappable ByBest fields
+  const productMetadata: any = {
+    externalProductId: externalProduct.id.toString(),
+    externalSyncId: syncId,
+    externalData: {
+      // Store all original ByBest data
+      ...externalProduct,
+      // Explicitly store fields we can't map directly
+      collections: externalProduct.collections || [],
+      warehouses: externalProduct.stock?.warehouses || [],
+      sale_percentage: externalProduct.sale_percentage || null,
+      date_sale_start: externalProduct.date_sale_start || null,
+      date_sale_end: externalProduct.date_sale_end || null,
+      product_url: externalProduct.product_url || null,
+      product_type: externalProduct.product_type || null,
+      code: externalProduct.code || null,
+      currency: externalProduct.currency || null,
+      is_visible: externalProduct.is_visible !== undefined ? externalProduct.is_visible : true,
+      brand_info: externalProduct.brand_info || null,
+      attributes: externalProduct.attributes || []
+    }
+  }
 
   // Prepare product data
   const productData: any = {
@@ -261,47 +381,70 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     categoryId,
     name: externalProduct.name,
     nameAl: externalProduct.nameAl || null,
-    description: externalProduct.description || null,
+    description: externalProduct.description || externalProduct.short_description || null,
     descriptionAl: externalProduct.descriptionAl || null,
-    price: parseFloat(externalProduct.price) || parseFloat(externalProduct.salePrice) || 0,
-    originalPrice: externalProduct.originalPrice ? parseFloat(externalProduct.originalPrice) : null,
-    sku: externalProduct.sku || null,
-    stock: parseInt(externalProduct.stockQuantity || externalProduct.stock || '0') || 0,
-    isActive: externalProduct.isActive !== undefined ? externalProduct.isActive : true,
-    featured: externalProduct.featured || false,
-    images: Array.isArray(externalProduct.images) ? externalProduct.images : [],
-    metadata: {
-      externalProductId: externalProduct.id,
-      externalSyncId: syncId,
-      externalData: externalProduct
-    }
+    price: parseFloat(currentPrice.toString()) || 0,
+    originalPrice: regularPrice && regularPrice !== currentPrice ? parseFloat(regularPrice.toString()) : null,
+    sku: externalProduct.code || externalProduct.sku || externalProduct.article_no || null,
+    stock: stockValue,
+    trackInventory: externalProduct.stock?.manage_stock !== false, // Default to true unless explicitly false
+    isActive: externalProduct.status === 'active' && externalProduct.is_visible !== false,
+    featured: externalProduct.is_featured || false,
+    images,
+    metaTitle: externalProduct.meta_title || null,
+    metaDescription: externalProduct.meta_description || null,
+    saleStartDate,
+    saleEndDate,
+    metadata: productMetadata
   }
 
   // Find existing product by external ID in metadata
-  // Fetch products and filter in memory (Prisma JSON queries don't work well with MongoDB)
   const products = await prisma.product.findMany({
     where: { businessId },
     include: { variants: true }
   })
   
-  const existingProduct = products.find(p => {
+  const existingProduct = products.find((p: any) => {
     if (p.metadata && typeof p.metadata === 'object' && 'externalProductId' in p.metadata) {
       const metadata = p.metadata as { externalProductId?: string }
-      return metadata.externalProductId === externalProduct.id
+      return metadata.externalProductId === externalProduct.id.toString()
     }
     return false
   })
 
   if (existingProduct) {
+    // Track stock change for inventory activity
+    const oldStock = existingProduct.stock || 0
+    const stockChanged = oldStock !== stockValue
+    
     // Update existing product
     await prisma.product.update({
       where: { id: existingProduct.id },
       data: productData
     })
 
-    // Handle variants if product type is variable
-    if (externalProduct.productType === 'variable' && Array.isArray(externalProduct.variations)) {
-      await syncProductVariants(existingProduct.id, externalProduct.variations, syncId)
+    // Create inventory activity if stock changed
+    if (stockChanged && existingProduct.trackInventory !== false) {
+      const quantityChange = stockValue - oldStock
+      const activityType = quantityChange > 0 ? 'RESTOCK' : 'ADJUSTMENT'
+      
+      await prisma.inventoryActivity.create({
+        data: {
+          productId: existingProduct.id,
+          businessId,
+          type: activityType,
+          quantity: quantityChange,
+          oldStock,
+          newStock: stockValue,
+          reason: `External sync from ByBest (Product ID: ${externalProduct.id})`,
+          changedBy: 'External Sync'
+        }
+      })
+    }
+
+    // Handle variants - ByBest uses variants array
+    if (Array.isArray(externalProduct.variants) && externalProduct.variants.length > 0) {
+      await syncProductVariants(existingProduct.id, externalProduct.variants, syncId, businessId)
     }
   } else {
     // Create new product
@@ -312,35 +455,104 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       }
     })
 
-    // Handle variants if product type is variable
-    if (externalProduct.productType === 'variable' && Array.isArray(externalProduct.variations)) {
-      await syncProductVariants(newProduct.id, externalProduct.variations, syncId)
+    // Handle variants - ByBest uses variants array
+    if (Array.isArray(externalProduct.variants) && externalProduct.variants.length > 0) {
+      await syncProductVariants(newProduct.id, externalProduct.variants, syncId, businessId)
     }
   }
 }
 
 // Helper function to sync product variants
-async function syncProductVariants(productId: string, variations: any[], syncId: string) {
+async function syncProductVariants(productId: string, variations: any[], syncId: string, businessId: string) {
   for (const variation of variations) {
     if (!variation.id) {
       continue // Skip invalid variations
     }
 
-    const variantData: any = {
-      productId,
-      name: variation.name || variation.attributes?.join(' - ') || 'Default',
-      price: parseFloat(variation.price) || 0,
-      stock: parseInt(variation.stockQuantity || variation.stock || '0') || 0,
-      sku: variation.sku || null,
-      metadata: {
-        externalVariantId: variation.id,
-        externalSyncId: syncId,
-        externalData: variation
+    // Build variant name from attributes if available
+    let variantName = variation.name || 'Default'
+    if (Array.isArray(variation.attributes) && variation.attributes.length > 0) {
+      const attributeNames = variation.attributes.map((attr: any) => {
+        if (typeof attr === 'string') return attr
+        if (attr.option_name) return `${attr.attribute_name || ''}: ${attr.option_name}`.trim()
+        return attr.attribute_name || attr.option_name || ''
+      }).filter(Boolean)
+      if (attributeNames.length > 0) {
+        variantName = attributeNames.join(' - ')
       }
     }
 
+    // Handle stock - ByBest uses stock.quantity or stock_quantity
+    const variantStockQuantity = variation.stock?.quantity || variation.stock_quantity || variation.stockQuantity || variation.stock || 0
+    const variantStock = parseInt(variantStockQuantity.toString()) || 0
+
+    // Handle price - ByBest uses sale_price for current, regular_price for original
+    const variantCurrentPrice = variation.sale_price || variation.salePrice || variation.regular_price || variation.price || 0
+    const variantRegularPrice = variation.regular_price || variation.price || variantCurrentPrice
+    const variantPrice = parseFloat(variantCurrentPrice.toString()) || 0
+    const variantOriginalPrice = variantRegularPrice && variantRegularPrice !== variantCurrentPrice ? parseFloat(variantRegularPrice.toString()) : null
+
+    // Handle SKU - ByBest uses variation_sku or sku
+    const variantSku = variation.variation_sku || variation.variationSku || variation.sku || null
+
+    // Handle variant sale dates - ByBest format: "2024-01-15 00:00:00"
+    let variantSaleStartDate: Date | null = null
+    let variantSaleEndDate: Date | null = null
+    
+    if (variation.date_sale_start) {
+      try {
+        variantSaleStartDate = new Date(variation.date_sale_start)
+        if (isNaN(variantSaleStartDate.getTime())) {
+          variantSaleStartDate = null
+        }
+      } catch {
+        variantSaleStartDate = null
+      }
+    }
+    
+    if (variation.date_sale_end) {
+      try {
+        variantSaleEndDate = new Date(variation.date_sale_end)
+        if (isNaN(variantSaleEndDate.getTime())) {
+          variantSaleEndDate = null
+        }
+      } catch {
+        variantSaleEndDate = null
+      }
+    }
+
+    // Prepare variant metadata with all unmappable ByBest fields
+    const variantMetadata: any = {
+      externalVariantId: variation.id.toString(),
+      externalSyncId: syncId,
+      externalData: {
+        // Store all original ByBest variant data
+        ...variation,
+        // Explicitly store fields we can't map directly
+        warehouses: variation.stock?.warehouses || [],
+        sale_percentage: variation.sale_percentage || null,
+        date_sale_start: variation.date_sale_start || null,
+        date_sale_end: variation.date_sale_end || null,
+        variation_sku: variation.variation_sku || null,
+        regular_price: variation.regular_price || null,
+        currency: variation.currency || null,
+        attributes: variation.attributes || []
+      }
+    }
+
+    const variantData: any = {
+      productId,
+      name: variantName,
+      price: variantPrice,
+      originalPrice: variantOriginalPrice,
+      stock: variantStock,
+      sku: variantSku,
+      saleStartDate: variantSaleStartDate,
+      saleEndDate: variantSaleEndDate,
+      metadata: variantMetadata
+    }
+
     // Find existing variant by external ID
-    // Fetch variants and filter in memory (Prisma JSON queries don't work well with MongoDB)
     const variants = await prisma.productVariant.findMany({
       where: { productId }
     }) as any[]
@@ -348,16 +560,40 @@ async function syncProductVariants(productId: string, variations: any[], syncId:
     const existingVariant = variants.find((v: any) => {
       if (v.metadata && typeof v.metadata === 'object' && 'externalVariantId' in v.metadata) {
         const metadata = v.metadata as { externalVariantId?: string }
-        return metadata.externalVariantId === variation.id
+        return metadata.externalVariantId === variation.id.toString()
       }
       return false
     })
 
     if (existingVariant) {
+      // Track stock change for inventory activity
+      const oldVariantStock = existingVariant.stock || 0
+      const variantStockChanged = oldVariantStock !== variantStock
+
       await prisma.productVariant.update({
         where: { id: existingVariant.id },
         data: variantData
       })
+
+      // Create inventory activity if variant stock changed
+      if (variantStockChanged) {
+        const quantityChange = variantStock - oldVariantStock
+        const activityType = quantityChange > 0 ? 'RESTOCK' : 'ADJUSTMENT'
+        
+        await prisma.inventoryActivity.create({
+          data: {
+            productId,
+            variantId: existingVariant.id,
+            businessId,
+            type: activityType,
+            quantity: quantityChange,
+            oldStock: oldVariantStock,
+            newStock: variantStock,
+            reason: `External sync from ByBest (Variant ID: ${variation.id})`,
+            changedBy: 'External Sync'
+          }
+        })
+      }
     } else {
       await prisma.productVariant.create({
         data: variantData
