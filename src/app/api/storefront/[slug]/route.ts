@@ -457,10 +457,17 @@ export async function GET(
                   product.saleEndDate
                 )
                 
-                // Use Albanian description if business language is Albanian
-                const productDescription = useAlbanian && product.descriptionAl 
-                  ? product.descriptionAl 
-                  : product.description
+                // Exception slugs: Always use English description, fallback to Albanian only if English is empty
+                const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
+                const isExceptionSlug = exceptionSlugs.includes(slug)
+                
+                // For exception slugs: prioritize English, use Albanian only if English is empty/missing
+                // For others: use Albanian if business language is Albanian, otherwise English
+                const productDescription = isExceptionSlug
+                  ? (product.description || product.descriptionAl || '')
+                  : (useAlbanian && product.descriptionAl 
+                    ? product.descriptionAl 
+                    : product.description)
                 
                 return {
                   id: product.id,
