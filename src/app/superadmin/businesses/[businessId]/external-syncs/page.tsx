@@ -54,9 +54,9 @@ export default function ExternalSyncsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingSync, setEditingSync] = useState<ExternalSync | null>(null)
   const [deletingSync, setDeletingSync] = useState<ExternalSync | null>(null)
-  const [syncingSyncId, setSyncingSyncId] = useState<string | null>(null)
   const [syncConfirmModal, setSyncConfirmModal] = useState<ExternalSync | null>(null)
-  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; processedCount?: number; skippedCount?: number } | null>(null)
+  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; processedCount?: number; skippedCount?: number; errors?: any[] } | null>(null)
+  const [syncingInModal, setSyncingInModal] = useState(false)
 
   useEffect(() => {
     fetchBusiness()
@@ -328,21 +328,15 @@ export default function ExternalSyncsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleSyncNow(sync)}
-                          disabled={syncingSyncId === sync.id || !sync.isActive}
+                          disabled={!sync.isActive}
                           className={`p-2 rounded-lg ${
-                            syncingSyncId === sync.id
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : sync.isActive
+                            sync.isActive
                               ? 'text-teal-600 hover:bg-teal-50'
                               : 'text-gray-400 cursor-not-allowed'
                           }`}
                           title={sync.isActive ? 'Sync Now' : 'Activate sync first'}
                         >
-                          {syncingSyncId === sync.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )}
+                          <RefreshCw className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleToggleActive(sync)}
@@ -719,11 +713,13 @@ function DeleteConfirmModal({ sync, onClose, onConfirm }: DeleteConfirmModalProp
 // Sync Confirmation Modal
 interface SyncConfirmModalProps {
   sync: ExternalSync
+  syncing: boolean
+  syncResult: { success: boolean; message: string; processedCount?: number; skippedCount?: number; errors?: any[] } | null
   onClose: () => void
   onConfirm: (perPage?: number) => void
 }
 
-function SyncConfirmModal({ sync, onClose, onConfirm }: SyncConfirmModalProps) {
+function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: SyncConfirmModalProps) {
   const [perPage, setPerPage] = useState<string>(() => {
     // Get default perPage from sync config
     if (sync.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints) {
@@ -734,7 +730,7 @@ function SyncConfirmModal({ sync, onClose, onConfirm }: SyncConfirmModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-md w-full">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
@@ -759,7 +755,8 @@ function SyncConfirmModal({ sync, onClose, onConfirm }: SyncConfirmModalProps) {
               max="500"
               value={perPage}
               onChange={(e) => setPerPage(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              disabled={syncing || !!syncResult}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
               placeholder="100"
             />
             <p className="mt-1 text-xs text-gray-500">
@@ -767,19 +764,80 @@ function SyncConfirmModal({ sync, onClose, onConfirm }: SyncConfirmModalProps) {
             </p>
           </div>
 
+          {/* Sync Results Section */}
+          {syncResult && (
+            <div className={`mb-6 p-4 rounded-lg border-2 ${
+              syncResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+            }`}>
+              <div className="flex items-center gap-3 mb-3">
+                {syncResult.success ? (
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                )}
+                <h4 className="font-semibold text-gray-900">
+                  {syncResult.success ? 'Sync Completed' : 'Sync Failed'}
+                </h4>
+              </div>
+              <p className="text-sm text-gray-700 mb-3">{syncResult.message}</p>
+              
+              {syncResult.processedCount !== undefined && (
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Processed:</span>
+                    <span className="font-medium text-gray-900">{syncResult.processedCount}</span>
+                  </div>
+                  {syncResult.skippedCount !== undefined && syncResult.skippedCount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Skipped:</span>
+                      <span className="font-medium text-orange-600">{syncResult.skippedCount}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {syncResult.errors && syncResult.errors.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Errors ({syncResult.errors.length}):</p>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {syncResult.errors.slice(0, 5).map((error: any, idx: number) => (
+                      <div key={idx} className="text-xs text-red-600 bg-red-100 p-2 rounded">
+                        {error.productId || 'Unknown'}: {error.error || 'Unknown error'}
+                      </div>
+                    ))}
+                    {syncResult.errors.length > 5 && (
+                      <p className="text-xs text-gray-500">... and {syncResult.errors.length - 5} more errors</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              disabled={syncing}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {syncResult ? 'Close' : 'Cancel'}
             </button>
-            <button
-              onClick={() => onConfirm(parseInt(perPage) || undefined)}
-              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
-            >
-              Start Sync
-            </button>
+            {!syncResult && (
+              <button
+                onClick={() => onConfirm(parseInt(perPage) || undefined)}
+                disabled={syncing}
+                className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+              >
+                {syncing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  'Start Sync'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
