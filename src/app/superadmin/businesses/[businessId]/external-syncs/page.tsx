@@ -417,7 +417,13 @@ export default function ExternalSyncsPage() {
       {syncConfirmModal && (
         <SyncConfirmModal
           sync={syncConfirmModal}
-          onClose={() => setSyncConfirmModal(null)}
+          syncing={syncingInModal}
+          syncResult={syncResult}
+          onClose={() => {
+            setSyncConfirmModal(null)
+            setSyncResult(null)
+            setSyncingInModal(false)
+          }}
           onConfirm={confirmSync}
         />
       )}
