@@ -491,7 +491,10 @@ export async function GET(
                       price: variantPricing.effectivePrice,
                       originalPrice: variantPricing.effectiveOriginalPrice,
                       stock: variant.stock,
-                      sku: variant.sku
+                      sku: variant.sku,
+                      metadata: variant.metadata || null, // Include metadata for variant images
+                      saleStartDate: variant.saleStartDate || null,
+                      saleEndDate: variant.saleEndDate || null
                     }
                   }),
                   modifiers: (product.modifiers as any[]).map((modifier: any) => ({

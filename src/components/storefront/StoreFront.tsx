@@ -4104,6 +4104,14 @@ function ProductModal({
   featuredBadgeColor?: string // Only add this
   storefrontLanguage?: string // Add language prop
 }) {
+  // Log product.variants when modal opens
+  useEffect(() => {
+    console.log('[ProductModal Mount] Product variants:', product.variants)
+    product.variants.forEach((v, idx) => {
+      console.log(`[ProductModal Mount] Variant ${idx}:`, v)
+      console.log(`[ProductModal Mount] Variant ${idx} metadata:`, (v as any).metadata)
+    })
+  }, [product.id])
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('')
@@ -4428,6 +4436,10 @@ function ProductModal({
                       const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
                       const variantAvailable = variant.stock - variantInCart
                       
+                      // Log the full variant object from product.variants
+                      console.log('[Variant Map] Full variant object from product.variants:', variant)
+                      console.log('[Variant Map] Variant metadata:', (variant as any).metadata)
+                      
                       return (
                         <button
                           key={variant.id}
@@ -4436,9 +4448,11 @@ function ProductModal({
                               variantId: variant.id,
                               variantName: variant.name,
                               variantMetadata: (variant as any).metadata,
-                              variantImage: (variant as any).metadata?.image
+                              variantImage: (variant as any).metadata?.image,
+                              fullVariantObject: variant
                             })
-                            setSelectedVariant(variant)
+                            // Pass the full variant object including metadata
+                            setSelectedVariant(variant as ProductVariant)
                             // Reset image index when variant changes (if variant has image, it will show via getCurrentImage)
                             setCurrentImageIndex(0)
                             console.log('[Variant Click] State updated, selectedVariant should be:', variant)
