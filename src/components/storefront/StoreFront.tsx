@@ -4120,13 +4120,13 @@ function ProductModal({
     
     const variantNameLower = variantName.toLowerCase().trim()
     const variantMap: Record<string, string> = {
-      'green': 'Gjelbër',
-      'white': 'Bardhë',
+      'green': 'E gjelbër',
+      'white': 'E bardhë',
       'orange': 'Portokalli',
-      'red': 'Kuq',
-      'blue': 'Kaltër',
-      'black': 'Zi',
-      'yellow': 'Verdhë',
+      'red': 'E kuqe',
+      'blue': 'E kaltër',
+      'black': 'E zezë',
+      'yellow': 'E verdhë',
       'purple': 'Vjollcë',
       'pink': 'Rozë',
       'gray': 'Gri',
