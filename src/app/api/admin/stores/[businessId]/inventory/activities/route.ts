@@ -76,10 +76,47 @@ export async function GET(
       take: limit
     })
 
+    // Populate user information for activities where changedBy is a user ID
+    const activitiesWithUsers = await Promise.all(
+      activities.map(async (activity) => {
+        // Check if changedBy looks like a MongoDB ObjectId (24 hex characters)
+        const isObjectId = activity.changedBy ? /^[0-9a-fA-F]{24}$/.test(activity.changedBy) : false
+        
+        if (isObjectId && activity.changedBy) {
+          try {
+            const user = await prisma.user.findUnique({
+              where: { id: activity.changedBy },
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            })
+            
+            if (user) {
+              return {
+                ...activity,
+                user: {
+                  id: user.id,
+                  name: user.name || user.email || 'Unknown User'
+                },
+                changedBy: user.name || user.email || activity.changedBy || undefined // Keep original for backward compatibility
+              }
+            }
+          } catch (error) {
+            // If user not found, continue with original changedBy
+            console.error(`User not found for changedBy: ${activity.changedBy}`, error)
+          }
+        }
+        
+        return activity
+      })
+    )
+
     const pages = Math.ceil(total / limit)
 
     return NextResponse.json({
-      activities,
+      activities: activitiesWithUsers,
       pagination: {
         page,
         limit,

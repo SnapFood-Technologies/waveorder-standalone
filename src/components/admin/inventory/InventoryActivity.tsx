@@ -410,7 +410,7 @@ export function InventoryActivity({ businessId, productId }: InventoryActivityPr
                               <User className="w-3 h-3 text-teal-600" />
                             </div>
                             <div className="ml-2 text-sm text-gray-900">
-                              {activity.changedBy || 'System'}
+                              {activity.user?.name || activity.changedBy || 'System'}
                             </div>
                           </div>
                         </td>

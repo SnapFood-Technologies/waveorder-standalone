@@ -204,7 +204,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
           <p className="text-gray-600 mt-1">
@@ -217,7 +217,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
             setEditingCategory(null)
             setShowForm(true)
           }}
-          className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+          className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Category
