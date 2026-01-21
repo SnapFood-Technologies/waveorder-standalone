@@ -345,120 +345,12 @@ export async function GET(
         const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
         
         // Build all categories with products
-        const allCategories = (business.categories as any[]).map((category: any) => ({
-          id: category.id,
-          name: useAlbanian && category.nameAl ? category.nameAl : category.name,
-          description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
-          nameAl: category.nameAl,
-          descriptionAl: category.descriptionAl,
-          parentId: category.parentId,
-          parent: category.parent ? {
-            id: category.parent.id,
-            name: useAlbanian && category.parent.nameAl ? category.parent.nameAl : category.parent.name,
-            hideParentInStorefront: category.parent.hideParentInStorefront
-          } : null,
-          hideParentInStorefront: category.hideParentInStorefront,
-          image: category.image,
-          sortOrder: category.sortOrder,
-          children: category.children ? (category.children as any[]).map((child: any) => ({
-            id: child.id,
-            name: useAlbanian && child.nameAl ? child.nameAl : child.name,
-            description: useAlbanian && child.descriptionAl ? child.descriptionAl : child.description,
-            nameAl: child.nameAl,
-            descriptionAl: child.descriptionAl,
-            image: child.image,
-            sortOrder: child.sortOrder
-          })) : [],
-          products: (category.products as any[])
-            .filter((product: any) => {
-              // Filter out products with stock 0
-              // If inventory tracking is disabled, product is always available (show it)
-              if (!product.trackInventory) {
-                return true
-              }
-              
-              // If product has variants, check if any variant has stock > 0
-              if (product.variants && product.variants.length > 0) {
-                return product.variants.some((v: any) => v.stock > 0)
-              }
-              
-              // Otherwise, check product stock
-              return product.stock > 0
-            })
-            .map((product: any) => {
-              // Calculate effective price for product
-              const productPricing = calculateEffectivePrice(
-                product.price,
-                product.originalPrice,
-                product.saleStartDate,
-                product.saleEndDate
-              )
-              
-              // Use Albanian description if business language is Albanian
-              const productDescription = useAlbanian && product.descriptionAl 
-                ? product.descriptionAl 
-                : product.description
-              
-              return {
-                id: product.id,
-                name: product.name,
-                description: productDescription,
-                descriptionAl: product.descriptionAl,
-                images: product.images,
-                price: productPricing.effectivePrice,
-                originalPrice: productPricing.effectiveOriginalPrice,
-                sku: product.sku,
-                stock: product.stock,
-                trackInventory: product.trackInventory,
-                featured: product.featured,
-                metaTitle: product.metaTitle,
-                metaDescription: product.metaDescription,
-                variants: (product.variants as any[]).map((variant: any) => {
-                  // Calculate effective price for variant
-                  const variantPricing = calculateEffectivePrice(
-                    variant.price,
-                    variant.originalPrice,
-                    variant.saleStartDate,
-                    variant.saleEndDate
-                  )
-                  
-                  return {
-                    id: variant.id,
-                    name: variant.name,
-                    price: variantPricing.effectivePrice,
-                    originalPrice: variantPricing.effectiveOriginalPrice,
-                    stock: variant.stock,
-                    sku: variant.sku
-                  }
-                }),
-                modifiers: (product.modifiers as any[]).map((modifier: any) => ({
-                  id: modifier.id,
-                  name: modifier.name,
-                  price: modifier.price,
-                  required: modifier.required
-                }))
-              }
-            })
-        }))
-        
-        // Separate parent and child categories
-        const parentCategories = allCategories.filter((cat: any) => !cat.parentId)
-        const childCategories = allCategories.filter((cat: any) => cat.parentId)
-        
-        // Check if we should hide single parent
-        if (parentCategories.length === 1 && parentCategories[0].hideParentInStorefront) {
-          // Return only children of that parent in flat structure
-          // Need to get products from parent category that belong to these children
-          const parentId = parentCategories[0].id
-          return childCategories
-            .filter((child: any) => child.parentId === parentId)
-            .map((child: any) => {
-              // Find the child category in allCategories to get its products
-              const childWithProducts = allCategories.find((c: any) => c.id === child.id)
-              const products = (childWithProducts?.products || []) as any[]
-              
-              // Filter out products with stock 0
-              const filteredProducts = products.filter((product: any) => {
+        const allCategoriesWithProducts = (business.categories as any[])
+          .map((category: any) => {
+            // Filter products with stock 0
+            const filteredProducts = (category.products as any[])
+              .filter((product: any) => {
+                // Filter out products with stock 0
                 // If inventory tracking is disabled, product is always available (show it)
                 if (!product.trackInventory) {
                   return true
@@ -472,12 +364,139 @@ export async function GET(
                 // Otherwise, check product stock
                 return product.stock > 0
               })
-              
-              return {
-                ...child,
-                products: filteredProducts
-              }
-            })
+            
+            return {
+              id: category.id,
+              name: useAlbanian && category.nameAl ? category.nameAl : category.name,
+              description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
+              nameAl: category.nameAl,
+              descriptionAl: category.descriptionAl,
+              parentId: category.parentId,
+              parent: category.parent ? {
+                id: category.parent.id,
+                name: useAlbanian && category.parent.nameAl ? category.parent.nameAl : category.parent.name,
+                hideParentInStorefront: category.parent.hideParentInStorefront
+              } : null,
+              hideParentInStorefront: category.hideParentInStorefront,
+              image: category.image,
+              sortOrder: category.sortOrder,
+              children: category.children ? (category.children as any[]).map((child: any) => ({
+                id: child.id,
+                name: useAlbanian && child.nameAl ? child.nameAl : child.name,
+                description: useAlbanian && child.descriptionAl ? child.descriptionAl : child.description,
+                nameAl: child.nameAl,
+                descriptionAl: child.descriptionAl,
+                image: child.image,
+                sortOrder: child.sortOrder
+              })) : [],
+              products: filteredProducts
+            }
+          })
+        
+        // Filter categories that have at least 1 product
+        // For parent categories: must have products OR have children with products
+        // For child categories: must have products
+        const allCategories = allCategoriesWithProducts
+          .filter((category: any) => {
+            // Child categories: must have at least 1 product
+            if (category.parentId) {
+              return category.products.length > 0
+            }
+            
+            // Parent categories: must have products OR have children with products
+            if (category.children && category.children.length > 0) {
+              // Check if any child has products
+              const childrenWithProducts = category.children.filter((childId: any) => {
+                const child = allCategoriesWithProducts.find((c: any) => c.id === childId.id)
+                return child && child.products.length > 0
+              })
+              // Show parent if it has products OR has children with products
+              return category.products.length > 0 || childrenWithProducts.length > 0
+            }
+            
+            // Parent without children: must have products
+            return category.products.length > 0
+          })
+          .map((category: any) => {
+            // Filter children to only include those with products
+            const childrenWithProducts = category.children
+              ? category.children.filter((child: any) => {
+                  const childCategory = allCategoriesWithProducts.find((c: any) => c.id === child.id)
+                  return childCategory && childCategory.products.length > 0
+                })
+              : []
+            
+            return {
+              ...category,
+              children: childrenWithProducts,
+              products: category.products.map((product: any) => {
+                // Calculate effective price for product
+                const productPricing = calculateEffectivePrice(
+                  product.price,
+                  product.originalPrice,
+                  product.saleStartDate,
+                  product.saleEndDate
+                )
+                
+                // Use Albanian description if business language is Albanian
+                const productDescription = useAlbanian && product.descriptionAl 
+                  ? product.descriptionAl 
+                  : product.description
+                
+                return {
+                  id: product.id,
+                  name: product.name,
+                  description: productDescription,
+                  descriptionAl: product.descriptionAl,
+                  images: product.images,
+                  price: productPricing.effectivePrice,
+                  originalPrice: productPricing.effectiveOriginalPrice,
+                  sku: product.sku,
+                  stock: product.stock,
+                  trackInventory: product.trackInventory,
+                  featured: product.featured,
+                  metaTitle: product.metaTitle,
+                  metaDescription: product.metaDescription,
+                  variants: (product.variants as any[]).map((variant: any) => {
+                    // Calculate effective price for variant
+                    const variantPricing = calculateEffectivePrice(
+                      variant.price,
+                      variant.originalPrice,
+                      variant.saleStartDate,
+                      variant.saleEndDate
+                    )
+                    
+                    return {
+                      id: variant.id,
+                      name: variant.name,
+                      price: variantPricing.effectivePrice,
+                      originalPrice: variantPricing.effectiveOriginalPrice,
+                      stock: variant.stock,
+                      sku: variant.sku
+                    }
+                  }),
+                  modifiers: (product.modifiers as any[]).map((modifier: any) => ({
+                    id: modifier.id,
+                    name: modifier.name,
+                    price: modifier.price,
+                    required: modifier.required
+                  }))
+                }
+              })
+            }
+          })
+        
+        // Separate parent and child categories
+        const parentCategories = allCategories.filter((cat: any) => !cat.parentId)
+        const childCategories = allCategories.filter((cat: any) => cat.parentId)
+        
+        // Check if we should hide single parent
+        if (parentCategories.length === 1 && parentCategories[0].hideParentInStorefront) {
+          // Return only children of that parent in flat structure
+          // Children are already filtered to only include those with products
+          const parentId = parentCategories[0].id
+          return childCategories
+            .filter((child: any) => child.parentId === parentId && child.products.length > 0)
             .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
         }
         

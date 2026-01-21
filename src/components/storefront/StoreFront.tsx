@@ -3083,7 +3083,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     borderBottomColor: (shouldShowOnlySubcategories ? selectedCategory === 'all' : !selectedSubCategory) ? primaryColor : 'transparent'
                   }}
                 >
-                  All
+                  {translations.all || 'All'}
                 </button>
                 {(shouldShowOnlySubcategories 
                   ? childCategories // When parent is hidden, all categories are already children (no need to filter)

@@ -149,7 +149,7 @@ export default function ExternalSyncsPage() {
       }
       fetchSyncs()
     } catch (err: any) {
-      alert(err.message || 'Failed to update sync')
+      setError(err.message || 'Failed to update sync')
     }
   }
 
@@ -252,7 +252,7 @@ export default function ExternalSyncsPage() {
     setDeduplicateResult(null)
     
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/categories/deduplicate`, {
+      const response = await fetch(`/api/superadmin/businesses/${businessId}/categories/deduplicate`, {
         method: 'POST'
       })
 
@@ -267,11 +267,11 @@ export default function ExternalSyncsPage() {
           productsMoved: 0,
           childrenMoved: 0
         })
-        alert(errorData.message || 'Error deduplicating categories')
+        setError(errorData.message || 'Error deduplicating categories')
       }
     } catch (error: any) {
       console.error('Error deduplicating categories:', error)
-      alert('Error deduplicating categories. Please try again.')
+      setError('Error deduplicating categories. Please try again.')
     } finally {
       setDeduplicating(false)
     }
