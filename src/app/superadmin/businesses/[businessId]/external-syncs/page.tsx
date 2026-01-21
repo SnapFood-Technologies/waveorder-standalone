@@ -55,6 +55,8 @@ export default function ExternalSyncsPage() {
   const [editingSync, setEditingSync] = useState<ExternalSync | null>(null)
   const [deletingSync, setDeletingSync] = useState<ExternalSync | null>(null)
   const [syncingSyncId, setSyncingSyncId] = useState<string | null>(null)
+  const [syncConfirmModal, setSyncConfirmModal] = useState<ExternalSync | null>(null)
+  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; processedCount?: number; skippedCount?: number } | null>(null)
 
   useEffect(() => {
     fetchBusiness()
@@ -100,7 +102,10 @@ export default function ExternalSyncsPage() {
       setDeletingSync(null)
       fetchSyncs()
     } catch (err: any) {
-      alert(err.message || 'Failed to delete sync')
+      setSyncResult({
+        success: false,
+        message: err.message || 'Failed to delete sync'
+      })
     }
   }
 
@@ -122,35 +127,61 @@ export default function ExternalSyncsPage() {
 
   const handleSyncNow = async (sync: ExternalSync) => {
     if (!sync.isActive) {
-      alert('Please activate the sync before running it')
+      setSyncResult({
+        success: false,
+        message: 'Please activate the sync before running it'
+      })
       return
     }
 
     if (!sync.externalSystemBaseUrl || !sync.externalSystemApiKey) {
-      alert('External system base URL and API key are required')
+      setSyncResult({
+        success: false,
+        message: 'External system base URL and API key are required'
+      })
       return
     }
 
-    if (confirm(`Start syncing products from ${sync.externalSystemName || sync.name}?`)) {
-      try {
-        setSyncingSyncId(sync.id)
-        const response = await fetch(`/api/superadmin/businesses/${businessId}/external-syncs/${sync.id}/sync`, {
-          method: 'POST'
-        })
-        
-        if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.message || 'Failed to start sync')
-        }
+    setSyncConfirmModal(sync)
+  }
 
-        const result = await response.json()
-        alert(`Sync started successfully!\nProcessed: ${result.processedCount || 0}\nSkipped: ${result.skippedCount || 0}`)
-        fetchSyncs() // Refresh to show updated sync status
-      } catch (err: any) {
-        alert(err.message || 'Failed to start sync')
-      } finally {
-        setSyncingSyncId(null)
+  const confirmSync = async (perPage?: number) => {
+    if (!syncConfirmModal) return
+
+    const sync = syncConfirmModal
+    setSyncConfirmModal(null)
+
+    try {
+      setSyncingSyncId(sync.id)
+      const url = new URL(`/api/superadmin/businesses/${businessId}/external-syncs/${sync.id}/sync`, window.location.origin)
+      if (perPage) {
+        url.searchParams.set('per_page', perPage.toString())
       }
+      
+      const response = await fetch(url.toString(), {
+        method: 'POST'
+      })
+      
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to start sync')
+      }
+
+      const result = await response.json()
+      setSyncResult({
+        success: true,
+        message: `Sync completed successfully!`,
+        processedCount: result.processedCount || 0,
+        skippedCount: result.skippedCount || 0
+      })
+      fetchSyncs() // Refresh to show updated sync status
+    } catch (err: any) {
+      setSyncResult({
+        success: false,
+        message: err.message || 'Failed to start sync'
+      })
+    } finally {
+      setSyncingSyncId(null)
     }
   }
 
@@ -376,6 +407,23 @@ export default function ExternalSyncsPage() {
           sync={deletingSync}
           onClose={() => setDeletingSync(null)}
           onConfirm={() => handleDelete(deletingSync)}
+        />
+      )}
+
+      {/* Sync Confirmation Modal */}
+      {syncConfirmModal && (
+        <SyncConfirmModal
+          sync={syncConfirmModal}
+          onClose={() => setSyncConfirmModal(null)}
+          onConfirm={confirmSync}
+        />
+      )}
+
+      {/* Sync Result Modal */}
+      {syncResult && (
+        <SyncResultModal
+          result={syncResult}
+          onClose={() => setSyncResult(null)}
         />
       )}
     </div>
@@ -660,6 +708,133 @@ function DeleteConfirmModal({ sync, onClose, onConfirm }: DeleteConfirmModalProp
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
             >
               Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Sync Confirmation Modal
+interface SyncConfirmModalProps {
+  sync: ExternalSync
+  onClose: () => void
+  onConfirm: (perPage?: number) => void
+}
+
+function SyncConfirmModal({ sync, onClose, onConfirm }: SyncConfirmModalProps) {
+  const [perPage, setPerPage] = useState<string>(() => {
+    // Get default perPage from sync config
+    if (sync.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints) {
+      return (sync.externalSystemEndpoints as any).perPage?.toString() || '100'
+    }
+    return '100'
+  })
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+              <RefreshCw className="w-6 h-6 text-teal-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Start Sync</h3>
+              <p className="text-sm text-gray-600">Sync products from external system</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-700 mb-4">
+            Start syncing products from <strong>{sync.externalSystemName || sync.name}</strong>? This will fetch and update products in your store.
+          </p>
+          
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Products Per Page (for this sync)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              value={perPage}
+              onChange={(e) => setPerPage(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              placeholder="100"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Number of products to fetch per API request (default: {sync.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints ? (sync.externalSystemEndpoints as any).perPage || 100 : 100})
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onConfirm(parseInt(perPage) || undefined)}
+              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+            >
+              Start Sync
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Sync Result Modal
+interface SyncResultModalProps {
+  result: { success: boolean; message: string; processedCount?: number; skippedCount?: number }
+  onClose: () => void
+}
+
+function SyncResultModal({ result, onClose }: SyncResultModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              result.success ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {result.success ? (
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              ) : (
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {result.success ? 'Sync Completed' : 'Sync Failed'}
+              </h3>
+            </div>
+          </div>
+          <p className="text-sm text-gray-700 mb-4">{result.message}</p>
+          {result.success && result.processedCount !== undefined && (
+            <div className="mb-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Processed:</span>
+                <span className="font-medium text-gray-900">{result.processedCount}</span>
+              </div>
+              {result.skippedCount !== undefined && result.skippedCount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Skipped:</span>
+                  <span className="font-medium text-gray-900">{result.skippedCount}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+            >
+              OK
             </button>
           </div>
         </div>

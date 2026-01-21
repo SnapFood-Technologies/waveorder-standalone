@@ -21,8 +21,12 @@ export async function POST(
 
     const { businessId, syncId } = await params
 
+    // Get per_page from query params (if provided, overrides config)
+    const { searchParams } = new URL(request.url)
+    const perPageOverride = searchParams.get('per_page')
+
     // Get sync configuration
-    const sync = await prisma.externalSync.findFirst({
+    const sync = await (prisma as any).externalSync.findFirst({
       where: {
         id: syncId,
         businessId
@@ -66,7 +70,8 @@ export async function POST(
     // Parse endpoints and brand IDs
     const endpoints = sync.externalSystemEndpoints as any || {}
     const productsEndpoint = endpoints['products-by-brand'] || endpoints['products'] || '/brand-products-export'
-    const perPage = endpoints?.perPage || 100 // Get per_page from config, default to 100
+    // Use per_page from query param if provided, otherwise from config, otherwise default to 100
+    const perPage = perPageOverride ? parseInt(perPageOverride) : (endpoints?.perPage || 100)
     
     // Handle brandIds - can be string (like "13" or "5") or array
     let brandIds: string[] = []
@@ -338,9 +343,9 @@ async function syncProductVariants(productId: string, variations: any[], syncId:
     // Fetch variants and filter in memory (Prisma JSON queries don't work well with MongoDB)
     const variants = await prisma.productVariant.findMany({
       where: { productId }
-    })
+    }) as any[]
     
-    const existingVariant = variants.find(v => {
+    const existingVariant = variants.find((v: any) => {
       if (v.metadata && typeof v.metadata === 'object' && 'externalVariantId' in v.metadata) {
         const metadata = v.metadata as { externalVariantId?: string }
         return metadata.externalVariantId === variation.id
