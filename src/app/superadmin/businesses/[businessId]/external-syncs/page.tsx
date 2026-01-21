@@ -1202,20 +1202,34 @@ function DeduplicateCategoriesModal({
                     {result.details && result.details.length > 0 && (
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <h4 className="font-medium text-gray-900 mb-3">Details:</h4>
-                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
                           {result.details.map((detail, idx) => (
-                            <div key={idx} className="text-sm">
-                              <p className="font-medium text-gray-900">
-                                External ID: {detail.externalId}
-                              </p>
-                              <p className="text-gray-700">
-                                Kept: <span className="font-medium text-green-700">{detail.kept}</span>
-                              </p>
-                              {detail.removed.length > 0 && (
-                                <p className="text-gray-600">
-                                  Removed: {detail.removed.map(r => r.name).join(', ')}
-                                </p>
-                              )}
+                            <div key={idx} className="bg-white border border-gray-200 rounded-lg p-3">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <p className="text-xs font-medium text-gray-500 mb-1">
+                                    External ID: <span className="text-gray-900">{detail.externalId}</span>
+                                  </p>
+                                  <p className="text-sm text-gray-700 mb-1">
+                                    Kept: <span className="font-medium text-green-700">{detail.kept}</span>
+                                  </p>
+                                  {detail.removed.length > 0 && (
+                                    <p className="text-sm text-gray-600">
+                                      Removed: <span className="font-medium text-orange-600">{detail.removed.length}</span> duplicate{detail.removed.length !== 1 ? 's' : ''}
+                                      {detail.removed.length <= 3 && (
+                                        <span className="text-gray-500 ml-1">
+                                          ({detail.removed.map(r => r.name).join(', ')})
+                                        </span>
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                                {detail.removed.length > 3 && (
+                                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    {detail.removed.length} removed
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
