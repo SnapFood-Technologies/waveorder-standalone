@@ -748,6 +748,8 @@ function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: Syn
     }
     return '100'
   })
+  const [currentPage, setCurrentPage] = useState<string>('1')
+  const [syncAllPages, setSyncAllPages] = useState<boolean>(true)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
