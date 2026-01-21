@@ -55,7 +55,21 @@ export default function ExternalSyncsPage() {
   const [editingSync, setEditingSync] = useState<ExternalSync | null>(null)
   const [deletingSync, setDeletingSync] = useState<ExternalSync | null>(null)
   const [syncConfirmModal, setSyncConfirmModal] = useState<ExternalSync | null>(null)
-  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string; processedCount?: number; skippedCount?: number; errors?: any[] } | null>(null)
+  const [syncResult, setSyncResult] = useState<{ 
+    success: boolean
+    message: string
+    processedCount?: number
+    skippedCount?: number
+    errors?: any[]
+    pagination?: {
+      total?: number
+      perPage?: number
+      currentPage?: number
+      totalPages?: number
+      remainingPages?: number
+      syncAllPages?: boolean
+    }
+  } | null>(null)
   const [syncingInModal, setSyncingInModal] = useState(false)
 
   useEffect(() => {
@@ -735,7 +749,21 @@ function DeleteConfirmModal({ sync, onClose, onConfirm }: DeleteConfirmModalProp
 interface SyncConfirmModalProps {
   sync: ExternalSync
   syncing: boolean
-  syncResult: { success: boolean; message: string; processedCount?: number; skippedCount?: number; errors?: any[] } | null
+  syncResult: { 
+    success: boolean
+    message: string
+    processedCount?: number
+    skippedCount?: number
+    errors?: any[]
+    pagination?: {
+      total?: number
+      perPage?: number
+      currentPage?: number
+      totalPages?: number
+      remainingPages?: number
+      syncAllPages?: boolean
+    }
+  } | null
   onClose: () => void
   onConfirm: (perPage?: number, currentPage?: number, syncAllPages?: boolean) => void
 }
@@ -852,6 +880,31 @@ function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: Syn
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Skipped:</span>
                       <span className="font-medium text-orange-600">{syncResult.skippedCount}</span>
+                    </div>
+                  )}
+                  {syncResult.pagination && (
+                    <div className="mt-4 pt-3 border-t border-gray-200 space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Products:</span>
+                        <span className="font-medium text-gray-900">{syncResult.pagination.total?.toLocaleString() || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Current Page:</span>
+                        <span className="font-medium text-gray-900">{syncResult.pagination.currentPage || 'N/A'} / {syncResult.pagination.totalPages || 'N/A'}</span>
+                      </div>
+                      {syncResult.pagination.remainingPages !== undefined && syncResult.pagination.remainingPages > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Remaining Pages:</span>
+                          <span className="font-medium text-teal-600">{syncResult.pagination.remainingPages}</span>
+                        </div>
+                      )}
+                      {syncResult.pagination.syncAllPages === false && syncResult.pagination.totalPages && syncResult.pagination.totalPages > 1 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <p className="text-xs text-gray-500">
+                            {syncResult.pagination.totalPages - (syncResult.pagination.currentPage || 1)} more pages available. Check "Sync All Pages" to sync everything.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

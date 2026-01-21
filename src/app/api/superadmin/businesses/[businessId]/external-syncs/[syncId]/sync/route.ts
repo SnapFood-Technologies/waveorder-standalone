@@ -109,6 +109,13 @@ export async function POST(
     const errors: any[] = []
     let lastError: string | null = null
     let syncStatus: 'success' | 'failed' | 'partial' = 'success'
+    let paginationInfo: {
+      total?: number
+      perPage?: number
+      currentPage?: number
+      totalPages?: number
+      remainingPages?: number
+    } = {}
 
     try {
       // Fetch products from external system
@@ -120,6 +127,7 @@ export async function POST(
         let page = currentPage // Start from specified current page
         let hasMore = true
         let isFirstPage = true
+        let lastProcessedPage = currentPage
 
         while (hasMore) {
           const url = new URL(`${baseUrl}${endpoint}`)
@@ -154,10 +162,24 @@ export async function POST(
             products = data
           }
           
-          // Check total pages and warn if syncing all pages with many pages
-          const totalPages = data.pagination?.totalPages || data.total_pages || (data.total && perPage ? Math.ceil(data.total / perPage) : 1)
-          if (syncAllPages && totalPages > 50 && isFirstPage) {
-            console.warn(`⚠️ Warning: Syncing all ${totalPages} pages may cause timeout. Consider using sync_all_pages=false for testing.`)
+          // Capture pagination info from external API response (only on first page)
+          if (isFirstPage) {
+            const total = data.total || data.pagination?.total || 0
+            const totalPages = data.pagination?.totalPages || data.total_pages || (total && perPage ? Math.ceil(total / perPage) : 1)
+            const currentPageFromApi = data.pagination?.currentPage || data.current_page || page
+            const perPageFromApi = data.pagination?.perPage || data.per_page || perPage
+            
+            paginationInfo = {
+              total,
+              perPage: perPageFromApi,
+              currentPage: currentPageFromApi,
+              totalPages,
+              remainingPages: syncAllPages ? 0 : Math.max(0, totalPages - currentPageFromApi)
+            }
+            
+            if (syncAllPages && totalPages > 50) {
+              console.warn(`⚠️ Warning: Syncing all ${totalPages} pages may cause timeout. Consider using sync_all_pages=false for testing.`)
+            }
           }
 
           if (!products || products.length === 0) {
@@ -226,6 +248,15 @@ export async function POST(
       }
     })
 
+    // Calculate remaining pages
+    // If syncing all pages, remainingPages = 0 (all done)
+    // If syncing single page, remainingPages = totalPages - currentPage
+    const remainingPages = syncAllPages 
+      ? 0 // All pages synced
+      : (paginationInfo.totalPages && paginationInfo.currentPage)
+        ? Math.max(0, paginationInfo.totalPages - paginationInfo.currentPage)
+        : 0
+
     return NextResponse.json({
       message: syncAllPages 
         ? 'Sync completed' 
@@ -235,8 +266,11 @@ export async function POST(
       errors: errors.slice(0, 10), // Return first 10 errors
       status: syncStatus,
       pagination: {
-        currentPage,
-        perPage,
+        total: paginationInfo.total,
+        perPage: paginationInfo.perPage || perPage,
+        currentPage: paginationInfo.currentPage || currentPage,
+        totalPages: paginationInfo.totalPages,
+        remainingPages,
         syncAllPages
       }
     })

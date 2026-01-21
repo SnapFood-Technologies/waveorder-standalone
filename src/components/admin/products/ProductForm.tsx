@@ -67,6 +67,8 @@ interface ProductForm {
   images: string[]
   price: number
   originalPrice?: number
+  saleStartDate?: string
+  saleEndDate?: string
   sku: string
   stock: number
   trackInventory: boolean
@@ -176,12 +178,28 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           }
         }) || []
         
+        // Format dates for input fields (YYYY-MM-DDTHH:mm format)
+        const formatDateForInput = (date: Date | string | null | undefined): string | undefined => {
+          if (!date) return undefined
+          const d = typeof date === 'string' ? new Date(date) : date
+          if (isNaN(d.getTime())) return undefined
+          // Format as YYYY-MM-DDTHH:mm for datetime-local input
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          const hours = String(d.getHours()).padStart(2, '0')
+          const minutes = String(d.getMinutes()).padStart(2, '0')
+          return `${year}-${month}-${day}T${hours}:${minutes}`
+        }
+
         setForm({
           ...data.product,
           nameAl: data.product.nameAl || '',
           descriptionAl: data.product.descriptionAl || '',
           variants: variantsWithImage,
           originalPrice: data.product.originalPrice || undefined,
+          saleStartDate: formatDateForInput(data.product.saleStartDate),
+          saleEndDate: formatDateForInput(data.product.saleEndDate),
           lowStockAlert: data.product.lowStockAlert || undefined
         })
       }
@@ -755,7 +773,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Regular Price * ({business.currency})
@@ -815,7 +833,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                               setForm(prev => ({ 
                                 ...prev, 
                                 price: prev.originalPrice || prev.price, 
-                                originalPrice: undefined 
+                                originalPrice: undefined,
+                                saleStartDate: undefined,
+                                saleEndDate: undefined
                               }))
                             }
                           }}
@@ -828,25 +848,60 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                       </p>
                     </div>
                   )}
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category *
-                    </label>
-                    <select
-                      required
-                      value={form.categoryId}
-                      onChange={(e) => setForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                    >
-                      <option value="">Select category</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
+                {/* Sale Date Fields - Show when sale price is set OR when editing and dates exist */}
+                {isPro && ((form.originalPrice && form.price < form.originalPrice) || form.saleStartDate || form.saleEndDate) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sale Start Date (Optional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.saleStartDate || ''}
+                        onChange={(e) => setForm(prev => ({ ...prev, saleStartDate: e.target.value || undefined }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        When the sale price becomes active
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Sale End Date (Optional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={form.saleEndDate || ''}
+                        onChange={(e) => setForm(prev => ({ ...prev, saleEndDate: e.target.value || undefined }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        When the sale price expires
+                      </p>
+                    </div>
                   </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category *
+                  </label>
+                  <select
+                    required
+                    value={form.categoryId}
+                    onChange={(e) => setForm(prev => ({ ...prev, categoryId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  >
+                    <option value="">Select category</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {isPro && form.originalPrice && form.price < form.originalPrice && (

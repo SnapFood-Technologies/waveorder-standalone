@@ -211,6 +211,32 @@ export async function POST(
 
     const productData = await request.json()
 
+    // Parse sale dates
+    let saleStartDate: Date | null = null
+    let saleEndDate: Date | null = null
+    
+    if (productData.saleStartDate) {
+      try {
+        saleStartDate = new Date(productData.saleStartDate)
+        if (isNaN(saleStartDate.getTime())) {
+          saleStartDate = null
+        }
+      } catch {
+        saleStartDate = null
+      }
+    }
+    
+    if (productData.saleEndDate) {
+      try {
+        saleEndDate = new Date(productData.saleEndDate)
+        if (isNaN(saleEndDate.getTime())) {
+          saleEndDate = null
+        }
+      } catch {
+        saleEndDate = null
+      }
+    }
+
     const product = await prisma.product.create({
       data: {
         name: productData.name,
@@ -220,6 +246,8 @@ export async function POST(
         images: productData.images || [],
         price: productData.price,
         originalPrice: productData.originalPrice || null,
+        saleStartDate,
+        saleEndDate,
         sku: productData.sku || null,
         stock: productData.trackInventory ? productData.stock : 0,
         trackInventory: productData.trackInventory,

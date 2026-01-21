@@ -69,6 +69,32 @@ export async function PUT(
       return NextResponse.json({ message: 'Product not found' }, { status: 404 })
     }
 
+    // Parse sale dates
+    let saleStartDate: Date | null = null
+    let saleEndDate: Date | null = null
+    
+    if (productData.saleStartDate) {
+      try {
+        saleStartDate = new Date(productData.saleStartDate)
+        if (isNaN(saleStartDate.getTime())) {
+          saleStartDate = null
+        }
+      } catch {
+        saleStartDate = null
+      }
+    }
+    
+    if (productData.saleEndDate) {
+      try {
+        saleEndDate = new Date(productData.saleEndDate)
+        if (isNaN(saleEndDate.getTime())) {
+          saleEndDate = null
+        }
+      } catch {
+        saleEndDate = null
+      }
+    }
+
     const product = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -79,6 +105,8 @@ export async function PUT(
         images: productData.images || [],
         price: productData.price,
         originalPrice: productData.originalPrice || null,
+        saleStartDate,
+        saleEndDate,
         sku: productData.sku || null,
         stock: productData.trackInventory ? productData.stock : 0,
         trackInventory: productData.trackInventory,
