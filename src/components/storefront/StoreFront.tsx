@@ -1507,6 +1507,7 @@ interface Product {
   id: string
   name: string
   description?: string
+  descriptionAl?: string
   images: string[]
   price: number
   originalPrice?: number
@@ -3196,6 +3197,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     disabled={storeData.isTemporarilyClosed}
                     cart={cart} // Add this line
                     featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
+                    storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
                   />
                 ))
             })()}
@@ -3333,6 +3335,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           cart={cart} // Add this line
           showError={showError}
           featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
+          storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
         />
       )}
 
@@ -3871,7 +3874,8 @@ function ProductCard({
   translations,
   disabled = false,
   cart = [], // Add cart prop to check current quantities
-  featuredBadgeColor = '#EF4444' // Only add this new prop
+  featuredBadgeColor = '#EF4444', // Only add this new prop
+  storefrontLanguage = 'en' // Add language prop
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -3881,8 +3885,15 @@ function ProductCard({
   disabled?: boolean
   cart?: CartItem[]
   featuredBadgeColor?: string // Only add this
+  storefrontLanguage?: string // Add language prop
 }) {
   const hasImage = product.images.length > 0
+  
+  // Use Albanian description if language is Albanian
+  const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
+  const displayDescription = useAlbanian && product.descriptionAl 
+    ? product.descriptionAl 
+    : product.description
   
   // Calculate total quantity in cart for this product (all variants)
   const totalInCart = cart
@@ -3928,9 +3939,9 @@ function ProductCard({
             </div>
             
             <div className="mb-1">
-              {product.description && (
+              {displayDescription && (
                 <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
-                  {product.description}
+                  {displayDescription.replace(/&nbsp;/g, ' ')}
                 </p>
               )}
             </div>
@@ -3997,7 +4008,43 @@ function ProductCard({
     </div>
   )
 }
+
+// Helper function to format product description
+// Replaces HTML entities and converts list-like patterns to ordered lists
+function formatProductDescription(description: string | undefined): string {
+  if (!description) return ''
   
+  // Replace HTML entities
+  let formatted = description
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+  
+  // Split by newlines first
+  const lines = formatted
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+  
+  // Check if it looks like a list (multiple lines with colons indicating key-value pairs)
+  // Example: "Gjatësia e gjerdanit: 38 cm" pattern
+  const hasListPattern = lines.length > 1 && lines.some(line => line.includes(':'))
+  
+  if (hasListPattern) {
+    // Convert to ordered list format
+    const listItems = lines.map((line: string, index: number) => {
+      // Remove bullet points if present
+      let cleaned = line.replace(/^[•\-\*]\s/, '').replace(/^\d+[\.\)]\s/, '').trim()
+      return `${index + 1}. ${cleaned}`
+    })
+    return listItems.join('\n')
+  }
+  
+  return formatted
+}
 
 function ProductModal({
   product,
@@ -4012,7 +4059,8 @@ function ProductModal({
   translations,
   cart = [],
   showError,
-  featuredBadgeColor = '#EF4444' // Only add this new prop
+  featuredBadgeColor = '#EF4444', // Only add this new prop
+  storefrontLanguage = 'en' // Add language prop
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -4027,9 +4075,17 @@ function ProductModal({
   cart?: CartItem[]
   showError?: (message: string, type?: 'error' | 'warning' | 'info') => void
   featuredBadgeColor?: string // Only add this
+  storefrontLanguage?: string // Add language prop
 }) {
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  // Use Albanian description if language is Albanian
+  const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
+  const displayDescription = useAlbanian && product.descriptionAl 
+    ? product.descriptionAl 
+    : product.description
+  const formattedDescription = formatProductDescription(displayDescription)
 
   // Calculate available stock and current cart quantity
   const availableStock = selectedVariant?.stock || product.stock
@@ -4209,9 +4265,16 @@ function ProductModal({
               </div>
             )}
             
-            {product.description && (
+            {formattedDescription && (
               <div className="bg-gray-50 p-4 rounded-xl">
-                <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                <div className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  {formattedDescription.split('\n').map((line: string, index: number) => (
+                    <React.Fragment key={index}>
+                      {line}
+                      {index < formattedDescription.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             )}
 

@@ -394,10 +394,16 @@ export async function GET(
                 product.saleEndDate
               )
               
+              // Use Albanian description if business language is Albanian
+              const productDescription = useAlbanian && product.descriptionAl 
+                ? product.descriptionAl 
+                : product.description
+              
               return {
                 id: product.id,
                 name: product.name,
-                description: product.description,
+                description: productDescription,
+                descriptionAl: product.descriptionAl,
                 images: product.images,
                 price: productPricing.effectivePrice,
                 originalPrice: productPricing.effectiveOriginalPrice,
