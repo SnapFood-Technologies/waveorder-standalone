@@ -29,7 +29,8 @@ export async function POST(
     
     // Parse pagination parameters
     const currentPage = currentPageParam ? parseInt(currentPageParam) : 1
-    const syncAllPages = syncAllPagesParam === null ? true : syncAllPagesParam === 'true' // Default to true for backward compatibility
+    // Default to false (single page) to prevent timeouts - explicitly set to 'true' to sync all pages
+    const syncAllPages = syncAllPagesParam === 'true'
 
     // Get sync configuration
     const sync = await (prisma as any).externalSync.findFirst({
@@ -151,6 +152,12 @@ export async function POST(
             products = data.data
           } else if (Array.isArray(data)) {
             products = data
+          }
+          
+          // Check total pages and warn if syncing all pages with many pages
+          const totalPages = data.pagination?.totalPages || data.total_pages || (data.total && perPage ? Math.ceil(data.total / perPage) : 1)
+          if (syncAllPages && totalPages > 50 && isFirstPage) {
+            console.warn(`⚠️ Warning: Syncing all ${totalPages} pages may cause timeout. Consider using sync_all_pages=false for testing.`)
           }
 
           if (!products || products.length === 0) {
