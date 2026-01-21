@@ -145,7 +145,7 @@ export default function ExternalSyncsPage() {
     setSyncConfirmModal(sync)
   }
 
-  const confirmSync = async (perPage?: number) => {
+  const confirmSync = async (perPage?: number, currentPage?: number, syncAllPages?: boolean) => {
     if (!syncConfirmModal) return
 
     const sync = syncConfirmModal
@@ -157,6 +157,12 @@ export default function ExternalSyncsPage() {
       const url = new URL(`/api/superadmin/businesses/${businessId}/external-syncs/${sync.id}/sync`, window.location.origin)
       if (perPage) {
         url.searchParams.set('per_page', perPage.toString())
+      }
+      if (currentPage !== undefined) {
+        url.searchParams.set('current_page', currentPage.toString())
+      }
+      if (syncAllPages !== undefined) {
+        url.searchParams.set('sync_all_pages', syncAllPages.toString())
       }
       
       const response = await fetch(url.toString(), {
@@ -731,7 +737,7 @@ interface SyncConfirmModalProps {
   syncing: boolean
   syncResult: { success: boolean; message: string; processedCount?: number; skippedCount?: number; errors?: any[] } | null
   onClose: () => void
-  onConfirm: (perPage?: number) => void
+  onConfirm: (perPage?: number, currentPage?: number, syncAllPages?: boolean) => void
 }
 
 function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: SyncConfirmModalProps) {
@@ -760,23 +766,61 @@ function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: Syn
             Start syncing products from <strong>{sync.externalSystemName || sync.name}</strong>? This will fetch and update products in your store.
           </p>
           
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Products Per Page (for this sync)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="500"
-              value={perPage}
-              onChange={(e) => setPerPage(e.target.value)}
-              disabled={syncing || !!syncResult}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              placeholder="100"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Number of products to fetch per API request (default: {sync.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints ? (sync.externalSystemEndpoints as any).perPage || 100 : 100})
-            </p>
+          <div className="mb-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Products Per Page
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={perPage}
+                onChange={(e) => setPerPage(e.target.value)}
+                disabled={syncing || !!syncResult}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                placeholder="100"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Number of products to fetch per API request (default: {sync.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints ? (sync.externalSystemEndpoints as any).perPage || 100 : 100})
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 mb-2">
+                <input
+                  type="checkbox"
+                  checked={syncAllPages}
+                  onChange={(e) => setSyncAllPages(e.target.checked)}
+                  disabled={syncing || !!syncResult}
+                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <span className="text-sm font-medium text-gray-700">Sync All Pages</span>
+              </label>
+              <p className="text-xs text-gray-500 ml-6">
+                If unchecked, only sync the specified page below
+              </p>
+            </div>
+
+            {!syncAllPages && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Current Page
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={currentPage}
+                  onChange={(e) => setCurrentPage(e.target.value)}
+                  disabled={syncing || !!syncResult}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  placeholder="1"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Page number to sync (starts from 1)
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Sync Results Section */}

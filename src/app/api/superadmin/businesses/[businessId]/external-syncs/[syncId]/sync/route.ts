@@ -110,8 +110,9 @@ export async function POST(
       
       // For each brand ID, fetch products
       for (const brandId of brandIds.length > 0 ? brandIds : ['']) {
-        let page = 1
+        let page = currentPage // Start from specified current page
         let hasMore = true
+        let isFirstPage = true
 
         while (hasMore) {
           const url = new URL(`${baseUrl}${endpoint}`)
@@ -166,15 +167,25 @@ export async function POST(
             }
           }
 
-          // Check if there are more pages
+          // If syncAllPages is false, only sync the current page
+          if (!syncAllPages) {
+            hasMore = false
+            break
+          }
+
+          // Check if there are more pages (only if syncAllPages is true)
           if (data.pagination) {
             hasMore = data.pagination.hasNext || (page < data.pagination.totalPages)
-            page++
+            if (hasMore) {
+              page++
+            }
           } else if (products.length < perPage) {
             hasMore = false
           } else {
             page++
           }
+          
+          isFirstPage = false
         }
       }
 
@@ -203,11 +214,18 @@ export async function POST(
     })
 
     return NextResponse.json({
-      message: 'Sync completed',
+      message: syncAllPages 
+        ? 'Sync completed' 
+        : `Sync completed for page ${currentPage}`,
       processedCount,
       skippedCount,
       errors: errors.slice(0, 10), // Return first 10 errors
-      status: syncStatus
+      status: syncStatus,
+      pagination: {
+        currentPage,
+        perPage,
+        syncAllPages
+      }
     })
 
   } catch (error: any) {
@@ -219,6 +237,25 @@ export async function POST(
   }
 }
 
+// Helper function to extract name from object or string format with fallback
+function extractName(nameField: any): { en: string; sq: string } {
+  if (!nameField) return { en: '', sq: '' }
+  
+  // Handle object format: { en: "...", sq: "..." }
+  if (typeof nameField === 'object' && nameField !== null) {
+    const en = nameField.en || nameField.sq || ''
+    const sq = nameField.sq || nameField.en || ''
+    return { en, sq }
+  }
+  
+  // Handle string format (backward compatibility)
+  if (typeof nameField === 'string') {
+    return { en: nameField, sq: nameField }
+  }
+  
+  return { en: '', sq: '' }
+}
+
 // Helper function to process external product and create/update in WaveOrder
 async function processExternalProduct(externalProduct: any, businessId: string, syncId: string) {
   // Validate required fields
@@ -226,29 +263,82 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     throw new Error('Product missing id')
   }
 
-  if (!externalProduct.name) {
+  // Check if name exists (can be object or string)
+  const nameCheck = externalProduct.name
+  if (!nameCheck || (typeof nameCheck === 'object' && !nameCheck.en && !nameCheck.sq) || (typeof nameCheck === 'string' && !nameCheck.trim())) {
     throw new Error('Product missing name')
   }
 
   // Handle categories - ByBest provides array, we use first category
-  // Store external category ID in metadata for matching
+  // Store external category ID in metadata for matching and handle parent categories
   let categoryId: string
-  let categoryName = 'Uncategorized'
+  let categoryNameEn = 'Uncategorized'
+  let categoryNameSq = 'Uncategorized'
   let externalCategoryId: string | null = null
+  let parentCategoryId: string | null = null
+  let externalParentCategoryId: string | null = null
   
   if (Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0) {
     const firstCategory = externalProduct.categories[0]
-    categoryName = firstCategory.name || 'Uncategorized'
+    const categoryNames = extractName(firstCategory.name)
+    categoryNameEn = categoryNames.en || 'Uncategorized'
+    categoryNameSq = categoryNames.sq || categoryNames.en || 'Uncategorized'
     externalCategoryId = firstCategory.id?.toString() || null
+    
+    // Handle parent category
+    if (firstCategory.parent && firstCategory.parent.id) {
+      externalParentCategoryId = firstCategory.parent.id.toString()
+    }
   } else if (externalProduct.categoryName) {
-    categoryName = externalProduct.categoryName
+    const categoryNames = extractName(externalProduct.categoryName)
+    categoryNameEn = categoryNames.en || 'Uncategorized'
+    categoryNameSq = categoryNames.sq || categoryNames.en || 'Uncategorized'
   }
   
-  // Find category by external ID in metadata first, then fallback to name
+  // Fetch all categories for this business to find by external ID
   const categories = await prisma.category.findMany({
     where: { businessId }
   }) as any[]
   
+  // First, handle parent category if exists
+  if (externalParentCategoryId) {
+    let parentCategory = categories.find((c: any) => {
+      if (c.metadata && typeof c.metadata === 'object' && 'externalCategoryId' in c.metadata) {
+        const metadata = c.metadata as { externalCategoryId?: string }
+        return metadata.externalCategoryId === externalParentCategoryId.toString()
+      }
+      return false
+    })
+    
+    if (!parentCategory) {
+      // Parent category doesn't exist, create it
+      const parentNames = externalProduct.categories?.[0]?.parent?.name 
+        ? extractName(externalProduct.categories[0].parent.name)
+        : { en: 'Uncategorized', sq: 'Uncategorized' }
+      
+      parentCategory = await (prisma.category.create as any)({
+        data: {
+          businessId,
+          name: parentNames.en || 'Uncategorized',
+          nameAl: parentNames.sq || parentNames.en || null,
+          sortOrder: 0,
+          isActive: true,
+          metadata: {
+            externalCategoryId: externalParentCategoryId.toString(),
+            externalSyncId: syncId,
+            externalData: externalProduct.categories?.[0]?.parent || null
+          }
+        }
+      })
+      
+      // Add to categories array for future lookups
+      categories.push(parentCategory)
+    }
+    
+    parentCategoryId = parentCategory.id
+  }
+  
+  // Find category by external ID in metadata first, then fallback to name
   let category = categories.find((c: any) => {
     if (externalCategoryId && c.metadata && typeof c.metadata === 'object' && 'externalCategoryId' in c.metadata) {
       const metadata = c.metadata as { externalCategoryId?: string }
@@ -257,9 +347,9 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     return false
   })
   
-  // If not found by external ID, try by name
+  // If not found by external ID, try by name (English)
   if (!category) {
-    category = categories.find((c: any) => c.name === categoryName)
+    category = categories.find((c: any) => c.name === categoryNameEn)
   }
 
   if (!category) {
@@ -267,8 +357,9 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     category = await (prisma.category.create as any)({
       data: {
         businessId,
-        name: categoryName,
-        nameAl: externalProduct.categoryNameAl || null,
+        name: categoryNameEn,
+        nameAl: categoryNameSq || categoryNameEn || null,
+        parentId: parentCategoryId,
         sortOrder: 0,
         isActive: true,
         ...(externalCategoryId ? {
@@ -283,12 +374,20 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       }
     })
   } else if (externalCategoryId) {
-    // Update category metadata if external ID is missing or different
+    // Update category metadata and parent if needed
     const currentMetadata = (category.metadata as any) || {}
-    if (currentMetadata.externalCategoryId !== externalCategoryId.toString()) {
+    const needsUpdate = currentMetadata.externalCategoryId !== externalCategoryId.toString() || 
+                       category.parentId !== parentCategoryId ||
+                       category.name !== categoryNameEn ||
+                       category.nameAl !== categoryNameSq
+    
+    if (needsUpdate) {
       await (prisma.category.update as any)({
         where: { id: category.id },
         data: {
+          name: categoryNameEn,
+          nameAl: categoryNameSq || categoryNameEn || null,
+          parentId: parentCategoryId,
           metadata: {
             ...currentMetadata,
             externalCategoryId: externalCategoryId.toString(),
@@ -375,14 +474,45 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     }
   }
 
+  // Extract product names with fallback logic
+  const productNames = extractName(externalProduct.name)
+  const productNameEn = productNames.en || productNames.sq || 'Unnamed Product'
+  const productNameSq = productNames.sq || productNames.en || productNameEn
+  
+  // Extract product descriptions with fallback logic
+  const productDescription = externalProduct.description || externalProduct.short_description || null
+  const productDescEn = productDescription 
+    ? (typeof productDescription === 'object' ? (productDescription.en || productDescription.sq || '') : productDescription)
+    : null
+  const productDescSq = productDescription && typeof productDescription === 'object'
+    ? (productDescription.sq || productDescription.en || null)
+    : (productDescEn || null)
+  
+  // Extract meta title/description with fallback
+  const metaTitleObj = externalProduct.meta_title
+  const metaTitleEn = metaTitleObj 
+    ? (typeof metaTitleObj === 'object' ? (metaTitleObj.en || metaTitleObj.sq || null) : metaTitleObj)
+    : null
+  const metaTitleSq = metaTitleObj && typeof metaTitleObj === 'object'
+    ? (metaTitleObj.sq || metaTitleObj.en || null)
+    : null
+  
+  const metaDescObj = externalProduct.meta_description
+  const metaDescEn = metaDescObj 
+    ? (typeof metaDescObj === 'object' ? (metaDescObj.en || metaDescObj.sq || null) : metaDescObj)
+    : null
+  const metaDescSq = metaDescObj && typeof metaDescObj === 'object'
+    ? (metaDescObj.sq || metaDescObj.en || null)
+    : null
+
   // Prepare product data
   const productData: any = {
     businessId,
     categoryId,
-    name: externalProduct.name,
-    nameAl: externalProduct.nameAl || null,
-    description: externalProduct.description || externalProduct.short_description || null,
-    descriptionAl: externalProduct.descriptionAl || null,
+    name: productNameEn,
+    nameAl: productNameSq || productNameEn || null,
+    description: productDescEn,
+    descriptionAl: productDescSq || productDescEn || null,
     price: parseFloat(currentPrice.toString()) || 0,
     originalPrice: regularPrice && regularPrice !== currentPrice ? parseFloat(regularPrice.toString()) : null,
     sku: externalProduct.code || externalProduct.sku || externalProduct.article_no || null,
@@ -391,8 +521,8 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     isActive: externalProduct.status === 'active' && externalProduct.is_visible !== false,
     featured: externalProduct.is_featured || false,
     images,
-    metaTitle: externalProduct.meta_title || null,
-    metaDescription: externalProduct.meta_description || null,
+    metaTitle: metaTitleEn,
+    metaDescription: metaDescEn,
     saleStartDate,
     saleEndDate,
     metadata: productMetadata
@@ -470,12 +600,26 @@ async function syncProductVariants(productId: string, variations: any[], syncId:
     }
 
     // Build variant name from attributes if available
-    let variantName = variation.name || 'Default'
-    if (Array.isArray(variation.attributes) && variation.attributes.length > 0) {
+    // Use English name with Albanian fallback
+    let variantName = 'Default'
+    
+    if (variation.name) {
+      const variantNames = extractName(variation.name)
+      variantName = variantNames.en || variantNames.sq || 'Default'
+    } else if (Array.isArray(variation.attributes) && variation.attributes.length > 0) {
       const attributeNames = variation.attributes.map((attr: any) => {
         if (typeof attr === 'string') return attr
-        if (attr.option_name) return `${attr.attribute_name || ''}: ${attr.option_name}`.trim()
-        return attr.attribute_name || attr.option_name || ''
+        
+        // Handle attribute_name and option_name as objects or strings
+        const attrName = typeof attr.attribute_name === 'object' 
+          ? (attr.attribute_name.en || attr.attribute_name.sq || '')
+          : (attr.attribute_name || '')
+        const optName = typeof attr.option_name === 'object'
+          ? (attr.option_name.en || attr.option_name.sq || '')
+          : (attr.option_name || '')
+        
+        if (optName) return `${attrName}: ${optName}`.trim()
+        return attrName || optName || ''
       }).filter(Boolean)
       if (attributeNames.length > 0) {
         variantName = attributeNames.join(' - ')
