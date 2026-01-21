@@ -4106,6 +4106,7 @@ function ProductModal({
 }) {
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string>('')
 
   // Use Albanian description if language is Albanian
   const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
@@ -4146,19 +4147,6 @@ function ProductModal({
     return variantMap[variantNameLower] || variantName
   }
 
-  // Get current display image - use variant image if selected and available, otherwise use product images
-  const getCurrentImage = (): string => {
-    const variant = selectedVariant as any
-    if (variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata) {
-      const variantImage = variant.metadata.image
-      if (variantImage && typeof variantImage === 'string') {
-        return variantImage
-      }
-    }
-    // Fallback to product images
-    return product.images[currentImageIndex] || product.images[0] || ''
-  }
-
   // Calculate available stock and current cart quantity
   const availableStock = selectedVariant?.stock || product.stock
   const cartItemId = `${product.id}-${selectedVariant?.id || 'default'}-${selectedModifiers.map(m => m.id).join(',')}`
@@ -4170,11 +4158,25 @@ function ProductModal({
   const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
   const totalPrice = (basePrice + modifierPrice) * quantity
 
+  // Update image URL when variant or image index changes
+  useEffect(() => {
+    const variant = selectedVariant as any
+    if (variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata) {
+      const variantImage = variant.metadata.image
+      if (variantImage && typeof variantImage === 'string') {
+        setCurrentImageUrl(variantImage)
+        return
+      }
+    }
+    // Fallback to product images
+    setCurrentImageUrl(product.images[currentImageIndex] || product.images[0] || '')
+  }, [selectedVariant?.id, currentImageIndex, product.images, product.id])
+
   // Reset quantity when variant changes or modal opens
   useEffect(() => {
     setQuantity(1)
-    setCurrentImageIndex(0) // Reset image index when product changes
-  }, [selectedVariant, product.id])
+    setCurrentImageIndex(0) // Reset image index when product or variant changes
+  }, [selectedVariant?.id, product.id])
 
   // Adjust quantity if it exceeds available stock
   useEffect(() => {
@@ -4253,11 +4255,19 @@ function ProductModal({
                   {/* Main Image */}
                   <div className="relative overflow-hidden rounded-2xl bg-gray-50">
                     <img 
-                      src={getCurrentImage()} 
-                      alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                      src={currentImageUrl} 
+                      alt={`${product.name}${selectedVariant ? ` - ${getVariantDisplayName(selectedVariant.name)}` : ''}`}
                       className="w-full h-full object-contain transition-opacity duration-300"
                       style={{ minHeight: '300px' }}
-                      key={selectedVariant?.id || 'default'} // Force re-render when variant changes
+                      key={`${product.id}-${selectedVariant?.id || 'default'}-${currentImageIndex}`} // Force re-render when variant or image changes
+                      onError={(e) => {
+                        // Fallback to product image if variant image fails to load
+                        const target = e.target as HTMLImageElement
+                        if (selectedVariant) {
+                          target.src = product.images[0] || ''
+                          setCurrentImageUrl(product.images[0] || '')
+                        }
+                      }}
                     />
                     
                     {/* Navigation Arrows - Only show if multiple images and no variant image */}
