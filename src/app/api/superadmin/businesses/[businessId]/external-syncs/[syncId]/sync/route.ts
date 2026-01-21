@@ -21,9 +21,15 @@ export async function POST(
 
     const { businessId, syncId } = await params
 
-    // Get per_page from query params (if provided, overrides config)
+    // Get pagination parameters from query params
     const { searchParams } = new URL(request.url)
     const perPageOverride = searchParams.get('per_page')
+    const currentPageParam = searchParams.get('current_page')
+    const syncAllPagesParam = searchParams.get('sync_all_pages')
+    
+    // Parse pagination parameters
+    const currentPage = currentPageParam ? parseInt(currentPageParam) : 1
+    const syncAllPages = syncAllPagesParam === null ? true : syncAllPagesParam === 'true' // Default to true for backward compatibility
 
     // Get sync configuration
     const sync = await (prisma as any).externalSync.findFirst({

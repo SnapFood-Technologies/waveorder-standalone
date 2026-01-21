@@ -214,7 +214,9 @@ export async function POST(
     const product = await prisma.product.create({
       data: {
         name: productData.name,
+        nameAl: productData.nameAl || null,
         description: productData.description || null,
+        descriptionAl: productData.descriptionAl || null,
         images: productData.images || [],
         price: productData.price,
         originalPrice: productData.originalPrice || null,

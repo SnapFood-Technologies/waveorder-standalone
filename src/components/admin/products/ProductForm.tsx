@@ -55,11 +55,15 @@ interface Category {
 
 interface Business {
   currency: string
+  language?: string
+  storefrontLanguage?: string
 }
 
 interface ProductForm {
   name: string
+  nameAl?: string
   description: string
+  descriptionAl?: string
   images: string[]
   price: number
   originalPrice?: number
@@ -85,7 +89,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   
   const [form, setForm] = useState<ProductForm>({
     name: '',
+    nameAl: '',
     description: '',
+    descriptionAl: '',
     images: [],
     price: 0,
     originalPrice: undefined,
@@ -104,11 +110,12 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   })
 
   const [categories, setCategories] = useState<Category[]>([])
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', language: 'en', storefrontLanguage: 'en' })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al'>('en')
 
   const [successMessage, setSuccessMessage] = useState<{
     type: 'create' | 'update'
@@ -128,7 +135,15 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ 
+          currency: data.business.currency,
+          language: data.business.language || 'en',
+          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en'
+        })
+        // Set default language based on business language
+        if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq') {
+          setActiveLanguage('en') // Start with English, but show Albanian fields
+        }
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -163,6 +178,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         
         setForm({
           ...data.product,
+          nameAl: data.product.nameAl || '',
+          descriptionAl: data.product.descriptionAl || '',
           variants: variantsWithImage,
           originalPrice: data.product.originalPrice || undefined,
           lowStockAlert: data.product.lowStockAlert || undefined
@@ -625,30 +642,64 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
 
+                {/* Language Toggle - Only show if business supports Albanian */}
+                {(business.language === 'sq' || business.storefrontLanguage === 'sq') && (
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setActiveLanguage('en')}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        activeLanguage === 'en'
+                          ? 'bg-teal-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      English
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveLanguage('al')}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        activeLanguage === 'al'
+                          ? 'bg-teal-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Albanian
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Product Name *
+                    Product Name {activeLanguage === 'al' && business.language === 'sq' ? '(Albanian)' : ''} *
                   </label>
                   <input
                     type="text"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+                    required={activeLanguage === 'en' || !(business.language === 'sq' || business.storefrontLanguage === 'sq')}
+                    value={activeLanguage === 'en' ? form.name : (form.nameAl || '')}
+                    onChange={(e) => setForm(prev => ({ 
+                      ...prev, 
+                      [activeLanguage === 'en' ? 'name' : 'nameAl']: e.target.value 
+                    }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                    placeholder="Enter product name"
+                    placeholder={activeLanguage === 'en' ? "Enter product name" : "Shkruani emrin e produktit"}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
+                    Description {activeLanguage === 'al' && business.language === 'sq' ? '(Albanian)' : ''}
                   </label>
                   <textarea
-                    value={form.description}
-                    onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                    value={activeLanguage === 'en' ? form.description : (form.descriptionAl || '')}
+                    onChange={(e) => setForm(prev => ({ 
+                      ...prev, 
+                      [activeLanguage === 'en' ? 'description' : 'descriptionAl']: e.target.value 
+                    }))}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                    placeholder="Describe your product..."
+                    placeholder={activeLanguage === 'en' ? "Describe your product..." : "Përshkruani produktin tuaj..."}
                   />
                 </div>
 

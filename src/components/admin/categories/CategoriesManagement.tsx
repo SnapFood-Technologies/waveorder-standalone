@@ -685,6 +685,7 @@ interface CategoryFormProps {
 
 function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormProps) {
   const [allCategories, setAllCategories] = useState<Category[]>([])
+  const [businessLanguage, setBusinessLanguage] = useState<string>('en')
   const [form, setForm] = useState({
     name: category?.name || '',
     nameAl: category?.nameAl || '',
@@ -698,6 +699,23 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'al'>('en')
+
+  // Fetch business language
+  useEffect(() => {
+    const fetchBusinessLanguage = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const lang = data.business.storefrontLanguage || data.business.language || 'en'
+          setBusinessLanguage(lang)
+        }
+      } catch (error) {
+        console.error('Error fetching business language:', error)
+      }
+    }
+    fetchBusinessLanguage()
+  }, [businessId])
 
   // Fetch all categories for parent selector
   useEffect(() => {
@@ -821,31 +839,33 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
-          {/* Language Toggle */}
-          <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
-            <button
-              type="button"
-              onClick={() => setActiveLanguage('en')}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
-                activeLanguage === 'en'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              English
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveLanguage('al')}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
-                activeLanguage === 'al'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Albanian
-            </button>
-          </div>
+          {/* Language Toggle - Only show if business supports Albanian */}
+          {(businessLanguage === 'sq') && (
+            <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setActiveLanguage('en')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                  activeLanguage === 'en'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveLanguage('al')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                  activeLanguage === 'al'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Albanian
+              </button>
+            </div>
+          )}
 
           {/* Category Name */}
           <div>
