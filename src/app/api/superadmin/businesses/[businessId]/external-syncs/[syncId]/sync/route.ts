@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 // POST - Trigger sync from external system
 export async function POST(
@@ -74,13 +75,17 @@ export async function POST(
         // If it's a JSON string, parse it first
         try {
           const parsed = JSON.parse(sync.externalBrandIds)
-          brandIds = Array.isArray(parsed) ? parsed : [parsed.toString()]
+          brandIds = Array.isArray(parsed) 
+            ? parsed.filter(id => id != null).map(id => id.toString())
+            : [parsed.toString()]
         } catch {
           // If not JSON, treat as plain string
           brandIds = [sync.externalBrandIds]
         }
       } else if (Array.isArray(sync.externalBrandIds)) {
-        brandIds = sync.externalBrandIds.map(id => id.toString())
+        brandIds = sync.externalBrandIds
+          .filter((id: any) => id != null)
+          .map((id: any) => id.toString())
       } else {
         // If it's a number or other type, convert to string
         brandIds = [sync.externalBrandIds.toString()]
@@ -183,7 +188,7 @@ export async function POST(
     }
 
     // Update sync status
-    await prisma.externalSync.update({
+    await (prisma as any).externalSync.update({
       where: { id: syncId },
       data: {
         lastSyncAt: new Date(),
@@ -268,17 +273,18 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
   }
 
   // Find existing product by external ID in metadata
-  const existingProduct = await prisma.product.findFirst({
-    where: {
-      businessId,
-      metadata: {
-        path: ['externalProductId'],
-        equals: externalProduct.id
-      }
-    },
-    include: {
-      variants: true
+  // Fetch products and filter in memory (Prisma JSON queries don't work well with MongoDB)
+  const products = await prisma.product.findMany({
+    where: { businessId },
+    include: { variants: true }
+  })
+  
+  const existingProduct = products.find(p => {
+    if (p.metadata && typeof p.metadata === 'object' && 'externalProductId' in p.metadata) {
+      const metadata = p.metadata as { externalProductId?: string }
+      return metadata.externalProductId === externalProduct.id
     }
+    return false
   })
 
   if (existingProduct) {
@@ -329,14 +335,17 @@ async function syncProductVariants(productId: string, variations: any[], syncId:
     }
 
     // Find existing variant by external ID
-    const existingVariant = await prisma.productVariant.findFirst({
-      where: {
-        productId,
-        metadata: {
-          path: ['externalVariantId'],
-          equals: variation.id
-        }
+    // Fetch variants and filter in memory (Prisma JSON queries don't work well with MongoDB)
+    const variants = await prisma.productVariant.findMany({
+      where: { productId }
+    })
+    
+    const existingVariant = variants.find(v => {
+      if (v.metadata && typeof v.metadata === 'object' && 'externalVariantId' in v.metadata) {
+        const metadata = v.metadata as { externalVariantId?: string }
+        return metadata.externalVariantId === variation.id
       }
+      return false
     })
 
     if (existingVariant) {
