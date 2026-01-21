@@ -216,6 +216,7 @@ close: string
     loadingCountries: string
     loadingCities: string
     selectDeliveryMethod: string
+    pleaseSelectDeliveryMethod: string
     enterAddressForDelivery: string
     deliveryMethod: string
     noDeliveryOptions: string
@@ -455,6 +456,7 @@ canBeAdded: "more can be added to cart",
     loadingCountries: "Loading countries...",
     loadingCities: "Loading cities...",
     selectDeliveryMethod: "Select delivery method below",
+    pleaseSelectDeliveryMethod: "Please select a delivery method",
     enterAddressForDelivery: "Enter address to see delivery options",
     deliveryMethod: "Delivery Method",
     noDeliveryOptions: "No delivery options available for this city",
@@ -690,6 +692,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     loadingCountries: "Duke ngarkuar shtetet...",
     loadingCities: "Duke ngarkuar qytetet...",
     selectDeliveryMethod: "Zgjidh metodën e dërgesës më poshtë",
+    pleaseSelectDeliveryMethod: "Ju lutem zgjidhni një metodë dërgese",
     enterAddressForDelivery: "Shkruani adresën për të parë opsionet e dërgesës",
     deliveryMethod: "Metoda e Dërgesës",
     noDeliveryOptions: "Nuk ka opsione dërgese të disponueshme për këtë qytet",
@@ -925,6 +928,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     loadingCountries: "Cargando países...",
     loadingCities: "Cargando ciudades...",
     selectDeliveryMethod: "Selecciona el método de entrega a continuación",
+    pleaseSelectDeliveryMethod: "Por favor selecciona un método de entrega",
     enterAddressForDelivery: "Ingresa la dirección para ver las opciones de entrega",
     deliveryMethod: "Método de Entrega",
     noDeliveryOptions: "No hay opciones de entrega disponibles para esta ciudad",
@@ -1161,6 +1165,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     loadingCountries: "Φόρτωση χωρών...",
     loadingCities: "Φόρτωση πόλεων...",
     selectDeliveryMethod: "Επιλέξτε τη μέθοδο παράδοσης παρακάτω",
+    pleaseSelectDeliveryMethod: "Παρακαλώ επιλέξτε μια μέθοδο παράδοσης",
     enterAddressForDelivery: "Εισάγετε διεύθυνση για να δείτε τις επιλογές παράδοσης",
     deliveryMethod: "Μέθοδος Παράδοσης",
     noDeliveryOptions: "Δεν υπάρχουν επιλογές παράδοσης διαθέσιμες για αυτή την πόλη",

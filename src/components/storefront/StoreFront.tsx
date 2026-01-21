@@ -2434,7 +2434,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           return
         }
         if (!customerInfo.postalPricingId) {
-          showError('Please select a delivery method')
+          showError(translations.pleaseSelectDeliveryMethod || 'Please select a delivery method')
           return
         }
       } else {
@@ -2579,7 +2579,20 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         }, 10000)
       } else {
         // Display the error message from the API, or fallback to default message
-        const errorMessage = result.error || result.message || (translations.failedToCreateOrder || 'Failed to create order. Please try again.')
+        // Map API error messages to translations
+        let errorMessage = result.error || result.message || (translations.failedToCreateOrder || 'Failed to create order. Please try again.')
+        
+        // Map common API error messages to translations
+        if (errorMessage.includes('Please select a delivery method')) {
+          errorMessage = translations.pleaseSelectDeliveryMethod || 'Please select a delivery method'
+        } else if (errorMessage.includes('Delivery address is required')) {
+          errorMessage = translations.addDeliveryAddress || 'Please provide delivery address'
+        } else if (errorMessage.includes('Customer name is required')) {
+          errorMessage = translations.fillRequiredInfo || 'Please fill in required customer information'
+        } else if (errorMessage.includes('Customer phone is required')) {
+          errorMessage = translations.fillRequiredInfo || 'Please fill in required customer information'
+        }
+        
         showError(errorMessage, 'error')
       }
     } catch (error) {
