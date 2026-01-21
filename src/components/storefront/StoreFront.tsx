@@ -2306,7 +2306,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     : null
   const currentSubCategories = selectedParentCategory?.children || []
 
-  const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = []) => {
+  const addToCart = (product: Product, variant?: ProductVariant, modifiers: ProductModifier[] = [], variantDisplayName?: string) => {
     // Check stock availability
     const availableStock = variant?.stock || product.stock
     const cartItemId = `${product.id}-${variant?.id || 'default'}-${modifiers.map(m => m.id).join(',')}`
@@ -2325,11 +2325,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     const modifierPrice = modifiers.reduce((sum, mod) => sum + mod.price, 0)
     const totalPrice = basePrice + modifierPrice
   
+    // Use mapped variant display name if provided, otherwise use variant.name
+    const variantName = variant ? (variantDisplayName || variant.name) : ''
+  
     const cartItem: CartItem = {
       id: cartItemId,
       productId: product.id,
       variantId: variant?.id,
-      name: `${product.name}${variant ? ` (${variant.name})` : ''}`,
+      name: `${product.name}${variant ? ` (${variantName})` : ''}`,
       price: basePrice,
       quantity: 1,
       modifiers,
@@ -3225,6 +3228,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     cart={cart} // Add this line
                     featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
                     storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
+                    businessSlug={storeData.slug}
                   />
                 ))
             })()}
@@ -3363,6 +3367,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           showError={showError}
           featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
           storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
+          businessSlug={storeData.slug}
         />
       )}
 
@@ -3902,7 +3907,8 @@ function ProductCard({
   disabled = false,
   cart = [], // Add cart prop to check current quantities
   featuredBadgeColor = '#EF4444', // Only add this new prop
-  storefrontLanguage = 'en' // Add language prop
+  storefrontLanguage = 'en', // Add language prop
+  businessSlug = '' // Add business slug prop
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -3913,14 +3919,24 @@ function ProductCard({
   cart?: CartItem[]
   featuredBadgeColor?: string // Only add this
   storefrontLanguage?: string // Add language prop
+  businessSlug?: string // Add business slug prop
 }) {
   const hasImage = product.images.length > 0
   
-  // Use Albanian description if language is Albanian
-  const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
-  const displayDescription = useAlbanian && product.descriptionAl 
-    ? product.descriptionAl 
-    : product.description
+  // Exception slugs: Always use English description, fallback to Albanian only if English is empty
+  const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
+  const isExceptionSlug = exceptionSlugs.includes(businessSlug)
+  
+  // Use Albanian description if language is Albanian (unless exception slug)
+  const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
+  
+  // For exception slugs: prioritize English, use Albanian only if English is empty/missing
+  // For others: use Albanian if language is Albanian, otherwise English
+  const displayDescription = isExceptionSlug
+    ? (product.description || product.descriptionAl || '')
+    : (useAlbanian && product.descriptionAl 
+      ? product.descriptionAl 
+      : product.description)
   
   // Calculate total quantity in cart for this product (all variants)
   const totalInCart = cart
@@ -4087,14 +4103,15 @@ function ProductModal({
   cart = [],
   showError,
   featuredBadgeColor = '#EF4444', // Only add this new prop
-  storefrontLanguage = 'en' // Add language prop
+  storefrontLanguage = 'en', // Add language prop
+  businessSlug = '' // Add business slug prop
 }: {
   product: Product
   selectedVariant: ProductVariant | null
   setSelectedVariant: (variant: ProductVariant | null) => void
   selectedModifiers: ProductModifier[]
   setSelectedModifiers: (modifiers: ProductModifier[]) => void
-  onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[]) => void
+  onAddToCart: (product: Product, variant?: ProductVariant, modifiers?: ProductModifier[], variantDisplayName?: string) => void
   onClose: () => void
   currencySymbol: string
   primaryColor: string
@@ -4103,6 +4120,7 @@ function ProductModal({
   showError?: (message: string, type?: 'error' | 'warning' | 'info') => void
   featuredBadgeColor?: string // Only add this
   storefrontLanguage?: string // Add language prop
+  businessSlug?: string // Add business slug prop
 }) {
   // Log product.variants when modal opens
   useEffect(() => {
@@ -4130,11 +4148,20 @@ function ProductModal({
     })
   }, [selectedVariant?.id])
 
-  // Use Albanian description if language is Albanian
-  const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
-  const displayDescription = useAlbanian && product.descriptionAl 
-    ? product.descriptionAl 
-    : product.description
+  // Exception slugs: Always use English description, fallback to Albanian only if English is empty
+  const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
+  const isExceptionSlug = exceptionSlugs.includes(businessSlug)
+  
+  // Use Albanian description if language is Albanian (unless exception slug)
+  const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
+  
+  // For exception slugs: prioritize English, use Albanian only if English is empty/missing
+  // For others: use Albanian if language is Albanian, otherwise English
+  const displayDescription = isExceptionSlug
+    ? (product.description || product.descriptionAl || '')
+    : (useAlbanian && product.descriptionAl 
+      ? product.descriptionAl 
+      : product.description)
   const formattedDescription = formatProductDescription(displayDescription)
 
   // Map variant names to Albanian
@@ -4241,8 +4268,11 @@ function ProductModal({
       return
     }
     
+    // Get mapped variant display name if variant exists
+    const variantDisplayName = selectedVariant ? getVariantDisplayName(selectedVariant.name) : undefined
+    
     for (let i = 0; i < quantity; i++) {
-      onAddToCart(product, selectedVariant || undefined, selectedModifiers)
+      onAddToCart(product, selectedVariant || undefined, selectedModifiers, variantDisplayName)
     }
   }
   return (
