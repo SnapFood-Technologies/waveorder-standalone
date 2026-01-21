@@ -369,54 +369,70 @@ export async function GET(
             image: child.image,
             sortOrder: child.sortOrder
           })) : [],
-          products: (category.products as any[]).map((product: any) => {
-            // Calculate effective price for product
-            const productPricing = calculateEffectivePrice(
-              product.price,
-              product.originalPrice,
-              product.saleStartDate,
-              product.saleEndDate
-            )
-            
-            return {
-              id: product.id,
-              name: product.name,
-              description: product.description,
-              images: product.images,
-              price: productPricing.effectivePrice,
-              originalPrice: productPricing.effectiveOriginalPrice,
-              sku: product.sku,
-              stock: product.stock,
-              trackInventory: product.trackInventory,
-              featured: product.featured,
-              metaTitle: product.metaTitle,
-              metaDescription: product.metaDescription,
-              variants: (product.variants as any[]).map((variant: any) => {
-                // Calculate effective price for variant
-                const variantPricing = calculateEffectivePrice(
-                  variant.price,
-                  variant.originalPrice,
-                  variant.saleStartDate,
-                  variant.saleEndDate
-                )
-                
-                return {
-                  id: variant.id,
-                  name: variant.name,
-                  price: variantPricing.effectivePrice,
-                  originalPrice: variantPricing.effectiveOriginalPrice,
-                  stock: variant.stock,
-                  sku: variant.sku
-                }
-              }),
-              modifiers: (product.modifiers as any[]).map((modifier: any) => ({
-                id: modifier.id,
-                name: modifier.name,
-                price: modifier.price,
-                required: modifier.required
-              }))
-            }
-          })
+          products: (category.products as any[])
+            .filter((product: any) => {
+              // Filter out products with stock 0
+              // If inventory tracking is disabled, product is always available (show it)
+              if (!product.trackInventory) {
+                return true
+              }
+              
+              // If product has variants, check if any variant has stock > 0
+              if (product.variants && product.variants.length > 0) {
+                return product.variants.some((v: any) => v.stock > 0)
+              }
+              
+              // Otherwise, check product stock
+              return product.stock > 0
+            })
+            .map((product: any) => {
+              // Calculate effective price for product
+              const productPricing = calculateEffectivePrice(
+                product.price,
+                product.originalPrice,
+                product.saleStartDate,
+                product.saleEndDate
+              )
+              
+              return {
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                images: product.images,
+                price: productPricing.effectivePrice,
+                originalPrice: productPricing.effectiveOriginalPrice,
+                sku: product.sku,
+                stock: product.stock,
+                trackInventory: product.trackInventory,
+                featured: product.featured,
+                metaTitle: product.metaTitle,
+                metaDescription: product.metaDescription,
+                variants: (product.variants as any[]).map((variant: any) => {
+                  // Calculate effective price for variant
+                  const variantPricing = calculateEffectivePrice(
+                    variant.price,
+                    variant.originalPrice,
+                    variant.saleStartDate,
+                    variant.saleEndDate
+                  )
+                  
+                  return {
+                    id: variant.id,
+                    name: variant.name,
+                    price: variantPricing.effectivePrice,
+                    originalPrice: variantPricing.effectiveOriginalPrice,
+                    stock: variant.stock,
+                    sku: variant.sku
+                  }
+                }),
+                modifiers: (product.modifiers as any[]).map((modifier: any) => ({
+                  id: modifier.id,
+                  name: modifier.name,
+                  price: modifier.price,
+                  required: modifier.required
+                }))
+              }
+            })
         }))
         
         // Separate parent and child categories
@@ -433,9 +449,27 @@ export async function GET(
             .map((child: any) => {
               // Find the child category in allCategories to get its products
               const childWithProducts = allCategories.find((c: any) => c.id === child.id)
+              const products = (childWithProducts?.products || []) as any[]
+              
+              // Filter out products with stock 0
+              const filteredProducts = products.filter((product: any) => {
+                // If inventory tracking is disabled, product is always available (show it)
+                if (!product.trackInventory) {
+                  return true
+                }
+                
+                // If product has variants, check if any variant has stock > 0
+                if (product.variants && product.variants.length > 0) {
+                  return product.variants.some((v: any) => v.stock > 0)
+                }
+                
+                // Otherwise, check product stock
+                return product.stock > 0
+              })
+              
               return {
                 ...child,
-                products: childWithProducts?.products || []
+                products: filteredProducts
               }
             })
             .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
