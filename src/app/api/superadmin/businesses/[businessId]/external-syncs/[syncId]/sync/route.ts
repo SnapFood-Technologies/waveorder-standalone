@@ -4,6 +4,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 
+// Increase timeout for long-running sync operations (5 minutes)
+// Note: This requires Vercel Pro plan or self-hosted Node.js runtime
+export const maxDuration = 300 // 5 minutes
+
 // POST - Trigger sync from external system
 export async function POST(
   request: NextRequest,
@@ -122,6 +126,13 @@ export async function POST(
       const baseUrl = sync.externalSystemBaseUrl.replace(/\/$/, '') // Remove trailing slash
       const endpoint = productsEndpoint.startsWith('/') ? productsEndpoint : `/${productsEndpoint}`
       
+      // Pre-fetch all categories once to avoid repeated queries
+      const allCategories = await prisma.category.findMany({
+        where: { businessId }
+      }) as any[]
+      
+      console.log(`[Sync] Pre-loaded ${allCategories.length} categories for business ${businessId}`)
+      
       // For each brand ID, fetch products
       for (const brandId of brandIds.length > 0 ? brandIds : ['']) {
         let page = currentPage // Start from specified current page
@@ -138,13 +149,32 @@ export async function POST(
           url.searchParams.set('page', page.toString())
           url.searchParams.set('per_page', perPage.toString())
 
-          // Fetch from external API
-          const response = await fetch(url.toString(), {
-            headers: {
-              'X-App-Key': sync.externalSystemApiKey!,
-              'Content-Type': 'application/json'
+          console.log(`[Sync] Fetching page ${page} from ${url.toString()}`)
+          const fetchStartTime = Date.now()
+
+          // Fetch from external API with timeout
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+          
+          let response: Response
+          try {
+            response = await fetch(url.toString(), {
+              headers: {
+                'X-App-Key': sync.externalSystemApiKey!,
+                'Content-Type': 'application/json'
+              },
+              signal: controller.signal
+            })
+            clearTimeout(timeoutId)
+            const fetchDuration = Date.now() - fetchStartTime
+            console.log(`[Sync] External API responded in ${fetchDuration}ms`)
+          } catch (error: any) {
+            clearTimeout(timeoutId)
+            if (error.name === 'AbortError') {
+              throw new Error(`External API request timeout after 30 seconds: ${url.toString()}`)
             }
-          })
+            throw error
+          }
 
           if (!response.ok) {
             throw new Error(`External API error: ${response.status} ${response.statusText}`)
@@ -188,19 +218,38 @@ export async function POST(
           }
 
           // Process each product
-          for (const externalProduct of products) {
+          const processStartTime = Date.now()
+          console.log(`[Sync] Processing ${products.length} products from page ${page}`)
+          
+          for (let i = 0; i < products.length; i++) {
+            const externalProduct = products[i]
+            const productStartTime = Date.now()
+            
             try {
-              await processExternalProduct(externalProduct, businessId, sync.id)
+              await processExternalProduct(externalProduct, businessId, sync.id, allCategories)
               processedCount++
+              
+              const productDuration = Date.now() - productStartTime
+              if (productDuration > 1000) {
+                console.log(`[Sync] Product ${externalProduct.id} took ${productDuration}ms`)
+              }
             } catch (error: any) {
               skippedCount++
               errors.push({
                 productId: externalProduct.id || 'unknown',
                 error: error.message
               })
-              console.error('Error processing product:', error)
+              console.error(`[Sync] Error processing product ${externalProduct.id}:`, error.message)
+            }
+            
+            // Log progress every 10 products
+            if ((i + 1) % 10 === 0) {
+              console.log(`[Sync] Progress: ${i + 1}/${products.length} products processed`)
             }
           }
+          
+          const processDuration = Date.now() - processStartTime
+          console.log(`[Sync] Completed processing ${products.length} products in ${processDuration}ms (avg: ${Math.round(processDuration / products.length)}ms per product)`)
 
           // If syncAllPages is false, only sync the current page
           if (!syncAllPages) {
@@ -304,7 +353,7 @@ function extractName(nameField: any): { en: string; sq: string } {
 }
 
 // Helper function to process external product and create/update in WaveOrder
-async function processExternalProduct(externalProduct: any, businessId: string, syncId: string) {
+async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[]) {
   // Validate required fields
   if (!externalProduct.id) {
     throw new Error('Product missing id')
@@ -342,8 +391,8 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     categoryNameSq = categoryNames.sq || categoryNames.en || 'Uncategorized'
   }
   
-  // Fetch all categories for this business to find by external ID
-  const categories = await prisma.category.findMany({
+  // Use preloaded categories if provided, otherwise fetch them
+  const categories = preloadedCategories || await prisma.category.findMany({
     where: { businessId }
   }) as any[]
   
