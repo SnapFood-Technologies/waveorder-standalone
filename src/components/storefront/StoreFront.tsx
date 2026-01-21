@@ -2146,9 +2146,41 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       })
     } else if (selectedSubCategory) {
       // Get products from selected subcategory (when parent is selected but subcategory is chosen)
-      const subcategory = storeData.categories.find(cat => cat.id === selectedSubCategory)
-      if (subcategory) {
-        products = subcategory.products.map(product => ({ 
+      // Child categories are nested in parent's children array, not in flat categories array
+      let subcategory: any = null
+      
+      // Search through all parent categories' children arrays
+      for (const category of storeData.categories) {
+        if (category.children) {
+          const foundChild = category.children.find((child: any) => child.id === selectedSubCategory)
+          if (foundChild) {
+            // Get the full category data - child categories should be in the flat array too
+            // But if not, we need to get products from the parent's children data
+            subcategory = storeData.categories.find(cat => cat.id === selectedSubCategory)
+            // If not found in flat array, use the nested child data
+            if (!subcategory) {
+              // Find the parent category that contains this child to get full product data
+              const parentCategory = storeData.categories.find(cat => 
+                cat.children?.some((child: any) => child.id === selectedSubCategory)
+              )
+              if (parentCategory) {
+                // Child categories with products should be in the flat array
+                // Try to find it again, or use the nested data structure
+                subcategory = foundChild
+              }
+            }
+            break
+          }
+        }
+      }
+      
+      // If still not found, try direct lookup (in case child is in flat array)
+      if (!subcategory) {
+        subcategory = storeData.categories.find(cat => cat.id === selectedSubCategory)
+      }
+      
+      if (subcategory && subcategory.products) {
+        products = subcategory.products.map((product: any) => ({ 
           ...product, 
           categoryName: subcategory.name,
           categoryId: subcategory.id 
@@ -2184,24 +2216,50 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       if (category) {
         // If category has subcategories, show all products from parent and children
         if (category.children && category.children.length > 0) {
-          const subcategoryIds = category.children.map(child => child.id)
-          const subcategoryProducts = storeData.categories
-            .filter(cat => subcategoryIds.includes(cat.id))
-            .flatMap(subcat => 
-              subcat.products.map(product => ({ 
+          const subcategoryIds = category.children.map((child: any) => child.id)
+          
+          // Get products from subcategories
+          // Child categories might be in flat array OR we need to get them from nested structure
+          const subcategoryProducts: any[] = []
+          
+          // First, try to find child categories in flat array
+          const flatChildCategories = storeData.categories.filter(cat => subcategoryIds.includes(cat.id))
+          
+          // Add products from flat child categories
+          flatChildCategories.forEach(subcat => {
+            if (subcat.products) {
+              subcategoryProducts.push(...subcat.products.map((product: any) => ({ 
                 ...product, 
                 categoryName: `${category.name} > ${subcat.name}`,
                 categoryId: subcat.id 
-              }))
-            )
-          const parentProducts = category.products.map(product => ({ 
+              })))
+            }
+          })
+          
+          // If some children weren't found in flat array, check nested children
+          const foundChildIds = new Set(flatChildCategories.map(cat => cat.id))
+          category.children.forEach((child: any) => {
+            if (!foundChildIds.has(child.id)) {
+              // This child wasn't in flat array, try to find it
+              const childCategory = storeData.categories.find(cat => cat.id === child.id)
+              if (childCategory && childCategory.products) {
+                subcategoryProducts.push(...childCategory.products.map((product: any) => ({ 
+                  ...product, 
+                  categoryName: `${category.name} > ${child.name}`,
+                  categoryId: child.id 
+                })))
+              }
+            }
+          })
+          
+          const parentProducts = (category.products || []).map((product: any) => ({ 
             ...product, 
             categoryName: category.name,
             categoryId: category.id 
           }))
           products = [...parentProducts, ...subcategoryProducts]
         } else {
-          products = category.products.map(product => ({ 
+          products = (category.products || []).map((product: any) => ({ 
             ...product, 
             categoryName: category.name,
             categoryId: category.id 

@@ -519,8 +519,16 @@ export async function GET(
             .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
         }
         
-        // Return parent categories with their children nested
-        return parentCategories.sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+        // Return both parent and child categories in flat array
+        // Parent categories have children nested, but child categories are also in the flat array
+        // This allows frontend to find child categories by ID
+        return allCategories.sort((a: any, b: any) => {
+          // Sort parents first, then children
+          if (!a.parentId && b.parentId) return -1
+          if (a.parentId && !b.parentId) return 1
+          // Within same level, sort by sortOrder
+          return a.sortOrder - b.sortOrder
+        })
       })()
     }
 

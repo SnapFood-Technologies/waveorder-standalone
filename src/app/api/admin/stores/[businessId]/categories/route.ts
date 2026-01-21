@@ -50,7 +50,38 @@ export async function GET(
       ]
     })
 
-    return NextResponse.json({ categories })
+    // Calculate total product count for parent categories (including products from children)
+    // Create a map of category ID to product count for quick lookup
+    const categoryProductCounts = new Map<string, number>()
+    for (const category of categories) {
+      categoryProductCounts.set(category.id, category._count.products)
+    }
+    
+    // For each parent category, calculate total products (direct + children)
+    const categoriesWithTotalCounts = categories.map(category => {
+      if (!category.parentId && category._count.children > 0) {
+        // This is a parent category with children - calculate total products
+        let totalProducts = category._count.products // Start with direct products
+        
+        // Add products from all child categories
+        for (const child of category.children || []) {
+          const childProductCount = categoryProductCounts.get(child.id) || 0
+          totalProducts += childProductCount
+        }
+        
+        return {
+          ...category,
+          _count: {
+            ...category._count,
+            products: totalProducts // Override with total count (direct + children)
+          }
+        }
+      }
+      
+      return category
+    })
+
+    return NextResponse.json({ categories: categoriesWithTotalCounts })
 
   } catch (error) {
     console.error('Error fetching categories:', error)
