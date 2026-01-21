@@ -4107,6 +4107,20 @@ function ProductModal({
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('')
+  
+  // Log when currentImageUrl changes
+  useEffect(() => {
+    console.log('[currentImageUrl State] Updated to:', currentImageUrl)
+  }, [currentImageUrl])
+  
+  // Log when selectedVariant changes
+  useEffect(() => {
+    console.log('[selectedVariant State] Updated to:', {
+      id: selectedVariant?.id,
+      name: selectedVariant?.name,
+      metadata: (selectedVariant as any)?.metadata
+    })
+  }, [selectedVariant?.id])
 
   // Use Albanian description if language is Albanian
   const useAlbanian = storefrontLanguage === 'sq' || storefrontLanguage === 'al'
@@ -4160,16 +4174,30 @@ function ProductModal({
 
   // Update image URL when variant or image index changes
   useEffect(() => {
+    console.log('[Image Update Effect] Running...', {
+      selectedVariantId: selectedVariant?.id,
+      currentImageIndex,
+      productImagesLength: product.images?.length,
+      productId: product.id
+    })
+    
     const variant = selectedVariant as any
+    console.log('[Image Update Effect] Variant object:', variant)
+    console.log('[Image Update Effect] Variant metadata:', variant?.metadata)
+    
     if (variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata) {
       const variantImage = variant.metadata.image
+      console.log('[Image Update Effect] Found variant image:', variantImage)
       if (variantImage && typeof variantImage === 'string') {
+        console.log('[Image Update Effect] Setting variant image URL:', variantImage)
         setCurrentImageUrl(variantImage)
         return
       }
     }
     // Fallback to product images
-    setCurrentImageUrl(product.images[currentImageIndex] || product.images[0] || '')
+    const fallbackImage = product.images[currentImageIndex] || product.images[0] || ''
+    console.log('[Image Update Effect] No variant image, using fallback:', fallbackImage)
+    setCurrentImageUrl(fallbackImage)
   }, [selectedVariant?.id, currentImageIndex, product.images, product.id])
 
   // Reset quantity when variant changes or modal opens
@@ -4260,12 +4288,18 @@ function ProductModal({
                       className="w-full h-full object-contain transition-opacity duration-300"
                       style={{ minHeight: '300px' }}
                       key={`${product.id}-${selectedVariant?.id || 'default'}-${currentImageIndex}`} // Force re-render when variant or image changes
+                      onLoad={() => {
+                        console.log('[Image Load] Image loaded successfully:', currentImageUrl)
+                      }}
                       onError={(e) => {
+                        console.error('[Image Error] Failed to load image:', currentImageUrl)
                         // Fallback to product image if variant image fails to load
                         const target = e.target as HTMLImageElement
                         if (selectedVariant) {
-                          target.src = product.images[0] || ''
-                          setCurrentImageUrl(product.images[0] || '')
+                          const fallback = product.images[0] || ''
+                          console.log('[Image Error] Falling back to product image:', fallback)
+                          target.src = fallback
+                          setCurrentImageUrl(fallback)
                         }
                       }}
                     />
@@ -4398,9 +4432,16 @@ function ProductModal({
                         <button
                           key={variant.id}
                           onClick={() => {
+                            console.log('[Variant Click] Variant selected:', {
+                              variantId: variant.id,
+                              variantName: variant.name,
+                              variantMetadata: (variant as any).metadata,
+                              variantImage: (variant as any).metadata?.image
+                            })
                             setSelectedVariant(variant)
                             // Reset image index when variant changes (if variant has image, it will show via getCurrentImage)
                             setCurrentImageIndex(0)
+                            console.log('[Variant Click] State updated, selectedVariant should be:', variant)
                           }}
                           className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
                             selectedVariant?.id === variant.id
