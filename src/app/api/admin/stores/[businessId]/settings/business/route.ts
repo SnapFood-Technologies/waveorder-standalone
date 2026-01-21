@@ -60,7 +60,9 @@ export async function GET(
         noFollow: true,
         whatsappNumber: true,
         storeLatitude: true,
-        storeLongitude: true
+        storeLongitude: true,
+        uncategorizedNameOverride: true,
+        uncategorizedNameOverrideAl: true
       }
     })
 
@@ -200,6 +202,8 @@ export async function PUT(
         noFollow: noFollow,
         storeLatitude: data.storeLatitude ? parseFloat(data.storeLatitude) : null,
         storeLongitude: data.storeLongitude ? parseFloat(data.storeLongitude) : null,
+        uncategorizedNameOverride: data.uncategorizedNameOverride?.trim() || null,
+        uncategorizedNameOverrideAl: data.uncategorizedNameOverrideAl?.trim() || null,
         updatedAt: new Date()
       },
       select: {

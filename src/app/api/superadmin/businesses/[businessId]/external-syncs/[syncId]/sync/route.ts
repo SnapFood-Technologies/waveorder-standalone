@@ -382,21 +382,38 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
   let parentCategoryId: string | null = null
   let externalParentCategoryId: string | null = null
   
-  if (Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0) {
+  // Debug: Log category information to investigate why products fall back to Uncategorized
+  const hasCategoriesArray = Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0
+  const hasCategoryName = !!externalProduct.categoryName
+  
+  if (hasCategoriesArray) {
     const firstCategory = externalProduct.categories[0]
     const categoryNames = extractName(firstCategory.name)
     categoryNameEn = categoryNames.en || 'Uncategorized'
     categoryNameSq = categoryNames.sq || categoryNames.en || 'Uncategorized'
     externalCategoryId = firstCategory.id?.toString() || null
     
+    // Log if category name extraction failed
+    if (!categoryNames.en && !categoryNames.sq) {
+      console.warn(`[Sync] Product ${externalProduct.id}: Category name extraction failed. Category object:`, JSON.stringify(firstCategory.name))
+    }
+    
     // Handle parent category
     if (firstCategory.parent && firstCategory.parent.id) {
       externalParentCategoryId = firstCategory.parent.id.toString()
     }
-  } else if (externalProduct.categoryName) {
+  } else if (hasCategoryName) {
     const categoryNames = extractName(externalProduct.categoryName)
     categoryNameEn = categoryNames.en || 'Uncategorized'
     categoryNameSq = categoryNames.sq || categoryNames.en || 'Uncategorized'
+    
+    // Log if category name extraction failed
+    if (!categoryNames.en && !categoryNames.sq) {
+      console.warn(`[Sync] Product ${externalProduct.id}: categoryName extraction failed. Value:`, JSON.stringify(externalProduct.categoryName))
+    }
+  } else {
+    // Log products that don't have categories
+    console.warn(`[Sync] Product ${externalProduct.id} (${externalProduct.name?.en || externalProduct.name || 'Unknown'}): No categories found. Categories array:`, externalProduct.categories, 'categoryName:', externalProduct.categoryName)
   }
   
   // Use preloaded categories if provided, otherwise fetch them
@@ -452,30 +469,56 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
   })
   
   // If not found by external ID, try by name (English)
+  // For "Uncategorized", also check if it has no externalCategoryId to avoid duplicates
   if (!category) {
-    category = categories.find((c: any) => c.name === categoryNameEn)
+    if (categoryNameEn === 'Uncategorized' && !externalCategoryId) {
+      // Find existing "Uncategorized" category that has no externalCategoryId (or null)
+      category = categories.find((c: any) => {
+        if (c.name === 'Uncategorized') {
+          // Prefer categories without externalCategoryId (true "Uncategorized")
+          if (!c.metadata || typeof c.metadata !== 'object' || !('externalCategoryId' in c.metadata)) {
+            return true
+          }
+          const metadata = c.metadata as { externalCategoryId?: string }
+          return !metadata.externalCategoryId
+        }
+        return false
+      })
+    } else {
+      category = categories.find((c: any) => c.name === categoryNameEn)
+    }
   }
 
   if (!category) {
     // Create new category with external ID in metadata
-    category = await (prisma.category.create as any)({
-      data: {
-        businessId,
-        name: categoryNameEn,
-        nameAl: categoryNameSq || categoryNameEn || null,
-        parentId: parentCategoryId,
-        sortOrder: 0,
-        isActive: true,
-        ...(externalCategoryId ? {
-          metadata: {
-            externalCategoryId: externalCategoryId.toString(),
-            externalSyncId: syncId,
-            externalData: Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0 
-              ? externalProduct.categories[0] 
-              : null
-          }
-        } : {})
+    // For "Uncategorized" without external ID, ensure we only create one
+    const categoryData: any = {
+      businessId,
+      name: categoryNameEn,
+      nameAl: categoryNameSq || categoryNameEn || null,
+      parentId: parentCategoryId,
+      sortOrder: 0,
+      isActive: true
+    }
+    
+    if (externalCategoryId) {
+      categoryData.metadata = {
+        externalCategoryId: externalCategoryId.toString(),
+        externalSyncId: syncId,
+        externalData: Array.isArray(externalProduct.categories) && externalProduct.categories.length > 0 
+          ? externalProduct.categories[0] 
+          : null
       }
+    } else if (categoryNameEn === 'Uncategorized') {
+      // For "Uncategorized" without external ID, add metadata to mark it as the default uncategorized
+      categoryData.metadata = {
+        externalSyncId: syncId,
+        isDefaultUncategorized: true
+      }
+    }
+    
+    category = await (prisma.category.create as any)({
+      data: categoryData
     })
     
     // Add newly created category to categories array so subsequent products can find it

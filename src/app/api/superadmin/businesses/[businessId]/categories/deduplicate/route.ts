@@ -47,8 +47,19 @@ export async function POST(
     // Group categories by externalCategoryId
     const categoriesByExternalId = new Map<string, any[]>()
     
+    // Also track Uncategorized categories (name === "Uncategorized" and no externalCategoryId)
+    const uncategorizedCategories: any[] = []
+    
     for (const category of allCategories) {
-      if (category.metadata && typeof category.metadata === 'object' && 'externalCategoryId' in category.metadata) {
+      // Check if it's an Uncategorized category (name is "Uncategorized" and has no externalCategoryId)
+      const isUncategorized = category.name === 'Uncategorized' && 
+        (!category.metadata || typeof category.metadata !== 'object' || 
+         !('externalCategoryId' in category.metadata) || 
+         !(category.metadata as any).externalCategoryId)
+      
+      if (isUncategorized) {
+        uncategorizedCategories.push(category)
+      } else if (category.metadata && typeof category.metadata === 'object' && 'externalCategoryId' in category.metadata) {
         const metadata = category.metadata as { externalCategoryId?: string }
         const externalId = metadata.externalCategoryId
         
@@ -67,6 +78,11 @@ export async function POST(
       if (categories.length > 1) {
         duplicates.push({ externalId, categories })
       }
+    }
+    
+    // Add Uncategorized duplicates if there are more than 1
+    if (uncategorizedCategories.length > 1) {
+      duplicates.push({ externalId: 'UNCATEGORIZED', categories: uncategorizedCategories })
     }
 
     if (duplicates.length === 0) {
@@ -173,7 +189,7 @@ export async function POST(
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         })
         return {
-          externalId,
+          externalId: externalId === 'UNCATEGORIZED' ? 'Uncategorized (no external ID)' : externalId,
           kept: sorted[0].name,
           keptId: sorted[0].id,
           removed: sorted.slice(1).map(c => ({ name: c.name, id: c.id }))

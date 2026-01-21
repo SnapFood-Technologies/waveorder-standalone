@@ -344,6 +344,25 @@ export async function GET(
         const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
         const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
         
+        // Get Uncategorized name overrides (for storefront display only)
+        const uncategorizedNameOverride = business.uncategorizedNameOverride || null
+        const uncategorizedNameOverrideAl = business.uncategorizedNameOverrideAl || null
+        
+        // Helper function to apply Uncategorized name override for storefront display
+        const getCategoryDisplayName = (categoryName: string, categoryNameAl?: string | null): string => {
+          // Only apply override if category name is exactly "Uncategorized"
+          if (categoryName === 'Uncategorized') {
+            if (useAlbanian && uncategorizedNameOverrideAl) {
+              return uncategorizedNameOverrideAl
+            }
+            if (uncategorizedNameOverride) {
+              return uncategorizedNameOverride
+            }
+          }
+          // Return normal category name (with language preference)
+          return useAlbanian && categoryNameAl ? categoryNameAl : categoryName
+        }
+        
         // Build all categories with products
         const allCategoriesWithProducts = (business.categories as any[])
           .map((category: any) => {
@@ -367,14 +386,14 @@ export async function GET(
             
             return {
               id: category.id,
-              name: useAlbanian && category.nameAl ? category.nameAl : category.name,
+              name: getCategoryDisplayName(category.name, category.nameAl),
               description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
               nameAl: category.nameAl,
               descriptionAl: category.descriptionAl,
               parentId: category.parentId,
               parent: category.parent ? {
                 id: category.parent.id,
-                name: useAlbanian && category.parent.nameAl ? category.parent.nameAl : category.parent.name,
+                name: getCategoryDisplayName(category.parent.name, category.parent.nameAl),
                 hideParentInStorefront: category.parent.hideParentInStorefront
               } : null,
               hideParentInStorefront: category.hideParentInStorefront,
@@ -382,7 +401,7 @@ export async function GET(
               sortOrder: category.sortOrder,
               children: category.children ? (category.children as any[]).map((child: any) => ({
                 id: child.id,
-                name: useAlbanian && child.nameAl ? child.nameAl : child.name,
+                name: getCategoryDisplayName(child.name, child.nameAl),
                 description: useAlbanian && child.descriptionAl ? child.descriptionAl : child.description,
                 nameAl: child.nameAl,
                 descriptionAl: child.descriptionAl,
