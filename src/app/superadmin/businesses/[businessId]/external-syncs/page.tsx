@@ -16,7 +16,8 @@ import {
   PowerOff,
   ExternalLink,
   Clock,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -53,6 +54,7 @@ export default function ExternalSyncsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingSync, setEditingSync] = useState<ExternalSync | null>(null)
   const [deletingSync, setDeletingSync] = useState<ExternalSync | null>(null)
+  const [syncingSyncId, setSyncingSyncId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchBusiness()
@@ -115,6 +117,40 @@ export default function ExternalSyncsPage() {
       fetchSyncs()
     } catch (err: any) {
       alert(err.message || 'Failed to update sync')
+    }
+  }
+
+  const handleSyncNow = async (sync: ExternalSync) => {
+    if (!sync.isActive) {
+      alert('Please activate the sync before running it')
+      return
+    }
+
+    if (!sync.externalSystemBaseUrl || !sync.externalSystemApiKey) {
+      alert('External system base URL and API key are required')
+      return
+    }
+
+    if (confirm(`Start syncing products from ${sync.externalSystemName || sync.name}?`)) {
+      try {
+        setSyncingSyncId(sync.id)
+        const response = await fetch(`/api/superadmin/businesses/${businessId}/external-syncs/${sync.id}/sync`, {
+          method: 'POST'
+        })
+        
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.message || 'Failed to start sync')
+        }
+
+        const result = await response.json()
+        alert(`Sync started successfully!\nProcessed: ${result.processedCount || 0}\nSkipped: ${result.skippedCount || 0}`)
+        fetchSyncs() // Refresh to show updated sync status
+      } catch (err: any) {
+        alert(err.message || 'Failed to start sync')
+      } finally {
+        setSyncingSyncId(null)
+      }
     }
   }
 
@@ -260,6 +296,24 @@ export default function ExternalSyncsPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => handleSyncNow(sync)}
+                          disabled={syncingSyncId === sync.id || !sync.isActive}
+                          className={`p-2 rounded-lg ${
+                            syncingSyncId === sync.id
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : sync.isActive
+                              ? 'text-teal-600 hover:bg-teal-50'
+                              : 'text-gray-400 cursor-not-allowed'
+                          }`}
+                          title={sync.isActive ? 'Sync Now' : 'Activate sync first'}
+                        >
+                          {syncingSyncId === sync.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => handleToggleActive(sync)}
                           className={`p-2 rounded-lg ${
                             sync.isActive
@@ -345,7 +399,10 @@ function ExternalSyncModal({ businessId, sync, onClose, onSuccess }: ExternalSyn
     externalSystemBaseUrl: sync?.externalSystemBaseUrl || '',
     externalSystemApiKey: sync?.externalSystemApiKey || '',
     externalSystemEndpoints: sync?.externalSystemEndpoints ? JSON.stringify(sync.externalSystemEndpoints, null, 2) : '',
-    externalBrandIds: sync?.externalBrandIds ? JSON.stringify(sync.externalBrandIds, null, 2) : ''
+    externalBrandIds: sync?.externalBrandIds ? JSON.stringify(sync.externalBrandIds, null, 2) : '',
+    perPage: sync?.externalSystemEndpoints && typeof sync.externalSystemEndpoints === 'object' && 'perPage' in sync.externalSystemEndpoints 
+      ? (sync.externalSystemEndpoints as any).perPage?.toString() || '100'
+      : '100'
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -364,6 +421,13 @@ function ExternalSyncModal({ businessId, sync, onClose, onSuccess }: ExternalSyn
         } catch {
           throw new Error('Invalid JSON in Endpoints field')
         }
+      }
+      
+      // Add perPage to endpoints config if provided
+      if (endpoints && formData.perPage) {
+        endpoints.perPage = parseInt(formData.perPage) || 100
+      } else if (!endpoints && formData.perPage) {
+        endpoints = { perPage: parseInt(formData.perPage) || 100 }
       }
       
       if (formData.externalBrandIds.trim()) {
@@ -490,10 +554,10 @@ function ExternalSyncModal({ businessId, sync, onClose, onSuccess }: ExternalSyn
               onChange={(e) => setFormData({ ...formData, externalSystemEndpoints: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
               rows={4}
-              placeholder='{"products": "/api/products", "categories": "/api/categories"}'
+              placeholder='{"products-by-brand": "/brand-products-export"}'
             />
             <p className="mt-1 text-xs text-gray-500">
-              JSON object with endpoint paths for products, categories, etc.
+              JSON object with endpoint paths. Use "products-by-brand" key for product sync endpoint (e.g., "/brand-products-export")
             </p>
           </div>
 
@@ -506,10 +570,28 @@ function ExternalSyncModal({ businessId, sync, onClose, onSuccess }: ExternalSyn
               onChange={(e) => setFormData({ ...formData, externalBrandIds: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
               rows={2}
-              placeholder='"brand-123" or ["brand-123", "brand-456"]'
+              placeholder='"13" or ["13", "5"]'
             />
             <p className="mt-1 text-xs text-gray-500">
-              Single brand ID as string, or array of brand IDs
+              Single brand ID as string (e.g., "13" for Villeroy), or array of brand IDs
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Products Per Page
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="500"
+              value={formData.perPage}
+              onChange={(e) => setFormData({ ...formData, perPage: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="100"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Number of products to fetch per API request (default: 100, max: 500)
             </p>
           </div>
 
