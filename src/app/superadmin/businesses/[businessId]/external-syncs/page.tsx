@@ -149,10 +149,11 @@ export default function ExternalSyncsPage() {
     if (!syncConfirmModal) return
 
     const sync = syncConfirmModal
-    setSyncConfirmModal(null)
 
     try {
-      setSyncingSyncId(sync.id)
+      setSyncingInModal(true)
+      setSyncResult(null) // Clear previous results
+      
       const url = new URL(`/api/superadmin/businesses/${businessId}/external-syncs/${sync.id}/sync`, window.location.origin)
       if (perPage) {
         url.searchParams.set('per_page', perPage.toString())
@@ -169,19 +170,27 @@ export default function ExternalSyncsPage() {
 
       const result = await response.json()
       setSyncResult({
-        success: true,
-        message: `Sync completed successfully!`,
+        success: result.status === 'success' || result.status === 'partial',
+        message: result.status === 'success' 
+          ? 'Sync completed successfully!' 
+          : result.status === 'partial'
+          ? 'Sync completed with some errors'
+          : 'Sync failed',
         processedCount: result.processedCount || 0,
-        skippedCount: result.skippedCount || 0
+        skippedCount: result.skippedCount || 0,
+        errors: result.errors || []
       })
       fetchSyncs() // Refresh to show updated sync status
     } catch (err: any) {
       setSyncResult({
         success: false,
-        message: err.message || 'Failed to start sync'
+        message: err.message || 'Failed to start sync',
+        processedCount: 0,
+        skippedCount: 0,
+        errors: []
       })
     } finally {
-      setSyncingSyncId(null)
+      setSyncingInModal(false)
     }
   }
 
