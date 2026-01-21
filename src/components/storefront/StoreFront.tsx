@@ -1526,6 +1526,9 @@ interface ProductVariant {
   originalPrice?: number
   stock: number
   sku?: string
+  metadata?: any // For variant-specific data like images
+  saleStartDate?: Date | string | null
+  saleEndDate?: Date | string | null
 }
 
 interface ProductModifier {
@@ -4111,6 +4114,51 @@ function ProductModal({
     : product.description
   const formattedDescription = formatProductDescription(displayDescription)
 
+  // Map variant names to Albanian
+  const getVariantDisplayName = (variantName: string): string => {
+    if (!useAlbanian) return variantName
+    
+    const variantNameLower = variantName.toLowerCase().trim()
+    const variantMap: Record<string, string> = {
+      'green': 'Gjelbër',
+      'white': 'Bardhë',
+      'orange': 'Portokalli',
+      'red': 'Kuq',
+      'blue': 'Kaltër',
+      'black': 'Zi',
+      'yellow': 'Verdhë',
+      'purple': 'Vjollcë',
+      'pink': 'Rozë',
+      'gray': 'Gri',
+      'grey': 'Gri',
+      'brown': 'Kafe',
+      'beige': 'Bezh',
+      'navy': 'Blu e errët',
+      'maroon': 'Kafe e errët',
+      'teal': 'Blu jeshil',
+      'cyan': 'Cyan',
+      'lime': 'Gjelbër e çelët',
+      'magenta': 'Magenta',
+      'silver': 'Argjend',
+      'gold': 'Ar'
+    }
+    
+    return variantMap[variantNameLower] || variantName
+  }
+
+  // Get current display image - use variant image if selected and available, otherwise use product images
+  const getCurrentImage = (): string => {
+    const variant = selectedVariant as any
+    if (variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata) {
+      const variantImage = variant.metadata.image
+      if (variantImage && typeof variantImage === 'string') {
+        return variantImage
+      }
+    }
+    // Fallback to product images
+    return product.images[currentImageIndex] || product.images[0] || ''
+  }
+
   // Calculate available stock and current cart quantity
   const availableStock = selectedVariant?.stock || product.stock
   const cartItemId = `${product.id}-${selectedVariant?.id || 'default'}-${selectedModifiers.map(m => m.id).join(',')}`
@@ -4199,82 +4247,101 @@ function ProductModal({
             )}
 
             {/* Image Section */}
-            {product.images.length > 0 && (
+            {(product.images.length > 0 || ((selectedVariant as any)?.metadata && typeof (selectedVariant as any).metadata === 'object' && 'image' in (selectedVariant as any).metadata)) && (
               <div className="relative">
                 <div className="w-full max-w-sm mx-auto relative">
                   {/* Main Image */}
                   <div className="relative overflow-hidden rounded-2xl bg-gray-50">
                     <img 
-                      src={product.images[currentImageIndex]} 
+                      src={getCurrentImage()} 
                       alt={`${product.name} - Image ${currentImageIndex + 1}`}
                       className="w-full h-full object-contain transition-opacity duration-300"
                       style={{ minHeight: '300px' }}
+                      key={selectedVariant?.id || 'default'} // Force re-render when variant changes
                     />
                     
-                    {/* Navigation Arrows - Only show if multiple images */}
-                    {product.images.length > 1 && (
-                      <>
-                        {/* Left Arrow */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCurrentImageIndex((prev) => 
-                              prev === 0 ? product.images.length - 1 : prev - 1
-                            )
-                          }}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
-                          aria-label="Previous image"
-                        >
-                          <ChevronLeft className="w-5 h-5 text-gray-700" />
-                        </button>
-                        
-                        {/* Right Arrow */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCurrentImageIndex((prev) => 
-                              prev === product.images.length - 1 ? 0 : prev + 1
-                            )
-                          }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
-                          aria-label="Next image"
-                        >
-                          <ChevronRight className="w-5 h-5 text-gray-700" />
-                        </button>
-                      </>
-                    )}
+                    {/* Navigation Arrows - Only show if multiple images and no variant image */}
+                    {(() => {
+                      const variant = selectedVariant as any
+                      const hasVariantImage = variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata && variant.metadata.image
+                      const showNavigation = product.images.length > 1 && !hasVariantImage
+                      
+                      return showNavigation ? (
+                        <>
+                          {/* Left Arrow */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCurrentImageIndex((prev) => 
+                                prev === 0 ? product.images.length - 1 : prev - 1
+                              )
+                            }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
+                            aria-label="Previous image"
+                          >
+                            <ChevronLeft className="w-5 h-5 text-gray-700" />
+                          </button>
+                          
+                          {/* Right Arrow */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCurrentImageIndex((prev) => 
+                                prev === product.images.length - 1 ? 0 : prev + 1
+                              )
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 rounded-full p-2 shadow-lg transition-all"
+                            aria-label="Next image"
+                          >
+                            <ChevronRight className="w-5 h-5 text-gray-700" />
+                          </button>
+                        </>
+                      ) : null
+                    })()}
                   </div>
                   
-                  {/* Image Dots Indicator - Only show if multiple images */}
-                  {product.images.length > 1 && (
-                    <div className="flex items-center justify-center gap-2 mt-4">
-                      {product.images.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`transition-all rounded-full ${
-                            currentImageIndex === index
-                              ? 'w-2.5 h-2.5'
-                              : 'w-2 h-2'
-                          }`}
-                          style={{
-                            backgroundColor: currentImageIndex === index 
-                              ? primaryColor 
-                              : '#d1d5db',
-                            opacity: currentImageIndex === index ? 1 : 0.5
-                          }}
-                          aria-label={`Go to image ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  {/* Image Dots Indicator - Only show if multiple images and no variant image */}
+                  {(() => {
+                    const variant = selectedVariant as any
+                    const hasVariantImage = variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata && variant.metadata.image
+                    const showDots = product.images.length > 1 && !hasVariantImage
+                    
+                    return showDots ? (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        {product.images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`transition-all rounded-full ${
+                              currentImageIndex === index
+                                ? 'w-2.5 h-2.5'
+                                : 'w-2 h-2'
+                            }`}
+                            style={{
+                              backgroundColor: currentImageIndex === index 
+                                ? primaryColor 
+                                : '#d1d5db',
+                              opacity: currentImageIndex === index ? 1 : 0.5
+                            }}
+                            aria-label={`Go to image ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    ) : null
+                  })()}
                   
-                  {/* Image Counter */}
-                  {product.images.length > 1 && (
-                    <div className="absolute top-3 left-3 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
-                      {currentImageIndex + 1} / {product.images.length}
-                    </div>
-                  )}
+                  {/* Image Counter - Only show if multiple images and no variant image */}
+                  {(() => {
+                    const variant = selectedVariant as any
+                    const hasVariantImage = variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata && variant.metadata.image
+                    const showCounter = product.images.length > 1 && !hasVariantImage
+                    
+                    return showCounter ? (
+                      <div className="absolute top-3 left-3 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                        {currentImageIndex + 1} / {product.images.length}
+                      </div>
+                    ) : null
+                  })()}
                 </div>
                 
                 {/* Featured Badge */}
@@ -4303,67 +4370,71 @@ function ProductModal({
             )}
 
             {/* Variants with Stock Info */}
-            {product.variants.length > 0 && (
+            {product.variants.filter((v: ProductVariant) => v.stock > 0).length > 0 && (
               <div>
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
                   <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
                   {translations.chooseSize || 'Choose Size'}
                 </h3>
                 <div className="space-y-3">
-                  {product.variants.map((variant: ProductVariant) => {
-                    const variantCartItemId = `${product.id}-${variant.id}-${selectedModifiers.map(m => m.id).join(',')}`
-                    const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
-                    const variantAvailable = variant.stock - variantInCart
-                    
-                    return (
-                      <button
-                        key={variant.id}
-                        onClick={() => variant.stock > 0 ? setSelectedVariant(variant) : null}
-                        disabled={variant.stock === 0}
-                        className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
-                          selectedVariant?.id === variant.id
-                            ? 'bg-blue-50'
-                            : variant.stock === 0
-                            ? 'border-gray-200 opacity-50 cursor-not-allowed bg-gray-50'
-                            : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
-                        }`}
-                        style={{
-                          borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
-                        }}
-                      >
-                        <div className="flex justify-between items-center">
-                        <div>
-                          <span className="font-medium text-gray-800">{variant.name}</span>
-                          {variant.stock === 0 && (
-                            <span className="block text-xs text-red-600 mt-1">{translations.outOfStock}</span>
-                          )}
-                          {variant.stock > 0 && variantInCart > 0 && (
-                            <span className="block text-xs text-blue-600 mt-1">
-                              {translations.inCartAvailable
-                                .replace('{inCart}', variantInCart.toString())
-                                .replace('{available}', variantAvailable.toString())}
-                            </span>
-                          )}
-                          {variant.stock > 0 && variantInCart === 0 && variant.stock <= 5 && (
-                            <span className="block text-xs text-orange-600 mt-1">
-                              {translations.onlyStockAvailable.replace('{stock}', variant.stock.toString())}
-                            </span>
-                          )}
-                        </div>
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold" style={{ color: primaryColor }}>
-                              {currencySymbol}{variant.price.toFixed(2)}
-                            </span>
-                            {variant.originalPrice && variant.originalPrice > variant.price && (
-                              <span className="text-gray-500 line-through text-sm">
-                                {currencySymbol}{variant.originalPrice.toFixed(2)}
+                  {product.variants
+                    .filter((variant: ProductVariant) => variant.stock > 0) // Filter out variants with 0 stock
+                    .map((variant: ProductVariant) => {
+                      const variantCartItemId = `${product.id}-${variant.id}-${selectedModifiers.map(m => m.id).join(',')}`
+                      const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
+                      const variantAvailable = variant.stock - variantInCart
+                      
+                      return (
+                        <button
+                          key={variant.id}
+                          onClick={() => {
+                            setSelectedVariant(variant)
+                            // Reset image index when variant changes (if variant has image, it will show via getCurrentImage)
+                            setCurrentImageIndex(0)
+                          }}
+                          className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
+                            selectedVariant?.id === variant.id
+                              ? 'bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-200 hover:bg-gray-50'
+                          }`}
+                          style={{
+                            borderColor: selectedVariant?.id === variant.id ? primaryColor : undefined
+                          }}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium text-gray-800">{getVariantDisplayName(variant.name)}</span>
+                              {variantInCart > 0 && (
+                                <span className="block text-xs text-blue-600 mt-1">
+                                  {translations.inCartAvailable
+                                    ? translations.inCartAvailable
+                                        .replace('{inCart}', variantInCart.toString())
+                                        .replace('{available}', variantAvailable.toString())
+                                    : `You have ${variantInCart} in cart, ${variantAvailable} available`}
+                                </span>
+                              )}
+                              {variantInCart === 0 && variant.stock <= 5 && (
+                                <span className="block text-xs text-orange-600 mt-1">
+                                  {translations.onlyStockAvailable
+                                    ? translations.onlyStockAvailable.replace('{stock}', variant.stock.toString())
+                                    : `Only ${variant.stock} available`}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold" style={{ color: primaryColor }}>
+                                {currencySymbol}{variant.price.toFixed(2)}
                               </span>
-                            )}
+                              {variant.originalPrice && variant.originalPrice > variant.price && (
+                                <span className="text-gray-500 line-through text-sm">
+                                  {currencySymbol}{variant.originalPrice.toFixed(2)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    )
-                  })}
+                        </button>
+                      )
+                    })}
                 </div>
               </div>
             )}

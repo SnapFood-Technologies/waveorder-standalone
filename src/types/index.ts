@@ -28,6 +28,11 @@ export interface ProductVariant {
   name: string
   price: number
   stock: number
+  metadata?: any // For variant-specific data like images
+  originalPrice?: number
+  sku?: string
+  saleStartDate?: Date | string | null
+  saleEndDate?: Date | string | null
 }
 
 export interface ProductModifier {
