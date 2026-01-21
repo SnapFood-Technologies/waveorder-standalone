@@ -71,6 +71,20 @@ export default function ExternalSyncsPage() {
     }
   } | null>(null)
   const [syncingInModal, setSyncingInModal] = useState(false)
+  const [showDeduplicateModal, setShowDeduplicateModal] = useState(false)
+  const [deduplicating, setDeduplicating] = useState(false)
+  const [deduplicateResult, setDeduplicateResult] = useState<{
+    duplicatesFound: number
+    duplicatesRemoved: number
+    productsMoved: number
+    childrenMoved: number
+    details?: Array<{
+      externalId: string
+      kept: string
+      keptId: string
+      removed: Array<{ name: string; id: string }>
+    }>
+  } | null>(null)
 
   useEffect(() => {
     fetchBusiness()
@@ -233,6 +247,36 @@ export default function ExternalSyncsPage() {
     })
   }
 
+  const handleDeduplicate = async () => {
+    setDeduplicating(true)
+    setDeduplicateResult(null)
+    
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/categories/deduplicate`, {
+        method: 'POST'
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setDeduplicateResult(result)
+      } else {
+        const errorData = await response.json()
+        setDeduplicateResult({
+          duplicatesFound: 0,
+          duplicatesRemoved: 0,
+          productsMoved: 0,
+          childrenMoved: 0
+        })
+        alert(errorData.message || 'Error deduplicating categories')
+      }
+    } catch (error: any) {
+      console.error('Error deduplicating categories:', error)
+      alert('Error deduplicating categories. Please try again.')
+    } finally {
+      setDeduplicating(false)
+    }
+  }
+
   if (loading && !business) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -261,13 +305,22 @@ export default function ExternalSyncsPage() {
               <p className="text-gray-600 mt-1">Manage product synchronization with external systems</p>
             </div>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add External Sync
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowDeduplicateModal(true)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Deduplicate Categories
+            </button>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add External Sync
+            </button>
+          </div>
         </div>
       </div>
 
@@ -461,6 +514,21 @@ export default function ExternalSyncsPage() {
         <SyncResultModal
           result={syncResult}
           onClose={() => setSyncResult(null)}
+        />
+      )}
+
+      {/* Deduplicate Categories Modal */}
+      {showDeduplicateModal && (
+        <DeduplicateCategoriesModal
+          businessId={businessId}
+          businessName={business?.name || 'Business'}
+          deduplicating={deduplicating}
+          result={deduplicateResult}
+          onClose={() => {
+            setShowDeduplicateModal(false)
+            setDeduplicateResult(null)
+          }}
+          onConfirm={handleDeduplicate}
         />
       )}
     </div>
@@ -989,6 +1057,188 @@ interface SyncResultModalProps {
     }
   }
   onClose: () => void
+}
+
+// Deduplicate Categories Modal
+interface DeduplicateCategoriesModalProps {
+  businessId: string
+  businessName: string
+  deduplicating: boolean
+  result: {
+    duplicatesFound: number
+    duplicatesRemoved: number
+    productsMoved: number
+    childrenMoved: number
+    details?: Array<{
+      externalId: string
+      kept: string
+      keptId: string
+      removed: Array<{ name: string; id: string }>
+    }>
+  } | null
+  onClose: () => void
+  onConfirm: () => void
+}
+
+function DeduplicateCategoriesModal({ 
+  businessId, 
+  businessName, 
+  deduplicating, 
+  result, 
+  onClose, 
+  onConfirm 
+}: DeduplicateCategoriesModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          {!result ? (
+            // Confirmation View
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Deduplicate Categories</h3>
+                  <p className="text-sm text-gray-600">Remove duplicate categories for {businessName}</p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-700 mb-4">
+                  This will find and remove duplicate categories that have the same <strong>externalCategoryId</strong> in their metadata.
+                </p>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-yellow-900 mb-2">What will happen:</h4>
+                  <ul className="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                    <li>Categories with the same external ID will be grouped</li>
+                    <li>The category with the most products (or most children, or oldest) will be kept</li>
+                    <li>All products from duplicates will be moved to the kept category</li>
+                    <li>All subcategories from duplicates will be moved to the kept category</li>
+                    <li>Duplicate categories will be deleted</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm text-red-800">
+                    <strong>Warning:</strong> This action cannot be undone. Make sure you want to proceed.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={onClose}
+                  disabled={deduplicating}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={onConfirm}
+                  disabled={deduplicating}
+                  className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                >
+                  {deduplicating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deduplicating...
+                    </>
+                  ) : (
+                    'Confirm & Deduplicate'
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            // Results View
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  result.duplicatesRemoved > 0 ? 'bg-green-100' : 'bg-gray-100'
+                }`}>
+                  {result.duplicatesRemoved > 0 ? (
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  ) : (
+                    <Info className="w-6 h-6 text-gray-600" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Deduplication Complete</h3>
+                  <p className="text-sm text-gray-600">Results for {businessName}</p>
+                </div>
+              </div>
+              
+              <div className="mb-6 space-y-4">
+                {result.duplicatesRemoved === 0 ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      No duplicate categories found. All categories are unique.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Duplicates Found</p>
+                        <p className="text-2xl font-bold text-gray-900">{result.duplicatesFound}</p>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Removed</p>
+                        <p className="text-2xl font-bold text-orange-600">{result.duplicatesRemoved}</p>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Products Moved</p>
+                        <p className="text-2xl font-bold text-teal-600">{result.productsMoved}</p>
+                      </div>
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-xs text-gray-600 mb-1">Children Moved</p>
+                        <p className="text-2xl font-bold text-blue-600">{result.childrenMoved}</p>
+                      </div>
+                    </div>
+                    
+                    {result.details && result.details.length > 0 && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-900 mb-3">Details:</h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {result.details.map((detail, idx) => (
+                            <div key={idx} className="text-sm">
+                              <p className="font-medium text-gray-900">
+                                External ID: {detail.externalId}
+                              </p>
+                              <p className="text-gray-700">
+                                Kept: <span className="font-medium text-green-700">{detail.kept}</span>
+                              </p>
+                              {detail.removed.length > 0 && (
+                                <p className="text-gray-600">
+                                  Removed: {detail.removed.map(r => r.name).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              
+              <div className="flex justify-end">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function SyncResultModal({ result, onClose }: SyncResultModalProps) {

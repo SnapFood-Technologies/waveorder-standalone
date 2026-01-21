@@ -226,7 +226,14 @@ export async function POST(
             const productStartTime = Date.now()
             
             try {
-              await processExternalProduct(externalProduct, businessId, sync.id, allCategories)
+              // Process product and get updated categories array (in case new categories were created)
+              const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories)
+              // Update the shared allCategories array with newly created categories
+              // Replace the array reference to ensure all subsequent products see the new categories
+              if (updatedCategories && updatedCategories.length > allCategories.length) {
+                // Clear and repopulate to ensure we have all categories
+                allCategories.splice(0, allCategories.length, ...updatedCategories)
+              }
               processedCount++
               
               const productDuration = Date.now() - productStartTime
@@ -353,7 +360,8 @@ function extractName(nameField: any): { en: string; sq: string } {
 }
 
 // Helper function to process external product and create/update in WaveOrder
-async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[]) {
+// Returns the updated categories array (including newly created categories)
+async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[]): Promise<any[]> {
   // Validate required fields
   if (!externalProduct.id) {
     throw new Error('Product missing id')
@@ -469,6 +477,9 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
         } : {})
       }
     })
+    
+    // Add newly created category to categories array so subsequent products can find it
+    categories.push(category)
   } else if (externalCategoryId) {
     // Update category metadata and parent if needed
     const currentMetadata = (category.metadata as any) || {}
@@ -686,6 +697,9 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       await syncProductVariants(newProduct.id, externalProduct.variants, syncId, businessId)
     }
   }
+  
+  // Return updated categories array (including newly created categories)
+  return categories
 }
 
 // Helper function to sync product variants
