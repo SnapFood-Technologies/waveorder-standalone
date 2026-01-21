@@ -4107,10 +4107,13 @@ function ProductModal({
               </div>
             )}
             
-            {maxQuantityCanAdd > 0 && maxQuantityCanAdd < 5 && (
+            {/* Only show low stock warning when:
+                1. Stock is very low (<= 2 items remaining), AND
+                2. Customer already has items in cart (don't expose stock unnecessarily) */}
+            {maxQuantityCanAdd > 0 && maxQuantityCanAdd <= 2 && currentQuantityInCart > 0 && (
               <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl">
                 <p className="text-orange-800 text-sm font-medium">
-                  {translations.onlyMoreCanBeAdded.replace('{count}', maxQuantityCanAdd.toString())} ({translations.stockLabel}: {availableStock}, {translations.inCartLabel}: {currentQuantityInCart})
+                  {translations.onlyMoreCanBeAdded.replace('{count}', maxQuantityCanAdd.toString())}
                 </p>
               </div>
             )}
