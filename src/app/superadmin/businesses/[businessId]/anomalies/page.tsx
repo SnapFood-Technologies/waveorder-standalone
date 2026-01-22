@@ -197,60 +197,128 @@ export default function AnomaliesPage() {
     )
   }
 
+  const handleExportCSV = () => {
+    // Prepare CSV data
+    const headers = ['Type', 'Severity', 'Status', 'Title', 'Description', 'Entity Type', 'Entity Name', 'Detected At', 'Resolved At']
+    const rows = anomalies.map(anomaly => [
+      anomaly.type.replace(/_/g, ' '),
+      anomaly.severity,
+      anomaly.status,
+      anomaly.title,
+      anomaly.description,
+      anomaly.entityType || '',
+      anomaly.entityName || '',
+      formatDate(anomaly.detectedAt),
+      anomaly.resolvedAt ? formatDate(anomaly.resolvedAt) : ''
+    ])
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `anomalies_${business?.name || 'business'}_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               href={`/superadmin/businesses/${businessId}`}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
             >
               <ChevronLeft className="w-6 h-6" />
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Anomalies</h1>
-              <p className="text-gray-600 mt-1">Detect and manage data quality issues</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">
+                Anomalies {business && <span className="text-gray-500">- {business.name}</span>}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">Detect and manage data quality issues</p>
             </div>
           </div>
-          <button
-            onClick={handleRunDetection}
-            disabled={detecting}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {detecting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Running Check...
-              </>
-            ) : (
-              <>
-                <PlayCircle className="w-4 h-4 mr-2" />
-                Run Anomaly Check Now
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleExportCSV}
+              disabled={anomalies.length === 0}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Export CSV
+            </button>
+            <button
+              onClick={handleRunDetection}
+              disabled={detecting}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {detecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Run Check
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Total Anomalies</p>
-          <p className="text-2xl font-bold text-gray-900">{counts.total}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Issues</p>
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-4 h-4 text-gray-600" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">{counts.total}</p>
+          <p className="text-xs text-gray-500 mt-1">All detected anomalies</p>
         </div>
-        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-          <p className="text-sm text-orange-700 mb-1">Open</p>
-          <p className="text-2xl font-bold text-orange-900">{counts.open}</p>
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-orange-700 uppercase tracking-wider">Open</p>
+            <div className="w-8 h-8 bg-white/80 rounded-lg flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-orange-600" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-orange-900">{counts.open}</p>
+          <p className="text-xs text-orange-600 mt-1">Requires attention</p>
         </div>
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <p className="text-sm text-green-700 mb-1">Resolved</p>
-          <p className="text-2xl font-bold text-green-900">{counts.resolved}</p>
+        <div className="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-green-700 uppercase tracking-wider">Resolved</p>
+            <div className="w-8 h-8 bg-white/80 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-green-900">{counts.resolved}</p>
+          <p className="text-xs text-green-600 mt-1">Successfully fixed</p>
         </div>
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600 mb-1">Ignored</p>
-          <p className="text-2xl font-bold text-gray-700">{counts.ignored}</p>
+        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Ignored</p>
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <XCircle className="w-4 h-4 text-gray-600" />
+            </div>
+          </div>
+          <p className="text-3xl font-bold text-gray-700">{counts.ignored}</p>
+          <p className="text-xs text-gray-500 mt-1">Acknowledged issues</p>
         </div>
       </div>
 

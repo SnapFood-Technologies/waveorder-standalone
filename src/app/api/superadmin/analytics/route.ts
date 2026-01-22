@@ -214,10 +214,21 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    // Calculate average order value (across all businesses' orders - for platform metrics)
-    const avgOrderValue = deliveredOrders.length > 0 
-      ? deliveredOrders.reduce((sum, order) => sum + order.total, 0) / deliveredOrders.length 
-      : 0
+    // Calculate total page views (from old Analytics + new VisitorSession)
+    const oldPageViews = await prisma.analytics.aggregate({
+      where: {
+        date: { gte: startDate, lte: endDate }
+      },
+      _sum: { visitors: true }
+    })
+    
+    const newPageViews = await prisma.visitorSession.count({
+      where: {
+        visitedAt: { gte: startDate, lte: endDate }
+      }
+    })
+    
+    const totalPageViews = (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
 
     // Calculate conversion rate (delivered orders / total orders)
     const conversionRate = totalOrders > 0 
@@ -387,7 +398,7 @@ export async function GET(request: NextRequest) {
         totalUsers,
         totalOrders,
         totalRevenue,
-        avgOrderValue, // Average order value across all businesses
+        pageViews: totalPageViews, // Total page views across all businesses
         conversionRate
       },
       businessGrowth: formatCumulativeGrowth(businessGrowth),

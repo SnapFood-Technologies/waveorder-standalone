@@ -292,33 +292,37 @@ export default function ExternalSyncsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
             <Link
               href={`/superadmin/businesses/${businessId}`}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
             >
               <ChevronLeft className="w-6 h-6" />
             </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">External Syncs</h1>
-              <p className="text-gray-600 mt-1">Manage product synchronization with external systems</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">
+                External Syncs {business && <span className="text-gray-500">- {business.name}</span>}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">Manage product synchronization with external systems</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowDeduplicateModal(true)}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Deduplicate Categories
+              <span className="hidden sm:inline">Deduplicate Categories</span>
+              <span className="sm:hidden">Deduplicate</span>
             </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add External Sync
+              <span className="hidden sm:inline">Add External Sync</span>
+              <span className="sm:hidden">Add Sync</span>
             </button>
           </div>
         </div>

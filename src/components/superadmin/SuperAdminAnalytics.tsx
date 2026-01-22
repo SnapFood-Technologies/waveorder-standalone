@@ -29,7 +29,7 @@ interface AnalyticsData {
     totalUsers: number
     totalOrders: number
     totalRevenue: number
-    avgOrderValue: number
+    pageViews: number
     conversionRate: number
   }
   businessGrowth: {
@@ -247,12 +247,13 @@ export function SuperAdminAnalytics() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
+              <p className="text-sm font-medium text-gray-600">Page Views</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
-                {formatCurrency(data.overview.avgOrderValue)}
+                {data.overview.pageViews.toLocaleString()}
               </p>
+              <p className="text-xs text-gray-500 mt-1">Across all storefronts</p>
             </div>
-            <TrendingUp className="w-10 h-10 text-teal-500" />
+            <Eye className="w-10 h-10 text-purple-500" />
           </div>
         </div>
 
@@ -512,10 +513,10 @@ export function SuperAdminAnalytics() {
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <TrendingUp className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                <Eye className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Avg Order Value</p>
-                  <p className="text-xs text-gray-600 mt-1">Average value of all orders across the platform</p>
+                  <p className="text-sm font-medium text-gray-900">Page Views</p>
+                  <p className="text-xs text-gray-600 mt-1">Total storefront visits across all businesses in the selected period</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
