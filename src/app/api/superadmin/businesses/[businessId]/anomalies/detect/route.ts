@@ -84,10 +84,16 @@ export async function POST(
         })
         detectedAnomalies.push(anomaly)
       } else {
-        // Update last checked
+        // Update existing anomaly with latest product data (name, SKU, etc.)
+        const skuInfo = product.sku ? ` (SKU: ${product.sku})` : ''
         await prisma.anomaly.update({
           where: { id: existing.id },
-          data: { lastChecked: now }
+          data: { 
+            lastChecked: now,
+            entityName: product.name, // Update name in case it changed
+            entitySku: product.sku || null, // Update SKU (important for backfilling)
+            description: `Product "${product.name}"${skuInfo} is published but has a price of 0. This may be a data entry error.`
+          }
         })
       }
     }
