@@ -239,6 +239,116 @@ export async function GET(
       return acc
     }, new Set())
 
+    // Traffic sources analysis
+    const sourceStats = new Map<string, { visitors: number, orders: number }>()
+    const campaignStats = new Map<string, { visitors: number, orders: number }>()
+    const mediumStats = new Map<string, { visitors: number, orders: number }>()
+    const placementStats = new Map<string, { visitors: number, orders: number }>()
+    
+    // Aggregate analytics by source, campaign, medium, placement
+    analytics.forEach(a => {
+      // Sources
+      const source = a.source || 'Direct'
+      const existingSource = sourceStats.get(source) || { visitors: 0, orders: 0 }
+      existingSource.visitors += a.visitors
+      sourceStats.set(source, existingSource)
+
+      // Campaigns
+      if (a.campaign) {
+        const existingCampaign = campaignStats.get(a.campaign) || { visitors: 0, orders: 0 }
+        existingCampaign.visitors += a.visitors
+        campaignStats.set(a.campaign, existingCampaign)
+      }
+
+      // Medium
+      if (a.medium) {
+        const existingMedium = mediumStats.get(a.medium) || { visitors: 0, orders: 0 }
+        existingMedium.visitors += a.visitors
+        mediumStats.set(a.medium, existingMedium)
+      }
+
+      // Placement
+      if (a.placement) {
+        const existingPlacement = placementStats.get(a.placement) || { visitors: 0, orders: 0 }
+        existingPlacement.visitors += a.visitors
+        placementStats.set(a.placement, existingPlacement)
+      }
+    })
+
+    // Count orders by determining source/campaign/medium/placement from analytics on the same day
+    completedOrders.forEach(order => {
+      const orderDate = order.createdAt.toISOString().split('T')[0]
+      const dayAnalytics = analytics.find(a => 
+        a.date.toISOString().split('T')[0] === orderDate
+      )
+      
+      if (dayAnalytics) {
+        // Source orders
+        const source = dayAnalytics.source || 'Direct'
+        const existingSource = sourceStats.get(source) || { visitors: 0, orders: 0 }
+        existingSource.orders++
+        sourceStats.set(source, existingSource)
+
+        // Campaign orders
+        if (dayAnalytics.campaign) {
+          const existingCampaign = campaignStats.get(dayAnalytics.campaign) || { visitors: 0, orders: 0 }
+          existingCampaign.orders++
+          campaignStats.set(dayAnalytics.campaign, existingCampaign)
+        }
+
+        // Medium orders
+        if (dayAnalytics.medium) {
+          const existingMedium = mediumStats.get(dayAnalytics.medium) || { visitors: 0, orders: 0 }
+          existingMedium.orders++
+          mediumStats.set(dayAnalytics.medium, existingMedium)
+        }
+
+        // Placement orders
+        if (dayAnalytics.placement) {
+          const existingPlacement = placementStats.get(dayAnalytics.placement) || { visitors: 0, orders: 0 }
+          existingPlacement.orders++
+          placementStats.set(dayAnalytics.placement, existingPlacement)
+        }
+      }
+    })
+
+    const totalVisitors = Array.from(sourceStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+    
+    const trafficSources = Array.from(sourceStats.entries()).map(([source, stats]) => ({
+      source,
+      visitors: stats.visitors,
+      orders: stats.orders,
+      conversionRate: stats.visitors > 0 ? parseFloat(((stats.orders / stats.visitors) * 100).toFixed(2)) : 0,
+      percentage: totalVisitors > 0 ? parseFloat(((stats.visitors / totalVisitors) * 100).toFixed(1)) : 0
+    })).sort((a, b) => b.visitors - a.visitors)
+
+    const totalCampaignVisitors = Array.from(campaignStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+    const campaigns = Array.from(campaignStats.entries()).map(([campaign, stats]) => ({
+      campaign,
+      visitors: stats.visitors,
+      orders: stats.orders,
+      conversionRate: stats.visitors > 0 ? parseFloat(((stats.orders / stats.visitors) * 100).toFixed(2)) : 0,
+      percentage: totalCampaignVisitors > 0 ? parseFloat(((stats.visitors / totalCampaignVisitors) * 100).toFixed(1)) : 0
+    })).sort((a, b) => b.visitors - a.visitors)
+
+    const totalMediumVisitors = Array.from(mediumStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+    const mediums = Array.from(mediumStats.entries()).map(([medium, stats]) => ({
+      medium,
+      visitors: stats.visitors,
+      orders: stats.orders,
+      conversionRate: stats.visitors > 0 ? parseFloat(((stats.orders / stats.visitors) * 100).toFixed(2)) : 0,
+      percentage: totalMediumVisitors > 0 ? parseFloat(((stats.visitors / totalMediumVisitors) * 100).toFixed(1)) : 0
+    })).sort((a, b) => b.visitors - a.visitors)
+
+    const totalPlacementVisitors = Array.from(placementStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+    const placements = Array.from(placementStats.entries()).map(([placement, stats]) => ({
+      placement,
+      visitors: stats.visitors,
+      orders: stats.orders,
+      conversionRate: stats.visitors > 0 ? parseFloat(((stats.orders / stats.visitors) * 100).toFixed(2)) : 0,
+      percentage: totalPlacementVisitors > 0 ? parseFloat(((stats.visitors / totalPlacementVisitors) * 100).toFixed(1)) : 0
+    })).sort((a, b) => b.visitors - a.visitors)
+
     return NextResponse.json({
       data: {
         overview: {
@@ -255,7 +365,10 @@ export async function GET(
         },
         traffic: {
           trends: trafficTrends,
-          sources: [] // Would need referrer tracking in analytics
+          sources: trafficSources,
+          campaigns: campaigns,
+          mediums: mediums,
+          placements: placements
         },
         products: {
           topProducts,

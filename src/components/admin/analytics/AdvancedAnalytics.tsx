@@ -38,7 +38,7 @@ interface GeographicData {
   totalCities: number
 }
 
-interface SourceData {
+interface TrafficData {
   sources: Array<{
     source: string
     visitors: number
@@ -46,12 +46,32 @@ interface SourceData {
     conversionRate: number
     percentage: number
   }>
-  totalSources: number
+  campaigns: Array<{
+    campaign: string
+    visitors: number
+    orders: number
+    conversionRate: number
+    percentage: number
+  }>
+  mediums: Array<{
+    medium: string
+    visitors: number
+    orders: number
+    conversionRate: number
+    percentage: number
+  }>
+  placements: Array<{
+    placement: string
+    visitors: number
+    orders: number
+    conversionRate: number
+    percentage: number
+  }>
 }
 
 export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps) {
   const [geographicData, setGeographicData] = useState<GeographicData | null>(null)
-  const [sourceData, setSourceData] = useState<SourceData | null>(null)
+  const [trafficData, setTrafficData] = useState<TrafficData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -78,18 +98,36 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
         setGeographicData(geoResult.data)
       }
 
-      // Fetch source data - using mock data for now
-      setSourceData({
-        sources: [
-          { source: 'Direct', visitors: 0, orders: 0, conversionRate: 0, percentage: 0 },
-          { source: 'WhatsApp', visitors: 0, orders: 0, conversionRate: 0, percentage: 0 },
-          { source: 'Social Media', visitors: 0, orders: 0, conversionRate: 0, percentage: 0 },
-          { source: 'Referral', visitors: 0, orders: 0, conversionRate: 0, percentage: 0 },
-        ],
-        totalSources: 4
-      })
+      // Fetch traffic data from advanced analytics endpoint
+      const advancedResponse = await fetch(`/api/admin/stores/${businessId}/analytics/advanced?${params}`)
+      if (advancedResponse.ok) {
+        const advancedResult = await advancedResponse.json()
+        const traffic = advancedResult.data.traffic || {}
+        
+        setTrafficData({
+          sources: traffic.sources || [],
+          campaigns: traffic.campaigns || [],
+          mediums: traffic.mediums || [],
+          placements: traffic.placements || []
+        })
+      } else {
+        // Fallback to empty if fetch fails
+        setTrafficData({
+          sources: [],
+          campaigns: [],
+          mediums: [],
+          placements: []
+        })
+      }
     } catch (error) {
       console.error('Error fetching analytics:', error)
+      // Set empty data on error
+      setTrafficData({
+        sources: [],
+        campaigns: [],
+        mediums: [],
+        placements: []
+      })
     } finally {
       setLoading(false)
     }
@@ -112,7 +150,10 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
 
   const allCountries = geographicData?.countries || []
   const allCities = geographicData?.cities || []
-  const allSources = sourceData?.sources || []
+  const allSources = trafficData?.sources || []
+  const allCampaigns = trafficData?.campaigns || []
+  const allMediums = trafficData?.mediums || []
+  const allPlacements = trafficData?.placements || []
 
   return (
     <div className="space-y-6">
@@ -293,13 +334,26 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
         ) : (
           <div className="space-y-4">
             {allSources.map((source, index) => {
+              // Dynamic color assignment based on source name or index
+              const colorSchemes = [
+                { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-600' },
+                { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-600' },
+                { bg: 'bg-purple-100', text: 'text-purple-700', bar: 'bg-purple-600' },
+                { bg: 'bg-orange-100', text: 'text-orange-700', bar: 'bg-orange-600' },
+                { bg: 'bg-pink-100', text: 'text-pink-700', bar: 'bg-pink-600' },
+                { bg: 'bg-indigo-100', text: 'text-indigo-700', bar: 'bg-indigo-600' },
+                { bg: 'bg-teal-100', text: 'text-teal-700', bar: 'bg-teal-600' },
+              ]
+              
               const sourceColors: Record<string, { bg: string; text: string; bar: string }> = {
-                Direct: { bg: 'bg-green-100', text: 'text-green-700', bar: 'bg-green-600' },
-                WhatsApp: { bg: 'bg-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-600' },
-                'Social Media': { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-600' },
-                Referral: { bg: 'bg-purple-100', text: 'text-purple-700', bar: 'bg-purple-600' },
+                'Direct': colorSchemes[0],
+                'gazetareforma.com': colorSchemes[1],
+                'facebook': colorSchemes[2],
+                'instagram': colorSchemes[3],
+                'google': colorSchemes[4],
               }
-              const colors = sourceColors[source.source] || { bg: 'bg-gray-100', text: 'text-gray-700', bar: 'bg-gray-600' }
+              
+              const colors = sourceColors[source.source] || colorSchemes[index % colorSchemes.length]
               
               return (
                 <div key={source.source} className="bg-gray-50 rounded-lg p-4">
@@ -341,9 +395,182 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
         )}
       </div>
 
+      {/* Campaigns Section */}
+      {allCampaigns.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp className="w-6 h-6 text-indigo-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Campaigns</h2>
+          </div>
+
+          <div className="space-y-4">
+            {allCampaigns.map((campaign, index) => {
+              const colorSchemes = [
+                { bg: 'bg-indigo-100', text: 'text-indigo-700', bar: 'bg-indigo-600' },
+                { bg: 'bg-violet-100', text: 'text-violet-700', bar: 'bg-violet-600' },
+                { bg: 'bg-fuchsia-100', text: 'text-fuchsia-700', bar: 'bg-fuchsia-600' },
+                { bg: 'bg-rose-100', text: 'text-rose-700', bar: 'bg-rose-600' },
+              ]
+              const colors = colorSchemes[index % colorSchemes.length]
+              
+              return (
+                <div key={campaign.campaign} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${colors.bg}`}>
+                        <TrendingUp className={`w-5 h-5 ${colors.text}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{campaign.campaign}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {campaign.visitors} visitors
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-3 h-3" />
+                            {campaign.orders} orders
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {campaign.conversionRate}% conversion
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold ${colors.text}`}>{campaign.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${colors.bar} h-2 rounded-full transition-all`}
+                      style={{ width: `${campaign.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Placements Section */}
+      {allPlacements.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <MapPin className="w-6 h-6 text-amber-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Placements</h2>
+          </div>
+
+          <div className="space-y-4">
+            {allPlacements.map((placement, index) => {
+              const colorSchemes = [
+                { bg: 'bg-amber-100', text: 'text-amber-700', bar: 'bg-amber-600' },
+                { bg: 'bg-yellow-100', text: 'text-yellow-700', bar: 'bg-yellow-600' },
+                { bg: 'bg-lime-100', text: 'text-lime-700', bar: 'bg-lime-600' },
+                { bg: 'bg-emerald-100', text: 'text-emerald-700', bar: 'bg-emerald-600' },
+              ]
+              const colors = colorSchemes[index % colorSchemes.length]
+              
+              return (
+                <div key={placement.placement} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${colors.bg}`}>
+                        <MapPin className={`w-5 h-5 ${colors.text}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{placement.placement}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {placement.visitors} visitors
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-3 h-3" />
+                            {placement.orders} orders
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {placement.conversionRate}% conversion
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold ${colors.text}`}>{placement.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${colors.bar} h-2 rounded-full transition-all`}
+                      style={{ width: `${placement.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Mediums Section */}
+      {allMediums.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <ExternalLink className="w-6 h-6 text-cyan-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Traffic Mediums</h2>
+          </div>
+
+          <div className="space-y-4">
+            {allMediums.map((medium, index) => {
+              const colorSchemes = [
+                { bg: 'bg-cyan-100', text: 'text-cyan-700', bar: 'bg-cyan-600' },
+                { bg: 'bg-sky-100', text: 'text-sky-700', bar: 'bg-sky-600' },
+                { bg: 'bg-blue-100', text: 'text-blue-700', bar: 'bg-blue-600' },
+              ]
+              const colors = colorSchemes[index % colorSchemes.length]
+              
+              return (
+                <div key={medium.medium} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${colors.bg}`}>
+                        <ExternalLink className={`w-5 h-5 ${colors.text}`} />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{medium.medium}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            {medium.visitors} visitors
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <ShoppingBag className="w-3 h-3" />
+                            {medium.orders} orders
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {medium.conversionRate}% conversion
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold ${colors.text}`}>{medium.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${colors.bar} h-2 rounded-full transition-all`}
+                      style={{ width: `${medium.percentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Insights */}
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Geographic & Source Insights</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Insights</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
           {allCountries.length > 0 && (
             <div className="flex items-start gap-2">
@@ -373,7 +600,23 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
             <div className="flex items-start gap-2">
               <TrendingUp className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
               <p>
-                <strong>Best Converter:</strong> {allSources.sort((a, b) => b.conversionRate - a.conversionRate)[0]?.source} has the highest conversion rate
+                <strong>Best Converter:</strong> {allSources.sort((a, b) => b.conversionRate - a.conversionRate)[0]?.source} has {allSources.sort((a, b) => b.conversionRate - a.conversionRate)[0]?.conversionRate}% conversion
+              </p>
+            </div>
+          )}
+          {allCampaigns.length > 0 && (
+            <div className="flex items-start gap-2">
+              <TrendingUp className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5" />
+              <p>
+                <strong>Top Campaign:</strong> {allCampaigns[0]?.campaign} with {allCampaigns[0]?.visitors} visitors
+              </p>
+            </div>
+          )}
+          {allPlacements.length > 0 && (
+            <div className="flex items-start gap-2">
+              <MapPin className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p>
+                <strong>Best Placement:</strong> {allPlacements[0]?.placement} generates {allPlacements[0]?.percentage}% of placement traffic
               </p>
             </div>
           )}
