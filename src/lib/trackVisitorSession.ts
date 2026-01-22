@@ -1,8 +1,11 @@
 // lib/trackVisitorSession.ts - Track individual visitor sessions
-import { PrismaClient } from '@prisma/client'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from './geolocation'
+import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
+// Reuse Prisma client - don't create new instance each time
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
+const prisma = globalForPrisma.prisma || new PrismaClient()
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 interface TrackingData {
   ipAddress?: string
@@ -142,8 +145,8 @@ export async function trackVisitorSession(
     console.log(`[VisitorSession] ✅ SAVED: business=${businessId}, source=${source}, country=${locationData?.country || 'NONE'}, city=${locationData?.city || 'NONE'}, ip=${ipAddress}`)
   } catch (error) {
     // Log error but don't throw - we don't want tracking to break the storefront
-    console.error('Error tracking visitor session:', error)
-  } finally {
-    await prisma.$disconnect()
+    console.error('[VisitorSession] ❌ ERROR:', error)
+    console.error('[VisitorSession] Error stack:', error instanceof Error ? error.stack : 'No stack trace')
   }
+  // Don't disconnect - reuse connection
 }
