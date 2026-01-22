@@ -207,12 +207,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         requiredPlan: 'PRO' as Plan
       },
       { 
-        name: 'Advanced Analytics', 
-        href: `${baseUrl}/advanced-analytics`, 
-        icon: TrendingUp, 
-        requiredPlan: 'PRO' as Plan
-      },
-      { 
         name: 'Team Management', 
         href: `${baseUrl}/team`, 
         icon: UserPlus, 
