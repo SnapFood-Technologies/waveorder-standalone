@@ -1895,7 +1895,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesCategory = selectedCategory === 'all' || category.id === selectedCategory
-      return matchesSearch && matchesCategory
+      const hasValidPrice = product.price > 0 // Exclude products with price 0
+      return matchesSearch && matchesCategory && hasValidPrice
     }).map(product => ({ ...product, categoryName: category.name }))
   )
 
@@ -2282,6 +2283,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         return product.categoryId === selectedFilterCategory
       })
     }
+
+    // Exclude products with price 0
+    // @ts-ignore
+    products = products.filter(product => (product.price || 0) > 0)
 
     // Apply sorting
     // @ts-ignore
