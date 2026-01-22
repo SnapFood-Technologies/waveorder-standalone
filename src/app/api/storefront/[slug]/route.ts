@@ -1,7 +1,6 @@
 // app/api/storefront/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { trackBusinessView } from '@/lib/analytics'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import * as Sentry from '@sentry/nextjs'
