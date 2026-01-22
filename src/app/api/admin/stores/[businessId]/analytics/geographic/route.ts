@@ -36,7 +36,29 @@ export async function GET(
 
     endDate.setHours(23, 59, 59, 999)
 
-    // Fetch visitor sessions with geographic information
+    // Fetch BOTH old Analytics AND new VisitorSession data
+    // Old Analytics data
+    const oldAnalytics = await prisma.analytics.findMany({
+      where: {
+        businessId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        },
+        OR: [
+          { country: { not: null } },
+          { city: { not: null } }
+        ]
+      },
+      select: {
+        country: true,
+        city: true,
+        region: true,
+        visitors: true
+      }
+    })
+    
+    // New VisitorSession data
     const visitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
@@ -86,9 +108,19 @@ export async function GET(
       }
     })
 
-    // Aggregate by country
+    // Aggregate by country - COMBINE old Analytics + new VisitorSessions
     const countryMap = new Map<string, { visitors: number; orders: number; revenue: number }>()
     
+    // Add old Analytics data
+    oldAnalytics.forEach(analytics => {
+      if (analytics.country) {
+        const existing = countryMap.get(analytics.country) || { visitors: 0, orders: 0, revenue: 0 }
+        existing.visitors += analytics.visitors
+        countryMap.set(analytics.country, existing)
+      }
+    })
+    
+    // Add new VisitorSession data
     visitorSessions.forEach(session => {
       if (session.country) {
         const existing = countryMap.get(session.country) || { visitors: 0, orders: 0, revenue: 0 }
@@ -124,9 +156,20 @@ export async function GET(
       }
     })
 
-    // Aggregate by city
+    // Aggregate by city - COMBINE old Analytics + new VisitorSessions
     const cityMap = new Map<string, { city: string; country: string; visitors: number; orders: number; revenue: number }>()
     
+    // Add old Analytics data
+    oldAnalytics.forEach(analytics => {
+      if (analytics.city && analytics.country) {
+        const key = `${analytics.city}|${analytics.country}`
+        const existing = cityMap.get(key) || { city: analytics.city, country: analytics.country, visitors: 0, orders: 0, revenue: 0 }
+        existing.visitors += analytics.visitors
+        cityMap.set(key, existing)
+      }
+    })
+    
+    // Add new VisitorSession data
     visitorSessions.forEach(session => {
       if (session.city && session.country) {
         const key = `${session.city}|${session.country}`
@@ -169,14 +212,14 @@ export async function GET(
     // Calculate total visitors for percentage calculation
     const totalVisitors = Array.from(countryMap.values()).reduce((sum, c) => sum + c.visitors, 0)
 
-    // Convert to arrays and calculate percentages
+    // Convert to arrays and calculate percentages (format to 1 decimal place)
     const countries = Array.from(countryMap.entries())
       .map(([country, data]) => ({
         country,
         visitors: data.visitors,
         orders: data.orders,
         revenue: data.revenue,
-        percentage: totalVisitors > 0 ? (data.visitors / totalVisitors) * 100 : 0
+        percentage: totalVisitors > 0 ? parseFloat(((data.visitors / totalVisitors) * 100).toFixed(1)) : 0
       }))
       .sort((a, b) => b.visitors - a.visitors)
 
@@ -187,7 +230,7 @@ export async function GET(
         visitors: data.visitors,
         orders: data.orders,
         revenue: data.revenue,
-        percentage: totalVisitors > 0 ? (data.visitors / totalVisitors) * 100 : 0
+        percentage: totalVisitors > 0 ? parseFloat(((data.visitors / totalVisitors) * 100).toFixed(1)) : 0
       }))
       .sort((a, b) => b.visitors - a.visitors)
 

@@ -36,7 +36,20 @@ export async function GET(
 
     endDate.setHours(23, 59, 59, 999)
 
-    // Fetch visitor sessions (individual visits)
+    // Fetch BOTH old Analytics data AND new VisitorSession data
+    // Old Analytics table (legacy data)
+    const oldAnalytics = await prisma.analytics.findMany({
+      where: {
+        businessId,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: { date: 'asc' }
+    })
+    
+    // New VisitorSession table (individual visits)
     const visitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
@@ -67,9 +80,14 @@ export async function GET(
       }
     })
 
-    // Calculate overview metrics from individual sessions
-    const totalViews = visitorSessions.length
-    const uniqueVisitors = new Set(visitorSessions.map(s => s.ipAddress)).size
+    // Calculate overview metrics - COMBINE old Analytics + new VisitorSessions
+    const oldViews = oldAnalytics.reduce((sum, a) => sum + a.visitors, 0)
+    const newViews = visitorSessions.length
+    const totalViews = oldViews + newViews
+    
+    // Unique visitors: count from VisitorSessions + estimate from old Analytics
+    const newUniqueVisitors = new Set(visitorSessions.map(s => s.ipAddress)).size
+    const uniqueVisitors = newUniqueVisitors + oldViews // Estimate: treat old visitors as unique
     
     // Filter only DELIVERED + PAID orders (completed orders)
     // - DELIVERY orders: DELIVERED + PAID
@@ -106,6 +124,17 @@ export async function GET(
     const prevStartDate = new Date(startDate.getTime() - periodDuration)
     const prevEndDate = new Date(startDate.getTime() - 1)
 
+    // Previous period - COMBINE old and new data
+    const prevOldAnalytics = await prisma.analytics.findMany({
+      where: {
+        businessId,
+        date: {
+          gte: prevStartDate,
+          lte: prevEndDate
+        }
+      }
+    })
+    
     const prevVisitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
@@ -148,14 +177,24 @@ export async function GET(
       return false
     })
 
-    const prevViews = prevVisitorSessions.length
+    const prevOldViews = prevOldAnalytics.reduce((sum, a) => sum + a.visitors, 0)
+    const prevNewViews = prevVisitorSessions.length
+    const prevViews = prevOldViews + prevNewViews
     const prevRevenue = prevCompletedOrders.reduce((sum, o) => sum + o.total, 0)
 
     const viewsGrowth = prevViews > 0 ? (((totalViews - prevViews) / prevViews) * 100).toFixed(1) : 0
     const revenueGrowth = prevRevenue > 0 ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : 0
 
-    // Traffic trends (daily breakdown) - aggregate sessions by day
+    // Traffic trends (daily breakdown) - COMBINE old Analytics + new VisitorSessions
     const dailyVisits = new Map<string, number>()
+    
+    // Add old Analytics data
+    oldAnalytics.forEach(analytics => {
+      const dateStr = analytics.date.toISOString().split('T')[0]
+      dailyVisits.set(dateStr, (dailyVisits.get(dateStr) || 0) + analytics.visitors)
+    })
+    
+    // Add new VisitorSession data
     visitorSessions.forEach(session => {
       const dateStr = session.visitedAt.toISOString().split('T')[0]
       dailyVisits.set(dateStr, (dailyVisits.get(dateStr) || 0) + 1)
@@ -229,6 +268,14 @@ export async function GET(
       dailyData[adjustedDay].revenue += order.total
     })
 
+    // Add old Analytics visitor data to daily breakdown
+    oldAnalytics.forEach(analytics => {
+      const dayOfWeek = analytics.date.getDay()
+      const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+      dailyData[adjustedDay].visitors += analytics.visitors
+    })
+    
+    // Add new VisitorSession data to daily breakdown
     visitorSessions.forEach(session => {
       const dayOfWeek = session.visitedAt.getDay()
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
@@ -243,13 +290,39 @@ export async function GET(
       return acc
     }, new Set())
 
-    // Traffic sources analysis - aggregate from individual sessions
+    // Traffic sources analysis - COMBINE old Analytics + new VisitorSessions
     const sourceStats = new Map<string, { visitors: number, orders: number }>()
     const campaignStats = new Map<string, { visitors: number, orders: number }>()
     const mediumStats = new Map<string, { visitors: number, orders: number }>()
     const placementStats = new Map<string, { visitors: number, orders: number }>()
     
-    // Aggregate visitor sessions by source, campaign, medium, placement
+    // Add old Analytics data (treat as "direct" if no source specified)
+    oldAnalytics.forEach(analytics => {
+      const source = analytics.source || 'direct'
+      const existingSource = sourceStats.get(source) || { visitors: 0, orders: 0 }
+      existingSource.visitors += analytics.visitors
+      sourceStats.set(source, existingSource)
+      
+      if (analytics.campaign) {
+        const existingCampaign = campaignStats.get(analytics.campaign) || { visitors: 0, orders: 0 }
+        existingCampaign.visitors += analytics.visitors
+        campaignStats.set(analytics.campaign, existingCampaign)
+      }
+      
+      if (analytics.medium) {
+        const existingMedium = mediumStats.get(analytics.medium) || { visitors: 0, orders: 0 }
+        existingMedium.visitors += analytics.visitors
+        mediumStats.set(analytics.medium, existingMedium)
+      }
+      
+      if (analytics.placement) {
+        const existingPlacement = placementStats.get(analytics.placement) || { visitors: 0, orders: 0 }
+        existingPlacement.visitors += analytics.visitors
+        placementStats.set(analytics.placement, existingPlacement)
+      }
+    })
+    
+    // Add new VisitorSession data
     visitorSessions.forEach(session => {
       // Sources
       const source = session.source || 'direct'
