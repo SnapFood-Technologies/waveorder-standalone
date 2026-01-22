@@ -1603,6 +1603,10 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+  
+  // Infinite scroll for products
+  const PRODUCTS_PER_PAGE = 24
+  const [displayedProductsCount, setDisplayedProductsCount] = useState(PRODUCTS_PER_PAGE)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined' && storeData?.id) {
       const savedCart = localStorage.getItem('cart')
@@ -1761,12 +1765,28 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
   }, [cart, storeData.id])
 
-  // Scroll to top button visibility
+  // Scroll to top button visibility + Infinite scroll for products
   useEffect(() => {
     const handleScroll = () => {
       // Use multiple methods for better mobile compatibility
       const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
       setShowScrollToTop(scrollY > 800) // Show after scrolling 800px
+      
+      // Infinite scroll: Load more products when near bottom
+      const windowHeight = window.innerHeight
+      const documentHeight = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+        document.body.offsetHeight,
+        document.documentElement.offsetHeight,
+        document.body.clientHeight,
+        document.documentElement.clientHeight
+      )
+      
+      // Load more when within 800px of bottom
+      if (scrollY + windowHeight >= documentHeight - 800) {
+        setDisplayedProductsCount(prev => prev + PRODUCTS_PER_PAGE)
+      }
     }
 
     // Initial check
@@ -1781,7 +1801,14 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       window.removeEventListener('scroll', handleScroll)
       document.removeEventListener('scroll', handleScroll)
     }
-  }, [])
+  }, []) // Empty deps - handler uses state setter functions
+  
+  // Reset displayed products when search/filter changes
+  useEffect(() => {
+    setDisplayedProductsCount(PRODUCTS_PER_PAGE)
+    // Scroll to top when filters change for better UX
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [searchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy])
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -3216,21 +3243,45 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 }
                 }
                 
-                return filteredProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onOpenModal={openProductModal}
-                    primaryColor={primaryColor}
-                    currencySymbol={currencySymbol}
-                    translations={translations}
-                    disabled={storeData.isTemporarilyClosed}
-                    cart={cart} // Add this line
-                    featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
-                    storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
-                    businessSlug={storeData.slug}
-                  />
-                ))
+                // Infinite scroll: Only render products up to displayedProductsCount
+                const visibleProducts = filteredProducts.slice(0, Math.min(displayedProductsCount, filteredProducts.length))
+                
+                return (
+                  <>
+                    {visibleProducts.map(product => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onOpenModal={openProductModal}
+                        primaryColor={primaryColor}
+                        currencySymbol={currencySymbol}
+                        translations={translations}
+                        disabled={storeData.isTemporarilyClosed}
+                        cart={cart}
+                        featuredBadgeColor={storeData.featuredBadgeColor}
+                        storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
+                        businessSlug={storeData.slug}
+                      />
+                    ))}
+                    
+                    {/* Show loading indicator when more products available */}
+                    {visibleProducts.length < filteredProducts.length && (
+                      <div className="col-span-full py-8 text-center text-gray-500">
+                        <div className="inline-flex items-center gap-2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                          <span>{translations.loadingMore || 'Loading more products...'}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Show "all loaded" message */}
+                    {visibleProducts.length >= filteredProducts.length && filteredProducts.length > PRODUCTS_PER_PAGE && (
+                      <div className="col-span-full py-4 text-center text-sm text-gray-400">
+                        {translations.allProductsLoaded || `All ${filteredProducts.length} products loaded`}
+                      </div>
+                    )}
+                  </>
+                )
             })()}
             </div>
         </div>
@@ -4035,6 +4086,8 @@ function ProductCard({
             <img 
               src={product.images[0]} 
               alt={product.name}
+              loading="lazy"
+              decoding="async"
               className={`w-full h-full object-cover rounded-lg ${disabled || isOutOfStock ? 'filter grayscale' : ''}`}
             />
           </div>
