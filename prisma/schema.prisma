@@ -403,6 +403,7 @@ model Anomaly {
   entityType  String?  // "PRODUCT", "ORDER", "CUSTOMER", etc.
   entityId    String?  @db.ObjectId
   entityName  String?  // For display purposes
+  entitySku   String?  // Product SKU (if entity is a product)
   
   // Resolution tracking
   resolvedAt  DateTime?

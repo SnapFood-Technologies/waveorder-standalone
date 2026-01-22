@@ -4006,7 +4006,13 @@ function ProductCard({
             <div className="mb-1">
               {displayDescription && (
                 <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
-                  {displayDescription.replace(/&nbsp;/g, ' ')}
+                  {displayDescription
+                    .replace(/&amp;/g, '&')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#39;/g, "'")
+                    .replace(/&nbsp;/g, ' ')}
                 </p>
               )}
             </div>

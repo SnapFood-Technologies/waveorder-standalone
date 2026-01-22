@@ -27,6 +27,7 @@ interface Anomaly {
   entityType?: string | null
   entityId?: string | null
   entityName?: string | null
+  entitySku?: string | null
   resolvedAt?: string | null
   resolvedBy?: string | null
   detectedAt: string
@@ -199,7 +200,7 @@ export default function AnomaliesPage() {
 
   const handleExportCSV = () => {
     // Prepare CSV data
-    const headers = ['Type', 'Severity', 'Status', 'Title', 'Description', 'Entity Type', 'Entity Name', 'Detected At', 'Resolved At']
+    const headers = ['Type', 'Severity', 'Status', 'Title', 'Description', 'Entity Type', 'Entity Name', 'SKU', 'Detected At', 'Resolved At']
     const rows = anomalies.map(anomaly => [
       anomaly.type.replace(/_/g, ' '),
       anomaly.severity,
@@ -208,6 +209,7 @@ export default function AnomaliesPage() {
       anomaly.description,
       anomaly.entityType || '',
       anomaly.entityName || '',
+      anomaly.entitySku || '',
       formatDate(anomaly.detectedAt),
       anomaly.resolvedAt ? formatDate(anomaly.resolvedAt) : ''
     ])
@@ -430,6 +432,7 @@ export default function AnomaliesPage() {
                       {anomaly.entityName && (
                         <div className="text-xs text-gray-500 mt-1">
                           {anomaly.entityType}: {anomaly.entityName}
+                          {anomaly.entitySku && <span className="text-gray-400 ml-1">(SKU: {anomaly.entitySku})</span>}
                         </div>
                       )}
                     </td>
@@ -560,7 +563,10 @@ function AnomalyDetailsModal({ anomaly, onClose, onUpdateStatus }: AnomalyDetail
             {anomaly.entityName && (
               <div>
                 <p className="text-sm font-medium text-gray-500">Affected {anomaly.entityType}</p>
-                <p className="text-sm text-gray-900 mt-1">{anomaly.entityName}</p>
+                <p className="text-sm text-gray-900 mt-1">
+                  {anomaly.entityName}
+                  {anomaly.entitySku && <span className="text-gray-500 ml-2">(SKU: {anomaly.entitySku})</span>}
+                </p>
               </div>
             )}
 

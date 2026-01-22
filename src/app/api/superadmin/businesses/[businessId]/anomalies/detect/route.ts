@@ -47,6 +47,7 @@ export async function POST(
         id: true,
         name: true,
         price: true,
+        sku: true,
         categoryId: true
       }
     })
@@ -64,6 +65,7 @@ export async function POST(
 
       if (!existing) {
         // Create new anomaly
+        const skuInfo = product.sku ? ` (SKU: ${product.sku})` : ''
         const anomaly = await prisma.anomaly.create({
           data: {
             businessId,
@@ -71,10 +73,11 @@ export async function POST(
             severity: 'HIGH',
             status: 'OPEN',
             title: 'Product with zero price',
-            description: `Product "${product.name}" is published but has a price of 0. This may be a data entry error.`,
+            description: `Product "${product.name}"${skuInfo} is published but has a price of 0. This may be a data entry error.`,
             entityType: 'PRODUCT',
             entityId: product.id,
             entityName: product.name,
+            entitySku: product.sku || null,
             detectedAt: now,
             lastChecked: now
           }
