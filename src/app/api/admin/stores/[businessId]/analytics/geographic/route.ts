@@ -36,11 +36,11 @@ export async function GET(
 
     endDate.setHours(23, 59, 59, 999)
 
-    // Fetch analytics data with geographic information
-    const analytics = await prisma.analytics.findMany({
+    // Fetch visitor sessions with geographic information
+    const visitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
-        date: {
+        visitedAt: {
           gte: startDate,
           lte: endDate
         },
@@ -52,8 +52,7 @@ export async function GET(
       select: {
         country: true,
         city: true,
-        region: true,
-        visitors: true
+        region: true
       }
     })
 
@@ -90,11 +89,11 @@ export async function GET(
     // Aggregate by country
     const countryMap = new Map<string, { visitors: number; orders: number; revenue: number }>()
     
-    analytics.forEach(a => {
-      if (a.country) {
-        const existing = countryMap.get(a.country) || { visitors: 0, orders: 0, revenue: 0 }
-        existing.visitors += a.visitors
-        countryMap.set(a.country, existing)
+    visitorSessions.forEach(session => {
+      if (session.country) {
+        const existing = countryMap.get(session.country) || { visitors: 0, orders: 0, revenue: 0 }
+        existing.visitors++
+        countryMap.set(session.country, existing)
       }
     })
 
@@ -128,11 +127,11 @@ export async function GET(
     // Aggregate by city
     const cityMap = new Map<string, { city: string; country: string; visitors: number; orders: number; revenue: number }>()
     
-    analytics.forEach(a => {
-      if (a.city && a.country) {
-        const key = `${a.city}|${a.country}`
-        const existing = cityMap.get(key) || { city: a.city, country: a.country, visitors: 0, orders: 0, revenue: 0 }
-        existing.visitors += a.visitors
+    visitorSessions.forEach(session => {
+      if (session.city && session.country) {
+        const key = `${session.city}|${session.country}`
+        const existing = cityMap.get(key) || { city: session.city, country: session.country, visitors: 0, orders: 0, revenue: 0 }
+        existing.visitors++
         cityMap.set(key, existing)
       }
     })

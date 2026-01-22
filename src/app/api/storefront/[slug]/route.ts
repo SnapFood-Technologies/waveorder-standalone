@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { trackBusinessView } from '@/lib/analytics'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
+import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import * as Sentry from '@sentry/nextjs'
 
 const prisma = new PrismaClient()
@@ -240,56 +241,27 @@ export async function GET(
       ipAddress = request.ip || undefined
     }
 
-    // Extract UTM parameters from query string
-    const { searchParams } = new URL(request.url)
-    const utmParams = extractUTMParams(searchParams)
-
-    // Track the view with enhanced data - run in background, don't await
+    // Track visitor session - run in background, don't await
     // This allows the response to return quickly while tracking happens async
     ;(async () => {
       try {
-        // Parse device info from user agent
-        const device = userAgent ? parseUserAgent(userAgent) : null
-
-        // Get location from IP (async, non-blocking)
-        let location = null
-        if (ipAddress) {
-          try {
-            location = await getLocationFromIP(ipAddress)
-            // Log for debugging (remove in production if needed)
-            if (location) {
-              console.log(`[Analytics] IP ${ipAddress} resolved to: ${location.city}, ${location.country}`)
-            } else {
-              console.log(`[Analytics] IP ${ipAddress} could not be resolved to location`)
-            }
-          } catch (geoError) {
-            // Silently fail - location is optional
-            console.warn('[Analytics] Failed to get location for IP:', ipAddress, geoError)
-          }
-        } else {
-          console.warn('[Analytics] No IP address found in request headers')
-        }
-
-        // Track with all collected data
-        await trackBusinessView(business.id, {
+        await trackVisitorSession(business.id, {
           ipAddress,
           userAgent,
           referrer,
-          location,
-          device,
-          utmParams
+          url: request.url
         })
       } catch (error) {
         Sentry.captureException(error, {
           tags: {
-            operation: 'track_business_view',
+            operation: 'track_visitor_session',
             businessId: business.id,
           },
           extra: {
             slug,
           },
         })
-        console.error('Failed to track view:', error)
+        console.error('Failed to track visitor session:', error)
       }
     })()
 

@@ -36,16 +36,16 @@ export async function GET(
 
     endDate.setHours(23, 59, 59, 999)
 
-    // Fetch analytics data
-    const analytics = await prisma.analytics.findMany({
+    // Fetch visitor sessions (individual visits)
+    const visitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
-        date: {
+        visitedAt: {
           gte: startDate,
           lte: endDate
         }
       },
-      orderBy: { date: 'asc' }
+      orderBy: { visitedAt: 'asc' }
     })
 
     // Fetch orders data
@@ -67,8 +67,9 @@ export async function GET(
       }
     })
 
-    // Calculate overview metrics
-    const totalViews = analytics.reduce((sum, a) => sum + a.visitors, 0)
+    // Calculate overview metrics from individual sessions
+    const totalViews = visitorSessions.length
+    const uniqueVisitors = new Set(visitorSessions.map(s => s.ipAddress)).size
     
     // Filter only DELIVERED + PAID orders (completed orders)
     // - DELIVERY orders: DELIVERED + PAID
@@ -105,10 +106,10 @@ export async function GET(
     const prevStartDate = new Date(startDate.getTime() - periodDuration)
     const prevEndDate = new Date(startDate.getTime() - 1)
 
-    const prevAnalytics = await prisma.analytics.findMany({
+    const prevVisitorSessions = await prisma.visitorSession.findMany({
       where: {
         businessId,
-        date: {
+        visitedAt: {
           gte: prevStartDate,
           lte: prevEndDate
         }
@@ -147,23 +148,26 @@ export async function GET(
       return false
     })
 
-    const prevViews = prevAnalytics.reduce((sum, a) => sum + a.visitors, 0)
+    const prevViews = prevVisitorSessions.length
     const prevRevenue = prevCompletedOrders.reduce((sum, o) => sum + o.total, 0)
 
     const viewsGrowth = prevViews > 0 ? (((totalViews - prevViews) / prevViews) * 100).toFixed(1) : 0
     const revenueGrowth = prevRevenue > 0 ? (((totalRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1) : 0
 
-    // Traffic trends (daily breakdown) - only count completed orders
-    const trafficTrends = analytics.map(a => {
-      const dateStr = a.date.toISOString().split('T')[0]
-      return {
-        date: dateStr,
-        visitors: a.visitors,
-        orders: completedOrders.filter(o => 
-          o.createdAt.toISOString().split('T')[0] === dateStr
-        ).length
-      }
+    // Traffic trends (daily breakdown) - aggregate sessions by day
+    const dailyVisits = new Map<string, number>()
+    visitorSessions.forEach(session => {
+      const dateStr = session.visitedAt.toISOString().split('T')[0]
+      dailyVisits.set(dateStr, (dailyVisits.get(dateStr) || 0) + 1)
     })
+
+    const trafficTrends = Array.from(dailyVisits.entries()).map(([date, visitors]) => ({
+      date,
+      visitors,
+      orders: completedOrders.filter(o => 
+        o.createdAt.toISOString().split('T')[0] === date
+      ).length
+    })).sort((a, b) => a.date.localeCompare(b.date))
 
     // Top products - only from DELIVERED + PAID orders
     const productStats = new Map()
@@ -225,10 +229,10 @@ export async function GET(
       dailyData[adjustedDay].revenue += order.total
     })
 
-    analytics.forEach(a => {
-      const dayOfWeek = a.date.getDay()
+    visitorSessions.forEach(session => {
+      const dayOfWeek = session.visitedAt.getDay()
       const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-      dailyData[adjustedDay].visitors += a.visitors
+      dailyData[adjustedDay].visitors++
     })
 
     // Customer analysis
@@ -239,78 +243,78 @@ export async function GET(
       return acc
     }, new Set())
 
-    // Traffic sources analysis
+    // Traffic sources analysis - aggregate from individual sessions
     const sourceStats = new Map<string, { visitors: number, orders: number }>()
     const campaignStats = new Map<string, { visitors: number, orders: number }>()
     const mediumStats = new Map<string, { visitors: number, orders: number }>()
     const placementStats = new Map<string, { visitors: number, orders: number }>()
     
-    // Aggregate analytics by source, campaign, medium, placement
-    analytics.forEach(a => {
+    // Aggregate visitor sessions by source, campaign, medium, placement
+    visitorSessions.forEach(session => {
       // Sources
-      const source = a.source || 'Direct'
+      const source = session.source || 'direct'
       const existingSource = sourceStats.get(source) || { visitors: 0, orders: 0 }
-      existingSource.visitors += a.visitors
+      existingSource.visitors++
       sourceStats.set(source, existingSource)
 
       // Campaigns
-      if (a.campaign) {
-        const existingCampaign = campaignStats.get(a.campaign) || { visitors: 0, orders: 0 }
-        existingCampaign.visitors += a.visitors
-        campaignStats.set(a.campaign, existingCampaign)
+      if (session.campaign) {
+        const existingCampaign = campaignStats.get(session.campaign) || { visitors: 0, orders: 0 }
+        existingCampaign.visitors++
+        campaignStats.set(session.campaign, existingCampaign)
       }
 
       // Medium
-      if (a.medium) {
-        const existingMedium = mediumStats.get(a.medium) || { visitors: 0, orders: 0 }
-        existingMedium.visitors += a.visitors
-        mediumStats.set(a.medium, existingMedium)
+      if (session.medium) {
+        const existingMedium = mediumStats.get(session.medium) || { visitors: 0, orders: 0 }
+        existingMedium.visitors++
+        mediumStats.set(session.medium, existingMedium)
       }
 
       // Placement
-      if (a.placement) {
-        const existingPlacement = placementStats.get(a.placement) || { visitors: 0, orders: 0 }
-        existingPlacement.visitors += a.visitors
-        placementStats.set(a.placement, existingPlacement)
+      if (session.placement) {
+        const existingPlacement = placementStats.get(session.placement) || { visitors: 0, orders: 0 }
+        existingPlacement.visitors++
+        placementStats.set(session.placement, existingPlacement)
       }
     })
 
-    // Count orders by determining source/campaign/medium/placement from analytics on the same day
-    completedOrders.forEach(order => {
-      const orderDate = order.createdAt.toISOString().split('T')[0]
-      const dayAnalytics = analytics.find(a => 
-        a.date.toISOString().split('T')[0] === orderDate
-      )
+    // Count orders - match orders to sessions by timestamp proximity
+    // For simplicity, we'll distribute orders across sources proportionally
+    // In a production system, you might track orderId in VisitorSession
+    const totalSessionsWithOrders = sourceStats.size > 0 ? completedOrders.length : 0
+    if (totalSessionsWithOrders > 0 && sourceStats.size > 0) {
+      // Simple distribution: proportional to visitor count
+      const totalSessionVisitors = Array.from(sourceStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+      completedOrders.forEach(() => {
+        sourceStats.forEach((stats, source) => {
+          const orderShare = totalSessionsWithOrders * (stats.visitors / totalSessionVisitors)
+          stats.orders = Math.round(orderShare)
+        })
+      })
       
-      if (dayAnalytics) {
-        // Source orders
-        const source = dayAnalytics.source || 'Direct'
-        const existingSource = sourceStats.get(source) || { visitors: 0, orders: 0 }
-        existingSource.orders++
-        sourceStats.set(source, existingSource)
-
-        // Campaign orders
-        if (dayAnalytics.campaign) {
-          const existingCampaign = campaignStats.get(dayAnalytics.campaign) || { visitors: 0, orders: 0 }
-          existingCampaign.orders++
-          campaignStats.set(dayAnalytics.campaign, existingCampaign)
-        }
-
-        // Medium orders
-        if (dayAnalytics.medium) {
-          const existingMedium = mediumStats.get(dayAnalytics.medium) || { visitors: 0, orders: 0 }
-          existingMedium.orders++
-          mediumStats.set(dayAnalytics.medium, existingMedium)
-        }
-
-        // Placement orders
-        if (dayAnalytics.placement) {
-          const existingPlacement = placementStats.get(dayAnalytics.placement) || { visitors: 0, orders: 0 }
-          existingPlacement.orders++
-          placementStats.set(dayAnalytics.placement, existingPlacement)
-        }
+      // Similarly for campaigns, mediums, placements
+      const totalCampaignVisitors = Array.from(campaignStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+      if (totalCampaignVisitors > 0) {
+        campaignStats.forEach((stats) => {
+          stats.orders = Math.round(totalSessionsWithOrders * (stats.visitors / totalCampaignVisitors))
+        })
       }
-    })
+      
+      const totalMediumVisitors = Array.from(mediumStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+      if (totalMediumVisitors > 0) {
+        mediumStats.forEach((stats) => {
+          stats.orders = Math.round(totalSessionsWithOrders * (stats.visitors / totalMediumVisitors))
+        })
+      }
+      
+      const totalPlacementVisitors = Array.from(placementStats.values()).reduce((sum, s) => sum + s.visitors, 0)
+      if (totalPlacementVisitors > 0) {
+        placementStats.forEach((stats) => {
+          stats.orders = Math.round(totalSessionsWithOrders * (stats.visitors / totalPlacementVisitors))
+        })
+      }
+    }
 
     const totalVisitors = Array.from(sourceStats.values()).reduce((sum, s) => sum + s.visitors, 0)
     
@@ -353,13 +357,13 @@ export async function GET(
       data: {
         overview: {
           totalViews,
-          uniqueVisitors: totalViews, // Using visitors as unique for now
+          uniqueVisitors: uniqueVisitors,
           totalOrders: completedOrdersCount, // Only count completed (DELIVERED + PAID) orders
           revenue: totalRevenue, // Only revenue from completed orders
           conversionRate: parseFloat(conversionRate as string),
           avgOrderValue,
-          bounceRate: 35, // Placeholder - would need session tracking
-          avgSessionDuration: 180, // Placeholder - would need session tracking
+          bounceRate: 35, // Placeholder - would need session duration tracking
+          avgSessionDuration: 180, // Placeholder - would need session duration tracking
           viewsGrowth: parseFloat(viewsGrowth as string),
           revenueGrowth: parseFloat(revenueGrowth as string)
         },

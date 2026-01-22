@@ -343,6 +343,7 @@ model Business {
   orders             Order[]
   customers          Customer[]
   analytics          Analytics[]
+  visitorSessions    VisitorSession[]
   orderNotifications OrderNotification[]
 
   // Support relations
@@ -738,6 +739,55 @@ model TeamInvitation {
   updatedAt DateTime @updatedAt
 }
 
+// Individual visitor sessions - stores each visit separately (no aggregation)
+model VisitorSession {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // UTM Parameters (from URL query params)
+  source    String? // utm_source or parsed from referrer: "gazetareforma.com", "google", "direct"
+  medium    String? // utm_medium: "referral", "cpc", "organic"
+  campaign  String? // utm_campaign: "summer_sale", "newsletter"
+  term      String? // utm_term: search keywords
+  content   String? // utm_content: ad variation
+  placement String? // Custom placement parameter
+
+  // Referrer Information
+  referrer     String? // HTTP referer header
+  referrerHost String? // Parsed hostname from referrer
+
+  // Geographic Data
+  country   String? // Country name (e.g., "Greece", "Albania")
+  city      String? // City name (e.g., "Athens", "Tirana")
+  region    String? // State/Province/Region (e.g., "Attica", "Tirana County")
+  latitude  Float? // Geographic latitude
+  longitude Float? // Geographic longitude
+
+  // Device Information
+  deviceType String? // "mobile", "desktop", "tablet"
+  browser    String? // "Chrome", "Safari", etc.
+  os         String? // "iOS", "Android", "Windows"
+
+  // Technical Metadata
+  ipAddress String? // Client IP (consider hashing for privacy)
+  userAgent String? // User agent string
+
+  // Timestamps
+  visitedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  // Indexes for fast queries
+  @@index([businessId])
+  @@index([businessId, visitedAt])
+  @@index([businessId, source])
+  @@index([businessId, medium])
+  @@index([businessId, campaign])
+  @@index([visitedAt])
+}
+
+// Keep Analytics for backward compatibility and pre-aggregated daily stats
+// NOTE: Removed unique constraint to allow multiple records per day
 model Analytics {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   businessId String   @db.ObjectId
@@ -753,9 +803,9 @@ model Analytics {
   country   String? // Country name (e.g., "Greece", "Albania")
   city      String? // City name (e.g., "Athens", "Tirana")
   region    String? // State/Province/Region (e.g., "Attica", "Tirana County")
-  latitude  Float?  // Geographic latitude
-  longitude Float?   // Geographic longitude
-  ipAddress String?  // IP address (for reference, can be hashed for privacy)
+  latitude  Float? // Geographic latitude
+  longitude Float? // Geographic longitude
+  ipAddress String? // IP address (for reference, can be hashed for privacy)
 
   // Device information (aggregated per day)
   deviceType String? // "mobile", "desktop", "tablet"
@@ -777,7 +827,8 @@ model Analytics {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([businessId, date])
+  // REMOVED: @@unique([businessId, date]) - This was causing data loss!
+  @@index([businessId, date])
   @@index([businessId, country])
   @@index([businessId, city])
   @@index([businessId, source])
