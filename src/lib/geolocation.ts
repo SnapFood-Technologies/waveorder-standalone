@@ -105,7 +105,8 @@ export async function getLocationFromIP(ip: string): Promise<LocationData | null
       
       const response = await fetch(`https://ipapi.co/${ip}/json/`, {
         headers: {
-          'User-Agent': 'WaveOrder Analytics'
+          'User-Agent': 'WaveOrder Analytics',
+          'Accept': 'application/json'
         },
         signal: controller.signal,
         cache: 'no-store'

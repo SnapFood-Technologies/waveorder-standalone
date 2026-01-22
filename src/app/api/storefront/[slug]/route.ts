@@ -209,15 +209,35 @@ export async function GET(
     // Extract tracking data from request
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
-    const forwardedFor = request.headers.get('x-forwarded-for')
-    const realIP = request.headers.get('x-real-ip')
     
-    // Get IP address (first IP in chain if forwarded)
+    // Get IP address - handle various proxy/CDN headers
+    // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (last IP is usually client)
     let ipAddress: string | undefined
-    if (forwardedFor) {
-      ipAddress = forwardedFor.split(',')[0].trim()
-    } else if (realIP) {
-      ipAddress = realIP.trim()
+    
+    // Cloudflare
+    const cfIP = request.headers.get('cf-connecting-ip')
+    if (cfIP) {
+      ipAddress = cfIP.trim()
+    } else {
+      // Vercel/other proxies - x-real-ip is usually the client IP
+      const realIP = request.headers.get('x-real-ip')
+      if (realIP) {
+        ipAddress = realIP.trim()
+      } else {
+        // x-forwarded-for - last IP in chain is usually the original client
+        const forwardedFor = request.headers.get('x-forwarded-for')
+        if (forwardedFor) {
+          const ips = forwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
+          // Use last IP (original client) instead of first (proxy)
+          ipAddress = ips.length > 0 ? ips[ips.length - 1] : undefined
+        }
+      }
+    }
+    
+    // Fallback to request.ip if available
+    if (!ipAddress) {
+      // @ts-ignore - NextRequest.ip might be available
+      ipAddress = request.ip || undefined
     }
 
     // Extract UTM parameters from query string
@@ -236,10 +256,18 @@ export async function GET(
         if (ipAddress) {
           try {
             location = await getLocationFromIP(ipAddress)
+            // Log for debugging (remove in production if needed)
+            if (location) {
+              console.log(`[Analytics] IP ${ipAddress} resolved to: ${location.city}, ${location.country}`)
+            } else {
+              console.log(`[Analytics] IP ${ipAddress} could not be resolved to location`)
+            }
           } catch (geoError) {
             // Silently fail - location is optional
-            console.warn('Failed to get location for analytics:', geoError)
+            console.warn('[Analytics] Failed to get location for IP:', ipAddress, geoError)
           }
+        } else {
+          console.warn('[Analytics] No IP address found in request headers')
         }
 
         // Track with all collected data
