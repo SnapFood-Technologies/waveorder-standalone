@@ -749,10 +749,39 @@ model Analytics {
   orders   Int   @default(0)
   revenue  Float @default(0)
 
+  // Geographic data (aggregated per day)
+  country   String? // Country name (e.g., "Greece", "Albania")
+  city      String? // City name (e.g., "Athens", "Tirana")
+  region    String? // State/Province/Region (e.g., "Attica", "Tirana County")
+  latitude  Float?  // Geographic latitude
+  longitude Float?   // Geographic longitude
+  ipAddress String?  // IP address (for reference, can be hashed for privacy)
+
+  // Device information (aggregated per day)
+  deviceType String? // "mobile", "desktop", "tablet"
+  browser    String? // "Chrome", "Safari", etc.
+  os         String? // "iOS", "Android", "Windows"
+
+  // UTM parameters (from query string)
+  source     String? // UTM source (e.g., "google", "facebook")
+  campaign   String? // UTM campaign (e.g., "summer_sale")
+  medium     String? // UTM medium (e.g., "email", "cpc")
+  term       String? // UTM term (e.g., "keyword")
+  content    String? // UTM content (e.g., "ad_variant")
+  placement  String? // Custom placement parameter
+
+  // Technical metadata
+  referrer   String? // HTTP referrer
+  userAgent  String? // User agent string
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([businessId, date])
+  @@index([businessId, country])
+  @@index([businessId, city])
+  @@index([businessId, source])
+  @@index([businessId, campaign])
 }
 
 enum UserRole {

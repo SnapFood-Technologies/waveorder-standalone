@@ -3,8 +3,10 @@
 
 import { useState, useEffect } from 'react'
 import { Eye, ShoppingBag, TrendingUp, Calendar, Info, Wallet } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 import { DateRangeFilter } from './DateRangeFilter'
+import GeographicAnalytics from '../analytics/GeographicAnalytics'
 
 interface DashboardMetricsProps {
   businessId: string
@@ -328,6 +330,9 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
           </div>
         )}
       </div>
+
+      {/* Geographic Analytics Preview */}
+      <GeographicAnalytics businessId={businessId} dateRange={dateRange} />
 
       {/* Revenue Info Modal */}
       {showRevenueModal && (

@@ -21,6 +21,7 @@ import {
   AlertCircle
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
+import GeographicAnalytics from './GeographicAnalytics'
 
 interface AdvancedAnalyticsProps {
   businessId: string
@@ -364,6 +365,11 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Geographic Analytics Section */}
+          <div className="mt-6">
+            <GeographicAnalytics businessId={businessId} dateRange={dateRange} />
           </div>
         </div>
       )}

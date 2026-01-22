@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { trackBusinessView } from '@/lib/analytics'
+import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import * as Sentry from '@sentry/nextjs'
 
 const prisma = new PrismaClient()
@@ -205,20 +206,64 @@ export async function GET(
     Sentry.setTag('business_id', business.id)
     Sentry.setTag('business_type', business.businessType)
 
-    // Track the view - call this after confirming business exists
-    // Run in background, don't await to avoid slowing down the response
-    trackBusinessView(business.id).catch(error => {
-      Sentry.captureException(error, {
-        tags: {
-          operation: 'track_business_view',
-          businessId: business.id,
-        },
-        extra: {
-          slug,
-        },
-      })
-      console.error('Failed to track view:', error)
-    })
+    // Extract tracking data from request
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const forwardedFor = request.headers.get('x-forwarded-for')
+    const realIP = request.headers.get('x-real-ip')
+    
+    // Get IP address (first IP in chain if forwarded)
+    let ipAddress: string | undefined
+    if (forwardedFor) {
+      ipAddress = forwardedFor.split(',')[0].trim()
+    } else if (realIP) {
+      ipAddress = realIP.trim()
+    }
+
+    // Extract UTM parameters from query string
+    const { searchParams } = new URL(request.url)
+    const utmParams = extractUTMParams(searchParams)
+
+    // Track the view with enhanced data - run in background, don't await
+    // This allows the response to return quickly while tracking happens async
+    ;(async () => {
+      try {
+        // Parse device info from user agent
+        const device = userAgent ? parseUserAgent(userAgent) : null
+
+        // Get location from IP (async, non-blocking)
+        let location = null
+        if (ipAddress) {
+          try {
+            location = await getLocationFromIP(ipAddress)
+          } catch (geoError) {
+            // Silently fail - location is optional
+            console.warn('Failed to get location for analytics:', geoError)
+          }
+        }
+
+        // Track with all collected data
+        await trackBusinessView(business.id, {
+          ipAddress,
+          userAgent,
+          referrer,
+          location,
+          device,
+          utmParams
+        })
+      } catch (error) {
+        Sentry.captureException(error, {
+          tags: {
+            operation: 'track_business_view',
+            businessId: business.id,
+          },
+          extra: {
+            slug,
+          },
+        })
+        console.error('Failed to track view:', error)
+      }
+    })()
 
     // Calculate business hours status
     const isOpen = calculateIsOpen(business.businessHours, business.timezone)
