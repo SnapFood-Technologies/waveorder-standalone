@@ -3243,45 +3243,24 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 }
                 }
                 
-                // Infinite scroll: Only render products up to displayedProductsCount
+                // Infinite scroll: Only render products up to displayedProductsCount (seamless, no loading indicators)
                 const visibleProducts = filteredProducts.slice(0, Math.min(displayedProductsCount, filteredProducts.length))
                 
-                return (
-                  <>
-                    {visibleProducts.map(product => (
-                      <ProductCard 
-                        key={product.id} 
-                        product={product} 
-                        onOpenModal={openProductModal}
-                        primaryColor={primaryColor}
-                        currencySymbol={currencySymbol}
-                        translations={translations}
-                        disabled={storeData.isTemporarilyClosed}
-                        cart={cart}
-                        featuredBadgeColor={storeData.featuredBadgeColor}
-                        storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
-                        businessSlug={storeData.slug}
-                      />
-                    ))}
-                    
-                    {/* Show loading indicator when more products available */}
-                    {visibleProducts.length < filteredProducts.length && (
-                      <div className="col-span-full py-8 text-center text-gray-500">
-                        <div className="inline-flex items-center gap-2">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                          <span>{translations.loadingMore || 'Loading more products...'}</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Show "all loaded" message */}
-                    {visibleProducts.length >= filteredProducts.length && filteredProducts.length > PRODUCTS_PER_PAGE && (
-                      <div className="col-span-full py-4 text-center text-sm text-gray-400">
-                        {translations.allProductsLoaded || `All ${filteredProducts.length} products loaded`}
-                      </div>
-                    )}
-                  </>
-                )
+                return visibleProducts.map(product => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onOpenModal={openProductModal}
+                    primaryColor={primaryColor}
+                    currencySymbol={currencySymbol}
+                    translations={translations}
+                    disabled={storeData.isTemporarilyClosed}
+                    cart={cart}
+                    featuredBadgeColor={storeData.featuredBadgeColor}
+                    storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
+                    businessSlug={storeData.slug}
+                  />
+                ))
             })()}
             </div>
         </div>
