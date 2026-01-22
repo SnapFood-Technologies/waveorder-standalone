@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
       currentMonthBusinesses,
       lastMonthBusinesses,
       recentSignups,
-      totalPageViews
+      oldPageViews,
+      newPageViews
     ] = await Promise.all([
       // Total businesses (all time)
       prisma.business.count(),
@@ -164,18 +165,28 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Total page views in selected period - MOVE THIS TO THE END
-  prisma.analytics.aggregate({
-    where: {
-      date: {
-        gte: startDate,
-        lte: endDate
-      }
-    },
-    _sum: {
-      visitors: true
-    }
-  })
+      // Total page views from old Analytics (legacy data)
+      prisma.analytics.aggregate({
+        where: {
+          date: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        _sum: {
+          visitors: true
+        }
+      }),
+      
+      // Total page views from new VisitorSession (new tracking)
+      prisma.visitorSession.count({
+        where: {
+          visitedAt: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      })
     ])
 
     // Filter out deactivated businesses in memory (handles both null and undefined)
@@ -219,7 +230,7 @@ export async function GET(request: NextRequest) {
       monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
       // Recent signups this week (not affected by date filter, only with active businesses)
       recentSignups: activeRecentSignups.length,
-      totalPageViews: totalPageViews?._sum.visitors || 0
+      totalPageViews: (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
     }
 
     return NextResponse.json(stats)
