@@ -540,7 +540,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     storeClosedMessage: "Na vjen keq për çdo shqetësim.",
     time: "Koha",
     serviceFee: "Taksa e Shërbimit",
-    popular: "Popullore",
+    popular: "Popular",
     
     // Order Details
     orderDetails: "Detajet e Porosisë",
