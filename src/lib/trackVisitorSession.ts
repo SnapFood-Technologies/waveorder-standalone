@@ -45,16 +45,27 @@ export async function trackVisitorSession(
 ): Promise<void> {
   try {
     const { ipAddress, userAgent, referrer, url } = trackingData
+    
+    console.log('[trackVisitorSession] Received tracking data:', {
+      businessId,
+      ipAddress,
+      url,
+      referrer,
+      hasUserAgent: !!userAgent
+    })
 
     // Parse URL to extract UTM parameters
     const searchParams = new URL(url).searchParams
     const utmParams = extractUTMParams(searchParams)
+    console.log('[trackVisitorSession] Extracted UTM params:', utmParams)
 
     // Parse referrer data
     const referrerData = extractReferrerData(referrer)
+    console.log('[trackVisitorSession] Extracted referrer data:', referrerData)
 
     // Determine source (priority: UTM source > referrer host > "direct")
     let source = utmParams.source || referrerData.source || 'direct'
+    console.log('[trackVisitorSession] Determined source:', source)
 
     // Determine medium (if not from UTM)
     let medium = utmParams.medium
@@ -77,48 +88,58 @@ export async function trackVisitorSession(
     let locationData = null
     if (ipAddress) {
       try {
+        console.log('[trackVisitorSession] Calling getLocationFromIP with IP:', ipAddress)
         locationData = await getLocationFromIP(ipAddress)
+        console.log('[trackVisitorSession] getLocationFromIP returned:', locationData)
         if (locationData) {
-          console.log(`[VisitorSession] IP ${ipAddress} resolved to: ${locationData.city}, ${locationData.country}`)
+          console.log(`[VisitorSession] ✅ IP ${ipAddress} resolved to: ${locationData.city}, ${locationData.country}`)
+        } else {
+          console.warn(`[VisitorSession] ❌ IP ${ipAddress} returned NULL location data`)
         }
       } catch (geoError) {
-        console.warn('[VisitorSession] Failed to get location for IP:', ipAddress, geoError)
+        console.error('[VisitorSession] ❌ Failed to get location for IP:', ipAddress, geoError)
       }
+    } else {
+      console.warn('[trackVisitorSession] ⚠️ No IP address provided, skipping geolocation')
     }
 
     // Create visitor session record
+    const sessionData = {
+      businessId,
+      // UTM parameters
+      source: source || 'direct',
+      medium: medium || undefined,
+      campaign: utmParams.campaign || undefined,
+      term: utmParams.term || undefined,
+      content: utmParams.content || undefined,
+      placement: utmParams.placement || undefined,
+      // Referrer
+      referrer: referrerData.referrer || undefined,
+      referrerHost: referrerData.referrerHost || undefined,
+      // Geographic data
+      country: locationData?.country || undefined,
+      city: locationData?.city || undefined,
+      region: locationData?.region || undefined,
+      latitude: locationData?.latitude || undefined,
+      longitude: locationData?.longitude || undefined,
+      // Device data
+      deviceType: deviceData?.deviceType || undefined,
+      browser: deviceData?.browser || undefined,
+      os: deviceData?.os || undefined,
+      // Technical metadata
+      ipAddress: ipAddress || undefined,
+      userAgent: userAgent || undefined,
+      // Timestamps
+      visitedAt: new Date()
+    }
+    
+    console.log('[trackVisitorSession] Creating session with data:', JSON.stringify(sessionData, null, 2))
+    
     await prisma.visitorSession.create({
-      data: {
-        businessId,
-        // UTM parameters
-        source: source || 'direct',
-        medium: medium || undefined,
-        campaign: utmParams.campaign || undefined,
-        term: utmParams.term || undefined,
-        content: utmParams.content || undefined,
-        placement: utmParams.placement || undefined,
-        // Referrer
-        referrer: referrerData.referrer || undefined,
-        referrerHost: referrerData.referrerHost || undefined,
-        // Geographic data
-        country: locationData?.country || undefined,
-        city: locationData?.city || undefined,
-        region: locationData?.region || undefined,
-        latitude: locationData?.latitude || undefined,
-        longitude: locationData?.longitude || undefined,
-        // Device data
-        deviceType: deviceData?.deviceType || undefined,
-        browser: deviceData?.browser || undefined,
-        os: deviceData?.os || undefined,
-        // Technical metadata
-        ipAddress: ipAddress || undefined,
-        userAgent: userAgent || undefined,
-        // Timestamps
-        visitedAt: new Date()
-      }
+      data: sessionData
     })
 
-    console.log(`[VisitorSession] Tracked visit for business ${businessId} from source: ${source}`)
+    console.log(`[VisitorSession] ✅ SAVED: business=${businessId}, source=${source}, country=${locationData?.country || 'NONE'}, city=${locationData?.city || 'NONE'}, ip=${ipAddress}`)
   } catch (error) {
     // Log error but don't throw - we don't want tracking to break the storefront
     console.error('Error tracking visitor session:', error)
