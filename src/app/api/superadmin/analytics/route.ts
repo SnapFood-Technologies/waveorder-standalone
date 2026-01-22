@@ -217,14 +217,14 @@ export async function GET(request: NextRequest) {
     // Calculate total page views (from old Analytics + new VisitorSession)
     const oldPageViews = await prisma.analytics.aggregate({
       where: {
-        date: { gte: startDate, lte: endDate }
+        date: { gte: startDate, lte: now }
       },
       _sum: { visitors: true }
     })
     
     const newPageViews = await prisma.visitorSession.count({
       where: {
-        visitedAt: { gte: startDate, lte: endDate }
+        visitedAt: { gte: startDate, lte: now }
       }
     })
     
