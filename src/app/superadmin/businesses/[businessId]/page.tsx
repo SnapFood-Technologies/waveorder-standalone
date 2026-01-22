@@ -845,6 +845,25 @@ export default function BusinessDetailsPage() {
             </Link>
           </div>
 
+          {/* Anomalies CTA */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-6 h-6 text-orange-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Anomalies</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Detect and manage data quality issues
+            </p>
+            <Link
+              href={`/superadmin/businesses/${business.id}/anomalies`}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Manage Anomalies
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </div>
+
           {/* Quick Actions */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>

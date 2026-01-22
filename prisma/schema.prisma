@@ -345,6 +345,7 @@ model Business {
   analytics          Analytics[]
   visitorSessions    VisitorSession[]
   orderNotifications OrderNotification[]
+  anomalies          Anomaly[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -383,6 +384,41 @@ model OrderNotification {
 
   @@index([businessId])
   @@index([orderId])
+}
+
+model Anomaly {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String   @db.ObjectId
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  type        String   // "ZERO_PRICE_PRODUCT", "MISSING_IMAGE", "OUT_OF_STOCK", etc.
+  severity    String   // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  status      String   @default("OPEN") // "OPEN", "RESOLVED", "IGNORED"
+  
+  // Details about the anomaly
+  title       String
+  description String
+  
+  // Reference to affected entity
+  entityType  String?  // "PRODUCT", "ORDER", "CUSTOMER", etc.
+  entityId    String?  @db.ObjectId
+  entityName  String?  // For display purposes
+  
+  // Resolution tracking
+  resolvedAt  DateTime?
+  resolvedBy  String?   @db.ObjectId
+  
+  // Detection metadata
+  detectedAt  DateTime  @default(now())
+  lastChecked DateTime  @default(now())
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([businessId, type])
+  @@index([detectedAt])
 }
 
 model BusinessUser {

@@ -111,8 +111,8 @@ export async function GET(
       return false
     })
 
-    // Get analytics data for views
-    const analytics = await prisma.analytics.findMany({
+    // Get BOTH old Analytics AND new VisitorSession data for views
+    const oldAnalytics = await prisma.analytics.findMany({
       where: {
         businessId: businessId,
         date: {
@@ -124,11 +124,23 @@ export async function GET(
         visitors: true
       }
     })
+    
+    const visitorSessions = await prisma.visitorSession.findMany({
+      where: {
+        businessId: businessId,
+        visitedAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
 
-    // Calculate metrics
+    // Calculate metrics - COMBINE old Analytics + new VisitorSessions
     const totalOrders = allOrders.length
     const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0)
-    const totalViews = analytics.reduce((sum, record) => sum + record.visitors, 0)
+    const oldViews = oldAnalytics.reduce((sum, record) => sum + record.visitors, 0)
+    const newViews = visitorSessions.length
+    const totalViews = oldViews + newViews
 
     // Calculate growth (compare with previous period)
     const periodDuration = endDate.getTime() - startDate.getTime()
