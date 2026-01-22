@@ -342,6 +342,19 @@ async function createInventoryActivities(orderId: string, businessId: string, it
         }
       }
     }
+    
+    // TODO: Sync stock changes to OmniStack Gateway after order creation
+    // When stock is decremented due to order placement, we should sync the updated product/variant stock back to OmniStack
+    // This ensures OmniStack stays in sync with WaveOrder inventory changes from orders
+    // See: /api/admin/stores/[businessId]/products/[productId]/inventory/route.ts for reference implementation
+
+    // TODO: Sync order creation to ByBest Shop
+    // When an order is created, we should sync the order data to ByBest Shop
+    // This ensures ByBest Shop stays in sync with WaveOrder orders
+    // import { syncOrderToByBestShop } from '@/lib/bybestshop';
+    // syncOrderToByBestShop(order).catch(err => {
+    //   console.error('[ByBestShop] Order sync failed:', err);
+    // });
   } catch (error) {
     console.error('Error creating inventory activities:', error);
     // Don't throw error here to avoid breaking order creation

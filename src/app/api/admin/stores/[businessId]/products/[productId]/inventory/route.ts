@@ -80,6 +80,13 @@ export async function POST(
       syncProductToOmniGateway(updatedProduct).catch(err => {
         console.error('[OmniGateway] Background sync failed:', err);
       });
+
+      // TODO: Sync stock update to ByBest Shop (if product is linked)
+      // Run in background - don't block the response
+      // import { syncProductToByBestShop } from '@/lib/bybestshop';
+      // syncProductToByBestShop(updatedProduct).catch(err => {
+      //   console.error('[ByBestShop] Background sync failed:', err);
+      // });
     }
 
     return NextResponse.json({ 

@@ -594,6 +594,19 @@ export async function POST(
       }
     }
 
+    // TODO: Sync stock changes to OmniStack Gateway after admin order creation
+    // When stock is decremented due to admin order creation, we should sync the updated product/variant stock back to OmniStack
+    // This ensures OmniStack stays in sync with WaveOrder inventory changes from orders
+    // See: /api/admin/stores/[businessId]/products/[productId]/inventory/route.ts for reference implementation
+
+    // TODO: Sync order creation to ByBest Shop
+    // When an admin order is created, we should sync the order data to ByBest Shop
+    // This ensures ByBest Shop stays in sync with WaveOrder orders
+    // import { syncOrderToByBestShop } from '@/lib/bybestshop';
+    // syncOrderToByBestShop(order).catch(err => {
+    //   console.error('[ByBestShop] Order sync failed:', err);
+    // });
+
     // Send order notification email if enabled for admin-created orders
     try {
       const businessWithNotifications = await prisma.business.findUnique({

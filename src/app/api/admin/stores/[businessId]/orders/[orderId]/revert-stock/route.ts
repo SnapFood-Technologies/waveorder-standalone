@@ -114,6 +114,28 @@ export async function POST(
       }
     }
 
+    // TODO: Sync stock changes to OmniStack Gateway after stock revert
+    // When stock is restored due to order cancellation revert, we should sync the updated product/variant stock back to OmniStack
+    // This ensures OmniStack stays in sync with WaveOrder inventory changes from order cancellations
+    // See: /api/admin/stores/[businessId]/products/[productId]/inventory/route.ts for reference implementation
+
+    // TODO: Sync stock changes to ByBest Shop after stock revert
+    // When stock is restored due to order cancellation revert, we should sync the updated product/variant stock back to ByBest Shop
+    // This ensures ByBest Shop stays in sync with WaveOrder inventory changes from order cancellations
+    // Fetch updated products/variants and sync:
+    // import { syncProductToByBestShop } from '@/lib/bybestshop';
+    // for (const item of order.items) {
+    //   const updatedProduct = await prisma.product.findFirst({
+    //     where: { id: item.productId, businessId },
+    //     include: { category: true, variants: true }
+    //   });
+    //   if (updatedProduct) {
+    //     syncProductToByBestShop(updatedProduct).catch(err => {
+    //       console.error('[ByBestShop] Stock revert sync failed:', err);
+    //     });
+    //   }
+    // }
+
     return NextResponse.json({
       message: `Successfully reverted stock for ${revertedItems} items`,
       revertedItems,

@@ -824,6 +824,20 @@ export async function PUT(
       }
     }
 
+    // TODO: Sync stock changes to OmniStack Gateway if order status update affects stock
+    // If order status changes affect inventory (e.g., cancellation restores stock, delivery decrements stock),
+    // we should sync the updated product/variant stock back to OmniStack
+    // This ensures OmniStack stays in sync with WaveOrder inventory changes from order status updates
+    // See: /api/admin/stores/[businessId]/products/[productId]/inventory/route.ts for reference implementation
+
+    // TODO: Sync order status update to ByBest Shop
+    // When order status is updated, we should sync the status change to ByBest Shop
+    // This ensures ByBest Shop stays in sync with WaveOrder order status updates
+    // import { syncOrderToByBestShop } from '@/lib/bybestshop';
+    // syncOrderToByBestShop(updatedOrder).catch(err => {
+    //   console.error('[ByBestShop] Order status sync failed:', err);
+    // });
+
     return NextResponse.json({
       order: {
         id: updatedOrder.id,

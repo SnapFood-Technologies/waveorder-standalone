@@ -186,6 +186,13 @@ export async function PUT(
       console.error('[OmniGateway] Background sync failed:', err);
     });
 
+    // TODO: Sync to ByBest Shop (if product is linked)
+    // Run in background - don't block the response
+    // import { syncProductToByBestShop } from '@/lib/bybestshop';
+    // syncProductToByBestShop(product).catch(err => {
+    //   console.error('[ByBestShop] Background sync failed:', err);
+    // });
+
     return NextResponse.json({ product })
 
   } catch (error) {
