@@ -70,9 +70,9 @@ export function parseUserAgent(userAgent: string): DeviceData {
 }
 
 /**
- * Check if IP address is private/local
+ * Check if IP address is private/local or a known bot/crawler IP
  */
-function isPrivateIP(ip: string): boolean {
+export function isPrivateIP(ip: string): boolean {
   if (!ip || ip === 'Unknown' || ip === 'unknown') return true
   
   // Localhost
@@ -84,7 +84,28 @@ function isPrivateIP(ip: string): boolean {
   // IPv6 local
   if (ip.startsWith('fe80:') || ip.startsWith('::')) return true
   
+  // Known bot/crawler IPs (Microsoft Azure bots, etc.)
+  // Microsoft Azure crawler IPs (Boydton, Virginia data center)
+  if (ip.startsWith('20.84.') || ip.startsWith('40.76.') || ip.startsWith('52.167.')) return true
+  
   return false
+}
+
+/**
+ * Check if a User-Agent is a known bot/crawler
+ */
+export function isBot(userAgent: string | undefined): boolean {
+  if (!userAgent) return false
+  
+  const ua = userAgent.toLowerCase()
+  const botPatterns = [
+    'bot', 'crawler', 'spider', 'scraper', 'curl', 'wget', 'python-requests',
+    'facebookexternalhit', 'twitterbot', 'linkedinbot', 'whatsapp', 'slack',
+    'googlebot', 'bingbot', 'yandex', 'baiduspider', 'duckduckbot',
+    'semrushbot', 'ahrefsbot', 'mj12bot', 'dotbot', 'rogerbot'
+  ]
+  
+  return botPatterns.some(pattern => ua.includes(pattern))
 }
 
 /**

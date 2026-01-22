@@ -214,11 +214,20 @@ export async function GET(
     // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (first IP is the original client)
     let ipAddress: string | undefined
     
-    console.log('[IP DEBUG] All headers:', {
+    // Log ALL headers to debug
+    const allHeaders: Record<string, string> = {}
+    request.headers.forEach((value, key) => {
+      allHeaders[key] = value
+    })
+    console.log('[IP DEBUG] ALL REQUEST HEADERS:', JSON.stringify(allHeaders, null, 2))
+    
+    console.log('[IP DEBUG] Key headers:', {
       'cf-connecting-ip': request.headers.get('cf-connecting-ip'),
       'x-real-ip': request.headers.get('x-real-ip'),
       'x-forwarded-for': request.headers.get('x-forwarded-for'),
-      'x-forwarded-host': request.headers.get('x-forwarded-host')
+      'x-forwarded-host': request.headers.get('x-forwarded-host'),
+      'true-client-ip': request.headers.get('true-client-ip'),
+      'x-client-ip': request.headers.get('x-client-ip')
     })
     
     // Cloudflare
@@ -259,7 +268,9 @@ export async function GET(
     console.log('[TRACKING DEBUG] Starting visitor session tracking:', {
       businessId: business.id,
       ipAddress,
-      url: request.url,
+      fullUrl: request.url,
+      nextUrl: request.nextUrl?.href,
+      searchParams: Object.fromEntries(new URL(request.url).searchParams),
       referrer,
       hasUserAgent: !!userAgent
     })

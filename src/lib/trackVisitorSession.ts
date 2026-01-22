@@ -1,5 +1,5 @@
 // lib/trackVisitorSession.ts - Track individual visitor sessions
-import { getLocationFromIP, parseUserAgent, extractUTMParams } from './geolocation'
+import { getLocationFromIP, parseUserAgent, extractUTMParams, isPrivateIP, isBot } from './geolocation'
 import { PrismaClient } from '@prisma/client'
 
 // Reuse Prisma client - don't create new instance each time
@@ -56,6 +56,18 @@ export async function trackVisitorSession(
       referrer,
       hasUserAgent: !!userAgent
     })
+    
+    // Skip bot/crawler traffic
+    if (isBot(userAgent)) {
+      console.log('[trackVisitorSession] ⚠️ SKIPPING: Detected bot/crawler:', userAgent)
+      return
+    }
+    
+    // Skip private/bot IPs
+    if (ipAddress && isPrivateIP(ipAddress)) {
+      console.log('[trackVisitorSession] ⚠️ SKIPPING: Private or bot IP detected:', ipAddress)
+      return
+    }
 
     // Parse URL to extract UTM parameters
     const searchParams = new URL(url).searchParams

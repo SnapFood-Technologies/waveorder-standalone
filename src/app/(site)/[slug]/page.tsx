@@ -1,18 +1,60 @@
 // app/[slug]/page.tsx
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
 import type { Metadata } from 'next'
 
 interface PageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ lang?: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-async function getStoreData(slug: string) {
+async function getStoreData(slug: string, searchParams?: Record<string, string | string[] | undefined>) {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/storefront/${slug}`, {
-      cache: 'no-store'
+    
+    // Get headers from the original request
+    const headersList = await headers()
+    
+    // Extract client IP and other tracking data
+    const cfIP = headersList.get('cf-connecting-ip')
+    const xRealIP = headersList.get('x-real-ip')
+    const xForwardedFor = headersList.get('x-forwarded-for')
+    const userAgent = headersList.get('user-agent')
+    const referer = headersList.get('referer')
+    
+    // Build query string from search params
+    const queryString = searchParams ? new URLSearchParams(
+      Object.entries(searchParams).reduce((acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = Array.isArray(value) ? value[0] : value
+        }
+        return acc
+      }, {} as Record<string, string>)
+    ).toString() : ''
+    
+    const url = queryString 
+      ? `${baseUrl}/api/storefront/${slug}?${queryString}`
+      : `${baseUrl}/api/storefront/${slug}`
+    
+    console.log('[StorePage] Fetching store data with URL:', url)
+    console.log('[StorePage] Forwarding client headers:', {
+      'cf-connecting-ip': cfIP,
+      'x-real-ip': xRealIP,
+      'x-forwarded-for': xForwardedFor
+    })
+    
+    // Forward the client's headers to the API route
+    const fetchHeaders: HeadersInit = {}
+    if (cfIP) fetchHeaders['cf-connecting-ip'] = cfIP
+    if (xRealIP) fetchHeaders['x-real-ip'] = xRealIP
+    if (xForwardedFor) fetchHeaders['x-forwarded-for'] = xForwardedFor
+    if (userAgent) fetchHeaders['user-agent'] = userAgent
+    if (referer) fetchHeaders['referer'] = referer
+    
+    const response = await fetch(url, {
+      cache: 'no-store',
+      headers: fetchHeaders
     })
     
     if (!response.ok) {
@@ -140,9 +182,10 @@ function getPriceRange(categories: any[], currency: string): string {
   return '$$$$'
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const storeData = await getStoreData(slug)
+  const resolvedSearchParams = await searchParams
+  const storeData = await getStoreData(slug, resolvedSearchParams)
   
   if (!storeData) {
     return {
@@ -221,9 +264,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-export default async function StorePage({ params }: PageProps) {
+export default async function StorePage({ params, searchParams }: PageProps) {
   const { slug } = await params
-  const storeData = await getStoreData(slug)
+  const resolvedSearchParams = await searchParams
+  const storeData = await getStoreData(slug, resolvedSearchParams)
 
   if (!storeData) {
     notFound()
