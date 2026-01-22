@@ -114,26 +114,17 @@ export function isBot(userAgent: string | undefined): boolean {
  */
 export async function getLocationFromIP(ip: string): Promise<LocationData | null> {
   try {
-    console.log('[Geolocation] Starting lookup for IP:', ip)
-    
     // Skip private/local IPs
     if (isPrivateIP(ip)) {
-      console.warn('[Geolocation] ⚠️ IP is private/local, skipping:', ip)
       return null
     }
 
-    console.log('[Geolocation] ✅ IP is public, proceeding with lookup')
-
     // Primary: Try ipapi.co
     try {
-      console.log('[Geolocation] Trying PRIMARY service: ipapi.co')
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
       
-      const url = `https://ipapi.co/${ip}/json/`
-      console.log('[Geolocation] Fetching:', url)
-      
-      const response = await fetch(url, {
+      const response = await fetch(`https://ipapi.co/${ip}/json/`, {
         headers: {
           'User-Agent': 'WaveOrder Analytics',
           'Accept': 'application/json'
@@ -144,84 +135,60 @@ export async function getLocationFromIP(ip: string): Promise<LocationData | null
       
       clearTimeout(timeoutId)
       
-      console.log('[Geolocation] ipapi.co response status:', response.status)
-      
       if (response.ok) {
         const data = await response.json()
-        console.log('[Geolocation] ipapi.co RAW response:', JSON.stringify(data, null, 2))
         
         // Check for errors in response
         if (data.error) {
           throw new Error(`ipapi.co error: ${data.reason || 'Unknown error'}`)
         }
         
-        const locationData = {
+        return {
           country: data.country_name || null,
           city: data.city || null,
           region: data.region || data.region_code || null,
           latitude: data.latitude || null,
           longitude: data.longitude || null
         }
-        
-        console.log('[Geolocation] ✅ ipapi.co SUCCESS:', locationData)
-        return locationData
       }
     } catch (primaryError: any) {
       // If timeout or network error, try fallback
-      console.error('[Geolocation] ❌ PRIMARY service failed:', primaryError.message)
-      if (primaryError.name === 'AbortError' || primaryError.message.includes('fetch')) {
-        console.warn('[Geolocation] Trying FALLBACK service...')
-      } else {
+      if (primaryError.name !== 'AbortError' && !primaryError.message.includes('fetch')) {
         throw primaryError
       }
     }
 
     // Fallback: Try ip-api.com
     try {
-      console.log('[Geolocation] Trying FALLBACK service: ip-api.com')
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
       
-      const url = `http://ip-api.com/json/${ip}?fields=status,message,country,city,regionName,lat,lon`
-      console.log('[Geolocation] Fetching:', url)
-      
-      const response = await fetch(url, {
+      const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,city,regionName,lat,lon`, {
         signal: controller.signal,
         cache: 'no-store'
       })
       
       clearTimeout(timeoutId)
       
-      console.log('[Geolocation] ip-api.com response status:', response.status)
-      
       if (response.ok) {
         const data = await response.json()
-        console.log('[Geolocation] ip-api.com RAW response:', JSON.stringify(data, null, 2))
         
         if (data.status === 'success') {
-          const locationData = {
+          return {
             country: data.country || null,
             city: data.city || null,
             region: data.regionName || null,
             latitude: data.lat || null,
             longitude: data.lon || null
           }
-          
-          console.log('[Geolocation] ✅ ip-api.com SUCCESS:', locationData)
-          return locationData
-        } else {
-          console.error('[Geolocation] ❌ ip-api.com returned failure:', data.message)
         }
       }
     } catch (fallbackError: any) {
-      console.error('[Geolocation] ❌ FALLBACK service also failed:', fallbackError.message)
+      // Both services failed
     }
 
-    // Both services failed
-    console.error('[Geolocation] ❌ ALL geolocation services failed for IP:', ip)
     return null
   } catch (error: any) {
-    console.error('[Geolocation] Error getting location from IP:', error.message)
     return null
   }
 }

@@ -37,13 +37,6 @@ async function getStoreData(slug: string, searchParams?: Record<string, string |
       ? `${baseUrl}/api/storefront/${slug}?${queryString}`
       : `${baseUrl}/api/storefront/${slug}`
     
-    console.log('[StorePage] Fetching store data with URL:', url)
-    console.log('[StorePage] Forwarding client headers:', {
-      'cf-connecting-ip': cfIP,
-      'x-real-ip': xRealIP,
-      'x-forwarded-for': xForwardedFor
-    })
-    
     // Forward the client's headers to the API route
     const fetchHeaders: HeadersInit = {}
     if (cfIP) fetchHeaders['cf-connecting-ip'] = cfIP

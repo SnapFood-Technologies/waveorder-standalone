@@ -214,42 +214,22 @@ export async function GET(
     // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (first IP is the original client)
     let ipAddress: string | undefined
     
-    // Log ALL headers to debug
-    const allHeaders: Record<string, string> = {}
-    request.headers.forEach((value, key) => {
-      allHeaders[key] = value
-    })
-    console.log('[IP DEBUG] ALL REQUEST HEADERS:', JSON.stringify(allHeaders, null, 2))
-    
-    console.log('[IP DEBUG] Key headers:', {
-      'cf-connecting-ip': request.headers.get('cf-connecting-ip'),
-      'x-real-ip': request.headers.get('x-real-ip'),
-      'x-forwarded-for': request.headers.get('x-forwarded-for'),
-      'x-forwarded-host': request.headers.get('x-forwarded-host'),
-      'true-client-ip': request.headers.get('true-client-ip'),
-      'x-client-ip': request.headers.get('x-client-ip')
-    })
-    
     // Cloudflare
     const cfIP = request.headers.get('cf-connecting-ip')
     if (cfIP) {
       ipAddress = cfIP.trim()
-      console.log('[IP DEBUG] Using Cloudflare IP:', ipAddress)
     } else {
       // Vercel/other proxies - x-real-ip is usually the client IP
       const realIP = request.headers.get('x-real-ip')
       if (realIP) {
         ipAddress = realIP.trim()
-        console.log('[IP DEBUG] Using x-real-ip:', ipAddress)
       } else {
         // x-forwarded-for - FIRST IP in chain is the original client
         const forwardedFor = request.headers.get('x-forwarded-for')
         if (forwardedFor) {
           const ips = forwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
-          console.log('[IP DEBUG] x-forwarded-for chain:', ips)
           // Use FIRST IP (original client), not last (which is the final proxy/CDN)
           ipAddress = ips.length > 0 ? ips[0] : undefined
-          console.log('[IP DEBUG] Using FIRST IP from chain:', ipAddress)
         }
       }
     }
@@ -258,23 +238,10 @@ export async function GET(
     if (!ipAddress) {
       // @ts-ignore - NextRequest.ip might be available
       ipAddress = request.ip || undefined
-      console.log('[IP DEBUG] Using request.ip fallback:', ipAddress)
     }
-    
-    console.log('[IP DEBUG] FINAL IP ADDRESS:', ipAddress)
 
     // Track visitor session - run in background, don't await
     // This allows the response to return quickly while tracking happens async
-    console.log('[TRACKING DEBUG] Starting visitor session tracking:', {
-      businessId: business.id,
-      ipAddress,
-      fullUrl: request.url,
-      nextUrl: request.nextUrl?.href,
-      searchParams: Object.fromEntries(new URL(request.url).searchParams),
-      referrer,
-      hasUserAgent: !!userAgent
-    })
-    
     ;(async () => {
       try {
         await trackVisitorSession(business.id, {
@@ -283,7 +250,6 @@ export async function GET(
           referrer,
           url: request.url
         })
-        console.log('[TRACKING DEBUG] Visitor session tracked successfully')
       } catch (error) {
         Sentry.captureException(error, {
           tags: {
@@ -294,7 +260,6 @@ export async function GET(
             slug,
           },
         })
-        console.error('[TRACKING DEBUG] Failed to track visitor session:', error)
       }
     })()
 
