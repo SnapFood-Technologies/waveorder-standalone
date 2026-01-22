@@ -1830,7 +1830,6 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       const response = await fetch('/api/storefront/locations/countries')
       if (response.ok) {
         const data = await response.json()
-        console.log('Fetched countries:', data.data)
         setCountries(data.data || [])
       } else {
         console.error('Failed to fetch countries:', response.status, response.statusText)
@@ -1991,24 +1990,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     setLoadingPostalPricing(true)
     setPostalPricingOptions([]) // Clear previous options
     try {
-      console.log('Fetching postal pricing for city:', cityName)
       const url = `/api/storefront/${storeData.slug}/postal-pricing?cityName=${encodeURIComponent(cityName)}`
-      console.log('Fetching postal pricing from:', url)
       const response = await fetch(url)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Postal pricing API response:', data)
-        console.log('Number of pricing options:', data.data?.length || 0)
-        
         setPostalPricingOptions(data.data || [])
-        
-        if (!data.data || data.data.length === 0) {
-          console.warn(`⚠️ No postal pricing found for city: "${cityName}"`)
-          console.warn(`Business ID: ${storeData.id}, Slug: ${storeData.slug}`)
-        } else {
-          console.log('✅ Postal pricing options loaded:', data.data.map((p: any) => ({ id: p.id, name: p.postal_name, price: p.price })))
-        }
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
         console.error('❌ Failed to fetch postal pricing:', response.status, errorData)
@@ -4154,31 +4141,9 @@ function ProductModal({
   storefrontLanguage?: string // Add language prop
   businessSlug?: string // Add business slug prop
 }) {
-  // Log product.variants when modal opens
-  useEffect(() => {
-    console.log('[ProductModal Mount] Product variants:', product.variants)
-    product.variants.forEach((v, idx) => {
-      console.log(`[ProductModal Mount] Variant ${idx}:`, v)
-      console.log(`[ProductModal Mount] Variant ${idx} metadata:`, (v as any).metadata)
-    })
-  }, [product.id])
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('')
-  
-  // Log when currentImageUrl changes
-  useEffect(() => {
-    console.log('[currentImageUrl State] Updated to:', currentImageUrl)
-  }, [currentImageUrl])
-  
-  // Log when selectedVariant changes
-  useEffect(() => {
-    console.log('[selectedVariant State] Updated to:', {
-      id: selectedVariant?.id,
-      name: selectedVariant?.name,
-      metadata: (selectedVariant as any)?.metadata
-    })
-  }, [selectedVariant?.id])
 
   // Exception slugs: Always use English description, fallback to Albanian only if English is empty
   const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
@@ -4241,29 +4206,17 @@ function ProductModal({
 
   // Update image URL when variant or image index changes
   useEffect(() => {
-    console.log('[Image Update Effect] Running...', {
-      selectedVariantId: selectedVariant?.id,
-      currentImageIndex,
-      productImagesLength: product.images?.length,
-      productId: product.id
-    })
-    
     const variant = selectedVariant as any
-    console.log('[Image Update Effect] Variant object:', variant)
-    console.log('[Image Update Effect] Variant metadata:', variant?.metadata)
     
     if (variant?.metadata && typeof variant.metadata === 'object' && 'image' in variant.metadata) {
       const variantImage = variant.metadata.image
-      console.log('[Image Update Effect] Found variant image:', variantImage)
       if (variantImage && typeof variantImage === 'string') {
-        console.log('[Image Update Effect] Setting variant image URL:', variantImage)
         setCurrentImageUrl(variantImage)
         return
       }
     }
     // Fallback to product images
     const fallbackImage = product.images[currentImageIndex] || product.images[0] || ''
-    console.log('[Image Update Effect] No variant image, using fallback:', fallbackImage)
     setCurrentImageUrl(fallbackImage)
   }, [selectedVariant?.id, currentImageIndex, product.images, product.id])
 
@@ -4358,16 +4311,11 @@ function ProductModal({
                       className="w-full h-full object-contain transition-opacity duration-300"
                       style={{ minHeight: '300px' }}
                       key={`${product.id}-${selectedVariant?.id || 'default'}-${currentImageIndex}`} // Force re-render when variant or image changes
-                      onLoad={() => {
-                        console.log('[Image Load] Image loaded successfully:', currentImageUrl)
-                      }}
                       onError={(e) => {
-                        console.error('[Image Error] Failed to load image:', currentImageUrl)
                         // Fallback to product image if variant image fails to load
                         const target = e.target as HTMLImageElement
                         if (selectedVariant) {
                           const fallback = product.images[0] || ''
-                          console.log('[Image Error] Falling back to product image:', fallback)
                           target.src = fallback
                           setCurrentImageUrl(fallback)
                         }
@@ -4498,26 +4446,12 @@ function ProductModal({
                       const variantInCart = cart.find(item => item.id === variantCartItemId)?.quantity || 0
                       const variantAvailable = variant.stock - variantInCart
                       
-                      // Log the full variant object from product.variants
-                      console.log('[Variant Map] Full variant object from product.variants:', variant)
-                      console.log('[Variant Map] Variant metadata:', (variant as any).metadata)
-                      
                       return (
                         <button
                           key={variant.id}
                           onClick={() => {
-                            console.log('[Variant Click] Variant selected:', {
-                              variantId: variant.id,
-                              variantName: variant.name,
-                              variantMetadata: (variant as any).metadata,
-                              variantImage: (variant as any).metadata?.image,
-                              fullVariantObject: variant
-                            })
-                            // Pass the full variant object including metadata
                             setSelectedVariant(variant as ProductVariant)
-                            // Reset image index when variant changes (if variant has image, it will show via getCurrentImage)
                             setCurrentImageIndex(0)
-                            console.log('[Variant Click] State updated, selectedVariant should be:', variant)
                           }}
                           className={`w-full p-4 border-2 rounded-xl text-left transition-all ${
                             selectedVariant?.id === variant.id
@@ -4531,20 +4465,15 @@ function ProductModal({
                           <div className="flex justify-between items-center">
                             <div>
                               <span className="font-medium text-gray-800">{getVariantDisplayName(variant.name)}</span>
-                              {variantInCart > 0 && (
-                                <span className="block text-xs text-blue-600 mt-1">
-                                  {translations.inCartAvailable
-                                    ? translations.inCartAvailable
-                                        .replace('{inCart}', variantInCart.toString())
-                                        .replace('{available}', variantAvailable.toString())
-                                    : `You have ${variantInCart} in cart, ${variantAvailable} available`}
-                                </span>
-                              )}
-                              {variantInCart === 0 && variant.stock <= 5 && (
+                              {/* Show stock warning ONLY when:
+                                  1. Customer has this variant in cart (variantInCart > 0), AND
+                                  2. Remaining stock is very low (<= 2)
+                                  This matches the product-level warning logic */}
+                              {variantInCart > 0 && variantAvailable <= 2 && (
                                 <span className="block text-xs text-orange-600 mt-1">
-                                  {translations.onlyStockAvailable
-                                    ? translations.onlyStockAvailable.replace('{stock}', variant.stock.toString())
-                                    : `Only ${variant.stock} available`}
+                                  {translations.onlyMoreCanBeAdded
+                                    ? translations.onlyMoreCanBeAdded.replace('{count}', variantAvailable.toString())
+                                    : `Only ${variantAvailable} more can be added`}
                                 </span>
                               )}
                             </div>
