@@ -211,7 +211,7 @@ export async function GET(
     const referrer = request.headers.get('referer') || undefined
     
     // Get IP address - handle various proxy/CDN headers
-    // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (last IP is usually client)
+    // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (first IP is the original client)
     let ipAddress: string | undefined
     
     // Cloudflare
@@ -224,12 +224,12 @@ export async function GET(
       if (realIP) {
         ipAddress = realIP.trim()
       } else {
-        // x-forwarded-for - last IP in chain is usually the original client
+        // x-forwarded-for - FIRST IP in chain is the original client
         const forwardedFor = request.headers.get('x-forwarded-for')
         if (forwardedFor) {
           const ips = forwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
-          // Use last IP (original client) instead of first (proxy)
-          ipAddress = ips.length > 0 ? ips[ips.length - 1] : undefined
+          // Use FIRST IP (original client), not last (which is the final proxy/CDN)
+          ipAddress = ips.length > 0 ? ips[0] : undefined
         }
       }
     }

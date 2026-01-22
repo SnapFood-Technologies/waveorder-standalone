@@ -713,38 +713,19 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         </div>
       )}
 
-      {/* CTA to Advanced Analytics - Shown at the bottom */}
-      <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600 rounded-xl p-8 text-white shadow-xl border-2 border-purple-400">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <MapPin className="w-7 h-7" />
-              <h3 className="text-2xl font-bold">Need Geographic Insights?</h3>
-            </div>
-            <p className="text-white/90 text-lg mb-4">
-              For more detailed insights about geographic data, cities, sources, and more, explore Advanced Analytics.
-            </p>
-            <ul className="space-y-2 text-white/80 text-base">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-                <span>Geographic insights by cities and regions</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-                <span>Traffic sources and referral analysis</span>
-              </li>
-            </ul>
-          </div>
-          <div className="flex-shrink-0">
-            <Link 
-              href={`/admin/stores/${businessId}/advanced-analytics`}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-white text-purple-600 rounded-lg font-semibold text-lg hover:bg-gray-50 transition-all transform hover:scale-105 shadow-lg"
-            >
-              <span>Go to Advanced Analytics</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
+      {/* CTA to Advanced Analytics */}
+      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 text-white">
+        <h3 className="font-semibold text-lg mb-2">Need Geographic Insights?</h3>
+        <p className="text-sm text-teal-50 mb-4">
+          Get detailed insights about geographic data, cities, and traffic sources with Advanced Analytics.
+        </p>
+        <Link 
+          href={`/admin/stores/${businessId}/advanced-analytics`}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg font-medium text-sm hover:bg-teal-50 transition-colors"
+        >
+          <span>View Advanced Analytics</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </div>
   )
