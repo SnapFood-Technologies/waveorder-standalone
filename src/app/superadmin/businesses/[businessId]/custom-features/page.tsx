@@ -125,50 +125,64 @@ export default function ManageCustomFeaturesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <Link
-            href={`/superadmin/businesses/${businessId}`}
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back to Business Details
-          </Link>
-          
-          <div className="flex items-center gap-3 mb-2">
-            <Sparkles className="w-8 h-8 text-teal-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Manage Custom Features</h1>
-              {business && (
-                <p className="text-gray-600 mt-1">{business.name}</p>
-              )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/superadmin/businesses/${businessId}`}
+              className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Link>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">
+                Custom Features {business && <span className="text-gray-500">- {business.name}</span>}
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">Manage advanced storefront features</p>
             </div>
           </div>
-          <p className="text-gray-600 mt-2">
-            Enable or disable advanced features for this business. These features allow the business owner to customize their storefront experience.
-          </p>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </>
+            )}
+          </button>
         </div>
+      </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
-        )}
+      {/* Error Message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-700">{successMessage}</p>
-          </div>
-        )}
+      {/* Success Message */}
+      {successMessage && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <p className="text-sm text-green-700">{successMessage}</p>
+        </div>
+      )}
 
-        {/* Features Cards */}
-        <div className="space-y-4 mb-6">
+      {/* Main Content: 3/4 + 1/4 Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left: Features Form (3/4) */}
+        <div className="lg:col-span-3 space-y-4">
           {/* Brands Feature */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start justify-between">
@@ -303,30 +317,100 @@ export default function ManageCustomFeaturesPage() {
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-6">
-          <div>
-            <p className="text-sm text-gray-600">
-              Changes will be saved immediately and the business owner will see the enabled features in their admin panel.
+        {/* Right: Info Sidebar (1/4) */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Info Card */}
+          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-lg border border-teal-200 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-teal-600" />
+              <h3 className="font-semibold text-gray-900">About Custom Features</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Enable advanced features to give businesses more control over their storefront appearance and functionality.
             </p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-600">Features are enabled per business</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-600">Business owners configure their own settings</p>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-gray-600">Changes take effect immediately</p>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </>
-            )}
-          </button>
+
+          {/* Feature Status */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Enabled Features</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Brands</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.brandsFeatureEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.brandsFeatureEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Collections</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.collectionsFeatureEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.collectionsFeatureEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Custom Menu</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.customMenuEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.customMenuEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Custom Filtering</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.customFilteringEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.customFilteringEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="space-y-2">
+              <Link
+                href={`/superadmin/businesses/${businessId}`}
+                className="flex items-center justify-between text-sm text-gray-600 hover:text-teal-600 py-2"
+              >
+                <span>Business Details</span>
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+              </Link>
+              <Link
+                href={`/superadmin/businesses/${businessId}/anomalies`}
+                className="flex items-center justify-between text-sm text-gray-600 hover:text-teal-600 py-2"
+              >
+                <span>View Anomalies</span>
+                <ChevronLeft className="w-4 h-4 rotate-180" />
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
