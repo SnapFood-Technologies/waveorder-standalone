@@ -242,7 +242,7 @@ for (const externalProduct of products) {
       businessId: "X",
       name: "Swatch Air Max",
       price: 150,
-      brandId: "brand-nike-id",
+      brandId: "brand-brand-id",
       collectionIds: ["collection-summer-id"],
       groupIds: ["group-featured-id"],
       connectedBusinesses: ["Y"]  // Y can sell it
@@ -280,7 +280,7 @@ Products List:
 │ Swatch Air Max               $150        │
 │ [Business X]  ← Blue badge             │
 ├────────────────────────────────────────┤
-│ Adidas Ultraboost          $180        │
+│ Swarovski Ultraboost          $180        │
 │ [Business X]  ← Blue badge             │
 ├────────────────────────────────────────┤
 │ Y's Product                $50         │
@@ -351,8 +351,8 @@ const brands = await prisma.brand.findMany({
 ┌─────────────────────────┐
 │ Filter by Brand:        │
 │ ☐ Swatch (X)              │
-│ ☐ Adidas (X)            │
-│ ☐ Puma (Z)              │
+│ ☐ Swarovski (X)            │
+│ ☐ Villeroy and Boch (Z)              │
 │ ☐ Y's Brand (Y)         │
 ├─────────────────────────┤
 │ Filter by Collection:   │
@@ -370,7 +370,7 @@ const brands = await prisma.brand.findMany({
 **Filter Query:**
 ```javascript
 products.filter(p => 
-  p.brandId === "nike-id" &&
+  p.brandId === "brand-id" &&
   (p.businessId === "Y" || ["X", "Z"].includes(p.businessId))
 )
 ```
@@ -603,8 +603,8 @@ const brands = await prisma.brand.findMany({
 // Y's storefront shows:
 Filter by Brand:
 ☐ Swatch (from X)
-☐ Adidas (from X)
-☐ Puma (from Z)
+☐ Swarovski (from X)
+☐ Villeroy and Boch (from Z)
 ☐ ByBest Brand (from Y)
 ```
 
@@ -769,13 +769,13 @@ WHERE businessId IN ["Y", "X", "Z"]
     ▼
 Display Filter:
 ☐ Swatch (from X)
-☐ Adidas (from X)
-☐ Puma (from Z)
+☐ Swarovski (from X)
+☐ Villeroy and Boch (from Z)
     │
     │ Customer selects "Swatch"
     ▼
 Filter Products:
-WHERE brandId = "nike-id" AND businessId IN ["Y", "X", "Z"]
+WHERE brandId = "brand-id" AND businessId IN ["Y", "X", "Z"]
     │
     ▼
 Show Swatch products from X (and Y if Y has any)
