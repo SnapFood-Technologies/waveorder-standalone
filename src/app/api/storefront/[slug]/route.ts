@@ -145,54 +145,12 @@ export async function GET(
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
-    // Find business by slug
+    // Find business by slug (optimized for connected businesses)
     const business = await prisma.business.findUnique({
       where: { 
         slug,
         isActive: true,
         setupWizardCompleted: true
-      },
-      include: {
-        categories: {
-          where: { isActive: true },
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            // @ts-ignore - Parent relation will exist after Prisma client regeneration
-            parent: {
-              select: {
-                id: true,
-                name: true,
-                nameAl: true,
-                hideParentInStorefront: true
-              }
-            },
-            // @ts-ignore - Children relation will exist after Prisma client regeneration
-            children: {
-              where: { isActive: true },
-              orderBy: { sortOrder: 'asc' },
-              select: {
-                id: true,
-                name: true,
-                nameAl: true,
-                description: true,
-                descriptionAl: true,
-                image: true,
-                sortOrder: true
-              }
-            },
-            products: {
-              where: { isActive: true },
-              include: {
-                variants: {
-                  orderBy: { price: 'asc' }
-                },
-                modifiers: {
-                  orderBy: { price: 'asc' }
-                }
-              }
-            }
-          }
-        }
       }
     }) as any
 
@@ -205,6 +163,67 @@ export async function GET(
     // Set business context for Sentry
     Sentry.setTag('business_id', business.id)
     Sentry.setTag('business_type', business.businessType)
+
+    // Optimized query for connected businesses
+    // Check if business has connections (performance optimization)
+    const hasConnections = business.connectedBusinesses && Array.isArray(business.connectedBusinesses) && business.connectedBusinesses.length > 0
+    
+    // Build businessIds array for queries
+    const businessIds = hasConnections 
+      ? [business.id, ...business.connectedBusinesses]
+      : [business.id]
+
+    // Fetch categories with products (optimized based on connections)
+    const categories = await prisma.category.findMany({
+      where: {
+        businessId: hasConnections ? { in: businessIds } : business.id,
+        isActive: true
+      },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        // @ts-ignore - Parent relation will exist after Prisma client regeneration
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            hideParentInStorefront: true
+          }
+        },
+        // @ts-ignore - Children relation will exist after Prisma client regeneration
+        children: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            description: true,
+            descriptionAl: true,
+            image: true,
+            sortOrder: true
+          }
+        },
+        products: {
+          where: {
+            businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true,
+            price: { gt: 0 }  // Don't show zero-price products
+          },
+          include: {
+            variants: {
+              orderBy: { price: 'asc' }
+            },
+            modifiers: {
+              orderBy: { price: 'asc' }
+            }
+          }
+        }
+      }
+    })
+
+    // Attach categories to business object
+    business.categories = categories
 
     // Extract tracking data from request
     const userAgent = request.headers.get('user-agent') || undefined

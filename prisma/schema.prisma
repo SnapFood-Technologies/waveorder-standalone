@@ -344,6 +344,10 @@ model Business {
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
 
+  // Custom Menu & Filtering Data (JSON)
+  customMenuItems     Json? // Array of custom menu items
+  customFilterSettings Json? // Filter configuration settings
+
   // Business Connections (marketplace/multi-business features)
   connectedBusinesses String[] @db.ObjectId
 
