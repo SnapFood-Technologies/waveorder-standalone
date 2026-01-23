@@ -412,13 +412,13 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Recent Business Registrations */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Recent Business Registrations</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-gray-500">Shows 10 most recent registrations, independent of date filter</p>
-              <div className="group relative">
+      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Business Registrations</h3>
+            <div className="flex items-start sm:items-center gap-2 mt-1">
+              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">Shows 10 most recent registrations, independent of date filter</p>
+              <div className="group relative flex-shrink-0">
                 <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                   Shows 10 most recent registrations, independent of date filter
@@ -428,7 +428,7 @@ export function SuperAdminDashboard() {
           </div>
           <Link 
             href="/superadmin/businesses"
-            className="px-4 py-2 text-sm font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors inline-flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-lg transition-colors inline-flex items-center justify-center gap-2 flex-shrink-0 w-full sm:w-auto"
           >
             View All
             <ArrowUpRight className="w-4 h-4" />

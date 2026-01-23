@@ -125,6 +125,7 @@ export async function PATCH(
         name: true,
         brandsFeatureEnabled: true,
         collectionsFeatureEnabled: true,
+        groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true
       }
