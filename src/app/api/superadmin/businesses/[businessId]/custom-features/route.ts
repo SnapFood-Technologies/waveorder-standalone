@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 // GET - Fetch custom features settings for a business
 export async function GET(
   request: Request,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden - SuperAdmin access required' }, { status: 403 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
 
     // Fetch business with custom features settings
     const business = await prisma.business.findUnique({
@@ -64,7 +64,7 @@ export async function GET(
 // PATCH - Update custom features settings for a business
 export async function PATCH(
   request: Request,
-  { params }: { params: { businessId: string } }
+  { params }: { params: Promise<{ businessId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -82,7 +82,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden - SuperAdmin access required' }, { status: 403 })
     }
 
-    const { businessId } = params
+    const { businessId } = await params
     const body = await request.json()
 
     const {
