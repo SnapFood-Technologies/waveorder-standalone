@@ -1602,6 +1602,14 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [priceMax, setPriceMax] = useState<number | ''>('')
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
+  
+  // Custom filtering states
+  const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set())
+  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set())
+  const [selectedBrands, setSelectedBrands] = useState<Set<string>>(new Set())
+  
+  // Custom menu states
+  const [selectedMenuItem, setSelectedMenuItem] = useState<string | null>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   
   // Infinite scroll for products
@@ -2281,6 +2289,33 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       products = products.filter(product => {
         // @ts-ignore
         return product.categoryId === selectedFilterCategory
+      })
+    }
+
+    // Apply custom filtering (collections, groups, brands)
+    if (selectedCollections.size > 0) {
+      // @ts-ignore
+      products = products.filter(product => {
+        // @ts-ignore
+        const productCollections = product.collectionIds || []
+        return productCollections.some((colId: string) => selectedCollections.has(colId))
+      })
+    }
+
+    if (selectedGroups.size > 0) {
+      // @ts-ignore
+      products = products.filter(product => {
+        // @ts-ignore
+        const productGroups = product.groupIds || []
+        return productGroups.some((groupId: string) => selectedGroups.has(groupId))
+      })
+    }
+
+    if (selectedBrands.size > 0) {
+      // @ts-ignore
+      products = products.filter(product => {
+        // @ts-ignore
+        return product.brandId && selectedBrands.has(product.brandId)
       })
     }
 

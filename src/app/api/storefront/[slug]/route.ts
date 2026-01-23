@@ -225,6 +225,53 @@ export async function GET(
     // Attach categories to business object
     business.categories = categories
 
+    // Fetch additional entities for custom menu/filtering (if enabled)
+    let collections: any[] = []
+    let groups: any[] = []
+    let brands: any[] = []
+
+    if (business.customMenuEnabled || business.customFilteringEnabled) {
+      const customFilterSettings = business.customFilterSettings as any || {}
+      
+      // Fetch collections if menu enabled OR filtering enabled for collections
+      if (business.customMenuEnabled || customFilterSettings.collectionsEnabled) {
+        collections = await prisma.collection.findMany({
+          where: {
+            businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        })
+      }
+      
+      // Fetch groups if menu enabled OR filtering enabled for groups
+      if (business.customMenuEnabled || customFilterSettings.groupsEnabled) {
+        groups = await prisma.group.findMany({
+          where: {
+            businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        })
+      }
+      
+      // Fetch brands if filtering enabled for brands
+      if (customFilterSettings.brandsEnabled) {
+        brands = await prisma.brand.findMany({
+          where: {
+            businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        })
+      }
+    }
+
+    // Attach to business object
+    business.collections = collections
+    business.groups = groups
+    business.brands = brands
+
     // Extract tracking data from request
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined

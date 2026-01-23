@@ -36,7 +36,9 @@ import {
   MessageSquare,
   Tag,
   Layers,
-  FolderTree
+  FolderTree,
+  Menu,
+  SlidersHorizontal
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -68,6 +70,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [brandsEnabled, setBrandsEnabled] = useState(false)
   const [collectionsEnabled, setCollectionsEnabled] = useState(false)
   const [groupsEnabled, setGroupsEnabled] = useState(false)
+  const [customMenuEnabled, setCustomMenuEnabled] = useState(false)
+  const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -94,6 +98,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setBrandsEnabled(data.business?.brandsFeatureEnabled || false)
           setCollectionsEnabled(data.business?.collectionsFeatureEnabled || false)
           setGroupsEnabled(data.business?.groupsFeatureEnabled || false)
+          setCustomMenuEnabled(data.business?.customMenuEnabled || false)
+          setCustomFilteringEnabled(data.business?.customFilteringEnabled || false)
         }
       } catch (error) {
         console.error('Error fetching feature flags:', error)
@@ -176,11 +182,26 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: Palette, 
       requiredPlan: 'STARTER'
     },
+    // @ts-ignore
+    ...(customMenuEnabled ? [{
+      name: 'Custom Menu', 
+      href: `${baseUrl}/custom-menu`, 
+      icon: Menu, 
+      requiredPlan: 'STARTER' as Plan
+    }] : []),
+    // @ts-ignore
+    ...(customFilteringEnabled ? [{
+      name: 'Custom Filtering', 
+      href: `${baseUrl}/custom-filtering`, 
+      icon: SlidersHorizontal, 
+      requiredPlan: 'STARTER' as Plan
+    }] : []),
     { 
       name: 'Marketing', 
       href: `${baseUrl}/marketing`, 
       icon: Megaphone, 
-      requiredPlan: 'STARTER'
+      // @ts-ignore
+      requiredPlan: 'STARTER' as Plan
     },
     
     // Help & Support (only show when not impersonating)
