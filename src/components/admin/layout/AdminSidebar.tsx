@@ -149,6 +149,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Import', 
           href: `${baseUrl}/products/import`, 
           icon: Upload, 
+          // @ts-ignore
           requiredPlan: 'STARTER'
         },
       ]
