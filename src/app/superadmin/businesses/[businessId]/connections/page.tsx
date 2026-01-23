@@ -210,7 +210,7 @@ export default function BusinessConnectionsPage() {
             <div key={business.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-4">
                 {business.logo ? (
-                  <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-lg object-cover" />
+                  <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-lg object-contain" />
                 ) : (
                   <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                     <Store className="w-6 h-6 text-gray-400" />
@@ -284,7 +284,7 @@ export default function BusinessConnectionsPage() {
                     >
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         {business.logo ? (
-                          <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                          <img src={business.logo} alt={business.name} className="w-12 h-12 rounded-lg object-contain flex-shrink-0" />
                         ) : (
                           <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                             <Store className="w-6 h-6 text-gray-400" />

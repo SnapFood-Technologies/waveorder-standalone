@@ -65,10 +65,10 @@ export async function POST(
       )
     }
 
-    // Get business to ensure it exists and get connected businesses
+    // Get business to ensure it exists
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { id: true, name: true, connectedBusinesses: true }
+      select: { id: true, name: true }
     })
 
     if (!business) {
@@ -77,6 +77,18 @@ export async function POST(
         { status: 404 }
       )
     }
+
+    // CORRECT LOGIC: Find businesses that have THIS business in THEIR connectedBusinesses array
+    // These are the "originators" or "marketplace owners" that want to see this business's products
+    const originators = await prisma.business.findMany({
+      where: {
+        connectedBusinesses: { has: businessId }
+      },
+      select: { id: true }
+    })
+
+    // Get array of originator IDs - these are who should see the synced products
+    const connectedBusinessIds = originators.map(b => b.id)
 
     // Parse endpoints and brand IDs
     const endpoints = sync.externalSystemEndpoints as any || {}
@@ -227,7 +239,7 @@ export async function POST(
             
             try {
               // Process product and get updated categories array (in case new categories were created)
-              const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories, business)
+              const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories, connectedBusinessIds)
               // Update the shared allCategories array with newly created categories
               // Replace the array reference to ensure all subsequent products see the new categories
               if (updatedCategories && updatedCategories.length > allCategories.length) {
@@ -361,7 +373,7 @@ function extractName(nameField: any): { en: string; sq: string } {
 
 // Helper function to process external product and create/update in WaveOrder
 // Returns the updated categories array (including newly created categories)
-async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[], business?: any): Promise<any[]> {
+async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[], connectedBusinessIds?: string[]): Promise<any[]> {
   // Validate required fields
   if (!externalProduct.id) {
     throw new Error('Product missing id')
@@ -444,7 +456,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           nameAl: parentNames.sq || parentNames.en || null,
           sortOrder: 0,
           isActive: true,
-          connectedBusinesses: business?.connectedBusinesses || [],
+          connectedBusinesses: connectedBusinessIds,
           metadata: {
             externalCategoryId: externalParentCategoryId.toString(),
             externalSyncId: syncId,
@@ -500,7 +512,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       parentId: parentCategoryId,
       sortOrder: 0,
       isActive: true,
-      connectedBusinesses: business?.connectedBusinesses || []
+      connectedBusinesses: connectedBusinessIds
     }
     
     if (externalCategoryId) {
@@ -540,7 +552,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           name: categoryNameEn,
           nameAl: categoryNameSq || categoryNameEn || null,
           parentId: parentCategoryId,
-          connectedBusinesses: business?.connectedBusinesses || [],
+          connectedBusinesses: connectedBusinessIds,
           metadata: {
             ...currentMetadata,
             externalCategoryId: externalCategoryId.toString(),
@@ -685,7 +697,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           nameAl: brandNames.sq || brandNames.en || null,
           sortOrder: 0,
           isActive: true,
-          connectedBusinesses: business?.connectedBusinesses || [],
+          connectedBusinesses: connectedBusinessIds,
           metadata: {
             externalBrandId: externalBrandId,
             externalSyncId: syncId,
@@ -698,7 +710,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       await prisma.brand.update({
         where: { id: brand.id },
         data: {
-          connectedBusinesses: business?.connectedBusinesses || []
+          connectedBusinesses: connectedBusinessIds
         }
       })
     }
@@ -729,14 +741,14 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
               sortOrder: 0,
               isActive: true,
               featured: false,
-              connectedBusinesses: business?.connectedBusinesses || []
+              connectedBusinesses: connectedBusinessIds
             }
           })
         } else {
           await prisma.collection.update({
             where: { id: collection.id },
             data: {
-              connectedBusinesses: business?.connectedBusinesses || []
+              connectedBusinesses: connectedBusinessIds
             }
           })
         }
@@ -772,7 +784,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
               sortOrder: 0,
               isActive: true,
               featured: false,
-              connectedBusinesses: business?.connectedBusinesses || [],
+              connectedBusinesses: connectedBusinessIds || [],
               ...(externalCollectionId && {
                 metadata: {
                   externalCollectionId: externalCollectionId,
@@ -786,7 +798,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           await prisma.collection.update({
             where: { id: collection.id },
             data: {
-              connectedBusinesses: business?.connectedBusinesses || []
+              connectedBusinesses: connectedBusinessIds || []
             }
           })
         }
@@ -822,7 +834,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
             nameAl: groupNames.sq || groupNames.en || null,
             sortOrder: 0,
             isActive: true,
-            connectedBusinesses: business?.connectedBusinesses || [],
+            connectedBusinesses: connectedBusinessIds,
             metadata: {
               externalGroupId: externalGroupId,
               externalSyncId: syncId,
@@ -834,7 +846,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
         await prisma.group.update({
           where: { id: group.id },
           data: {
-            connectedBusinesses: business?.connectedBusinesses || []
+            connectedBusinesses: connectedBusinessIds
           }
         })
       }
@@ -863,7 +875,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     metaDescription: metaDescEn,
     saleStartDate,
     saleEndDate,
-    connectedBusinesses: business?.connectedBusinesses || [],
+    connectedBusinesses: connectedBusinessIds,
     ...(brandId && { brandId }),
     ...(collectionIds.length > 0 && { collectionIds }),
     ...(groupIds.length > 0 && { groupIds }),
