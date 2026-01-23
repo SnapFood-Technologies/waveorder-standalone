@@ -118,6 +118,13 @@ export async function GET(
         onboardingStep: true,
         setupWizardCompleted: true,
         
+        // Custom Features
+        brandsFeatureEnabled: true,
+        collectionsFeatureEnabled: true,
+        groupsFeatureEnabled: true,
+        customMenuEnabled: true,
+        customFilteringEnabled: true,
+        
         // Status
         isActive: true,
         createdAt: true,
