@@ -1474,6 +1474,13 @@ interface StoreData {
   mobileCartStyle?: 'bar' | 'badge'
   cartBadgeColor?: string      // NEW
   featuredBadgeColor?: string  // NEW
+  customMenuEnabled?: boolean
+  customMenuItems?: any[]
+  customFilteringEnabled?: boolean
+  customFilterSettings?: any
+  collections?: any[]
+  groups?: any[]
+  brands?: any[]
 }
 
 interface Category {
@@ -3032,8 +3039,80 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   )}
 </div>
 
-          {/* Category Tabs */}
+          {/* Category Tabs / Custom Menu */}
           <div className="space-y-4 mb-6">
+            {/* Check if custom menu is enabled and has items */}
+            {storeData.customMenuEnabled && storeData.customMenuItems && (storeData.customMenuItems as any[]).length > 0 ? (
+              /* CUSTOM MENU */
+              <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                <button
+                  onClick={() => {
+                    setSelectedMenuItem(null)
+                    setSelectedCategory('all')
+                    setSelectedSubCategory(null)
+                    setSelectedCollections(new Set())
+                    setSelectedGroups(new Set())
+                    setSelectedBrands(new Set())
+                  }}
+                  className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
+                    !selectedMenuItem
+                      ? 'border-b-2'
+                      : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                  }`}
+                  style={{ 
+                    color: !selectedMenuItem ? primaryColor : undefined,
+                    borderBottomColor: !selectedMenuItem ? primaryColor : 'transparent'
+                  }}
+                >
+                  {translations.all || 'All'}
+                </button>
+                
+                {(storeData.customMenuItems as any[]).filter(item => item.isActive).map((item: any) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (item.type === 'link' && item.url) {
+                        window.open(item.url, '_blank')
+                      } else {
+                        setSelectedMenuItem(item.id)
+                        setSearchTerm('')
+                        
+                        // Clear all filters first
+                        setSelectedCollections(new Set())
+                        setSelectedGroups(new Set())
+                        setSelectedBrands(new Set())
+                        setSelectedSubCategory(null)
+                        
+                        // Apply filter based on type
+                        if (item.type === 'category') {
+                          setSelectedCategory(item.targetId)
+                        } else if (item.type === 'collection') {
+                          setSelectedCategory('all')
+                          setSelectedCollections(new Set([item.targetId]))
+                        } else if (item.type === 'group') {
+                          setSelectedCategory('all')
+                          setSelectedGroups(new Set([item.targetId]))
+                        }
+                      }
+                    }}
+                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative inline-flex items-center gap-1 ${
+                      selectedMenuItem === item.id
+                        ? 'border-b-2'
+                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                    }`}
+                    style={{ 
+                      color: selectedMenuItem === item.id ? primaryColor : undefined,
+                      borderBottomColor: selectedMenuItem === item.id ? primaryColor : 'transparent'
+                    }}
+                  >
+                    {storeData.storefrontLanguage === 'sq' && item.nameAl ? item.nameAl : item.name}
+                    {item.type === 'link' && <ExternalLink className="h-3 w-3" />}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              /* DEFAULT CATEGORY MENU */
+              <>
             {/* Parent Category Tabs */}
             {!shouldShowOnlySubcategories && (
               <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
@@ -3204,6 +3283,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   )
                 })}
               </div>
+            )}
+            </>
             )}
           </div>
 
