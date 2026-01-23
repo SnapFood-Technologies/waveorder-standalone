@@ -65,10 +65,10 @@ export async function POST(
       )
     }
 
-    // Get business to ensure it exists
+    // Get business to ensure it exists and get connected businesses
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { id: true, name: true }
+      select: { id: true, name: true, connectedBusinesses: true }
     })
 
     if (!business) {
@@ -227,7 +227,7 @@ export async function POST(
             
             try {
               // Process product and get updated categories array (in case new categories were created)
-              const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories)
+              const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories, business)
               // Update the shared allCategories array with newly created categories
               // Replace the array reference to ensure all subsequent products see the new categories
               if (updatedCategories && updatedCategories.length > allCategories.length) {
@@ -361,7 +361,7 @@ function extractName(nameField: any): { en: string; sq: string } {
 
 // Helper function to process external product and create/update in WaveOrder
 // Returns the updated categories array (including newly created categories)
-async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[]): Promise<any[]> {
+async function processExternalProduct(externalProduct: any, businessId: string, syncId: string, preloadedCategories?: any[], business?: any): Promise<any[]> {
   // Validate required fields
   if (!externalProduct.id) {
     throw new Error('Product missing id')
@@ -444,6 +444,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           nameAl: parentNames.sq || parentNames.en || null,
           sortOrder: 0,
           isActive: true,
+          connectedBusinesses: business?.connectedBusinesses || [],
           metadata: {
             externalCategoryId: externalParentCategoryId.toString(),
             externalSyncId: syncId,
@@ -498,7 +499,8 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       nameAl: categoryNameSq || categoryNameEn || null,
       parentId: parentCategoryId,
       sortOrder: 0,
-      isActive: true
+      isActive: true,
+      connectedBusinesses: business?.connectedBusinesses || []
     }
     
     if (externalCategoryId) {
@@ -538,6 +540,7 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
           name: categoryNameEn,
           nameAl: categoryNameSq || categoryNameEn || null,
           parentId: parentCategoryId,
+          connectedBusinesses: business?.connectedBusinesses || [],
           metadata: {
             ...currentMetadata,
             externalCategoryId: externalCategoryId.toString(),
@@ -655,6 +658,187 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     ? (metaDescObj.sq || metaDescObj.en || null)
     : null
 
+  // Handle Brand (if brand_info exists)
+  let brandId: string | null = null
+  if (externalProduct.brand_info && externalProduct.brand_info.id) {
+    const externalBrandId = externalProduct.brand_info.id.toString()
+    const brandNames = extractName(externalProduct.brand_info.name || externalProduct.brand_info.brandName || 'Unknown Brand')
+    
+    // Find existing brand by external ID
+    let brand = await prisma.brand.findFirst({
+      where: {
+        businessId,
+        metadata: {
+          path: ['externalBrandId'],
+          equals: externalBrandId
+        }
+      }
+    })
+    
+    if (!brand) {
+      // Create new brand
+      brand = await prisma.brand.create({
+        data: {
+          businessId,
+          name: brandNames.en || 'Unknown Brand',
+          nameAl: brandNames.sq || brandNames.en || null,
+          sortOrder: 0,
+          isActive: true,
+          connectedBusinesses: business?.connectedBusinesses || [],
+          metadata: {
+            externalBrandId: externalBrandId,
+            externalSyncId: syncId,
+            externalData: externalProduct.brand_info
+          }
+        }
+      })
+    } else {
+      // Update existing brand with connected businesses
+      await prisma.brand.update({
+        where: { id: brand.id },
+        data: {
+          connectedBusinesses: business?.connectedBusinesses || []
+        }
+      })
+    }
+    
+    brandId = brand.id
+  }
+
+  // Handle Collections (if collections array exists)
+  const collectionIds: string[] = []
+  if (Array.isArray(externalProduct.collections) && externalProduct.collections.length > 0) {
+    for (const extCollection of externalProduct.collections) {
+      if (typeof extCollection === 'string') {
+        // Handle string format (collection name only)
+        const collectionName = extCollection
+        
+        let collection = await prisma.collection.findFirst({
+          where: {
+            businessId,
+            name: collectionName
+          }
+        })
+        
+        if (!collection) {
+          collection = await prisma.collection.create({
+            data: {
+              businessId,
+              name: collectionName,
+              sortOrder: 0,
+              isActive: true,
+              featured: false,
+              connectedBusinesses: business?.connectedBusinesses || []
+            }
+          })
+        } else {
+          await prisma.collection.update({
+            where: { id: collection.id },
+            data: {
+              connectedBusinesses: business?.connectedBusinesses || []
+            }
+          })
+        }
+        
+        collectionIds.push(collection.id)
+      } else if (typeof extCollection === 'object' && extCollection.name) {
+        // Handle object format with id
+        const externalCollectionId = extCollection.id?.toString()
+        const collectionNames = extractName(extCollection.name)
+        
+        let collection = await prisma.collection.findFirst({
+          where: {
+            businessId,
+            ...(externalCollectionId && {
+              metadata: {
+                path: ['externalCollectionId'],
+                equals: externalCollectionId
+              }
+            })
+          }
+        })
+        
+        if (!collection) {
+          collection = await prisma.collection.create({
+            data: {
+              businessId,
+              name: collectionNames.en || 'Unnamed Collection',
+              nameAl: collectionNames.sq || collectionNames.en || null,
+              sortOrder: 0,
+              isActive: true,
+              featured: false,
+              connectedBusinesses: business?.connectedBusinesses || [],
+              ...(externalCollectionId && {
+                metadata: {
+                  externalCollectionId: externalCollectionId,
+                  externalSyncId: syncId,
+                  externalData: extCollection
+                }
+              })
+            }
+          })
+        } else {
+          await prisma.collection.update({
+            where: { id: collection.id },
+            data: {
+              connectedBusinesses: business?.connectedBusinesses || []
+            }
+          })
+        }
+        
+        collectionIds.push(collection.id)
+      }
+    }
+  }
+
+  // Handle Groups (if groups array exists)
+  const groupIds: string[] = []
+  if (Array.isArray(externalProduct.groups) && externalProduct.groups.length > 0) {
+    for (const extGroup of externalProduct.groups) {
+      const externalGroupId = extGroup.id?.toString()
+      const groupNames = extractName(extGroup.name)
+      
+      let group = await prisma.group.findFirst({
+        where: {
+          businessId,
+          ...(externalGroupId && {
+            metadata: {
+              path: ['externalGroupId'],
+              equals: externalGroupId
+            }
+          })
+        }
+      })
+      
+      if (!group) {
+        group = await prisma.group.create({
+          data: {
+            businessId,
+            name: groupNames.en || 'Unnamed Group',
+            nameAl: groupNames.sq || groupNames.en || null,
+            sortOrder: 0,
+            isActive: true,
+            connectedBusinesses: business?.connectedBusinesses || [],
+            metadata: {
+              externalGroupId: externalGroupId,
+              externalSyncId: syncId,
+              externalData: extGroup
+            }
+          }
+        })
+      } else {
+        await prisma.group.update({
+          where: { id: group.id },
+          data: {
+            connectedBusinesses: business?.connectedBusinesses || []
+          }
+        })
+      }
+      
+      groupIds.push(group.id)
+    }
+  }
+
   // Prepare product data
   const productData: any = {
     businessId,
@@ -675,6 +859,10 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     metaDescription: metaDescEn,
     saleStartDate,
     saleEndDate,
+    connectedBusinesses: business?.connectedBusinesses || [],
+    ...(brandId && { brandId }),
+    ...(collectionIds.length > 0 && { collectionIds }),
+    ...(groupIds.length > 0 && { groupIds }),
     metadata: productMetadata
   }
 
