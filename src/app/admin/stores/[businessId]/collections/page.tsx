@@ -46,6 +46,7 @@ export default function CollectionsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [featureDisabled, setFeatureDisabled] = useState(false)
+  const [business, setBusiness] = useState<{ language?: string } | null>(null)
 
   // Form state
   const [formData, setFormData] = useState({
