@@ -18,8 +18,19 @@ export async function GET(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Get connected businesses for this business
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
+    })
+
     const categories = await prisma.category.findMany({
-      where: { businessId },
+      where: {
+        OR: [
+          { businessId: businessId },
+          { businessId: { in: business?.connectedBusinesses || [] } }
+        ]
+      },
       include: {
         parent: {
           select: {
@@ -42,7 +53,8 @@ export async function GET(
             products: true,
             children: true
           }
-        }
+        },
+        business: { select: { id: true, name: true } }
       },
       orderBy: [
         { parentId: 'asc' },

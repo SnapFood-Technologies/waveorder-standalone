@@ -19,6 +19,12 @@ export async function GET(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Get connected businesses for this business
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
+    })
+
     const { searchParams } = new URL(request.url)
     
     const page = parseInt(searchParams.get('page') || '1')
@@ -28,8 +34,12 @@ export async function GET(
     const status = searchParams.get('status') || 'all'
     const skip = (page - 1) * limit
 
+    // Include products from own business + connected businesses
     const whereClause: any = {
-      businessId
+      OR: [
+        { businessId: businessId },
+        { businessId: { in: business?.connectedBusinesses || [] } }
+      ]
     }
 
     if (search) {
@@ -58,7 +68,10 @@ export async function GET(
     if (status === 'low-stock') {
       const lowStockProducts = await prisma.product.findMany({
         where: {
-          businessId,
+          OR: [
+            { businessId: businessId },
+            { businessId: { in: business?.connectedBusinesses || [] } }
+          ],
           trackInventory: true,
           lowStockAlert: { not: null },
           ...(search && {
@@ -86,7 +99,10 @@ export async function GET(
     if (status === 'low-stock') {
       const allProducts = await prisma.product.findMany({
         where: {
-          businessId,
+          OR: [
+            { businessId: businessId },
+            { businessId: { in: business?.connectedBusinesses || [] } }
+          ],
           trackInventory: true,
           lowStockAlert: { not: null },
           ...(search && {
@@ -101,7 +117,8 @@ export async function GET(
         include: {
           category: { select: { id: true, name: true } },
           variants: true,
-          modifiers: true
+          modifiers: true,
+          business: { select: { id: true, name: true } }
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -117,7 +134,8 @@ export async function GET(
         include: {
           category: { select: { id: true, name: true } },
           variants: true,
-          modifiers: true
+          modifiers: true,
+          business: { select: { id: true, name: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -128,7 +146,12 @@ export async function GET(
     const pages = Math.ceil(total / limit)
 
     // Get stats for all products (not filtered by current page)
-    const statsWhereClause: any = { businessId }
+    const statsWhereClause: any = {
+      OR: [
+        { businessId: businessId },
+        { businessId: { in: business?.connectedBusinesses || [] } }
+      ]
+    }
     
     // Apply search and category filters to stats if they exist
     if (search) {

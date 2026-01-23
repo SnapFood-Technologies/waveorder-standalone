@@ -23,14 +23,26 @@ export async function GET(
       return NextResponse.json({ message: featureAccess.error }, { status: featureAccess.status })
     }
 
+    // Get connected businesses for this business
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
+    })
+
     const brands = await prisma.brand.findMany({
-      where: { businessId },
+      where: {
+        OR: [
+          { businessId: businessId },
+          { businessId: { in: business?.connectedBusinesses || [] } }
+        ]
+      },
       include: {
         _count: {
           select: {
             products: true
           }
-        }
+        },
+        business: { select: { id: true, name: true } }
       },
       orderBy: [
         { sortOrder: 'asc' },

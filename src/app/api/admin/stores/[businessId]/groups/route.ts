@@ -23,8 +23,22 @@ export async function GET(
       return NextResponse.json({ message: featureAccess.error }, { status: featureAccess.status })
     }
 
+    // Get connected businesses for this business
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
+    })
+
     const groups = await prisma.group.findMany({
-      where: { businessId },
+      where: {
+        OR: [
+          { businessId: businessId },
+          { businessId: { in: business?.connectedBusinesses || [] } }
+        ]
+      },
+      include: {
+        business: { select: { id: true, name: true } }
+      },
       orderBy: { sortOrder: 'asc' }
     })
 
@@ -33,7 +47,10 @@ export async function GET(
       groups.map(async (group) => {
         const productCount = await prisma.product.count({
           where: {
-            businessId,
+            OR: [
+              { businessId: businessId },
+              { businessId: { in: business?.connectedBusinesses || [] } }
+            ],
             groupIds: {
               has: group.id
             }

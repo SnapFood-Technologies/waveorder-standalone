@@ -119,25 +119,15 @@ export async function POST(
       return NextResponse.json({ error: 'Already connected to this business' }, { status: 400 })
     }
 
-    // BIDIRECTIONAL CONNECTION:
-    await prisma.$transaction([
-      prisma.business.update({
-        where: { id: businessId },
-        data: {
-          connectedBusinesses: {
-            push: targetBusinessId
-          }
+    // ONE-WAY CONNECTION: Only update current business
+    await prisma.business.update({
+      where: { id: businessId },
+      data: {
+        connectedBusinesses: {
+          push: targetBusinessId
         }
-      }),
-      prisma.business.update({
-        where: { id: targetBusinessId },
-        data: {
-          connectedBusinesses: {
-            push: businessId
-          }
-        }
-      })
-    ])
+      }
+    })
 
     return NextResponse.json({ 
       success: true,
@@ -179,18 +169,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Target business ID is required' }, { status: 400 })
     }
 
-    // Get businesses
+    // Get current business
     const currentBusiness = await prisma.business.findUnique({
       where: { id: businessId },
       select: { connectedBusinesses: true }
     })
 
-    const targetBusiness = await prisma.business.findUnique({
-      where: { id: targetBusinessId },
-      select: { connectedBusinesses: true }
-    })
-
-    if (!currentBusiness || !targetBusiness) {
+    if (!currentBusiness) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
@@ -199,25 +184,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Businesses are not connected' }, { status: 400 })
     }
 
-    // BIDIRECTIONAL DISCONNECTION:
-    await prisma.$transaction([
-      prisma.business.update({
-        where: { id: businessId },
-        data: {
-          connectedBusinesses: currentBusiness.connectedBusinesses.filter(
-            (id) => id !== targetBusinessId
-          )
-        }
-      }),
-      prisma.business.update({
-        where: { id: targetBusinessId },
-        data: {
-          connectedBusinesses: targetBusiness.connectedBusinesses.filter(
-            (id) => id !== businessId
-          )
-        }
-      })
-    ])
+    // ONE-WAY DISCONNECTION: Only update current business
+    await prisma.business.update({
+      where: { id: businessId },
+      data: {
+        connectedBusinesses: currentBusiness.connectedBusinesses.filter(
+          (id) => id !== targetBusinessId
+        )
+      }
+    })
 
     return NextResponse.json({ 
       success: true,

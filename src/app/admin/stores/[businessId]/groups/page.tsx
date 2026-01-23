@@ -14,6 +14,10 @@ interface Group {
   isActive: boolean
   metadata?: any
   productCount?: number
+  business: {
+    id: string
+    name: string
+  }
 }
 
 interface Business {
@@ -229,7 +233,14 @@ export default function GroupsPage() {
                 <tr key={group.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
-                      <div className="font-medium text-gray-900">{group.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{group.name}</span>
+                        {group.business.id !== businessId && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                            {group.business.name}
+                          </span>
+                        )}
+                      </div>
                       {group.nameAl && (
                         <div className="text-sm text-gray-500">{group.nameAl}</div>
                       )}

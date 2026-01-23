@@ -46,6 +46,10 @@ interface Product {
     id: string
     name: string
   }
+  business: {
+    id: string
+    name: string
+  }
   variants: ProductVariant[]
   modifiers: ProductModifier[]
   createdAt: string
@@ -572,6 +576,11 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                     
                     {/* Status badges */}
                     <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      {product.business.id !== businessId && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
+                          {product.business.name}
+                        </span>
+                      )}
                       {product.featured && (
                         <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded font-medium">
                           Featured

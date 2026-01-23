@@ -25,6 +25,10 @@ interface Brand {
   website?: string | null
   sortOrder: number
   isActive: boolean
+  business: {
+    id: string
+    name: string
+  }
   _count: {
     products: number
   }
@@ -255,6 +259,11 @@ export default function BrandsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-medium text-gray-900">{brand.name}</h3>
+                      {brand.business.id !== businessId && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                          {brand.business.name}
+                        </span>
+                      )}
                       {!brand.isActive && (
                         <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded">
                           Inactive

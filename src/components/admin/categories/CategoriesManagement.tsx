@@ -34,6 +34,10 @@ interface Category {
     nameAl?: string
     sortOrder: number
   }>
+  business?: {
+    id: string
+    name: string
+  }
   hideParentInStorefront?: boolean
   image?: string
   sortOrder: number
@@ -361,6 +365,11 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
                             <h4 className="font-semibold text-gray-900">{category.name}</h4>
                             {category.nameAl && (
                               <span className="text-xs text-gray-500">({category.nameAl})</span>
+                            )}
+                            {category.business && category.business.id !== businessId && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded font-medium">
+                                {category.business.name}
+                              </span>
                             )}
                             {!category.isActive && (
                               <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">

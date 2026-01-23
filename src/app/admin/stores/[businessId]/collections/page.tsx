@@ -25,6 +25,10 @@ interface Collection {
   sortOrder: number
   isActive: boolean
   featured: boolean
+  business: {
+    id: string
+    name: string
+  }
   _count: {
     products: number
   }
@@ -262,7 +266,14 @@ export default function CollectionsPage() {
 
               {/* Content */}
               <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{collection.name}</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold text-gray-900">{collection.name}</h3>
+                  {collection.business.id !== businessId && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                      {collection.business.name}
+                    </span>
+                  )}
+                </div>
                 {collection.description && (
                   <p className="text-sm text-gray-600 line-clamp-2 mb-3">{collection.description}</p>
                 )}
