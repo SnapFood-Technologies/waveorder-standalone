@@ -502,16 +502,16 @@ model Product {
   saleStartDate DateTime? // When the sale price becomes active
   saleEndDate   DateTime? // When the sale price expires
 
-  categoryId String @db.ObjectId
-  businessId String @db.ObjectId
-  brandId    String? @db.ObjectId
+  categoryId    String   @db.ObjectId
+  businessId    String   @db.ObjectId
+  brandId       String?  @db.ObjectId
+  collectionIds String[] @db.ObjectId // Array of collection IDs (MongoDB-friendly)
 
   inventoryActivities InventoryActivity[]
 
-  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  brand       Brand?       @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  collections Collection[] @relation("ProductCollections")
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  brand    Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
   variants   ProductVariant[]
   modifiers  ProductModifier[]
@@ -563,8 +563,7 @@ model Collection {
 
   metadata Json? // For storing external system data (e.g., external collection IDs)
 
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  products Product[] @relation("ProductCollections")
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
