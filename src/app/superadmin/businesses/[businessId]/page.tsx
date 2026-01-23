@@ -31,7 +31,8 @@ import {
   PowerOff,
   Truck,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Link2
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -880,6 +881,25 @@ export default function BusinessDetailsPage() {
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Manage Custom Features
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </div>
+
+          {/* Connected Businesses CTA */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Link2 className="w-6 h-6 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Connected Businesses</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Manage business connections for marketplace and shared products
+            </p>
+            <Link
+              href={`/superadmin/businesses/${business.id}/connections`}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Link2 className="w-4 h-4 mr-2" />
+              Manage Connections
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>

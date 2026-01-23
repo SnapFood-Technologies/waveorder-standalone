@@ -343,6 +343,9 @@ model Business {
   groupsFeatureEnabled      Boolean @default(false)
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
+  
+  // Business Connections (marketplace/multi-business features)
+  connectedBusinesses String[] @db.ObjectId
 
   users              BusinessUser[]
   categories         Category[]
@@ -468,6 +471,9 @@ model Category {
   sortOrder  Int     @default(0)
   isActive   Boolean @default(true)
   businessId String  @db.ObjectId
+  
+  // Marketplace/Multi-business support
+  connectedBusinesses String[] @db.ObjectId
 
   metadata Json? // For storing external system data (e.g., external category IDs)
 
@@ -509,6 +515,9 @@ model Product {
   brandId       String?  @db.ObjectId
   collectionIds String[] @db.ObjectId // Array of collection IDs (MongoDB-friendly)
   groupIds      String[] @db.ObjectId // Array of group IDs (MongoDB-friendly)
+  
+  // Marketplace/Multi-business support - businesses that can also sell this product
+  connectedBusinesses String[] @db.ObjectId
 
   inventoryActivities InventoryActivity[]
 
@@ -563,6 +572,9 @@ model Collection {
   sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
   featured    Boolean @default(false)
+  
+  // Marketplace/Multi-business support
+  connectedBusinesses String[] @db.ObjectId
 
   metadata Json? // For storing external system data (e.g., external collection IDs)
 
@@ -584,6 +596,9 @@ model Group {
   description String?
   sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
+  
+  // Marketplace/Multi-business support
+  connectedBusinesses String[] @db.ObjectId
 
   metadata Json? // For storing external system data (e.g., external group IDs)
 
