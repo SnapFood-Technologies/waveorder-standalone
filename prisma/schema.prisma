@@ -337,6 +337,12 @@ model Business {
   notifyCustomerOnPaymentReceived Boolean @default(true)
   notifyCustomerOnPickedUpAndPaid Boolean @default(true)
 
+  // Custom Features (managed by SuperAdmin)
+  brandsFeatureEnabled       Boolean @default(false)
+  collectionsFeatureEnabled  Boolean @default(false)
+  customMenuEnabled          Boolean @default(false)
+  customFilteringEnabled     Boolean @default(false)
+
   users              BusinessUser[]
   categories         Category[]
   products           Product[]
@@ -346,6 +352,8 @@ model Business {
   visitorSessions    VisitorSession[]
   orderNotifications OrderNotification[]
   anomalies          Anomaly[]
+  brands             Brand[]
+  collections        Collection[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -496,11 +504,14 @@ model Product {
 
   categoryId String @db.ObjectId
   businessId String @db.ObjectId
+  brandId    String? @db.ObjectId
 
   inventoryActivities InventoryActivity[]
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  business    Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  brand       Brand?       @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  collections Collection[] @relation("ProductCollections")
 
   variants   ProductVariant[]
   modifiers  ProductModifier[]
@@ -512,6 +523,55 @@ model Product {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([brandId])
+}
+
+model Brand {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String  @db.ObjectId
+  name        String
+  nameAl      String? // Albanian name
+  description String?
+  logo        String?
+  website     String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  metadata Json? // For storing external system data (e.g., external brand IDs)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+}
+
+model Collection {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String  @db.ObjectId
+  name        String
+  nameAl      String? // Albanian name
+  description String?
+  image       String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+  featured    Boolean @default(false)
+
+  metadata Json? // For storing external system data (e.g., external collection IDs)
+
+  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  products Product[] @relation("ProductCollections")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@index([businessId, featured])
 }
 
 model ProductVariant {
