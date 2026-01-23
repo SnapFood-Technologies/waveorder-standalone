@@ -67,6 +67,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/stripe": "^8.0.416",
+    "@types/uuid": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.7",
     "tailwindcss": "^4",

@@ -665,15 +665,16 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     const brandNames = extractName(externalProduct.brand_info.name || externalProduct.brand_info.brandName || 'Unknown Brand')
     
     // Find existing brand by external ID
-    let brand = await prisma.brand.findFirst({
-      where: {
-        businessId,
-        metadata: {
-          path: ['externalBrandId'],
-          equals: externalBrandId
-        }
-      }
+    // Note: MongoDB JSON queries require string_contains for nested fields
+    const existingBrands = await prisma.brand.findMany({
+      where: { businessId }
     })
+    
+    let brand = existingBrands.find((b: any) => 
+      b.metadata && 
+      typeof b.metadata === 'object' && 
+      (b.metadata as any).externalBrandId === externalBrandId
+    )
     
     if (!brand) {
       // Create new brand
@@ -746,16 +747,20 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
         const externalCollectionId = extCollection.id?.toString()
         const collectionNames = extractName(extCollection.name)
         
-        let collection = await prisma.collection.findFirst({
-          where: {
-            businessId,
-            ...(externalCollectionId && {
-              metadata: {
-                path: ['externalCollectionId'],
-                equals: externalCollectionId
-              }
-            })
+        // Find by external ID or name
+        const existingCollections = await prisma.collection.findMany({
+          where: { businessId }
+        })
+        
+        let collection = existingCollections.find((c: any) => {
+          // Try to match by external ID first
+          if (externalCollectionId && c.metadata && typeof c.metadata === 'object') {
+            if ((c.metadata as any).externalCollectionId === externalCollectionId) {
+              return true
+            }
           }
+          // Fallback to name matching
+          return c.name === collectionNames.en
         })
         
         if (!collection) {
@@ -798,17 +803,16 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
       const externalGroupId = extGroup.id?.toString()
       const groupNames = extractName(extGroup.name)
       
-      let group = await prisma.group.findFirst({
-        where: {
-          businessId,
-          ...(externalGroupId && {
-            metadata: {
-              path: ['externalGroupId'],
-              equals: externalGroupId
-            }
-          })
-        }
+      // Find by external ID
+      const existingGroups = await prisma.group.findMany({
+        where: { businessId }
       })
+      
+      let group = existingGroups.find((g: any) => 
+        g.metadata && 
+        typeof g.metadata === 'object' && 
+        (g.metadata as any).externalGroupId === externalGroupId
+      )
       
       if (!group) {
         group = await prisma.group.create({

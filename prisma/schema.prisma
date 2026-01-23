@@ -345,7 +345,7 @@ model Business {
   customFilteringEnabled    Boolean @default(false)
 
   // Custom Menu & Filtering Data (JSON)
-  customMenuItems     Json? // Array of custom menu items
+  customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
 
   // Business Connections (marketplace/multi-business features)
@@ -553,6 +553,9 @@ model Brand {
   website     String?
   sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
+
+  // Marketplace/Multi-business support
+  connectedBusinesses String[] @db.ObjectId
 
   metadata Json? // For storing external system data (e.g., external brand IDs)
 
