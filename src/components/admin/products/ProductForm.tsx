@@ -53,10 +53,22 @@ interface Category {
   name: string
 }
 
+interface Brand {
+  id: string
+  name: string
+}
+
+interface Collection {
+  id: string
+  name: string
+}
+
 interface Business {
   currency: string
   language?: string
   storefrontLanguage?: string
+  brandsFeatureEnabled?: boolean
+  collectionsFeatureEnabled?: boolean
 }
 
 interface ProductForm {
@@ -77,6 +89,8 @@ interface ProductForm {
   isActive: boolean
   featured: boolean
   categoryId: string
+  brandId?: string
+  collectionIds: string[]
   variants: ProductVariant[]
   modifiers: ProductModifier[]
   metaTitle: string
@@ -105,6 +119,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     isActive: true,
     featured: false,
     categoryId: '',
+    brandId: undefined,
+    collectionIds: [],
     variants: [],
     modifiers: [],
     metaTitle: '',
@@ -112,7 +128,15 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   })
 
   const [categories, setCategories] = useState<Category[]>([])
-  const [business, setBusiness] = useState<Business>({ currency: 'USD', language: 'en', storefrontLanguage: 'en' })
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [business, setBusiness] = useState<Business>({ 
+    currency: 'USD', 
+    language: 'en', 
+    storefrontLanguage: 'en',
+    brandsFeatureEnabled: false,
+    collectionsFeatureEnabled: false
+  })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -127,6 +151,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   useEffect(() => {
     fetchBusinessData()
     fetchCategories()
+    fetchBrands()
+    fetchCollections()
     if (isEditing) {
       fetchProduct()
     }
@@ -140,7 +166,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         setBusiness({ 
           currency: data.business.currency,
           language: data.business.language || 'en',
-          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en'
+          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en',
+          brandsFeatureEnabled: data.business.brandsFeatureEnabled || false,
+          collectionsFeatureEnabled: data.business.collectionsFeatureEnabled || false
         })
         // Set default language based on business language
         if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq') {
@@ -161,6 +189,32 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
+    }
+  }
+
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/brands`)
+      if (response.ok) {
+        const data = await response.json()
+        setBrands(data.brands)
+      }
+    } catch (error) {
+      // Feature might not be enabled, silently fail
+      console.log('Brands feature not available or not enabled')
+    }
+  }
+
+  const fetchCollections = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/collections`)
+      if (response.ok) {
+        const data = await response.json()
+        setCollections(data.collections)
+      }
+    } catch (error) {
+      // Feature might not be enabled, silently fail
+      console.log('Collections feature not available or not enabled')
     }
   }
 
@@ -200,7 +254,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           originalPrice: data.product.originalPrice || undefined,
           saleStartDate: formatDateForInput(data.product.saleStartDate),
           saleEndDate: formatDateForInput(data.product.saleEndDate),
-          lowStockAlert: data.product.lowStockAlert || undefined
+          lowStockAlert: data.product.lowStockAlert || undefined,
+          brandId: data.product.brandId || undefined,
+          collectionIds: data.product.collectionIds || []
         })
       }
     } catch (error) {
@@ -903,6 +959,64 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     ))}
                   </select>
                 </div>
+
+                {business.brandsFeatureEnabled && brands.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Brand
+                    </label>
+                    <select
+                      value={form.brandId || ''}
+                      onChange={(e) => setForm(prev => ({ ...prev, brandId: e.target.value || undefined }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                    >
+                      <option value="">No brand</option>
+                      {brands.map(brand => (
+                        <option key={brand.id} value={brand.id}>
+                          {brand.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {business.collectionsFeatureEnabled && collections.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Collections
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                      {collections.map(collection => (
+                        <label key={collection.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={form.collectionIds.includes(collection.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm(prev => ({ 
+                                  ...prev, 
+                                  collectionIds: [...prev.collectionIds, collection.id] 
+                                }))
+                              } else {
+                                setForm(prev => ({ 
+                                  ...prev, 
+                                  collectionIds: prev.collectionIds.filter(id => id !== collection.id) 
+                                }))
+                              }
+                            }}
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="text-sm text-gray-900">{collection.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {form.collectionIds.length > 0 && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {form.collectionIds.length} collection{form.collectionIds.length !== 1 ? 's' : ''} selected
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {isPro && form.originalPrice && form.price < form.originalPrice && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">

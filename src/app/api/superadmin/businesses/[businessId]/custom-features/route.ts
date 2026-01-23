@@ -45,6 +45,10 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      business: {
+        id: business.id,
+        name: business.name
+      },
       features: {
         brandsFeatureEnabled: business.brandsFeatureEnabled,
         collectionsFeatureEnabled: business.collectionsFeatureEnabled,

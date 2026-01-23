@@ -33,7 +33,9 @@ import {
   HelpCircle,
   BookOpen,
   Ticket,
-  MessageSquare
+  MessageSquare,
+  Tag,
+  Layers
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -62,6 +64,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const { subscription } = useBusiness()
   
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings'])
+  const [brandsEnabled, setBrandsEnabled] = useState(false)
+  const [collectionsEnabled, setCollectionsEnabled] = useState(false)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -77,6 +81,23 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     url.searchParams.set('businessId', businessId)
     return url.pathname + url.search
   }
+
+  // Fetch feature flags
+  useEffect(() => {
+    const fetchFeatureFlags = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBrandsEnabled(data.business?.brandsFeatureEnabled || false)
+          setCollectionsEnabled(data.business?.collectionsFeatureEnabled || false)
+        }
+      } catch (error) {
+        console.error('Error fetching feature flags:', error)
+      }
+    }
+    fetchFeatureFlags()
+  }, [businessId])
 
   const baseUrl = `/admin/stores/${businessId}`
 
@@ -110,6 +131,20 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Boxes, 
           requiredPlan: 'STARTER'
         },
+        // @ts-ignore
+        ...(brandsEnabled ? [{
+          name: 'Brands', 
+          href: `${baseUrl}/brands`, 
+          icon: Tag, 
+          requiredPlan: 'STARTER'
+        }] : []),
+        // @ts-ignore
+        ...(collectionsEnabled ? [{
+          name: 'Collections', 
+          href: `${baseUrl}/collections`, 
+          icon: Layers, 
+          requiredPlan: 'STARTER'
+        }] : []),
         { 
           name: 'Import', 
           href: `${baseUrl}/products/import`, 

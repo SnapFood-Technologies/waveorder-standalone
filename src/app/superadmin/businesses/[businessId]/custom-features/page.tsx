@@ -51,18 +51,13 @@ export default function ManageCustomFeaturesPage() {
         setLoading(true)
         setError(null)
 
-        // Fetch business details
-        const businessRes = await fetch(`/api/superadmin/businesses/${businessId}`)
-        if (!businessRes.ok) throw new Error('Failed to fetch business')
-        const businessData = await businessRes.json()
-        setBusiness(businessData)
-
-        // Fetch custom features
+        // Fetch custom features (includes business info)
         const featuresRes = await fetch(`/api/superadmin/businesses/${businessId}/custom-features`)
         if (!featuresRes.ok) throw new Error('Failed to fetch custom features')
         const featuresData = await featuresRes.json()
         
         if (featuresData.success) {
+          setBusiness(featuresData.business)
           setFeatures(featuresData.features)
         }
       } catch (err) {

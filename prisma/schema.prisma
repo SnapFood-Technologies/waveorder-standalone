@@ -223,13 +223,13 @@ model Business {
   storefrontLanguage                 String  @default("en") // Language for storefront UI (defaults to business language, can be changed separately)
   timeFormat                         String  @default("24") // "12" for 12-hour format, "24" for 24-hour format
   translateContentToBusinessLanguage Boolean @default(true) // Translate customer-facing content to business language
-  
+
   // Uncategorized category name override (for storefront display only)
   uncategorizedNameOverride   String? // Override "Uncategorized" name in English for storefront
   uncategorizedNameOverrideAl String? // Override "Uncategorized" name in Albanian for storefront
-  deliveryFee                        Float   @default(0)
-  minimumOrder                       Float   @default(0)
-  deliveryRadius                     Float   @default(10)
+  deliveryFee                 Float   @default(0)
+  minimumOrder                Float   @default(0)
+  deliveryRadius              Float   @default(10)
 
   // Payment settings
   paymentMethods      PaymentMethod[]
@@ -338,10 +338,10 @@ model Business {
   notifyCustomerOnPickedUpAndPaid Boolean @default(true)
 
   // Custom Features (managed by SuperAdmin)
-  brandsFeatureEnabled       Boolean @default(false)
-  collectionsFeatureEnabled  Boolean @default(false)
-  customMenuEnabled          Boolean @default(false)
-  customFilteringEnabled     Boolean @default(false)
+  brandsFeatureEnabled      Boolean @default(false)
+  collectionsFeatureEnabled Boolean @default(false)
+  customMenuEnabled         Boolean @default(false)
+  customFilteringEnabled    Boolean @default(false)
 
   users              BusinessUser[]
   categories         Category[]
@@ -395,35 +395,35 @@ model OrderNotification {
 }
 
 model Anomaly {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  businessId  String   @db.ObjectId
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  
-  type        String   // "ZERO_PRICE_PRODUCT", "MISSING_IMAGE", "OUT_OF_STOCK", etc.
-  severity    String   // "LOW", "MEDIUM", "HIGH", "CRITICAL"
-  status      String   @default("OPEN") // "OPEN", "RESOLVED", "IGNORED"
-  
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type     String // "ZERO_PRICE_PRODUCT", "MISSING_IMAGE", "OUT_OF_STOCK", etc.
+  severity String // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  status   String @default("OPEN") // "OPEN", "RESOLVED", "IGNORED"
+
   // Details about the anomaly
   title       String
   description String
-  
+
   // Reference to affected entity
-  entityType  String?  // "PRODUCT", "ORDER", "CUSTOMER", etc.
-  entityId    String?  @db.ObjectId
-  entityName  String?  // For display purposes
-  entitySku   String?  // Product SKU (if entity is a product)
-  
+  entityType String? // "PRODUCT", "ORDER", "CUSTOMER", etc.
+  entityId   String? @db.ObjectId
+  entityName String? // For display purposes
+  entitySku  String? // Product SKU (if entity is a product)
+
   // Resolution tracking
-  resolvedAt  DateTime?
-  resolvedBy  String?   @db.ObjectId
-  
+  resolvedAt DateTime?
+  resolvedBy String?   @db.ObjectId
+
   // Detection metadata
-  detectedAt  DateTime  @default(now())
-  lastChecked DateTime  @default(now())
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
+  detectedAt  DateTime @default(now())
+  lastChecked DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([businessId])
   @@index([businessId, status])
   @@index([businessId, type])
@@ -509,9 +509,9 @@ model Product {
 
   inventoryActivities InventoryActivity[]
 
-  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  business Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  brand    Brand?    @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  brand    Brand?   @relation(fields: [brandId], references: [id], onDelete: SetNull)
 
   variants   ProductVariant[]
   modifiers  ProductModifier[]
@@ -574,13 +574,13 @@ model Collection {
 }
 
 model ProductVariant {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   price         Float
   originalPrice Float? // Regular price before sale
-  stock         Int      @default(0)
+  stock         Int     @default(0)
   sku           String?
-  productId     String   @db.ObjectId
+  productId     String  @db.ObjectId
   metadata      Json? // For storing external system data (e.g., articleNo, attributes, images, sale dates)
 
   // Sale date fields
@@ -909,16 +909,16 @@ model Analytics {
   os         String? // "iOS", "Android", "Windows"
 
   // UTM parameters (from query string)
-  source     String? // UTM source (e.g., "google", "facebook")
-  campaign   String? // UTM campaign (e.g., "summer_sale")
-  medium     String? // UTM medium (e.g., "email", "cpc")
-  term       String? // UTM term (e.g., "keyword")
-  content    String? // UTM content (e.g., "ad_variant")
-  placement  String? // Custom placement parameter
+  source    String? // UTM source (e.g., "google", "facebook")
+  campaign  String? // UTM campaign (e.g., "summer_sale")
+  medium    String? // UTM medium (e.g., "email", "cpc")
+  term      String? // UTM term (e.g., "keyword")
+  content   String? // UTM content (e.g., "ad_variant")
+  placement String? // Custom placement parameter
 
   // Technical metadata
-  referrer   String? // HTTP referrer
-  userAgent  String? // User agent string
+  referrer  String? // HTTP referrer
+  userAgent String? // User agent string
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
