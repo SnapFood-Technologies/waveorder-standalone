@@ -18,6 +18,7 @@ import {
 interface CustomFeatures {
   brandsFeatureEnabled: boolean
   collectionsFeatureEnabled: boolean
+  groupsFeatureEnabled: boolean
   customMenuEnabled: boolean
   customFilteringEnabled: boolean
 }
@@ -36,6 +37,7 @@ export default function ManageCustomFeaturesPage() {
   const [features, setFeatures] = useState<CustomFeatures>({
     brandsFeatureEnabled: false,
     collectionsFeatureEnabled: false,
+    groupsFeatureEnabled: false,
     customMenuEnabled: false,
     customFilteringEnabled: false
   })
@@ -244,6 +246,39 @@ export default function ManageCustomFeaturesPage() {
             </div>
           </div>
 
+          {/* Groups Feature */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Tag className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Groups</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Enable custom product groups for flexible organization. Business can assign products to multiple groups for better categorization beyond collections.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 rounded">Group Management</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded">Multiple Groups per Product</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleToggle('groupsFeatureEnabled')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                  features.groupsFeatureEnabled ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    features.groupsFeatureEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Custom Menu Feature */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start justify-between">
@@ -361,6 +396,16 @@ export default function ManageCustomFeaturesPage() {
                     : 'bg-gray-100 text-gray-500'
                 }`}>
                   {features.collectionsFeatureEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Groups</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.groupsFeatureEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.groupsFeatureEnabled ? 'ON' : 'OFF'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">

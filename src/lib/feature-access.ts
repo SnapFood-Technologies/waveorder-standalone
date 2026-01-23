@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma'
 
-export async function checkFeatureAccess(businessId: string, feature: 'brands' | 'collections' | 'customMenu' | 'customFiltering') {
+export async function checkFeatureAccess(businessId: string, feature: 'brands' | 'collections' | 'groups' | 'customMenu' | 'customFiltering') {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     select: {
       brandsFeatureEnabled: true,
       collectionsFeatureEnabled: true,
+      groupsFeatureEnabled: true,
       customMenuEnabled: true,
       customFilteringEnabled: true
     }
@@ -18,6 +19,7 @@ export async function checkFeatureAccess(businessId: string, feature: 'brands' |
   const featureMap = {
     brands: business.brandsFeatureEnabled,
     collections: business.collectionsFeatureEnabled,
+    groups: business.groupsFeatureEnabled,
     customMenu: business.customMenuEnabled,
     customFiltering: business.customFilteringEnabled
   }

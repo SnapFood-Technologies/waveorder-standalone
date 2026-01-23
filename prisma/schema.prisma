@@ -340,6 +340,7 @@ model Business {
   // Custom Features (managed by SuperAdmin)
   brandsFeatureEnabled      Boolean @default(false)
   collectionsFeatureEnabled Boolean @default(false)
+  groupsFeatureEnabled      Boolean @default(false)
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
 
@@ -354,6 +355,7 @@ model Business {
   anomalies          Anomaly[]
   brands             Brand[]
   collections        Collection[]
+  groups             Group[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -506,6 +508,7 @@ model Product {
   businessId    String   @db.ObjectId
   brandId       String?  @db.ObjectId
   collectionIds String[] @db.ObjectId // Array of collection IDs (MongoDB-friendly)
+  groupIds      String[] @db.ObjectId // Array of group IDs (MongoDB-friendly)
 
   inventoryActivities InventoryActivity[]
 
@@ -571,6 +574,26 @@ model Collection {
   @@index([businessId])
   @@index([businessId, isActive])
   @@index([businessId, featured])
+}
+
+model Group {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String  @db.ObjectId
+  name        String
+  nameAl      String? // Albanian name
+  description String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  metadata Json? // For storing external system data (e.g., external group IDs)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
 }
 
 model ProductVariant {

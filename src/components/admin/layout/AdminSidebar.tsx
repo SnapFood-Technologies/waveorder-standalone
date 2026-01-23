@@ -35,7 +35,8 @@ import {
   Ticket,
   MessageSquare,
   Tag,
-  Layers
+  Layers,
+  FolderTree
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -66,6 +67,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings'])
   const [brandsEnabled, setBrandsEnabled] = useState(false)
   const [collectionsEnabled, setCollectionsEnabled] = useState(false)
+  const [groupsEnabled, setGroupsEnabled] = useState(false)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -91,6 +93,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           const data = await response.json()
           setBrandsEnabled(data.business?.brandsFeatureEnabled || false)
           setCollectionsEnabled(data.business?.collectionsFeatureEnabled || false)
+          setGroupsEnabled(data.business?.groupsFeatureEnabled || false)
         }
       } catch (error) {
         console.error('Error fetching feature flags:', error)
@@ -143,6 +146,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Collections', 
           href: `${baseUrl}/collections`, 
           icon: Layers, 
+          requiredPlan: 'STARTER'
+        }] : []),
+        // @ts-ignore
+        ...(groupsEnabled ? [{
+          name: 'Groups', 
+          href: `${baseUrl}/groups`, 
+          icon: FolderTree, 
           requiredPlan: 'STARTER'
         }] : []),
         { 

@@ -63,12 +63,18 @@ interface Collection {
   name: string
 }
 
+interface Group {
+  id: string
+  name: string
+}
+
 interface Business {
   currency: string
   language?: string
   storefrontLanguage?: string
   brandsFeatureEnabled?: boolean
   collectionsFeatureEnabled?: boolean
+  groupsFeatureEnabled?: boolean
 }
 
 interface ProductForm {
@@ -91,6 +97,7 @@ interface ProductForm {
   categoryId: string
   brandId?: string
   collectionIds: string[]
+  groupIds: string[]
   variants: ProductVariant[]
   modifiers: ProductModifier[]
   metaTitle: string
@@ -121,6 +128,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     categoryId: '',
     brandId: undefined,
     collectionIds: [],
+    groupIds: [],
     variants: [],
     modifiers: [],
     metaTitle: '',
@@ -130,12 +138,14 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [collections, setCollections] = useState<Collection[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
   const [business, setBusiness] = useState<Business>({ 
     currency: 'USD', 
     language: 'en', 
     storefrontLanguage: 'en',
     brandsFeatureEnabled: false,
-    collectionsFeatureEnabled: false
+    collectionsFeatureEnabled: false,
+    groupsFeatureEnabled: false
   })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
@@ -153,6 +163,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     fetchCategories()
     fetchBrands()
     fetchCollections()
+    fetchGroups()
     if (isEditing) {
       fetchProduct()
     }
@@ -168,7 +179,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           language: data.business.language || 'en',
           storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en',
           brandsFeatureEnabled: data.business.brandsFeatureEnabled || false,
-          collectionsFeatureEnabled: data.business.collectionsFeatureEnabled || false
+          collectionsFeatureEnabled: data.business.collectionsFeatureEnabled || false,
+          groupsFeatureEnabled: data.business.groupsFeatureEnabled || false
         })
         // Set default language based on business language
         if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq') {
@@ -218,6 +230,19 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     }
   }
 
+  const fetchGroups = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/groups`)
+      if (response.ok) {
+        const data = await response.json()
+        setGroups(data.groups)
+      }
+    } catch (error) {
+      // Feature might not be enabled, silently fail
+      console.log('Groups feature not available or not enabled')
+    }
+  }
+
   const fetchProduct = async () => {
     try {
       const response = await fetch(`/api/admin/stores/${businessId}/products/${productId}`)
@@ -256,7 +281,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           saleEndDate: formatDateForInput(data.product.saleEndDate),
           lowStockAlert: data.product.lowStockAlert || undefined,
           brandId: data.product.brandId || undefined,
-          collectionIds: data.product.collectionIds || []
+          collectionIds: data.product.collectionIds || [],
+          groupIds: data.product.groupIds || []
         })
       }
     } catch (error) {
@@ -1013,6 +1039,44 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     {form.collectionIds.length > 0 && (
                       <p className="text-xs text-gray-600 mt-1">
                         {form.collectionIds.length} collection{form.collectionIds.length !== 1 ? 's' : ''} selected
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {business.groupsFeatureEnabled && groups.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Groups
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                      {groups.map(group => (
+                        <label key={group.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={form.groupIds.includes(group.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setForm(prev => ({ 
+                                  ...prev, 
+                                  groupIds: [...prev.groupIds, group.id] 
+                                }))
+                              } else {
+                                setForm(prev => ({ 
+                                  ...prev, 
+                                  groupIds: prev.groupIds.filter(id => id !== group.id) 
+                                }))
+                              }
+                            }}
+                            className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                          />
+                          <span className="text-sm text-gray-900">{group.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {form.groupIds.length > 0 && (
+                      <p className="text-xs text-gray-600 mt-1">
+                        {form.groupIds.length} group{form.groupIds.length !== 1 ? 's' : ''} selected
                       </p>
                     )}
                   </div>

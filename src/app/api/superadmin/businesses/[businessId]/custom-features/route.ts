@@ -34,6 +34,7 @@ export async function GET(
         name: true,
         brandsFeatureEnabled: true,
         collectionsFeatureEnabled: true,
+        groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true
       }
@@ -50,10 +51,11 @@ export async function GET(
         name: business.name
       },
       features: {
-        brandsFeatureEnabled: business.brandsFeatureEnabled,
-        collectionsFeatureEnabled: business.collectionsFeatureEnabled,
-        customMenuEnabled: business.customMenuEnabled,
-        customFilteringEnabled: business.customFilteringEnabled
+      brandsFeatureEnabled: business.brandsFeatureEnabled,
+      collectionsFeatureEnabled: business.collectionsFeatureEnabled,
+      groupsFeatureEnabled: business.groupsFeatureEnabled,
+      customMenuEnabled: business.customMenuEnabled,
+      customFilteringEnabled: business.customFilteringEnabled
       }
     })
   } catch (error) {
@@ -89,11 +91,12 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const {
-      brandsFeatureEnabled,
-      collectionsFeatureEnabled,
-      customMenuEnabled,
-      customFilteringEnabled
+    const { 
+      brandsFeatureEnabled, 
+      collectionsFeatureEnabled, 
+      groupsFeatureEnabled,
+      customMenuEnabled, 
+      customFilteringEnabled 
     } = body
 
     // Validate business exists
@@ -109,6 +112,7 @@ export async function PATCH(
     const updateData: any = {}
     if (brandsFeatureEnabled !== undefined) updateData.brandsFeatureEnabled = brandsFeatureEnabled
     if (collectionsFeatureEnabled !== undefined) updateData.collectionsFeatureEnabled = collectionsFeatureEnabled
+    if (groupsFeatureEnabled !== undefined) updateData.groupsFeatureEnabled = groupsFeatureEnabled
     if (customMenuEnabled !== undefined) updateData.customMenuEnabled = customMenuEnabled
     if (customFilteringEnabled !== undefined) updateData.customFilteringEnabled = customFilteringEnabled
 
@@ -132,6 +136,7 @@ export async function PATCH(
       features: {
         brandsFeatureEnabled: updatedBusiness.brandsFeatureEnabled,
         collectionsFeatureEnabled: updatedBusiness.collectionsFeatureEnabled,
+        groupsFeatureEnabled: updatedBusiness.groupsFeatureEnabled,
         customMenuEnabled: updatedBusiness.customMenuEnabled,
         customFilteringEnabled: updatedBusiness.customFilteringEnabled
       }
