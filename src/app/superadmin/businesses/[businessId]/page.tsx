@@ -30,7 +30,8 @@ import {
   Power,
   PowerOff,
   Truck,
-  TrendingUp
+  TrendingUp,
+  Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -860,6 +861,25 @@ export default function BusinessDetailsPage() {
             >
               <AlertTriangle className="w-4 h-4 mr-2" />
               Manage Anomalies
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </div>
+
+          {/* Custom Features CTA */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Custom Features</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Enable advanced features like brands, collections, custom menus and filtering
+            </p>
+            <Link
+              href={`/superadmin/businesses/${business.id}/custom-features`}
+              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Manage Custom Features
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
