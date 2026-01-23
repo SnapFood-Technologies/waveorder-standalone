@@ -16,11 +16,16 @@ interface Group {
   productCount?: number
 }
 
+interface Business {
+  language?: string
+}
+
 export default function GroupsPage() {
   const params = useParams()
   const businessId = params.businessId as string
 
   const [groups, setGroups] = useState<Group[]>([])
+  const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingGroup, setEditingGroup] = useState<Group | null>(null)
@@ -305,18 +310,20 @@ export default function GroupsPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Name (Albanian)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nameAl}
-                    onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="e.g., Elektronikë"
-                  />
-                </div>
+                {business?.language === 'sq' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Name (Albanian)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameAl}
+                      onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder="e.g., Elektronikë"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

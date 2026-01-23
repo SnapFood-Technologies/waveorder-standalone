@@ -742,8 +742,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
 
-                {/* Language Toggle - Only show if business supports Albanian */}
-                {(business.language === 'sq' || business.storefrontLanguage === 'sq') && (
+                {/* Language Toggle - Only show if business language is Albanian */}
+                {business.language === 'sq' && (
                   <div className="flex gap-2 mb-4">
                     <button
                       type="button"

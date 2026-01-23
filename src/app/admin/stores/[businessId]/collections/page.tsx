@@ -54,8 +54,21 @@ export default function CollectionsPage() {
   })
 
   useEffect(() => {
+    fetchBusiness()
     fetchCollections()
   }, [businessId])
+
+  const fetchBusiness = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBusiness(data.business)
+      }
+    } catch (error) {
+      console.error('Error fetching business:', error)
+    }
+  }
 
   const fetchCollections = async () => {
     try {
@@ -319,17 +332,19 @@ export default function CollectionsPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Collection Name (Albanian)
-                </label>
-                <input
-                  type="text"
-                  value={formData.nameAl}
-                  onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
+              {business?.language === 'sq' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Collection Name (Albanian)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nameAl}
+                    onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
