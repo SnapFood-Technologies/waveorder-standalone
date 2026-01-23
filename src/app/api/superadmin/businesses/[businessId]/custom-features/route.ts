@@ -20,7 +20,7 @@ export async function GET(
       where: { email: session.user.email }
     })
 
-    if (!user || user.role !== 'SUPERADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden - SuperAdmin access required' }, { status: 403 })
     }
 
@@ -78,7 +78,7 @@ export async function PATCH(
       where: { email: session.user.email }
     })
 
-    if (!user || user.role !== 'SUPERADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden - SuperAdmin access required' }, { status: 403 })
     }
 
