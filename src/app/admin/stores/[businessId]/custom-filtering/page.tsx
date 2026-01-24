@@ -109,7 +109,7 @@ export default function CustomFilteringPage() {
   }
 
   const handleToggle = (key: 'categoriesEnabled' | 'collectionsEnabled' | 'groupsEnabled' | 'brandsEnabled') => {
-    if (key === 'categoriesEnabled' || key === 'priceRangeEnabled') {
+    if (key === 'categoriesEnabled') {
       return
     }
     setSettings({ ...settings, [key]: !settings[key] })

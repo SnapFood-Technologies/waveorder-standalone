@@ -1184,18 +1184,18 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             </div>
           )}
 
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <Link
                 href={`/superadmin/businesses/${business.id}`}
-                className="inline-flex items-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                className="inline-flex items-center justify-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 View Full Details
               </Link>
               <button
                 onClick={() => window.open(`/${business.slug}`, '_blank')}
-                className="inline-flex items-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                className="inline-flex items-center justify-center px-3 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Visit Store
@@ -1203,7 +1203,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
               <button
                 onClick={handleImpersonate}
                 disabled={!canImpersonate}
-                className={`inline-flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                className={`inline-flex items-center justify-center px-3 py-2 text-sm rounded-lg transition-colors w-full sm:w-auto ${
                   canImpersonate
                     ? 'bg-teal-600 text-white hover:bg-teal-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1215,7 +1215,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             </div>
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors w-full sm:w-auto"
             >
               Close
             </button>
