@@ -11,7 +11,7 @@ const BUSINESS_ID = '6974910a36e36dc0e22f2103'
  * Postal Service ID (Normal only)
  * TODO: Update this with the actual postal service ID for this business
  */
-const POSTAL_SERVICE_ID_NORMAL = '6974910a36e36dc0e22f2103' // GED Normal
+const POSTAL_SERVICE_ID_NORMAL = '6974ba5a0134da991f6ff565' // GED Normal
 
 /**
  * City names organized by region (same as first script)
