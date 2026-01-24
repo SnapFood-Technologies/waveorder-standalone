@@ -1762,7 +1762,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [totalProducts, setTotalProducts] = useState(storeData.initialProducts?.length || 0)
   
   // Infinite scroll for products (now using API pagination)
-  const [displayedProductsCount, setDisplayedProductsCount] = useState(PRODUCTS_PER_PAGE)
+  // Initialize with actual initial products count (or PRODUCTS_PER_PAGE if no initial products)
+  const [displayedProductsCount, setDisplayedProductsCount] = useState(
+    storeData.initialProducts && storeData.initialProducts.length > 0 
+      ? storeData.initialProducts.length 
+      : PRODUCTS_PER_PAGE
+  )
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined' && storeData?.id) {
       const savedCart = localStorage.getItem('cart')
@@ -1996,9 +2001,12 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       
       if (reset) {
         // Replace products with new filtered results
-        setProducts(data.products || [])
+        const newProducts = data.products || []
+        setProducts(newProducts)
         setCurrentPage(1)
-        setIsFiltering(false) // Clear filtering state when new products arrive
+        // Clear filtering state AFTER products are set (use setTimeout to ensure React has updated)
+        // This prevents gray-out flash on products that remain in the new results
+        setTimeout(() => setIsFiltering(false), 0)
       } else {
         setProducts(prev => [...prev, ...(data.products || [])])
       }
@@ -2077,11 +2085,14 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
 
   // Update displayed count when products are loaded
   useEffect(() => {
-    if (products.length > 0 && displayedProductsCount < products.length) {
-      // Show all loaded products
+    // If we have initial products, show them all immediately
+    if (storeData.initialProducts && storeData.initialProducts.length > 0 && products.length === storeData.initialProducts.length) {
+      setDisplayedProductsCount(products.length)
+    } else if (products.length > 0 && displayedProductsCount < products.length) {
+      // Show all loaded products (for pagination)
       setDisplayedProductsCount(Math.min(products.length, displayedProductsCount + PRODUCTS_PER_PAGE))
     }
-  }, [products.length])
+  }, [products.length, storeData.initialProducts])
 
   // Load more products on scroll (infinite scroll)
   useEffect(() => {

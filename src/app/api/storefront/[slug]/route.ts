@@ -232,7 +232,8 @@ export async function GET(
     // Attach categories to business object
     business.categories = categories
 
-    // PERFORMANCE: Fetch initial 24 products for server-side render (fast page load)
+    // PERFORMANCE: Fetch initial products for server-side render (fast page load)
+    // Fetch 50 products initially, then filter by stock and take first 24 to ensure we have enough after filtering
     let initialProducts: any[] = []
     try {
       const productWhere: any = {
@@ -241,9 +242,11 @@ export async function GET(
         price: { gt: 0 }
       }
 
+      // Fetch more products initially to account for stock filtering
+      // We'll filter out products with no stock, so fetch 50 to ensure we get at least 24 after filtering
       const initialProductsRaw = await prisma.product.findMany({
         where: productWhere,
-        take: 24,
+        take: 50,
         orderBy: { name: 'asc' },
         select: {
           id: true,
@@ -309,6 +312,7 @@ export async function GET(
         }
       }
 
+      // Filter out products with no stock and limit to 24 after filtering
       initialProducts = initialProductsRaw
         .filter((product: any) => {
           if (product.trackInventory) {
@@ -319,6 +323,7 @@ export async function GET(
           }
           return true
         })
+        .slice(0, 24) // Take first 24 after stock filtering
         .map((product: any) => {
           const productPricing = calculateEffectivePrice(
             product.price,
