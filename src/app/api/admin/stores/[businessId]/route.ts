@@ -145,6 +145,7 @@ export async function GET(
     })
 
   } catch (error) {
+    console.log('error-business-data', error);
     console.error('Error fetching business data:', error)
     return NextResponse.json(
       { error: 'Failed to fetch business data' },
