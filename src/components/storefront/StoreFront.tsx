@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { 
   Search, 
   ShoppingCart, 
@@ -2118,15 +2118,17 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   const meetsMinimumOrder = cartSubtotal >= storeData.minimumOrder || deliveryType !== 'delivery'
 
   // PERFORMANCE OPTIMIZATION: Use products from API (already filtered server-side)
-  // Map products to include category name for display
-  const filteredProducts = products.map(product => {
-    // Find category name from storeData.categories
-    const category = storeData.categories.find((cat: any) => cat.id === product.categoryId)
-    return {
-      ...product,
-      categoryName: category?.name || 'Uncategorized'
-    }
-  })
+  // Map products to include category name for display - MUST be reactive to products changes
+  const filteredProducts = useMemo(() => {
+    return products.map(product => {
+      // Find category name from storeData.categories
+      const category = storeData.categories.find((cat: any) => cat.id === product.categoryId)
+      return {
+        ...product,
+        categoryName: category?.name || 'Uncategorized'
+      }
+    })
+  }, [products, storeData.categories])
 
   // Helper function to validate phone number is complete
   const isPhoneValid = (phone: string) => {
@@ -3633,9 +3635,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       <p className="text-gray-600 mb-4">{productsError}</p>
                       <button
                         onClick={() => fetchProducts(1, true)}
-                        className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                        className="px-4 py-2 text-white rounded-lg transition-colors hover:opacity-90"
+                        style={{ backgroundColor: primaryColor }}
                       >
-                        {translations.retry || 'Retry'}
+                        {translations.tryAgain || 'Try Again'}
                       </button>
                     </div>
                   )
@@ -3720,10 +3723,35 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         businessSlug={storeData.slug}
                       />
                     ))}
-                    {/* Subtle loading indicator for pagination - only spinner, no text */}
+                    {/* Subtle loading indicator for pagination - 3 bouncing dots */}
                     {productsLoading && products.length > 0 && (
                       <div className="col-span-full text-center py-4">
-                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-400 border-t-transparent"></div>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <div 
+                            className="w-2 h-2 rounded-full animate-bounce"
+                            style={{ 
+                              backgroundColor: primaryColor,
+                              animationDelay: '0ms',
+                              animationDuration: '1.4s'
+                            }}
+                          ></div>
+                          <div 
+                            className="w-2 h-2 rounded-full animate-bounce"
+                            style={{ 
+                              backgroundColor: primaryColor,
+                              animationDelay: '160ms',
+                              animationDuration: '1.4s'
+                            }}
+                          ></div>
+                          <div 
+                            className="w-2 h-2 rounded-full animate-bounce"
+                            style={{ 
+                              backgroundColor: primaryColor,
+                              animationDelay: '320ms',
+                              animationDuration: '1.4s'
+                            }}
+                          ></div>
+                        </div>
                       </div>
                     )}
                   </>

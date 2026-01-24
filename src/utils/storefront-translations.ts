@@ -243,6 +243,10 @@ close: string
     collections: string
     groups: string
     brands: string
+    
+    // Product Loading
+    tryAgain: string
+    loadMore: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -490,6 +494,10 @@ canBeAdded: "more can be added to cart",
     collections: "Collections",
     groups: "Groups", 
     brands: "Brands",
+    
+    // Product Loading
+    tryAgain: "Try Again",
+    loadMore: "Load More"
 
   }
   
@@ -733,6 +741,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     collections: "Koleksionet",
     groups: "Grupet",
     brands: "Markat",
+    
+    // Product Loading
+    tryAgain: "Provo Përsëri",
+    loadMore: "Shfaq Më Shumë"
 
   }
 
@@ -976,6 +988,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     collections: "Colecciones",
     groups: "Grupos",
     brands: "Marcas",
+    
+    // Product Loading
+    tryAgain: "Intentar de Nuevo",
+    loadMore: "Cargar Más"
 
   }
 
@@ -1220,6 +1236,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     collections: "Συλλογές",
     groups: "Ομάδες",
     brands: "Μάρκες",
+    
+    // Product Loading
+    tryAgain: "Δοκίμασε Ξανά",
+    loadMore: "Φόρτωσε Περισσότερα"
 
   }
 
