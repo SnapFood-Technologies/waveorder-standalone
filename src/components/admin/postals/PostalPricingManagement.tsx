@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { MapPin, Plus, Edit2, Trash2, Save, X, Package, ChevronDown, Search } from 'lucide-react'
+import { MapPin, Plus, Edit2, Trash2, Save, X, Package, ChevronDown, Search, AlertTriangle, Loader2 } from 'lucide-react'
 
 interface Postal {
   id: string
@@ -42,6 +42,8 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [filterCity, setFilterCity] = useState<string>('')
   const [filterPostal, setFilterPostal] = useState<string>('')
+  const [deleteModalPricing, setDeleteModalPricing] = useState<PostalPricing | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -107,18 +109,22 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
     }
   }
 
-  const handleDelete = async (pricingId: string) => {
-    if (!confirm('Are you sure you want to delete this pricing? This action cannot be undone.')) {
-      return
-    }
+  const handleDelete = (pricingItem: PostalPricing) => {
+    setDeleteModalPricing(pricingItem)
+  }
 
+  const confirmDelete = async () => {
+    if (!deleteModalPricing) return
+
+    setIsDeleting(true)
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/postal-pricing/${pricingId}`, {
+      const response = await fetch(`/api/admin/stores/${businessId}/postal-pricing/${deleteModalPricing.id}`, {
         method: 'DELETE'
       })
 
       if (response.ok) {
         setSuccessMessage('Pricing deleted successfully')
+        setDeleteModalPricing(null)
         fetchData()
         setTimeout(() => setSuccessMessage(null), 3000)
       } else {
@@ -128,6 +134,8 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
     } catch (error) {
       console.error('Error deleting pricing:', error)
       setError('Failed to delete pricing')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -318,7 +326,7 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => p.id && handleDelete(p.id)}
+                      onClick={() => handleDelete(p)}
                       className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Delete"
                     >
@@ -331,6 +339,56 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
           })
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalPricing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Delete Postal Pricing
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Are you sure you want to delete pricing for "{deleteModalPricing.cityName}"? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteModalPricing(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -41,6 +41,8 @@ export default function CustomMenuPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [deleteModalItem, setDeleteModalItem] = useState<MenuItem | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState({
     type: 'category' as 'group' | 'collection' | 'category' | 'link',
     targetId: '',
@@ -177,20 +179,28 @@ export default function CustomMenuPage() {
     }
   }
 
-  const handleDelete = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) return
+  const handleDelete = (item: MenuItem) => {
+    setDeleteModalItem(item)
+  }
 
+  const confirmDelete = async () => {
+    if (!deleteModalItem) return
+
+    setIsDeleting(true)
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/custom-menu/${itemId}`, {
+      const response = await fetch(`/api/admin/stores/${businessId}/custom-menu/${deleteModalItem.id}`, {
         method: 'DELETE'
       })
       
       if (!response.ok) throw new Error('Failed to delete menu item')
       
       toast.success('Menu item deleted successfully')
+      setDeleteModalItem(null)
       fetchMenuItems()
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete menu item')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -332,7 +342,7 @@ export default function CustomMenuPage() {
                               <Pencil className="h-4 w-4" />
                             </button>
                             <button
-                              onClick={() => handleDelete(item.id)}
+                              onClick={() => handleDelete(item)}
                               className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                               title="Delete"
                             >
@@ -516,6 +526,56 @@ export default function CustomMenuPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Delete Menu Item
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Are you sure you want to delete "{deleteModalItem.name}"? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteModalItem(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

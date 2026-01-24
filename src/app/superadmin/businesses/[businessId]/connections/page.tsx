@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Link2, Plus, Search, X, Loader2, Store, AlertCircle, ChevronLeft } from 'lucide-react'
+import { Link2, Plus, Search, X, Loader2, Store, AlertCircle, ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react'
 
 interface Business {
   id: string
@@ -27,6 +27,8 @@ export default function BusinessConnectionsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [connecting, setConnecting] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [disconnectModalBusiness, setDisconnectModalBusiness] = useState<Business | null>(null)
+  const [isDisconnecting, setIsDisconnecting] = useState(false)
 
   useEffect(() => {
     fetchBusinessName()
@@ -102,17 +104,23 @@ export default function BusinessConnectionsPage() {
     }
   }
 
-  const handleDisconnect = async (targetBusinessId: string) => {
-    if (!confirm('Are you sure you want to disconnect these businesses? They will no longer be able to share products, categories, collections, and groups.')) return
+  const handleDisconnect = (business: Business) => {
+    setDisconnectModalBusiness(business)
+  }
 
-    setDisconnecting(targetBusinessId)
+  const confirmDisconnect = async () => {
+    if (!disconnectModalBusiness) return
+
+    setIsDisconnecting(true)
+    setDisconnecting(disconnectModalBusiness.id)
     try {
       const response = await fetch(
-        `/api/superadmin/businesses/${businessId}/connections?targetBusinessId=${targetBusinessId}`,
+        `/api/superadmin/businesses/${businessId}/connections?targetBusinessId=${disconnectModalBusiness.id}`,
         { method: 'DELETE' }
       )
 
       if (response.ok) {
+        setDisconnectModalBusiness(null)
         await fetchConnectedBusinesses()
       } else {
         const data = await response.json()
@@ -121,6 +129,7 @@ export default function BusinessConnectionsPage() {
     } catch (error) {
       alert('An error occurred while disconnecting')
     } finally {
+      setIsDisconnecting(false)
       setDisconnecting(null)
     }
   }
@@ -217,7 +226,7 @@ export default function BusinessConnectionsPage() {
                   </div>
                 )}
                 <button
-                  onClick={() => handleDisconnect(business.id)}
+                  onClick={() => handleDisconnect(business)}
                   disabled={disconnecting === business.id}
                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                   title="Disconnect"
@@ -319,6 +328,56 @@ export default function BusinessConnectionsPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disconnect Confirmation Modal */}
+      {disconnectModalBusiness && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Disconnect Business
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Are you sure you want to disconnect from "{disconnectModalBusiness.name}"? They will no longer be able to share products, categories, collections, and groups.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDisconnectModalBusiness(null)}
+                  disabled={isDisconnecting}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDisconnect}
+                  disabled={isDisconnecting}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {isDisconnecting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Disconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <X className="w-4 h-4 mr-2" />
+                      Disconnect
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
