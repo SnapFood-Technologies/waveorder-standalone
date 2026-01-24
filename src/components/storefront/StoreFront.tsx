@@ -1954,6 +1954,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     
     try {
+      // Set ref immediately to prevent duplicate scroll-triggered calls
+      isFetchingRef.current = true
+      
       // Only show loading for pagination (page > 1), not initial load
       if (page > 1 || products.length > 0) {
         setProductsLoading(true)
@@ -2020,6 +2023,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setIsFiltering(false) // Clear filtering state on error too
     } finally {
       setProductsLoading(false)
+      // Clear ref when fetch completes (allows next scroll-triggered fetch)
+      isFetchingRef.current = false
     }
   }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
@@ -2094,10 +2099,14 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
   }, [products.length, storeData.initialProducts])
 
+  // Track if fetch is in progress using ref (immediate, bypasses async state)
+  const isFetchingRef = useRef(false)
+  
   // Load more products on scroll (infinite scroll)
   useEffect(() => {
     const handleScroll = () => {
-      if (productsLoading || !hasMoreProducts) return
+      // Use ref for immediate check (prevents race condition)
+      if (isFetchingRef.current || productsLoading || !hasMoreProducts) return
       
       const scrollY = window.scrollY || document.documentElement.scrollTop
       const windowHeight = window.innerHeight
@@ -2108,6 +2117,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
         // If we've shown all loaded products, load next page
         if (displayedProductsCount >= products.length && hasMoreProducts) {
           const nextPage = currentPage + 1
+          // Set ref immediately to prevent duplicate calls
+          isFetchingRef.current = true
           fetchProducts(nextPage, false)
         } else if (displayedProductsCount < products.length) {
           // Show more of the already-loaded products
@@ -2116,12 +2127,11 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       }
     }
 
+    // Only use window listener (removed duplicate document listener)
     window.addEventListener('scroll', handleScroll, { passive: true })
-    document.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      document.removeEventListener('scroll', handleScroll)
     }
   }, [displayedProductsCount, products.length, hasMoreProducts, productsLoading, currentPage, fetchProducts])
 

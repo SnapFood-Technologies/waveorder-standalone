@@ -54,6 +54,7 @@ interface CategoriesPageProps {
 
 export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [categories, setCategories] = useState<Category[]>([])
+  const [totalProducts, setTotalProducts] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -72,6 +73,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories)
+        setTotalProducts(data.totalProducts || 0) // Use API total to avoid double-counting
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -257,7 +259,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
             <div>
               <p className="text-sm text-gray-600">Total Products</p>
               <p className="text-2xl font-bold text-purple-600">
-                {categories.reduce((sum, c) => sum + c._count.products, 0)}
+                {totalProducts || categories.reduce((sum, c) => sum + (c.parentId ? 0 : c._count.products), 0)}
               </p>
             </div>
             <Package className="w-8 h-8 text-purple-600" />

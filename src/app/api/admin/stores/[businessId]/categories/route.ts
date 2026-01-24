@@ -50,7 +50,6 @@ export async function GET(
         },
         _count: {
           select: {
-            products: true,
             children: true
           }
         },
@@ -62,18 +61,28 @@ export async function GET(
       ]
     })
 
-    // Calculate total product count for parent categories (including products from children)
-    // Create a map of category ID to product count for quick lookup
+    // Get product counts for each category (with business filtering like groups/collections/brands)
     const categoryProductCounts = new Map<string, number>()
     for (const category of categories) {
-      categoryProductCounts.set(category.id, category._count.products)
+      const productCount = await prisma.product.count({
+        where: {
+          OR: [
+            { businessId: businessId },
+            { businessId: { in: business?.connectedBusinesses || [] } }
+          ],
+          categoryId: category.id
+        }
+      })
+      categoryProductCounts.set(category.id, productCount)
     }
     
     // For each parent category, calculate total products (direct + children)
     const categoriesWithTotalCounts = categories.map(category => {
+      const directProductCount = categoryProductCounts.get(category.id) || 0
+      
       if (!category.parentId && category._count.children > 0) {
         // This is a parent category with children - calculate total products
-        let totalProducts = category._count.products // Start with direct products
+        let totalProducts = directProductCount // Start with direct products
         
         // Add products from all child categories
         for (const child of category.children || []) {
@@ -84,16 +93,35 @@ export async function GET(
         return {
           ...category,
           _count: {
-            ...category._count,
-            products: totalProducts // Override with total count (direct + children)
+            products: totalProducts, // Total count (direct + children)
+            children: category._count.children
           }
         }
       }
       
-      return category
+      return {
+        ...category,
+        _count: {
+          products: directProductCount, // Direct count only
+          children: category._count.children
+        }
+      }
     })
 
-    return NextResponse.json({ categories: categoriesWithTotalCounts })
+    // Get total unique products count (to avoid double counting from summing categories)
+    const totalProducts = await prisma.product.count({
+      where: {
+        OR: [
+          { businessId: businessId },
+          { businessId: { in: business?.connectedBusinesses || [] } }
+        ]
+      }
+    })
+
+    return NextResponse.json({ 
+      categories: categoriesWithTotalCounts,
+      totalProducts // Add total products count to avoid frontend double-counting
+    })
 
   } catch (error) {
     console.error('Error fetching categories:', error)

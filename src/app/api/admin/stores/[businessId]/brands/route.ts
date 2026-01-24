@@ -37,11 +37,6 @@ export async function GET(
         ]
       },
       include: {
-        _count: {
-          select: {
-            products: true
-          }
-        },
         business: { select: { id: true, name: true } }
       },
       orderBy: [
@@ -50,7 +45,29 @@ export async function GET(
       ]
     })
 
-    return NextResponse.json({ brands })
+    // Get product counts for each brand (with business filtering like groups/collections)
+    const brandsWithCounts = await Promise.all(
+      brands.map(async (brand) => {
+        const productCount = await prisma.product.count({
+          where: {
+            OR: [
+              { businessId: businessId },
+              { businessId: { in: business?.connectedBusinesses || [] } }
+            ],
+            brandId: brand.id
+          }
+        })
+
+        return {
+          ...brand,
+          _count: {
+            products: productCount
+          }
+        }
+      })
+    )
+
+    return NextResponse.json({ brands: brandsWithCounts })
 
   } catch (error) {
     console.error('Error fetching brands:', error)
