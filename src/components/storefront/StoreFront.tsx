@@ -30,7 +30,9 @@ import {
   ExternalLink,
   CheckCircle,
   Filter,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -138,6 +140,109 @@ const generateTimeSlots = (businessHours, currentDate, orderType, timeFormat = '
   }
   
   return slots
+}
+
+// Scrollable Section Component with Arrow Indicators
+function ScrollableSection({ 
+  children, 
+  maxHeight = '200px',
+  className = ''
+}: { 
+  children: React.ReactNode
+  maxHeight?: string
+  className?: string
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [showUpArrow, setShowUpArrow] = useState(false)
+  const [showDownArrow, setShowDownArrow] = useState(false)
+
+  const checkScrollPosition = () => {
+    if (!scrollRef.current) return
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+    setShowUpArrow(scrollTop > 10)
+    setShowDownArrow(scrollTop < scrollHeight - clientHeight - 10)
+  }
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current
+    if (!scrollElement) return
+
+    // Initial check
+    setTimeout(checkScrollPosition, 100)
+    
+    scrollElement.addEventListener('scroll', checkScrollPosition)
+    
+    // Check on resize
+    const resizeObserver = new ResizeObserver(() => {
+      setTimeout(checkScrollPosition, 100)
+    })
+    resizeObserver.observe(scrollElement)
+
+    return () => {
+      scrollElement.removeEventListener('scroll', checkScrollPosition)
+      resizeObserver.disconnect()
+    }
+  }, [children])
+
+  const scrollUp = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ top: -150, behavior: 'smooth' })
+    }
+  }
+
+  const scrollDown = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ top: 150, behavior: 'smooth' })
+    }
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      {/* Up Arrow */}
+      {showUpArrow && (
+        <button
+          onClick={scrollUp}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95"
+          aria-label="Scroll up"
+          type="button"
+        >
+          <ArrowUp className="w-4 h-4 text-gray-700" />
+        </button>
+      )}
+      
+      {/* Scrollable Content with padding to prevent arrow overlap */}
+      <div
+        ref={scrollRef}
+        className="space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pr-1"
+        style={{ 
+          maxHeight,
+          paddingTop: showUpArrow ? '12px' : '0',
+          paddingBottom: showDownArrow ? '12px' : '0'
+        }}
+        onScroll={checkScrollPosition}
+        onWheel={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+
+      {/* Down Arrow */}
+      {showDownArrow && (
+        <button
+          onClick={scrollDown}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95"
+          aria-label="Scroll down"
+          type="button"
+        >
+          <ArrowDown className="w-4 h-4 text-gray-700" />
+        </button>
+      )}
+    </div>
+  )
 }
 
 // Add this component before your main StoreFront component
@@ -3880,7 +3985,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             </div>
 
             {/* Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style={{ overscrollBehavior: 'contain' }}>
               {/* Price Range */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.priceRange || 'Price Range'}</h3>
@@ -3925,7 +4030,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               {/* Categories */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
-                <div className="space-y-2 max-h-[260px] overflow-y-auto scrollbar-hide">
+                <ScrollableSection maxHeight="180px">
                   <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                     <input
                       type="radio"
@@ -3958,7 +4063,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       <span className="ml-3 text-sm text-gray-700">{category.name}</span>
                     </label>
                   ))}
-                </div>
+                </ScrollableSection>
               </div>
 
               {/* Collections Filter - Only show if enabled */}
@@ -3972,7 +4077,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.collections || 'Collections'}</h3>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                  <ScrollableSection maxHeight="150px">
                     {(() => {
                       const availableCollections = storeData.customFilterSettings.collectionsMode === 'all' 
                         ? storeData.collections || []
@@ -4002,7 +4107,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       </label>
                       ))
                     })()}
-                  </div>
+                  </ScrollableSection>
                 </div>
               )}
 
@@ -4017,7 +4122,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.groups || 'Groups'}</h3>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                  <ScrollableSection maxHeight="150px">
                     {(() => {
                       const availableGroups = storeData.customFilterSettings.groupsMode === 'all' 
                         ? storeData.groups || []
@@ -4047,7 +4152,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       </label>
                       ))
                     })()}
-                  </div>
+                  </ScrollableSection>
                 </div>
               )}
 
@@ -4062,7 +4167,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.brands || 'Brands'}</h3>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                  <ScrollableSection maxHeight="150px">
                     {(() => {
                       const availableBrands = storeData.customFilterSettings.brandsMode === 'all' 
                         ? storeData.brands || []
@@ -4092,7 +4197,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       </label>
                       ))
                     })()}
-                  </div>
+                  </ScrollableSection>
                 </div>
               )}
 
@@ -4107,7 +4212,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
-                  <div className="space-y-2 max-h-[260px] overflow-y-auto scrollbar-hide">
+                  <ScrollableSection maxHeight="180px">
                     <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input
                         type="radio"
@@ -4147,7 +4252,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         </label>
                       ))
                     })()}
-                  </div>
+                  </ScrollableSection>
                 </div>
               )}
 
