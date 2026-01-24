@@ -106,6 +106,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         isActive: true,
         isIndexable: true,
         noIndex: false,
+        isTemporarilyClosed: false, // 🔥 FIX: Add this condition to match storefront logic
         onboardingCompleted: true,
         setupWizardCompleted: true,
         slug: {
