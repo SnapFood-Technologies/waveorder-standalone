@@ -236,6 +236,11 @@ close: string
     clearAll: string
     applyFilters: string
     sort: string
+    
+    // Custom Filtering
+    collections: string
+    groups: string
+    brands: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -476,6 +481,11 @@ canBeAdded: "more can be added to cart",
     clearAll: "Clear All",
     applyFilters: "Apply Filters",
     sort: "Sort",
+    
+    // Custom Filtering
+    collections: "Collections",
+    groups: "Groups", 
+    brands: "Brands",
 
   }
   
@@ -712,6 +722,11 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     clearAll: "Pastro Të Gjitha",
     applyFilters: "Apliko Filtra",
     sort: "Rendit",
+    
+    // Custom Filtering
+    collections: "Koleksionet",
+    groups: "Grupet",
+    brands: "Markat",
 
   }
 
@@ -948,6 +963,11 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     clearAll: "Limpiar Todo",
     applyFilters: "Aplicar Filtros",
     sort: "Ordenar",
+    
+    // Custom Filtering
+    collections: "Colecciones",
+    groups: "Grupos",
+    brands: "Marcas",
 
   }
 
@@ -1185,6 +1205,11 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     clearAll: "Καθαρισμός Όλων",
     applyFilters: "Εφαρμογή Φίλτρων",
     sort: "Ταξινόμηση",
+    
+    // Custom Filtering
+    collections: "Συλλογές",
+    groups: "Ομάδες",
+    brands: "Μάρκες",
 
   }
 
