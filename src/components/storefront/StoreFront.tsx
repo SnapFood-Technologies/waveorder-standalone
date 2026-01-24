@@ -1731,6 +1731,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [products, setProducts] = useState<any[]>(storeData.initialProducts || [])
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
+  const [isFiltering, setIsFiltering] = useState(false) // Track when filtering is happening
   // If we have initial products, we're on page 1, otherwise start at 0
   const [currentPage, setCurrentPage] = useState(storeData.initialProducts && storeData.initialProducts.length > 0 ? 1 : 0)
   const [hasMoreProducts, setHasMoreProducts] = useState(true)
@@ -1919,6 +1920,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     if (!storeData.categories || storeData.categories.length === 0) {
       setProducts([])
       setProductsLoading(false)
+      setIsFiltering(false)
       return
     }
     
@@ -1926,6 +1928,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       // Only show loading for pagination (page > 1), not initial load
       if (page > 1 || products.length > 0) {
         setProductsLoading(true)
+      }
+      // If resetting (filter change), set filtering state to gray out cards
+      if (reset && products.length > 0) {
+        setIsFiltering(true)
       }
       setProductsError(null)
       
@@ -1980,6 +1986,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setProductsError('Failed to load products')
     } finally {
       setProductsLoading(false)
+      setIsFiltering(false) // Clear filtering state when done
     }
   }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, searchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
@@ -3378,6 +3385,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 <button
                   onClick={() => {
+                    // Set filtering state immediately for better UX
+                    if (products.length > 0) {
+                      setIsFiltering(true)
+                    }
                     setSelectedMenuItem(null)
                     setSelectedCategory('all')
                     setSelectedSubCategory(null)
@@ -3405,6 +3416,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       if (item.type === 'link' && item.url) {
                         window.open(item.url, '_blank')
                       } else {
+                        // Set filtering state immediately for better UX
+                        if (products.length > 0) {
+                          setIsFiltering(true)
+                        }
                         setSelectedMenuItem(item.id)
                         setSearchTerm('')
                         
@@ -3449,6 +3464,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 <button
                   onClick={() => {
+                    // Set filtering state immediately for better UX
+                    if (products.length > 0) {
+                      setIsFiltering(true)
+                    }
                     setSelectedCategory('all')
                     setSelectedSubCategory(null)
                     // Keep search term when switching to "All"
@@ -3509,6 +3528,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     <button
                       key={category.id}
                       onClick={() => {
+                        // Set filtering state immediately for better UX
+                        if (products.length > 0) {
+                          setIsFiltering(true)
+                        }
                         setSelectedCategory(category.id)
                         setSelectedSubCategory(null)
                         // Clear search when switching to specific category
@@ -3585,6 +3608,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     <button
                       key={subcategory.id}
                       onClick={() => {
+                        // Set filtering state immediately for better UX
+                        if (products.length > 0) {
+                          setIsFiltering(true)
+                        }
                         if (shouldShowOnlySubcategories) {
                           setSelectedCategory(subcategory.id)
                         } else {
@@ -3721,6 +3748,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         featuredBadgeColor={storeData.featuredBadgeColor}
                         storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
                         businessSlug={storeData.slug}
+                        isFiltering={isFiltering}
                       />
                     ))}
                     {/* Subtle loading indicator for pagination - 3 bouncing dots */}
@@ -4626,7 +4654,8 @@ function ProductCard({
   cart = [], // Add cart prop to check current quantities
   featuredBadgeColor = '#EF4444', // Only add this new prop
   storefrontLanguage = 'en', // Add language prop
-  businessSlug = '' // Add business slug prop
+  businessSlug = '', // Add business slug prop
+  isFiltering = false // Gray out card while filtering
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -4638,6 +4667,7 @@ function ProductCard({
   featuredBadgeColor?: string // Only add this
   storefrontLanguage?: string // Add language prop
   businessSlug?: string // Add business slug prop
+  isFiltering?: boolean // Gray out card while filtering
 }) {
   const hasImage = product.images.length > 0
   
@@ -4674,8 +4704,10 @@ function ProductCard({
   const isOutOfStock = !hasStock
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-shadow ${
-      disabled || isOutOfStock ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md cursor-pointer'
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 ${
+      disabled || isOutOfStock ? 'opacity-60 cursor-not-allowed' : 
+      isFiltering ? 'opacity-50 grayscale cursor-wait' : 
+      'hover:shadow-md cursor-pointer'
     }`}>
       <div 
         className="flex items-start p-5"
@@ -4761,14 +4793,14 @@ function ProductCard({
               alt={product.name}
               loading="lazy"
               decoding="async"
-              className={`w-full h-full object-cover rounded-lg ${disabled || isOutOfStock ? 'filter grayscale' : ''}`}
+              className={`w-full h-full object-cover rounded-lg ${disabled || isOutOfStock || isFiltering ? 'filter grayscale' : ''}`}
             />
           </div>
         )}
         
         {!hasImage && (
           <div className={`w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0 ${
-            disabled || isOutOfStock ? 'filter grayscale' : ''
+            disabled || isOutOfStock || isFiltering ? 'filter grayscale' : ''
           }`}>
             <Package className="w-7 h-7" />
           </div>

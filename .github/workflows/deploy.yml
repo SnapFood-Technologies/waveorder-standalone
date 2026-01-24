@@ -66,6 +66,15 @@ jobs:
           npx prisma generate
           echo "✅ Prisma client generated successfully"
 
+      # 📊 ENSURE DATABASE INDEXES
+      - name: 📊 Ensure Database Indexes
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Creating database indexes for performance..."
+          npx tsx scripts/ensure-product-indexes.ts
+          echo "✅ Database indexes ensured successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:

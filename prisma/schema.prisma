@@ -540,7 +540,15 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Performance indexes for storefront queries
   @@index([brandId])
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@index([businessId, isActive, price])
+  @@index([categoryId])
+  @@index([businessId, categoryId, isActive])
+  @@index([businessId, isActive, featured])
+  @@index([businessId, isActive, price, name])
 }
 
 model Brand {
@@ -639,6 +647,9 @@ model ProductVariant {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Performance index for loading variants by product
+  @@index([productId])
 }
 
 model InventoryActivity {
