@@ -154,25 +154,11 @@ function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
 }
 
 function getPriceRange(categories: any[], currency: string): string {
-  if (!categories || categories.length === 0) return '$$'
-  
-  const prices = categories.flatMap(category => 
-    category.products?.map((product: any) => product.price) || []
-  ).filter(price => typeof price === 'number' && price > 0)
-  
-  if (prices.length === 0) return '$$'
-  
-  const minPrice = Math.min(...prices)
-  const maxPrice = Math.max(...prices)
-  const avgPrice = (minPrice + maxPrice) / 2
-  
-  const currencyMultiplier = currency === 'USD' ? 1 : currency === 'EUR' ? 1.1 : currency === 'ALL' ? 0.01 : 1
-  const adjustedAvg = avgPrice * currencyMultiplier
-  
-  if (adjustedAvg < 10) return '$'
-  if (adjustedAvg < 25) return '$$'  
-  if (adjustedAvg < 50) return '$$$'
-  return '$$$$'
+  // PERFORMANCE OPTIMIZATION: Categories no longer include products
+  // Price range calculation would require a separate API call
+  // For now, return default price range
+  // TODO: Add price range API endpoint if needed for SEO
+  return '$$'
 }
 
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {

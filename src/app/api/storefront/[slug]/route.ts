@@ -173,15 +173,25 @@ export async function GET(
       ? [business.id, ...business.connectedBusinesses]
       : [business.id]
 
-    // Fetch categories with products (optimized based on connections)
+    // PERFORMANCE OPTIMIZATION: Fetch categories WITHOUT products initially
+    // Products will be loaded on-demand via separate API endpoint
     const categories = await prisma.category.findMany({
       where: {
         businessId: hasConnections ? { in: businessIds } : business.id,
         isActive: true
       },
       orderBy: { sortOrder: 'asc' },
-      include: {
-        // @ts-ignore - Parent relation will exist after Prisma client regeneration
+      select: {
+        id: true,
+        name: true,
+        nameAl: true,
+        description: true,
+        descriptionAl: true,
+        image: true,
+        parentId: true,
+        sortOrder: true,
+        hideParentInStorefront: true,
+        // @ts-ignore - Parent relation
         parent: {
           select: {
             id: true,
@@ -190,7 +200,7 @@ export async function GET(
             hideParentInStorefront: true
           }
         },
-        // @ts-ignore - Children relation will exist after Prisma client regeneration
+        // @ts-ignore - Children relation
         children: {
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' },
@@ -204,18 +214,15 @@ export async function GET(
             sortOrder: true
           }
         },
-        products: {
-          where: {
-            businessId: hasConnections ? { in: businessIds } : business.id,
-            isActive: true,
-            price: { gt: 0 }  // Don't show zero-price products
-          },
-          include: {
-            variants: {
-              orderBy: { price: 'asc' }
-            },
-            modifiers: {
-              orderBy: { price: 'asc' }
+        // Only get product COUNT for initial load (not actual products)
+        _count: {
+          select: {
+            products: {
+              where: {
+                businessId: hasConnections ? { in: businessIds } : business.id,
+                isActive: true,
+                price: { gt: 0 }
+              }
             }
           }
         }
@@ -233,11 +240,19 @@ export async function GET(
     if (business.customMenuEnabled || business.customFilteringEnabled) {
       const customFilterSettings = business.customFilterSettings as any || {}
       
+      // PERFORMANCE OPTIMIZATION: Fetch only needed fields for collections/groups/brands
       // Fetch collections if menu enabled OR filtering enabled for collections
       if (business.customMenuEnabled || customFilterSettings.collectionsEnabled) {
         collections = await prisma.collection.findMany({
           where: {
             businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true
+          },
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            sortOrder: true,
             isActive: true
           },
           orderBy: { sortOrder: 'asc' }
@@ -251,6 +266,13 @@ export async function GET(
             businessId: hasConnections ? { in: businessIds } : business.id,
             isActive: true
           },
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            sortOrder: true,
+            isActive: true
+          },
           orderBy: { sortOrder: 'asc' }
         })
       }
@@ -260,6 +282,13 @@ export async function GET(
         brands = await prisma.brand.findMany({
           where: {
             businessId: hasConnections ? { in: businessIds } : business.id,
+            isActive: true
+          },
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            sortOrder: true,
             isActive: true
           },
           orderBy: { sortOrder: 'asc' }
@@ -508,26 +537,11 @@ export async function GET(
           return useAlbanian && categoryNameAl ? categoryNameAl : categoryName
         }
         
-        // Build all categories with products
-        const allCategoriesWithProducts = (business.categories as any[])
+        // PERFORMANCE OPTIMIZATION: Build categories WITHOUT products
+        // Products will be loaded on-demand via /api/storefront/[slug]/products endpoint
+        const allCategories = (business.categories as any[])
           .map((category: any) => {
-            // Filter products with stock 0
-            const filteredProducts = (category.products as any[])
-              .filter((product: any) => {
-                // Filter out products with stock 0
-                // If inventory tracking is disabled, product is always available (show it)
-                if (!product.trackInventory) {
-                  return true
-                }
-                
-                // If product has variants, check if any variant has stock > 0
-                if (product.variants && product.variants.length > 0) {
-                  return product.variants.some((v: any) => v.stock > 0)
-                }
-                
-                // Otherwise, check product stock
-                return product.stock > 0
-              })
+            const productCount = category._count?.products || 0
             
             return {
               id: category.id,
@@ -544,6 +558,7 @@ export async function GET(
               hideParentInStorefront: category.hideParentInStorefront,
               image: category.image,
               sortOrder: category.sortOrder,
+              productCount, // Include product count for filtering
               children: category.children ? (category.children as any[]).map((child: any) => ({
                 id: child.id,
                 name: getCategoryDisplayName(child.name, child.nameAl),
@@ -553,131 +568,64 @@ export async function GET(
                 image: child.image,
                 sortOrder: child.sortOrder
               })) : [],
-              products: filteredProducts
+              products: [] // Empty array - products loaded separately
             }
           })
         
-        // Filter categories that have at least 1 product
-        // For parent categories: must have products OR have children with products
-        // For child categories: must have products
-        const allCategories = allCategoriesWithProducts
+        // Filter categories that have at least 1 product (using count)
+        const filteredCategories = allCategories
           .filter((category: any) => {
             // Child categories: must have at least 1 product
             if (category.parentId) {
-              return category.products.length > 0
+              return category.productCount > 0
             }
             
             // Parent categories: must have products OR have children with products
             if (category.children && category.children.length > 0) {
               // Check if any child has products
-              const childrenWithProducts = category.children.filter((childId: any) => {
-                const child = allCategoriesWithProducts.find((c: any) => c.id === childId.id)
-                return child && child.products.length > 0
+              const childrenWithProducts = category.children.filter((child: any) => {
+                const childCategory = allCategories.find((c: any) => c.id === child.id)
+                return childCategory && childCategory.productCount > 0
               })
               // Show parent if it has products OR has children with products
-              return category.products.length > 0 || childrenWithProducts.length > 0
+              return category.productCount > 0 || childrenWithProducts.length > 0
             }
             
             // Parent without children: must have products
-            return category.products.length > 0
+            return category.productCount > 0
           })
           .map((category: any) => {
             // Filter children to only include those with products
             const childrenWithProducts = category.children
               ? category.children.filter((child: any) => {
-                  const childCategory = allCategoriesWithProducts.find((c: any) => c.id === child.id)
-                  return childCategory && childCategory.products.length > 0
+                  const childCategory = allCategories.find((c: any) => c.id === child.id)
+                  return childCategory && childCategory.productCount > 0
                 })
               : []
             
             return {
               ...category,
-              children: childrenWithProducts,
-              products: category.products.map((product: any) => {
-                // Calculate effective price for product
-                const productPricing = calculateEffectivePrice(
-                  product.price,
-                  product.originalPrice,
-                  product.saleStartDate,
-                  product.saleEndDate
-                )
-                
-                // Exception slugs: Always use English description, fallback to Albanian only if English is empty
-                const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
-                const isExceptionSlug = exceptionSlugs.includes(slug)
-                
-                // For exception slugs: prioritize English, use Albanian only if English is empty/missing
-                // For others: use Albanian if business language is Albanian, otherwise English
-                const productDescription = isExceptionSlug
-                  ? (product.description || product.descriptionAl || '')
-                  : (useAlbanian && product.descriptionAl 
-                    ? product.descriptionAl 
-                    : product.description)
-                
-                return {
-                  id: product.id,
-                  name: product.name,
-                  description: productDescription,
-                  descriptionAl: product.descriptionAl,
-                  images: product.images,
-                  price: productPricing.effectivePrice,
-                  originalPrice: productPricing.effectiveOriginalPrice,
-                  sku: product.sku,
-                  stock: product.stock,
-                  trackInventory: product.trackInventory,
-                  featured: product.featured,
-                  metaTitle: product.metaTitle,
-                  metaDescription: product.metaDescription,
-                  variants: (product.variants as any[]).map((variant: any) => {
-                    // Calculate effective price for variant
-                    const variantPricing = calculateEffectivePrice(
-                      variant.price,
-                      variant.originalPrice,
-                      variant.saleStartDate,
-                      variant.saleEndDate
-                    )
-                    
-                    return {
-                      id: variant.id,
-                      name: variant.name,
-                      price: variantPricing.effectivePrice,
-                      originalPrice: variantPricing.effectiveOriginalPrice,
-                      stock: variant.stock,
-                      sku: variant.sku,
-                      metadata: variant.metadata || null, // Include metadata for variant images
-                      saleStartDate: variant.saleStartDate || null,
-                      saleEndDate: variant.saleEndDate || null
-                    }
-                  }),
-                  modifiers: (product.modifiers as any[]).map((modifier: any) => ({
-                    id: modifier.id,
-                    name: modifier.name,
-                    price: modifier.price,
-                    required: modifier.required
-                  }))
-                }
-              })
+              children: childrenWithProducts
             }
           })
         
         // Separate parent and child categories
-        const parentCategories = allCategories.filter((cat: any) => !cat.parentId)
-        const childCategories = allCategories.filter((cat: any) => cat.parentId)
+        const parentCategories = filteredCategories.filter((cat: any) => !cat.parentId)
+        const childCategories = filteredCategories.filter((cat: any) => cat.parentId)
         
         // Check if we should hide single parent
         if (parentCategories.length === 1 && parentCategories[0].hideParentInStorefront) {
           // Return only children of that parent in flat structure
-          // Children are already filtered to only include those with products
           const parentId = parentCategories[0].id
           return childCategories
-            .filter((child: any) => child.parentId === parentId && child.products.length > 0)
+            .filter((child: any) => child.parentId === parentId && child.productCount > 0)
             .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
         }
         
         // Return both parent and child categories in flat array
         // Parent categories have children nested, but child categories are also in the flat array
         // This allows frontend to find child categories by ID
-        return allCategories.sort((a: any, b: any) => {
+        return filteredCategories.sort((a: any, b: any) => {
           // Sort parents first, then children
           if (!a.parentId && b.parentId) return -1
           if (a.parentId && !b.parentId) return 1

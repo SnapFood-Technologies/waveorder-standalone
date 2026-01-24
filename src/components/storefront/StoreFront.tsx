@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   Search, 
   ShoppingCart, 
@@ -1619,8 +1619,16 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [selectedMenuItem, setSelectedMenuItem] = useState<string | null>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   
-  // Infinite scroll for products
+  // PERFORMANCE OPTIMIZATION: Products loaded from API endpoint
   const PRODUCTS_PER_PAGE = 24
+  const [products, setProducts] = useState<any[]>([])
+  const [productsLoading, setProductsLoading] = useState(true)
+  const [productsError, setProductsError] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMoreProducts, setHasMoreProducts] = useState(true)
+  const [totalProducts, setTotalProducts] = useState(0)
+  
+  // Infinite scroll for products (now using API pagination)
   const [displayedProductsCount, setDisplayedProductsCount] = useState(PRODUCTS_PER_PAGE)
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== 'undefined' && storeData?.id) {
@@ -1780,50 +1788,135 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
   }, [cart, storeData.id])
 
-  // Scroll to top button visibility + Infinite scroll for products
+  // Scroll to top button visibility
   useEffect(() => {
     const handleScroll = () => {
-      // Use multiple methods for better mobile compatibility
       const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
       setShowScrollToTop(scrollY > 800) // Show after scrolling 800px
-      
-      // Infinite scroll: Load more products when near bottom
-      const windowHeight = window.innerHeight
-      const documentHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.offsetHeight,
-        document.body.clientHeight,
-        document.documentElement.clientHeight
-      )
-      
-      // Load more when within 800px of bottom
-      if (scrollY + windowHeight >= documentHeight - 800) {
-        setDisplayedProductsCount(prev => prev + PRODUCTS_PER_PAGE)
-      }
     }
 
-    // Initial check
     handleScroll()
-
-    // Add scroll listener with passive for better performance
     window.addEventListener('scroll', handleScroll, { passive: true })
-    // Also listen on document for mobile Safari compatibility
     document.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
       window.removeEventListener('scroll', handleScroll)
       document.removeEventListener('scroll', handleScroll)
     }
-  }, []) // Empty deps - handler uses state setter functions
+  }, [])
   
-  // Reset displayed products when search/filter changes
+  // PERFORMANCE OPTIMIZATION: Fetch products from API endpoint
+  const fetchProducts = useCallback(async (page: number = 1, reset: boolean = false) => {
+    // Don't fetch if no categories
+    if (!storeData.categories || storeData.categories.length === 0) {
+      setProducts([])
+      setProductsLoading(false)
+      return
+    }
+    
+    try {
+      setProductsLoading(true)
+      setProductsError(null)
+      
+      const params = new URLSearchParams()
+      // Priority: selectedFilterCategory > selectedSubCategory > selectedCategory
+      const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
+      if (categoryToFilter) {
+        params.set('categoryId', categoryToFilter)
+      }
+      if (searchTerm.trim()) {
+        params.set('search', searchTerm.trim())
+      }
+      if (priceMin !== '') {
+        params.set('priceMin', priceMin.toString())
+      }
+      if (priceMax !== '') {
+        params.set('priceMax', priceMax.toString())
+      }
+      if (selectedCollections.size > 0) {
+        params.set('collections', Array.from(selectedCollections).join(','))
+      }
+      if (selectedGroups.size > 0) {
+        params.set('groups', Array.from(selectedGroups).join(','))
+      }
+      if (selectedBrands.size > 0) {
+        params.set('brands', Array.from(selectedBrands).join(','))
+      }
+      params.set('sortBy', sortBy)
+      params.set('page', page.toString())
+      params.set('limit', '50') // Load 50 products per page for better performance
+      
+      const response = await fetch(`/api/storefront/${storeData.slug}/products?${params.toString()}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch products')
+      }
+      
+      const data = await response.json()
+      
+      if (reset) {
+        setProducts(data.products || [])
+        setCurrentPage(1)
+      } else {
+        setProducts(prev => [...prev, ...(data.products || [])])
+      }
+      
+      setTotalProducts(data.pagination?.total || 0)
+      setHasMoreProducts(data.pagination?.hasMore || false)
+      setCurrentPage(page)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+      setProductsError('Failed to load products')
+    } finally {
+      setProductsLoading(false)
+    }
+  }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, searchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+
+  // Initial products load and refetch when filters change
   useEffect(() => {
+    fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
-    // Scroll to top when filters change for better UX
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [searchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy])
+  }, [fetchProducts])
+
+  // Update displayed count when products are loaded
+  useEffect(() => {
+    if (products.length > 0 && displayedProductsCount < products.length) {
+      // Show all loaded products
+      setDisplayedProductsCount(Math.min(products.length, displayedProductsCount + PRODUCTS_PER_PAGE))
+    }
+  }, [products.length])
+
+  // Load more products on scroll (infinite scroll)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (productsLoading || !hasMoreProducts) return
+      
+      const scrollY = window.scrollY || document.documentElement.scrollTop
+      const windowHeight = window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      
+      // Load more when within 800px of bottom
+      if (scrollY + windowHeight >= documentHeight - 800) {
+        // If we've shown all loaded products, load next page
+        if (displayedProductsCount >= products.length && hasMoreProducts) {
+          const nextPage = currentPage + 1
+          fetchProducts(nextPage, false)
+        } else if (displayedProductsCount < products.length) {
+          // Show more of the already-loaded products
+          setDisplayedProductsCount(prev => Math.min(prev + PRODUCTS_PER_PAGE, products.length))
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    document.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      document.removeEventListener('scroll', handleScroll)
+    }
+  }, [displayedProductsCount, products.length, hasMoreProducts, productsLoading, currentPage, fetchProducts])
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -1904,16 +1997,16 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   // Check minimum order requirement
   const meetsMinimumOrder = cartSubtotal >= storeData.minimumOrder || deliveryType !== 'delivery'
 
-  // Filter products
-  const filteredProducts = storeData.categories.flatMap(category => 
-    category.products.filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesCategory = selectedCategory === 'all' || category.id === selectedCategory
-      const hasValidPrice = product.price > 0 // Exclude products with price 0
-      return matchesSearch && matchesCategory && hasValidPrice
-    }).map(product => ({ ...product, categoryName: category.name }))
-  )
+  // PERFORMANCE OPTIMIZATION: Use products from API (already filtered server-side)
+  // Map products to include category name for display
+  const filteredProducts = products.map(product => {
+    // Find category name from storeData.categories
+    const category = storeData.categories.find((cat: any) => cat.id === product.categoryId)
+    return {
+      ...product,
+      categoryName: category?.name || 'Uncategorized'
+    }
+  })
 
   // Helper function to validate phone number is complete
   const isPhoneValid = (phone: string) => {
@@ -2145,7 +2238,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   }
 
 
+  // PERFORMANCE OPTIMIZATION: Products are already filtered by API
+  // All filtering (category, search, price, collections, groups, brands, sorting) happens server-side
   const getFilteredProducts = () => {
+    return filteredProducts
+  }
+
+  // Legacy function - kept for reference but not used
+  const getFilteredProductsLegacy = () => {
     // @ts-ignore
     let products = []
   
@@ -3405,6 +3505,32 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(() => {
+                // Show loading state
+                if (productsLoading && products.length === 0) {
+                  return (
+                    <div className="col-span-full text-center py-12">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                      <p className="mt-4 text-gray-600">{translations.loading || 'Loading products...'}</p>
+                    </div>
+                  )
+                }
+                
+                // Show error state
+                if (productsError && products.length === 0) {
+                  return (
+                    <div className="col-span-full text-center py-12">
+                      <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-4">{productsError}</p>
+                      <button
+                        onClick={() => fetchProducts(1, true)}
+                        className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                      >
+                        {translations.retry || 'Retry'}
+                      </button>
+                    </div>
+                  )
+                }
+                
                 const filteredProducts = getFilteredProducts()
                 
                 if (storeData.categories.length === 0) {
@@ -3460,24 +3586,35 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 }
                 }
                 
-                // Infinite scroll: Only render products up to displayedProductsCount (seamless, no loading indicators)
+                // Infinite scroll: Only render products up to displayedProductsCount
                 const visibleProducts = filteredProducts.slice(0, Math.min(displayedProductsCount, filteredProducts.length))
                 
-                return visibleProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onOpenModal={openProductModal}
-                    primaryColor={primaryColor}
-                    currencySymbol={currencySymbol}
-                    translations={translations}
-                    disabled={storeData.isTemporarilyClosed}
-                    cart={cart}
-                    featuredBadgeColor={storeData.featuredBadgeColor}
-                    storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
-                    businessSlug={storeData.slug}
-                  />
-                ))
+                return (
+                  <>
+                    {visibleProducts.map(product => (
+                      <ProductCard 
+                        key={product.id} 
+                        product={product} 
+                        onOpenModal={openProductModal}
+                        primaryColor={primaryColor}
+                        currencySymbol={currencySymbol}
+                        translations={translations}
+                        disabled={storeData.isTemporarilyClosed}
+                        cart={cart}
+                        featuredBadgeColor={storeData.featuredBadgeColor}
+                        storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
+                        businessSlug={storeData.slug}
+                      />
+                    ))}
+                    {/* Loading indicator for pagination */}
+                    {productsLoading && products.length > 0 && (
+                      <div className="col-span-full text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600"></div>
+                        <p className="mt-2 text-sm text-gray-600">{translations.loadingMore || 'Loading more products...'}</p>
+                      </div>
+                    )}
+                  </>
+                )
             })()}
             </div>
         </div>
