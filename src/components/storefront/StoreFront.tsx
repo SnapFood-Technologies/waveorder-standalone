@@ -2949,7 +2949,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       onClick={() => setShowFilterModal(true)}
       className="flex items-center justify-center px-3 py-3 border-2 border-gray-200 rounded-xl text-base transition-colors hover:border-gray-300 flex-shrink-0"
       style={{ 
-        borderColor: (priceMin !== '' || priceMax !== '' || selectedFilterCategory !== null || sortBy !== 'name-asc') ? primaryColor : undefined
+        borderColor: (
+          priceMin !== '' || 
+          priceMax !== '' || 
+          selectedFilterCategory !== null || 
+          selectedCollections.size > 0 ||
+          selectedGroups.size > 0 ||
+          selectedBrands.size > 0 ||
+          sortBy !== 'name-asc'
+        ) ? primaryColor : undefined
       }}
     >
       <SlidersHorizontal className="w-5 h-5 text-gray-600" />
@@ -2957,7 +2965,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   </div>
   
   {/* Active Filters Badges */}
-  {(priceMin !== '' || priceMax !== '' || selectedFilterCategory !== null || sortBy !== 'name-asc') && (
+  {(
+    priceMin !== '' || 
+    priceMax !== '' || 
+    selectedFilterCategory !== null || 
+    selectedCollections.size > 0 ||
+    selectedGroups.size > 0 ||
+    selectedBrands.size > 0 ||
+    sortBy !== 'name-asc'
+  ) && (
     <div className="py-3">
       <div className="flex flex-wrap gap-2">
         {/* Price Range Badge */}
@@ -3002,6 +3018,72 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             </div>
           )
         })()}
+
+        {/* Collections Badges */}
+        {selectedCollections.size > 0 && storeData.collections && storeData.collections.map((collection: any) => {
+          if (!selectedCollections.has(collection.id)) return null
+          return (
+            <div key={`collection-${collection.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+              <span className="text-gray-700">
+                {storeData.storefrontLanguage === 'sq' && collection.nameAl ? collection.nameAl : collection.name}
+              </span>
+              <button
+                onClick={() => {
+                  const newCollections = new Set(selectedCollections)
+                  newCollections.delete(collection.id)
+                  setSelectedCollections(newCollections)
+                }}
+                className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+              >
+                <X className="w-2.5 h-2.5 text-gray-600" />
+              </button>
+            </div>
+          )
+        })}
+
+        {/* Groups Badges */}
+        {selectedGroups.size > 0 && storeData.groups && storeData.groups.map((group: any) => {
+          if (!selectedGroups.has(group.id)) return null
+          return (
+            <div key={`group-${group.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+              <span className="text-gray-700">
+                {storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name}
+              </span>
+              <button
+                onClick={() => {
+                  const newGroups = new Set(selectedGroups)
+                  newGroups.delete(group.id)
+                  setSelectedGroups(newGroups)
+                }}
+                className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+              >
+                <X className="w-2.5 h-2.5 text-gray-600" />
+              </button>
+            </div>
+          )
+        })}
+
+        {/* Brands Badges */}
+        {selectedBrands.size > 0 && storeData.brands && storeData.brands.map((brand: any) => {
+          if (!selectedBrands.has(brand.id)) return null
+          return (
+            <div key={`brand-${brand.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
+              <span className="text-gray-700">
+                {storeData.storefrontLanguage === 'sq' && brand.nameAl ? brand.nameAl : brand.name}
+              </span>
+              <button
+                onClick={() => {
+                  const newBrands = new Set(selectedBrands)
+                  newBrands.delete(brand.id)
+                  setSelectedBrands(newBrands)
+                }}
+                className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+              >
+                <X className="w-2.5 h-2.5 text-gray-600" />
+              </button>
+            </div>
+          )
+        })}
 
         {/* Sort By Badge */}
         {sortBy !== 'name-asc' && (
@@ -3715,6 +3797,99 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 </div>
               </div>
 
+              {/* Collections Filter - Only show if enabled */}
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.collectionsEnabled && storeData.collections && storeData.collections.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.collections || 'Collections'}</h3>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                    {storeData.collections.map((collection: any) => (
+                      <label key={collection.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedCollections.has(collection.id)}
+                          onChange={(e) => {
+                            const newCollections = new Set(selectedCollections)
+                            if (e.target.checked) {
+                              newCollections.add(collection.id)
+                            } else {
+                              newCollections.delete(collection.id)
+                            }
+                            setSelectedCollections(newCollections)
+                          }}
+                          className="w-4 h-4 border-gray-300 rounded text-gray-600 focus:ring-2 focus:ring-offset-0"
+                          style={{ accentColor: primaryColor }}
+                        />
+                        <span className="ml-3 text-sm text-gray-700">
+                          {storeData.storefrontLanguage === 'sq' && collection.nameAl ? collection.nameAl : collection.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Groups Filter - Only show if enabled */}
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.groupsEnabled && storeData.groups && storeData.groups.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.groups || 'Groups'}</h3>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                    {storeData.groups.map((group: any) => (
+                      <label key={group.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedGroups.has(group.id)}
+                          onChange={(e) => {
+                            const newGroups = new Set(selectedGroups)
+                            if (e.target.checked) {
+                              newGroups.add(group.id)
+                            } else {
+                              newGroups.delete(group.id)
+                            }
+                            setSelectedGroups(newGroups)
+                          }}
+                          className="w-4 h-4 border-gray-300 rounded text-gray-600 focus:ring-2 focus:ring-offset-0"
+                          style={{ accentColor: primaryColor }}
+                        />
+                        <span className="ml-3 text-sm text-gray-700">
+                          {storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Brands Filter - Only show if enabled */}
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.brandsEnabled && storeData.brands && storeData.brands.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.brands || 'Brands'}</h3>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
+                    {storeData.brands.map((brand: any) => (
+                      <label key={brand.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedBrands.has(brand.id)}
+                          onChange={(e) => {
+                            const newBrands = new Set(selectedBrands)
+                            if (e.target.checked) {
+                              newBrands.add(brand.id)
+                            } else {
+                              newBrands.delete(brand.id)
+                            }
+                            setSelectedBrands(newBrands)
+                          }}
+                          className="w-4 h-4 border-gray-300 rounded text-gray-600 focus:ring-2 focus:ring-offset-0"
+                          style={{ accentColor: primaryColor }}
+                        />
+                        <span className="ml-3 text-sm text-gray-700">
+                          {storeData.storefrontLanguage === 'sq' && brand.nameAl ? brand.nameAl : brand.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Sort By */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.sortBy || 'Sort By'}</h3>
@@ -3750,6 +3925,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   setPriceMax('')
                   setSelectedFilterCategory(null)
                   setSelectedCategory('all')
+                  setSelectedCollections(new Set())
+                  setSelectedGroups(new Set())
+                  setSelectedBrands(new Set())
                   setSortBy('name-asc')
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
