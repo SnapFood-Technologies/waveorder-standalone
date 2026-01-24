@@ -267,10 +267,37 @@ export async function GET(
       }
     }
 
+    // Fetch custom menu items if custom menu is enabled
+    let customMenuItems: any[] = []
+    if (business.customMenuEnabled) {
+      customMenuItems = (business.customMenuItems as any[]) || []
+      
+      // Populate target entity details for each menu item
+      const menuItemsWithTargets = customMenuItems
+        .filter((item: any) => item.isActive)
+        .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map((item: any) => {
+          let target = null
+          
+          if (item.type === 'group' && item.targetId) {
+            target = groups.find(g => g.id === item.targetId)
+          } else if (item.type === 'collection' && item.targetId) {
+            target = collections.find(c => c.id === item.targetId)
+          } else if (item.type === 'category' && item.targetId) {
+            target = business.categories.find((cat: any) => cat.id === item.targetId)
+          }
+          
+          return { ...item, target }
+        })
+      
+      customMenuItems = menuItemsWithTargets
+    }
+
     // Attach to business object
     business.collections = collections
     business.groups = groups
     business.brands = brands
+    business.customMenuItems = customMenuItems
 
     // Extract tracking data from request
     const userAgent = request.headers.get('user-agent') || undefined
@@ -425,6 +452,15 @@ export async function GET(
       nextOpenTime,
       openingHoursSchema,
       
+      // Custom Features
+      customMenuEnabled: business.customMenuEnabled,
+      customMenuItems: business.customMenuItems || [],
+      customFilteringEnabled: business.customFilteringEnabled,
+      customFilterSettings: business.customFilterSettings || {},
+      collections: business.collections || [],
+      groups: business.groups || [],
+      brands: business.brands || [],
+
       // Menu
       categories: (() => {
         // Helper function to calculate effective price based on sale dates
