@@ -3020,9 +3020,17 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         })()}
 
         {/* Collections Badges */}
-        {selectedCollections.size > 0 && storeData.collections && storeData.collections.map((collection: any) => {
-          if (!selectedCollections.has(collection.id)) return null
-          return (
+        {selectedCollections.size > 0 && (() => {
+          const availableCollections = storeData.customFilteringEnabled && storeData.customFilterSettings?.collectionsEnabled 
+            && storeData.customFilterSettings.collectionsMode === 'custom'
+            ? (storeData.collections || []).filter((c: any) => 
+                (storeData.customFilterSettings.selectedCollections || []).includes(c.id)
+              )
+            : storeData.collections || []
+          
+          return availableCollections.map((collection: any) => {
+            if (!selectedCollections.has(collection.id)) return null
+            return (
             <div key={`collection-${collection.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
               <span className="text-gray-700">
                 {storeData.storefrontLanguage === 'sq' && collection.nameAl ? collection.nameAl : collection.name}
@@ -3038,13 +3046,22 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <X className="w-2.5 h-2.5 text-gray-600" />
               </button>
             </div>
-          )
-        })}
+            )
+          })
+        })()}
 
         {/* Groups Badges */}
-        {selectedGroups.size > 0 && storeData.groups && storeData.groups.map((group: any) => {
-          if (!selectedGroups.has(group.id)) return null
-          return (
+        {selectedGroups.size > 0 && (() => {
+          const availableGroups = storeData.customFilteringEnabled && storeData.customFilterSettings?.groupsEnabled 
+            && storeData.customFilterSettings.groupsMode === 'custom'
+            ? (storeData.groups || []).filter((g: any) => 
+                (storeData.customFilterSettings.selectedGroups || []).includes(g.id)
+              )
+            : storeData.groups || []
+          
+          return availableGroups.map((group: any) => {
+            if (!selectedGroups.has(group.id)) return null
+            return (
             <div key={`group-${group.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
               <span className="text-gray-700">
                 {storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name}
@@ -3060,13 +3077,22 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <X className="w-2.5 h-2.5 text-gray-600" />
               </button>
             </div>
-          )
-        })}
+            )
+          })
+        })()}
 
         {/* Brands Badges */}
-        {selectedBrands.size > 0 && storeData.brands && storeData.brands.map((brand: any) => {
-          if (!selectedBrands.has(brand.id)) return null
-          return (
+        {selectedBrands.size > 0 && (() => {
+          const availableBrands = storeData.customFilteringEnabled && storeData.customFilterSettings?.brandsEnabled 
+            && storeData.customFilterSettings.brandsMode === 'custom'
+            ? (storeData.brands || []).filter((b: any) => 
+                (storeData.customFilterSettings.selectedBrands || []).includes(b.id)
+              )
+            : storeData.brands || []
+          
+          return availableBrands.map((brand: any) => {
+            if (!selectedBrands.has(brand.id)) return null
+            return (
             <div key={`brand-${brand.id}`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
               <span className="text-gray-700">
                 {storeData.storefrontLanguage === 'sq' && brand.nameAl ? brand.nameAl : brand.name}
@@ -3082,8 +3108,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <X className="w-2.5 h-2.5 text-gray-600" />
               </button>
             </div>
-          )
-        })}
+            )
+          })
+        })()}
 
         {/* Sort By Badge */}
         {sortBy !== 'name-asc' && (
@@ -3798,11 +3825,24 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               </div>
 
               {/* Collections Filter - Only show if enabled */}
-              {storeData.customFilteringEnabled && storeData.customFilterSettings?.collectionsEnabled && storeData.collections && storeData.collections.length > 0 && (
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.collectionsEnabled && (() => {
+                const availableCollections = storeData.customFilterSettings.collectionsMode === 'all' 
+                  ? storeData.collections || []
+                  : (storeData.collections || []).filter((c: any) => 
+                      (storeData.customFilterSettings.selectedCollections || []).includes(c.id)
+                    )
+                return availableCollections.length > 0
+              })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.collections || 'Collections'}</h3>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
-                    {storeData.collections.map((collection: any) => (
+                    {(() => {
+                      const availableCollections = storeData.customFilterSettings.collectionsMode === 'all' 
+                        ? storeData.collections || []
+                        : (storeData.collections || []).filter((c: any) => 
+                            (storeData.customFilterSettings.selectedCollections || []).includes(c.id)
+                          )
+                      return availableCollections.map((collection: any) => (
                       <label key={collection.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
                           type="checkbox"
@@ -3823,17 +3863,31 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           {storeData.storefrontLanguage === 'sq' && collection.nameAl ? collection.nameAl : collection.name}
                         </span>
                       </label>
-                    ))}
+                      ))
+                    })()}
                   </div>
                 </div>
               )}
 
               {/* Groups Filter - Only show if enabled */}
-              {storeData.customFilteringEnabled && storeData.customFilterSettings?.groupsEnabled && storeData.groups && storeData.groups.length > 0 && (
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.groupsEnabled && (() => {
+                const availableGroups = storeData.customFilterSettings.groupsMode === 'all' 
+                  ? storeData.groups || []
+                  : (storeData.groups || []).filter((g: any) => 
+                      (storeData.customFilterSettings.selectedGroups || []).includes(g.id)
+                    )
+                return availableGroups.length > 0
+              })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.groups || 'Groups'}</h3>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
-                    {storeData.groups.map((group: any) => (
+                    {(() => {
+                      const availableGroups = storeData.customFilterSettings.groupsMode === 'all' 
+                        ? storeData.groups || []
+                        : (storeData.groups || []).filter((g: any) => 
+                            (storeData.customFilterSettings.selectedGroups || []).includes(g.id)
+                          )
+                      return availableGroups.map((group: any) => (
                       <label key={group.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
                           type="checkbox"
@@ -3854,17 +3908,31 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           {storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name}
                         </span>
                       </label>
-                    ))}
+                      ))
+                    })()}
                   </div>
                 </div>
               )}
 
               {/* Brands Filter - Only show if enabled */}
-              {storeData.customFilteringEnabled && storeData.customFilterSettings?.brandsEnabled && storeData.brands && storeData.brands.length > 0 && (
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.brandsEnabled && (() => {
+                const availableBrands = storeData.customFilterSettings.brandsMode === 'all' 
+                  ? storeData.brands || []
+                  : (storeData.brands || []).filter((b: any) => 
+                      (storeData.customFilterSettings.selectedBrands || []).includes(b.id)
+                    )
+                return availableBrands.length > 0
+              })() && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.brands || 'Brands'}</h3>
                   <div className="space-y-2 max-h-[200px] overflow-y-auto scrollbar-hide">
-                    {storeData.brands.map((brand: any) => (
+                    {(() => {
+                      const availableBrands = storeData.customFilterSettings.brandsMode === 'all' 
+                        ? storeData.brands || []
+                        : (storeData.brands || []).filter((b: any) => 
+                            (storeData.customFilterSettings.selectedBrands || []).includes(b.id)
+                          )
+                      return availableBrands.map((brand: any) => (
                       <label key={brand.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
                           type="checkbox"
@@ -3885,7 +3953,63 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           {storeData.storefrontLanguage === 'sq' && brand.nameAl ? brand.nameAl : brand.name}
                         </span>
                       </label>
-                    ))}
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Categories Filter - Only show if enabled */}
+              {storeData.customFilteringEnabled && storeData.customFilterSettings?.categoriesEnabled && (() => {
+                const availableCategories = storeData.customFilterSettings.categoriesMode === 'all' 
+                  ? storeData.categories || []
+                  : (storeData.categories || []).filter((c: any) => 
+                      (storeData.customFilterSettings.selectedCategories || []).includes(c.id)
+                    )
+                return availableCategories.length > 0
+              })() && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
+                  <div className="space-y-2 max-h-[260px] overflow-y-auto scrollbar-hide">
+                    <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                      <input
+                        type="radio"
+                        name="customFilterCategory"
+                        value=""
+                        checked={selectedFilterCategory === null}
+                        onChange={() => {
+                          setSelectedFilterCategory(null)
+                          setSelectedCategory('all')
+                        }}
+                        className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                        style={{ accentColor: primaryColor }}
+                      />
+                      <span className="ml-3 text-sm text-gray-700">{translations.all || 'All'}</span>
+                    </label>
+                    {(() => {
+                      const availableCategories = storeData.customFilterSettings.categoriesMode === 'all' 
+                        ? storeData.categories || []
+                        : (storeData.categories || []).filter((c: any) => 
+                            (storeData.customFilterSettings.selectedCategories || []).includes(c.id)
+                          )
+                      return availableCategories.map((category: any) => (
+                        <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                          <input
+                            type="radio"
+                            name="customFilterCategory"
+                            value={category.id}
+                            checked={selectedFilterCategory === category.id}
+                            onChange={() => {
+                              setSelectedFilterCategory(category.id)
+                              setSelectedCategory(category.id)
+                            }}
+                            className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                            style={{ accentColor: primaryColor }}
+                          />
+                          <span className="ml-3 text-sm text-gray-700">{category.name}</span>
+                        </label>
+                      ))
+                    })()}
                   </div>
                 </div>
               )}

@@ -31,12 +31,20 @@ export async function GET(
       }
     })
 
-    // Default settings
+    // Default settings with enhanced structure
     const defaultSettings = {
       categoriesEnabled: true,
+      categoriesMode: 'all' as const,
+      selectedCategories: [],
       collectionsEnabled: false,
+      collectionsMode: 'all' as const,
+      selectedCollections: [],
       groupsEnabled: false,
+      groupsMode: 'all' as const,
+      selectedGroups: [],
       brandsEnabled: false,
+      brandsMode: 'all' as const,
+      selectedBrands: [],
       priceRangeEnabled: true
     }
 
@@ -73,7 +81,21 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { collectionsEnabled, groupsEnabled, brandsEnabled } = body
+    const {
+      categoriesEnabled,
+      categoriesMode,
+      selectedCategories,
+      collectionsEnabled,
+      collectionsMode,
+      selectedCollections,
+      groupsEnabled,
+      groupsMode,
+      selectedGroups,
+      brandsEnabled,
+      brandsMode,
+      selectedBrands,
+      priceRangeEnabled
+    } = body
 
     // Get current settings
     const business = await prisma.business.findUnique({
@@ -81,15 +103,32 @@ export async function PATCH(
       select: { customFilterSettings: true }
     })
 
-    const currentSettings = business?.customFilterSettings || {}
+    const currentSettings = (business?.customFilterSettings as any) || {}
 
-    // Update settings (categories and priceRange are always enabled)
+    // Build updated settings with enhanced structure
     const updatedSettings = {
-      categoriesEnabled: true,  // Always true
-      priceRangeEnabled: true,  // Always true
-      collectionsEnabled: collectionsEnabled !== undefined ? collectionsEnabled : (currentSettings as any).collectionsEnabled || false,
-      groupsEnabled: groupsEnabled !== undefined ? groupsEnabled : (currentSettings as any).groupsEnabled || false,
-      brandsEnabled: brandsEnabled !== undefined ? brandsEnabled : (currentSettings as any).brandsEnabled || false
+      // Categories (now configurable)
+      categoriesEnabled: categoriesEnabled !== undefined ? categoriesEnabled : (currentSettings.categoriesEnabled !== undefined ? currentSettings.categoriesEnabled : true),
+      categoriesMode: categoriesMode || currentSettings.categoriesMode || 'all',
+      selectedCategories: selectedCategories || currentSettings.selectedCategories || [],
+      
+      // Collections
+      collectionsEnabled: collectionsEnabled !== undefined ? collectionsEnabled : (currentSettings.collectionsEnabled || false),
+      collectionsMode: collectionsMode || currentSettings.collectionsMode || 'all',
+      selectedCollections: selectedCollections || currentSettings.selectedCollections || [],
+      
+      // Groups
+      groupsEnabled: groupsEnabled !== undefined ? groupsEnabled : (currentSettings.groupsEnabled || false),
+      groupsMode: groupsMode || currentSettings.groupsMode || 'all',
+      selectedGroups: selectedGroups || currentSettings.selectedGroups || [],
+      
+      // Brands
+      brandsEnabled: brandsEnabled !== undefined ? brandsEnabled : (currentSettings.brandsEnabled || false),
+      brandsMode: brandsMode || currentSettings.brandsMode || 'all',
+      selectedBrands: selectedBrands || currentSettings.selectedBrands || [],
+      
+      // Price Range (always enabled)
+      priceRangeEnabled: true
     }
 
     // Save updated settings
