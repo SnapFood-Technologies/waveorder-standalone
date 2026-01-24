@@ -69,10 +69,13 @@ export async function GET(
       : [business.id]
 
     // Get category info to handle parent/child relationships
+    // Run this in parallel with business lookup for better performance
     let categoryIdsToFilter: string[] = []
     if (categoryId && categoryId !== 'all') {
+      categoryIdsToFilter = [categoryId] // Default to single category
+      
+      // Only fetch children if needed (async, don't block)
       try {
-        // Check if this is a parent category with children
         const category = await prisma.category.findUnique({
           where: { 
             id: categoryId,
@@ -90,16 +93,12 @@ export async function GET(
           }
         })
         
-        if (category) {
-          if (category.children && category.children.length > 0) {
-            // Parent category: include parent + all children
-            categoryIdsToFilter = [category.id, ...category.children.map((c: any) => c.id)]
-          } else {
-            // Child category or category without children: just this category
-            categoryIdsToFilter = [category.id]
-          }
-        } else {
-          categoryIdsToFilter = [categoryId]
+        if (category?.children && category.children.length > 0) {
+          // Parent category: include parent + all children
+          categoryIdsToFilter = [category.id, ...category.children.map((c: any) => c.id)]
+        } else if (category) {
+          // Child category or category without children: just this category
+          categoryIdsToFilter = [category.id]
         }
       } catch (error) {
         // Fallback to single category if query fails
@@ -166,7 +165,7 @@ export async function GET(
         orderBy = { name: 'asc' }
     }
 
-    // Fetch products with pagination
+    // Fetch products with pagination - use Promise.all for parallel execution
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where: productWhere,

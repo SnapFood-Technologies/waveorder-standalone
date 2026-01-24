@@ -1731,7 +1731,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [products, setProducts] = useState<any[]>(storeData.initialProducts || [])
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
-  const [isFiltering, setIsFiltering] = useState(false) // Track when filtering is happening
+  const [isFiltering, setIsFiltering] = useState(false) // Track when filtering is happening (only set on user clicks)
   // If we have initial products, we're on page 1, otherwise start at 0
   const [currentPage, setCurrentPage] = useState(storeData.initialProducts && storeData.initialProducts.length > 0 ? 1 : 0)
   const [hasMoreProducts, setHasMoreProducts] = useState(true)
@@ -1929,10 +1929,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (page > 1 || products.length > 0) {
         setProductsLoading(true)
       }
-      // If resetting (filter change), set filtering state to gray out cards
-      if (reset && products.length > 0) {
-        setIsFiltering(true)
-      }
+      // Note: isFiltering is only set in onClick handlers for menu items, not here
       setProductsError(null)
       
       const params = new URLSearchParams()
