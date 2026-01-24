@@ -4739,15 +4739,18 @@ function ProductCard({
             
             <div className="mb-1">
               {displayDescription && (
-                <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
-                  {displayDescription
-                    .replace(/&amp;/g, '&')
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/&quot;/g, '"')
-                    .replace(/&#39;/g, "'")
-                    .replace(/&nbsp;/g, ' ')}
-                </p>
+                <div 
+                  className="text-sm text-gray-600 leading-relaxed line-clamp-3"
+                  dangerouslySetInnerHTML={{ 
+                    __html: displayDescription
+                      .replace(/&amp;/g, '&')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&nbsp;/g, ' ')
+                  }} 
+                />
               )}
             </div>
           </div>
@@ -4904,7 +4907,6 @@ function ProductModal({
     : (useAlbanian && product.descriptionAl 
       ? product.descriptionAl 
       : product.description)
-  const formattedDescription = formatProductDescription(displayDescription)
 
   // Map variant names to Albanian
   const getVariantDisplayName = (variantName: string): string => {
@@ -5163,16 +5165,20 @@ function ProductModal({
               </div>
             )}
             
-            {formattedDescription && (
+            {displayDescription && (
               <div className="bg-gray-50 p-4 rounded-xl">
-                <div className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {formattedDescription.split('\n').map((line: string, index: number) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      {index < formattedDescription.split('\n').length - 1 && <br />}
-                    </React.Fragment>
-                  ))}
-                </div>
+                <div 
+                  className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ 
+                    __html: displayDescription
+                      .replace(/&amp;/g, '&')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&nbsp;/g, ' ')
+                  }} 
+                />
               </div>
             )}
 
