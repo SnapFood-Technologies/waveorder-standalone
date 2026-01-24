@@ -3417,8 +3417,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     </div>
   )}
 
-  {/* Search suggestions/results count - only show when search has 3+ characters */}
-  {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && (
+  {/* Search suggestions/results count - only show when search has 3+ characters AND API call is complete */}
+  {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && !productsLoading && (
     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
       <p className="text-sm text-gray-600">
         {totalProducts === 0 
@@ -3570,11 +3570,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         }
                         setSelectedCategory(category.id)
                         setSelectedSubCategory(null)
-                        // Clear search when switching to specific category
-                        if (searchTerm) {
-                          setSearchTerm('')
-                          setDebouncedSearchTerm('')
-                        }
+                        // Keep search term when switching to category (allow filtering by category + search)
                       }}
                       disabled={false}
                       className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative ${
@@ -3611,10 +3607,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     } else {
                       setSelectedSubCategory(null)
                     }
-                    if (searchTerm) {
-                      setSearchTerm('')
-                      setDebouncedSearchTerm('')
-                    }
+                    // Keep search term when switching to "All" (allow filtering by search)
                   }}
                   className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
                     (shouldShowOnlySubcategories ? selectedCategory === 'all' : !selectedSubCategory)
@@ -3653,10 +3646,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         } else {
                           setSelectedSubCategory(subcategory.id)
                         }
-                        if (searchTerm) {
-                          setSearchTerm('')
-                          setDebouncedSearchTerm('')
-                        }
+                        // Keep search term when selecting subcategory (allow filtering by category + search)
                       }}
                       className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
                         (shouldShowOnlySubcategories ? selectedCategory === subcategory.id : selectedSubCategory === subcategory.id)

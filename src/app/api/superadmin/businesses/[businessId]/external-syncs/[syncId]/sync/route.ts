@@ -204,6 +204,12 @@ export async function POST(
             products = data
           }
           
+          // Check if brand_info exists at response level (applies to all products in this page)
+          const responseBrandInfo = data.brand_info || null
+          if (responseBrandInfo) {
+            console.log(`[Sync] Response-level brand_info found: ${responseBrandInfo.name} (ID: ${responseBrandInfo.id}) - will apply to all products in this page`)
+          }
+          
           // Capture pagination info from external API response (only on first page)
           if (isFirstPage) {
             const total = data.total || data.pagination?.total || 0
@@ -238,6 +244,12 @@ export async function POST(
             const productStartTime = Date.now()
             
             try {
+              // If product doesn't have brand_info but response has it, use response-level brand_info
+              // Product-level brand_info takes precedence over response-level (if product has its own, use that)
+              if (!externalProduct.brand_info && responseBrandInfo) {
+                externalProduct.brand_info = responseBrandInfo
+              }
+              
               // Process product and get updated categories array (in case new categories were created)
               const updatedCategories = await processExternalProduct(externalProduct, businessId, sync.id, allCategories, connectedBusinessIds)
               // Update the shared allCategories array with newly created categories
@@ -706,11 +718,20 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
         }
       })
     } else {
-      // Update existing brand with connected businesses
-      await prisma.brand.update({
+      // Update existing brand with latest data from external system
+      brand = await prisma.brand.update({
         where: { id: brand.id },
         data: {
-          connectedBusinesses: connectedBusinessIds
+          name: brandNames.en || brand.name || 'Unknown Brand',
+          nameAl: brandNames.sq || brandNames.en || brand.nameAl || null,
+          connectedBusinesses: connectedBusinessIds,
+          // Update metadata to include latest external data
+          metadata: {
+            ...(brand.metadata && typeof brand.metadata === 'object' ? brand.metadata : {}),
+            externalBrandId: externalBrandId,
+            externalSyncId: syncId,
+            externalData: externalProduct.brand_info
+          }
         }
       })
     }
