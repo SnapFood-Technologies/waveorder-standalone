@@ -1727,7 +1727,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // PERFORMANCE OPTIMIZATION: Products loaded from API endpoint
   const PRODUCTS_PER_PAGE = 24
   const [products, setProducts] = useState<any[]>([])
-  const [productsLoading, setProductsLoading] = useState(true)
+  const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [hasMoreProducts, setHasMoreProducts] = useState(true)
@@ -1920,7 +1920,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     
     try {
-      setProductsLoading(true)
+      // Only show loading for pagination (page > 1), not initial load
+      if (page > 1 || products.length > 0) {
+        setProductsLoading(true)
+      }
       setProductsError(null)
       
       const params = new URLSearchParams()
@@ -3610,17 +3613,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(() => {
-                // Show loading state
-                if (productsLoading && products.length === 0) {
-                  return (
-                    <div className="col-span-full text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-                      <p className="mt-4 text-gray-600">{translations.loading || 'Loading products...'}</p>
-                    </div>
-                  )
-                }
-                
-                // Show error state
+                // Show error state only
                 if (productsError && products.length === 0) {
                   return (
                     <div className="col-span-full text-center py-12">
@@ -3650,7 +3643,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 )
                 }
                 
-                if (filteredProducts.length === 0) {
+                // Don't show empty state during initial load - let products appear naturally
+                if (filteredProducts.length === 0 && !productsLoading) {
                 if (searchTerm) {
                     return (
                     <div className="col-span-full">
@@ -3678,7 +3672,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         />
                     </div>
                     )
-                } else {
+                } else if (!productsLoading) {
+                    // Only show "no products" if we're not loading
                     return (
                     <div className="col-span-full">
                         <EmptyState 
@@ -3689,6 +3684,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     </div>
                     )
                 }
+                // During loading, show nothing (products will appear when ready)
+                return null
                 }
                 
                 // Infinite scroll: Only render products up to displayedProductsCount
@@ -3711,11 +3708,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         businessSlug={storeData.slug}
                       />
                     ))}
-                    {/* Loading indicator for pagination */}
+                    {/* Subtle loading indicator for pagination - only spinner, no text */}
                     {productsLoading && products.length > 0 && (
-                      <div className="col-span-full text-center py-8">
-                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600"></div>
-                        <p className="mt-2 text-sm text-gray-600">{translations.loadingMore || 'Loading more products...'}</p>
+                      <div className="col-span-full text-center py-4">
+                        <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-teal-400 border-t-transparent"></div>
                       </div>
                     )}
                   </>
