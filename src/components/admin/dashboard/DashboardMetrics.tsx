@@ -244,66 +244,73 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
           <div className="space-y-6">
             {/* Custom Bar Chart */}
             <div className="h-64 relative">
-              {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-xs text-gray-500 py-2">
-                {Array.from({ length: 6 }, (_, i) => {
-                  const maxValue = Math.max(...metrics.ordersByStatus.map(item => item.count))
-                  const value = Math.ceil((maxValue * (5 - i)) / 5)
-                  return (
-                    <span key={i} className="text-right">
-                      {value > 0 ? value : ''}
-                    </span>
-                  )
-                })}
-              </div>
-              
-              {/* Chart area */}
-              <div className="ml-10 h-full relative">
-                {/* Grid lines */}
-                <div className="absolute inset-0 flex flex-col justify-between">
-                  {Array.from({ length: 6 }, (_, i) => (
-                    <div key={i} className="border-t border-gray-100"></div>
-                  ))}
-                </div>
-                
-                {/* Bars */}
-                <div className="absolute inset-0 flex items-end justify-between px-2">
-                  {metrics.ordersByStatus.map((item, index) => {
-                    const maxValue = Math.max(...metrics.ordersByStatus.map(data => data.count))
-                    const height = maxValue > 0 ? (item.count / maxValue) * 100 : 0
+              {/* Calculate max value once outside map for efficiency and accuracy */}
+              {(() => {
+                const maxValue = Math.max(...metrics.ordersByStatus.map(item => item.count), 1)
+                return (
+                  <>
+                    {/* Y-axis labels */}
+                    <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col justify-between text-xs text-gray-500 py-2">
+                      {Array.from({ length: 6 }, (_, i) => {
+                        const value = Math.ceil((maxValue * (5 - i)) / 5)
+                        return (
+                          <span key={i} className="text-right">
+                            {value > 0 ? value : ''}
+                          </span>
+                        )
+                      })}
+                    </div>
                     
-                    return (
-                      <div
-                        key={item.status}
-                        className="flex flex-col items-center group cursor-pointer"
-                        style={{ width: `${100 / metrics.ordersByStatus.length - 2}%` }}
-                      >
-                        {/* Tooltip */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-10">
-                          {item.label}: {item.count} orders
-                        </div>
-                        
-                        {/* Bar */}
-                        <div
-                          className="w-full rounded-t transition-all duration-300 hover:opacity-80"
-                          style={{
-                            height: `${height}%`,
-                            backgroundColor: item.color,
-                            minHeight: item.count > 0 ? '4px' : '0px'
-                          }}
-                        ></div>
-                        
-                        {/* X-axis label */}
-                        <div className="mt-2 text-xs text-gray-600 text-center leading-tight">
-                          {item.label.split(' ').map((word, i) => (
-                            <div key={i}>{word}</div>
-                          ))}
-                        </div>
+                    {/* Chart area */}
+                    <div className="ml-10 h-full relative">
+                      {/* Grid lines */}
+                      <div className="absolute inset-0 flex flex-col justify-between">
+                        {Array.from({ length: 6 }, (_, i) => (
+                          <div key={i} className="border-t border-gray-100"></div>
+                        ))}
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
+                      
+                      {/* Bars */}
+                      <div className="absolute inset-0 flex items-end justify-between px-2">
+                        {metrics.ordersByStatus.map((item, index) => {
+                          // Calculate height with proper scaling and minimum visibility
+                          const height = maxValue > 0 ? Math.max((item.count / maxValue) * 100, item.count > 0 ? 5 : 2) : 2
+                          
+                          return (
+                            <div
+                              key={item.status}
+                              className="flex flex-col items-center group cursor-pointer"
+                              style={{ width: `${100 / metrics.ordersByStatus.length - 2}%` }}
+                            >
+                              {/* Tooltip */}
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap z-10">
+                                {item.label}: {item.count} orders
+                              </div>
+                              
+                              {/* Bar */}
+                              <div
+                                className="w-full rounded-t transition-all duration-300 hover:opacity-80"
+                                style={{
+                                  height: `${height}%`,
+                                  backgroundColor: item.color,
+                                  minHeight: item.count > 0 ? '8px' : '2px'
+                                }}
+                              ></div>
+                              
+                              {/* X-axis label */}
+                              <div className="mt-2 text-xs text-gray-600 text-center leading-tight">
+                                {item.label.split(' ').map((word, i) => (
+                                  <div key={i}>{word}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
             </div>
             
             {/* Legend */}
