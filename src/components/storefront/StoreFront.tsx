@@ -1925,6 +1925,12 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     
     try {
+      // If resetting (search/filter change), clear products immediately to avoid showing stale data
+      if (reset) {
+        setProducts([])
+        setTotalProducts(0)
+      }
+      
       // Only show loading for pagination (page > 1), not initial load
       if (page > 1 || products.length > 0) {
         setProductsLoading(true)
@@ -2123,7 +2129,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
 
   // PERFORMANCE OPTIMIZATION: Use products from API (already filtered server-side)
   // Map products to include category name for display - MUST be reactive to products changes
+  // IMPORTANT: When searching, only show products from API (products state), not initialProducts
   const filteredProducts = useMemo(() => {
+    // If there's a search term, only use products from API (already filtered server-side)
+    // This ensures we don't show initialProducts or cached products that don't match the search
     return products.map(product => {
       // Find category name from storeData.categories
       const category = storeData.categories.find((cat: any) => cat.id === product.categoryId)
@@ -3367,7 +3376,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       <p className="text-sm text-gray-600">
         {getFilteredProducts().length === 0 
           ? `${translations.noResultsFor || 'No results for'} "${searchTerm}"`
-          : `${getFilteredProducts().length} ${getFilteredProducts().length !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${searchTerm}"`
+          : `${totalProducts} ${totalProducts !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${searchTerm}"`
         }
       </p>
     </div>
@@ -3483,7 +3492,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   {translations.all || 'All'}
                   {searchTerm && selectedCategory === 'all' && (
                     <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                      {getFilteredProducts().length}
+                      {totalProducts}
                     </span>
                   )}
                 </button>
