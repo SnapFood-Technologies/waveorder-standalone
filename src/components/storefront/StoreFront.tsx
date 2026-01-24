@@ -201,16 +201,27 @@ function ScrollableSection({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Up Arrow */}
+      {/* Up Arrow - Positioned on the right */}
       {showUpArrow && (
         <button
-          onClick={scrollUp}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute top-1 left-1/2 -translate-x-1/2 z-20 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            scrollUp(e)
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
+          className="absolute top-1 right-4 z-30 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95 pointer-events-auto"
           aria-label="Scroll up"
           type="button"
         >
-          <ArrowUp className="w-4 h-4 text-gray-700" />
+          <ArrowUp className="w-4 h-4 text-gray-700 pointer-events-none" />
         </button>
       )}
       
@@ -229,16 +240,27 @@ function ScrollableSection({
         {children}
       </div>
 
-      {/* Down Arrow */}
+      {/* Down Arrow - Positioned on the right */}
       {showDownArrow && (
         <button
-          onClick={scrollDown}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            scrollDown(e)
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
+          onMouseUp={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+          }}
+          className="absolute bottom-1 right-4 z-30 w-7 h-7 bg-white border-2 border-gray-300 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-95 pointer-events-auto"
           aria-label="Scroll down"
           type="button"
         >
-          <ArrowDown className="w-4 h-4 text-gray-700" />
+          <ArrowDown className="w-4 h-4 text-gray-700 pointer-events-none" />
         </button>
       )}
     </div>

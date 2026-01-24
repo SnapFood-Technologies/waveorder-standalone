@@ -638,9 +638,9 @@ export async function GET(
       customMenuItems: business.customMenuItems || [],
       customFilteringEnabled: business.customFilteringEnabled,
       customFilterSettings: business.customFilterSettings || {},
-      collections: business.collections || [],
-      groups: business.groups || [],
-      brands: business.brands || [],
+      collections: collections || [],
+      groups: groups || [],
+      brands: brands || [],
 
       // Initial products for server-side render (first 24)
       initialProducts: initialProducts || [],
