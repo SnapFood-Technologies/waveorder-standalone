@@ -858,6 +858,42 @@ function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: Syn
   })
   const [currentPage, setCurrentPage] = useState<string>('1')
   const [syncAllPages, setSyncAllPages] = useState<boolean>(false) // Default to false to prevent timeouts
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0)
+
+  // Elapsed time timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (syncing) {
+      // Reset and start timer when sync begins
+      setElapsedSeconds(0)
+      interval = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1)
+      }, 1000)
+    } else {
+      // Clear timer when sync stops
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [syncing])
+
+  // Format elapsed time display
+  const formatElapsedTime = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds} second${seconds !== 1 ? 's' : ''}`
+    } else {
+      const mins = Math.floor(seconds / 60)
+      const secs = seconds % 60
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} min`
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -1005,6 +1041,23 @@ function SyncConfirmModal({ sync, syncing, syncResult, onClose, onConfirm }: Syn
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Elapsed Time Display */}
+          {syncing && (
+            <div className="mb-6 bg-teal-50 border border-teal-200 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-teal-900">Sync in Progress</p>
+                  <p className="text-lg font-bold text-teal-800">
+                    {formatElapsedTime(elapsedSeconds)}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

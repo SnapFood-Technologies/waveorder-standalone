@@ -380,13 +380,17 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Visitors Over Time</h3>
                 <div className="h-64 flex items-end justify-between gap-2">
                   {data.traffic.trends.map((trend: any, index: number) => {
-                    const maxVisitors = Math.max(...data.traffic.trends.map((t: any) => t.visitors))
-                    const height = maxVisitors > 0 ? (trend.visitors / maxVisitors) * 100 : 5
+                    const maxVisitors = Math.max(...data.traffic.trends.map((t: any) => Number(t.visitors) || 0))
+                    const visitorCount = Number(trend.visitors) || 0
+                    const height = maxVisitors > 0 && visitorCount > 0 ? (visitorCount / maxVisitors) * 100 : (visitorCount > 0 ? 10 : 2)
+                    
+                    // Debug log (remove after testing)
+                    if (index === 0) console.log('Analytics Chart Debug:', { maxVisitors, visitorCount, height, trendData: trend })
                     
                     return (
                       <div key={index} className="flex-1 flex flex-col items-center group">
                         <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap">
-                          {trend.visitors} visitors
+                          {visitorCount} visitors
                         </div>
                         <div
                           className="w-full bg-teal-500 rounded-t hover:bg-teal-600 transition-colors cursor-pointer"
@@ -405,13 +409,14 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Orders Over Time</h3>
                 <div className="h-64 flex items-end justify-between gap-2">
                   {data.traffic.trends.map((trend: any, index: number) => {
-                    const maxOrders = Math.max(...data.traffic.trends.map((t: any) => t.orders))
-                    const height = maxOrders > 0 ? (trend.orders / maxOrders) * 100 : 5
+                    const maxOrders = Math.max(...data.traffic.trends.map((t: any) => Number(t.orders) || 0))
+                    const orderCount = Number(trend.orders) || 0
+                    const height = maxOrders > 0 && orderCount > 0 ? (orderCount / maxOrders) * 100 : (orderCount > 0 ? 10 : 2)
                     
                     return (
                       <div key={index} className="flex-1 flex flex-col items-center group">
                         <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap">
-                          {trend.orders} orders
+                          {orderCount} orders
                         </div>
                         <div
                           className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
