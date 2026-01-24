@@ -1586,6 +1586,7 @@ interface StoreData {
   collections?: any[]
   groups?: any[]
   brands?: any[]
+  initialProducts?: any[]  // Initial products from server-side render
 }
 
 interface Category {
@@ -1726,12 +1727,14 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   
   // PERFORMANCE OPTIMIZATION: Products loaded from API endpoint
   const PRODUCTS_PER_PAGE = 24
-  const [products, setProducts] = useState<any[]>([])
+  // Use initial products from server-side render if available
+  const [products, setProducts] = useState<any[]>(storeData.initialProducts || [])
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  // If we have initial products, we're on page 1, otherwise start at 0
+  const [currentPage, setCurrentPage] = useState(storeData.initialProducts && storeData.initialProducts.length > 0 ? 1 : 0)
   const [hasMoreProducts, setHasMoreProducts] = useState(true)
-  const [totalProducts, setTotalProducts] = useState(0)
+  const [totalProducts, setTotalProducts] = useState(storeData.initialProducts?.length || 0)
   
   // Infinite scroll for products (now using API pagination)
   const [displayedProductsCount, setDisplayedProductsCount] = useState(PRODUCTS_PER_PAGE)
@@ -1980,12 +1983,21 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
   }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, searchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
-  // Initial products load and refetch when filters change
+  // Initial products load - skip if we already have initialProducts from server
+  useEffect(() => {
+    // Only fetch if we don't have initial products from server-side render
+    if (!storeData.initialProducts || storeData.initialProducts.length === 0) {
+      fetchProducts(1, true)
+    }
+    setDisplayedProductsCount(PRODUCTS_PER_PAGE)
+  }, [storeData.slug]) // Only run when slug changes
+
+  // Refetch products when filters change
   useEffect(() => {
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [fetchProducts])
+  }, [searchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
   // Update displayed count when products are loaded
   useEffect(() => {

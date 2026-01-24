@@ -232,6 +232,157 @@ export async function GET(
     // Attach categories to business object
     business.categories = categories
 
+    // PERFORMANCE: Fetch initial 24 products for server-side render (fast page load)
+    let initialProducts: any[] = []
+    try {
+      const productWhere: any = {
+        businessId: hasConnections ? { in: businessIds } : business.id,
+        isActive: true,
+        price: { gt: 0 }
+      }
+
+      const initialProductsRaw = await prisma.product.findMany({
+        where: productWhere,
+        take: 24,
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          descriptionAl: true,
+          images: true,
+          price: true,
+          originalPrice: true,
+          sku: true,
+          stock: true,
+          trackInventory: true,
+          featured: true,
+          metaTitle: true,
+          metaDescription: true,
+          categoryId: true,
+          saleStartDate: true,
+          saleEndDate: true,
+          collectionIds: true,
+          groupIds: true,
+          brandId: true,
+          variants: {
+            orderBy: { price: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              originalPrice: true,
+              stock: true,
+              sku: true,
+              metadata: true,
+              saleStartDate: true,
+              saleEndDate: true
+            }
+          },
+          modifiers: {
+            orderBy: { price: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              required: true
+            }
+          }
+        }
+      })
+
+      // Transform products (same logic as products API)
+      const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
+      const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
+      const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
+      const isExceptionSlug = exceptionSlugs.includes(slug)
+
+      const calculateEffectivePrice = (price: number, originalPrice: number | null, saleStartDate: Date | null, saleEndDate: Date | null) => {
+        const now = new Date()
+        const isSaleActive = (!saleStartDate || now >= saleStartDate) && (!saleEndDate || now <= saleEndDate)
+        if (isSaleActive && originalPrice && originalPrice > price) {
+          return { effectivePrice: price, effectiveOriginalPrice: originalPrice }
+        }
+        return {
+          effectivePrice: originalPrice && originalPrice > price ? originalPrice : price,
+          effectiveOriginalPrice: null
+        }
+      }
+
+      initialProducts = initialProductsRaw
+        .filter((product: any) => {
+          if (product.trackInventory) {
+            if (product.variants && product.variants.length > 0) {
+              return product.variants.some((v: any) => v.stock > 0)
+            }
+            return product.stock > 0
+          }
+          return true
+        })
+        .map((product: any) => {
+          const productPricing = calculateEffectivePrice(
+            product.price,
+            product.originalPrice,
+            product.saleStartDate,
+            product.saleEndDate
+          )
+
+          const productDescription = isExceptionSlug
+            ? (product.description || product.descriptionAl || '')
+            : (useAlbanian && product.descriptionAl 
+              ? product.descriptionAl 
+              : product.description)
+
+          return {
+            id: product.id,
+            name: product.name,
+            description: productDescription,
+            descriptionAl: product.descriptionAl,
+            images: product.images,
+            price: productPricing.effectivePrice,
+            originalPrice: productPricing.effectiveOriginalPrice,
+            sku: product.sku,
+            stock: product.stock,
+            trackInventory: product.trackInventory,
+            featured: product.featured,
+            metaTitle: product.metaTitle,
+            metaDescription: product.metaDescription,
+            categoryId: product.categoryId,
+            collectionIds: product.collectionIds || [],
+            groupIds: product.groupIds || [],
+            brandId: product.brandId,
+            variants: product.variants.map((variant: any) => {
+              const variantPricing = calculateEffectivePrice(
+                variant.price,
+                variant.originalPrice,
+                variant.saleStartDate,
+                variant.saleEndDate
+              )
+              return {
+                id: variant.id,
+                name: variant.name,
+                price: variantPricing.effectivePrice,
+                originalPrice: variantPricing.effectiveOriginalPrice,
+                stock: variant.stock,
+                sku: variant.sku,
+                metadata: variant.metadata || null,
+                saleStartDate: variant.saleStartDate || null,
+                saleEndDate: variant.saleEndDate || null
+              }
+            }),
+            modifiers: product.modifiers.map((modifier: any) => ({
+              id: modifier.id,
+              name: modifier.name,
+              price: modifier.price,
+              required: modifier.required
+            }))
+          }
+        })
+    } catch (error) {
+      console.error('Error fetching initial products:', error)
+      // Continue without initial products - client will fetch them
+    }
+
     // Fetch additional entities for custom menu/filtering (if enabled)
     let collections: any[] = []
     let groups: any[] = []
@@ -489,6 +640,9 @@ export async function GET(
       collections: business.collections || [],
       groups: business.groups || [],
       brands: business.brands || [],
+
+      // Initial products for server-side render (first 24)
+      initialProducts: initialProducts || [],
 
       // Menu
       categories: (() => {
