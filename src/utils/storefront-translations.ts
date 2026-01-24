@@ -213,6 +213,8 @@ close: string
     stock: string
     max: string
     loading: string
+    loadingMore: string
+    retry: string
     loadingCountries: string
     loadingCities: string
     selectDeliveryMethod: string
@@ -458,6 +460,8 @@ canBeAdded: "more can be added to cart",
     stock: "Stock",
     max: "Max",
     loading: "Loading options...",
+    loadingMore: "Loading more products...",
+    retry: "Retry",
     loadingCountries: "Loading countries...",
     loadingCities: "Loading cities...",
     selectDeliveryMethod: "Select delivery method below",
@@ -699,6 +703,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     stock: "Stoku",
     max: "Maks",
     loading: "Duke ngarkuar opsionet...",
+    loadingMore: "Duke ngarkuar më shumë produkte...",
+    retry: "Provo përsëri",
     loadingCountries: "Duke ngarkuar shtetet...",
     loadingCities: "Duke ngarkuar qytetet...",
     selectDeliveryMethod: "Zgjidh metodën e dërgesës më poshtë",
@@ -940,6 +946,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     stock: "Stock",
     max: "Máx",
     loading: "Cargando opciones...",
+    loadingMore: "Cargando más productos...",
+    retry: "Reintentar",
     loadingCountries: "Cargando países...",
     loadingCities: "Cargando ciudades...",
     selectDeliveryMethod: "Selecciona el método de entrega a continuación",
@@ -1182,6 +1190,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     stock: "Απόθεμα",
     max: "Μέγ",
     loading: "Φόρτωση επιλογών...",
+    loadingMore: "Φόρτωση περισσότερων προϊόντων...",
+    retry: "Επανάληψη",
     loadingCountries: "Φόρτωση χωρών...",
     loadingCities: "Φόρτωση πόλεων...",
     selectDeliveryMethod: "Επιλέξτε τη μέθοδο παράδοσης παρακάτω",
