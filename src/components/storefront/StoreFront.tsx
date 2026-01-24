@@ -1991,7 +1991,7 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     } finally {
       setProductsLoading(false)
     }
-  }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, searchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
   // Initial products load - skip if we already have initialProducts from server
   useEffect(() => {
@@ -3501,8 +3501,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               <div className="flex gap-1 overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
                 <button
                   onClick={() => {
-                    // Set filtering state immediately for better UX
-                    if (products.length > 0) {
+                    // Set filtering state immediately for better UX when switching FROM a category TO "All"
+                    // Only gray out if we're currently on a category (not already on "All") and have products
+                    if (selectedCategory !== 'all' && products.length > 0) {
                       setIsFiltering(true)
                     }
                     setSelectedCategory('all')
@@ -3529,22 +3530,18 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 </button>
                 {parentCategories.map(category => {
                   // Count products in this category (including subcategories)
-                  // During search, hide counts (can't accurately count without loading all products)
-                  // Without search, use productCount from API
+                  // During search: calculate from loaded products (may not be 100% accurate but shows relative counts)
+                  // Without search: use productCount from API (total counts)
                   const categoryProductCount = debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3
-                    ? null // Hide counts during search - can't calculate accurately
-                    : (() => {
-                        // Use productCount from API (from _count.products)
-                        let count = (category as any).productCount || category.products?.length || 0
-                        // Add subcategory product counts if any
+                    ? (() => {
+                        // Calculate count from currently loaded search results
+                        const categoryIds = [category.id]
                         if (category.children) {
-                          const subcategoryIds = category.children.map(c => c.id)
-                          count += storeData.categories
-                            .filter(cat => subcategoryIds.includes(cat.id))
-                            .reduce((sum, cat) => sum + ((cat as any).productCount || cat.products?.length || 0), 0)
+                          categoryIds.push(...category.children.map(c => c.id))
                         }
-                        return count
+                        return products.filter(p => categoryIds.includes(p.categoryId)).length
                       })()
+                    : null // Hide counts when not searching (only show during search)
                   
                   return (
                     <button
@@ -3574,7 +3571,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       }}
                     >
                       {category.name}
-                      {categoryProductCount !== null && categoryProductCount > 0 && selectedCategory !== 'all' && (
+                      {/* Show category count badges ONLY during search (not on initial load) */}
+                      {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && categoryProductCount !== null && categoryProductCount > 0 && selectedCategory !== 'all' && (
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                           {categoryProductCount}
                         </span>
@@ -3619,11 +3617,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 ).map(subcategory => {
                   // Find full subcategory data from storeData
                   const fullSubcategory = storeData.categories.find(cat => cat.id === subcategory.id)
-                  // During search, hide counts (can't accurately count without loading all products)
-                  // Without search, use productCount from API
+                  // During search: calculate from loaded products
+                  // Without search: hide counts (only show during search)
                   const subcategoryProductCount = debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3
-                    ? null // Hide counts during search
-                    : (fullSubcategory as any)?.productCount || fullSubcategory?.products?.length || 0
+                    ? products.filter(p => p.categoryId === subcategory.id).length // Count from search results
+                    : null // Hide counts when not searching
                   
                   return (
                     <button
@@ -3654,7 +3652,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       }}
                     >
                       {subcategory.name}
-                      {subcategoryProductCount !== null && subcategoryProductCount > 0 && (
+                      {/* Show subcategory count badges ONLY during search (not on initial load) */}
+                      {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && subcategoryProductCount !== null && subcategoryProductCount > 0 && (
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                           {subcategoryProductCount}
                         </span>

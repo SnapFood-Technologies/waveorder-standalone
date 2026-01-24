@@ -69,36 +69,42 @@ export async function GET(
       : [business.id]
 
     // Get category info to handle parent/child relationships
-    // Run this in parallel with business lookup for better performance
+    // OPTIMIZATION: Use a single query to get category + children in parallel
     let categoryIdsToFilter: string[] = []
     if (categoryId && categoryId !== 'all') {
       categoryIdsToFilter = [categoryId] // Default to single category
       
-      // Only fetch children if needed (async, don't block)
+      // OPTIMIZED: Fetch category and children in parallel (both queries run simultaneously)
       try {
-        const category = await prisma.category.findUnique({
-          where: { 
-            id: categoryId,
-            businessId: hasConnections ? { in: businessIds } : business.id,
-            isActive: true
-          },
-          select: {
-            id: true,
-            parentId: true,
-            // @ts-ignore - Children relation
-            children: {
-              where: { isActive: true },
-              select: { id: true }
+        const [category, childCategories] = await Promise.all([
+          prisma.category.findUnique({
+            where: { 
+              id: categoryId,
+              businessId: hasConnections ? { in: businessIds } : business.id,
+              isActive: true
+            },
+            select: {
+              id: true,
+              parentId: true
             }
-          }
-        })
+          }),
+          // Fetch children in parallel using parentId filter (indexed, faster than relation)
+          prisma.category.findMany({
+            where: {
+              parentId: categoryId,
+              businessId: hasConnections ? { in: businessIds } : business.id,
+              isActive: true
+            },
+            select: { id: true }
+          })
+        ])
         
-        if (category?.children && category.children.length > 0) {
+        if (childCategories && childCategories.length > 0) {
           // Parent category: include parent + all children
-          categoryIdsToFilter = [category.id, ...category.children.map((c: any) => c.id)]
+          categoryIdsToFilter = [categoryId, ...childCategories.map((c: any) => c.id)]
         } else if (category) {
           // Child category or category without children: just this category
-          categoryIdsToFilter = [category.id]
+          categoryIdsToFilter = [categoryId]
         }
       } catch (error) {
         // Fallback to single category if query fails
