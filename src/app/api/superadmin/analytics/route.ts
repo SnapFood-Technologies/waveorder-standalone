@@ -230,6 +230,48 @@ export async function GET(request: NextRequest) {
     
     const totalPageViews = (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
 
+    // Get time-series data for page views (for chart)
+    const oldAnalyticsData = await prisma.analytics.findMany({
+      where: {
+        date: { gte: startDate, lte: now }
+      },
+      select: {
+        date: true,
+        visitors: true
+      },
+      orderBy: { date: 'asc' }
+    })
+
+    const newVisitorSessions = await prisma.visitorSession.findMany({
+      where: {
+        visitedAt: { gte: startDate, lte: now }
+      },
+      select: {
+        visitedAt: true
+      },
+      orderBy: { visitedAt: 'asc' }
+    })
+
+    // Merge and group time-series data by date
+    const pageViewsTimeSeries = new Map<string, number>()
+
+    // Add old analytics data
+    oldAnalyticsData.forEach(item => {
+      const dateKey = item.date.toISOString().split('T')[0]
+      pageViewsTimeSeries.set(dateKey, (pageViewsTimeSeries.get(dateKey) || 0) + (item.visitors || 0))
+    })
+
+    // Add new visitor sessions data (group by date)
+    newVisitorSessions.forEach(session => {
+      const dateKey = session.visitedAt.toISOString().split('T')[0]
+      pageViewsTimeSeries.set(dateKey, (pageViewsTimeSeries.get(dateKey) || 0) + 1)
+    })
+
+    // Convert to sorted array
+    const pageViewsData = Array.from(pageViewsTimeSeries.entries())
+      .map(([date, views]) => ({ date, views }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
     // Calculate conversion rate (delivered orders / total orders)
     const conversionRate = totalOrders > 0 
       ? (deliveredOrders.length / totalOrders) * 100 
@@ -406,7 +448,8 @@ export async function GET(request: NextRequest) {
       topBusinesses, // Ranked by business order revenue (delivered + paid)
       revenueByPlan, // Platform subscription revenue by plan (currently all $0)
       incompleteBusinesses: formattedIncompleteBusinesses,
-      inactiveBusinesses: formattedInactiveBusinesses
+      inactiveBusinesses: formattedInactiveBusinesses,
+      pageViewsTimeSeries: pageViewsData // Time-series data for page views chart
     })
 
   } catch (error) {

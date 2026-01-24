@@ -26,6 +26,7 @@ import {
   X
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
+import { StorefrontViewsChart } from './StorefrontViewsChart';
 
 interface DashboardStats {
   totalBusinesses: number;
@@ -535,6 +536,9 @@ export function SuperAdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Storefront Analytics Chart */}
+      <StorefrontViewsChart className="mt-6" />
 
       {/* Incomplete Business Info Modal */}
       {showIncompleteModal && selectedBusiness && (
