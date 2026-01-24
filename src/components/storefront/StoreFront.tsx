@@ -1925,17 +1925,12 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     
     try {
-      // If resetting (search/filter change), clear products immediately to avoid showing stale data
-      if (reset) {
-        setProducts([])
-        setTotalProducts(0)
-      }
-      
       // Only show loading for pagination (page > 1), not initial load
       if (page > 1 || products.length > 0) {
         setProductsLoading(true)
       }
       // Note: isFiltering is only set in onClick handlers for menu items, not here
+      // When filtering, we keep old products visible (grayed out) until new ones load
       setProductsError(null)
       
       const params = new URLSearchParams()
@@ -1975,8 +1970,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       const data = await response.json()
       
       if (reset) {
+        // Replace products with new filtered results
         setProducts(data.products || [])
         setCurrentPage(1)
+        setIsFiltering(false) // Clear filtering state when new products arrive
       } else {
         setProducts(prev => [...prev, ...(data.products || [])])
       }
@@ -1987,9 +1984,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     } catch (error) {
       console.error('Error fetching products:', error)
       setProductsError('Failed to load products')
+      setIsFiltering(false) // Clear filtering state on error too
     } finally {
       setProductsLoading(false)
-      setIsFiltering(false) // Clear filtering state when done
     }
   }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, searchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
@@ -2002,8 +1999,19 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
   }, [storeData.slug]) // Only run when slug changes
 
+  // Track if this is the initial mount to avoid refetching when we have initialProducts
+  const [isInitialMount, setIsInitialMount] = useState(true)
+  
   // Refetch products when filters change
   useEffect(() => {
+    // Skip on initial mount if we have initial products from server
+    if (isInitialMount && storeData.initialProducts && storeData.initialProducts.length > 0) {
+      setIsInitialMount(false)
+      return
+    }
+    setIsInitialMount(false)
+    
+    // Only fetch if filters actually changed (not on initial mount)
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
