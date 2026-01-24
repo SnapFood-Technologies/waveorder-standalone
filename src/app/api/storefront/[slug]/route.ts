@@ -620,6 +620,7 @@ export async function GET(
       schemaData: business.schemaData,
       favicon: business.favicon,
       noIndex: business.noIndex,
+      isIndexable: business.isIndexable,
       
       // SEO (Albanian) - NEW
       seoTitleAl: business.seoTitleAl,

@@ -2014,6 +2014,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   // Track if this is the initial mount to avoid refetching when we have initialProducts
   const [isInitialMount, setIsInitialMount] = useState(true)
   
+  // Track previous debounced search term to detect when search is cleared
+  const prevDebouncedSearchTermRef = useRef('')
+  
   // Refetch products when filters change (using debounced search term)
   useEffect(() => {
     // Skip on initial mount if we have initial products from server
@@ -2023,14 +2026,28 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     setIsInitialMount(false)
     
+    // Only trigger API call if:
+    // 1. Search term is >= 3 characters (actual search)
+    // 2. Search term is cleared (empty) AND we previously had a search >= 3 chars (clearing search)
+    // 3. Other filters changed (category, price, etc.)
+    const searchTermLength = debouncedSearchTerm.trim().length
+    const prevSearchTermLength = prevDebouncedSearchTermRef.current.trim().length
+    const isSearchCleared = searchTermLength === 0 && prevSearchTermLength >= 3
+    
+    // Skip API call if search term is 1-2 characters (wait for 3+)
+    if (searchTermLength > 0 && searchTermLength < 3 && !isSearchCleared) {
+      prevDebouncedSearchTermRef.current = debouncedSearchTerm
+      return
+    }
+    
+    prevDebouncedSearchTermRef.current = debouncedSearchTerm
+    
     // Gray out products when search/filter changes (if products exist)
     if (products.length > 0) {
       setIsFiltering(true)
     }
     
-    // Only fetch if filters actually changed (not on initial mount)
-    // Note: debouncedSearchTerm is used here - search only triggers if >= 3 chars
-    // If search term is cleared or < 3 chars, fetchProducts will fetch all products (no search param)
+    // Fetch products (will only include search param if >= 3 chars)
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -3400,11 +3417,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     </div>
   )}
 
-  {/* Search suggestions/results count */}
-  {searchTerm && (
+  {/* Search suggestions/results count - only show when search has 3+ characters */}
+  {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && (
     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
       <p className="text-sm text-gray-600">
-        {getFilteredProducts().length === 0 
+        {totalProducts === 0 
           ? `${translations.noResultsFor || 'No results for'} "${debouncedSearchTerm}"`
           : `${totalProducts} ${totalProducts !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${debouncedSearchTerm}"`
         }

@@ -197,7 +197,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   
   // Build robots directive
   let robots = 'index, follow'
-  if (!shouldIndex || storeData.noIndex) {
+  if (!shouldIndex) {
     robots = 'noindex'
     if (storeData.noFollow) {
       robots += ', nofollow'
