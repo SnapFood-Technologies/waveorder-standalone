@@ -66,6 +66,15 @@ jobs:
           npx prisma generate
           echo "✅ Prisma client generated successfully"
 
+      # 📍 POPULATE POSTAL PRICING
+      - name: 📍 Populate Postal Pricing Data
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Populating postal pricing data..."
+          npx tsx scripts/populate-postal-pricing-business2.ts
+          echo "✅ Postal pricing data populated successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:

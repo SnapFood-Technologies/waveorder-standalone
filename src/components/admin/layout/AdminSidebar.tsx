@@ -182,20 +182,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: Palette, 
       requiredPlan: 'STARTER'
     },
-    // @ts-ignore
-    ...(customMenuEnabled ? [{
-      name: 'Custom Menu', 
-      href: `${baseUrl}/custom-menu`, 
-      icon: Menu, 
-      requiredPlan: 'STARTER' as Plan
-    }] : []),
-    // @ts-ignore
-    ...(customFilteringEnabled ? [{
-      name: 'Custom Filtering', 
-      href: `${baseUrl}/custom-filtering`, 
-      icon: SlidersHorizontal, 
-      requiredPlan: 'STARTER' as Plan
-    }] : []),
     { 
       name: 'Marketing', 
       href: `${baseUrl}/marketing`, 
@@ -319,6 +305,20 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'STARTER'
         },
+        // @ts-ignore
+        ...(customMenuEnabled ? [{
+          name: 'Custom Menu', 
+          href: `${baseUrl}/custom-menu`, 
+          icon: Menu, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(customFilteringEnabled ? [{
+          name: 'Custom Filtering', 
+          href: `${baseUrl}/custom-filtering`, 
+          icon: SlidersHorizontal, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
       ]
     },
   ]
