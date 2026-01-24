@@ -1613,7 +1613,8 @@ interface Category {
   hideParentInStorefront?: boolean
   image?: string
   sortOrder: number
-  products: Product[]
+  products: Product[] // Legacy - may be empty array for performance
+  productCount?: number // Product count from API (from _count)
 }
 
 interface Product {
@@ -1708,6 +1709,7 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null)
   const [showFilterModal, setShowFilterModal] = useState(false)
@@ -1939,8 +1941,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (categoryToFilter) {
         params.set('categoryId', categoryToFilter)
       }
-      if (searchTerm.trim()) {
-        params.set('search', searchTerm.trim())
+      // Only search if debounced search term has at least 3 characters
+      if (debouncedSearchTerm.trim().length >= 3) {
+        params.set('search', debouncedSearchTerm.trim())
       }
       if (priceMin !== '') {
         params.set('priceMin', priceMin.toString())
@@ -1999,10 +2002,19 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
   }, [storeData.slug]) // Only run when slug changes
 
+  // Debounce search term - wait 400ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 400)
+    
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
   // Track if this is the initial mount to avoid refetching when we have initialProducts
   const [isInitialMount, setIsInitialMount] = useState(true)
   
-  // Refetch products when filters change
+  // Refetch products when filters change (using debounced search term)
   useEffect(() => {
     // Skip on initial mount if we have initial products from server
     if (isInitialMount && storeData.initialProducts && storeData.initialProducts.length > 0) {
@@ -2011,11 +2023,18 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
     setIsInitialMount(false)
     
+    // Gray out products when search/filter changes (if products exist)
+    if (products.length > 0) {
+      setIsFiltering(true)
+    }
+    
     // Only fetch if filters actually changed (not on initial mount)
+    // Note: debouncedSearchTerm is used here - search only triggers if >= 3 chars
+    // If search term is cleared or < 3 chars, fetchProducts will fetch all products (no search param)
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [searchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [debouncedSearchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
   // Update displayed count when products are loaded
   useEffect(() => {
@@ -3161,7 +3180,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
       <input
         type="text"
-        placeholder={searchTerm ? `Searching for "${searchTerm}"...` : (storeData.businessType === 'RETAIL' ? (translations.searchProducts || "Search products") : (translations.search || "Search for dishes, ingredients..."))}
+        placeholder={searchTerm ? (searchTerm.length < 3 ? `Type at least 3 characters...` : `Searching for "${searchTerm}"...`) : (storeData.businessType === 'RETAIL' ? (translations.searchProducts || "Search products") : (translations.search || "Search for dishes, ingredients..."))}
         value={searchTerm}
         onChange={(e) => {
           setSearchTerm(e.target.value)
@@ -3179,7 +3198,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {/* Clear search button */}
       {searchTerm && (
         <button
-          onClick={() => setSearchTerm('')}
+          onClick={() => {
+            setSearchTerm('')
+            setDebouncedSearchTerm('')
+          }}
           className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
         >
           <X className="w-3 h-3 text-gray-600" />
@@ -3383,8 +3405,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-xl">
       <p className="text-sm text-gray-600">
         {getFilteredProducts().length === 0 
-          ? `${translations.noResultsFor || 'No results for'} "${searchTerm}"`
-          : `${totalProducts} ${totalProducts !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${searchTerm}"`
+          ? `${translations.noResultsFor || 'No results for'} "${debouncedSearchTerm}"`
+          : `${totalProducts} ${totalProducts !== 1 ? (translations.results || 'results') : (translations.result || 'result')} ${translations.for || 'for'} "${debouncedSearchTerm}"`
         }
       </p>
     </div>
@@ -3436,6 +3458,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         }
                         setSelectedMenuItem(item.id)
                         setSearchTerm('')
+                        setDebouncedSearchTerm('')
                         
                         // Clear all filters first
                         setSelectedCollections(new Set())
@@ -3498,42 +3521,27 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   }}
                 >
                   {translations.all || 'All'}
-                  {searchTerm && selectedCategory === 'all' && (
+                  {debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 && selectedCategory === 'all' && (
                     <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                       {totalProducts}
                     </span>
                   )}
                 </button>
                 {parentCategories.map(category => {
-                  // Count products in this category (including subcategories) that match search
-                  const categoryProductCount = searchTerm 
-                    ? (() => {
-                        const searchTermLower = searchTerm.toLowerCase().trim()
-                        let count = category.products.filter(product => {
-                          return product.name.toLowerCase().includes(searchTermLower) ||
-                            product.description?.toLowerCase().includes(searchTermLower) ||
-                            category.name.toLowerCase().includes(searchTermLower)
-                        }).length
-                        // Add subcategory products if any
-                        if (category.children) {
-                          const subcategoryIds = category.children.map(c => c.id)
-                          const subcategoryProducts = storeData.categories
-                            .filter(cat => subcategoryIds.includes(cat.id))
-                            .flatMap(cat => cat.products)
-                          count += subcategoryProducts.filter(product => {
-                            return product.name.toLowerCase().includes(searchTermLower) ||
-                              product.description?.toLowerCase().includes(searchTermLower)
-                          }).length
-                        }
-                        return count
-                      })()
+                  // Count products in this category (including subcategories)
+                  // During search, hide counts (can't accurately count without loading all products)
+                  // Without search, use productCount from API
+                  const categoryProductCount = debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3
+                    ? null // Hide counts during search - can't calculate accurately
                     : (() => {
-                        let count = category.products.length
+                        // Use productCount from API (from _count.products)
+                        let count = (category as any).productCount || category.products?.length || 0
+                        // Add subcategory product counts if any
                         if (category.children) {
                           const subcategoryIds = category.children.map(c => c.id)
                           count += storeData.categories
                             .filter(cat => subcategoryIds.includes(cat.id))
-                            .reduce((sum, cat) => sum + cat.products.length, 0)
+                            .reduce((sum, cat) => sum + ((cat as any).productCount || cat.products?.length || 0), 0)
                         }
                         return count
                       })()
@@ -3551,6 +3559,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         // Clear search when switching to specific category
                         if (searchTerm) {
                           setSearchTerm('')
+                          setDebouncedSearchTerm('')
                         }
                       }}
                       disabled={false}
@@ -3565,7 +3574,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       }}
                     >
                       {category.name}
-                      {searchTerm && selectedCategory !== 'all' && (
+                      {categoryProductCount !== null && categoryProductCount > 0 && selectedCategory !== 'all' && (
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                           {categoryProductCount}
                         </span>
@@ -3589,6 +3598,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     }
                     if (searchTerm) {
                       setSearchTerm('')
+                      setDebouncedSearchTerm('')
                     }
                   }}
                   className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
@@ -3609,14 +3619,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 ).map(subcategory => {
                   // Find full subcategory data from storeData
                   const fullSubcategory = storeData.categories.find(cat => cat.id === subcategory.id)
-                  const subcategoryProductCount = searchTerm && fullSubcategory
-                    ? fullSubcategory.products.filter(product => {
-                        const searchTermLower = searchTerm.toLowerCase().trim()
-                        return product.name.toLowerCase().includes(searchTermLower) ||
-                          product.description?.toLowerCase().includes(searchTermLower) ||
-                          subcategory.name.toLowerCase().includes(searchTermLower)
-                      }).length
-                    : fullSubcategory?.products.length || 0
+                  // During search, hide counts (can't accurately count without loading all products)
+                  // Without search, use productCount from API
+                  const subcategoryProductCount = debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3
+                    ? null // Hide counts during search
+                    : (fullSubcategory as any)?.productCount || fullSubcategory?.products?.length || 0
                   
                   return (
                     <button
@@ -3633,6 +3640,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         }
                         if (searchTerm) {
                           setSearchTerm('')
+                          setDebouncedSearchTerm('')
                         }
                       }}
                       className={`px-4 py-2 text-sm font-medium transition-all whitespace-nowrap border-b-2 relative ${
@@ -3646,7 +3654,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       }}
                     >
                       {subcategory.name}
-                      {searchTerm && fullSubcategory && (
+                      {subcategoryProductCount !== null && subcategoryProductCount > 0 && (
                         <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                           {subcategoryProductCount}
                         </span>
@@ -3701,17 +3709,21 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 
                 // Don't show empty state during initial load - let products appear naturally
                 if (filteredProducts.length === 0 && !productsLoading) {
-                if (searchTerm) {
+                if (debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3) {
                     return (
                     <div className="col-span-full">
                         <EmptyState 
                         type="search-empty"
                         primaryColor={primaryColor}
                         translations={translations}
-                        searchTerm={searchTerm}
-                        onClearSearch={() => setSearchTerm('')}
+                        searchTerm={debouncedSearchTerm}
+                        onClearSearch={() => {
+                            setSearchTerm('')
+                            setDebouncedSearchTerm('')
+                        }}
                         onShowAll={() => {
                             setSearchTerm('')
+                            setDebouncedSearchTerm('')
                             setSelectedCategory('all')
                         }}
                         />
