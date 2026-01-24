@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Menu, Plus, Pencil, Trash2, GripVertical, ExternalLink, X, Loader2, AlertTriangle, Search } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 
 interface MenuItem {
   id: string
@@ -243,6 +243,7 @@ export default function CustomMenuPage() {
 
   return (
     <>
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

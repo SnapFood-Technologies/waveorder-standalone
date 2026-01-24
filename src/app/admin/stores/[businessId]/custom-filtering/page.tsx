@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { SlidersHorizontal, Check, X, Loader2, AlertTriangle } from 'lucide-react'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
 
 interface FilterSettings {
   categoriesEnabled: boolean
@@ -112,6 +112,7 @@ export default function CustomFilteringPage() {
 
   return (
     <>
+      <Toaster position="top-right" />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Custom Filtering</h1>
