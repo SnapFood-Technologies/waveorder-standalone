@@ -146,12 +146,16 @@ export async function GET(
     const pages = Math.ceil(total / limit)
 
     // Get breakdown by business and detect duplicates by external ID
+    // Need to fetch all products to check for duplicates and products without brands
     const allProductsForBreakdown = await prisma.product.findMany({
       where: whereClause,
       select: { 
         businessId: true,
         id: true,
-        metadata: true
+        metadata: true,
+        brandId: true,
+        name: true,
+        sku: true
       }
     })
     
@@ -173,9 +177,12 @@ export async function GET(
       productCount: businessBreakdown[b.id] || 0
     }))
 
-    // Detect duplicates by external ID
+    // Detect duplicates by external ID and products without brands
     const externalIdMap = new Map<string, any[]>()
+    const productsWithoutBrand: any[] = []
+    
     allProductsForBreakdown.forEach((product: any) => {
+      // Check for duplicates by external ID
       if (product.metadata && typeof product.metadata === 'object') {
         const metadata = product.metadata as any
         const externalId = metadata.externalProductId || metadata.externalId
@@ -188,6 +195,17 @@ export async function GET(
             businessId: product.businessId
           })
         }
+      }
+      
+      // Track products without brand
+      if (!product.brandId) {
+        productsWithoutBrand.push({
+          productId: product.id,
+          businessId: product.businessId,
+          name: product.name,
+          sku: product.sku,
+          externalProductId: product.metadata?.externalProductId || null
+        })
       }
     })
     
@@ -270,7 +288,11 @@ export async function GET(
         featured: featuredCount
       },
       breakdown: breakdown, // Shows product count by business
-      duplicates: duplicates // Shows products with duplicate external IDs
+      duplicates: duplicates, // Shows products with duplicate external IDs
+      productsWithoutBrand: {
+        count: productsWithoutBrand.length,
+        products: productsWithoutBrand.slice(0, 100) // Limit to first 100 for response size
+      }
     })
 
   } catch (error) {
