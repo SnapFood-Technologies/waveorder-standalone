@@ -210,11 +210,26 @@ export async function GET(request: NextRequest) {
       ])
       businesses = result[0]
       totalCount = result[1]
+      
+      // Fetch connectedBusinesses separately for each business
+      const businessesWithConnections = await Promise.all(
+        businesses.map(async (business: any) => {
+          const businessData = await prisma.business.findUnique({
+            where: { id: business.id },
+            select: { connectedBusinesses: true }
+          })
+          return {
+            ...business,
+            connectedBusinesses: businessData?.connectedBusinesses || []
+          }
+        })
+      )
+      businesses = businessesWithConnections
     }
 
     // Format response with auth method detection
     // @ts-ignore
-    const formattedBusinesses = businesses.map(business => {
+    const formattedBusinesses = await Promise.all(businesses.map(async (business) => {
       // @ts-ignore
       const owner = business.users.find(u => u.role === 'OWNER')?.user
       let authMethod = 'email'
@@ -248,6 +263,31 @@ export async function GET(request: NextRequest) {
       const subscriptionPriceId = owner?.subscription?.priceId
       const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
 
+      // Determine marketplace role
+      // @ts-ignore
+      const isOriginator = business.connectedBusinesses && business.connectedBusinesses.length > 0
+      
+      // Check if supplier (find businesses that have this business in their connectedBusinesses)
+      let isSupplier = false
+      if (!isOriginator) {
+        const originatorCount = await prisma.business.count({
+          where: {
+            connectedBusinesses: { has: business.id }
+          }
+        })
+        isSupplier = originatorCount > 0
+      }
+
+      // Count only own products (exclude supplier products for originators)
+      // For originators: only count products where businessId = business.id (not supplier products)
+      // For suppliers: count all products where businessId = business.id (their own products)
+      // The _count already does this correctly, but we'll be explicit
+      const ownProductCount = await prisma.product.count({
+        where: {
+          businessId: business.id
+        }
+      })
+
       return {
         id: business.id,
         name: business.name,
@@ -269,6 +309,7 @@ export async function GET(request: NextRequest) {
         onboardingCompleted: business.onboardingCompleted,
         setupWizardCompleted: business.setupWizardCompleted,
         createdByAdmin: business.createdByAdmin,
+        marketplaceRole: isOriginator ? 'originator' : (isSupplier ? 'supplier' : null),
         users: users,
         owner: owner ? {
           id: owner.id,
@@ -302,10 +343,10 @@ export async function GET(request: NextRequest) {
             // @ts-ignore
             .reduce((sum, order) => sum + order.total, 0),
           totalCustomers: business._count.customers || 0,
-          totalProducts: business._count.products || 0
+          totalProducts: ownProductCount // Use explicit count of own products only
         }
       }
-    })
+    }))
 
     return NextResponse.json({
       businesses: formattedBusinesses,
