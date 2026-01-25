@@ -122,6 +122,12 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     lowStock: 0,
     featured: 0
   })
+  const [duplicates, setDuplicates] = useState<any[]>([])
+  const [productsWithoutBrand, setProductsWithoutBrand] = useState<{
+    count: number
+    products: any[]
+  }>({ count: 0, products: [] })
+  const [cleaning, setCleaning] = useState(false)
 
   const { isPro } = useSubscription()
 
@@ -186,6 +192,12 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
         if (productsData.stats) {
           setStats(productsData.stats)
         }
+        if (productsData.duplicates) {
+          setDuplicates(productsData.duplicates || [])
+        }
+        if (productsData.productsWithoutBrand) {
+          setProductsWithoutBrand(productsData.productsWithoutBrand || { count: 0, products: [] })
+        }
       }
 
       if (categoriesRes.ok) {
@@ -196,6 +208,34 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
       console.error('Error fetching data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCleanupProductsWithoutBrand = async () => {
+    if (!confirm(`Are you sure you want to delete ${productsWithoutBrand.count} products without brands? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setCleaning(true)
+      const response = await fetch(`/api/admin/stores/${businessId}/products/cleanup-without-brand`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to clean up products')
+      }
+
+      const data = await response.json()
+      alert(`Successfully deleted ${data.deletedCount} products without brands`)
+      
+      // Refresh the products list
+      await fetchData()
+    } catch (error: any) {
+      alert(`Error: ${error.message || 'Failed to clean up products'}`)
+    } finally {
+      setCleaning(false)
     }
   }
 
@@ -380,6 +420,38 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
         </div>
         </div>
 
+      {/* Duplicates & Products Without Brand Alert Card */}
+      {(duplicates.length > 0 || productsWithoutBrand.count > 0) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-yellow-900 mb-2">Data Quality Issues</h3>
+              <div className="space-y-1 text-sm text-yellow-800">
+                {duplicates.length > 0 && (
+                  <div>
+                    <strong>{duplicates.length}</strong> duplicate product(s) found (same external ID)
+                  </div>
+                )}
+                {productsWithoutBrand.count > 0 && (
+                  <div>
+                    <strong>{productsWithoutBrand.count}</strong> product(s) without brand
+                  </div>
+                )}
+              </div>
+            </div>
+            {productsWithoutBrand.count > 0 && (
+              <button
+                onClick={handleCleanupProductsWithoutBrand}
+                disabled={cleaning}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {cleaning ? 'Cleaning...' : `Clean ${productsWithoutBrand.count} Products Without Brand`}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -425,9 +497,9 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
 
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           {/* Search */}
-          <div className="flex-1">
+          <div className="w-full">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -441,14 +513,14 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <select
               value={selectedCategory}
               onChange={(e) => {
                 setSelectedCategory(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full sm:w-auto flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -464,7 +536,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                 setFilterStatus(e.target.value as any)
                 setCurrentPage(1)
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full sm:w-auto flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
