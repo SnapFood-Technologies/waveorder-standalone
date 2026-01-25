@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Clock, CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react'
+import { Clock, CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw, MoreVertical, X, Check } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface SyncLog {
@@ -38,6 +38,12 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
   const [logs, setLogs] = useState<SyncLog[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    logId: string
+    newStatus: 'failed' | 'success'
+    logName: string
+  } | null>(null)
+  const [updating, setUpdating] = useState(false)
 
   const fetchLogs = async () => {
     try {
@@ -74,6 +80,29 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
     
     return () => clearInterval(interval)
   }, [businessId, syncId])
+
+  const updateLogStatus = async (logId: string, newStatus: 'failed' | 'success') => {
+    try {
+      setUpdating(true)
+      const response = await fetch(`/api/superadmin/businesses/${businessId}/external-syncs/logs/${logId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update log status')
+      }
+
+      // Refresh logs
+      await fetchLogs()
+      setConfirmModal(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update log status')
+    } finally {
+      setUpdating(false)
+    }
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -169,6 +198,9 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Started
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -244,10 +276,76 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
                       )}
                     </div>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {log.status === 'running' && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setConfirmModal({
+                            logId: log.id,
+                            newStatus: 'failed',
+                            logName: log.sync.name
+                          })}
+                          className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded border border-red-200 hover:border-red-300 transition-colors"
+                          title="Mark as Failed"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmModal({
+                            logId: log.id,
+                            newStatus: 'success',
+                            logName: log.sync.name
+                          })}
+                          className="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded border border-green-200 hover:border-green-300 transition-colors"
+                          title="Mark as Completed"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Status Change
+            </h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to mark this sync log as <strong>{confirmModal.newStatus === 'failed' ? 'FAILED' : 'COMPLETED'}</strong>?
+              <br />
+              <span className="text-xs text-gray-500 mt-2 block">
+                Sync: {confirmModal.logName}
+              </span>
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal(null)}
+                disabled={updating}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => updateLogStatus(confirmModal.logId, confirmModal.newStatus)}
+                disabled={updating}
+                className={`px-4 py-2 text-sm text-white rounded-lg transition-colors disabled:opacity-50 ${
+                  confirmModal.newStatus === 'failed'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {updating ? 'Updating...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

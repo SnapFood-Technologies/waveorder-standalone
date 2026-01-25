@@ -68,33 +68,45 @@ export async function POST(
     }
 
     // ALWAYS mark any old "running" logs as failed when starting a new sync
-    const oldRunningLogs = await (prisma as any).externalSyncLog.findMany({
-      where: {
-        syncId,
-        status: 'running',
-        completedAt: null
-      }
-    })
-    
-    if (oldRunningLogs.length > 0) {
-      const now = Date.now()
-      await Promise.all(
-        oldRunningLogs.map((log: any) => {
-          const logAge = now - new Date(log.startedAt).getTime()
-          return (prisma as any).externalSyncLog.update({
-            where: { id: log.id },
-            data: {
-              status: 'failed',
-              error: `Sync timed out after ${Math.round(logAge / 60000)} minutes (replaced by new sync)`,
-              completedAt: new Date(),
-              duration: logAge
-            }
-          }).catch((err: any) => {
-            console.error(`[Sync] Failed to mark old log ${log.id} as failed:`, err)
-          })
+    try {
+      const oldRunningLogs = await (prisma as any).externalSyncLog.findMany({
+        where: {
+          syncId,
+          status: 'running',
+          completedAt: null
+        }
+      })
+      
+      console.log(`[Sync] Found ${oldRunningLogs.length} old running log(s) to mark as failed`)
+      
+      if (oldRunningLogs.length > 0) {
+        const now = Date.now()
+        const updatePromises = oldRunningLogs.map(async (log: any) => {
+          try {
+            const logAge = now - new Date(log.startedAt).getTime()
+            const result = await (prisma as any).externalSyncLog.update({
+              where: { id: log.id },
+              data: {
+                status: 'failed',
+                error: `Sync timed out after ${Math.round(logAge / 60000)} minutes (replaced by new sync)`,
+                completedAt: new Date(),
+                duration: logAge
+              }
+            })
+            console.log(`[Sync] Successfully marked log ${log.id} as failed`)
+            return result
+          } catch (err: any) {
+            console.error(`[Sync] CRITICAL: Failed to mark old log ${log.id} as failed:`, err)
+            throw err
+          }
         })
-      )
-      console.log(`[Sync] Marked ${oldRunningLogs.length} old running log(s) as failed before starting new sync`)
+        
+        await Promise.all(updatePromises)
+        console.log(`[Sync] Successfully marked ${oldRunningLogs.length} old running log(s) as failed before starting new sync`)
+      }
+    } catch (error: any) {
+      console.error('[Sync] CRITICAL: Error marking old running logs as failed:', error)
+      // Don't block the sync, but log the error
     }
 
     // SAFEGUARD: Check if sync is already running
