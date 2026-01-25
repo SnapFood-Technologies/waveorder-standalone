@@ -152,6 +152,7 @@ export async function GET(
         externalSystemApiKey: business.externalSystemApiKey,
         externalSystemEndpoints: business.externalSystemEndpoints,
         externalBrandIds: business.externalBrandIds,
+        connectedBusinesses: business.connectedBusinesses || [],
         owner: owner ? {
           id: owner.id,
           name: owner.name,

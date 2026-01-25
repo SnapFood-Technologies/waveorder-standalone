@@ -92,6 +92,7 @@ interface BusinessDetails {
   externalSystemApiKey?: string | null
   externalSystemEndpoints?: any
   externalBrandIds?: any
+  connectedBusinesses?: string[]
 }
 
 const businessTypeIcons: Record<string, any> = {
@@ -115,6 +116,12 @@ export default function BusinessDetailsPage() {
   const [postals, setPostals] = useState<any[]>([])
   const [postalPricing, setPostalPricing] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'delivery' | 'postals' | 'pricing'>('delivery')
+  const [marketplaceInfo, setMarketplaceInfo] = useState<{
+    isOriginator: boolean
+    isSupplier: boolean
+    originator?: { id: string; name: string }
+    suppliers?: Array<{ id: string; name: string; productCount: number }>
+  } | null>(null)
 
   useEffect(() => {
     fetchBusinessDetails()
@@ -136,10 +143,43 @@ export default function BusinessDetailsPage() {
       }
       const data = await response.json()
       setBusiness(data.business)
+      
+      // Check marketplace status
+      await fetchMarketplaceInfo(data.business)
     } catch (err: any) {
       setError(err.message || 'Failed to load business details')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchMarketplaceInfo = async (businessData: BusinessDetails) => {
+    try {
+      // Check if business is originator (has connectedBusinesses)
+      const isOriginator = !!(businessData.connectedBusinesses && businessData.connectedBusinesses.length > 0)
+      
+      // Check if business is supplier (find businesses that have this business in their connectedBusinesses)
+      const originatorResponse = await fetch(`/api/superadmin/businesses/${businessId}/marketplace/originator`)
+      const originatorData = originatorResponse.ok ? await originatorResponse.json() : null
+      
+      // If originator, get suppliers info
+      let suppliers: Array<{ id: string; name: string; productCount: number }> = []
+      if (isOriginator) {
+        const suppliersResponse = await fetch(`/api/superadmin/businesses/${businessId}/marketplace/suppliers`)
+        if (suppliersResponse.ok) {
+          const suppliersData = await suppliersResponse.json()
+          suppliers = suppliersData.suppliers || []
+        }
+      }
+      
+      setMarketplaceInfo({
+        isOriginator,
+        isSupplier: !!originatorData?.originator,
+        originator: originatorData?.originator || undefined,
+        suppliers: suppliers.length > 0 ? suppliers : undefined
+      })
+    } catch (err) {
+      console.error('Error fetching marketplace info:', err)
     }
   }
 
@@ -292,6 +332,51 @@ export default function BusinessDetailsPage() {
               </span>
             </div>
           </div>
+
+          {/* Marketplace Card */}
+          {marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Marketplace</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {marketplaceInfo.isOriginator 
+                      ? 'This business is an originator (marketplace owner)'
+                      : 'This business is a supplier (connected to an originator)'}
+                  </p>
+                </div>
+                <Link
+                  href={`/superadmin/businesses/${businessId}/marketplace`}
+                  className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+                >
+                  View Marketplace
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+              
+              {marketplaceInfo.isSupplier && marketplaceInfo.originator && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-1">Originator</p>
+                  <p className="text-sm text-blue-700">{marketplaceInfo.originator.name}</p>
+                  <p className="text-xs text-blue-600 mt-1">This business's products are visible to the originator</p>
+                </div>
+              )}
+              
+              {marketplaceInfo.isOriginator && marketplaceInfo.suppliers && marketplaceInfo.suppliers.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-900 mb-2">Suppliers ({marketplaceInfo.suppliers.length})</p>
+                  <div className="space-y-2">
+                    {marketplaceInfo.suppliers.map((supplier) => (
+                      <div key={supplier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-900">{supplier.name}</span>
+                        <span className="text-sm text-gray-600">{supplier.productCount} products</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Owner Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
