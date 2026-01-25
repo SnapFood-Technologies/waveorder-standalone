@@ -16,19 +16,23 @@ export async function DELETE(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    // Find all products without brands for this business
-    const productsWithoutBrand = await prisma.product.findMany({
-      where: {
-        businessId,
-        brandId: null
-      },
+    // Fetch all products for this business and filter in memory
+    // This is more reliable than trying to query null in Prisma
+    const allProducts = await prisma.product.findMany({
+      where: { businessId },
       select: {
         id: true,
         name: true,
         sku: true,
-        metadata: true
+        metadata: true,
+        brandId: true
       }
     })
+    
+    // Filter products without brands (null, undefined, or empty string)
+    const productsWithoutBrand = allProducts.filter(p => 
+      !p.brandId || p.brandId === null || p.brandId === undefined || p.brandId === ''
+    )
 
     if (productsWithoutBrand.length === 0) {
       return NextResponse.json({
@@ -37,18 +41,20 @@ export async function DELETE(
       })
     }
 
-    // Delete all products without brands
+    // Delete all products without brands using the IDs we found
+    const productIdsToDelete = productsWithoutBrand.map(p => p.id)
+    
     const deleteResult = await prisma.product.deleteMany({
       where: {
         businessId,
-        brandId: null
+        id: { in: productIdsToDelete }
       }
     })
 
     return NextResponse.json({
       message: `Successfully deleted ${deleteResult.count} products without brands`,
       deletedCount: deleteResult.count,
-      deletedProducts: productsWithoutBrand.map(p => ({
+      deletedProducts: productsWithoutBrand.slice(0, 50).map(p => ({
         id: p.id,
         name: p.name,
         sku: p.sku,
