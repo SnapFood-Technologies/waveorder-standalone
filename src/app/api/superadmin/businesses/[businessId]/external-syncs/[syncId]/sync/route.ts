@@ -67,6 +67,36 @@ export async function POST(
       )
     }
 
+    // ALWAYS mark any old "running" logs as failed when starting a new sync
+    const oldRunningLogs = await (prisma as any).externalSyncLog.findMany({
+      where: {
+        syncId,
+        status: 'running',
+        completedAt: null
+      }
+    })
+    
+    if (oldRunningLogs.length > 0) {
+      const now = Date.now()
+      await Promise.all(
+        oldRunningLogs.map((log: any) => {
+          const logAge = now - new Date(log.startedAt).getTime()
+          return (prisma as any).externalSyncLog.update({
+            where: { id: log.id },
+            data: {
+              status: 'failed',
+              error: `Sync timed out after ${Math.round(logAge / 60000)} minutes (replaced by new sync)`,
+              completedAt: new Date(),
+              duration: logAge
+            }
+          }).catch((err: any) => {
+            console.error(`[Sync] Failed to mark old log ${log.id} as failed:`, err)
+          })
+        })
+      )
+      console.log(`[Sync] Marked ${oldRunningLogs.length} old running log(s) as failed before starting new sync`)
+    }
+
     // SAFEGUARD: Check if sync is already running
     const STALE_LOCK_TIMEOUT = 10 * 60 * 1000 // 10 minutes
     const now = new Date()
@@ -88,8 +118,8 @@ export async function POST(
         // Lock is stale (sync probably crashed), clear it
         console.warn(`[Sync] Stale lock detected (${Math.round(lockAge / 60000)} minutes old), clearing...`)
         
-        // Find and mark the old running log as failed
-        const oldRunningLog = await (prisma as any).externalSyncLog.findFirst({
+        // Find and mark ALL old running logs as failed (not just one)
+        const oldRunningLogs = await (prisma as any).externalSyncLog.findMany({
           where: {
             syncId,
             status: 'running',
@@ -100,16 +130,26 @@ export async function POST(
           }
         })
         
-        if (oldRunningLog) {
-          await (prisma as any).externalSyncLog.update({
-            where: { id: oldRunningLog.id },
-            data: {
-              status: 'failed',
-              error: `Sync timed out after ${Math.round(lockAge / 60000)} minutes (stale lock cleared)`,
-              completedAt: new Date(),
-              duration: Date.now() - new Date(oldRunningLog.startedAt).getTime()
-            }
-          })
+        // Mark all old running logs as failed
+        if (oldRunningLogs.length > 0) {
+          const now = Date.now()
+          await Promise.all(
+            oldRunningLogs.map((log: any) => {
+              const logAge = now - new Date(log.startedAt).getTime()
+              return (prisma as any).externalSyncLog.update({
+                where: { id: log.id },
+                data: {
+                  status: 'failed',
+                  error: `Sync timed out after ${Math.round(logAge / 60000)} minutes (stale lock cleared by new sync)`,
+                  completedAt: new Date(),
+                  duration: logAge
+                }
+              }).catch((err: any) => {
+                console.error(`[Sync] Failed to mark log ${log.id} as failed:`, err)
+              })
+            })
+          )
+          console.log(`[Sync] Marked ${oldRunningLogs.length} old running log(s) as failed`)
         }
         
         // Clear the running flag
