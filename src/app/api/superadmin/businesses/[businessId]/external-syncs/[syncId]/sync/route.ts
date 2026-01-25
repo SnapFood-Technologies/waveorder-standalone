@@ -13,6 +13,12 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string; syncId: string }> }
 ) {
+  // Declare variables at function level for error handling
+  let syncLog: any = null
+  let syncStartTime: Date | null = null
+  let syncId: string | null = null
+  let businessId: string | null = null
+
   try {
     const session = await getServerSession(authOptions)
     
@@ -23,7 +29,10 @@ export async function POST(
       )
     }
 
-    const { businessId, syncId } = await params
+    const paramsData = await params
+    businessId = paramsData.businessId
+    syncId = paramsData.syncId
+    syncStartTime = new Date()
 
     // Get pagination parameters from query params
     const { searchParams } = new URL(request.url)
@@ -56,6 +65,36 @@ export async function POST(
         { message: 'Sync is not active' },
         { status: 400 }
       )
+    }
+
+    // SAFEGUARD: Check if sync is already running
+    const STALE_LOCK_TIMEOUT = 10 * 60 * 1000 // 10 minutes
+    const now = new Date()
+    const existingSyncStartedAt = sync.syncStartedAt ? new Date(sync.syncStartedAt) : null
+    
+    if (sync.isRunning && existingSyncStartedAt) {
+      const lockAge = now.getTime() - existingSyncStartedAt.getTime()
+      if (lockAge < STALE_LOCK_TIMEOUT) {
+        // Sync is running and lock is not stale
+        return NextResponse.json(
+          { 
+            message: 'Sync is already running',
+            syncStartedAt: existingSyncStartedAt.toISOString(),
+            lockAgeMinutes: Math.round(lockAge / 60000)
+          },
+          { status: 409 } // Conflict status
+        )
+      } else {
+        // Lock is stale (sync probably crashed), clear it
+        console.warn(`[Sync] Stale lock detected (${Math.round(lockAge / 60000)} minutes old), clearing...`)
+        await (prisma as any).externalSync.update({
+          where: { id: syncId },
+          data: {
+            isRunning: false,
+            syncStartedAt: null
+          }
+        })
+      }
     }
 
     if (!sync.externalSystemBaseUrl || !sync.externalSystemApiKey) {
@@ -118,6 +157,36 @@ export async function POST(
         // If it's a number or other type, convert to string
         brandIds = [sync.externalBrandIds.toString()]
       }
+    }
+
+    // Create sync log entry
+    try {
+      syncLog = await (prisma as any).externalSyncLog.create({
+        data: {
+          syncId,
+          businessId,
+          status: 'running',
+          processedCount: 0,
+          skippedCount: 0,
+          errorCount: 0,
+          currentPage: currentPage,
+          perPage: perPageOverride ? parseInt(perPageOverride) : (endpoints?.perPage || 100),
+          syncAllPages: syncAllPages,
+          startedAt: syncStartTime
+        }
+      })
+
+      // Set sync as running
+      await (prisma as any).externalSync.update({
+        where: { id: syncId },
+        data: {
+          isRunning: true,
+          syncStartedAt: syncStartTime
+        }
+      })
+    } catch (logError) {
+      console.error('Error creating sync log:', logError)
+      // Continue even if log creation fails
     }
 
     let processedCount = 0
@@ -318,16 +387,6 @@ export async function POST(
       console.error('Sync error:', error)
     }
 
-    // Update sync status
-    await (prisma as any).externalSync.update({
-      where: { id: syncId },
-      data: {
-        lastSyncAt: new Date(),
-        lastSyncStatus: syncStatus,
-        lastSyncError: lastError
-      }
-    })
-
     // Calculate remaining pages
     // If syncing all pages, remainingPages = 0 (all done)
     // If syncing single page, remainingPages = totalPages - currentPage
@@ -337,6 +396,46 @@ export async function POST(
         ? Math.max(0, paginationInfo.totalPages - paginationInfo.currentPage)
         : 0
 
+    const syncEndTime = new Date()
+    const duration = syncEndTime.getTime() - syncStartTime.getTime()
+
+    // Update sync log with final status
+    if (syncLog?.id) {
+      try {
+        await (prisma as any).externalSyncLog.update({
+          where: { id: syncLog.id },
+          data: {
+            status: syncStatus,
+            error: lastError,
+            processedCount,
+            skippedCount,
+            errorCount: errors.length,
+            currentPage: paginationInfo.currentPage || currentPage,
+            totalPages: paginationInfo.totalPages,
+            perPage: paginationInfo.perPage || perPage,
+            syncAllPages,
+            completedAt: syncEndTime,
+            duration,
+            metadata: errors.length > 0 ? { errors: errors.slice(0, 50) } : null // Store first 50 errors
+          }
+        })
+      } catch (logUpdateError) {
+        console.error('Error updating sync log:', logUpdateError)
+      }
+    }
+
+    // Update sync status and clear running flag
+    await (prisma as any).externalSync.update({
+      where: { id: syncId },
+      data: {
+        lastSyncAt: syncEndTime,
+        lastSyncStatus: syncStatus,
+        lastSyncError: lastError,
+        isRunning: false,
+        syncStartedAt: null
+      }
+    })
+
     return NextResponse.json({
       message: syncAllPages 
         ? 'Sync completed' 
@@ -345,6 +444,8 @@ export async function POST(
       skippedCount,
       errors: errors.slice(0, 10), // Return first 10 errors
       status: syncStatus,
+      logId: syncLog.id,
+      duration,
       pagination: {
         total: paginationInfo.total,
         perPage: paginationInfo.perPage || perPage,
@@ -357,6 +458,35 @@ export async function POST(
 
   } catch (error: any) {
     console.error('Error in sync:', error)
+    
+    // Clear running flag on error (only if we have syncId)
+    if (syncId) {
+      try {
+        await (prisma as any).externalSync.update({
+          where: { id: syncId },
+          data: {
+            isRunning: false,
+            syncStartedAt: null
+          }
+        })
+        
+        // Update log if it was created
+        if (syncLog?.id && syncStartTime) {
+          await (prisma as any).externalSyncLog.update({
+            where: { id: syncLog.id },
+            data: {
+              status: 'failed',
+              error: error.message || 'Sync failed',
+              completedAt: new Date(),
+              duration: syncStartTime ? Date.now() - syncStartTime.getTime() : null
+            }
+          })
+        }
+      } catch (updateError) {
+        console.error('Error updating sync status on failure:', updateError)
+      }
+    }
+    
     return NextResponse.json(
       { message: 'Internal server error', error: error.message },
       { status: 500 }

@@ -20,6 +20,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import Link from 'next/link'
+import { ExternalSyncLogs } from '@/components/superadmin/ExternalSyncLogs'
 
 interface ExternalSync {
   id: string
@@ -469,6 +470,11 @@ export default function ExternalSyncsPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Sync Logs History */}
+      <div className="mt-8">
+        <ExternalSyncLogs businessId={businessId} />
       </div>
 
       {/* Modals */}

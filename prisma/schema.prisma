@@ -215,6 +215,7 @@ model Business {
   postals       Postal[]
   postalPricing PostalPricing[]
   externalSyncs ExternalSync[]
+  externalSyncLogs ExternalSyncLog[]
 
   // Settings
   currency                           String  @default("USD")
@@ -1366,12 +1367,58 @@ model ExternalSync {
   lastSyncStatus          String? // 'success', 'failed', 'partial'
   lastSyncError           String?
   syncFrequency           String? // Optional: 'manual', 'hourly', 'daily', etc. (for future use)
+  
+  // Safeguards to prevent concurrent syncs
+  isRunning               Boolean   @default(false) // True when sync is in progress
+  syncStartedAt           DateTime? // When current sync started (for stale lock detection)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  logs     ExternalSyncLog[] // History of all sync runs
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([businessId])
   @@index([businessId, isActive])
+}
+
+// Sync log history - stores every sync run
+model ExternalSyncLog {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  syncId          String   @db.ObjectId
+  businessId      String   @db.ObjectId
+  
+  // Sync details
+  status          String   // 'success', 'failed', 'partial', 'running'
+  error           String?  // Error message if failed
+  processedCount  Int      @default(0) // Number of products processed
+  skippedCount    Int      @default(0) // Number of products skipped
+  errorCount      Int      @default(0) // Number of products with errors
+  
+  // Pagination info
+  currentPage     Int?     // Current page synced
+  totalPages      Int?     // Total pages available
+  perPage         Int?     // Products per page
+  syncAllPages    Boolean  @default(false) // Whether all pages were synced
+  
+  // Timing
+  startedAt       DateTime @default(now())
+  completedAt     DateTime? // Null if still running or crashed
+  
+  // Duration in milliseconds (calculated)
+  duration        Int?     // completedAt - startedAt in ms
+  
+  // Additional metadata
+  metadata        Json?    // Store additional info (errors array, etc.)
+
+  sync    ExternalSync @relation(fields: [syncId], references: [id], onDelete: Cascade)
+  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([syncId])
+  @@index([businessId])
+  @@index([businessId, startedAt])
+  @@index([syncId, startedAt])
 }
