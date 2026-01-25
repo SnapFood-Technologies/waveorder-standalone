@@ -145,6 +145,64 @@ export async function GET(
 
     const pages = Math.ceil(total / limit)
 
+    // Get breakdown by business and detect duplicates by external ID
+    const allProductsForBreakdown = await prisma.product.findMany({
+      where: whereClause,
+      select: { 
+        businessId: true,
+        id: true,
+        metadata: true
+      }
+    })
+    
+    const businessBreakdown = allProductsForBreakdown.reduce((acc: any, product: any) => {
+      acc[product.businessId] = (acc[product.businessId] || 0) + 1
+      return acc
+    }, {})
+    
+    // Get business names for breakdown
+    const businessIds = Object.keys(businessBreakdown)
+    const businesses = await prisma.business.findMany({
+      where: { id: { in: businessIds } },
+      select: { id: true, name: true }
+    })
+    
+    const breakdown = businesses.map(b => ({
+      businessId: b.id,
+      businessName: b.name,
+      productCount: businessBreakdown[b.id] || 0
+    }))
+
+    // Detect duplicates by external ID
+    const externalIdMap = new Map<string, any[]>()
+    allProductsForBreakdown.forEach((product: any) => {
+      if (product.metadata && typeof product.metadata === 'object') {
+        const metadata = product.metadata as any
+        const externalId = metadata.externalProductId || metadata.externalId
+        if (externalId) {
+          if (!externalIdMap.has(externalId)) {
+            externalIdMap.set(externalId, [])
+          }
+          externalIdMap.get(externalId)!.push({
+            productId: product.id,
+            businessId: product.businessId
+          })
+        }
+      }
+    })
+    
+    // Find duplicates (external IDs with more than 1 product)
+    const duplicates = Array.from(externalIdMap.entries())
+      .filter(([externalId, products]) => products.length > 1)
+      .map(([externalId, products]) => ({
+        externalId,
+        count: products.length,
+        products: products.map((p: any) => ({
+          productId: p.productId,
+          businessId: p.businessId
+        }))
+      }))
+
     // Get stats for all products (not filtered by current page)
     const statsWhereClause: any = {
       OR: [
@@ -210,7 +268,9 @@ export async function GET(
         active: activeCount,
         lowStock: lowStockCount,
         featured: featuredCount
-      }
+      },
+      breakdown: breakdown, // Shows product count by business
+      duplicates: duplicates // Shows products with duplicate external IDs
     })
 
   } catch (error) {
