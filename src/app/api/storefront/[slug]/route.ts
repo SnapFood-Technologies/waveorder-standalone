@@ -247,7 +247,7 @@ export async function GET(
       const initialProductsRaw = await prisma.product.findMany({
         where: productWhere,
         take: 50,
-        orderBy: { name: 'asc' },
+        orderBy: { stock: 'desc' },
         select: {
           id: true,
           name: true,
