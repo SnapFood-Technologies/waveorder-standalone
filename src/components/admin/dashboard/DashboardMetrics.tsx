@@ -247,6 +247,7 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
               {/* Calculate max value once outside map for efficiency and accuracy */}
               {(() => {
                 const maxValue = Math.max(...metrics.ordersByStatus.map(item => item.count), 1)
+                const chartHeight = 256 // h-64 = 256px
                 return (
                   <>
                     {/* Y-axis labels */}
@@ -273,8 +274,10 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
                       {/* Bars */}
                       <div className="absolute inset-0 flex items-end justify-between px-2">
                         {metrics.ordersByStatus.map((item, index) => {
-                          // Calculate height with proper scaling and minimum visibility
-                          const height = maxValue > 0 ? Math.max((item.count / maxValue) * 100, item.count > 0 ? 5 : 2) : 2
+                          // Calculate height in pixels (not percentage) for accurate rendering
+                          const heightPx = maxValue > 0 
+                            ? Math.max((item.count / maxValue) * chartHeight, item.count > 0 ? 4 : 2)
+                            : 2
                           
                           return (
                             <div
@@ -291,9 +294,9 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
                               <div
                                 className="w-full rounded-t transition-all duration-300 hover:opacity-80"
                                 style={{
-                                  height: `${height}%`,
+                                  height: `${heightPx}px`,
                                   backgroundColor: item.color,
-                                  minHeight: item.count > 0 ? '8px' : '2px'
+                                  minHeight: item.count > 0 ? '4px' : '2px'
                                 }}
                               ></div>
                               
