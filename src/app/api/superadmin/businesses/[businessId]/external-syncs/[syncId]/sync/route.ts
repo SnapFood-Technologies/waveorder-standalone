@@ -491,8 +491,6 @@ export async function POST(
       { message: 'Internal server error', error: error.message },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
