@@ -288,6 +288,16 @@ export async function GET(request: NextRequest) {
         }
       })
 
+      // For originators, also count total products from suppliers
+      let supplierProductCount = 0
+      if (isOriginator && business.connectedBusinesses && business.connectedBusinesses.length > 0) {
+        supplierProductCount = await prisma.product.count({
+          where: {
+            businessId: { in: business.connectedBusinesses }
+          }
+        })
+      }
+
       return {
         id: business.id,
         name: business.name,
@@ -343,7 +353,8 @@ export async function GET(request: NextRequest) {
             // @ts-ignore
             .reduce((sum, order) => sum + order.total, 0),
           totalCustomers: business._count.customers || 0,
-          totalProducts: ownProductCount // Use explicit count of own products only
+          totalProducts: ownProductCount, // Use explicit count of own products only
+          supplierProductCount: supplierProductCount // For originators: total products from suppliers
         }
       }
     }))

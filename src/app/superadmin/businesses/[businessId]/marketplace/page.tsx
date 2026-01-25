@@ -45,16 +45,16 @@ export default function MarketplacePage() {
         fetch(`/api/superadmin/businesses/${businessId}/marketplace/suppliers`)
       ])
 
-      if (businessRes.ok) {
-        const businessData = await businessRes.json()
-        setBusiness(businessData.business)
-      }
-
+      // Read all responses once
+      const businessData = businessRes.ok ? await businessRes.json() : null
       const originatorData = originatorRes.ok ? await originatorRes.json() : null
       const suppliersData = suppliersRes.ok ? await suppliersRes.json() : null
 
+      if (businessData?.business) {
+        setBusiness(businessData.business)
+      }
+
       // Determine if originator or supplier
-      const businessData = businessRes.ok ? await businessRes.json() : null
       const isOriginator = businessData?.business?.connectedBusinesses?.length > 0
       const isSupplier = !!originatorData?.originator
 
