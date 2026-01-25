@@ -180,31 +180,46 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
                       <div className="text-xs text-gray-500">{log.sync.externalSystemName}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(log.status)}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.status)}`}>
-                        {log.status.toUpperCase()}
-                      </span>
-                    </div>
-                    {log.error && (
-                      <div className="mt-1 text-xs text-red-600 max-w-xs truncate" title={log.error}>
-                        {log.error}
+                  <td className="px-6 py-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(log.status)}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.status)}`}>
+                          {log.status.toUpperCase()}
+                        </span>
                       </div>
-                    )}
+                      {log.error && (
+                        <div className="text-xs text-red-600 max-w-md break-words" title={log.error}>
+                          {log.error}
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 text-sm text-gray-900">
                     <div className="space-y-1">
-                      <div>Processed: <span className="font-medium">{log.processedCount}</span></div>
-                      {log.skippedCount > 0 && (
-                        <div className="text-gray-500">Skipped: <span className="font-medium">{log.skippedCount}</span></div>
-                      )}
-                      {log.errorCount > 0 && (
-                        <div className="text-red-600">Errors: <span className="font-medium">{log.errorCount}</span></div>
-                      )}
-                      {log.currentPage && log.totalPages && (
-                        <div className="text-xs text-gray-500">
-                          Page {log.currentPage} of {log.totalPages}
+                      <div className="flex items-center gap-4">
+                        <div>Processed: <span className="font-medium text-gray-900">{log.processedCount}</span></div>
+                        {log.skippedCount > 0 && (
+                          <div className="text-gray-600">Skipped: <span className="font-medium">{log.skippedCount}</span></div>
+                        )}
+                        {log.errorCount > 0 && (
+                          <div className="text-red-600">Errors: <span className="font-medium">{log.errorCount}</span></div>
+                        )}
+                      </div>
+                      {(log.currentPage || log.perPage) && (
+                        <div className="text-xs text-gray-500 space-x-2">
+                          {log.currentPage && (
+                            <span>
+                              Page {log.currentPage}
+                              {log.totalPages ? ` of ${log.totalPages}` : ''}
+                            </span>
+                          )}
+                          {log.perPage && (
+                            <span>• {log.perPage} per page</span>
+                          )}
+                          {log.syncAllPages && (
+                            <span className="text-blue-600">• All pages</span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -216,10 +231,17 @@ export function ExternalSyncLogs({ businessId, syncId }: ExternalSyncLogsProps) 
                       formatDuration(log.duration)
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div>{formatDistanceToNow(new Date(log.startedAt), { addSuffix: true })}</div>
-                    <div className="text-xs text-gray-400">
-                      {new Date(log.startedAt).toLocaleString()}
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    <div className="space-y-1">
+                      <div className="font-medium">{formatDistanceToNow(new Date(log.startedAt), { addSuffix: true })}</div>
+                      <div className="text-xs text-gray-400">
+                        Started: {new Date(log.startedAt).toLocaleString()}
+                      </div>
+                      {log.completedAt && (
+                        <div className="text-xs text-gray-400">
+                          Completed: {new Date(log.completedAt).toLocaleString()}
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

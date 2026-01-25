@@ -87,6 +87,32 @@ export async function POST(
       } else {
         // Lock is stale (sync probably crashed), clear it
         console.warn(`[Sync] Stale lock detected (${Math.round(lockAge / 60000)} minutes old), clearing...`)
+        
+        // Find and mark the old running log as failed
+        const oldRunningLog = await (prisma as any).externalSyncLog.findFirst({
+          where: {
+            syncId,
+            status: 'running',
+            completedAt: null
+          },
+          orderBy: {
+            startedAt: 'desc'
+          }
+        })
+        
+        if (oldRunningLog) {
+          await (prisma as any).externalSyncLog.update({
+            where: { id: oldRunningLog.id },
+            data: {
+              status: 'failed',
+              error: `Sync timed out after ${Math.round(lockAge / 60000)} minutes (stale lock cleared)`,
+              completedAt: new Date(),
+              duration: Date.now() - new Date(oldRunningLog.startedAt).getTime()
+            }
+          })
+        }
+        
+        // Clear the running flag
         await (prisma as any).externalSync.update({
           where: { id: syncId },
           data: {
@@ -342,14 +368,49 @@ export async function POST(
               console.error(`[Sync] Error processing product ${externalProduct.id}:`, error.message)
             }
             
-            // Log progress every 10 products
-            if ((i + 1) % 10 === 0) {
-              console.log(`[Sync] Progress: ${i + 1}/${products.length} products processed`)
+            // Update log in real-time every 10 products
+            if ((i + 1) % 10 === 0 && syncLog?.id) {
+              try {
+                await (prisma as any).externalSyncLog.update({
+                  where: { id: syncLog.id },
+                  data: {
+                    processedCount,
+                    skippedCount,
+                    errorCount: errors.length,
+                    currentPage: page
+                  }
+                })
+                console.log(`[Sync] Progress: ${i + 1}/${products.length} products processed, total: ${processedCount}`)
+              } catch (logUpdateError) {
+                // Don't block processing if log update fails
+                console.error('[Sync] Error updating log during processing:', logUpdateError)
+              }
             }
           }
           
           const processDuration = Date.now() - processStartTime
           console.log(`[Sync] Completed processing ${products.length} products in ${processDuration}ms (avg: ${Math.round(processDuration / products.length)}ms per product)`)
+
+          // Update log in real-time after each page is processed
+          if (syncLog?.id) {
+            try {
+              await (prisma as any).externalSyncLog.update({
+                where: { id: syncLog.id },
+                data: {
+                  processedCount,
+                  skippedCount,
+                  errorCount: errors.length,
+                  currentPage: page,
+                  totalPages: paginationInfo.totalPages || null,
+                  perPage: paginationInfo.perPage || perPage,
+                  status: 'running' // Still running, processing more pages
+                }
+              })
+              console.log(`[Sync] Log updated: page ${page}, processed: ${processedCount}, skipped: ${skippedCount}, errors: ${errors.length}`)
+            } catch (logUpdateError) {
+              console.error('[Sync] Error updating log after page:', logUpdateError)
+            }
+          }
 
           // If syncAllPages is false, only sync the current page
           if (!syncAllPages) {
@@ -385,6 +446,27 @@ export async function POST(
       syncStatus = 'failed'
       lastError = error.message || 'Sync failed'
       console.error('Sync error:', error)
+      
+      // Update log immediately on error to prevent stuck "running" status
+      if (syncLog?.id && syncStartTime) {
+        try {
+          await (prisma as any).externalSyncLog.update({
+            where: { id: syncLog.id },
+            data: {
+              status: 'failed',
+              error: error.message || 'Sync failed',
+              processedCount,
+              skippedCount,
+              errorCount: errors.length,
+              completedAt: new Date(),
+              duration: Date.now() - syncStartTime.getTime(),
+              metadata: errors.length > 0 ? { errors: errors.slice(0, 50) } : null
+            }
+          })
+        } catch (logUpdateError) {
+          console.error('Error updating sync log on failure:', logUpdateError)
+        }
+      }
     }
 
     // Calculate remaining pages
@@ -399,7 +481,7 @@ export async function POST(
     const syncEndTime = new Date()
     const duration = syncEndTime.getTime() - syncStartTime.getTime()
 
-    // Update sync log with final status
+    // Update sync log with final status - CRITICAL: Must always update
     if (syncLog?.id) {
       try {
         await (prisma as any).externalSyncLog.update({
@@ -416,12 +498,33 @@ export async function POST(
             syncAllPages,
             completedAt: syncEndTime,
             duration,
-            metadata: errors.length > 0 ? { errors: errors.slice(0, 50) } : null // Store first 50 errors
+            metadata: errors.length > 0 ? { errors: errors.slice(0, 50) } : null
           }
         })
+        console.log(`[Sync] Log updated successfully: ${syncLog.id}, status: ${syncStatus}, processed: ${processedCount}`)
       } catch (logUpdateError) {
-        console.error('Error updating sync log:', logUpdateError)
+        console.error('[Sync] CRITICAL: Failed to update sync log:', logUpdateError)
+        // Retry once
+        try {
+          await (prisma as any).externalSyncLog.update({
+            where: { id: syncLog.id },
+            data: {
+              status: syncStatus,
+              error: lastError,
+              processedCount,
+              skippedCount,
+              errorCount: errors.length,
+              completedAt: syncEndTime,
+              duration
+            }
+          })
+          console.log(`[Sync] Log update retry succeeded: ${syncLog.id}`)
+        } catch (retryError) {
+          console.error('[Sync] CRITICAL: Log update retry also failed:', retryError)
+        }
       }
+    } else {
+      console.error('[Sync] CRITICAL: syncLog.id is missing, cannot update log!', { syncLog, syncId, businessId })
     }
 
     // Update sync status and clear running flag
