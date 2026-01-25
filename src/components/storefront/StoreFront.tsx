@@ -4125,24 +4125,6 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style={{ overscrollBehavior: 'contain' }}>
-              {/* Debug console logs */}
-              {(() => {
-                console.log('[Filter Modal Debug]', {
-                  customFilteringEnabled: storeData.customFilteringEnabled,
-                  customFilterSettings: storeData.customFilterSettings,
-                  collectionsEnabled: storeData.customFilterSettings?.collectionsEnabled,
-                  groupsEnabled: storeData.customFilterSettings?.groupsEnabled,
-                  brandsEnabled: storeData.customFilterSettings?.brandsEnabled,
-                  collectionsCount: storeData.collections?.length || 0,
-                  groupsCount: storeData.groups?.length || 0,
-                  brandsCount: storeData.brands?.length || 0,
-                  collectionsMode: storeData.customFilterSettings?.collectionsMode,
-                  groupsMode: storeData.customFilterSettings?.groupsMode,
-                  brandsMode: storeData.customFilterSettings?.brandsMode,
-                })
-                return null
-              })()}
-              
               {/* Price Range */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.priceRange || 'Price Range'}</h3>
@@ -4224,15 +4206,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               </div>
 
               {/* Collections Filter - Only show if enabled */}
-              {(() => {
-                const shouldShow = storeData.customFilteringEnabled && (storeData.customFilterSettings?.collectionsEnabled === true) && storeData.collections && storeData.collections.length > 0
-                console.log('[Filter Modal] Collections filter should show:', shouldShow, {
-                  customFilteringEnabled: storeData.customFilteringEnabled,
-                  collectionsEnabled: storeData.customFilterSettings?.collectionsEnabled,
-                  collectionsLength: storeData.collections?.length || 0
-                })
-                return shouldShow
-              })() && (
+              {storeData.customFilteringEnabled && (storeData.customFilterSettings?.collectionsEnabled === true) && storeData.collections && storeData.collections.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.collections || 'Collections'}</h3>
                   <ScrollableSection maxHeight="150px">
@@ -4310,15 +4284,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               )}
 
               {/* Brands Filter - Only show if enabled */}
-              {(() => {
-                const shouldShow = storeData.customFilteringEnabled && (storeData.customFilterSettings?.brandsEnabled === true) && storeData.brands && storeData.brands.length > 0
-                console.log('[Filter Modal] Brands filter should show:', shouldShow, {
-                  customFilteringEnabled: storeData.customFilteringEnabled,
-                  brandsEnabled: storeData.customFilterSettings?.brandsEnabled,
-                  brandsLength: storeData.brands?.length || 0
-                })
-                return shouldShow
-              })() && (
+              {storeData.customFilteringEnabled && (storeData.customFilterSettings?.brandsEnabled === true) && storeData.brands && storeData.brands.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.brands || 'Brands'}</h3>
                   <ScrollableSection maxHeight="150px">
