@@ -87,7 +87,7 @@ export async function GET(
               prisma.category.findUnique({
                 where: { 
                   id: categoryId,
-                  businessId: hasConnections ? { in: businessIds } : business.id,
+                  businessId: { in: businessIds },
                   isActive: true
                 },
                 select: {
@@ -99,7 +99,7 @@ export async function GET(
               prisma.category.findMany({
                 where: {
                   parentId: categoryId,
-                  businessId: hasConnections ? { in: businessIds } : business.id,
+                  businessId: { in: businessIds },
                   isActive: true
                 },
                 select: { id: true }
@@ -127,7 +127,7 @@ export async function GET(
 
     // Build where clause for products
     const productWhere: any = {
-      businessId: hasConnections ? { in: businessIds } : business.id,
+      businessId: { in: businessIds },
       isActive: true,
       price: { gt: 0 }
     }

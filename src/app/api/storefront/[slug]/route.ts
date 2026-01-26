@@ -177,7 +177,7 @@ export async function GET(
     // Products will be loaded on-demand via separate API endpoint
     const categories = await prisma.category.findMany({
       where: {
-        businessId: hasConnections ? { in: businessIds } : business.id,
+        businessId: { in: businessIds },
         isActive: true
       },
       orderBy: { sortOrder: 'asc' },
@@ -219,7 +219,7 @@ export async function GET(
           select: {
             products: {
               where: {
-                businessId: hasConnections ? { in: businessIds } : business.id,
+                businessId: { in: businessIds },
                 isActive: true,
                 price: { gt: 0 },
                 ...(business.hideProductsWithoutPhotos && {
@@ -240,7 +240,7 @@ export async function GET(
     let initialProducts: any[] = []
     try {
       const productWhere: any = {
-        businessId: hasConnections ? { in: businessIds } : business.id,
+        businessId: { in: businessIds },
         isActive: true,
         price: { gt: 0 }
       }
@@ -436,7 +436,7 @@ export async function GET(
       if (business.customMenuEnabled || customFilterSettings.collectionsEnabled) {
         const collectionsRaw = await prisma.collection.findMany({
           where: {
-            businessId: hasConnections ? { in: businessIds } : business.id,
+            businessId: { in: businessIds },
             isActive: true
           },
           select: {
@@ -455,7 +455,7 @@ export async function GET(
       if (business.customMenuEnabled || customFilterSettings.groupsEnabled) {
         const groupsRaw = await prisma.group.findMany({
           where: {
-            businessId: hasConnections ? { in: businessIds } : business.id,
+            businessId: { in: businessIds },
             isActive: true
           },
           select: {
@@ -474,7 +474,7 @@ export async function GET(
       if (customFilterSettings.brandsEnabled) {
         const brandsRaw = await prisma.brand.findMany({
           where: {
-            businessId: hasConnections ? { in: businessIds } : business.id,
+            businessId: { in: businessIds },
             isActive: true
           },
           select: {
