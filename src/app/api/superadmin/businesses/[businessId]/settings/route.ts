@@ -24,10 +24,42 @@ export async function PATCH(
       where: { id: businessId },
       data: {
         ...(hideProductsWithoutPhotos !== undefined && { hideProductsWithoutPhotos })
+      },
+      include: {
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+            authMethod: true
+          }
+        }
       }
     })
 
-    return NextResponse.json({ business })
+    // Fetch stats separately
+    const [totalOrders, totalRevenue, totalCustomers, totalProducts] = await Promise.all([
+      prisma.order.count({ where: { businessId } }),
+      prisma.order.aggregate({
+        where: { businessId, status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'COMPLETED'] } },
+        _sum: { total: true }
+      }),
+      prisma.customer.count({ where: { businessId } }),
+      prisma.product.count({ where: { businessId } })
+    ])
+
+    const businessWithStats = {
+      ...business,
+      stats: {
+        totalOrders,
+        totalRevenue: totalRevenue._sum.total || 0,
+        totalCustomers,
+        totalProducts
+      }
+    }
+
+    return NextResponse.json({ business: businessWithStats })
   } catch (error) {
     console.error('Error updating business settings:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })

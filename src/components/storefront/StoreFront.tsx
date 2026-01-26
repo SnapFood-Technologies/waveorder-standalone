@@ -4265,8 +4265,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 </div>
               </div>
 
-              {/* Categories - Only show if custom filtering is NOT enabled */}
-              {!storeData.customFilteringEnabled && (
+              {/* Categories - Show default categories if custom filtering is not enabled OR if custom filtering is enabled but categories are disabled */}
+              {(!storeData.customFilteringEnabled || !storeData.customFilterSettings?.categoriesEnabled) && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
                   <ScrollableSection maxHeight="180px">
