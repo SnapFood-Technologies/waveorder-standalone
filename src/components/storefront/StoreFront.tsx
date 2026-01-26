@@ -4265,44 +4265,46 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 </div>
               </div>
 
-              {/* Categories */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
-                <ScrollableSection maxHeight="180px">
-                  <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
-                    <input
-                      type="radio"
-                      name="filterCategory"
-                      value=""
-                      checked={selectedFilterCategory === null}
-                      onChange={() => {
-                        setSelectedFilterCategory(null)
-                        setSelectedCategory('all')
-                      }}
-                      className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
-                      style={{ accentColor: primaryColor }}
-                    />
-                    <span className="ml-3 text-sm text-gray-700">{translations.all || 'All'}</span>
-                  </label>
-                  {storeData.categories.map(category => (
-                    <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+              {/* Categories - Only show if custom filtering is NOT enabled */}
+              {!storeData.customFilteringEnabled && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.categories || 'Categories'}</h3>
+                  <ScrollableSection maxHeight="180px">
+                    <label className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                       <input
                         type="radio"
                         name="filterCategory"
-                        value={category.id}
-                        checked={selectedFilterCategory === category.id}
+                        value=""
+                        checked={selectedFilterCategory === null}
                         onChange={() => {
-                          setSelectedFilterCategory(category.id)
-                          setSelectedCategory(category.id)
+                          setSelectedFilterCategory(null)
+                          setSelectedCategory('all')
                         }}
                         className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
                         style={{ accentColor: primaryColor }}
                       />
-                      <span className="ml-3 text-sm text-gray-700">{category.name}</span>
+                      <span className="ml-3 text-sm text-gray-700">{translations.all || 'All'}</span>
                     </label>
-                  ))}
-                </ScrollableSection>
-              </div>
+                    {storeData.categories.map(category => (
+                      <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <input
+                          type="radio"
+                          name="filterCategory"
+                          value={category.id}
+                          checked={selectedFilterCategory === category.id}
+                          onChange={() => {
+                            setSelectedFilterCategory(category.id)
+                            setSelectedCategory(category.id)
+                          }}
+                          className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
+                          style={{ accentColor: primaryColor }}
+                        />
+                        <span className="ml-3 text-sm text-gray-700">{category.name}</span>
+                      </label>
+                    ))}
+                  </ScrollableSection>
+                </div>
+              )}
 
               {/* Collections Filter - Only show if enabled */}
               {storeData.customFilteringEnabled && (storeData.customFilterSettings?.collectionsEnabled === true) && storeData.collections && storeData.collections.length > 0 && (
@@ -4313,9 +4315,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       const collectionsMode = storeData.customFilterSettings?.collectionsMode || 'all'
                       const availableCollections = collectionsMode === 'all' 
                         ? storeData.collections || []
-                        : (storeData.collections || []).filter((c: any) => 
-                            (storeData.customFilterSettings.selectedCollections || []).includes(c.id)
-                          )
+                        : (storeData.collections || []).filter((c: any) => {
+                            const selectedIds = storeData.customFilterSettings.selectedCollections || []
+                            // Check if primary ID matches OR if any merged ID matches (for deduplicated entities)
+                            return selectedIds.includes(c.id) || 
+                                   (c.ids && c.ids.some((id: string) => selectedIds.includes(id)))
+                          })
                       return availableCollections.map((collection: any) => (
                       <label key={collection.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
@@ -4352,9 +4357,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       const groupsMode = storeData.customFilterSettings?.groupsMode || 'all'
                       const availableGroups = groupsMode === 'all' 
                         ? storeData.groups || []
-                        : (storeData.groups || []).filter((g: any) => 
-                            (storeData.customFilterSettings.selectedGroups || []).includes(g.id)
-                          )
+                        : (storeData.groups || []).filter((g: any) => {
+                            const selectedIds = storeData.customFilterSettings.selectedGroups || []
+                            // Check if primary ID matches OR if any merged ID matches (for deduplicated entities)
+                            return selectedIds.includes(g.id) || 
+                                   (g.ids && g.ids.some((id: string) => selectedIds.includes(id)))
+                          })
                       return availableGroups.map((group: any) => (
                       <label key={group.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
@@ -4391,9 +4399,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       const brandsMode = storeData.customFilterSettings?.brandsMode || 'all'
                       const availableBrands = brandsMode === 'all' 
                         ? storeData.brands || []
-                        : (storeData.brands || []).filter((b: any) => 
-                            (storeData.customFilterSettings.selectedBrands || []).includes(b.id)
-                          )
+                        : (storeData.brands || []).filter((b: any) => {
+                            const selectedIds = storeData.customFilterSettings.selectedBrands || []
+                            // Check if primary ID matches OR if any merged ID matches (for deduplicated entities)
+                            return selectedIds.includes(b.id) || 
+                                   (b.ids && b.ids.some((id: string) => selectedIds.includes(id)))
+                          })
                       return availableBrands.map((brand: any) => (
                       <label key={brand.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                         <input
@@ -4425,9 +4436,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               {storeData.customFilteringEnabled && storeData.customFilterSettings?.categoriesEnabled && (() => {
                 const availableCategories = storeData.customFilterSettings.categoriesMode === 'all' 
                   ? storeData.categories || []
-                  : (storeData.categories || []).filter((c: any) => 
-                      (storeData.customFilterSettings.selectedCategories || []).includes(c.id)
-                    )
+                  : (storeData.categories || []).filter((c: any) => {
+                      const selectedIds = storeData.customFilterSettings.selectedCategories || []
+                      // Check if primary ID matches OR if any merged ID matches (for deduplicated entities)
+                      return selectedIds.includes(c.id) || 
+                             (c.ids && c.ids.some((id: string) => selectedIds.includes(id)))
+                    })
                 return availableCategories.length > 0
               })() && (
                 <div>
@@ -4451,9 +4465,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     {(() => {
                       const availableCategories = storeData.customFilterSettings.categoriesMode === 'all' 
                         ? storeData.categories || []
-                        : (storeData.categories || []).filter((c: any) => 
-                            (storeData.customFilterSettings.selectedCategories || []).includes(c.id)
-                          )
+                        : (storeData.categories || []).filter((c: any) => {
+                            const selectedIds = storeData.customFilterSettings.selectedCategories || []
+                            // Check if primary ID matches OR if any merged ID matches (for deduplicated entities)
+                            return selectedIds.includes(c.id) || 
+                                   (c.ids && c.ids.some((id: string) => selectedIds.includes(id)))
+                          })
                       return availableCategories.map((category: any) => (
                         <label key={category.id} className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                           <input
