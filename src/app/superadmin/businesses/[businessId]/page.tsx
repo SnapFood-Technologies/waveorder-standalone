@@ -87,6 +87,7 @@ interface BusinessDetails {
     totalRevenue: number
     totalCustomers: number
     totalProducts: number
+    productsWithoutPhotos?: number
   }
   externalSystemName?: string | null
   externalSystemBaseUrl?: string | null
@@ -596,6 +597,28 @@ export default function BusinessDetailsPage() {
               Storefront Settings
             </h2>
             <div className="space-y-4">
+              {/* Products Without Photos Count Card */}
+              {typeof business.stats.productsWithoutPhotos === 'number' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-900">
+                          {business.stats.productsWithoutPhotos} Product{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          {business.stats.productsWithoutPhotos === 0 
+                            ? 'All products have photos' 
+                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} products are missing images`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Hide Products Without Photos Toggle */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex-1">
                   <h3 className="text-sm font-medium text-gray-900 mb-1">

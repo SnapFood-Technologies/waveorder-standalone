@@ -22,7 +22,49 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        businessType: true,
+        subscriptionPlan: true,
+        subscriptionStatus: true,
+        isActive: true,
+        deactivatedAt: true,
+        deactivationReason: true,
+        currency: true,
+        whatsappNumber: true,
+        address: true,
+        email: true,
+        phone: true,
+        website: true,
+        logo: true,
+        createdAt: true,
+        updatedAt: true,
+        onboardingCompleted: true,
+        setupWizardCompleted: true,
+        createdByAdmin: true,
+        timezone: true,
+        language: true,
+        storefrontLanguage: true,
+        deliveryEnabled: true,
+        pickupEnabled: true,
+        dineInEnabled: true,
+        deliveryFee: true,
+        minimumOrder: true,
+        deliveryRadius: true,
+        estimatedDeliveryTime: true,
+        estimatedPickupTime: true,
+        deliveryTimeText: true,
+        freeDeliveryText: true,
+        hideProductsWithoutPhotos: true,
+        externalSystemName: true,
+        externalSystemBaseUrl: true,
+        externalSystemApiKey: true,
+        externalSystemEndpoints: true,
+        externalBrandIds: true,
+        connectedBusinesses: true,
         users: {
           where: { role: 'OWNER' },
           include: {
@@ -88,6 +130,15 @@ export async function GET(
       })
       .reduce((sum: number, order: any) => sum + order.total, 0)
 
+    // Count products without photos
+    const productsWithoutPhotosCount = await prisma.product.count({
+      where: {
+        businessId: businessId,
+        isActive: true,
+        images: { isEmpty: true }
+      }
+    })
+
     // Get owner info
     const ownerRelation = business.users.find(u => u.role === 'OWNER')
     const owner = ownerRelation?.user
@@ -147,6 +198,7 @@ export async function GET(
         estimatedPickupTime: business.estimatedPickupTime,
         deliveryTimeText: business.deliveryTimeText,
         freeDeliveryText: business.freeDeliveryText,
+        hideProductsWithoutPhotos: business.hideProductsWithoutPhotos,
         externalSystemName: business.externalSystemName,
         externalSystemBaseUrl: business.externalSystemBaseUrl,
         externalSystemApiKey: business.externalSystemApiKey,
@@ -164,7 +216,8 @@ export async function GET(
           totalOrders: business._count.orders,
           totalRevenue,
           totalCustomers: business._count.customers,
-          totalProducts: business._count.products
+          totalProducts: business._count.products,
+          productsWithoutPhotos: productsWithoutPhotosCount
         }
       }
     })
