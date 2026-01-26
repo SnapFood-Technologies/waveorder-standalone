@@ -1739,7 +1739,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [priceMin, setPriceMin] = useState<number | ''>('')
   const [priceMax, setPriceMax] = useState<number | ''>('')
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'stock-desc' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('stock-desc')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
   
   // Custom filtering states
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set())
@@ -3480,19 +3480,17 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         })()}
 
         {/* Sort By Badge */}
-        {sortBy !== 'stock-desc' && (
+        {sortBy !== 'name-asc' && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
             <span className="text-gray-700">
               {translations.sort || 'Sort'}: {
-                sortBy === 'name-asc' ? (translations.sortByNameAsc || 'Name (A-Z)') :
                 sortBy === 'name-desc' ? (translations.sortByNameDesc || 'Name (Z-A)') :
                 sortBy === 'price-asc' ? (translations.sortByPriceAsc || 'Price (Low-High)') :
-                sortBy === 'price-desc' ? (translations.sortByPriceDesc || 'Price (High-Low)') :
-                (translations.sortByStock || 'Stock')
+                (translations.sortByPriceDesc || 'Price (High-Low)')
               }
             </span>
             <button
-              onClick={() => setSortBy('stock-desc')}
+              onClick={() => setSortBy('name-asc')}
               className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
             >
               <X className="w-2.5 h-2.5 text-gray-600" />
@@ -4425,7 +4423,6 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.sortBy || 'Sort By'}</h3>
                 <div className="space-y-2">
                   {[
-                    { value: 'stock-desc', label: translations.sortByStock || 'Stock (Default)' },
                     { value: 'name-asc', label: translations.sortByNameAsc || 'Name (A-Z)' },
                     { value: 'name-desc', label: translations.sortByNameDesc || 'Name (Z-A)' },
                     { value: 'price-asc', label: translations.sortByPriceAsc || 'Price (Low to High)' },
@@ -4459,7 +4456,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   setSelectedCollections(new Set())
                   setSelectedGroups(new Set())
                   setSelectedBrands(new Set())
-                  setSortBy('stock-desc')
+                  setSortBy('name-asc')
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >
