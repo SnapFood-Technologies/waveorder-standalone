@@ -146,13 +146,31 @@ export async function GET(
       productWhere.brandId = { in: brandIds }
     }
 
+    // Stock filter: Only show products with stock > 0 OR products that don't track inventory
+    // For products with variants, we'll check variant stock in post-processing
+    const stockConditions: any[] = [
+      { trackInventory: false }, // Products that don't track inventory always show
+      { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+    ]
+
     // Search filter (name or description)
     if (searchTerm.trim()) {
-      productWhere.OR = [
-        { name: { contains: searchTerm, mode: 'insensitive' } },
-        { description: { contains: searchTerm, mode: 'insensitive' } },
-        { descriptionAl: { contains: searchTerm, mode: 'insensitive' } }
+      // Combine search OR with stock conditions using AND
+      productWhere.AND = [
+        {
+          OR: [
+            { name: { contains: searchTerm, mode: 'insensitive' } },
+            { description: { contains: searchTerm, mode: 'insensitive' } },
+            { descriptionAl: { contains: searchTerm, mode: 'insensitive' } }
+          ]
+        },
+        {
+          OR: stockConditions
+        }
       ]
+    } else {
+      // No search term, just apply stock conditions
+      productWhere.OR = stockConditions
     }
 
     // Build orderBy clause
@@ -233,13 +251,17 @@ export async function GET(
     const isExceptionSlug = exceptionSlugs.includes(slug)
 
     // Transform products
+    // Note: We've already filtered products with 0 stock at the database level
+    // But we still need to check variants since variant stock can't be filtered at DB level easily
     const transformedProducts = products
       .filter((product: any) => {
-        // Filter out products with stock 0
+        // For products with variants, check if any variant has stock
+        if (product.trackInventory && product.variants && product.variants.length > 0) {
+          return product.variants.some((v: any) => v.stock > 0)
+        }
+        // For products without variants, they're already filtered at DB level
+        // But double-check for safety
         if (product.trackInventory) {
-          if (product.variants && product.variants.length > 0) {
-            return product.variants.some((v: any) => v.stock > 0)
-          }
           return product.stock > 0
         }
         return true
