@@ -137,8 +137,30 @@ export async function GET(
 
     // Calculate summary statistics
     const totalOrders = allOrders.length
-    const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0)
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+    
+    // Revenue calculation: Paid orders that are completed/fulfilled
+    // - DELIVERY orders: DELIVERED + PAID (final status)
+    // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
+    // - DINE_IN orders: PICKED_UP + PAID (final status - only when actually picked up)
+    // Excludes CANCELLED and REFUNDED orders
+    const revenueOrders = allOrders.filter(order => {
+      if (order.paymentStatus !== 'PAID') return false
+      if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+      
+      // Order-type specific revenue calculation
+      if (order.type === 'DELIVERY') {
+        return order.status === 'DELIVERED'
+      } else if (order.type === 'PICKUP') {
+        return order.status === 'PICKED_UP'
+      } else if (order.type === 'DINE_IN') {
+        return order.status === 'PICKED_UP'
+      }
+      
+      return false
+    })
+    
+    const totalRevenue = revenueOrders.reduce((sum, order) => sum + order.total, 0)
+    const averageOrderValue = revenueOrders.length > 0 ? totalRevenue / revenueOrders.length : 0
     
     // Status breakdown
     const statusBreakdown = allOrders.reduce((acc, order) => {
