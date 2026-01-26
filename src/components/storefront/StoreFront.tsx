@@ -6160,18 +6160,11 @@ function OrderPanel({
                           + {item.modifiers.map((m: any) => m.name).join(', ')}
                         </p>
                       )}
-                      <div className="flex flex-col gap-1 mt-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold">{currencySymbol}{currentTotalPrice.toFixed(2)}</p>
-                          {hasDiscount && originalTotalPrice && (
-                            <p className="text-xs text-gray-500 line-through">
-                              {currencySymbol}{originalTotalPrice.toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                        {hasDiscount && discountAmount > 0 && (
-                          <p className="text-xs text-green-600 font-medium">
-                            {translations.youSave || 'You save'} {currencySymbol}{discountAmount.toFixed(2)}
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm font-semibold">{currencySymbol}{currentTotalPrice.toFixed(2)}</p>
+                        {hasDiscount && originalTotalPrice && (
+                          <p className="text-xs text-gray-500 line-through">
+                            {currencySymbol}{originalTotalPrice.toFixed(2)}
                           </p>
                         )}
                       </div>

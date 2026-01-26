@@ -142,6 +142,11 @@ export async function GET(
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     const ipAddress = extractIPAddress(request)
+    
+    // Construct actual public URL from headers (not internal fetch URL)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
 
     // Validate slug - reject file extensions and suspicious patterns (bot/scanner protection)
     const invalidPatterns = /\.(php|asp|aspx|jsp|cgi|xml|txt|html|htm|js|css|json|sql|sh|py|rb|pl)$/i
@@ -161,7 +166,7 @@ export async function GET(
         ipAddress,
         userAgent,
         referrer,
-        url: request.url,
+        url: actualUrl,
         metadata: { reason: 'invalid_slug_pattern', slugLength: slug.length }
       })
       
@@ -193,7 +198,7 @@ export async function GET(
         ipAddress,
         userAgent,
         referrer,
-        url: request.url,
+        url: actualUrl,
         metadata: { reason: 'business_not_found', slug }
       })
       
@@ -450,7 +455,7 @@ export async function GET(
         ipAddress,
         userAgent,
         referrer,
-        url: request.url,
+        url: actualUrl,
         metadata: { phase: 'initial_products_fetch' }
       })
       
@@ -606,7 +611,7 @@ export async function GET(
           ipAddress,
           userAgent,
           referrer,
-          url: request.url,
+          url: actualUrl,
           metadata: { 
             hasConnections: hasConnections,
             categoriesCount: business.categories?.length || 0,
@@ -931,6 +936,11 @@ export async function GET(
     const referrer = request.headers.get('referer') || undefined
     const ipAddress = extractIPAddress(request)
     
+    // Construct actual public URL from headers (not internal fetch URL)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+    
     // Check if it's a Prisma connection error
     if (error instanceof Error) {
       // Prisma connection errors - check for all known patterns
@@ -959,7 +969,7 @@ export async function GET(
           ipAddress,
           userAgent,
           referrer,
-          url: request.url,
+          url: actualUrl,
           metadata: { 
             errorType: 'prisma_connection_error',
             isSuspiciousSlug,
@@ -978,7 +988,7 @@ export async function GET(
             },
             extra: {
               slug,
-              url: request.url,
+              url: actualUrl,
             },
           })
         }
@@ -1004,7 +1014,7 @@ export async function GET(
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: { errorType: 'general_error' }
     })
     
@@ -1017,7 +1027,7 @@ export async function GET(
       },
       extra: {
         slug,
-        url: request.url,
+        url: actualUrl,
       },
     })
     
