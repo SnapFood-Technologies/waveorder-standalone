@@ -22,49 +22,7 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        businessType: true,
-        subscriptionPlan: true,
-        subscriptionStatus: true,
-        isActive: true,
-        deactivatedAt: true,
-        deactivationReason: true,
-        currency: true,
-        whatsappNumber: true,
-        address: true,
-        email: true,
-        phone: true,
-        website: true,
-        logo: true,
-        createdAt: true,
-        updatedAt: true,
-        onboardingCompleted: true,
-        setupWizardCompleted: true,
-        createdByAdmin: true,
-        timezone: true,
-        language: true,
-        storefrontLanguage: true,
-        deliveryEnabled: true,
-        pickupEnabled: true,
-        dineInEnabled: true,
-        deliveryFee: true,
-        minimumOrder: true,
-        deliveryRadius: true,
-        estimatedDeliveryTime: true,
-        estimatedPickupTime: true,
-        deliveryTimeText: true,
-        freeDeliveryText: true,
-        hideProductsWithoutPhotos: true,
-        externalSystemName: true,
-        externalSystemBaseUrl: true,
-        externalSystemApiKey: true,
-        externalSystemEndpoints: true,
-        externalBrandIds: true,
-        connectedBusinesses: true,
+      include: {
         users: {
           where: { role: 'OWNER' },
           include: {
@@ -112,7 +70,7 @@ export async function GET(
     }
 
     // Calculate total revenue (only paid orders that are completed/fulfilled)
-    const totalRevenue = business.orders
+    const totalRevenue = (business as any).orders
       .filter((order: any) => {
         if (order.paymentStatus !== 'PAID') return false
         if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
@@ -130,17 +88,122 @@ export async function GET(
       })
       .reduce((sum: number, order: any) => sum + order.total, 0)
 
-    // Count products without photos
-    const productsWithoutPhotosCount = await prisma.product.count({
-      where: {
-        businessId: businessId,
-        isActive: true,
-        images: { isEmpty: true }
-      }
-    })
+    // Count products by various filter criteria
+    const [
+      productsWithoutPhotosCount,
+      productsWithZeroPriceCount,
+      productsOutOfStockCount,
+      productsWithVariantsAllZeroStockCount,
+      productsWithVariantsSomeZeroStockCount,
+      productsWithVariantsAllNonZeroStockCount
+    ] = await Promise.all([
+      // Products without photos
+      prisma.product.count({
+        where: {
+          businessId: businessId,
+          isActive: true,
+          images: { isEmpty: true }
+        }
+      }),
+      // Products with zero price
+      prisma.product.count({
+        where: {
+          businessId: businessId,
+          isActive: true,
+          price: { lte: 0 }
+        }
+      }),
+      // Products out of stock (no variants, trackInventory = true, stock <= 0)
+      prisma.product.count({
+        where: {
+          businessId: businessId,
+          isActive: true,
+          trackInventory: true,
+          stock: { lte: 0 },
+          variants: { none: {} } // No variants
+        }
+      }),
+      // Products with variants where ALL variants have stock = 0
+      (async () => {
+        const productsWithVariants = await prisma.product.findMany({
+          where: {
+            businessId: businessId,
+            isActive: true,
+            trackInventory: true,
+            variants: { some: {} } // Has variants
+          },
+          select: {
+            id: true,
+            variants: {
+              select: {
+                stock: true
+              }
+            }
+          }
+        })
+        
+        // Count products where all variants have stock = 0
+        return productsWithVariants.filter(product => 
+          product.variants.length > 0 && 
+          product.variants.every(v => v.stock === 0)
+        ).length
+      })(),
+      // Products with variants where SOME variants have stock = 0 (but not all)
+      (async () => {
+        const productsWithVariants = await prisma.product.findMany({
+          where: {
+            businessId: businessId,
+            isActive: true,
+            trackInventory: true,
+            variants: { some: {} } // Has variants
+          },
+          select: {
+            id: true,
+            variants: {
+              select: {
+                stock: true
+              }
+            }
+          }
+        })
+        
+        // Count products where at least one variant has stock = 0, but not all
+        return productsWithVariants.filter(product => {
+          if (product.variants.length === 0) return false
+          const hasZeroStock = product.variants.some(v => v.stock === 0)
+          const allZeroStock = product.variants.every(v => v.stock === 0)
+          return hasZeroStock && !allZeroStock
+        }).length
+      })(),
+      // Products with variants where ALL variants have stock > 0
+      (async () => {
+        const productsWithVariants = await prisma.product.findMany({
+          where: {
+            businessId: businessId,
+            isActive: true,
+            trackInventory: true,
+            variants: { some: {} } // Has variants
+          },
+          select: {
+            id: true,
+            variants: {
+              select: {
+                stock: true
+              }
+            }
+          }
+        })
+        
+        // Count products where all variants have stock > 0
+        return productsWithVariants.filter(product => 
+          product.variants.length > 0 && 
+          product.variants.every(v => v.stock > 0)
+        ).length
+      })()
+    ])
 
     // Get owner info
-    const ownerRelation = business.users.find(u => u.role === 'OWNER')
+    const ownerRelation = (business as any).users.find((u: any) => u.role === 'OWNER')
     const owner = ownerRelation?.user
     let authMethod: 'google' | 'email' | 'magic-link' | 'oauth' = 'email'
     if (owner?.accounts && owner.accounts.length > 0) {
@@ -198,7 +261,7 @@ export async function GET(
         estimatedPickupTime: business.estimatedPickupTime,
         deliveryTimeText: business.deliveryTimeText,
         freeDeliveryText: business.freeDeliveryText,
-        hideProductsWithoutPhotos: business.hideProductsWithoutPhotos,
+        hideProductsWithoutPhotos: (business as any).hideProductsWithoutPhotos,
         externalSystemName: business.externalSystemName,
         externalSystemBaseUrl: business.externalSystemBaseUrl,
         externalSystemApiKey: business.externalSystemApiKey,
@@ -213,11 +276,16 @@ export async function GET(
           authMethod
         } : null,
         stats: {
-          totalOrders: business._count.orders,
+          totalOrders: (business as any)._count.orders,
           totalRevenue,
-          totalCustomers: business._count.customers,
-          totalProducts: business._count.products,
-          productsWithoutPhotos: productsWithoutPhotosCount
+          totalCustomers: (business as any)._count.customers,
+          totalProducts: (business as any)._count.products,
+          productsWithoutPhotos: productsWithoutPhotosCount,
+          productsWithZeroPrice: productsWithZeroPriceCount,
+          productsOutOfStock: productsOutOfStockCount,
+          productsWithVariantsAllZeroStock: productsWithVariantsAllZeroStockCount,
+          productsWithVariantsSomeZeroStock: productsWithVariantsSomeZeroStockCount,
+          productsWithVariantsAllNonZeroStock: productsWithVariantsAllNonZeroStockCount
         }
       }
     })

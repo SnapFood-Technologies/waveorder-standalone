@@ -88,6 +88,11 @@ interface BusinessDetails {
     totalCustomers: number
     totalProducts: number
     productsWithoutPhotos?: number
+    productsWithZeroPrice?: number
+    productsOutOfStock?: number
+    productsWithVariantsAllZeroStock?: number
+    productsWithVariantsSomeZeroStock?: number
+    productsWithVariantsAllNonZeroStock?: number
   }
   externalSystemName?: string | null
   externalSystemBaseUrl?: string | null
@@ -597,17 +602,18 @@ export default function BusinessDetailsPage() {
               Storefront Settings
             </h2>
             <div className="space-y-4">
-              {/* Products Without Photos Count Card */}
-              {typeof business.stats.productsWithoutPhotos === 'number' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
+              {/* Product Filtering Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Products Without Photos Count Card */}
+                {typeof business.stats.productsWithoutPhotos === 'number' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
-                      <AlertTriangle className="w-5 h-5 text-amber-600" />
-                      <div>
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <div className="flex-1">
                         <p className="text-sm font-semibold text-amber-900">
                           {business.stats.productsWithoutPhotos} Product{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
                         </p>
-                        <p className="text-xs text-amber-700">
+                        <p className="text-xs text-amber-700 mt-1">
                           {business.stats.productsWithoutPhotos === 0 
                             ? 'All products have photos' 
                             : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} products are missing images`}
@@ -615,8 +621,93 @@ export default function BusinessDetailsPage() {
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Products With Zero Price Count Card */}
+                {typeof business.stats.productsWithZeroPrice === 'number' && business.stats.productsWithZeroPrice > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-900">
+                          {business.stats.productsWithZeroPrice} Product{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
+                        </p>
+                        <p className="text-xs text-red-700 mt-1">
+                          {business.stats.productsWithZeroPrice} of {business.stats.totalProducts} products have price ≤ 0
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products Out Of Stock (No Variants) Count Card */}
+                {typeof business.stats.productsOutOfStock === 'number' && business.stats.productsOutOfStock > 0 && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-orange-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-orange-900">
+                          {business.stats.productsOutOfStock} Product{business.stats.productsOutOfStock !== 1 ? 's' : ''} Out Of Stock
+                        </p>
+                        <p className="text-xs text-orange-700 mt-1">
+                          {business.stats.productsOutOfStock} products (no variants) have stock ≤ 0
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products With Variants - All Zero Stock Count Card */}
+                {typeof business.stats.productsWithVariantsAllZeroStock === 'number' && business.stats.productsWithVariantsAllZeroStock > 0 && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-purple-900">
+                          {business.stats.productsWithVariantsAllZeroStock} Product{business.stats.productsWithVariantsAllZeroStock !== 1 ? 's' : ''} With All Variants Zero Stock
+                        </p>
+                        <p className="text-xs text-purple-700 mt-1">
+                          {business.stats.productsWithVariantsAllZeroStock} products have all variants with stock = 0
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products With Variants - Some Zero Stock Count Card */}
+                {typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && business.stats.productsWithVariantsSomeZeroStock > 0 && (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <Package className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-indigo-900">
+                          {business.stats.productsWithVariantsSomeZeroStock} Product{business.stats.productsWithVariantsSomeZeroStock !== 1 ? 's' : ''} With Some Variants Zero Stock
+                        </p>
+                        <p className="text-xs text-indigo-700 mt-1">
+                          {business.stats.productsWithVariantsSomeZeroStock} products have some variants with stock = 0 (but not all)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products With Variants - All Non-Zero Stock Count Card */}
+                {typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && business.stats.productsWithVariantsAllNonZeroStock > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-green-900">
+                          {business.stats.productsWithVariantsAllNonZeroStock} Product{business.stats.productsWithVariantsAllNonZeroStock !== 1 ? 's' : ''} With All Variants In Stock
+                        </p>
+                        <p className="text-xs text-green-700 mt-1">
+                          {business.stats.productsWithVariantsAllNonZeroStock} products have all variants with stock &gt; 0
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               
               {/* Hide Products Without Photos Toggle */}
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
