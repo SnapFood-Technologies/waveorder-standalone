@@ -89,21 +89,38 @@ export async function GET(
 
     // Get all orders for the originator business that contain products from the vendor
     // We need to fetch orders and filter by checking if any item's product belongs to vendor
+    const whereClause: any = {
+      businessId: businessId,
+      createdAt: { gte: startDate }
+    }
+
+    if (status && status !== 'all') {
+      // Validate status is a valid OrderStatus enum value
+      const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+      if (validStatuses.includes(status)) {
+        whereClause.status = status
+      }
+    }
+
+    if (type && type !== 'all') {
+      // Validate type is a valid OrderType enum value
+      const validTypes = ['DELIVERY', 'PICKUP', 'DINE_IN']
+      if (validTypes.includes(type)) {
+        whereClause.type = type
+      }
+    }
+
+    if (search.trim()) {
+      whereClause.OR = [
+        { orderNumber: { contains: search.trim(), mode: 'insensitive' } },
+        { customerName: { contains: search.trim(), mode: 'insensitive' } },
+        { customer: { name: { contains: search.trim(), mode: 'insensitive' } } },
+        { customer: { phone: { contains: search.trim() } } }
+      ]
+    }
+
     const allOrders = await prisma.order.findMany({
-      where: {
-        businessId: businessId,
-        createdAt: { gte: startDate },
-        ...(status && status !== 'all' ? { status } : {}),
-        ...(type && type !== 'all' ? { type } : {}),
-        ...(search.trim() ? {
-          OR: [
-            { orderNumber: { contains: search.trim(), mode: 'insensitive' } },
-            { customerName: { contains: search.trim(), mode: 'insensitive' } },
-            { customer: { name: { contains: search.trim(), mode: 'insensitive' } } },
-            { customer: { phone: { contains: search.trim() } } }
-          ]
-        } : {})
-      },
+      where: whereClause,
       include: {
         items: {
           include: {
