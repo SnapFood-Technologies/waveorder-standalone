@@ -479,6 +479,8 @@ export default function SystemLogsPage() {
                     </>
                   ))}
                 </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
