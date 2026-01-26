@@ -3566,8 +3566,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   }
                   
                   // Check if this is a special styled item for bybest-shop
-                  const isUlje = storeData.slug === 'bybest-shop' && (item.nameAl || item.name || '').toUpperCase().includes('ULJE')
-                  const isEkspoloroniOfertat = storeData.slug === 'bybest-shop' && (item.nameAl || item.name || '').toUpperCase().includes('EKSPLORON')
+                  const nameAlUpper = (item.nameAl || '').toUpperCase()
+                  const nameUpper = (item.name || '').toUpperCase()
+                  
+                  const isUlje = storeData.slug === 'bybest-shop' && (nameAlUpper.includes('ULJE') || nameUpper.includes('SALE'))
+                  const isEkspoloroniOfertat = storeData.slug === 'bybest-shop' && (
+                    nameAlUpper.includes('EKSPLORON') || 
+                    nameAlUpper.includes('OFERTAT') || 
+                    nameUpper.includes('EXPLORE') || 
+                    nameUpper.includes('OFFER')
+                  )
                   
                   return (
                     <button
@@ -3613,13 +3621,20 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           : isEkspoloroniOfertat 
                             ? '#B91C1C' // dark red for Ekspoloroni Ofertat
                             : isUlje 
-                              ? '#DC2626' // red for Ulje
+                              ? '#B91C1C' // red for Ulje
                               : undefined,
                         borderBottomColor: selectedMenuItem === item.id ? primaryColor : 'transparent'
                       }}
                     >
                       {displayName}
-                      {isEkspoloroniOfertat && <Zap className="h-3.5 w-3.5 ml-0.5" fill="currentColor" />}
+                      {isEkspoloroniOfertat && (
+                        <Zap 
+                          className="h-3.5 w-3.5 ml-1" 
+                          fill="#B91C1C" 
+                          stroke="#B91C1C"
+                          strokeWidth={2}
+                        />
+                      )}
                       {item.type === 'link' && <ExternalLink className="h-3 w-3" />}
                     </button>
                   )

@@ -37,7 +37,7 @@ export async function GET(
       : [businessId]
 
     // Fetch all available entities in parallel
-    const [categories, collections, groups, brands] = await Promise.all([
+    const [categoriesRaw, collectionsRaw, groupsRaw, brandsRaw] = await Promise.all([
       prisma.category.findMany({
         where: {
           businessId: hasConnections ? { in: businessIds } : businessId,
@@ -71,6 +71,34 @@ export async function GET(
         orderBy: { name: 'asc' }
       })
     ])
+
+    // Deduplicate entities by name for originators (merge entities with same name from different businesses)
+    const deduplicateByName = <T extends { id: string; name: string; nameAl?: string | null }>(entities: T[]): T[] => {
+      if (!hasConnections || entities.length === 0) return entities
+      
+      const nameMap = new Map<string, T & { ids: string[] }>()
+      
+      entities.forEach(entity => {
+        // Use name as the key for deduplication (case-insensitive)
+        const key = entity.name.toLowerCase()
+        
+        if (nameMap.has(key)) {
+          // Merge: add this entity's ID to the ids array
+          const existing = nameMap.get(key)!
+          existing.ids.push(entity.id)
+        } else {
+          // First occurrence: create new entry with ids array
+          nameMap.set(key, { ...entity, ids: [entity.id] })
+        }
+      })
+      
+      return Array.from(nameMap.values())
+    }
+
+    const categories = deduplicateByName(categoriesRaw)
+    const collections = deduplicateByName(collectionsRaw)
+    const groups = deduplicateByName(groupsRaw)
+    const brands = deduplicateByName(brandsRaw)
 
     return NextResponse.json({
       categories,
