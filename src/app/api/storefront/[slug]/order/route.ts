@@ -1708,6 +1708,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           variantId: item.variantId || null,
           quantity: item.quantity,
           price: item.price,
+          originalPrice: (item as any).originalPrice || null,
           modifiers: modifierIds
         }
       })
@@ -1845,6 +1846,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             name: item.product.name,
             quantity: item.quantity,
             price: item.price,
+            originalPrice: (item as any).originalPrice || null,
             variant: item.variant?.name || null
           })),
           postalPricingDetails: postalPricingDetails,

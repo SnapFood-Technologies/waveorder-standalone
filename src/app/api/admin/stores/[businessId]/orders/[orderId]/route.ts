@@ -238,6 +238,7 @@ export async function GET(
           id: item.id,
           quantity: item.quantity,
           price: item.price,
+          originalPrice: (item as any).originalPrice || null,
           modifiers: modifierDetails,
           product: item.product,
           variant: item.variant
@@ -660,10 +661,11 @@ export async function PUT(
               language: updatedOrder.business.language || 'en',
               translateContentToBusinessLanguage: updatedOrder.business.translateContentToBusinessLanguage ?? true,
               businessType: updatedOrder.business.businessType || undefined,
-              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number }) => ({
+              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number; originalPrice?: number | null }) => ({
                 name: item.product.name,
                 quantity: item.quantity,
                 price: item.price,
+                originalPrice: item.originalPrice || null,
                 variant: item.variant?.name || null
               })),
               postalPricingDetails: postalPricingDetails,
@@ -728,11 +730,12 @@ export async function PUT(
                 name: updatedOrder.customer.name,
                 phone: updatedOrder.customer.phone
               },
-              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number }) => ({
+              items: updatedOrder.items.map((item: { product: { name: string }; variant: { name: string } | null; quantity: number; price: number; originalPrice?: number | null }) => ({
                 product: { name: item.product.name },
                 variant: item.variant ? { name: item.variant.name } : null,
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                originalPrice: item.originalPrice || null
               })),
               businessId: businessId
             },

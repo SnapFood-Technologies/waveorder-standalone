@@ -441,15 +441,16 @@ export async function POST(
         }, { status: 400 })
       }
 
-      let itemPrice = item.variantId ? 
-        product.variants.find(v => v.id === item.variantId)?.price || product.price : 
-        product.price
+      const selectedVariant = item.variantId ? product.variants.find(v => v.id === item.variantId) : null
+      let itemPrice = selectedVariant?.price || product.price
+      let itemOriginalPrice = selectedVariant?.originalPrice || product.originalPrice || null
 
       if (item.modifiers && item.modifiers.length > 0) {
         for (const modifierId of item.modifiers) {
           const modifier = product.modifiers.find(m => m.id === modifierId)
           if (modifier) {
             itemPrice += modifier.price
+            // Note: modifiers don't have originalPrice, so we only add to the current price
           }
         }
       }
@@ -462,6 +463,7 @@ export async function POST(
         variantId: item.variantId || null,
         quantity: item.quantity,
         price: itemPrice,
+        originalPrice: itemOriginalPrice,
         modifiers: item.modifiers || []
       })
     }

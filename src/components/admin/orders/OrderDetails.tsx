@@ -56,6 +56,7 @@ interface OrderItem {
   id: string
   quantity: number
   price: number
+  originalPrice?: number | null
   modifiers: Array<{
     id: string
     name: string
@@ -1339,9 +1340,24 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   <div className="text-right flex-shrink-0">
                     <div className="text-sm font-medium text-gray-900">
                       {item.quantity} × {formatCurrency(item.price)}
+                      {item.originalPrice && item.originalPrice > item.price && (
+                        <span className="text-xs text-gray-500 line-through ml-2">
+                          {formatCurrency(item.originalPrice)}
+                        </span>
+                      )}
                     </div>
                     <div className="text-lg font-bold text-gray-900">
                       {formatCurrency(item.quantity * item.price)}
+                      {item.originalPrice && item.originalPrice > item.price && (
+                        <>
+                          <span className="text-xs text-gray-500 line-through ml-2">
+                            {formatCurrency(item.quantity * item.originalPrice)}
+                          </span>
+                          <span className="text-xs text-green-600 font-medium ml-2">
+                            -{formatCurrency(item.quantity * (item.originalPrice - item.price))}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

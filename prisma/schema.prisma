@@ -863,9 +863,10 @@ model Order {
 }
 
 model OrderItem {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  quantity Int
-  price    Float
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  quantity      Int
+  price         Float
+  originalPrice Float?  // Original price before discount (if applicable)
 
   orderId   String  @db.ObjectId
   productId String  @db.ObjectId

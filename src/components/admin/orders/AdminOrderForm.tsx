@@ -30,6 +30,7 @@ interface Product {
   id: string
   name: string
   price: number
+  originalPrice?: number | null
   stock: number
   images: string[]
   variants?: ProductVariant[]
@@ -40,6 +41,7 @@ interface ProductVariant {
   id: string
   name: string
   price: number
+  originalPrice?: number | null
   stock: number
 }
 
@@ -55,6 +57,7 @@ interface CartItem {
   variantId?: string
   quantity: number
   price: number
+  originalPrice?: number | null
   name: string
   modifiers: string[]
 }
@@ -345,6 +348,7 @@ function ProductSearch({
     if (!selectedProduct) return
 
     const basePrice = selectedVariant ? selectedVariant.price : selectedProduct.price
+    const baseOriginalPrice = selectedVariant ? selectedVariant.originalPrice : selectedProduct.originalPrice
     const modifierPrices = selectedModifiers.reduce((sum, modifierId) => {
       const modifier = selectedProduct.modifiers?.find(m => m.id === modifierId)
       return sum + (modifier?.price || 0)
@@ -355,6 +359,7 @@ function ProductSearch({
       variantId: selectedVariant?.id,
       quantity,
       price: (basePrice + modifierPrices) * quantity,
+      originalPrice: baseOriginalPrice ? (baseOriginalPrice + modifierPrices) * quantity : null,
       name: selectedVariant ? `${selectedProduct.name} - ${selectedVariant.name}` : selectedProduct.name,
       modifiers: selectedModifiers
     }
@@ -405,7 +410,19 @@ function ProductSearch({
               )}
               <div className="flex-1">
                 <div className="font-medium">{product.name}</div>
-                <div className="text-sm text-gray-600">{formatCurrency(product.price)}</div>
+                <div className="text-sm text-gray-600">
+                  {formatCurrency(product.price)}
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <>
+                      <span className="text-xs text-gray-500 line-through ml-2">
+                        {formatCurrency(product.originalPrice)}
+                      </span>
+                      <span className="text-xs text-green-600 font-medium ml-2">
+                        -{formatCurrency(product.originalPrice - product.price)}
+                      </span>
+                    </>
+                  )}
+                </div>
                 <div className="text-xs text-gray-500">Stock: {product.stock}</div>
               </div>
             </button>
@@ -425,8 +442,20 @@ function ProductSearch({
             )}
             <div>
               <h3 className="font-medium">{selectedProduct.name}</h3>
-              <p className="text-sm text-gray-600">{formatCurrency(selectedProduct.price)}</p>
-              </div>
+              <p className="text-sm text-gray-600">
+                {formatCurrency(selectedProduct.price)}
+                {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
+                  <>
+                    <span className="text-xs text-gray-500 line-through ml-2">
+                      {formatCurrency(selectedProduct.originalPrice)}
+                    </span>
+                    <span className="text-xs text-green-600 font-medium ml-2">
+                      -{formatCurrency(selectedProduct.originalPrice - selectedProduct.price)}
+                    </span>
+                  </>
+                )}
+              </p>
+            </div>
           </div>
 
           {selectedProduct.variants && selectedProduct.variants.length > 0 && (
@@ -446,6 +475,7 @@ function ProductSearch({
                 {selectedProduct.variants.map((variant) => (
                   <option key={variant.id} value={variant.id}>
                     {variant.name} - {formatCurrency(variant.price)}
+                    {variant.originalPrice && variant.originalPrice > variant.price ? ` (was ${formatCurrency(variant.originalPrice)})` : ''}
                   </option>
                 ))}
               </select>
@@ -1150,7 +1180,19 @@ export default function AdminOrderForm({
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{formatCurrency(item.price)}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {formatCurrency(item.price)}
+                        {item.originalPrice && item.originalPrice > item.price && (
+                          <>
+                            <span className="text-xs text-gray-500 line-through ml-2">
+                              {formatCurrency(item.originalPrice)}
+                            </span>
+                            <span className="text-xs text-green-600 font-medium ml-2">
+                              -{formatCurrency(item.originalPrice - item.price)}
+                            </span>
+                          </>
+                        )}
+                      </p>
                       <button
                         onClick={() => removeFromCart(index)}
                         className="text-xs text-red-600 hover:text-red-800"

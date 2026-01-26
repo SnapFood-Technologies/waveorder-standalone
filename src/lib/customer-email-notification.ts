@@ -24,6 +24,7 @@ interface CustomerOrderData {
     name: string
     quantity: number
     price: number
+    originalPrice?: number | null
     variant?: string | null
   }[]
   // For RETAIL businesses
@@ -427,7 +428,15 @@ function createCustomerOrderStatusEmail({
                 ${item.variant ? `<p style="margin: 0; font-size: 12px; color: #6b7280;">${item.variant}</p>` : ''}
               </div>
               <div>
-                <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatCurrency(item.price)}</p>
+                ${item.originalPrice && item.originalPrice > item.price ? `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">
+                    ${formatCurrency(item.price)}
+                    <span style="text-decoration: line-through; color: #6b7280; font-size: 14px; margin-left: 8px;">${formatCurrency(item.originalPrice)}</span>
+                    <span style="color: #059669; font-size: 12px; margin-left: 8px;">-${formatCurrency(item.originalPrice - item.price)}</span>
+                  </p>
+                ` : `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatCurrency(item.price)}</p>
+                `}
               </div>
             </div>
           </div>
@@ -617,7 +626,15 @@ function createCustomerOrderPlacedEmail({
                 ${item.variant ? `<p style="margin: 0; font-size: 12px; color: #6b7280;">${item.variant}</p>` : ''}
               </div>
               <div>
-                <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatCurrency(item.price)}</p>
+                ${item.originalPrice && item.originalPrice > item.price ? `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">
+                    ${formatCurrency(item.price)}
+                    <span style="text-decoration: line-through; color: #6b7280; font-size: 14px; margin-left: 8px;">${formatCurrency(item.originalPrice)}</span>
+                    <span style="color: #059669; font-size: 12px; margin-left: 8px;">-${formatCurrency(item.originalPrice - item.price)}</span>
+                  </p>
+                ` : `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatCurrency(item.price)}</p>
+                `}
               </div>
             </div>
           </div>
