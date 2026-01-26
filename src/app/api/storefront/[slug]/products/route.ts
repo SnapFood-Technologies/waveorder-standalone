@@ -56,7 +56,8 @@ export async function GET(
         id: true,
         language: true,
         storefrontLanguage: true,
-        connectedBusinesses: true
+        connectedBusinesses: true,
+        hideProductsWithoutPhotos: true
       }
     }) as any
 
@@ -129,6 +130,13 @@ export async function GET(
       businessId: hasConnections ? { in: businessIds } : business.id,
       isActive: true,
       price: { gt: 0 }
+    }
+
+    // Exclude products without photos if setting is enabled
+    if (business.hideProductsWithoutPhotos) {
+      productWhere.images = {
+        isEmpty: false
+      }
     }
 
     // Category filter

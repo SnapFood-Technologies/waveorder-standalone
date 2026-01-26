@@ -64,6 +64,7 @@ interface BusinessDetails {
   timezone?: string
   language?: string
   storefrontLanguage?: string
+  hideProductsWithoutPhotos?: boolean
   deliveryEnabled?: boolean
   pickupEnabled?: boolean
   dineInEnabled?: boolean
@@ -225,6 +226,30 @@ export default function BusinessDetailsPage() {
       )
     }
     return <Building2 className="w-8 h-8 text-gray-600" />
+  }
+
+  const toggleHideProductsWithoutPhotos = async () => {
+    if (!business) return
+    
+    try {
+      const response = await fetch(`/api/superadmin/businesses/${businessId}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hideProductsWithoutPhotos: !business.hideProductsWithoutPhotos
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setBusiness(data.business)
+      } else {
+        alert('Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling setting:', error)
+      alert('Failed to update setting')
+    }
   }
 
   if (loading) {
@@ -560,6 +585,38 @@ export default function BusinessDetailsPage() {
                   </p>
                   <p className="text-xs text-gray-500">Setup Wizard</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Storefront Settings */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-teal-600" />
+              Storefront Settings
+            </h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">
+                    Hide Products Without Photos
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Products without images will be excluded from storefront listings and filters
+                  </p>
+                </div>
+                <button
+                  onClick={toggleHideProductsWithoutPhotos}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    business.hideProductsWithoutPhotos ? 'bg-teal-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      business.hideProductsWithoutPhotos ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
             </div>
           </div>

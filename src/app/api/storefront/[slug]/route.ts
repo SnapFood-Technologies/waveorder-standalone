@@ -221,7 +221,10 @@ export async function GET(
               where: {
                 businessId: hasConnections ? { in: businessIds } : business.id,
                 isActive: true,
-                price: { gt: 0 }
+                price: { gt: 0 },
+                ...(business.hideProductsWithoutPhotos && {
+                  images: { isEmpty: false }
+                })
               }
             }
           }
@@ -240,6 +243,13 @@ export async function GET(
         businessId: hasConnections ? { in: businessIds } : business.id,
         isActive: true,
         price: { gt: 0 }
+      }
+
+      // Exclude products without photos if setting is enabled
+      if (business.hideProductsWithoutPhotos) {
+        productWhere.images = {
+          isEmpty: false
+        }
       }
 
       // Fetch more products initially to account for stock filtering

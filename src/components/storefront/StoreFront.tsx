@@ -4381,7 +4381,24 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           style={{ accentColor: primaryColor }}
                         />
                         <span className="ml-3 text-sm text-gray-700">
-                          {storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name}
+                          {(() => {
+                            let displayName = storeData.storefrontLanguage === 'sq' && group.nameAl ? group.nameAl : group.name
+                            
+                            // Transform to proper case for bybest-shop
+                            if (storeData.slug === 'bybest-shop') {
+                              const nameToCheck = (group.nameAl || group.name || '').toUpperCase()
+                              
+                              if (nameToCheck === 'DHURATA') displayName = 'Dhurata'
+                              else if (nameToCheck === 'ULJE') displayName = 'Ulje'
+                              else if (nameToCheck === 'SHTËPI' || nameToCheck === 'SHTEPI') displayName = 'Shtëpia'
+                              else if (nameToCheck === 'FËMIJË' || nameToCheck === 'FEMIJE') displayName = 'Fëmijë'
+                              else if (nameToCheck === 'VAJZA & GRA') displayName = 'Vajza & Gra'
+                              else if (nameToCheck === 'MESHKUJ') displayName = 'Meshkuj'
+                              else if (nameToCheck === 'EKSPOLORONI OFERTAT' || nameToCheck.includes('EKSPLORON')) displayName = 'Ekspoloroni Ofertat'
+                            }
+                            
+                            return displayName
+                          })()}
                         </span>
                       </label>
                       ))
