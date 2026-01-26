@@ -32,7 +32,8 @@ import {
   Filter,
   SlidersHorizontal,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Zap
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -3546,53 +3547,83 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   {translations.all || 'All'}
                 </button>
                 
-                {(storeData.customMenuItems as any[]).filter(item => item.isActive).map((item: any) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      if (item.type === 'link' && item.url) {
-                        window.open(item.url, '_blank')
-                      } else {
-                        // Set filtering state immediately for better UX
-                        if (products.length > 0) {
-                          setIsFiltering(true)
+                {(storeData.customMenuItems as any[]).filter(item => item.isActive).map((item: any) => {
+                  // Get the display name
+                  let displayName = storeData.storefrontLanguage === 'sq' && item.nameAl ? item.nameAl : item.name
+                  
+                  // Transform to proper case for bybest-shop
+                  if (storeData.slug === 'bybest-shop') {
+                    const nameToCheck = (item.nameAl || item.name || '').toUpperCase()
+                    
+                    if (nameToCheck === 'DHURATA') displayName = 'Dhurata'
+                    else if (nameToCheck === 'ULJE') displayName = 'Ulje'
+                    else if (nameToCheck === 'SHTËPI' || nameToCheck === 'SHTEPI') displayName = 'Shtëpia'
+                    else if (nameToCheck === 'FËMIJË' || nameToCheck === 'FEMIJE') displayName = 'Fëmijë'
+                    else if (nameToCheck === 'VAJZA & GRA') displayName = 'Vajza & Gra'
+                    else if (nameToCheck === 'MESHKUJ') displayName = 'Meshkuj'
+                    else if (nameToCheck === 'EKSPOLORONI OFERTAT') displayName = 'Ekspoloroni Ofertat'
+                    else if (nameToCheck.includes('EKSPLORON')) displayName = 'Ekspoloroni Ofertat'
+                  }
+                  
+                  // Check if this is a special styled item for bybest-shop
+                  const isUlje = storeData.slug === 'bybest-shop' && (item.nameAl || item.name || '').toUpperCase().includes('ULJE')
+                  const isEkspoloroniOfertat = storeData.slug === 'bybest-shop' && (item.nameAl || item.name || '').toUpperCase().includes('EKSPLORON')
+                  
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (item.type === 'link' && item.url) {
+                          window.open(item.url, '_blank')
+                        } else {
+                          // Set filtering state immediately for better UX
+                          if (products.length > 0) {
+                            setIsFiltering(true)
+                          }
+                          setSelectedMenuItem(item.id)
+                          setSearchTerm('')
+                          setDebouncedSearchTerm('')
+                          
+                          // Clear all filters first
+                          setSelectedCollections(new Set())
+                          setSelectedGroups(new Set())
+                          setSelectedBrands(new Set())
+                          setSelectedSubCategory(null)
+                          
+                          // Apply filter based on type
+                          if (item.type === 'category') {
+                            setSelectedCategory(item.targetId)
+                          } else if (item.type === 'collection') {
+                            setSelectedCategory('all')
+                            setSelectedCollections(new Set([item.targetId]))
+                          } else if (item.type === 'group') {
+                            setSelectedCategory('all')
+                            setSelectedGroups(new Set([item.targetId]))
+                          }
                         }
-                        setSelectedMenuItem(item.id)
-                        setSearchTerm('')
-                        setDebouncedSearchTerm('')
-                        
-                        // Clear all filters first
-                        setSelectedCollections(new Set())
-                        setSelectedGroups(new Set())
-                        setSelectedBrands(new Set())
-                        setSelectedSubCategory(null)
-                        
-                        // Apply filter based on type
-                        if (item.type === 'category') {
-                          setSelectedCategory(item.targetId)
-                        } else if (item.type === 'collection') {
-                          setSelectedCategory('all')
-                          setSelectedCollections(new Set([item.targetId]))
-                        } else if (item.type === 'group') {
-                          setSelectedCategory('all')
-                          setSelectedGroups(new Set([item.targetId]))
-                        }
-                      }
-                    }}
-                    className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative inline-flex items-center gap-1 ${
-                      selectedMenuItem === item.id
-                        ? 'border-b-2'
-                        : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
-                    }`}
-                    style={{ 
-                      color: selectedMenuItem === item.id ? primaryColor : undefined,
-                      borderBottomColor: selectedMenuItem === item.id ? primaryColor : 'transparent'
-                    }}
-                  >
-                    {storeData.storefrontLanguage === 'sq' && item.nameAl ? item.nameAl : item.name}
-                    {item.type === 'link' && <ExternalLink className="h-3 w-3" />}
-                  </button>
-                ))}
+                      }}
+                      className={`px-5 py-3 font-medium transition-all whitespace-nowrap border-b-2 relative inline-flex items-center gap-1 ${
+                        selectedMenuItem === item.id
+                          ? 'border-b-2'
+                          : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900'
+                      }`}
+                      style={{ 
+                        color: selectedMenuItem === item.id 
+                          ? primaryColor 
+                          : isEkspoloroniOfertat 
+                            ? '#B91C1C' // dark red for Ekspoloroni Ofertat
+                            : isUlje 
+                              ? '#DC2626' // red for Ulje
+                              : undefined,
+                        borderBottomColor: selectedMenuItem === item.id ? primaryColor : 'transparent'
+                      }}
+                    >
+                      {displayName}
+                      {isEkspoloroniOfertat && <Zap className="h-3.5 w-3.5 ml-0.5" fill="currentColor" />}
+                      {item.type === 'link' && <ExternalLink className="h-3 w-3" />}
+                    </button>
+                  )
+                })}
               </div>
             ) : (
               /* DEFAULT CATEGORY MENU */
