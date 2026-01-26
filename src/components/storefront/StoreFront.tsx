@@ -1738,7 +1738,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [priceMin, setPriceMin] = useState<number | ''>('')
   const [priceMax, setPriceMax] = useState<number | ''>('')
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc')
+  const [sortBy, setSortBy] = useState<'stock-desc' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('stock-desc')
   
   // Custom filtering states
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set())
@@ -1969,7 +1969,14 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       // Priority: selectedFilterCategory > selectedSubCategory > selectedCategory
       const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
       if (categoryToFilter) {
-        params.set('categoryId', categoryToFilter)
+        // Check if category has merged IDs (marketplace deduplication)
+        const category = storeData.categories?.find((c: any) => c.id === categoryToFilter)
+        if (category && category.ids) {
+          // Merged category - send all IDs (API will handle them)
+          params.set('categoryId', category.ids.join(','))
+        } else {
+          params.set('categoryId', categoryToFilter)
+        }
       }
       // Only search if debounced search term has at least 3 characters
       if (debouncedSearchTerm.trim().length >= 3) {
@@ -1981,14 +1988,48 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (priceMax !== '') {
         params.set('priceMax', priceMax.toString())
       }
+      // Expand merged IDs for collections/groups/brands (marketplace deduplication)
       if (selectedCollections.size > 0) {
-        params.set('collections', Array.from(selectedCollections).join(','))
+        const expandedCollectionIds: string[] = []
+        Array.from(selectedCollections).forEach(id => {
+          const collection = storeData.collections?.find((c: any) => c.id === id)
+          if (collection && collection.ids) {
+            // Merged collection - add all IDs
+            expandedCollectionIds.push(...collection.ids)
+          } else {
+            // Single collection - add its ID
+            expandedCollectionIds.push(id)
+          }
+        })
+        params.set('collections', expandedCollectionIds.join(','))
       }
       if (selectedGroups.size > 0) {
-        params.set('groups', Array.from(selectedGroups).join(','))
+        const expandedGroupIds: string[] = []
+        Array.from(selectedGroups).forEach(id => {
+          const group = storeData.groups?.find((g: any) => g.id === id)
+          if (group && group.ids) {
+            // Merged group - add all IDs
+            expandedGroupIds.push(...group.ids)
+          } else {
+            // Single group - add its ID
+            expandedGroupIds.push(id)
+          }
+        })
+        params.set('groups', expandedGroupIds.join(','))
       }
       if (selectedBrands.size > 0) {
-        params.set('brands', Array.from(selectedBrands).join(','))
+        const expandedBrandIds: string[] = []
+        Array.from(selectedBrands).forEach(id => {
+          const brand = storeData.brands?.find((b: any) => b.id === id)
+          if (brand && brand.ids) {
+            // Merged brand - add all IDs
+            expandedBrandIds.push(...brand.ids)
+          } else {
+            // Single brand - add its ID
+            expandedBrandIds.push(id)
+          }
+        })
+        params.set('brands', expandedBrandIds.join(','))
       }
       params.set('sortBy', sortBy)
       params.set('page', page.toString())
@@ -3438,18 +3479,19 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         })()}
 
         {/* Sort By Badge */}
-        {sortBy !== 'name-asc' && (
+        {sortBy !== 'stock-desc' && (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm">
             <span className="text-gray-700">
               {translations.sort || 'Sort'}: {
+                sortBy === 'name-asc' ? (translations.sortByNameAsc || 'Name (A-Z)') :
                 sortBy === 'name-desc' ? (translations.sortByNameDesc || 'Name (Z-A)') :
                 sortBy === 'price-asc' ? (translations.sortByPriceAsc || 'Price (Low-High)') :
                 sortBy === 'price-desc' ? (translations.sortByPriceDesc || 'Price (High-Low)') :
-                (translations.sortByNameAsc || 'Name (A-Z)')
+                (translations.sortByStock || 'Stock')
               }
             </span>
             <button
-              onClick={() => setSortBy('name-asc')}
+              onClick={() => setSortBy('stock-desc')}
               className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
             >
               <X className="w-2.5 h-2.5 text-gray-600" />
@@ -4382,6 +4424,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">{translations.sortBy || 'Sort By'}</h3>
                 <div className="space-y-2">
                   {[
+                    { value: 'stock-desc', label: translations.sortByStock || 'Stock (Default)' },
                     { value: 'name-asc', label: translations.sortByNameAsc || 'Name (A-Z)' },
                     { value: 'name-desc', label: translations.sortByNameDesc || 'Name (Z-A)' },
                     { value: 'price-asc', label: translations.sortByPriceAsc || 'Price (Low to High)' },
@@ -4415,7 +4458,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                   setSelectedCollections(new Set())
                   setSelectedGroups(new Set())
                   setSelectedBrands(new Set())
-                  setSortBy('name-asc')
+                  setSortBy('stock-desc')
                 }}
                 className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
               >

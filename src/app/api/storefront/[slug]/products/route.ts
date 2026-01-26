@@ -29,7 +29,9 @@ export async function GET(
     const { searchParams } = new URL(request.url)
     
     // Parse query parameters
-    const categoryId = searchParams.get('categoryId')
+    const categoryIdParam = searchParams.get('categoryId')
+    // Support multiple category IDs for marketplace deduplication (comma-separated)
+    const categoryIds = categoryIdParam ? categoryIdParam.split(',').filter(id => id.trim()) : []
     const searchTerm = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -38,10 +40,10 @@ export async function GET(
     // Filter parameters
     const priceMin = searchParams.get('priceMin') ? parseFloat(searchParams.get('priceMin')!) : null
     const priceMax = searchParams.get('priceMax') ? parseFloat(searchParams.get('priceMax')!) : null
-    const collectionIds = searchParams.get('collections') ? searchParams.get('collections')!.split(',') : []
-    const groupIds = searchParams.get('groups') ? searchParams.get('groups')!.split(',') : []
-    const brandIds = searchParams.get('brands') ? searchParams.get('brands')!.split(',') : []
-    const sortBy = searchParams.get('sortBy') || 'name-asc'
+    const collectionIds = searchParams.get('collections') ? searchParams.get('collections')!.split(',').filter(id => id.trim()) : []
+    const groupIds = searchParams.get('groups') ? searchParams.get('groups')!.split(',').filter(id => id.trim()) : []
+    const brandIds = searchParams.get('brands') ? searchParams.get('brands')!.split(',').filter(id => id.trim()) : []
+    const sortBy = searchParams.get('sortBy') || 'stock-desc'
     
     // Find business by slug
     const business = await prisma.business.findUnique({
@@ -71,44 +73,54 @@ export async function GET(
     // Get category info to handle parent/child relationships
     // OPTIMIZATION: Use a single query to get category + children in parallel
     let categoryIdsToFilter: string[] = []
-    if (categoryId && categoryId !== 'all') {
-      categoryIdsToFilter = [categoryId] // Default to single category
+    if (categoryIds.length > 0) {
+      // Support multiple category IDs (for marketplace deduplication)
+      categoryIdsToFilter = [...categoryIds]
       
-      // OPTIMIZED: Fetch category and children in parallel (both queries run simultaneously)
+      // OPTIMIZED: For each category, check if it has children and include them
       try {
-        const [category, childCategories] = await Promise.all([
-          prisma.category.findUnique({
-            where: { 
-              id: categoryId,
-              businessId: hasConnections ? { in: businessIds } : business.id,
-              isActive: true
-            },
-            select: {
-              id: true,
-              parentId: true
+        // Fetch all categories and their children in parallel
+        const categoriesWithChildren = await Promise.all(
+          categoryIds.map(async (categoryId) => {
+            const [category, childCategories] = await Promise.all([
+              prisma.category.findUnique({
+                where: { 
+                  id: categoryId,
+                  businessId: hasConnections ? { in: businessIds } : business.id,
+                  isActive: true
+                },
+                select: {
+                  id: true,
+                  parentId: true
+                }
+              }),
+              // Fetch children using parentId filter
+              prisma.category.findMany({
+                where: {
+                  parentId: categoryId,
+                  businessId: hasConnections ? { in: businessIds } : business.id,
+                  isActive: true
+                },
+                select: { id: true }
+              })
+            ])
+            
+            if (childCategories && childCategories.length > 0) {
+              // Parent category: include parent + all children
+              return [categoryId, ...childCategories.map((c: any) => c.id)]
+            } else if (category) {
+              // Child category or category without children: just this category
+              return [categoryId]
             }
-          }),
-          // Fetch children in parallel using parentId filter (indexed, faster than relation)
-          prisma.category.findMany({
-            where: {
-              parentId: categoryId,
-              businessId: hasConnections ? { in: businessIds } : business.id,
-              isActive: true
-            },
-            select: { id: true }
+            return [categoryId]
           })
-        ])
+        )
         
-        if (childCategories && childCategories.length > 0) {
-          // Parent category: include parent + all children
-          categoryIdsToFilter = [categoryId, ...childCategories.map((c: any) => c.id)]
-        } else if (category) {
-          // Child category or category without children: just this category
-          categoryIdsToFilter = [categoryId]
-        }
+        // Flatten and deduplicate all category IDs
+        categoryIdsToFilter = [...new Set(categoriesWithChildren.flat())]
       } catch (error) {
-        // Fallback to single category if query fails
-        categoryIdsToFilter = [categoryId]
+        // Fallback to provided category IDs if query fails
+        categoryIdsToFilter = categoryIds
       }
     }
 
@@ -174,8 +186,11 @@ export async function GET(
     }
 
     // Build orderBy clause
-    let orderBy: any = { name: 'asc' }
+    let orderBy: any = { stock: 'desc' }
     switch (sortBy) {
+      case 'name-asc':
+        orderBy = { name: 'asc' }
+        break
       case 'name-desc':
         orderBy = { name: 'desc' }
         break
@@ -185,8 +200,11 @@ export async function GET(
       case 'price-desc':
         orderBy = { price: 'desc' }
         break
+      case 'stock-desc':
+        orderBy = { stock: 'desc' }
+        break
       default:
-        orderBy = { name: 'asc' }
+        orderBy = { stock: 'desc' }
     }
 
     // Fetch products with pagination - use Promise.all for parallel execution

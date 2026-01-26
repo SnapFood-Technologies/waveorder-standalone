@@ -396,10 +396,35 @@ export async function GET(
     if (business.customMenuEnabled || business.customFilteringEnabled) {
       const customFilterSettings = business.customFilterSettings as any || {}
       
+      // Helper function to deduplicate entities by name for marketplace businesses
+      const deduplicateByName = (entities: any[]) => {
+        if (!hasConnections || entities.length === 0) return entities
+        
+        const map = new Map<string, any>()
+        
+        for (const entity of entities) {
+          const key = entity.name // Use name as the deduplication key
+          
+          if (map.has(key)) {
+            // Merge IDs: keep all IDs of entities with same name
+            const existing = map.get(key)
+            if (!existing.ids) {
+              existing.ids = [existing.id] // Convert single ID to array
+            }
+            existing.ids.push(entity.id)
+          } else {
+            // First occurrence: store entity with single ID
+            map.set(key, { ...entity })
+          }
+        }
+        
+        return Array.from(map.values()).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      }
+      
       // PERFORMANCE OPTIMIZATION: Fetch only needed fields for collections/groups/brands
       // Fetch collections if menu enabled OR filtering enabled for collections
       if (business.customMenuEnabled || customFilterSettings.collectionsEnabled) {
-        collections = await prisma.collection.findMany({
+        const collectionsRaw = await prisma.collection.findMany({
           where: {
             businessId: hasConnections ? { in: businessIds } : business.id,
             isActive: true
@@ -413,11 +438,12 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
+        collections = deduplicateByName(collectionsRaw)
       }
       
       // Fetch groups if menu enabled OR filtering enabled for groups
       if (business.customMenuEnabled || customFilterSettings.groupsEnabled) {
-        groups = await prisma.group.findMany({
+        const groupsRaw = await prisma.group.findMany({
           where: {
             businessId: hasConnections ? { in: businessIds } : business.id,
             isActive: true
@@ -431,11 +457,12 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
+        groups = deduplicateByName(groupsRaw)
       }
       
       // Fetch brands if filtering enabled for brands
       if (customFilterSettings.brandsEnabled) {
-        brands = await prisma.brand.findMany({
+        const brandsRaw = await prisma.brand.findMany({
           where: {
             businessId: hasConnections ? { in: businessIds } : business.id,
             isActive: true
@@ -449,6 +476,7 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
+        brands = deduplicateByName(brandsRaw)
       }
     }
 
@@ -699,12 +727,46 @@ export async function GET(
         
         // PERFORMANCE OPTIMIZATION: Build categories WITHOUT products
         // Products will be loaded on-demand via /api/storefront/[slug]/products endpoint
-        const allCategories = (business.categories as any[])
+        
+        // Deduplicate categories by name for marketplace businesses
+        const deduplicateCategories = (categories: any[]) => {
+          if (!hasConnections || categories.length === 0) return categories
+          
+          const map = new Map<string, any>()
+          
+          for (const category of categories) {
+            const displayName = getCategoryDisplayName(category.name, category.nameAl)
+            const key = `${displayName}_${category.parentId || 'root'}` // Include parentId to allow same names at different levels
+            
+            if (map.has(key)) {
+              // Merge categories with same name
+              const existing = map.get(key)
+              if (!existing.ids) {
+                existing.ids = [existing.id]
+              }
+              existing.ids.push(category.id)
+              // Sum product counts
+              existing.productCount = (existing.productCount || 0) + (category._count?.products || 0)
+            } else {
+              map.set(key, { 
+                ...category,
+                productCount: category._count?.products || 0
+              })
+            }
+          }
+          
+          return Array.from(map.values())
+        }
+        
+        const deduplicatedCategories = deduplicateCategories(business.categories as any[])
+        
+        const allCategories = deduplicatedCategories
           .map((category: any) => {
-            const productCount = category._count?.products || 0
+            const productCount = category.productCount || 0
             
             return {
               id: category.id,
+              ids: category.ids, // Array of IDs if deduplicated
               name: getCategoryDisplayName(category.name, category.nameAl),
               description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
               nameAl: category.nameAl,
