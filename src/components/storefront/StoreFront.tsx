@@ -5390,23 +5390,11 @@ function ProductModal({
                         {currencySymbol}{basePrice.toFixed(2)}
                       </span>
                       {hasDiscount && baseOriginalPrice && (
-                        <>
-                          <span className="text-lg text-gray-500 line-through">
-                            {currencySymbol}{baseOriginalPrice.toFixed(2)}
-                          </span>
-                          {discountPercentage > 0 && (
-                            <span className="text-sm font-medium text-green-600">
-                              -{discountPercentage}%
-                            </span>
-                          )}
-                        </>
+                        <span className="text-lg text-gray-500 line-through">
+                          {currencySymbol}{baseOriginalPrice.toFixed(2)}
+                        </span>
                       )}
                     </div>
-                    {hasDiscount && discountAmount > 0 && (
-                      <p className="text-sm text-green-600 font-medium">
-                        {translations.youSave || 'You save'} {currencySymbol}{(discountAmount / quantity).toFixed(2)} {translations.perItem || 'per item'}
-                      </p>
-                    )}
                   </div>
                 </div>
               </div>
@@ -5545,28 +5533,16 @@ function ProductModal({
         {/* Footer */}
         <div className="p-6 bg-gray-50 flex-shrink-0">
           <div className="flex flex-col gap-2 mb-4">
-            {hasDiscount && totalOriginalPrice && (
-              <>
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>{translations.originalSubtotal || 'Original Subtotal'}</span>
-                  <span className="line-through">{currencySymbol}{totalOriginalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm text-green-600 font-medium">
-                  <span>{translations.discount || 'Discount'}</span>
-                  <span>-{currencySymbol}{discountAmount.toFixed(2)}</span>
-                </div>
-              </>
-            )}
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold text-gray-700">{translations.total || 'Total'}</span>
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2">
                 <span className="text-2xl font-bold" style={{ color: primaryColor }}>
                   {currencySymbol}{totalPrice.toFixed(2)}
                 </span>
-                {hasDiscount && discountAmount > 0 && (
-                  <p className="text-xs text-green-600 font-medium">
-                    {translations.youSave || 'You save'} {currencySymbol}{discountAmount.toFixed(2)}
-                  </p>
+                {hasDiscount && totalOriginalPrice && (
+                  <span className="text-lg text-gray-500 line-through">
+                    {currencySymbol}{totalOriginalPrice.toFixed(2)}
+                  </span>
                 )}
               </div>
             </div>
