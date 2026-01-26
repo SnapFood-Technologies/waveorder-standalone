@@ -1,10 +1,9 @@
 // src/app/api/admin/stores/[businessId]/customers/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 import { normalizePhoneNumber, phoneNumbersMatch, isValidPhoneNumber } from '@/lib/phone-utils'
 
-const prisma = new PrismaClient()
 
 function parseAndCleanAddress(addressJson: any): any {
   if (!addressJson?.street) return addressJson

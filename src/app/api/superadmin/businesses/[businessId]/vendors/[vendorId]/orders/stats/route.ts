@@ -1,11 +1,10 @@
 // app/api/superadmin/businesses/[businessId]/vendors/[vendorId]/orders/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { format, startOfDay, startOfWeek, startOfMonth, parseISO } from 'date-fns'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
@@ -281,6 +280,5 @@ export async function GET(
       { status: 500 }
     )
   } finally {
-    await prisma.$disconnect()
   }
 }

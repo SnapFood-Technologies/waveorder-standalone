@@ -1,11 +1,10 @@
 // app/api/superadmin/analytics/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { getBillingTypeFromPriceId } from '@/lib/stripe'
 
-const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {
@@ -459,6 +458,5 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   } finally {
-    await prisma.$disconnect()
   }
 }

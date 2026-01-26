@@ -1,11 +1,10 @@
 // src/app/api/admin/stores/[businessId]/orders/[orderId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 import { sendCustomerOrderStatusEmail } from '@/lib/customer-email-notification'
 import * as Sentry from '@sentry/nextjs'
 
-const prisma = new PrismaClient()
 
 /**
  * Check if customer should be notified for this status based on business settings

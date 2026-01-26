@@ -1,10 +1,8 @@
 // app/api/storefront/[slug]/products/route.ts
 // PERFORMANCE OPTIMIZED: Separate endpoint for products with filtering, search, and pagination
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
-
-const prisma = new PrismaClient()
 
 // Helper function to calculate effective price
 function calculateEffectivePrice(price: number, originalPrice: number | null, saleStartDate: Date | null, saleEndDate: Date | null): { effectivePrice: number; effectiveOriginalPrice: number | null } {
@@ -425,7 +423,5 @@ export async function GET(
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

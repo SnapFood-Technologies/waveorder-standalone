@@ -1,9 +1,8 @@
 // app/api/team/invite/[token]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
 
 // GET - Validate invitation and return details
 export async function GET(
@@ -210,6 +209,5 @@ export async function POST(
       message: 'Failed to accept invitation. Please try again.' 
     }, { status: 500 })
   } finally {
-    await prisma.$disconnect()
   }
 }

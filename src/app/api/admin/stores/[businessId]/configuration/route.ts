@@ -1,9 +1,9 @@
 // app/api/admin/stores/[businessId]/configuration/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient, PaymentMethod } from '@prisma/client'
+import { PaymentMethod } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,

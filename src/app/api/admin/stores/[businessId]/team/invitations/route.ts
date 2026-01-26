@@ -1,10 +1,9 @@
 // src/app/api/admin/stores/[businessId]/team/invitations/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,

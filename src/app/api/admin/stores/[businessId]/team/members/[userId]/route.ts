@@ -1,12 +1,11 @@
 // src/app/api/admin/stores/[businessId]/team/members/[userId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { canUpdateMemberRoles, canRemoveMembers, canManageUserRole, canRemoveUser } from '@/lib/permissions'
 import { sendRoleChangedEmail, sendTeamMemberRemovedEmail } from '@/lib/email'
 
-const prisma = new PrismaClient()
 
 export async function PATCH(
   request: NextRequest,

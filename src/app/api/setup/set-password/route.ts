@@ -1,9 +1,8 @@
 // app/api/setup/set-password/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
-const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {

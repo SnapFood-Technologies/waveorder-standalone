@@ -1,12 +1,11 @@
 // src/app/api/admin/stores/[businessId]/team/invitations/[invitationId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { PrismaClient } from '@prisma/client'
 import { authOptions } from '@/lib/auth'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { canInviteMembers } from '@/lib/permissions'
 
-const prisma = new PrismaClient()
 
 export async function POST(
   request: NextRequest,

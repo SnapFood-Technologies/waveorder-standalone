@@ -1,10 +1,9 @@
 // app/api/admin/stores/[businessId]/products/import/route.ts
 import Papa from 'papaparse'
+import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
 
 export async function POST(
   request: NextRequest,
