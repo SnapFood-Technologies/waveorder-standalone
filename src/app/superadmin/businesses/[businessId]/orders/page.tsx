@@ -40,7 +40,6 @@ import {
   Legend
 } from 'recharts'
 import { format, parseISO, startOfWeek, startOfMonth } from 'date-fns'
-import { useImpersonation } from '@/lib/impersonation'
 
 interface BusinessOrderStats {
   business: {
@@ -117,7 +116,18 @@ export default function BusinessOrdersStatsPage() {
   const params = useParams()
   const router = useRouter()
   const businessId = params.businessId as string
-  const { addParams } = useImpersonation(businessId)
+  
+  // In superadmin, always add impersonation params
+  const addParams = (href: string) => {
+    try {
+      const url = new URL(href, window.location.origin)
+      url.searchParams.set('impersonate', 'true')
+      url.searchParams.set('businessId', businessId)
+      return url.pathname + url.search
+    } catch (error) {
+      return `${href}?impersonate=true&businessId=${businessId}`
+    }
+  }
 
   const [data, setData] = useState<BusinessOrderStats | null>(null)
   const [loading, setLoading] = useState(true)
