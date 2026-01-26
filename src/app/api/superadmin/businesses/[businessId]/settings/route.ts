@@ -20,25 +20,41 @@ export async function PATCH(
     const { hideProductsWithoutPhotos } = body
 
     // Update business settings
-    const business = await prisma.business.update({
+    await prisma.business.update({
       where: { id: businessId },
       data: {
         ...(hideProductsWithoutPhotos !== undefined && { hideProductsWithoutPhotos })
-      },
+      }
+    })
+
+    // Fetch the complete business with all needed data (same as GET endpoint)
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
       include: {
-        owner: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            createdAt: true,
-            authMethod: true
+        users: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true,
+                authMethod: true
+              }
+            }
           }
         }
       }
     })
 
-    // Fetch stats separately
+    if (!business) {
+      return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    }
+
+    // Get owner (first admin user)
+    const owner = business.users.find(bu => bu.role === 'ADMIN')?.user || null
+
+    // Fetch stats
     const [totalOrders, totalRevenue, totalCustomers, totalProducts] = await Promise.all([
       prisma.order.count({ where: { businessId } }),
       prisma.order.aggregate({
@@ -51,6 +67,7 @@ export async function PATCH(
 
     const businessWithStats = {
       ...business,
+      owner,
       stats: {
         totalOrders,
         totalRevenue: totalRevenue._sum.total || 0,
