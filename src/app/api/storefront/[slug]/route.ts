@@ -362,7 +362,7 @@ export async function GET(
         }
       }
 
-      // Filter out products with no stock and limit to 24 after filtering
+      // Filter out products with no stock and limit to 50 after filtering (matching pagination limit)
       initialProducts = initialProductsRaw
         .filter((product: any) => {
           if (product.trackInventory) {
@@ -373,7 +373,7 @@ export async function GET(
           }
           return true
         })
-        .slice(0, 24) // Take first 24 after stock filtering
+        .slice(0, 50) // Take first 50 after stock filtering (matching pagination limit)
         .map((product: any) => {
           const productPricing = calculateEffectivePrice(
             product.price,
@@ -926,21 +926,55 @@ export async function GET(
     return NextResponse.json(storeData)
 
   } catch (error) {
+    // Extract request metadata for error logging
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const ipAddress = extractIPAddress(request)
+    
     // Check if it's a Prisma connection error
     if (error instanceof Error) {
-      // Prisma connection errors - don't spam Sentry for bot requests
-      if (error.message.includes('Response from the Engine was empty') || 
-          error.message.includes('PrismaClientKnownRequestError') ||
-          error.name === 'PrismaClientUnknownRequestError') {
-        // Only log to Sentry if it's not a suspicious slug (likely bot)
+      // Prisma connection errors - check for all known patterns
+      const isPrismaConnectionError = 
+        error.message.includes('Response from the Engine was empty') || 
+        error.message.includes('PrismaClientKnownRequestError') ||
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('Connection pool timeout') ||
+        error.message.includes('P1001') ||
+        error.message.includes('P1017') ||
+        error.name === 'PrismaClientUnknownRequestError'
+      
+      if (isPrismaConnectionError) {
         const isSuspiciousSlug = /\.(php|asp|jsp|xml|txt)$/i.test(slug)
         
+        // Log Prisma connection error to SystemLog
+        logSystemEvent({
+          logType: 'storefront_error',
+          severity: 'error',
+          slug,
+          endpoint: '/api/storefront/[slug]',
+          method: 'GET',
+          statusCode: isSuspiciousSlug ? 404 : 500,
+          errorMessage: error.message,
+          errorStack: error.stack,
+          ipAddress,
+          userAgent,
+          referrer,
+          url: request.url,
+          metadata: { 
+            errorType: 'prisma_connection_error',
+            isSuspiciousSlug,
+            errorCode: error.message.match(/P\d+/)?.[0],
+            errorName: error.name
+          }
+        })
+        
+        // Only log to Sentry if it's not a suspicious slug (likely bot)
         if (!isSuspiciousSlug) {
           Sentry.captureException(error, {
             tags: {
               endpoint: 'storefront_get',
               method: 'GET',
-              error_type: 'prisma_error',
+              error_type: 'prisma_connection_error',
             },
             extra: {
               slug,
@@ -956,6 +990,23 @@ export async function GET(
         )
       }
     }
+    
+    // Log other errors to SystemLog
+    logSystemEvent({
+      logType: 'storefront_error',
+      severity: 'error',
+      slug: slug || 'unknown',
+      endpoint: '/api/storefront/[slug]',
+      method: 'GET',
+      statusCode: 500,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: { errorType: 'general_error' }
+    })
     
     // Capture other errors in Sentry
     Sentry.captureException(error, {
