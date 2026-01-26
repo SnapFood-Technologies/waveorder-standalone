@@ -639,6 +639,5 @@ export async function POST(request: NextRequest) {
       { message: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
   }
 }

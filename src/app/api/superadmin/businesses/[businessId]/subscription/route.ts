@@ -283,7 +283,6 @@ export async function PATCH(
       },
       { status: 500 }
     )
-  } finally {
   }
 }
 
@@ -371,6 +370,5 @@ export async function GET(
       },
       { status: 500 }
     )
-  } finally {
   }
 }

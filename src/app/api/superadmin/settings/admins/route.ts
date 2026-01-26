@@ -74,6 +74,5 @@ export async function GET(request: NextRequest) {
       { message: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
   }
 }

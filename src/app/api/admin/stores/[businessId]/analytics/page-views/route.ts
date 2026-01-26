@@ -90,6 +90,5 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching page views analytics:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
-  } finally {
   }
 }

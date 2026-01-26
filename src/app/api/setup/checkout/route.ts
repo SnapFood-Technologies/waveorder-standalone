@@ -99,6 +99,5 @@ export async function POST(req: NextRequest) {
       { message: 'Failed to create checkout session' },
       { status: 500 }
     )
-  } finally {
   }
 }

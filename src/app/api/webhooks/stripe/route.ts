@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
       { message: 'Webhook handler failed' },
       { status: 500 }
     )
-  } finally {
   }
 }
 
@@ -104,8 +103,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     }
   } catch (error) {
     console.error('❌ Error handling checkout session completed:', error)
-    throw error
-  }
+    throw error  }
 }
 
 async function handleSubscriptionCreated(sub: Stripe.Subscription) {
