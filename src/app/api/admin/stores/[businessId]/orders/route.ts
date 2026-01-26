@@ -4,6 +4,7 @@ import { checkBusinessAccess } from '@/lib/api-helpers'
 import { PrismaClient } from '@prisma/client'
 import { phoneNumbersMatch, normalizePhoneNumber, isValidPhoneNumber } from '@/lib/phone-utils'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 const prisma = new PrismaClient()
 
@@ -666,6 +667,39 @@ export async function POST(
       console.error('Order notification email failed for admin-created order:', emailError)
     }
 
+    // Log successful order creation
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    logSystemEvent({
+      logType: 'order_created',
+      severity: 'info',
+      businessId: businessId,
+      endpoint: '/api/admin/stores/[businessId]/orders',
+      method: 'POST',
+      statusCode: 201,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customer.id,
+        customerName: order.customer.name,
+        createdByAdmin: true,
+        createdBy: access.session.user.id,
+        orderType: order.type,
+        itemCount: order.items.length,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        total: order.total,
+        paymentMethod: order.paymentMethod || null,
+        deliveryAddress: order.deliveryAddress || null,
+      }
+    })
+
     return NextResponse.json({
       order: {
         id: order.id,
@@ -685,6 +719,31 @@ export async function POST(
 
   } catch (error) {
     console.error('Error creating order:', error)
+    
+    // Log order creation error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    logSystemEvent({
+      logType: 'order_error',
+      severity: 'error',
+      businessId: (await params).businessId,
+      endpoint: '/api/admin/stores/[businessId]/orders',
+      method: 'POST',
+      statusCode: 500,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: {
+        errorType: 'admin_order_creation_error',
+        createdByAdmin: true,
+      }
+    })
+    
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   } finally {
     await prisma.$disconnect()

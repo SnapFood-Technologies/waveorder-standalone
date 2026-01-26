@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 const prisma = globalForPrisma.prisma || new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success'
+export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error'
 export type LogSeverity = 'error' | 'warning' | 'info'
 
 interface SystemLogData {
@@ -48,7 +48,7 @@ export function extractIPAddress(request: Request): string | undefined {
   // x-forwarded-for - FIRST IP in chain is the original client
   const forwardedFor = headers.get('x-forwarded-for')
   if (forwardedFor) {
-    const ips = forwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
+    const ips = forwardedFor.split(',').map((ip: string) => ip.trim()).filter((ip: string) => ip)
     // Use FIRST IP (original client), not last (which is the final proxy/CDN)
     return ips.length > 0 ? ips[0] : undefined
   }
