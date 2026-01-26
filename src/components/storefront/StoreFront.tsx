@@ -1947,8 +1947,11 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   
   // PERFORMANCE OPTIMIZATION: Fetch products from API endpoint
   const fetchProducts = useCallback(async (page: number = 1, reset: boolean = false) => {
-    // Don't fetch if no categories
-    if (!storeData.categories || storeData.categories.length === 0) {
+    // Allow fetching products even if categories are empty (products might exist but categories filtered out)
+    // Only skip if we're on initial load and have no initial products AND no categories
+    if ((!storeData.categories || storeData.categories.length === 0) && 
+        (!storeData.initialProducts || storeData.initialProducts.length === 0) && 
+        page === 1) {
       setProducts([])
       setProductsLoading(false)
       setIsFiltering(false)

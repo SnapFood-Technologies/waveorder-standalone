@@ -740,8 +740,17 @@ export async function GET(
         
         // Deduplicate categories by name for marketplace businesses
         const deduplicateCategories = (categories: any[]) => {
-          if (!hasConnections || categories.length === 0) return categories
+          if (categories.length === 0) return categories
           
+          // For normal businesses (no connections), just map _count.products to productCount
+          if (!hasConnections) {
+            return categories.map((category: any) => ({
+              ...category,
+              productCount: category._count?.products || 0
+            }))
+          }
+          
+          // For originator businesses, deduplicate by name
           const map = new Map<string, any>()
           
           for (const category of categories) {
