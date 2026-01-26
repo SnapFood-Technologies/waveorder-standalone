@@ -1972,7 +1972,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
       if (categoryToFilter) {
         // Check if category has merged IDs (marketplace deduplication)
-        const category = storeData.categories?.find((c: any) => c.id === categoryToFilter)
+        // Search by primary ID OR check if targetId is in the ids array (for menu items from admin)
+        const category = storeData.categories?.find((c: any) => 
+          c.id === categoryToFilter || (c.ids && c.ids.includes(categoryToFilter))
+        )
         if (category && category.ids) {
           // Merged category - send all IDs (API will handle them)
           params.set('categoryId', category.ids.join(','))
@@ -1994,7 +1997,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (selectedCollections.size > 0) {
         const expandedCollectionIds: string[] = []
         Array.from(selectedCollections).forEach(id => {
-          const collection = storeData.collections?.find((c: any) => c.id === id)
+          // Search by primary ID OR check if id is in the ids array (for menu items from admin)
+          const collection = storeData.collections?.find((c: any) => 
+            c.id === id || (c.ids && c.ids.includes(id))
+          )
           if (collection && collection.ids) {
             // Merged collection - add all IDs
             expandedCollectionIds.push(...collection.ids)
@@ -2008,7 +2014,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (selectedGroups.size > 0) {
         const expandedGroupIds: string[] = []
         Array.from(selectedGroups).forEach(id => {
-          const group = storeData.groups?.find((g: any) => g.id === id)
+          // Search by primary ID OR check if id is in the ids array (for menu items from admin)
+          const group = storeData.groups?.find((g: any) => 
+            g.id === id || (g.ids && g.ids.includes(id))
+          )
           if (group && group.ids) {
             // Merged group - add all IDs
             expandedGroupIds.push(...group.ids)
@@ -2022,7 +2031,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       if (selectedBrands.size > 0) {
         const expandedBrandIds: string[] = []
         Array.from(selectedBrands).forEach(id => {
-          const brand = storeData.brands?.find((b: any) => b.id === id)
+          // Search by primary ID OR check if id is in the ids array (for menu items from admin)
+          const brand = storeData.brands?.find((b: any) => 
+            b.id === id || (b.ids && b.ids.includes(id))
+          )
           if (brand && brand.ids) {
             // Merged brand - add all IDs
             expandedBrandIds.push(...brand.ids)

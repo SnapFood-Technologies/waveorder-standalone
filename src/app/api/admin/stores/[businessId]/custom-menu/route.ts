@@ -149,6 +149,20 @@ export async function POST(
     const body = await request.json()
     const { type, targetId, name, nameAl, url } = body
 
+    // Get business to check for connected businesses (needed for validation and creation)
+    const businessForValidation = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
+    })
+    
+    const hasConnectionsForValidation = businessForValidation?.connectedBusinesses && 
+                                        Array.isArray(businessForValidation.connectedBusinesses) && 
+                                        businessForValidation.connectedBusinesses.length > 0
+    
+    const businessIdsForValidation = hasConnectionsForValidation 
+      ? [businessId, ...businessForValidation.connectedBusinesses]
+      : [businessId]
+
     // Validate type
     if (!['group', 'collection', 'category', 'link'].includes(type)) {
       return NextResponse.json(
@@ -172,20 +186,6 @@ export async function POST(
           { status: 400 }
         )
       }
-
-      // Get business to check for connected businesses
-      const businessForValidation = await prisma.business.findUnique({
-        where: { id: businessId },
-        select: { connectedBusinesses: true }
-      })
-      
-      const hasConnectionsForValidation = businessForValidation?.connectedBusinesses && 
-                                          Array.isArray(businessForValidation.connectedBusinesses) && 
-                                          businessForValidation.connectedBusinesses.length > 0
-      
-      const businessIdsForValidation = hasConnectionsForValidation 
-        ? [businessId, ...businessForValidation.connectedBusinesses]
-        : [businessId]
 
       // Fetch target entity to auto-populate names (check in connected businesses too for originators)
       let targetEntity: any = null
