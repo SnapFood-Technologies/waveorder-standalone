@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ChevronLeft,
@@ -234,6 +234,19 @@ export default function BusinessOrdersStatsPage() {
     return parts[0].trim()
   }
 
+  const formatXAxisLabel = useCallback((dateStr: string, grouping: 'day' | 'week' | 'month'): string => {
+    const date = parseISO(dateStr)
+    switch (grouping) {
+      case 'week':
+        return format(startOfWeek(date, { weekStartsOn: 1 }), 'MMM d')
+      case 'month':
+        return format(startOfMonth(date), 'MMM yyyy')
+      case 'day':
+      default:
+        return format(date, 'MMM d')
+    }
+  }, [])
+
   // Process chart data based on period
   const processedChartData = useMemo(() => {
     if (!data?.chartData) return []
@@ -246,20 +259,7 @@ export default function BusinessOrdersStatsPage() {
       ...item,
       label: formatXAxisLabel(item.date, grouping)
     }))
-  }, [data?.chartData, selectedPeriod])
-
-  const formatXAxisLabel = (dateStr: string, grouping: 'day' | 'week' | 'month'): string => {
-    const date = parseISO(dateStr)
-    switch (grouping) {
-      case 'week':
-        return format(startOfWeek(date, { weekStartsOn: 1 }), 'MMM d')
-      case 'month':
-        return format(startOfMonth(date), 'MMM yyyy')
-      case 'day':
-      default:
-        return format(date, 'MMM d')
-    }
-  }
+  }, [data?.chartData, selectedPeriod, formatXAxisLabel])
 
   // Prepare status breakdown for pie chart
   const statusChartData = useMemo(() => {

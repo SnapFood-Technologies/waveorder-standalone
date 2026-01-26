@@ -380,106 +380,105 @@ export default function SystemLogsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {formatDate(log.createdAt)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {getLogTypeLabel(log.logType)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded border ${getSeverityColor(log.severity)}`}>
-                          {log.severity}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        {log.slug || '-'}
-                        {log.business && (
-                          <div className="text-xs text-gray-500 mt-0.5">{log.business.name}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {log.statusCode ? (
-                          <span className={`font-medium ${
-                            log.statusCode >= 500 ? 'text-red-600' :
-                            log.statusCode >= 400 ? 'text-amber-600' :
-                            'text-green-600'
-                          }`}>
-                            {log.statusCode}
+                    <>
+                      <tr key={log.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {formatDate(log.createdAt)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {getLogTypeLabel(log.logType)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded border ${getSeverityColor(log.severity)}`}>
+                            {log.severity}
                           </span>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {log.city && log.country ? (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {log.city}, {log.country}
-                          </div>
-                        ) : log.ipAddress ? (
-                          <div className="text-xs text-gray-500">{log.ipAddress}</div>
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => toggleLogExpansion(log.id)}
-                          className="text-teal-600 hover:text-teal-700 text-sm font-medium"
-                        >
-                          {expandedLogs.has(log.id) ? 'Hide' : 'Details'}
-                        </button>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          {log.slug || '-'}
+                          {log.business && (
+                            <div className="text-xs text-gray-500 mt-0.5">{log.business.name}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {log.statusCode ? (
+                            <span className={`font-medium ${
+                              log.statusCode >= 500 ? 'text-red-600' :
+                              log.statusCode >= 400 ? 'text-amber-600' :
+                              'text-green-600'
+                            }`}>
+                              {log.statusCode}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {log.city && log.country ? (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {log.city}, {log.country}
+                            </div>
+                          ) : log.ipAddress ? (
+                            <div className="text-xs text-gray-500">{log.ipAddress}</div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleLogExpansion(log.id)}
+                            className="text-teal-600 hover:text-teal-700 text-sm font-medium"
+                          >
+                            {expandedLogs.has(log.id) ? 'Hide' : 'Details'}
+                          </button>
+                        </td>
+                      </tr>
+                      {/* Expanded Log Details - directly below the row */}
+                      {expandedLogs.has(log.id) && (
+                        <tr key={`details-${log.id}`}>
+                          <td colSpan={7} className="px-4 py-4 bg-gray-50 border-t border-gray-200">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <p className="font-medium text-gray-900 mb-2">Request Details</p>
+                                <div className="space-y-1 text-gray-600">
+                                  <p><span className="font-medium">Endpoint:</span> {log.endpoint}</p>
+                                  <p><span className="font-medium">Method:</span> {log.method}</p>
+                                  <p><span className="font-medium">URL:</span> <span className="text-xs break-all">{log.url}</span></p>
+                                  {log.ipAddress && <p><span className="font-medium">IP:</span> {log.ipAddress}</p>}
+                                  {log.referrer && <p><span className="font-medium">Referrer:</span> <span className="text-xs break-all">{log.referrer}</span></p>}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 mb-2">Error Details</p>
+                                <div className="space-y-1 text-gray-600">
+                                  {log.errorMessage && (
+                                    <p><span className="font-medium">Message:</span> {log.errorMessage}</p>
+                                  )}
+                                  {log.errorStack && (
+                                    <div>
+                                      <p className="font-medium mb-1">Stack Trace:</p>
+                                      <pre className="text-xs bg-gray-800 text-gray-100 p-2 rounded overflow-x-auto max-h-40">
+                                        {log.errorStack}
+                                      </pre>
+                                    </div>
+                                  )}
+                                  {log.metadata && (
+                                    <div>
+                                      <p className="font-medium mb-1">Metadata:</p>
+                                      <pre className="text-xs bg-gray-800 text-gray-100 p-2 rounded overflow-x-auto max-h-40">
+                                        {JSON.stringify(log.metadata, null, 2)}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
-              </table>
-            </div>
-
-            {/* Expanded Log Details */}
-            {logs.map((log) => (
-              expandedLogs.has(log.id) && (
-                <div key={`details-${log.id}`} className="border-t border-gray-200 bg-gray-50 p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="font-medium text-gray-900 mb-2">Request Details</p>
-                      <div className="space-y-1 text-gray-600">
-                        <p><span className="font-medium">Endpoint:</span> {log.endpoint}</p>
-                        <p><span className="font-medium">Method:</span> {log.method}</p>
-                        <p><span className="font-medium">URL:</span> <span className="text-xs break-all">{log.url}</span></p>
-                        {log.ipAddress && <p><span className="font-medium">IP:</span> {log.ipAddress}</p>}
-                        {log.referrer && <p><span className="font-medium">Referrer:</span> <span className="text-xs break-all">{log.referrer}</span></p>}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 mb-2">Error Details</p>
-                      <div className="space-y-1 text-gray-600">
-                        {log.errorMessage && (
-                          <p><span className="font-medium">Message:</span> {log.errorMessage}</p>
-                        )}
-                        {log.errorStack && (
-                          <div>
-                            <p className="font-medium mb-1">Stack Trace:</p>
-                            <pre className="text-xs bg-gray-800 text-gray-100 p-2 rounded overflow-x-auto max-h-40">
-                              {log.errorStack}
-                            </pre>
-                          </div>
-                        )}
-                        {log.metadata && (
-                          <div>
-                            <p className="font-medium mb-1">Metadata:</p>
-                            <pre className="text-xs bg-gray-800 text-gray-100 p-2 rounded overflow-x-auto max-h-40">
-                              {JSON.stringify(log.metadata, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            ))}
 
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (
