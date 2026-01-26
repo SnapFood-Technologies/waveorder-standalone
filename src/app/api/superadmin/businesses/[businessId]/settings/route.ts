@@ -38,8 +38,7 @@ export async function PATCH(
                 id: true,
                 name: true,
                 email: true,
-                createdAt: true,
-                authMethod: true
+                createdAt: true
               }
             }
           }
@@ -51,14 +50,14 @@ export async function PATCH(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Get owner (first admin user)
-    const owner = business.users.find(bu => bu.role === 'ADMIN')?.user || null
+    // Get owner (first user with OWNER role)
+    const owner = business.users.find(bu => bu.role === 'OWNER')?.user || null
 
     // Fetch stats
     const [totalOrders, totalRevenue, totalCustomers, totalProducts] = await Promise.all([
       prisma.order.count({ where: { businessId } }),
       prisma.order.aggregate({
-        where: { businessId, status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'COMPLETED'] } },
+        where: { businessId, status: { in: ['CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED'] } },
         _sum: { total: true }
       }),
       prisma.customer.count({ where: { businessId } }),
@@ -70,7 +69,7 @@ export async function PATCH(
       owner,
       stats: {
         totalOrders,
-        totalRevenue: totalRevenue._sum.total || 0,
+        totalRevenue: totalRevenue._sum?.total || 0,
         totalCustomers,
         totalProducts
       }
