@@ -400,8 +400,17 @@ export default function BusinessDetailsPage() {
                   <div className="space-y-2">
                     {marketplaceInfo.suppliers.map((supplier) => (
                       <div key={supplier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-900">{supplier.name}</span>
-                        <span className="text-sm text-gray-600">{supplier.productCount} products</span>
+                        <div className="flex-1">
+                          <span className="text-sm text-gray-900">{supplier.name}</span>
+                          <span className="text-sm text-gray-600 ml-2">{supplier.productCount} products</span>
+                        </div>
+                        <Link
+                          href={`/superadmin/businesses/${businessId}/vendors/${supplier.id}/orders`}
+                          className="ml-3 inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+                        >
+                          <ShoppingBag className="w-4 h-4 mr-1" />
+                          Order Stats
+                        </Link>
                       </div>
                     ))}
                   </div>
