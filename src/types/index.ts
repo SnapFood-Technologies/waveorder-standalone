@@ -94,5 +94,6 @@ export interface OrderItem {
   variant?: ProductVariant
   quantity: number
   price: number
+  originalPrice?: number | null
   modifiers: string[]
 }

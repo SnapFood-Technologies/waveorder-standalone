@@ -95,7 +95,8 @@ export async function GET(
       productsOutOfStockCount,
       productsWithVariantsAllZeroStockCount,
       productsWithVariantsSomeZeroStockCount,
-      productsWithVariantsAllNonZeroStockCount
+      productsWithVariantsAllNonZeroStockCount,
+      inactiveProductsCount
     ] = await Promise.all([
       // Products without photos
       prisma.product.count({
@@ -199,7 +200,14 @@ export async function GET(
           product.variants.length > 0 && 
           product.variants.every(v => v.stock > 0)
         ).length
-      })()
+      })(),
+      // Inactive products
+      prisma.product.count({
+        where: {
+          businessId: businessId,
+          isActive: false
+        }
+      })
     ])
 
     // Get owner info
@@ -285,7 +293,8 @@ export async function GET(
           productsOutOfStock: productsOutOfStockCount,
           productsWithVariantsAllZeroStock: productsWithVariantsAllZeroStockCount,
           productsWithVariantsSomeZeroStock: productsWithVariantsSomeZeroStockCount,
-          productsWithVariantsAllNonZeroStock: productsWithVariantsAllNonZeroStockCount
+          productsWithVariantsAllNonZeroStock: productsWithVariantsAllNonZeroStockCount,
+          inactiveProducts: inactiveProductsCount
         }
       }
     })

@@ -2,6 +2,7 @@
 // PERFORMANCE OPTIMIZED: Separate endpoint for products with filtering, search, and pagination
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 const prisma = new PrismaClient()
 
@@ -24,15 +25,20 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
+  let slug: string = 'unknown'
+  let business: any = null
+  let categoryIds: string[] = []
+  let searchTerm: string = ''
+  
   try {
-    const { slug } = await context.params
+    slug = (await context.params).slug
     const { searchParams } = new URL(request.url)
     
     // Parse query parameters
     const categoryIdParam = searchParams.get('categoryId')
     // Support multiple category IDs for marketplace deduplication (comma-separated)
-    const categoryIds = categoryIdParam ? categoryIdParam.split(',').filter(id => id.trim()) : []
-    const searchTerm = searchParams.get('search') || ''
+    categoryIds = categoryIdParam ? categoryIdParam.split(',').filter(id => id.trim()) : []
+    searchTerm = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
@@ -46,24 +52,46 @@ export async function GET(
     const sortBy = searchParams.get('sortBy') || 'stock-desc'
     
     // Find business by slug
-    const business = await prisma.business.findUnique({
+    const businessData = await prisma.business.findUnique({
       where: { 
         slug,
         isActive: true,
         setupWizardCompleted: true
-      },
-      select: {
-        id: true,
-        language: true,
-        storefrontLanguage: true,
-        connectedBusinesses: true,
-        hideProductsWithoutPhotos: true
       }
     }) as any
-
-    if (!business) {
+    
+    if (!businessData) {
+      // Log 404 for business not found in products route
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      const ipAddress = extractIPAddress(request)
+      
+      logSystemEvent({
+        logType: 'storefront_404',
+        severity: 'error',
+        slug,
+        endpoint: '/api/storefront/[slug]/products',
+        method: 'GET',
+        statusCode: 404,
+        errorMessage: 'Business not found',
+        ipAddress,
+        userAgent,
+        referrer,
+        url: request.url,
+        metadata: { reason: 'business_not_found', route: 'products' }
+      })
+      
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
+    
+    business = {
+      id: businessData.id,
+      language: businessData.language,
+      storefrontLanguage: businessData.storefrontLanguage,
+      connectedBusinesses: businessData.connectedBusinesses,
+      hideProductsWithoutPhotos: businessData.hideProductsWithoutPhotos
+    }
+
 
     // Build businessIds array for connected businesses
     const hasConnections = business.connectedBusinesses && Array.isArray(business.connectedBusinesses) && business.connectedBusinesses.length > 0
@@ -365,6 +393,34 @@ export async function GET(
 
   } catch (error) {
     console.error('Products API error:', error)
+    
+    // Extract request metadata for logging
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const ipAddress = extractIPAddress(request)
+    
+    // Log product loading error
+    logSystemEvent({
+      logType: 'products_error',
+      severity: 'error',
+      slug: slug || 'unknown',
+      businessId: business?.id,
+      endpoint: '/api/storefront/[slug]/products',
+      method: 'GET',
+      statusCode: 500,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: { 
+        errorType: 'products_fetch_error',
+        categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+        searchTerm: searchTerm || undefined
+      }
+    })
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

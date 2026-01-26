@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import { trackVisitorSession } from '@/lib/trackVisitorSession'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import * as Sentry from '@sentry/nextjs'
 
 const prisma = new PrismaClient()
@@ -137,11 +138,33 @@ export async function GET(
     Sentry.setTag('api_type', 'storefront')
     Sentry.setTag('method', 'GET')
 
+    // Extract request metadata for logging
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const ipAddress = extractIPAddress(request)
+
     // Validate slug - reject file extensions and suspicious patterns (bot/scanner protection)
     const invalidPatterns = /\.(php|asp|aspx|jsp|cgi|xml|txt|html|htm|js|css|json|sql|sh|py|rb|pl)$/i
     if (invalidPatterns.test(slug) || slug.length > 100 || slug.length < 1) {
       Sentry.setTag('error_type', 'invalid_slug')
       Sentry.setTag('status_code', '404')
+      
+      // Log 404 for invalid slug
+      logSystemEvent({
+        logType: 'storefront_404',
+        severity: 'warning',
+        slug,
+        endpoint: '/api/storefront/[slug]',
+        method: 'GET',
+        statusCode: 404,
+        errorMessage: 'Invalid slug pattern',
+        ipAddress,
+        userAgent,
+        referrer,
+        url: request.url,
+        metadata: { reason: 'invalid_slug_pattern', slugLength: slug.length }
+      })
+      
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
@@ -157,6 +180,23 @@ export async function GET(
     if (!business) {
       Sentry.setTag('error_type', 'store_not_found')
       Sentry.setTag('status_code', '404')
+      
+      // Log 404 for business not found
+      logSystemEvent({
+        logType: 'storefront_404',
+        severity: 'error',
+        slug,
+        endpoint: '/api/storefront/[slug]',
+        method: 'GET',
+        statusCode: 404,
+        errorMessage: 'Business not found',
+        ipAddress,
+        userAgent,
+        referrer,
+        url: request.url,
+        metadata: { reason: 'business_not_found', slug }
+      })
+      
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
@@ -322,7 +362,7 @@ export async function GET(
         }
       }
 
-      // Filter out products with no stock and limit to 24 after filtering
+      // Filter out products with no stock and limit to 50 after filtering (matching pagination limit)
       initialProducts = initialProductsRaw
         .filter((product: any) => {
           if (product.trackInventory) {
@@ -333,7 +373,7 @@ export async function GET(
           }
           return true
         })
-        .slice(0, 24) // Take first 24 after stock filtering
+        .slice(0, 50) // Take first 50 after stock filtering (matching pagination limit)
         .map((product: any) => {
           const productPricing = calculateEffectivePrice(
             product.price,
@@ -395,6 +435,25 @@ export async function GET(
         })
     } catch (error) {
       console.error('Error fetching initial products:', error)
+      
+      // Log product loading error
+      logSystemEvent({
+        logType: 'products_error',
+        severity: 'error',
+        slug,
+        businessId: business.id,
+        endpoint: '/api/storefront/[slug]',
+        method: 'GET',
+        statusCode: 500,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error fetching initial products',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: request.url,
+        metadata: { phase: 'initial_products_fetch' }
+      })
+      
       // Continue without initial products - client will fetch them
     }
 
@@ -522,39 +581,7 @@ export async function GET(
     business.brands = brands
     business.customMenuItems = customMenuItems
 
-    // Extract tracking data from request
-    const userAgent = request.headers.get('user-agent') || undefined
-    const referrer = request.headers.get('referer') || undefined
-    
-    // Get IP address - handle various proxy/CDN headers
-    // Priority: cf-connecting-ip (Cloudflare) > x-real-ip > x-forwarded-for (first IP is the original client)
-    let ipAddress: string | undefined
-    
-    // Cloudflare
-    const cfIP = request.headers.get('cf-connecting-ip')
-    if (cfIP) {
-      ipAddress = cfIP.trim()
-    } else {
-      // Vercel/other proxies - x-real-ip is usually the client IP
-      const realIP = request.headers.get('x-real-ip')
-      if (realIP) {
-        ipAddress = realIP.trim()
-      } else {
-        // x-forwarded-for - FIRST IP in chain is the original client
-        const forwardedFor = request.headers.get('x-forwarded-for')
-        if (forwardedFor) {
-          const ips = forwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
-          // Use FIRST IP (original client), not last (which is the final proxy/CDN)
-          ipAddress = ips.length > 0 ? ips[0] : undefined
-        }
-      }
-    }
-    
-    // Fallback to request.ip if available
-    if (!ipAddress) {
-      // @ts-ignore - NextRequest.ip might be available
-      ipAddress = request.ip || undefined
-    }
+    // Extract tracking data from request (already extracted above for 404 logging)
 
     // Track visitor session - run in background, don't await
     // This allows the response to return quickly while tracking happens async
@@ -565,6 +592,26 @@ export async function GET(
           userAgent,
           referrer,
           url: request.url
+        })
+        
+        // Log successful storefront load
+        logSystemEvent({
+          logType: 'storefront_success',
+          severity: 'info',
+          slug,
+          businessId: business.id,
+          endpoint: '/api/storefront/[slug]',
+          method: 'GET',
+          statusCode: 200,
+          ipAddress,
+          userAgent,
+          referrer,
+          url: request.url,
+          metadata: { 
+            hasConnections: hasConnections,
+            categoriesCount: business.categories?.length || 0,
+            initialProductsCount: initialProducts.length
+          }
         })
       } catch (error) {
         Sentry.captureException(error, {
@@ -879,21 +926,55 @@ export async function GET(
     return NextResponse.json(storeData)
 
   } catch (error) {
+    // Extract request metadata for error logging
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const ipAddress = extractIPAddress(request)
+    
     // Check if it's a Prisma connection error
     if (error instanceof Error) {
-      // Prisma connection errors - don't spam Sentry for bot requests
-      if (error.message.includes('Response from the Engine was empty') || 
-          error.message.includes('PrismaClientKnownRequestError') ||
-          error.name === 'PrismaClientUnknownRequestError') {
-        // Only log to Sentry if it's not a suspicious slug (likely bot)
+      // Prisma connection errors - check for all known patterns
+      const isPrismaConnectionError = 
+        error.message.includes('Response from the Engine was empty') || 
+        error.message.includes('PrismaClientKnownRequestError') ||
+        error.message.includes('Can\'t reach database server') ||
+        error.message.includes('Connection pool timeout') ||
+        error.message.includes('P1001') ||
+        error.message.includes('P1017') ||
+        error.name === 'PrismaClientUnknownRequestError'
+      
+      if (isPrismaConnectionError) {
         const isSuspiciousSlug = /\.(php|asp|jsp|xml|txt)$/i.test(slug)
         
+        // Log Prisma connection error to SystemLog
+        logSystemEvent({
+          logType: 'storefront_error',
+          severity: 'error',
+          slug,
+          endpoint: '/api/storefront/[slug]',
+          method: 'GET',
+          statusCode: isSuspiciousSlug ? 404 : 500,
+          errorMessage: error.message,
+          errorStack: error.stack,
+          ipAddress,
+          userAgent,
+          referrer,
+          url: request.url,
+          metadata: { 
+            errorType: 'prisma_connection_error',
+            isSuspiciousSlug,
+            errorCode: error.message.match(/P\d+/)?.[0],
+            errorName: error.name
+          }
+        })
+        
+        // Only log to Sentry if it's not a suspicious slug (likely bot)
         if (!isSuspiciousSlug) {
           Sentry.captureException(error, {
             tags: {
               endpoint: 'storefront_get',
               method: 'GET',
-              error_type: 'prisma_error',
+              error_type: 'prisma_connection_error',
             },
             extra: {
               slug,
@@ -909,6 +990,23 @@ export async function GET(
         )
       }
     }
+    
+    // Log other errors to SystemLog
+    logSystemEvent({
+      logType: 'storefront_error',
+      severity: 'error',
+      slug: slug || 'unknown',
+      endpoint: '/api/storefront/[slug]',
+      method: 'GET',
+      statusCode: 500,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: { errorType: 'general_error' }
+    })
     
     // Capture other errors in Sentry
     Sentry.captureException(error, {

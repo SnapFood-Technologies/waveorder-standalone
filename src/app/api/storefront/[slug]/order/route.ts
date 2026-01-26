@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -1708,6 +1709,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           variantId: item.variantId || null,
           quantity: item.quantity,
           price: item.price,
+          originalPrice: (item as any).originalPrice || null,
           modifiers: modifierIds
         }
       })
@@ -1845,6 +1847,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
             name: item.product.name,
             quantity: item.quantity,
             price: item.price,
+            originalPrice: (item as any).originalPrice || null,
             variant: item.variant?.name || null
           })),
           postalPricingDetails: postalPricingDetails,
@@ -2019,6 +2022,39 @@ try {
       deliveryType: order.type,
     })
 
+    // Log successful order creation
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    logSystemEvent({
+      logType: 'order_created',
+      severity: 'info',
+      slug,
+      businessId: business.id,
+      endpoint: '/api/storefront/[slug]/order',
+      method: 'POST',
+      statusCode: 200,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerId: customer.id,
+        customerName: customerName || customer.name,
+        orderType: order.type,
+        itemCount: items.length,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        total: order.total,
+        paymentMethod: paymentMethod,
+        deliveryAddress: order.deliveryAddress || null,
+        hasEmail: !!customer.email,
+      }
+    })
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
@@ -2046,6 +2082,36 @@ try {
         } : null,
         url: request.url,
       },
+    })
+    
+    // Log order creation error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    const businessId = orderData?.businessId || undefined
+    
+    logSystemEvent({
+      logType: 'order_error',
+      severity: 'error',
+      slug,
+      businessId,
+      endpoint: '/api/storefront/[slug]/order',
+      method: 'POST',
+      statusCode: error instanceof Error && error.message.includes('required') ? 400 : 500,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: request.url,
+      metadata: {
+        errorType: 'order_creation_error',
+        orderData: orderData ? {
+          deliveryType: orderData.deliveryType,
+          itemCount: orderData.items?.length,
+          hasCustomerEmail: !!orderData.customerEmail,
+        } : null,
+      }
     })
     
     console.error('Order creation error:', error)

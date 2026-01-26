@@ -26,6 +26,7 @@ interface OrderData {
     } | null
     quantity: number
     price: number
+    originalPrice?: number | null
   }[]
   businessId: string
   // For RETAIL businesses
@@ -437,8 +438,16 @@ function createOrderNotificationEmail({
                 <p style="margin: 0 0 5px; font-weight: 600; color: #374151;">${item.quantity}x ${item.product.name}</p>
                 ${item.variant ? `<p style="margin: 0; font-size: 12px; color: #6b7280;">${labels.variant}: ${item.variant.name}</p>` : ''}
               </div>
-              <div style="    margin-left: 15px;">
-                <p style="margin: 0; font-weight: 600; color: #1f2937;">(${formatCurrency(item.price, businessData.currency)})</p>
+              <div style="margin-left: 15px;">
+                ${item.originalPrice && item.originalPrice > item.price ? `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">
+                    ${formatCurrency(item.price, businessData.currency)}
+                    <span style="text-decoration: line-through; color: #6b7280; font-size: 12px; margin-left: 8px;">${formatCurrency(item.originalPrice, businessData.currency)}</span>
+                    <span style="color: #059669; font-size: 11px; margin-left: 8px;">-${formatCurrency(item.originalPrice - item.price, businessData.currency)}</span>
+                  </p>
+                ` : `
+                  <p style="margin: 0; font-weight: 600; color: #1f2937;">${formatCurrency(item.price, businessData.currency)}</p>
+                `}
               </div>
             </div>
           </div>

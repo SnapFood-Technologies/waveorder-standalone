@@ -941,14 +941,14 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
   const productNameEn = productNames.en || productNames.sq || 'Unnamed Product'
   const productNameSq = productNames.sq || productNames.en || productNameEn
   
-  // Extract product descriptions with fallback logic
+  // Extract product descriptions - NO fallback between languages
   const productDescription = externalProduct.description || externalProduct.short_description || null
   const productDescEn = productDescription 
-    ? (typeof productDescription === 'object' ? (productDescription.en || productDescription.sq || '') : productDescription)
+    ? (typeof productDescription === 'object' ? (productDescription.en || null) : productDescription)
     : null
   const productDescSq = productDescription && typeof productDescription === 'object'
-    ? (productDescription.sq || productDescription.en || null)
-    : (productDescEn || null)
+    ? (productDescription.sq || null)
+    : null
   
   // Extract meta title/description with fallback
   const metaTitleObj = externalProduct.meta_title
@@ -1167,8 +1167,8 @@ async function processExternalProduct(externalProduct: any, businessId: string, 
     categoryId,
     name: productNameEn,
     nameAl: productNameSq || productNameEn || null,
-    description: productDescEn,
-    descriptionAl: productDescSq || productDescEn || null,
+    description: productDescEn || null,
+    descriptionAl: productDescSq || null,
     price: parseFloat(currentPrice.toString()) || 0,
     originalPrice: regularPrice && regularPrice !== currentPrice ? parseFloat(regularPrice.toString()) : null,
     sku: externalProduct.code || externalProduct.sku || externalProduct.article_no || null,
