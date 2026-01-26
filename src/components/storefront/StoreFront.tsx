@@ -1613,6 +1613,7 @@ interface StoreData {
 
 interface Category {
   id: string
+  ids?: string[] // Merged IDs for marketplace deduplication (optional)
   name: string
   nameAl?: string
   description?: string
