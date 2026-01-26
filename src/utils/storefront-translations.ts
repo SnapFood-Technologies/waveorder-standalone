@@ -75,6 +75,10 @@ inCartLabel: string
     required: string
     quantity: string
     addToCart: string
+    youSave: string
+    perItem: string
+    originalSubtotal: string
+    discount: string
     
 
     website: string
@@ -356,6 +360,10 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     required: "(Required)",
     quantity: "Quantity",
     addToCart: "Add to Cart",
+    youSave: "You save",
+    perItem: "per item",
+    originalSubtotal: "Original Subtotal",
+    discount: "Discount",
     
     // Placeholders
     streetAddress: "Street address",
@@ -607,6 +615,10 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     required: "(I detyrueshëm)",
     quantity: "Sasia",
     addToCart: "Shto në Shportë",
+    youSave: "Ti kursen",
+    perItem: "për artikull",
+    originalSubtotal: "Nëntotali Origjinal",
+    discount: "Zbritje",
     
     noResultsFor: 'Nuk ka rezultate për',
     result: 'rezultat',
@@ -855,6 +867,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     required: "(Obligatorio)",
     quantity: "Cantidad",
     addToCart: "Añadir al Carrito",
+    youSave: "Ahorras",
+    perItem: "por artículo",
+    originalSubtotal: "Subtotal Original",
+    discount: "Descuento",
     
     // Placeholders
     streetAddress: "Dirección",
@@ -1065,6 +1081,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     required: "(Υποχρεωτικό)",
     quantity: "Ποσότητα",
     addToCart: "Προσθήκη στο Καλάθι",
+    youSave: "Εξοικονομείτε",
+    perItem: "ανά είδος",
+    originalSubtotal: "Αρχικό Υποσύνολο",
+    discount: "Έκπτωση",
     
 
     website: "Ιστοσελίδα",

@@ -404,13 +404,6 @@ export default function BusinessDetailsPage() {
                           <span className="text-sm text-gray-900">{supplier.name}</span>
                           <span className="text-sm text-gray-600 ml-2">{supplier.productCount} products</span>
                         </div>
-                        <Link
-                          href={`/superadmin/businesses/${businessId}/vendors/${supplier.id}/orders`}
-                          className="ml-3 inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
-                        >
-                          <ShoppingBag className="w-4 h-4 mr-1" />
-                          Order Stats
-                        </Link>
                       </div>
                     ))}
                   </div>
@@ -500,7 +493,16 @@ export default function BusinessDetailsPage() {
 
           {/* Business Statistics */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Statistics</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Business Statistics</h2>
+              <Link
+                href={`/superadmin/businesses/${businessId}/orders`}
+                className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+              >
+                <ShoppingBag className="w-4 h-4 mr-1" />
+                Order Stats
+              </Link>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />

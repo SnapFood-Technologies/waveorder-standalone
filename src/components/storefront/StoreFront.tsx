@@ -2267,38 +2267,6 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   // Calculate cart totals with dynamic delivery fee
   const cartSubtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
   
-  // Calculate total original price (before discounts) and total discount
-  const cartOriginalSubtotal = cart.reduce((sum, item) => {
-    const modifierPrice = item.modifiers.reduce((modSum: number, mod: any) => modSum + mod.price, 0)
-    const pricePerItem = item.price + modifierPrice
-    
-    // Get original price from cart item or product data
-    let originalPricePerItem: number | null = null
-    if (item.originalPrice) {
-      originalPricePerItem = item.originalPrice + modifierPrice
-    } else {
-      // Fallback: try to find from product data
-      const originalProduct = storeData.categories
-        .flatMap((cat: any) => cat.products)
-        .find((p: any) => p.id === item.productId)
-      
-      if (item.variantId && originalProduct) {
-        const variant = originalProduct.variants?.find((v: any) => v.id === item.variantId)
-        if (variant?.originalPrice && variant.originalPrice > variant.price) {
-          originalPricePerItem = variant.originalPrice + modifierPrice
-        }
-      } else if (originalProduct?.originalPrice && originalProduct.originalPrice > originalProduct.price) {
-        originalPricePerItem = originalProduct.originalPrice + modifierPrice
-      }
-    }
-    
-    const originalTotal = originalPricePerItem ? originalPricePerItem * item.quantity : item.totalPrice
-    return sum + originalTotal
-  }, 0)
-  
-  const totalDiscount = cartOriginalSubtotal - cartSubtotal
-  const hasDiscount = totalDiscount > 0
-  
   const cartDeliveryFee = deliveryType === 'delivery' ? calculatedDeliveryFee : 0
   const cartTotal = cartSubtotal + cartDeliveryFee
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -4014,9 +3982,6 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           customerInfo={customerInfo}
           setCustomerInfo={setCustomerInfo}
           cartSubtotal={cartSubtotal}
-          cartOriginalSubtotal={cartOriginalSubtotal}
-          totalDiscount={totalDiscount}
-          hasDiscount={hasDiscount}
           cartDeliveryFee={cartDeliveryFee}
           cartTotal={cartTotal}
           meetsMinimumOrder={meetsMinimumOrder}
@@ -4088,9 +4053,6 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               customerInfo={customerInfo}
               setCustomerInfo={setCustomerInfo}
               cartSubtotal={cartSubtotal}
-              cartOriginalSubtotal={cartOriginalSubtotal}
-              totalDiscount={totalDiscount}
-              hasDiscount={hasDiscount}
               cartDeliveryFee={cartDeliveryFee}
               cartTotal={cartTotal}
               meetsMinimumOrder={meetsMinimumOrder}
@@ -5442,7 +5404,7 @@ function ProductModal({
                     </div>
                     {hasDiscount && discountAmount > 0 && (
                       <p className="text-sm text-green-600 font-medium">
-                        {translations.youSave || 'You save'} {currencySymbol}{(discountAmount / quantity).toFixed(2)} per item
+                        {translations.youSave || 'You save'} {currencySymbol}{(discountAmount / quantity).toFixed(2)} {translations.perItem || 'per item'}
                       </p>
                     )}
                   </div>
@@ -5739,9 +5701,6 @@ function OrderPanel({
   customerInfo,
   setCustomerInfo,
   cartSubtotal,
-  cartOriginalSubtotal = 0,
-  totalDiscount = 0,
-  hasDiscount = false,
   cartDeliveryFee,
   cartTotal,
   meetsMinimumOrder,
@@ -5776,9 +5735,6 @@ function OrderPanel({
   customerInfo: CustomerInfo
   setCustomerInfo: React.Dispatch<React.SetStateAction<CustomerInfo>>
   cartSubtotal: number
-  cartOriginalSubtotal?: number
-  totalDiscount?: number
-  hasDiscount?: boolean
   cartDeliveryFee: number
   cartTotal: number
   meetsMinimumOrder: boolean
@@ -6194,7 +6150,6 @@ function OrderPanel({
                 const originalTotalPrice = originalPricePerItem ? originalPricePerItem * item.quantity : null
                 const hasDiscount = originalTotalPrice && originalTotalPrice > currentTotalPrice
                 const discountAmount = hasDiscount ? originalTotalPrice - currentTotalPrice : 0
-                const discountPercentage = hasDiscount && originalTotalPrice ? Math.round((discountAmount / originalTotalPrice) * 100) : 0
 
                 return (
                   <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
@@ -6209,16 +6164,9 @@ function OrderPanel({
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold">{currencySymbol}{currentTotalPrice.toFixed(2)}</p>
                           {hasDiscount && originalTotalPrice && (
-                            <>
-                              <p className="text-xs text-gray-500 line-through">
-                                {currencySymbol}{originalTotalPrice.toFixed(2)}
-                              </p>
-                              {discountPercentage > 0 && (
-                                <span className="text-xs font-medium text-green-600">
-                                  -{discountPercentage}%
-                                </span>
-                              )}
-                            </>
+                            <p className="text-xs text-gray-500 line-through">
+                              {currencySymbol}{originalTotalPrice.toFixed(2)}
+                            </p>
                           )}
                         </div>
                         {hasDiscount && discountAmount > 0 && (
@@ -6256,18 +6204,6 @@ function OrderPanel({
         {cart.length > 0 && (
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <div className="space-y-3">
-              {hasDiscount && (
-                <>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>{translations.originalSubtotal || 'Original Subtotal'}</span>
-                    <span className="line-through">{currencySymbol}{cartOriginalSubtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-green-600 font-medium">
-                    <span>{translations.discount || 'Discount'}</span>
-                    <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
-                  </div>
-                </>
-              )}
               <div className="flex justify-between text-sm">
                 <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
