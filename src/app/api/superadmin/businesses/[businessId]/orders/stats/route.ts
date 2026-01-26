@@ -182,46 +182,70 @@ export async function GET(
       .map(([date, count]) => ({ date, orders: count }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
+    // Get customer order counts for first order detection
+    const customerIds = [...new Set(allOrders.map(order => order.customer.id))]
+    const customerOrderCounts = await prisma.order.groupBy({
+      by: ['customerId'],
+      where: {
+        businessId: businessId,
+        customerId: { in: customerIds }
+      },
+      _count: {
+        id: true
+      }
+    })
+
+    const orderCountMap = customerOrderCounts.reduce((acc, item) => {
+      acc[item.customerId] = item._count.id
+      return acc
+    }, {} as Record<string, number>)
+
     // Paginate orders for list
     const skip = (page - 1) * limit
     const paginatedOrders = allOrders.slice(skip, skip + limit)
 
     // Format orders for response
-    const formattedOrders = paginatedOrders.map(order => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      type: order.type,
-      total: order.total,
-      subtotal: order.subtotal,
-      deliveryFee: order.deliveryFee,
-      createdByAdmin: order.createdByAdmin,
-      customerName: order.customerName || order.customer.name,
-      deliveryAddress: order.deliveryAddress,
-      notes: order.notes,
-      paymentStatus: order.paymentStatus,
-      paymentMethod: order.paymentMethod,
-      createdAt: order.createdAt.toISOString(),
-      updatedAt: order.updatedAt.toISOString(),
-      customer: {
-        id: order.customer.id,
-        name: order.customer.name,
-        phone: order.customer.phone,
-        email: order.customer.email
-      },
-      itemCount: order.items.length,
-      items: order.items.map(item => ({
-        id: item.id,
-        quantity: item.quantity,
-        price: item.price,
-        product: {
-          name: item.product.name
+    const formattedOrders = paginatedOrders.map(order => {
+      const customerOrderCount = orderCountMap[order.customer.id] || 1
+      const isFirstOrder = customerOrderCount === 1
+
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        type: order.type,
+        total: order.total,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        createdByAdmin: order.createdByAdmin,
+        customerName: order.customerName || order.customer.name,
+        deliveryAddress: order.deliveryAddress,
+        notes: order.notes,
+        paymentStatus: order.paymentStatus,
+        paymentMethod: order.paymentMethod,
+        createdAt: order.createdAt.toISOString(),
+        updatedAt: order.updatedAt.toISOString(),
+        customer: {
+          id: order.customer.id,
+          name: order.customer.name,
+          phone: order.customer.phone,
+          email: order.customer.email,
+          isFirstOrder
         },
-        variant: item.variant ? {
-          name: item.variant.name
-        } : null
-      }))
-    }))
+        itemCount: order.items.length,
+        items: order.items.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          product: {
+            name: item.product.name
+          },
+          variant: item.variant ? {
+            name: item.variant.name
+          } : null
+        }))
+      }
+    })
 
     return NextResponse.json({
       business: {

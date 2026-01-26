@@ -20,7 +20,8 @@ import {
   BarChart3,
   LineChart as LineChartIcon,
   RefreshCw,
-  Info
+  Info,
+  Star
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -39,6 +40,7 @@ import {
   Legend
 } from 'recharts'
 import { format, parseISO, startOfWeek, startOfMonth } from 'date-fns'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface BusinessOrderStats {
   business: {
@@ -75,6 +77,7 @@ interface BusinessOrderStats {
       name: string
       phone: string
       email: string | null
+      isFirstOrder?: boolean
     }
     itemCount: number
     items: Array<{
@@ -114,6 +117,7 @@ export default function BusinessOrdersStatsPage() {
   const params = useParams()
   const router = useRouter()
   const businessId = params.businessId as string
+  const { addParams } = useImpersonation(businessId)
 
   const [data, setData] = useState<BusinessOrderStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -363,32 +367,48 @@ export default function BusinessOrdersStatsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-50 rounded-lg p-4 text-center">
-          <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-gray-900">{data.stats.totalOrders}</p>
-          <p className="text-xs text-gray-500">Total Orders</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">{data.stats.totalOrders}</p>
+            </div>
+            <Package className="w-10 h-10 text-blue-500" />
+          </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 text-center">
-          <TrendingUp className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(data.stats.totalRevenue)}
-          </p>
-          <p className="text-xs text-gray-500">Total Revenue</p>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatCurrency(data.stats.totalRevenue)}
+              </p>
+            </div>
+            <TrendingUp className="w-10 h-10 text-green-500" />
+          </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 text-center">
-          <DollarSign className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-gray-900">
-            {formatCurrency(data.stats.averageOrderValue)}
-          </p>
-          <p className="text-xs text-gray-500">Avg Order Value</p>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatCurrency(data.stats.averageOrderValue)}
+              </p>
+            </div>
+            <DollarSign className="w-10 h-10 text-emerald-500" />
+          </div>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4 text-center">
-          <CheckCircle className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-          <p className="text-2xl font-bold text-gray-900">
-            {data.stats.completionRate.toFixed(1)}%
-          </p>
-          <p className="text-xs text-gray-500">Completion Rate</p>
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Completion Rate</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {data.stats.completionRate.toFixed(1)}%
+              </p>
+            </div>
+            <CheckCircle className="w-10 h-10 text-teal-500" />
+          </div>
         </div>
       </div>
 
@@ -772,7 +792,7 @@ export default function BusinessOrdersStatsPage() {
                       
                       <td className="px-6 py-4 text-right">
                         <Link
-                          href={`/admin/stores/${businessId}/orders/${order.id}`}
+                          href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
                           className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Eye className="w-3 h-3 mr-1" />
