@@ -121,7 +121,7 @@ export default function MarketplacePage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Building2 className="w-6 h-6 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Your Originator</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Originator</h2>
               </div>
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm font-medium text-blue-900 mb-1">{marketplaceInfo.originator.name}</p>
@@ -145,10 +145,10 @@ export default function MarketplacePage() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">About Suppliers</h3>
               <div className="space-y-3 text-xs text-gray-600">
                 <p>
-                  <strong className="text-gray-900">Your Role:</strong> As a supplier, your products are visible to the originator's marketplace.
+                  <strong className="text-gray-900">Role:</strong> As a supplier, this business's products are visible to the originator's marketplace.
                 </p>
                 <p>
-                  <strong className="text-gray-900">Visibility:</strong> You cannot see the originator's products or other suppliers' products.
+                  <strong className="text-gray-900">Visibility:</strong> This business cannot see the originator's products or other suppliers' products.
                 </p>
                 <p>
                   <strong className="text-gray-900">Access:</strong> Only the originator can see products from all connected suppliers.
@@ -167,7 +167,7 @@ export default function MarketplacePage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Package className="w-6 h-6 text-teal-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Your Suppliers</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Connected Suppliers</h2>
                 <span className="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-800 rounded-full">
                   {marketplaceInfo.suppliers.length} {marketplaceInfo.suppliers.length === 1 ? 'Supplier' : 'Suppliers'}
                 </span>
@@ -212,16 +212,16 @@ export default function MarketplacePage() {
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Marketplace Owner</h3>
               <div className="space-y-3 text-xs text-gray-600">
                 <p>
-                  <strong className="text-gray-900">Your Role:</strong> As the marketplace owner, you can see and manage products from all your suppliers.
+                  <strong className="text-gray-900">Role:</strong> As the marketplace owner, this business can see and manage products from all its suppliers.
                 </p>
                 <p>
-                  <strong className="text-gray-900">Supplier Visibility:</strong> Suppliers cannot see each other's products or your products.
+                  <strong className="text-gray-900">Supplier Visibility:</strong> Suppliers cannot see each other's products or the originator's products.
                 </p>
                 <p>
-                  <strong className="text-gray-900">Product Access:</strong> All supplier products appear in your storefront alongside your own products.
+                  <strong className="text-gray-900">Product Access:</strong> All supplier products appear in the originator's storefront alongside its own products.
                 </p>
                 <p>
-                  <strong className="text-gray-900">Management:</strong> You have full control over which supplier products are displayed to customers.
+                  <strong className="text-gray-900">Management:</strong> The originator has full control over which supplier products are displayed to customers.
                 </p>
               </div>
             </div>
