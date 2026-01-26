@@ -624,7 +624,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Zero Price Count Card */}
-                {typeof business.stats.productsWithZeroPrice === 'number' && business.stats.productsWithZeroPrice > 0 && (
+                {typeof business.stats.productsWithZeroPrice === 'number' && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -633,7 +633,9 @@ export default function BusinessDetailsPage() {
                           {business.stats.productsWithZeroPrice} Product{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
                         </p>
                         <p className="text-xs text-red-700 mt-1">
-                          {business.stats.productsWithZeroPrice} of {business.stats.totalProducts} products have price ≤ 0
+                          {business.stats.productsWithZeroPrice === 0 
+                            ? 'All products have valid prices' 
+                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} products have price ≤ 0`}
                         </p>
                       </div>
                     </div>
@@ -641,7 +643,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products Out Of Stock (No Variants) Count Card */}
-                {typeof business.stats.productsOutOfStock === 'number' && business.stats.productsOutOfStock > 0 && (
+                {typeof business.stats.productsOutOfStock === 'number' && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-orange-600 flex-shrink-0" />
@@ -650,7 +652,9 @@ export default function BusinessDetailsPage() {
                           {business.stats.productsOutOfStock} Product{business.stats.productsOutOfStock !== 1 ? 's' : ''} Out Of Stock
                         </p>
                         <p className="text-xs text-orange-700 mt-1">
-                          {business.stats.productsOutOfStock} products (no variants) have stock ≤ 0
+                          {business.stats.productsOutOfStock === 0 
+                            ? 'All products (no variants) have stock' 
+                            : `${business.stats.productsOutOfStock} products (no variants) have stock ≤ 0`}
                         </p>
                       </div>
                     </div>
@@ -658,7 +662,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - All Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsAllZeroStock === 'number' && business.stats.productsWithVariantsAllZeroStock > 0 && (
+                {typeof business.stats.productsWithVariantsAllZeroStock === 'number' && (
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
@@ -667,7 +671,9 @@ export default function BusinessDetailsPage() {
                           {business.stats.productsWithVariantsAllZeroStock} Product{business.stats.productsWithVariantsAllZeroStock !== 1 ? 's' : ''} With All Variants Zero Stock
                         </p>
                         <p className="text-xs text-purple-700 mt-1">
-                          {business.stats.productsWithVariantsAllZeroStock} products have all variants with stock = 0
+                          {business.stats.productsWithVariantsAllZeroStock === 0 
+                            ? 'No products have all variants with stock = 0' 
+                            : `${business.stats.productsWithVariantsAllZeroStock} products have all variants with stock = 0`}
                         </p>
                       </div>
                     </div>
@@ -675,7 +681,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - Some Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && business.stats.productsWithVariantsSomeZeroStock > 0 && (
+                {typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && (
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-indigo-600 flex-shrink-0" />
@@ -684,7 +690,9 @@ export default function BusinessDetailsPage() {
                           {business.stats.productsWithVariantsSomeZeroStock} Product{business.stats.productsWithVariantsSomeZeroStock !== 1 ? 's' : ''} With Some Variants Zero Stock
                         </p>
                         <p className="text-xs text-indigo-700 mt-1">
-                          {business.stats.productsWithVariantsSomeZeroStock} products have some variants with stock = 0 (but not all)
+                          {business.stats.productsWithVariantsSomeZeroStock === 0 
+                            ? 'No products have some variants with stock = 0' 
+                            : `${business.stats.productsWithVariantsSomeZeroStock} products have some variants with stock = 0 (but not all)`}
                         </p>
                       </div>
                     </div>
@@ -692,7 +700,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - All Non-Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && business.stats.productsWithVariantsAllNonZeroStock > 0 && (
+                {typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -701,7 +709,9 @@ export default function BusinessDetailsPage() {
                           {business.stats.productsWithVariantsAllNonZeroStock} Product{business.stats.productsWithVariantsAllNonZeroStock !== 1 ? 's' : ''} With All Variants In Stock
                         </p>
                         <p className="text-xs text-green-700 mt-1">
-                          {business.stats.productsWithVariantsAllNonZeroStock} products have all variants with stock &gt; 0
+                          {business.stats.productsWithVariantsAllNonZeroStock === 0 
+                            ? 'No products have all variants with stock &gt; 0' 
+                            : `${business.stats.productsWithVariantsAllNonZeroStock} products have all variants with stock &gt; 0`}
                         </p>
                       </div>
                     </div>

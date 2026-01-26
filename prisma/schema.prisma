@@ -369,6 +369,9 @@ model Business {
   // Support relations
   supportTickets  SupportTicket[]
   supportMessages SupportMessage[]
+  
+  // System logs
+  systemLogs      SystemLog[]
 
   onboardingCompleted  Boolean @default(false)
   onboardingStep       Int     @default(0)
@@ -1422,4 +1425,48 @@ model ExternalSyncLog {
   @@index([businessId])
   @@index([businessId, startedAt])
   @@index([syncId, startedAt])
+}
+
+// System logs for tracking errors, 404s, and system events
+model SystemLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  logType     String   // 'storefront_404', 'storefront_error', 'products_error', 'system_error'
+  severity    String   // 'error', 'warning', 'info'
+  
+  // Request context
+  slug        String?  // Storefront slug (if applicable)
+  businessId  String?  @db.ObjectId // Business ID (if applicable)
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  endpoint    String   // API endpoint or route
+  method      String   // HTTP method
+  statusCode  Int?     // HTTP status code
+  
+  // Error details
+  errorMessage String? // Error message
+  errorStack   String? // Error stack trace (if available)
+  
+  // Request metadata
+  ipAddress   String?  // Client IP address
+  userAgent   String?  // User agent
+  referrer    String?  // Referrer URL
+  url         String   // Full request URL
+  
+  // Location data (parsed from IP)
+  country     String?
+  city        String?
+  region      String?
+  
+  // Additional context
+  metadata    Json?    // Additional context data
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([logType])
+  @@index([severity])
+  @@index([slug])
+  @@index([businessId])
+  @@index([statusCode])
+  @@index([createdAt])
+  @@index([logType, createdAt])
+  @@index([businessId, createdAt])
 }
