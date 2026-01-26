@@ -1,8 +1,7 @@
 // app/api/business/[businessId]/dashboard-stats/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,

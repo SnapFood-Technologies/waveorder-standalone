@@ -1,9 +1,8 @@
 // app/api/admin/stores/[businessId]/business-hours/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
 
 interface DayHours {
   open: string

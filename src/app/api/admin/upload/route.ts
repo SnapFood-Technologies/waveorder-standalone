@@ -1,10 +1,9 @@
 // app/api/admin/upload/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { uploadBusinessImage } from '@/lib/businessStorage'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,12 +1,11 @@
 // src/app/api/admin/stores/[businessId]/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 import { phoneNumbersMatch, normalizePhoneNumber, isValidPhoneNumber } from '@/lib/phone-utils'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
-const prisma = new PrismaClient()
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
@@ -745,7 +744,5 @@ export async function POST(
     })
     
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

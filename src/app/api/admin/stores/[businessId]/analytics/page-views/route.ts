@@ -1,9 +1,8 @@
 // src/app/api/admin/stores/[businessId]/analytics/page-views/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
 
 export async function GET(
   request: NextRequest,
@@ -91,7 +90,5 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching page views analytics:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
-  } finally {
-    await prisma.$disconnect()
   }
 }

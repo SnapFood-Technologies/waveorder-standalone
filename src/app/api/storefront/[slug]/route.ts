@@ -1,12 +1,10 @@
 // app/api/storefront/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import * as Sentry from '@sentry/nextjs'
-
-const prisma = new PrismaClient()
 
 function formatBusinessHours(businessHours: any): string | null {
   if (!businessHours) return null
@@ -1036,7 +1034,5 @@ export async function GET(
       { error: 'Internal server error' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

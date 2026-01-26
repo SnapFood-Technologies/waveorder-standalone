@@ -1,8 +1,7 @@
 // app/api/v1/products/[productId]/stock/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
-const prisma = new PrismaClient()
 
 // Helper to extract API key (business ID) from request
 function getApiKey(request: NextRequest): string | null {
@@ -221,7 +220,5 @@ export async function PUT(
       },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

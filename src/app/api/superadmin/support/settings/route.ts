@@ -1,10 +1,9 @@
 // src/app/api/superadmin/support/settings/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient()
 
 export async function GET(request: NextRequest) {
   try {

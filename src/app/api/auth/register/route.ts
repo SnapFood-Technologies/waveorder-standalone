@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 import { sendVerificationEmail, sendUserCreatedNotification } from '@/lib/email'
 import crypto from 'crypto'
 
-const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
