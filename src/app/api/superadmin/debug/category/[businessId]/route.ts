@@ -16,77 +16,77 @@ export async function GET(
   const { businessId } = await params
 
   try {
-    // Get all categories with product counts
-    const categories = await prisma.category.findMany({
-      where: { businessId },
+    // Get summary counts (fast)
+    const [totalCategories, emptyCount, parentCount] = await Promise.all([
+      prisma.category.count({ where: { businessId } }),
+      prisma.category.count({ 
+        where: { businessId, products: { none: {} } } 
+      }),
+      prisma.category.count({ 
+        where: { businessId, parentId: null } 
+      })
+    ])
+
+    // Get only empty categories (limited to 50)
+    const emptyCategories = await prisma.category.findMany({
+      where: { 
+        businessId, 
+        products: { none: {} } 
+      },
       select: {
         id: true,
-        name: true,
-        parentId: true,
-        _count: {
-          select: {
-            products: true
-          }
-        }
+        name: true
       },
+      take: 50,
       orderBy: { name: 'asc' }
     })
 
-    // For each category, check how many products are actually displayable
-    const categoriesWithAnalysis = await Promise.all(
-      categories.map(async (cat) => {
-        // Count displayable products (active, price > 0, has stock)
-        const displayableCount = await prisma.product.count({
-          where: {
-            businessId,
-            categoryId: cat.id,
-            isActive: true,
-            price: { gt: 0 },
-            OR: [
-              { trackInventory: false },
-              { trackInventory: true, stock: { gt: 0 } },
-              { variants: { some: { stock: { gt: 0 } } } }
-            ]
+    // Get categories with products but likely 0 displayable
+    // Only fetch categories that have products with issues
+    const categoriesWithIssues = await prisma.category.findMany({
+      where: {
+        businessId,
+        products: { some: {} }, // Has at least 1 product
+        // All products are either inactive, zero price, or zero stock
+        NOT: {
+          products: {
+            some: {
+              isActive: true,
+              price: { gt: 0 },
+              OR: [
+                { trackInventory: false },
+                { trackInventory: true, stock: { gt: 0 } },
+                { variants: { some: { stock: { gt: 0 } } } }
+              ]
+            }
           }
-        })
-
-        return {
-          ...cat,
-          totalProducts: cat._count.products,
-          displayableProducts: displayableCount
         }
-      })
-    )
+      },
+      select: {
+        id: true,
+        name: true,
+        _count: { select: { products: true } }
+      },
+      take: 20,
+      orderBy: { name: 'asc' }
+    })
 
-    // Find empty categories
-    const emptyCategories = categoriesWithAnalysis.filter(c => c.totalProducts === 0)
-
-    // Find categories with products but 0 displayable
-    const zeroDisplayable = categoriesWithAnalysis
-      .filter(c => c.totalProducts > 0 && c.displayableProducts === 0)
-      .map(c => {
-        // Determine the likely reason
-        let reason = 'unknown'
-        return {
-          id: c.id,
-          name: c.name,
-          totalProducts: c.totalProducts,
-          displayableProducts: c.displayableProducts,
-          reason: 'Products inactive, zero price, or zero stock'
-        }
-      })
-
-    // Summary
-    const summary = {
-      total: categories.length,
-      withProducts: categoriesWithAnalysis.filter(c => c.totalProducts > 0).length,
-      empty: emptyCategories.length,
-      parents: categories.filter(c => c.parentId === null).length,
-      zeroDisplayable: zeroDisplayable.length
-    }
+    const zeroDisplayable = categoriesWithIssues.map(c => ({
+      id: c.id,
+      name: c.name,
+      totalProducts: c._count.products,
+      displayableProducts: 0,
+      reason: 'Products inactive, zero price, or zero stock'
+    }))
 
     return NextResponse.json({
-      summary,
+      summary: {
+        total: totalCategories,
+        withProducts: totalCategories - emptyCount,
+        empty: emptyCount,
+        parents: parentCount,
+        zeroDisplayable: zeroDisplayable.length
+      },
       emptyCategories: emptyCategories.map(c => ({
         id: c.id,
         name: c.name

@@ -16,9 +16,10 @@ export async function GET(
   const { businessId } = await params
 
   try {
-    // Get counts
-    const [totalProducts, zeroStockCount, lowStockCount, inStockCount] = await Promise.all([
+    // Get counts using fast COUNT queries
+    const [totalProducts, zeroStockCount, inStockCount, zeroStockVariantsCount] = await Promise.all([
       prisma.product.count({ where: { businessId } }),
+      
       // Zero stock (products without variants that track inventory and have 0 stock)
       prisma.product.count({
         where: {
@@ -28,29 +29,7 @@ export async function GET(
           variants: { none: {} }
         }
       }),
-      // Low stock (below their lowStockAlert threshold)
-      prisma.product.count({
-        where: {
-          businessId,
-          trackInventory: true,
-          lowStockAlert: { gt: 0 },
-          stock: { gt: 0 },
-          variants: { none: {} }
-        }
-      }).then(async () => {
-        // Need to filter where stock < lowStockAlert
-        const productsWithLowStock = await prisma.product.findMany({
-          where: {
-            businessId,
-            trackInventory: true,
-            lowStockAlert: { gt: 0 },
-            stock: { gt: 0 },
-            variants: { none: {} }
-          },
-          select: { stock: true, lowStockAlert: true }
-        })
-        return productsWithLowStock.filter(p => p.lowStockAlert && p.stock <= p.lowStockAlert).length
-      }),
+      
       // In stock
       prisma.product.count({
         where: {
@@ -61,10 +40,19 @@ export async function GET(
             { variants: { some: { stock: { gt: 0 } } } }
           ]
         }
+      }),
+
+      // Products with variants where ALL variants have 0 stock
+      prisma.product.count({
+        where: {
+          businessId,
+          variants: { some: {} },
+          NOT: { variants: { some: { stock: { gt: 0 } } } }
+        }
       })
     ])
 
-    // Get zero stock products
+    // Get sample of zero stock products (limit 20, no variants fetch)
     const zeroStockProducts = await prisma.product.findMany({
       where: {
         businessId,
@@ -75,46 +63,36 @@ export async function GET(
       select: {
         id: true,
         name: true,
-        sku: true,
-        _count: { select: { variants: true } }
+        sku: true
       },
       take: 20,
       orderBy: { name: 'asc' }
     })
 
-    // Get products with all variants having 0 stock
+    // Get sample of products with all variants at 0 stock (limit 10)
     const productsWithZeroStockVariants = await prisma.product.findMany({
       where: {
         businessId,
-        trackInventory: true,
         variants: { some: {} },
-        NOT: {
-          variants: { some: { stock: { gt: 0 } } }
-        }
+        NOT: { variants: { some: { stock: { gt: 0 } } } }
       },
       select: {
         id: true,
         name: true,
         sku: true,
-        variants: {
-          select: {
-            id: true,
-            name: true,
-            stock: true
-          }
-        }
+        _count: { select: { variants: true } }
       },
-      take: 20,
+      take: 10,
       orderBy: { name: 'asc' }
     })
 
-    // Get low stock products
+    // Get sample of low stock products (limit 20)
+    // Simplified - just get products with stock between 1-10
     const lowStockProducts = await prisma.product.findMany({
       where: {
         businessId,
         trackInventory: true,
-        lowStockAlert: { gt: 0 },
-        stock: { gt: 0 },
+        stock: { gt: 0, lte: 10 },
         variants: { none: {} }
       },
       select: {
@@ -124,14 +102,14 @@ export async function GET(
         lowStockAlert: true
       },
       orderBy: { stock: 'asc' },
-      take: 50
-    }).then(products => products.filter(p => p.lowStockAlert && p.stock <= p.lowStockAlert).slice(0, 20))
+      take: 20
+    })
 
     return NextResponse.json({
       summary: {
         totalProducts,
         zeroStock: zeroStockCount,
-        zeroStockVariants: productsWithZeroStockVariants.length,
+        zeroStockVariants: zeroStockVariantsCount,
         lowStock: lowStockProducts.length,
         inStock: inStockCount
       },
@@ -139,16 +117,13 @@ export async function GET(
         id: p.id,
         name: p.name,
         sku: p.sku,
-        variantsCount: p._count.variants
+        variantsCount: 0
       })),
       zeroStockVariantsProducts: productsWithZeroStockVariants.map(p => ({
         id: p.id,
         name: p.name,
         sku: p.sku,
-        variants: p.variants.map(v => ({
-          name: v.name,
-          stock: v.stock
-        }))
+        variantsCount: p._count.variants
       })),
       lowStockProducts
     })

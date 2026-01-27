@@ -12,7 +12,6 @@ import {
   Link2,
   X,
   Search,
-  ChevronDown,
   Loader2,
   CheckCircle,
   XCircle,
@@ -34,24 +33,35 @@ interface Brand {
 type DebugTool = 'business' | 'brand' | 'category' | 'product' | 'stock' | 'sync' | 'connections'
 
 export default function DebugToolsPage() {
-  // State
+  // State - NO businesses loaded on mount
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
-  const [loading, setLoading] = useState(true)
+  const [businessSearch, setBusinessSearch] = useState('')
+  const [businessSearchLoading, setBusinessSearchLoading] = useState(false)
   
   // Modal state
   const [activeModal, setActiveModal] = useState<DebugTool | null>(null)
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
+  const [selectedBusinessName, setSelectedBusinessName] = useState('')
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [productIdInput, setProductIdInput] = useState('')
   const [debugLoading, setDebugLoading] = useState(false)
   const [debugResult, setDebugResult] = useState<any>(null)
   const [debugError, setDebugError] = useState<string | null>(null)
 
-  // Fetch businesses on mount
+  // Debounced business search
   useEffect(() => {
-    fetchBusinesses()
-  }, [])
+    if (!businessSearch || businessSearch.length < 2) {
+      setBusinesses([])
+      return
+    }
+
+    const timer = setTimeout(() => {
+      searchBusinesses(businessSearch)
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [businessSearch])
 
   // Fetch brands when business is selected
   useEffect(() => {
@@ -62,17 +72,18 @@ export default function DebugToolsPage() {
     }
   }, [selectedBusinessId])
 
-  const fetchBusinesses = async () => {
+  const searchBusinesses = async (query: string) => {
+    setBusinessSearchLoading(true)
     try {
-      const response = await fetch('/api/superadmin/businesses?limit=1000')
+      const response = await fetch(`/api/superadmin/businesses?search=${encodeURIComponent(query)}&limit=20`)
       if (response.ok) {
         const data = await response.json()
         setBusinesses(data.businesses || [])
       }
     } catch (error) {
-      console.error('Error fetching businesses:', error)
+      console.error('Error searching businesses:', error)
     } finally {
-      setLoading(false)
+      setBusinessSearchLoading(false)
     }
   }
 
@@ -86,6 +97,13 @@ export default function DebugToolsPage() {
     } catch (error) {
       console.error('Error fetching brands:', error)
     }
+  }
+
+  const selectBusiness = (business: Business) => {
+    setSelectedBusinessId(business.id)
+    setSelectedBusinessName(`${business.name} (${business.slug})`)
+    setBusinesses([]) // Clear dropdown
+    setBusinessSearch('') // Clear search
   }
 
   const runDebug = async (tool: DebugTool) => {
@@ -174,7 +192,9 @@ export default function DebugToolsPage() {
     setActiveModal(tool)
     setDebugResult(null)
     setDebugError(null)
-    // Reset selections based on tool
+    setBusinessSearch('')
+    setBusinesses([])
+    // Keep selected business if already selected
     if (tool === 'product') {
       setProductIdInput('')
     }
@@ -184,6 +204,13 @@ export default function DebugToolsPage() {
     setActiveModal(null)
     setDebugResult(null)
     setDebugError(null)
+  }
+
+  const clearSelectedBusiness = () => {
+    setSelectedBusinessId('')
+    setSelectedBusinessName('')
+    setBrands([])
+    setSelectedBrandId('')
   }
 
   const debugTools = [
@@ -256,14 +283,6 @@ export default function DebugToolsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -286,7 +305,7 @@ export default function DebugToolsPage() {
           <div>
             <h3 className="font-medium text-blue-900">How to use Debug Tools</h3>
             <p className="text-sm text-blue-700 mt-1">
-              Select a debug tool below, choose the relevant business/entity, and click "Analyze" to get detailed diagnostics. 
+              Select a debug tool below, search for a business by name, and click "Analyze" to get detailed diagnostics. 
               Results will show why products might not be displaying, stock issues, sync problems, and more.
             </p>
           </div>
@@ -348,24 +367,61 @@ export default function DebugToolsPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {/* Input Section */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                {/* Business Selector - shown for most tools */}
+                {/* Business Search - shown for most tools */}
                 {activeModal !== 'product' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Business
+                      Search Business
                     </label>
-                    <select
-                      value={selectedBusinessId}
-                      onChange={(e) => setSelectedBusinessId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    >
-                      <option value="">Choose a business...</option>
-                      {businesses.map(b => (
-                        <option key={b.id} value={b.id}>
-                          {b.name} ({b.slug})
-                        </option>
-                      ))}
-                    </select>
+                    
+                    {/* Show selected business or search input */}
+                    {selectedBusinessId ? (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg">
+                        <Building2 className="w-4 h-4 text-gray-400" />
+                        <span className="flex-1 text-gray-900">{selectedBusinessName}</span>
+                        <button
+                          onClick={clearSelectedBusiness}
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <X className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          {businessSearchLoading ? (
+                            <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                          ) : (
+                            <Search className="w-4 h-4 text-gray-400" />
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Type to search businesses..."
+                          value={businessSearch}
+                          onChange={(e) => setBusinessSearch(e.target.value)}
+                          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        />
+                        
+                        {/* Search Results Dropdown */}
+                        {businesses.length > 0 && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {businesses.map(b => (
+                              <button
+                                key={b.id}
+                                onClick={() => selectBusiness(b)}
+                                className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-0"
+                              >
+                                <Building2 className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium">{b.name}</span>
+                                <span className="text-gray-500 text-sm">({b.slug})</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">Type at least 2 characters to search</p>
                   </div>
                 )}
 
@@ -383,11 +439,11 @@ export default function DebugToolsPage() {
                       <option value="">Choose a brand...</option>
                       {brands.map(b => (
                         <option key={b.id} value={b.id}>
-                          {b.name} ({b.id})
+                          {b.name}
                         </option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">Or enter brand ID manually below:</p>
+                    <p className="text-xs text-gray-500 mt-1">Or enter brand ID manually:</p>
                     <input
                       type="text"
                       placeholder="Brand ID..."
@@ -996,8 +1052,6 @@ function ConnectionsDebugResults({ data }: { data: any }) {
                 <tr className="border-b border-blue-200">
                   <th className="text-left py-2 px-2">Business</th>
                   <th className="text-left py-2 px-2">Relationship</th>
-                  <th className="text-left py-2 px-2">Received</th>
-                  <th className="text-left py-2 px-2">Shared</th>
                 </tr>
               </thead>
               <tbody>
@@ -1008,17 +1062,10 @@ function ConnectionsDebugResults({ data }: { data: any }) {
                       <span className="text-gray-500 text-xs ml-2">({b.slug})</span>
                     </td>
                     <td className="py-2 px-2">
-                      <span className={`px-2 py-0.5 rounded text-xs ${
-                        b.relationship === 'bidirectional' ? 'bg-green-100 text-green-800' :
-                        b.relationship === 'receiving' ? 'bg-blue-100 text-blue-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {b.relationship === 'bidirectional' ? 'Both ways' :
-                         b.relationship === 'receiving' ? 'Receiving' : 'Sharing'}
+                      <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                        {b.relationship || 'connected'}
                       </span>
                     </td>
-                    <td className="py-2 px-2">{b.productsReceived}</td>
-                    <td className="py-2 px-2">{b.productsShared}</td>
                   </tr>
                 ))}
               </tbody>

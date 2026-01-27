@@ -34,14 +34,85 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Brand not found' }, { status: 404 })
     }
 
-    // Check if it's the originator's brand
     const isOriginatorBrand = brand.businessId === businessId
 
-    // Get all products for this brand (from the originator's perspective)
-    const products = await prisma.product.findMany({
+    // Use COUNT queries instead of fetching all products
+    const baseWhere = { businessId, brandId }
+
+    const [
+      total,
+      active,
+      priceGreaterThanZero,
+      priceZero,
+      hasImages,
+      hasVariants,
+      // Displayable count (active, price > 0, has stock or variants with stock)
+      displayableCount
+    ] = await Promise.all([
+      prisma.product.count({ where: baseWhere }),
+      prisma.product.count({ where: { ...baseWhere, isActive: true } }),
+      prisma.product.count({ where: { ...baseWhere, price: { gt: 0 } } }),
+      prisma.product.count({ where: { ...baseWhere, price: 0 } }),
+      prisma.product.count({ where: { ...baseWhere, images: { isEmpty: false } } }),
+      prisma.product.count({ where: { ...baseWhere, variants: { some: {} } } }),
+      prisma.product.count({
+        where: {
+          ...baseWhere,
+          isActive: true,
+          price: { gt: 0 },
+          OR: [
+            { trackInventory: false },
+            { trackInventory: true, stock: { gt: 0 } },
+            { variants: { some: { stock: { gt: 0 } } } }
+          ]
+        }
+      })
+    ])
+
+    // Additional stock-related counts
+    const [
+      stockGreaterThanZero,
+      stockZero,
+      noTrackInventory
+    ] = await Promise.all([
+      prisma.product.count({ 
+        where: { ...baseWhere, variants: { none: {} }, stock: { gt: 0 } } 
+      }),
+      prisma.product.count({ 
+        where: { ...baseWhere, variants: { none: {} }, trackInventory: true, stock: 0 } 
+      }),
+      prisma.product.count({ 
+        where: { ...baseWhere, variants: { none: {} }, trackInventory: false } 
+      })
+    ])
+
+    // Variant analysis counts
+    const [
+      productsWithVariants,
+      productsWithVariantsAndStock
+    ] = await Promise.all([
+      prisma.product.count({ where: { ...baseWhere, variants: { some: {} } } }),
+      prisma.product.count({ 
+        where: { ...baseWhere, variants: { some: { stock: { gt: 0 } } } } 
+      })
+    ])
+
+    const allVariantsZeroStock = productsWithVariants - productsWithVariantsAndStock
+
+    // Only fetch a SAMPLE of non-displayable products (max 10)
+    const notDisplayableSample = await prisma.product.findMany({
       where: {
-        businessId: businessId,
-        brandId: brandId
+        ...baseWhere,
+        OR: [
+          { isActive: false },
+          { price: 0 },
+          { trackInventory: true, stock: 0, variants: { none: {} } },
+          // Products with variants where all have 0 stock
+          {
+            variants: { some: {} },
+            NOT: { variants: { some: { stock: { gt: 0 } } } }
+          }
+        ]
       },
       select: {
         id: true,
@@ -52,79 +123,25 @@ export async function GET(request: Request) {
         trackInventory: true,
         images: true,
         variants: {
-          select: {
-            id: true,
-            name: true,
-            stock: true,
-            price: true
-          }
+          select: { stock: true },
+          take: 10 // Only get first 10 variants
         }
-      }
+      },
+      take: 10 // Only get 10 products for sample
     })
 
-    // Analyze products
-    const analysis = {
-      total: products.length,
-      active: products.filter(p => p.isActive).length,
-      inactive: products.filter(p => !p.isActive).length,
-      priceGreaterThanZero: products.filter(p => p.price > 0).length,
-      priceZero: products.filter(p => p.price === 0).length,
-      stockGreaterThanZero: products.filter(p => !p.variants.length && p.stock > 0).length,
-      stockZero: products.filter(p => !p.variants.length && p.trackInventory && p.stock === 0).length,
-      noTrackInventory: products.filter(p => !p.variants.length && !p.trackInventory).length,
-      hasImages: products.filter(p => p.images.length > 0).length,
-      noImages: products.filter(p => p.images.length === 0).length,
-      hasVariants: products.filter(p => p.variants.length > 0).length,
-      variantAnalysis: {
-        totalProductsWithVariants: 0,
-        allVariantsZeroStock: 0,
-        someVariantsHaveStock: 0,
-        allVariantsHaveStock: 0
+    // Determine reason for each non-displayable product
+    const notDisplayableWithReason = notDisplayableSample.map(p => {
+      let reason = 'unknown'
+      if (!p.isActive) reason = 'inactive'
+      else if (p.price === 0) reason = 'zero_price'
+      else if (p.variants.length > 0) {
+        const variantsWithStock = p.variants.filter(v => v.stock > 0).length
+        if (variantsWithStock === 0) reason = 'all_variants_zero_stock'
+      } else if (p.trackInventory && p.stock === 0) {
+        reason = 'zero_stock'
       }
-    }
 
-    // Analyze variants
-    const productsWithVariants = products.filter(p => p.variants.length > 0)
-    analysis.variantAnalysis.totalProductsWithVariants = productsWithVariants.length
-
-    for (const product of productsWithVariants) {
-      const variantsWithStock = product.variants.filter(v => v.stock > 0).length
-      if (variantsWithStock === 0) {
-        analysis.variantAnalysis.allVariantsZeroStock++
-      } else if (variantsWithStock === product.variants.length) {
-        analysis.variantAnalysis.allVariantsHaveStock++
-      } else {
-        analysis.variantAnalysis.someVariantsHaveStock++
-      }
-    }
-
-    // Check which products are displayable on storefront
-    const isDisplayable = (product: typeof products[0]) => {
-      // Must be active
-      if (!product.isActive) return { displayable: false, reason: 'inactive' }
-      // Must have price > 0
-      if (product.price === 0) return { displayable: false, reason: 'zero_price' }
-      
-      // If has variants, at least one must have stock
-      if (product.variants.length > 0) {
-        const variantsWithStock = product.variants.filter(v => v.stock > 0).length
-        if (variantsWithStock === 0) {
-          return { displayable: false, reason: 'all_variants_zero_stock' }
-        }
-        return { displayable: true, reason: '' }
-      }
-      
-      // No variants - check stock
-      if (product.trackInventory && product.stock === 0) {
-        return { displayable: false, reason: 'zero_stock' }
-      }
-      
-      return { displayable: true, reason: '' }
-    }
-
-    const displayableCount = products.filter(p => isDisplayable(p).displayable).length
-    const notDisplayable = products.filter(p => !isDisplayable(p).displayable).map(p => {
-      const result = isDisplayable(p)
       return {
         id: p.id,
         name: p.name,
@@ -134,7 +151,7 @@ export async function GET(request: Request) {
         hasImages: p.images.length > 0,
         variantsCount: p.variants.length,
         variantsWithStock: p.variants.filter(v => v.stock > 0).length,
-        reason: result.reason
+        reason
       }
     })
 
@@ -143,13 +160,31 @@ export async function GET(request: Request) {
         ...brand,
         isOriginatorBrand
       },
-      analysis,
+      analysis: {
+        total,
+        active,
+        inactive: total - active,
+        priceGreaterThanZero,
+        priceZero,
+        stockGreaterThanZero,
+        stockZero,
+        noTrackInventory,
+        hasImages,
+        noImages: total - hasImages,
+        hasVariants,
+        variantAnalysis: {
+          totalProductsWithVariants: productsWithVariants,
+          allVariantsZeroStock,
+          someVariantsHaveStock: productsWithVariantsAndStock, // Simplified
+          allVariantsHaveStock: 0 // Would need complex query, skip for performance
+        }
+      },
       storefrontDisplayable: {
         count: displayableCount
       },
       notDisplayableSample: {
-        count: notDisplayable.length,
-        first10: notDisplayable.slice(0, 10)
+        count: total - displayableCount,
+        first10: notDisplayableWithReason
       },
       apiComparison: {
         storefrontUrl: `/api/storefront/${businessId}/products?brandId=${brandId}`
