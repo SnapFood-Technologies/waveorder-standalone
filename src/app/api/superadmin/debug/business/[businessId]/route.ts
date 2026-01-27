@@ -16,7 +16,7 @@ export async function GET(
   const { businessId } = await params
 
   try {
-    // Get business info
+    // Get business info with slug for storefront ping
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: {
@@ -32,95 +32,46 @@ export async function GET(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    // Get product counts
-    const [
-      totalProducts,
-      activeProducts,
-      zeroPriceProducts,
-      zeroStockProducts,
-      noImageProducts,
-      productsWithVariants,
-      productsWithAllVariantsZeroStock
-    ] = await Promise.all([
+    // Simple counts - just 1 query each (fast)
+    const [productCount, orderCount, customerCount] = await Promise.all([
       prisma.product.count({ where: { businessId } }),
-      prisma.product.count({ where: { businessId, isActive: true } }),
-      prisma.product.count({ where: { businessId, price: 0 } }),
-      prisma.product.count({ where: { businessId, trackInventory: true, stock: 0, variants: { none: {} } } }),
-      prisma.product.count({ where: { businessId, images: { isEmpty: true } } }),
-      prisma.product.count({ where: { businessId, variants: { some: {} } } }),
-      // Products with variants where ALL variants have 0 stock
-      prisma.product.count({
-        where: {
-          businessId,
-          trackInventory: true,
-          variants: { some: {} },
-          NOT: {
-            variants: {
-              some: {
-                stock: { gt: 0 }
-              }
-            }
-          }
-        }
-      })
+      prisma.order.count({ where: { businessId } }),
+      prisma.customer.count({ where: { businessId } })
     ])
 
-    // Calculate displayable products (active, price > 0, has stock or variants with stock)
-    const displayableProducts = await prisma.product.count({
-      where: {
-        businessId,
-        isActive: true,
-        price: { gt: 0 },
-        OR: [
-          { trackInventory: false },
-          { trackInventory: true, stock: { gt: 0 } },
-          { variants: { some: { stock: { gt: 0 } } } }
-        ]
+    // Ping storefront API
+    let storefrontStatus = 'unknown'
+    let storefrontResponseTime = 0
+    
+    try {
+      const baseUrl = process.env.NEXTAUTH_URL || 'https://waveorder.app'
+      const startTime = Date.now()
+      const storefrontResponse = await fetch(`${baseUrl}/api/storefront/${business.slug}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      storefrontResponseTime = Date.now() - startTime
+      
+      if (storefrontResponse.ok) {
+        storefrontStatus = 'ok'
+      } else {
+        storefrontStatus = `error (${storefrontResponse.status})`
       }
-    })
-
-    // Get category count
-    const totalCategories = await prisma.category.count({ where: { businessId } })
-    const emptyCategories = await prisma.category.count({
-      where: {
-        businessId,
-        products: { none: {} }
-      }
-    })
-
-    // Get sync status
-    const syncConfig = await prisma.externalSync.findFirst({
-      where: { businessId },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        lastSyncAt: true,
-        lastSyncStatus: true,
-        lastSyncError: true,
-        isActive: true
-      }
-    })
+    } catch (error) {
+      storefrontStatus = 'failed'
+    }
 
     return NextResponse.json({
       business,
-      health: {
-        totalProducts,
-        displayableProducts,
-        productsWithIssues: totalProducts - displayableProducts,
-        totalCategories,
-        emptyCategories
+      counts: {
+        products: productCount,
+        orders: orderCount,
+        customers: customerCount
       },
-      issues: {
-        zeroPrice: zeroPriceProducts,
-        zeroStock: zeroStockProducts,
-        noImages: noImageProducts,
-        inactive: totalProducts - activeProducts,
-        variantsZeroStock: productsWithAllVariantsZeroStock
-      },
-      syncStatus: {
-        hasExternalSync: !!syncConfig,
-        lastSync: syncConfig?.lastSyncAt,
-        lastSyncStatus: syncConfig?.lastSyncStatus,
-        lastSyncError: syncConfig?.lastSyncError
+      storefront: {
+        status: storefrontStatus,
+        responseTime: storefrontResponseTime,
+        url: `/${business.slug}`
       }
     })
   } catch (error) {

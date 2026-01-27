@@ -53,8 +53,12 @@ export default function DebugToolsPage() {
   useEffect(() => {
     if (!businessSearch || businessSearch.length < 2) {
       setBusinesses([])
+      setBusinessSearchLoading(false)
       return
     }
+
+    // Show loading immediately when typing
+    setBusinessSearchLoading(true)
 
     const timer = setTimeout(() => {
       searchBusinesses(businessSearch)
@@ -73,15 +77,24 @@ export default function DebugToolsPage() {
   }, [selectedBusinessId])
 
   const searchBusinesses = async (query: string) => {
-    setBusinessSearchLoading(true)
     try {
+      // Use existing businesses list API with search param
       const response = await fetch(`/api/superadmin/businesses?search=${encodeURIComponent(query)}&limit=20`)
       if (response.ok) {
         const data = await response.json()
-        setBusinesses(data.businesses || [])
+        // Map to simple format
+        const businesses = (data.businesses || []).map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          slug: b.slug
+        }))
+        setBusinesses(businesses)
+      } else {
+        setBusinesses([])
       }
     } catch (error) {
       console.error('Error searching businesses:', error)
+      setBusinesses([])
     } finally {
       setBusinessSearchLoading(false)
     }
@@ -189,12 +202,15 @@ export default function DebugToolsPage() {
   }
 
   const openModal = (tool: DebugTool) => {
+    // Reset ALL state when opening new modal
     setActiveModal(tool)
     setDebugResult(null)
     setDebugError(null)
+    setDebugLoading(false)
     setBusinessSearch('')
     setBusinesses([])
-    // Keep selected business if already selected
+    setBusinessSearchLoading(false)
+    // Reset selection for fresh start
     if (tool === 'product') {
       setProductIdInput('')
     }
@@ -204,6 +220,8 @@ export default function DebugToolsPage() {
     setActiveModal(null)
     setDebugResult(null)
     setDebugError(null)
+    setDebugLoading(false)
+    setBusinessSearchLoading(false)
   }
 
   const clearSelectedBusiness = () => {
@@ -337,19 +355,19 @@ export default function DebugToolsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-3">
+            <div className="flex items-start justify-between p-4 border-b border-gray-200 gap-2">
+              <div className="flex items-start gap-3 min-w-0 flex-1">
                 {(() => {
                   const tool = debugTools.find(t => t.id === activeModal)
                   if (!tool) return null
                   return (
                     <>
-                      <div className={`w-10 h-10 ${tool.color} rounded-lg flex items-center justify-center`}>
+                      <div className={`w-10 h-10 ${tool.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
                         <tool.icon className="w-5 h-5 text-white" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <h2 className="text-lg font-semibold text-gray-900">{tool.name}</h2>
-                        <p className="text-sm text-gray-600">{tool.description}</p>
+                        <p className="text-sm text-gray-600 hidden sm:block">{tool.description}</p>
                       </div>
                     </>
                   )
@@ -357,7 +375,7 @@ export default function DebugToolsPage() {
               </div>
               <button
                 onClick={closeModal}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -558,50 +576,39 @@ function BusinessHealthResults({ data }: { data: any }) {
         </div>
       </div>
 
-      {/* Health Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Products" value={data.health?.totalProducts || 0} color="gray" />
-        <StatCard label="Displayable" value={data.health?.displayableProducts || 0} color="green" />
-        <StatCard label="Issues" value={data.health?.productsWithIssues || 0} color="red" />
-        <StatCard label="Categories" value={data.health?.totalCategories || 0} color="blue" />
+      {/* Simple Counts */}
+      <div className="grid grid-cols-3 gap-4">
+        <StatCard label="Products" value={data.counts?.products || 0} color="blue" />
+        <StatCard label="Orders" value={data.counts?.orders || 0} color="green" />
+        <StatCard label="Customers" value={data.counts?.customers || 0} color="gray" />
       </div>
 
-      {/* Issues Breakdown */}
-      {data.issues && Object.keys(data.issues).length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h4 className="font-semibold text-yellow-900 mb-2">Issues Found</h4>
-          <div className="space-y-1 text-sm">
-            {data.issues.zeroPrice > 0 && (
-              <div className="flex justify-between"><span>Products with price = 0:</span> <span className="font-medium text-red-600">{data.issues.zeroPrice}</span></div>
-            )}
-            {data.issues.zeroStock > 0 && (
-              <div className="flex justify-between"><span>Products with stock = 0:</span> <span className="font-medium text-red-600">{data.issues.zeroStock}</span></div>
-            )}
-            {data.issues.noImages > 0 && (
-              <div className="flex justify-between"><span>Products without images:</span> <span className="font-medium text-yellow-600">{data.issues.noImages}</span></div>
-            )}
-            {data.issues.inactive > 0 && (
-              <div className="flex justify-between"><span>Inactive products:</span> <span className="font-medium text-gray-600">{data.issues.inactive}</span></div>
-            )}
-            {data.issues.variantsZeroStock > 0 && (
-              <div className="flex justify-between"><span>Products with all variants out of stock:</span> <span className="font-medium text-red-600">{data.issues.variantsZeroStock}</span></div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Sync Status */}
-      {data.syncStatus && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 mb-2">External Sync Status</h4>
-          <div className="text-sm">
-            <p><span className="text-gray-500">Has External Sync:</span> <span className="font-medium">{data.syncStatus.hasExternalSync ? 'Yes' : 'No'}</span></p>
-            {data.syncStatus.lastSync && (
-              <p><span className="text-gray-500">Last Sync:</span> <span className="font-medium">{new Date(data.syncStatus.lastSync).toLocaleString()}</span></p>
-            )}
-            {data.syncStatus.lastSyncStatus && (
-              <p><span className="text-gray-500">Status:</span> <span className={data.syncStatus.lastSyncStatus === 'success' ? 'text-green-600' : 'text-red-600'}>{data.syncStatus.lastSyncStatus}</span></p>
-            )}
+      {/* Storefront Ping */}
+      {data.storefront && (
+        <div className={`rounded-lg p-4 ${data.storefront.status === 'ok' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+          <h4 className="font-semibold text-gray-900 mb-2">Storefront API Ping</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500">Status:</span>{' '}
+              <span className={`font-medium ${data.storefront.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
+                {data.storefront.status === 'ok' ? '✓ OK' : data.storefront.status}
+              </span>
+            </div>
+            <div>
+              <span className="text-gray-500">Response:</span>{' '}
+              <span className="font-medium">{data.storefront.responseTime}ms</span>
+            </div>
+            <div>
+              <span className="text-gray-500">URL:</span>{' '}
+              <a 
+                href={data.storefront.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-mono text-xs text-blue-600 hover:underline"
+              >
+                {data.storefront.url}
+              </a>
+            </div>
           </div>
         </div>
       )}
