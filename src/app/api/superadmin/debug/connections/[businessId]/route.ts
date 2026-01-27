@@ -36,77 +36,64 @@ export async function GET(
       where: { businessId }
     })
 
-    // Find products that have this business in connectedBusinesses (shared from other businesses)
-    const productsSharedWithThisBusiness = await prisma.product.findMany({
+    // Count products shared with this business (instead of fetching all)
+    const productsSharedWithThisBusinessCount = await prisma.product.count({
       where: {
         connectedBusinesses: { has: businessId },
-        businessId: { not: businessId } // Not owned by this business
-      },
-      select: {
-        id: true,
-        businessId: true
+        businessId: { not: businessId }
       }
     })
 
-    // Find products this business has shared with others
-    const productsSharedByThisBusiness = await prisma.product.findMany({
+    // Count products this business has shared (instead of fetching all)
+    const productsSharedByThisBusinessCount = await prisma.product.count({
       where: {
         businessId,
         connectedBusinesses: { isEmpty: false }
-      },
-      select: {
-        id: true,
-        connectedBusinesses: true
       }
     })
 
-    // Get unique businesses this one is connected to (as receiver)
-    const businessesSharingWithUs = [...new Set(productsSharedWithThisBusiness.map(p => p.businessId))]
-    
-    // Get unique businesses this one shares with (as sharer)
-    const businessesWeShareWith = [...new Set(productsSharedByThisBusiness.flatMap(p => p.connectedBusinesses))]
 
-    // Determine role
+    // Determine role based on counts (fast)
     let role = 'standalone'
-    if (businessesSharingWithUs.length > 0 && businessesWeShareWith.length > 0) {
-      role = 'both' // Both receives and shares products
-    } else if (businessesSharingWithUs.length > 0) {
-      role = 'receiver' // Receives products from other businesses (marketplace/originator)
-    } else if (businessesWeShareWith.length > 0) {
-      role = 'sharer' // Shares products with other businesses (supplier)
+    if (productsSharedWithThisBusinessCount > 0 && productsSharedByThisBusinessCount > 0) {
+      role = 'both'
+    } else if (productsSharedWithThisBusinessCount > 0) {
+      role = 'receiver'
+    } else if (productsSharedByThisBusinessCount > 0) {
+      role = 'sharer'
     }
 
-    // Get details of connected businesses
-    const connectedBusinessIds = [...new Set([...businessesSharingWithUs, ...businessesWeShareWith])]
-    const connectedBusinessDetails = await prisma.business.findMany({
-      where: { id: { in: connectedBusinessIds } },
-      select: { id: true, name: true, slug: true }
+    // Get connected businesses from Business.connectedBusinesses field (fast - single record)
+    const businessWithConnections = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { connectedBusinesses: true }
     })
 
-    // Build connection info
-    const connections = connectedBusinessDetails.map(b => {
-      const productsReceived = productsSharedWithThisBusiness.filter(p => p.businessId === b.id).length
-      const productsShared = productsSharedByThisBusiness.filter(p => p.connectedBusinesses.includes(b.id)).length
-      
-      return {
-        id: b.id,
-        name: b.name,
-        slug: b.slug,
-        productsReceived,
-        productsShared,
-        relationship: productsReceived > 0 && productsShared > 0 ? 'bidirectional' :
-                      productsReceived > 0 ? 'receiving' : 'sharing'
-      }
-    })
+    const connectedBusinessIds = businessWithConnections?.connectedBusinesses || []
+    
+    // Get details of connected businesses
+    const connectedBusinessDetails = connectedBusinessIds.length > 0 
+      ? await prisma.business.findMany({
+          where: { id: { in: connectedBusinessIds } },
+          select: { id: true, name: true, slug: true }
+        })
+      : []
 
     return NextResponse.json({
       business,
       role,
-      connectedBusinesses: connections,
+      connectedBusinesses: connectedBusinessDetails.map(b => ({
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        productsReceived: 0, // Not calculated to avoid slow query
+        productsShared: 0,   // Not calculated to avoid slow query
+        relationship: 'connected'
+      })),
       summary: {
         ownProducts: ownProductsCount,
-        productsReceivedFromOthers: productsSharedWithThisBusiness.length,
-        productsSharedWithOthers: productsSharedByThisBusiness.reduce((sum, p) => sum + p.connectedBusinesses.length, 0),
+        productsReceivedFromOthers: productsSharedWithThisBusinessCount,
+        productsSharedWithOthers: productsSharedByThisBusinessCount,
         totalConnections: connectedBusinessIds.length
       }
     })
