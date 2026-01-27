@@ -22,7 +22,8 @@ import {
   Settings,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Bug
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -123,12 +124,55 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     featured: 0
   })
 
+  // Debug panel state
+  const [showDebugPanel, setShowDebugPanel] = useState(false)
+  const [debugBrandId, setDebugBrandId] = useState('')
+  const [debugData, setDebugData] = useState<any>(null)
+  const [debugLoading, setDebugLoading] = useState(false)
+  const [brands, setBrands] = useState<Array<{id: string, name: string}>>([])
+
   const { isPro } = useSubscription()
 
   useEffect(() => {
     fetchBusinessData()
     fetchData()
+    fetchBrands()
   }, [businessId, currentPage, debouncedSearchTerm, selectedCategory, filterStatus])
+
+  // Fetch brands for debug dropdown
+  const fetchBrands = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/brands`)
+      if (response.ok) {
+        const data = await response.json()
+        setBrands(data.brands || [])
+      }
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+    }
+  }
+
+  // Fetch brand debug data
+  const fetchBrandDebug = async (brandId: string) => {
+    if (!brandId) return
+    setDebugLoading(true)
+    setDebugData(null)
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/debug/brand/${brandId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setDebugData(data)
+      } else {
+        const error = await response.json()
+        setDebugData({ error: error.message || 'Failed to fetch debug data' })
+      }
+    } catch (error) {
+      console.error('Error fetching brand debug:', error)
+      setDebugData({ error: 'Failed to fetch debug data' })
+    } finally {
+      setDebugLoading(false)
+    }
+  }
 
   // Debounce search
   useEffect(() => {
@@ -368,6 +412,15 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                 <Upload className="w-4 h-4 mr-2" />
                 Import
             </Link>
+
+            <button
+                onClick={() => setShowDebugPanel(true)}
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-orange-300 text-orange-700 rounded-lg hover:bg-orange-50 transition-colors"
+                title="Debug Brand Products"
+            >
+                <Bug className="w-4 h-4 mr-2" />
+                Debug
+            </button>
             </div>
             
             <Link
@@ -867,6 +920,235 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
           className="fixed inset-0 z-0" 
           onClick={() => setOpenDropdown(null)}
         />
+      )}
+
+      {/* Debug Panel Modal */}
+      {showDebugPanel && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bug className="w-5 h-5 text-orange-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Brand Debug Panel</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDebugPanel(false)
+                  setDebugData(null)
+                  setDebugBrandId('')
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Brand Selector */}
+              <div className="flex gap-3">
+                <select
+                  value={debugBrandId}
+                  onChange={(e) => setDebugBrandId(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">Select a brand to debug...</option>
+                  {brands.map(brand => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name} ({brand.id})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => fetchBrandDebug(debugBrandId)}
+                  disabled={!debugBrandId || debugLoading}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                >
+                  {debugLoading ? 'Loading...' : 'Analyze'}
+                </button>
+              </div>
+
+              {/* Manual Brand ID Input */}
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  placeholder="Or enter brand ID manually..."
+                  value={debugBrandId}
+                  onChange={(e) => setDebugBrandId(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+                />
+              </div>
+
+              {/* Debug Results */}
+              {debugLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                  <span className="ml-3 text-gray-600">Analyzing brand products...</span>
+                </div>
+              )}
+
+              {debugData && !debugLoading && (
+                <div className="space-y-4">
+                  {debugData.error ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+                      Error: {debugData.error}
+                    </div>
+                  ) : (
+                    <>
+                      {/* Brand Info */}
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-2">Brand Info</h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-gray-500">Name:</span> <span className="font-medium">{debugData.brand?.name}</span></div>
+                          <div><span className="text-gray-500">ID:</span> <span className="font-mono text-xs">{debugData.brand?.id}</span></div>
+                          <div><span className="text-gray-500">Type:</span> 
+                            <span className={`ml-1 px-2 py-0.5 rounded text-xs ${debugData.brand?.isOriginatorBrand ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                              {debugData.brand?.isOriginatorBrand ? 'Originator' : 'Supplier'}
+                            </span>
+                          </div>
+                          <div><span className="text-gray-500">Active:</span> <span className={debugData.brand?.isActive ? 'text-green-600' : 'text-red-600'}>{debugData.brand?.isActive ? 'Yes' : 'No'}</span></div>
+                        </div>
+                      </div>
+
+                      {/* Analysis Summary */}
+                      <div className="bg-orange-50 rounded-lg p-4">
+                        <h3 className="font-semibold text-gray-900 mb-3">Product Analysis</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-white rounded-lg p-3 border">
+                            <div className="text-2xl font-bold text-gray-900">{debugData.analysis?.total || 0}</div>
+                            <div className="text-xs text-gray-500">Total Products</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border">
+                            <div className="text-2xl font-bold text-green-600">{debugData.storefrontDisplayable?.count || 0}</div>
+                            <div className="text-xs text-gray-500">Storefront Displayable</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border">
+                            <div className="text-2xl font-bold text-red-600">{debugData.notDisplayableSample?.count || 0}</div>
+                            <div className="text-xs text-gray-500">Not Displayable</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 border">
+                            <div className="text-2xl font-bold text-blue-600">{debugData.analysis?.hasVariants || 0}</div>
+                            <div className="text-xs text-gray-500">With Variants</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Detailed Breakdown */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">By Status</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Active:</span> <span className="font-medium text-green-600">{debugData.analysis?.active || 0}</span></div>
+                            <div className="flex justify-between"><span>Inactive:</span> <span className="font-medium text-red-600">{debugData.analysis?.inactive || 0}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">By Price</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Price &gt; 0:</span> <span className="font-medium text-green-600">{debugData.analysis?.priceGreaterThanZero || 0}</span></div>
+                            <div className="flex justify-between"><span>Price = 0:</span> <span className="font-medium text-red-600">{debugData.analysis?.priceZero || 0}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">By Stock (No Variants)</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Stock &gt; 0:</span> <span className="font-medium text-green-600">{debugData.analysis?.stockGreaterThanZero || 0}</span></div>
+                            <div className="flex justify-between"><span>Stock = 0:</span> <span className="font-medium text-red-600">{debugData.analysis?.stockZero || 0}</span></div>
+                            <div className="flex justify-between"><span>No Inventory Track:</span> <span className="font-medium text-gray-600">{debugData.analysis?.noTrackInventory || 0}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white border rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">By Images</h4>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Has Images:</span> <span className="font-medium text-green-600">{debugData.analysis?.hasImages || 0}</span></div>
+                            <div className="flex justify-between"><span>No Images:</span> <span className="font-medium text-red-600">{debugData.analysis?.noImages || 0}</span></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Variant Analysis */}
+                      {debugData.analysis?.variantAnalysis && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">⚠️ Variant Stock Analysis (IMPORTANT)</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div className="bg-white rounded p-2">
+                              <div className="text-lg font-bold">{debugData.analysis.variantAnalysis.totalProductsWithVariants}</div>
+                              <div className="text-xs text-gray-500">Products with Variants</div>
+                            </div>
+                            <div className="bg-white rounded p-2">
+                              <div className="text-lg font-bold text-red-600">{debugData.analysis.variantAnalysis.allVariantsZeroStock}</div>
+                              <div className="text-xs text-gray-500">ALL Variants = 0 Stock</div>
+                            </div>
+                            <div className="bg-white rounded p-2">
+                              <div className="text-lg font-bold text-yellow-600">{debugData.analysis.variantAnalysis.someVariantsHaveStock}</div>
+                              <div className="text-xs text-gray-500">Some Variants Have Stock</div>
+                            </div>
+                            <div className="bg-white rounded p-2">
+                              <div className="text-lg font-bold text-green-600">{debugData.analysis.variantAnalysis.allVariantsHaveStock}</div>
+                              <div className="text-xs text-gray-500">ALL Variants Have Stock</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Not Displayable Sample */}
+                      {debugData.notDisplayableSample?.first10?.length > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <h4 className="font-semibold text-gray-900 mb-2">❌ Sample of Non-Displayable Products (First 10)</h4>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="border-b border-red-200">
+                                  <th className="text-left py-2 px-2">Name</th>
+                                  <th className="text-left py-2 px-2">Price</th>
+                                  <th className="text-left py-2 px-2">Stock</th>
+                                  <th className="text-left py-2 px-2">Active</th>
+                                  <th className="text-left py-2 px-2">Images</th>
+                                  <th className="text-left py-2 px-2">Variants</th>
+                                  <th className="text-left py-2 px-2">Reason</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {debugData.notDisplayableSample.first10.map((p: any, i: number) => (
+                                  <tr key={i} className="border-b border-red-100">
+                                    <td className="py-2 px-2 max-w-[150px] truncate" title={p.name}>{p.name}</td>
+                                    <td className="py-2 px-2">{p.price}</td>
+                                    <td className="py-2 px-2">{p.stock}</td>
+                                    <td className="py-2 px-2">{p.isActive ? '✓' : '✗'}</td>
+                                    <td className="py-2 px-2">{p.hasImages ? '✓' : '✗'}</td>
+                                    <td className="py-2 px-2">{p.variantsCount} ({p.variantsWithStock} w/stock)</td>
+                                    <td className="py-2 px-2">
+                                      <span className="px-1.5 py-0.5 bg-red-200 text-red-800 rounded text-xs">
+                                        {p.reason}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* API URL */}
+                      <div className="bg-gray-100 rounded-lg p-3 text-xs font-mono">
+                        <span className="text-gray-500">Storefront API:</span> {debugData.apiComparison?.storefrontUrl}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {!debugData && !debugLoading && (
+                <div className="text-center py-12 text-gray-500">
+                  Select a brand and click "Analyze" to see debug information
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
