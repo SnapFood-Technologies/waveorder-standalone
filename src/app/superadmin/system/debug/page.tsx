@@ -382,7 +382,7 @@ export default function DebugToolsPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-4 space-y-4">
               {/* Input Section */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                 {/* Business Search - shown for most tools */}
@@ -423,7 +423,7 @@ export default function DebugToolsPage() {
                         
                         {/* Search Results Dropdown */}
                         {businesses.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hide">
                             {businesses.map(b => (
                               <button
                                 key={b.id}
@@ -665,7 +665,7 @@ function BrandDebugResults({ data }: { data: any }) {
 
       {/* Detailed Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white border rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">By Status</h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Active:</span> <span className="font-medium text-green-600">{data.analysis?.active || 0}</span></div>
@@ -673,7 +673,7 @@ function BrandDebugResults({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">By Price</h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Price &gt; 0:</span> <span className="font-medium text-green-600">{data.analysis?.priceGreaterThanZero || 0}</span></div>
@@ -681,7 +681,7 @@ function BrandDebugResults({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">By Stock (No Variants)</h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Stock &gt; 0:</span> <span className="font-medium text-green-600">{data.analysis?.stockGreaterThanZero || 0}</span></div>
@@ -690,7 +690,7 @@ function BrandDebugResults({ data }: { data: any }) {
           </div>
         </div>
 
-        <div className="bg-white border rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">By Images</h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between"><span>Has Images:</span> <span className="font-medium text-green-600">{data.analysis?.hasImages || 0}</span></div>
@@ -728,7 +728,7 @@ function BrandDebugResults({ data }: { data: any }) {
       {data.notDisplayableSample?.first10?.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Sample of Non-Displayable Products (First 10)</h4>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-red-200">
@@ -782,7 +782,7 @@ function CategoryDebugResults({ data }: { data: any }) {
       {data.emptyCategories?.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Empty Categories ({data.emptyCategories.length})</h4>
-          <div className="space-y-1 max-h-60 overflow-y-auto">
+          <div className="space-y-1 max-h-60 overflow-y-auto scrollbar-hide">
             {data.emptyCategories.map((cat: any) => (
               <div key={cat.id} className="flex justify-between text-sm py-1 border-b border-red-100 last:border-0">
                 <span>{cat.name}</span>
@@ -797,7 +797,7 @@ function CategoryDebugResults({ data }: { data: any }) {
       {data.zeroDisplayable?.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Categories with Products but 0 Displayable ({data.zeroDisplayable.length})</h4>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-yellow-200">
@@ -868,10 +868,10 @@ function ProductDebugResults({ data }: { data: any }) {
       {data.product?.variants?.length > 0 && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Variants ({data.product.variants.length})</h4>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-gray-200">
                   <th className="text-left py-2 px-2">Name</th>
                   <th className="text-left py-2 px-2">Price</th>
                   <th className="text-left py-2 px-2">Stock</th>
@@ -879,7 +879,7 @@ function ProductDebugResults({ data }: { data: any }) {
               </thead>
               <tbody>
                 {data.product.variants.map((v: any) => (
-                  <tr key={v.id} className="border-b last:border-0">
+                  <tr key={v.id} className="border-b border-gray-100 last:border-0">
                     <td className="py-2 px-2">{v.name}</td>
                     <td className="py-2 px-2">{v.price}</td>
                     <td className={`py-2 px-2 ${v.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>{v.stock}</td>
@@ -910,7 +910,7 @@ function StockDebugResults({ data }: { data: any }) {
       {data.zeroStockProducts?.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Products with Zero Stock (First 20)</h4>
-          <div className="overflow-x-auto max-h-60">
+          <div className="overflow-x-auto scrollbar-hide max-h-60">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-red-50">
                 <tr className="border-b border-red-200">
@@ -937,7 +937,7 @@ function StockDebugResults({ data }: { data: any }) {
       {data.lowStockProducts?.length > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Low Stock Alerts (First 20)</h4>
-          <div className="overflow-x-auto max-h-60">
+          <div className="overflow-x-auto scrollbar-hide max-h-60">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-yellow-50">
                 <tr className="border-b border-yellow-200">
@@ -997,7 +997,7 @@ function SyncDebugResults({ data }: { data: any }) {
             {sync.recentLogs?.length > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200">
                 <h5 className="text-sm font-medium text-gray-700 mb-2">Recent Sync Logs</h5>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
+                <div className="space-y-1 max-h-40 overflow-y-auto scrollbar-hide">
                   {sync.recentLogs.map((log: any) => (
                     <div key={log.id} className="flex items-center justify-between text-xs py-1">
                       <span className={log.status === 'success' ? 'text-green-600' : 'text-red-600'}>{log.status}</span>
@@ -1071,9 +1071,9 @@ function ConnectionsDebugResults({ data }: { data: any }) {
 
       {/* Connected Businesses */}
       {data.connectedBusinesses?.length > 0 && (
-        <div className="bg-blue-50 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="font-semibold text-gray-900 mb-2">Connected Businesses ({data.connectedBusinesses.length})</h4>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto scrollbar-hide">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-blue-200">
@@ -1121,7 +1121,7 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   }
   
   return (
-    <div className="bg-white border rounded-lg p-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
       <div className={`text-2xl font-bold ${colorClasses[color as keyof typeof colorClasses]}`}>{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
     </div>
