@@ -17,7 +17,7 @@ export async function GET(
 
   try {
     // Get all sync configurations for this business
-    const syncConfigs = await prisma.externalProductSync.findMany({
+    const syncConfigs = await prisma.externalSync.findMany({
       where: { businessId },
       select: {
         id: true,
@@ -36,8 +36,8 @@ export async function GET(
     // Get recent sync logs for each config
     const syncsWithLogs = await Promise.all(
       syncConfigs.map(async (sync) => {
-        const logs = await prisma.syncLog.findMany({
-          where: { externalProductSyncId: sync.id },
+        const logs = await prisma.externalSyncLog.findMany({
+          where: { syncId: sync.id },
           select: {
             id: true,
             status: true,
@@ -45,7 +45,7 @@ export async function GET(
             errorCount: true,
             startedAt: true,
             completedAt: true,
-            errorMessage: true
+            error: true
           },
           orderBy: { startedAt: 'desc' },
           take: 5
@@ -53,16 +53,19 @@ export async function GET(
 
         return {
           ...sync,
-          recentLogs: logs
+          recentLogs: logs.map(log => ({
+            ...log,
+            errorMessage: log.error
+          }))
         }
       })
     )
 
-    // Get count of products that came from external sync
+    // Get count of products that came from external sync (have metadata)
     const externalProductsCount = await prisma.product.count({
       where: {
         businessId,
-        externalId: { not: null }
+        metadata: { not: null }
       }
     })
 

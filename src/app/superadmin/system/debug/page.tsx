@@ -938,47 +938,98 @@ function SyncDebugResults({ data }: { data: any }) {
 
 // Connections Debug Results
 function ConnectionsDebugResults({ data }: { data: any }) {
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'receiver':
+        return { class: 'bg-blue-100 text-blue-800', label: 'Receiver (Marketplace/Originator - receives products from others)' }
+      case 'sharer':
+        return { class: 'bg-purple-100 text-purple-800', label: 'Sharer (Supplier - shares products with others)' }
+      case 'both':
+        return { class: 'bg-green-100 text-green-800', label: 'Both (Receives and shares products)' }
+      default:
+        return { class: 'bg-gray-100 text-gray-800', label: 'Standalone (No connections)' }
+    }
+  }
+
+  const roleBadge = getRoleBadge(data.role)
+
   return (
     <div className="space-y-4">
-      {/* Business Role */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">Business Role</h3>
-        <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            data.role === 'originator' ? 'bg-blue-100 text-blue-800' :
-            data.role === 'supplier' ? 'bg-purple-100 text-purple-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {data.role === 'originator' ? 'Originator (Imports from suppliers)' :
-             data.role === 'supplier' ? 'Supplier (Products imported by others)' :
-             'Standalone (No connections)'}
-          </span>
-        </div>
-      </div>
-
-      {/* Connected Businesses */}
-      {data.connectedBusinesses?.length > 0 && (
-        <div className="bg-blue-50 rounded-lg p-4">
-          <h4 className="font-semibold text-gray-900 mb-2">
-            {data.role === 'originator' ? 'Importing From' : 'Imported By'} ({data.connectedBusinesses.length})
-          </h4>
-          <div className="space-y-2">
-            {data.connectedBusinesses.map((b: any) => (
-              <div key={b.id} className="flex justify-between items-center bg-white rounded p-2 text-sm">
-                <span className="font-medium">{b.name}</span>
-                <span className="text-gray-500">{b.productCount} products</span>
-              </div>
-            ))}
+      {/* Business Info */}
+      {data.business && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-900 mb-2">Business Info</h3>
+          <div className="text-sm">
+            <p><span className="text-gray-500">Name:</span> <span className="font-medium">{data.business.name}</span></p>
+            <p><span className="text-gray-500">Slug:</span> <span className="font-mono text-xs">{data.business.slug}</span></p>
           </div>
         </div>
       )}
 
+      {/* Business Role */}
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">Connection Role</h3>
+        <div className="flex items-center gap-3">
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${roleBadge.class}`}>
+            {roleBadge.label}
+          </span>
+        </div>
+      </div>
+
       {/* Summary */}
       {data.summary && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard label="Own Products" value={data.summary.ownProducts || 0} color="gray" />
-          <StatCard label="Connected Products" value={data.summary.connectedProducts || 0} color="blue" />
-          <StatCard label="Total Visible" value={data.summary.totalVisible || 0} color="green" />
+          <StatCard label="Received from Others" value={data.summary.productsReceivedFromOthers || 0} color="blue" />
+          <StatCard label="Shared with Others" value={data.summary.productsSharedWithOthers || 0} color="green" />
+          <StatCard label="Total Connections" value={data.summary.totalConnections || 0} color="yellow" />
+        </div>
+      )}
+
+      {/* Connected Businesses */}
+      {data.connectedBusinesses?.length > 0 && (
+        <div className="bg-blue-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-2">Connected Businesses ({data.connectedBusinesses.length})</h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-blue-200">
+                  <th className="text-left py-2 px-2">Business</th>
+                  <th className="text-left py-2 px-2">Relationship</th>
+                  <th className="text-left py-2 px-2">Received</th>
+                  <th className="text-left py-2 px-2">Shared</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.connectedBusinesses.map((b: any) => (
+                  <tr key={b.id} className="border-b border-blue-100">
+                    <td className="py-2 px-2">
+                      <span className="font-medium">{b.name}</span>
+                      <span className="text-gray-500 text-xs ml-2">({b.slug})</span>
+                    </td>
+                    <td className="py-2 px-2">
+                      <span className={`px-2 py-0.5 rounded text-xs ${
+                        b.relationship === 'bidirectional' ? 'bg-green-100 text-green-800' :
+                        b.relationship === 'receiving' ? 'bg-blue-100 text-blue-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {b.relationship === 'bidirectional' ? 'Both ways' :
+                         b.relationship === 'receiving' ? 'Receiving' : 'Sharing'}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2">{b.productsReceived}</td>
+                    <td className="py-2 px-2">{b.productsShared}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {data.connectedBusinesses?.length === 0 && (
+        <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
+          This business has no product sharing connections with other businesses
         </div>
       )}
     </div>

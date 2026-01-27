@@ -24,8 +24,7 @@ export async function GET(
         name: true,
         slug: true,
         businessType: true,
-        isActive: true,
-        externalProductSyncEnabled: true
+        isActive: true
       }
     })
 
@@ -90,13 +89,14 @@ export async function GET(
     })
 
     // Get sync status
-    const syncConfig = await prisma.externalProductSync.findFirst({
+    const syncConfig = await prisma.externalSync.findFirst({
       where: { businessId },
       orderBy: { updatedAt: 'desc' },
       select: {
         lastSyncAt: true,
         lastSyncStatus: true,
-        lastSyncError: true
+        lastSyncError: true,
+        isActive: true
       }
     })
 
@@ -117,7 +117,7 @@ export async function GET(
         variantsZeroStock: productsWithAllVariantsZeroStock
       },
       syncStatus: {
-        hasExternalSync: business.externalProductSyncEnabled,
+        hasExternalSync: !!syncConfig,
         lastSync: syncConfig?.lastSyncAt,
         lastSyncStatus: syncConfig?.lastSyncStatus,
         lastSyncError: syncConfig?.lastSyncError

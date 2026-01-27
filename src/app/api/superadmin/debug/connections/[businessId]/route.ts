@@ -16,103 +16,98 @@ export async function GET(
   const { businessId } = await params
 
   try {
-    // Check if this business is an originator (has connected suppliers)
-    const supplierConnections = await prisma.connectedBusiness.findMany({
-      where: { originatorId: businessId },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        }
+    // Get business info
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        businessType: true
       }
     })
 
-    // Check if this business is a supplier (connected to originators)
-    const originatorConnections = await prisma.connectedBusiness.findMany({
-      where: { supplierId: businessId },
-      include: {
-        originator: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        }
+    if (!business) {
+      return NextResponse.json({ error: 'Business not found' }, { status: 404 })
+    }
+
+    // Count own products (products created by this business)
+    const ownProductsCount = await prisma.product.count({
+      where: { businessId }
+    })
+
+    // Find products that have this business in connectedBusinesses (shared from other businesses)
+    const productsSharedWithThisBusiness = await prisma.product.findMany({
+      where: {
+        connectedBusinesses: { has: businessId },
+        businessId: { not: businessId } // Not owned by this business
+      },
+      select: {
+        id: true,
+        businessId: true
       }
     })
+
+    // Find products this business has shared with others
+    const productsSharedByThisBusiness = await prisma.product.findMany({
+      where: {
+        businessId,
+        connectedBusinesses: { isEmpty: false }
+      },
+      select: {
+        id: true,
+        connectedBusinesses: true
+      }
+    })
+
+    // Get unique businesses this one is connected to (as receiver)
+    const businessesSharingWithUs = [...new Set(productsSharedWithThisBusiness.map(p => p.businessId))]
+    
+    // Get unique businesses this one shares with (as sharer)
+    const businessesWeShareWith = [...new Set(productsSharedByThisBusiness.flatMap(p => p.connectedBusinesses))]
 
     // Determine role
     let role = 'standalone'
-    if (supplierConnections.length > 0) {
-      role = 'originator'
-    } else if (originatorConnections.length > 0) {
-      role = 'supplier'
+    if (businessesSharingWithUs.length > 0 && businessesWeShareWith.length > 0) {
+      role = 'both' // Both receives and shares products
+    } else if (businessesSharingWithUs.length > 0) {
+      role = 'receiver' // Receives products from other businesses (marketplace/originator)
+    } else if (businessesWeShareWith.length > 0) {
+      role = 'sharer' // Shares products with other businesses (supplier)
     }
 
-    // Get product counts
-    const ownProductsCount = await prisma.product.count({
-      where: {
-        businessId,
-        sourceBusinessId: null // Not imported
+    // Get details of connected businesses
+    const connectedBusinessIds = [...new Set([...businessesSharingWithUs, ...businessesWeShareWith])]
+    const connectedBusinessDetails = await prisma.business.findMany({
+      where: { id: { in: connectedBusinessIds } },
+      select: { id: true, name: true, slug: true }
+    })
+
+    // Build connection info
+    const connections = connectedBusinessDetails.map(b => {
+      const productsReceived = productsSharedWithThisBusiness.filter(p => p.businessId === b.id).length
+      const productsShared = productsSharedByThisBusiness.filter(p => p.connectedBusinesses.includes(b.id)).length
+      
+      return {
+        id: b.id,
+        name: b.name,
+        slug: b.slug,
+        productsReceived,
+        productsShared,
+        relationship: productsReceived > 0 && productsShared > 0 ? 'bidirectional' :
+                      productsReceived > 0 ? 'receiving' : 'sharing'
       }
     })
 
-    // Count products imported from each supplier (for originator)
-    const supplierProductCounts = await Promise.all(
-      supplierConnections.map(async (conn) => {
-        const count = await prisma.product.count({
-          where: {
-            businessId,
-            sourceBusinessId: conn.supplierId
-          }
-        })
-        return {
-          id: conn.supplier.id,
-          name: conn.supplier.name,
-          slug: conn.supplier.slug,
-          productCount: count,
-          isActive: conn.isActive,
-          importProducts: conn.importProducts
-        }
-      })
-    )
-
-    // Count products visible to each originator (for supplier)
-    const originatorProductCounts = await Promise.all(
-      originatorConnections.map(async (conn) => {
-        const count = await prisma.product.count({
-          where: {
-            businessId: conn.originatorId,
-            sourceBusinessId: businessId
-          }
-        })
-        return {
-          id: conn.originator.id,
-          name: conn.originator.name,
-          slug: conn.originator.slug,
-          productCount: count,
-          isActive: conn.isActive,
-          importProducts: conn.importProducts
-        }
-      })
-    )
-
-    // Total connected products
-    const connectedProductsCount = role === 'originator'
-      ? supplierProductCounts.reduce((sum, s) => sum + s.productCount, 0)
-      : originatorProductCounts.reduce((sum, s) => sum + s.productCount, 0)
-
     return NextResponse.json({
+      business,
       role,
-      connectedBusinesses: role === 'originator' ? supplierProductCounts : originatorProductCounts,
+      connectedBusinesses: connections,
       summary: {
         ownProducts: ownProductsCount,
-        connectedProducts: connectedProductsCount,
-        totalVisible: ownProductsCount + connectedProductsCount,
-        totalConnections: role === 'originator' ? supplierConnections.length : originatorConnections.length
+        productsReceivedFromOthers: productsSharedWithThisBusiness.length,
+        productsSharedWithOthers: productsSharedByThisBusiness.reduce((sum, p) => sum + p.connectedBusinesses.length, 0),
+        totalConnections: connectedBusinessIds.length
       }
     })
   } catch (error) {
