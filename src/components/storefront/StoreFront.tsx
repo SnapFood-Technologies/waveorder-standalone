@@ -3686,10 +3686,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     if (selectedCategory !== 'all' && products.length > 0) {
                       setIsFiltering(true)
                     }
-                    mainMenuClickedRef.current = false // Clear ref since we're going to "All" (no category filter)
                     setSelectedCategory('all')
                     setSelectedSubCategory(null)
-                    setSelectedFilterCategory(null) // Clear modal filter badge
+                    setSelectedFilterCategory(null) // Clear modal filter so main menu takes priority
                     // Keep search term when switching to "All"
                   }}
                   disabled={false}
