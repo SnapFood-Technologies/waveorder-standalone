@@ -1972,9 +1972,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setProductsError(null)
       
       const params = new URLSearchParams()
-      // Priority: selectedCategory (main menu) > selectedSubCategory > selectedFilterCategory (modal)
-      // If main menu category is selected, ignore modal filter to ensure main menu always works
-      const categoryToFilter = (selectedCategory !== 'all' ? selectedCategory : null) || selectedSubCategory || selectedFilterCategory
+      // Priority: selectedFilterCategory (modal) > selectedSubCategory > selectedCategory (main menu)
+      const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
       if (categoryToFilter) {
         // Check if category has merged IDs (marketplace deduplication)
         // Search by primary ID OR check if targetId is in the ids array (for menu items from admin)
