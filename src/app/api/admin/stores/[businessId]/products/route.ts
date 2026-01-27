@@ -33,21 +33,29 @@ export async function GET(
     const status = searchParams.get('status') || 'all'
     const skip = (page - 1) * limit
 
-    // Include products from own business + connected businesses
-    const whereClause: any = {
+    // Business filter: own business + connected businesses
+    const businessFilter = {
       OR: [
         { businessId: businessId },
         { businessId: { in: business?.connectedBusinesses || [] } }
       ]
     }
 
-    if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } }
-      ]
-    }
+    // Build where clause: combine business filter with search filter using AND
+    const whereClause: any = search
+      ? {
+          AND: [
+            businessFilter,
+            {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                { sku: { contains: search, mode: 'insensitive' } }
+              ]
+            }
+          ]
+        }
+      : businessFilter
 
     if (category) {
       whereClause.categoryId = category
@@ -65,23 +73,33 @@ export async function GET(
     let total = 0
     
     if (status === 'low-stock') {
+      const lowStockWhere: any = search
+        ? {
+            AND: [
+              businessFilter,
+              {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { description: { contains: search, mode: 'insensitive' } },
+                  { sku: { contains: search, mode: 'insensitive' } }
+                ]
+              }
+            ],
+            trackInventory: true,
+            lowStockAlert: { not: null }
+          }
+        : {
+            ...businessFilter,
+            trackInventory: true,
+            lowStockAlert: { not: null }
+          }
+
+      if (category) {
+        lowStockWhere.categoryId = category
+      }
+
       const lowStockProducts = await prisma.product.findMany({
-        where: {
-          OR: [
-            { businessId: businessId },
-            { businessId: { in: business?.connectedBusinesses || [] } }
-          ],
-          trackInventory: true,
-          lowStockAlert: { not: null },
-          ...(search && {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } }
-            ]
-          }),
-          ...(category && { categoryId: category })
-        },
+        where: lowStockWhere,
         select: { id: true, stock: true, lowStockAlert: true }
       })
       
@@ -96,23 +114,33 @@ export async function GET(
     let products = []
     
     if (status === 'low-stock') {
+      const lowStockWhere: any = search
+        ? {
+            AND: [
+              businessFilter,
+              {
+                OR: [
+                  { name: { contains: search, mode: 'insensitive' } },
+                  { description: { contains: search, mode: 'insensitive' } },
+                  { sku: { contains: search, mode: 'insensitive' } }
+                ]
+              }
+            ],
+            trackInventory: true,
+            lowStockAlert: { not: null }
+          }
+        : {
+            ...businessFilter,
+            trackInventory: true,
+            lowStockAlert: { not: null }
+          }
+
+      if (category) {
+        lowStockWhere.categoryId = category
+      }
+
       const allProducts = await prisma.product.findMany({
-        where: {
-          OR: [
-            { businessId: businessId },
-            { businessId: { in: business?.connectedBusinesses || [] } }
-          ],
-          trackInventory: true,
-          lowStockAlert: { not: null },
-          ...(search && {
-            OR: [
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-              { sku: { contains: search, mode: 'insensitive' } }
-            ]
-          }),
-          ...(category && { categoryId: category })
-        },
+        where: lowStockWhere,
         include: {
           category: { select: { id: true, name: true } },
           variants: true,
@@ -145,21 +173,21 @@ export async function GET(
     const pages = Math.ceil(total / limit)
 
     // Get stats for all products (not filtered by current page)
-    const statsWhereClause: any = {
-      OR: [
-        { businessId: businessId },
-        { businessId: { in: business?.connectedBusinesses || [] } }
-      ]
-    }
-    
-    // Apply search and category filters to stats if they exist
-    if (search) {
-      statsWhereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } }
-      ]
-    }
+    // Build stats where clause: combine business filter with search filter using AND
+    const statsWhereClause: any = search
+      ? {
+          AND: [
+            businessFilter,
+            {
+              OR: [
+                { name: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+                { sku: { contains: search, mode: 'insensitive' } }
+              ]
+            }
+          ]
+        }
+      : businessFilter
     
     if (category) {
       statsWhereClause.categoryId = category
