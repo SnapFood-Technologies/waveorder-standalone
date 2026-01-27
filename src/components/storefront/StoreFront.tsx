@@ -4874,13 +4874,20 @@ function ProductCard({
   const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
   const isExceptionSlug = exceptionSlugs.includes(businessSlug)
   
+  // No fallback slugs: Don't fallback to English if Albanian is missing
+  const noFallbackSlugs = ['neps-shop']
+  const isNoFallbackSlug = noFallbackSlugs.includes(businessSlug)
+  
   // Use Albanian description if language is Albanian (unless exception slug)
   const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
   
   // For exception slugs: prioritize English, use Albanian only if English is empty/missing
+  // For no fallback slugs: use Albanian only if available, don't fallback to English
   // For others: use Albanian if language is Albanian, otherwise English
   const displayDescription = isExceptionSlug
     ? (product.description || product.descriptionAl || '')
+    : isNoFallbackSlug && useAlbanian
+    ? (product.descriptionAl || '')
     : (useAlbanian && product.descriptionAl 
       ? product.descriptionAl 
       : product.description)
@@ -5090,13 +5097,20 @@ function ProductModal({
   const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
   const isExceptionSlug = exceptionSlugs.includes(businessSlug)
   
+  // No fallback slugs: Don't fallback to English if Albanian is missing
+  const noFallbackSlugs = ['neps-shop']
+  const isNoFallbackSlug = noFallbackSlugs.includes(businessSlug)
+  
   // Use Albanian description if language is Albanian (unless exception slug)
   const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
   
   // For exception slugs: prioritize English, use Albanian only if English is empty/missing
+  // For no fallback slugs: use Albanian only if available, don't fallback to English
   // For others: use Albanian if language is Albanian, otherwise English
   const displayDescription = isExceptionSlug
     ? (product.description || product.descriptionAl || '')
+    : isNoFallbackSlug && useAlbanian
+    ? (product.descriptionAl || '')
     : (useAlbanian && product.descriptionAl 
       ? product.descriptionAl 
       : product.description)
