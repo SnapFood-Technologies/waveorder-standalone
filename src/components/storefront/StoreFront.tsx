@@ -1972,10 +1972,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setProductsError(null)
       
       const params = new URLSearchParams()
-      // Priority: selectedFilterCategory (modal) > selectedSubCategory > selectedCategory (main menu)
-      // BUT: If selectedCategory matches selectedFilterCategory, they're the same so use selectedCategory
-      // When main menu is clicked, selectedFilterCategory is cleared, so main menu works
-      const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
+      // Priority: selectedCategory (main menu) > selectedSubCategory > selectedFilterCategory (modal)
+      // If main menu category is selected, ignore modal filter to ensure main menu always works
+      const categoryToFilter = (selectedCategory !== 'all' ? selectedCategory : null) || selectedSubCategory || selectedFilterCategory
       if (categoryToFilter) {
         // Check if category has merged IDs (marketplace deduplication)
         // Search by primary ID OR check if targetId is in the ids array (for menu items from admin)
