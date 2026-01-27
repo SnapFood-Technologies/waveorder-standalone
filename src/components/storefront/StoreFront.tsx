@@ -1972,7 +1972,9 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setProductsError(null)
       
       const params = new URLSearchParams()
-      // Priority: selectedFilterCategory > selectedSubCategory > selectedCategory
+      // Priority: selectedFilterCategory (modal) > selectedSubCategory > selectedCategory (main menu)
+      // BUT: If selectedCategory matches selectedFilterCategory, they're the same so use selectedCategory
+      // When main menu is clicked, selectedFilterCategory is cleared, so main menu works
       const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
       if (categoryToFilter) {
         // Check if category has merged IDs (marketplace deduplication)
@@ -3388,8 +3390,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           </div>
         )}
 
-        {/* Category Badge */}
-        {selectedFilterCategory && (() => {
+        {/* Category Badge - Only show if modal filter is active AND no main menu category is selected */}
+        {selectedFilterCategory && selectedCategory === 'all' && (() => {
           const category = storeData.categories.find(cat => cat.id === selectedFilterCategory)
           if (!category) return null
           return (
