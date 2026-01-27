@@ -1972,8 +1972,17 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       setProductsError(null)
       
       const params = new URLSearchParams()
-      // Priority: selectedFilterCategory (modal) > selectedSubCategory > selectedCategory (main menu)
-      const categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
+      // Priority logic:
+      // - If main menu was just clicked (mainMenuClickedRef), use selectedCategory (main menu takes priority)
+      // - Otherwise: selectedFilterCategory (modal) > selectedSubCategory > selectedCategory (main menu)
+      // This ensures main menu clicks work immediately even if React batches state updates
+      let categoryToFilter: string | null = null
+      if (mainMenuClickedRef.current && selectedCategory !== 'all') {
+        categoryToFilter = selectedCategory
+        mainMenuClickedRef.current = false // Reset flag after using it
+      } else {
+        categoryToFilter = selectedFilterCategory || selectedSubCategory || (selectedCategory !== 'all' ? selectedCategory : null)
+      }
       if (categoryToFilter) {
         // Check if category has merged IDs (marketplace deduplication)
         // Search by primary ID OR check if targetId is in the ids array (for menu items from admin)
@@ -2160,6 +2169,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
 
   // Track if fetch is in progress using ref (immediate, bypasses async state)
   const isFetchingRef = useRef(false)
+  // Track when main menu category is clicked to ensure it takes priority over modal filter
+  const mainMenuClickedRef = useRef(false)
   
   // Load more products on scroll (infinite scroll)
   useEffect(() => {
@@ -3721,6 +3732,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         if (products.length > 0) {
                           setIsFiltering(true)
                         }
+                        mainMenuClickedRef.current = true // Mark that main menu was clicked
                         setSelectedCategory(category.id)
                         setSelectedSubCategory(null)
                         setSelectedFilterCategory(null) // Clear modal filter so main menu takes priority
@@ -4306,7 +4318,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           checked={selectedFilterCategory === category.id}
                           onChange={() => {
                             setSelectedFilterCategory(category.id)
-                            setSelectedCategory(category.id)
+                            setSelectedCategory('all') // Set to 'all' so modal filter takes priority and badge shows
                           }}
                           className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
                           style={{ accentColor: primaryColor }}
@@ -4509,7 +4521,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                             checked={selectedFilterCategory === category.id}
                             onChange={() => {
                               setSelectedFilterCategory(category.id)
-                              setSelectedCategory(category.id)
+                              setSelectedCategory('all') // Set to 'all' so modal filter takes priority and badge shows
                             }}
                             className="w-4 h-4 border-gray-300 text-gray-600 focus:ring-2 focus:ring-offset-0"
                             style={{ accentColor: primaryColor }}
