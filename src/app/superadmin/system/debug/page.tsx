@@ -570,12 +570,13 @@ function BusinessHealthResults({ data }: { data: any }) {
     if (!data.business?.slug) return
     setPingStatus('loading')
     try {
-      const start = Date.now()
-      const res = await fetch(`/api/storefront/${data.business.slug}`)
-      setPingTime(Date.now() - start)
-      setPingStatus(res.ok ? 'ok' : 'error')
+      const res = await fetch(`/api/storefront/${data.business.slug}/health`)
+      const result = await res.json()
+      setPingTime(result.ms || 0)
+      setPingStatus(result.ok ? 'ok' : 'error')
     } catch {
       setPingStatus('error')
+      setPingTime(0)
     }
   }
 
