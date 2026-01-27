@@ -19,7 +19,8 @@ import {
   ChevronRight,
   MapPin,
   Server,
-  FileText
+  FileText,
+  Bug
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -29,7 +30,7 @@ interface SuperAdminSidebarProps {
 
 export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
   const pathname = usePathname();
-  // Auto-expand System menu if on logs page
+  // Auto-expand System menu if on logs or debug page
   const [expandedItems, setExpandedItems] = useState<string[]>(
     pathname?.startsWith('/superadmin/system') ? ['System'] : []
   );
@@ -79,6 +80,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'General Logs', 
           href: '/superadmin/system/logs', 
           icon: FileText
+        },
+        { 
+          name: 'Debug Tools', 
+          href: '/superadmin/system/debug', 
+          icon: Bug
         }
       ]
     },

@@ -386,14 +386,45 @@ export async function GET(
         }
       })
 
+    // FIX Bug #3: Calculate actual total accounting for variant stock filtering
+    // The DB count doesn't account for products filtered out due to variant stock
+    // We need to adjust the total to reflect actual displayable products
+    
+    // Count how many products were filtered out on this page due to variant stock
+    const productsBeforeVariantFilter = products.length
+    const productsAfterVariantFilter = transformedProducts.length
+    const productsFilteredByVariantStock = productsBeforeVariantFilter - productsAfterVariantFilter
+    
+    // Calculate filter ratio for this batch (what percentage got filtered out)
+    const filterRatio = productsBeforeVariantFilter > 0 
+      ? productsFilteredByVariantStock / productsBeforeVariantFilter 
+      : 0
+    
+    // Estimate actual total by applying same filter ratio to total count
+    // This is more accurate than just subtracting the current page's filtered count
+    const estimatedActualTotal = Math.round(totalCount * (1 - filterRatio))
+    
+    // Special case: if we fetched products but ALL were filtered out, 
+    // and this is page 1, the actual total is likely 0 (or very small)
+    let actualTotal: number
+    if (page === 1 && productsAfterVariantFilter === 0 && productsBeforeVariantFilter > 0) {
+      // All products on first page were filtered - likely ALL products have variant stock issues
+      actualTotal = 0
+    } else if (productsAfterVariantFilter < limit && page === 1) {
+      // First page has fewer products than limit - this IS the actual total
+      actualTotal = productsAfterVariantFilter
+    } else {
+      actualTotal = estimatedActualTotal
+    }
+    
     return NextResponse.json({
       products: transformedProducts,
       pagination: {
         page,
         limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasMore: skip + limit < totalCount
+        total: actualTotal,
+        totalPages: Math.max(1, Math.ceil(actualTotal / limit)),
+        hasMore: productsAfterVariantFilter === limit && actualTotal > skip + limit
       }
     })
 

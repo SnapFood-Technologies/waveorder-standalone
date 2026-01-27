@@ -259,6 +259,8 @@ export async function GET(
         },
         // Only get product COUNT for initial load (not actual products)
         // Filter: active products with price > 0 and stock > 0 (or don't track inventory)
+        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
+        // Products with variants will be filtered by variant stock when actually fetched
         _count: {
           select: {
             products: {
@@ -268,7 +270,10 @@ export async function GET(
                 price: { gt: 0 },
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
+                  // FIX: Include products with variants - they might have variant stock even if product stock is 0
+                  // This is more permissive but avoids hiding categories that have displayable products via variants
+                  { variants: { some: {} } } // Products with at least one variant
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -474,6 +479,7 @@ export async function GET(
       const customFilterSettings = business.customFilterSettings as any || {}
       
       // Helper function to deduplicate entities by name for marketplace businesses
+      // FIX: Also sum productCounts when merging entities
       const deduplicateByName = (entities: any[]) => {
         if (!hasConnections || entities.length === 0) return entities
         
@@ -489,9 +495,11 @@ export async function GET(
               existing.ids = [existing.id] // Convert single ID to array
             }
             existing.ids.push(entity.id)
+            // FIX: Sum product counts when merging
+            existing.productCount = (existing.productCount || 0) + (entity.productCount || 0)
           } else {
-            // First occurrence: store entity with single ID
-            map.set(key, { ...entity })
+            // First occurrence: store entity with single ID and its productCount
+            map.set(key, { ...entity, productCount: entity.productCount || 0 })
           }
         }
         
@@ -517,6 +525,7 @@ export async function GET(
         })
         
         // Count products for each collection (with stock filtering) - run in parallel
+        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
         const collectionsWithCounts = await Promise.all(
           collectionsRaw.map(async (collection) => {
             const productCount = await prisma.product.count({
@@ -527,7 +536,8 @@ export async function GET(
                 collectionIds: { has: collection.id }, // Product must have this collection ID in array
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
+                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -561,6 +571,7 @@ export async function GET(
         })
         
         // Count products for each group (with stock filtering) - run in parallel
+        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
         const groupsWithCounts = await Promise.all(
           groupsRaw.map(async (group) => {
             const productCount = await prisma.product.count({
@@ -571,7 +582,8 @@ export async function GET(
                 groupIds: { has: group.id }, // Product must have this group ID in array
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
+                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -605,6 +617,7 @@ export async function GET(
         })
         
         // Count products for each brand (with stock filtering) - run in parallel
+        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
         const brandsWithCounts = await Promise.all(
           brandsRaw.map(async (brand) => {
             const productCount = await prisma.product.count({
@@ -615,7 +628,8 @@ export async function GET(
                 brandId: brand.id, // Product must have this brandId
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
+                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -638,6 +652,7 @@ export async function GET(
       customMenuItems = (business.customMenuItems as any[]) || []
       
       // Populate target entity details for each menu item
+      // FIX: Check both primary id AND merged ids array (for marketplace deduplication)
       const menuItemsWithTargets = customMenuItems
         .filter((item: any) => item.isActive)
         .sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0))
@@ -645,11 +660,14 @@ export async function GET(
           let target = null
           
           if (item.type === 'group' && item.targetId) {
-            target = groups.find(g => g.id === item.targetId)
+            // Check primary id OR if targetId is in the merged ids array
+            target = groups.find((g: any) => g.id === item.targetId || (g.ids && g.ids.includes(item.targetId)))
           } else if (item.type === 'collection' && item.targetId) {
-            target = collections.find(c => c.id === item.targetId)
+            // Check primary id OR if targetId is in the merged ids array
+            target = collections.find((c: any) => c.id === item.targetId || (c.ids && c.ids.includes(item.targetId)))
           } else if (item.type === 'category' && item.targetId) {
-            target = business.categories.find((cat: any) => cat.id === item.targetId)
+            // Check primary id OR if targetId is in the merged ids array
+            target = business.categories.find((cat: any) => cat.id === item.targetId || (cat.ids && cat.ids.includes(item.targetId)))
           }
           
           return { ...item, target }
