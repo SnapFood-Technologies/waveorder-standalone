@@ -563,6 +563,22 @@ function DebugResults({ tool, data }: { tool: DebugTool; data: any }) {
 
 // Business Health Results
 function BusinessHealthResults({ data }: { data: any }) {
+  const [pingStatus, setPingStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle')
+  const [pingTime, setPingTime] = useState(0)
+
+  const pingStorefront = async () => {
+    if (!data.business?.slug) return
+    setPingStatus('loading')
+    try {
+      const start = Date.now()
+      const res = await fetch(`/api/storefront/${data.business.slug}`)
+      setPingTime(Date.now() - start)
+      setPingStatus(res.ok ? 'ok' : 'error')
+    } catch {
+      setPingStatus('error')
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Business Info */}
@@ -583,31 +599,35 @@ function BusinessHealthResults({ data }: { data: any }) {
         <StatCard label="Customers" value={data.counts?.customers || 0} color="gray" />
       </div>
 
-      {/* Storefront Ping */}
-      {data.storefront && (
-        <div className={`rounded-lg p-4 ${data.storefront.status === 'ok' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-          <h4 className="font-semibold text-gray-900 mb-2">Storefront API Ping</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+      {/* Storefront Ping - Manual Button */}
+      {data.business?.slug && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex items-center justify-between">
             <div>
-              <span className="text-gray-500">Status:</span>{' '}
-              <span className={`font-medium ${data.storefront.status === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
-                {data.storefront.status === 'ok' ? '✓ OK' : data.storefront.status}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500">Response:</span>{' '}
-              <span className="font-medium">{data.storefront.responseTime}ms</span>
-            </div>
-            <div>
-              <span className="text-gray-500">URL:</span>{' '}
+              <span className="text-gray-500 text-sm">Storefront:</span>{' '}
               <a 
-                href={data.storefront.url} 
+                href={`/${data.business.slug}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="font-mono text-xs text-blue-600 hover:underline"
+                className="font-mono text-sm text-blue-600 hover:underline"
               >
-                {data.storefront.url}
+                /{data.business.slug}
               </a>
+            </div>
+            <div className="flex items-center gap-3">
+              {pingStatus === 'ok' && (
+                <span className="text-green-600 text-sm">✓ OK ({pingTime}ms)</span>
+              )}
+              {pingStatus === 'error' && (
+                <span className="text-red-600 text-sm">✗ Failed</span>
+              )}
+              <button
+                onClick={pingStorefront}
+                disabled={pingStatus === 'loading'}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {pingStatus === 'loading' ? 'Pinging...' : 'Ping API'}
+              </button>
             </div>
           </div>
         </div>

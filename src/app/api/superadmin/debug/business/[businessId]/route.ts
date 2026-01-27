@@ -16,7 +16,7 @@ export async function GET(
   const { businessId } = await params
 
   try {
-    // Get business info with slug for storefront ping
+    // Get business info
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: {
@@ -32,34 +32,12 @@ export async function GET(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    // Simple counts - just 1 query each (fast)
+    // Simple counts - 3 fast queries
     const [productCount, orderCount, customerCount] = await Promise.all([
       prisma.product.count({ where: { businessId } }),
       prisma.order.count({ where: { businessId } }),
       prisma.customer.count({ where: { businessId } })
     ])
-
-    // Ping storefront API
-    let storefrontStatus = 'unknown'
-    let storefrontResponseTime = 0
-    
-    try {
-      const baseUrl = process.env.NEXTAUTH_URL || 'https://waveorder.app'
-      const startTime = Date.now()
-      const storefrontResponse = await fetch(`${baseUrl}/api/storefront/${business.slug}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      })
-      storefrontResponseTime = Date.now() - startTime
-      
-      if (storefrontResponse.ok) {
-        storefrontStatus = 'ok'
-      } else {
-        storefrontStatus = `error (${storefrontResponse.status})`
-      }
-    } catch (error) {
-      storefrontStatus = 'failed'
-    }
 
     return NextResponse.json({
       business,
@@ -69,8 +47,6 @@ export async function GET(
         customers: customerCount
       },
       storefront: {
-        status: storefrontStatus,
-        responseTime: storefrontResponseTime,
         url: `/${business.slug}`
       }
     })
