@@ -173,8 +173,16 @@ export async function GET(
     // Price filter
     if (priceMin !== null || priceMax !== null) {
       productWhere.price = {}
-      if (priceMin !== null) productWhere.price.gte = priceMin
-      if (priceMax !== null) productWhere.price.lte = priceMax
+      // Ensure price > 0 constraint is maintained (don't allow free products)
+      if (priceMin !== null) {
+        productWhere.price.gte = Math.max(priceMin, 0.01)
+      } else {
+        // If only priceMax is set, still enforce price > 0
+        productWhere.price.gt = 0
+      }
+      if (priceMax !== null) {
+        productWhere.price.lte = priceMax
+      }
     }
 
     // Collection filter

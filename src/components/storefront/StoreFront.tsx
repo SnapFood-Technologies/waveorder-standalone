@@ -3618,6 +3618,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                           setSelectedGroups(new Set())
                           setSelectedBrands(new Set())
                           setSelectedSubCategory(null)
+                          setSelectedFilterCategory(null) // Clear modal filter
                           
                           // Apply filter based on type
                           if (item.type === 'category') {
@@ -3676,6 +3677,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                     }
                     setSelectedCategory('all')
                     setSelectedSubCategory(null)
+                    setSelectedFilterCategory(null) // Clear modal filter so main menu takes priority
                     // Keep search term when switching to "All"
                   }}
                   disabled={false}
@@ -3721,6 +3723,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         }
                         setSelectedCategory(category.id)
                         setSelectedSubCategory(null)
+                        setSelectedFilterCategory(null) // Clear modal filter so main menu takes priority
                         // Keep search term when switching to category (allow filtering by category + search)
                       }}
                       disabled={false}
