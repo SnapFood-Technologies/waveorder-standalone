@@ -235,6 +235,16 @@ jobs:
           pm2 logs ${{ env.APP_NAME }} --lines 5 --nostream
           echo "✅ Deployment verification complete!"
 
+      # 🏙️ ADD MISSING CITIES (One-time - remove after first deploy)
+      - name: 🏙️ Add Missing Cities
+        if: github.event_name != 'schedule'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "🏙️ Adding missing cities (Dafni to Attica, Greece)..."
+          npx tsx scripts/add-city.ts
+          echo "✅ Cities added"
+
       # 📧 LOW STOCK ALERTS (Only runs on schedule)
       - name: 📧 Send Low Stock Alerts
         if: github.event_name == 'schedule'
