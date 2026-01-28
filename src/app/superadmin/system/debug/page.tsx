@@ -78,17 +78,11 @@ export default function DebugToolsPage() {
 
   const searchBusinesses = async (query: string) => {
     try {
-      // Use existing businesses list API with search param
-      const response = await fetch(`/api/superadmin/businesses?search=${encodeURIComponent(query)}&limit=20`)
+      // Lightweight search - 1 query only
+      const response = await fetch(`/api/superadmin/businesses/search?q=${encodeURIComponent(query)}`)
       if (response.ok) {
         const data = await response.json()
-        // Map to simple format
-        const businesses = (data.businesses || []).map((b: any) => ({
-          id: b.id,
-          name: b.name,
-          slug: b.slug
-        }))
-        setBusinesses(businesses)
+        setBusinesses(data.businesses || [])
       } else {
         setBusinesses([])
       }
