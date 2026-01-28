@@ -24,8 +24,7 @@ import {
   Globe,
   DollarSign,
   Megaphone,
-  LayoutDashboard,
-  Archive
+  LayoutDashboard
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -72,11 +71,6 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Marketing', 
           href: '/superadmin/analytics/marketing', 
           icon: Megaphone
-        },
-        { 
-          name: 'Archived Data', 
-          href: '/superadmin/analytics/archived', 
-          icon: Archive
         }
       ]
     },

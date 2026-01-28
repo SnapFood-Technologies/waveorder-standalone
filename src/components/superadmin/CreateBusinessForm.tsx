@@ -52,6 +52,7 @@ interface FormData {
   whatsappNumber: string
   phonePrefix: string
   address: string
+  country: string
   storeLatitude?: number
   storeLongitude?: number
   currency: string
@@ -118,11 +119,13 @@ const businessGoalOptions = [
 function AddressAutocomplete({
   value,
   onChange,
-  onCoordinatesChange
+  onCoordinatesChange,
+  onCountryChange
 }: {
   value: string
   onChange: (address: string) => void
   onCoordinatesChange: (lat: number, lng: number) => void
+  onCountryChange?: (countryCode: string) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -170,9 +173,19 @@ function AddressAutocomplete({
         
         onChange(place.formatted_address)
         onCoordinatesChange(lat, lng)
+        
+        // Extract country code from address_components
+        if (onCountryChange && place.address_components) {
+          const countryComponent = place.address_components.find(
+            (comp: any) => comp.types.includes('country')
+          )
+          if (countryComponent?.short_name) {
+            onCountryChange(countryComponent.short_name)
+          }
+        }
       }
     })
-  }, [isLoaded, onChange, onCoordinatesChange])
+  }, [isLoaded, onChange, onCoordinatesChange, onCountryChange])
 
   return (
     <input
@@ -216,6 +229,7 @@ export function CreateBusinessForm() {
     whatsappNumber: '',
     phonePrefix: '+1',
     address: '',
+    country: '',
     currency: 'USD',
     language: 'en',
     timezone: 'America/New_York',
@@ -363,6 +377,7 @@ export function CreateBusinessForm() {
           ownerEmail: formData.ownerEmail,
           whatsappNumber: completeWhatsappNumber,
           address: formData.address,
+          country: formData.country,
           storeLatitude: formData.storeLatitude,
           storeLongitude: formData.storeLongitude,
           currency: formData.currency,
@@ -955,12 +970,33 @@ export function CreateBusinessForm() {
                             storeLatitude: lat, 
                             storeLongitude: lng 
                           }))}
+                          onCountryChange={(countryCode) => setFormData(prev => ({ ...prev, country: countryCode }))}
                         />
                         {formData.storeLatitude && formData.storeLongitude && (
                           <p className="text-xs text-gray-400 mt-1">
                             Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}
                           </p>
                         )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Country
+                        </label>
+                        <select
+                          value={formData.country}
+                          onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select country</option>
+                          <option value="AL">Albania</option>
+                          <option value="GR">Greece</option>
+                          <option value="ES">Spain</option>
+                          <option value="US">USA</option>
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Auto-detected from address
+                        </p>
                       </div>
                     </div>
                   </div>

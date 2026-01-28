@@ -38,6 +38,7 @@ interface BusinessSettings {
   descriptionAl?: string
   businessType: string
   address?: string
+  country?: string  // ISO country code (e.g., "AL", "GR", "US")
   phone?: string
   email?: string
   website?: string
@@ -181,15 +182,17 @@ function AddressAutocomplete({
   value, 
   onChange, 
   placeholder, 
-  required, 
+  required,
   businessData,
-  onCoordinatesChange
+  onCoordinatesChange,
+  onCountryChange
 }: {
   value: string
   onChange: (address: string) => void
   placeholder: string
   required: boolean
   businessData?: any
+  onCountryChange?: (countryCode: string) => void
   onCoordinatesChange?: (lat: number, lng: number) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -267,9 +270,19 @@ function AddressAutocomplete({
         if (onCoordinatesChange) {
           onCoordinatesChange(lat, lng)
         }
+        
+        // Extract country code from address_components
+        if (onCountryChange && place.address_components) {
+          const countryComponent = place.address_components.find(
+            (comp: any) => comp.types.includes('country')
+          )
+          if (countryComponent?.short_name) {
+            onCountryChange(countryComponent.short_name)
+          }
+        }
       }
     })
-  }, [isLoaded, onChange, businessData, onCoordinatesChange])
+  }, [isLoaded, onChange, businessData, onCoordinatesChange, onCountryChange])
 
   return (
     <input
@@ -979,6 +992,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
         storeLongitude: lng 
       }))
     }}
+    onCountryChange={(countryCode) => {
+      setSettings(prev => ({ ...prev, country: countryCode }))
+    }}
     placeholder="Enter your full business address"
     required={true}
     businessData={settings}
@@ -993,6 +1009,26 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     </p>
   )}
 </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Country
+                </label>
+                <select
+                  value={settings.country || ''}
+                  onChange={(e) => setSettings(prev => ({ ...prev, country: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900"
+                >
+                  <option value="">Select country</option>
+                  <option value="AL">Albania</option>
+                  <option value="GR">Greece</option>
+                  <option value="ES">Spain</option>
+                  <option value="US">USA</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Auto-detected from address. You can change it manually if needed.
+                </p>
+              </div>
 
               <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

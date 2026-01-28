@@ -180,6 +180,7 @@ model Business {
   phone              String?
   email              String?
   address            String?
+  country            String?  // ISO country code (e.g., "AL", "GR", "US")
   storeLatitude      Float?
   storeLongitude     Float?
   website            String?
