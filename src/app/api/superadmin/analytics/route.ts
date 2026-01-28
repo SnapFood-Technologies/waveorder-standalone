@@ -448,6 +448,8 @@ export async function GET(request: NextRequest) {
       revenueByPlan, // Platform subscription revenue by plan (currently all $0)
       incompleteBusinesses: formattedIncompleteBusinesses,
       inactiveBusinesses: formattedInactiveBusinesses,
+      incompleteBusinessesCount: formattedIncompleteBusinesses.length,
+      inactiveBusinessesCount: formattedInactiveBusinesses.length,
       pageViewsTimeSeries: pageViewsData // Time-series data for page views chart
     })
 

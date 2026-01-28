@@ -29,12 +29,7 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {}
     
-    // Country filter by phone prefix
-    if (country === 'AL') {
-      whereConditions.whatsappNumber = { startsWith: '+355' }
-    } else if (country === 'GR') {
-      whereConditions.whatsappNumber = { startsWith: '+30' }
-    }
+    // Country filter will be applied in memory after fetching (Prisma/MongoDB startsWith issues)
 
     // Handle incomplete filter separately - filter in memory due to Prisma/MongoDB null handling issues
     // Skip building whereConditions for incomplete - we'll handle it in the query section
@@ -98,12 +93,7 @@ export async function GET(request: NextRequest) {
       if (plan !== 'all') {
         baseConditions.subscriptionPlan = plan.toUpperCase()
       }
-      // Country filter by phone prefix
-      if (country === 'AL') {
-        baseConditions.whatsappNumber = { startsWith: '+355' }
-      } else if (country === 'GR') {
-        baseConditions.whatsappNumber = { startsWith: '+30' }
-      }
+      // Country filter will be applied in memory (Prisma/MongoDB startsWith issues with + character)
 
       // Get all businesses matching search/plan
       const allBusinesses = await prisma.business.findMany({
@@ -153,8 +143,16 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' }
       })
 
+      // Apply country filter in memory first
+      let filteredBusinesses = allBusinesses
+      if (country === 'AL') {
+        filteredBusinesses = allBusinesses.filter(b => b.whatsappNumber?.startsWith('+355'))
+      } else if (country === 'GR') {
+        filteredBusinesses = allBusinesses.filter(b => b.whatsappNumber?.startsWith('+30'))
+      }
+
       // Filter for incomplete businesses in memory
-      const incompleteBusinesses = allBusinesses.filter(business => {
+      const incompleteBusinesses = filteredBusinesses.filter(business => {
         const whatsappNumber = (business.whatsappNumber || '').trim()
         const address = business.address ? business.address.trim() : null
         
@@ -170,8 +168,10 @@ export async function GET(request: NextRequest) {
       businesses = incompleteBusinesses.slice(offset, offset + limit)
     } else {
       // Regular query for active/inactive/all
-      const result = await Promise.all([
-        prisma.business.findMany({
+      // If country filter is applied, we need to filter in memory due to Prisma/MongoDB startsWith issues
+      if (country !== 'all') {
+        // Fetch all matching businesses without pagination
+        const allBusinesses = await prisma.business.findMany({
           where: whereConditions,
           include: {
             users: {
@@ -215,14 +215,75 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          orderBy: { createdAt: 'desc' },
-          skip: offset,
-          take: limit
-        }),
-        prisma.business.count({ where: whereConditions })
-      ])
-      businesses = result[0]
-      totalCount = result[1]
+          orderBy: { createdAt: 'desc' }
+        })
+        
+        // Apply country filter in memory
+        let filteredBusinesses = allBusinesses
+        if (country === 'AL') {
+          filteredBusinesses = allBusinesses.filter((b: any) => b.whatsappNumber?.startsWith('+355'))
+        } else if (country === 'GR') {
+          filteredBusinesses = allBusinesses.filter((b: any) => b.whatsappNumber?.startsWith('+30'))
+        }
+        
+        totalCount = filteredBusinesses.length
+        businesses = filteredBusinesses.slice(offset, offset + limit)
+      } else {
+        // No country filter - use regular Prisma pagination
+        const result = await Promise.all([
+          prisma.business.findMany({
+            where: whereConditions,
+            include: {
+              users: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    createdAt: true,
+                    password: true,
+                    accounts: {
+                      select: {
+                        provider: true,
+                        type: true
+                      }
+                    },
+                    subscription: {
+                      select: {
+                        priceId: true
+                      }
+                    }
+                  }
+                }
+              }
+              },
+              orders: {
+                select: { 
+                  total: true,
+                  status: true,
+                  paymentStatus: true,
+                  type: true
+                }
+              },
+              _count: {
+                select: { 
+                  orders: true,
+                  customers: true,
+                  products: true
+                }
+              }
+            },
+            orderBy: { createdAt: 'desc' },
+            skip: offset,
+            take: limit
+          }),
+          prisma.business.count({ where: whereConditions })
+        ])
+        businesses = result[0]
+        totalCount = result[1]
+      }
       
       // Fetch connectedBusinesses separately for each business
       const businessesWithConnections = await Promise.all(

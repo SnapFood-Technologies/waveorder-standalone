@@ -20,7 +20,12 @@ import {
   MapPin,
   Server,
   FileText,
-  Bug
+  Bug,
+  Globe,
+  DollarSign,
+  Megaphone,
+  LayoutDashboard,
+  Archive
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -30,16 +35,51 @@ interface SuperAdminSidebarProps {
 
 export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
   const pathname = usePathname();
-  // Auto-expand System menu if on logs or debug page
-  const [expandedItems, setExpandedItems] = useState<string[]>(
-    pathname?.startsWith('/superadmin/system') ? ['System'] : []
-  );
+  // Auto-expand menus based on current path
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    const items: string[] = []
+    if (pathname?.startsWith('/superadmin/system')) items.push('System')
+    if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
+    if (pathname?.startsWith('/superadmin/support')) items.push('Support')
+    if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
+    return items
+  });
   
   const navigation = [
     { name: 'Dashboard', href: '/superadmin/dashboard', icon: BarChart3 },
     { name: 'Businesses', href: '/superadmin/businesses', icon: Building2 },
     { name: 'Users', href: '/superadmin/users', icon: Users },
-    { name: 'Analytics', href: '/superadmin/analytics', icon: TrendingUp },
+    { 
+      name: 'Analytics', 
+      icon: TrendingUp,
+      children: [
+        { 
+          name: 'Overview', 
+          href: '/superadmin/analytics', 
+          icon: LayoutDashboard
+        },
+        { 
+          name: 'Geolocation', 
+          href: '/superadmin/analytics/geolocation', 
+          icon: Globe
+        },
+        { 
+          name: 'Financial', 
+          href: '/superadmin/analytics/financial', 
+          icon: DollarSign
+        },
+        { 
+          name: 'Marketing', 
+          href: '/superadmin/analytics/marketing', 
+          icon: Megaphone
+        },
+        { 
+          name: 'Archived Data', 
+          href: '/superadmin/analytics/archived', 
+          icon: Archive
+        }
+      ]
+    },
     { 
       name: 'Support', 
       icon: HeadphonesIcon,

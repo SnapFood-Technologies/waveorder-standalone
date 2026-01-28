@@ -2,6 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   BarChart3,
   TrendingUp,
@@ -18,7 +19,9 @@ import {
   FileText,
   Calendar,
   Filter,
-  HelpCircle
+  HelpCircle,
+  Archive,
+  ArrowRight
 } from 'lucide-react'
 
 interface AnalyticsData {
@@ -32,41 +35,14 @@ interface AnalyticsData {
     pageViews: number
     conversionRate: number
   }
-  businessGrowth: {
-    date: string
-    count: number
-  }[]
-  userGrowth: {
-    date: string
-    count: number
-  }[]
-  topBusinesses: {
-    id: string
-    name: string
-    orders: number
-    revenue: number
-    plan: string
-    billingType?: 'monthly' | 'yearly' | 'free' | null
-  }[]
   revenueByPlan: {
     plan: string
     billingType?: string
     revenue: number
     businesses: number
   }[]
-  incompleteBusinesses: {
-    id: string
-    name: string
-    missingFields: string[]
-    createdAt: string
-  }[]
-  inactiveBusinesses: {
-    id: string
-    name: string
-    deactivatedAt: string | null
-    deactivationReason: string | null
-    createdAt: string
-  }[]
+  incompleteBusinessesCount: number
+  inactiveBusinessesCount: number
 }
 
 export function SuperAdminAnalytics() {
@@ -270,46 +246,6 @@ export function SuperAdminAnalytics() {
         </div>
       </div>
 
-      {/* Top Businesses */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Performing Businesses</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Business</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Plan</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Orders</th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Revenue</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data.topBusinesses.map((business) => (
-                <tr key={business.id} className="hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
-                  <td className="py-3 px-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      business.plan === 'PRO' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {business.plan}
-                      {business.billingType && (
-                        <span className="ml-1 text-gray-600 font-normal">
-                          ({business.billingType === 'free' ? 'Free' : business.billingType === 'monthly' ? 'Monthly' : 'Yearly'})
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600 text-right">{formatNumber(business.orders)}</td>
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900 text-right">
-                    {formatCurrency(business.revenue)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* Revenue by Plan */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Subscription Plan</h3>
@@ -354,99 +290,6 @@ export function SuperAdminAnalytics() {
           })}
         </div>
       </div>
-
-      {/* Incomplete Businesses */}
-      {data.incompleteBusinesses && data.incompleteBusinesses.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Incomplete Businesses</h3>
-            <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
-              {data.incompleteBusinesses.length} businesses
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Business</th>
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Missing Fields</th>
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Created</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.incompleteBusinesses.map((business) => (
-                  <tr key={business.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-wrap gap-2">
-                        {business.missingFields.map((field, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded"
-                          >
-                            {field}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {new Date(business.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Inactive Businesses */}
-      {data.inactiveBusinesses && data.inactiveBusinesses.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Inactive Businesses</h3>
-            <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-              {data.inactiveBusinesses.length} businesses
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Business</th>
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Deactivated</th>
-                  <th className="text-left py-2 px-4 text-sm font-medium text-gray-500">Reason</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data.inactiveBusinesses.map((business) => (
-                  <tr key={business.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {business.deactivatedAt
-                        ? new Date(business.deactivatedAt).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })
-                        : 'N/A'}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {business.deactivationReason || (
-                        <span className="text-gray-400 italic">No reason provided</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Analytics Guide Section */}
       <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-lg border border-teal-200 p-6">
@@ -560,6 +403,27 @@ export function SuperAdminAnalytics() {
                 <p className="text-xs text-gray-700">Business is missing essential setup information (WhatsApp number or business address). These businesses may be active but need attention to function properly.</p>
               </div>
             </div>
+
+            {/* CTA for Archived Data */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <Link 
+                href="/superadmin/analytics/archived"
+                className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center group-hover:bg-gray-300 transition-colors">
+                    <Archive className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">View Archived Data</p>
+                    <p className="text-xs text-gray-600">
+                      {data.incompleteBusinessesCount || data.overview.incompleteBusinesses} incomplete, {data.inactiveBusinessesCount || 0} inactive businesses
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+              </Link>
+            </div>
           </div>
 
           {/* Revenue by Plan Card */}
@@ -588,103 +452,31 @@ export function SuperAdminAnalytics() {
             </div>
           </div>
 
-          {/* Top Performing Businesses Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-teal-600" />
-              </div>
-              <h4 className="text-base font-semibold text-gray-900">Top Performing Businesses</h4>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-teal-500 mt-0.5">•</span>
-                <span>Ranked by total revenue from completed and paid orders</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-teal-500 mt-0.5">•</span>
-                <span>Only includes <strong>active</strong> businesses with revenue greater than $0</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-teal-500 mt-0.5">•</span>
-                <span>Shows the top 10 businesses by revenue</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Incomplete Businesses Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-yellow-600" />
-              </div>
-              <h4 className="text-base font-semibold text-gray-900">Incomplete Businesses</h4>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-yellow-500 mt-0.5">•</span>
-                <span>Businesses missing WhatsApp number (empty or "Not provided") or business address (empty, "Not set", or null)</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-yellow-500 mt-0.5">•</span>
-                <span>Includes both active and inactive businesses that have incomplete setup</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-yellow-500 mt-0.5">•</span>
-                <span>Shows which specific fields are missing (WhatsApp, Address, or both)</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Inactive Businesses Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <h4 className="text-base font-semibold text-gray-900">Inactive Businesses</h4>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-red-500 mt-0.5">•</span>
-                <span>Businesses that have been deactivated by a super admin</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-red-500 mt-0.5">•</span>
-                <span>Shows deactivation date and reason (if provided)</span>
-              </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700">
-                <span className="text-red-500 mt-0.5">•</span>
-                <span>These businesses are not visible to customers but all data is preserved</span>
-              </div>
-            </div>
-          </div>
-
           {/* Date Range Filter Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm lg:col-span-2">
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
                 <Filter className="w-5 h-5 text-indigo-600" />
               </div>
               <h4 className="text-base font-semibold text-gray-900">Date Range Filter</h4>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-3">
+              <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="flex items-center gap-2 mb-1">
                   <Calendar className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Affected Metrics</p>
                 </div>
                 <p className="text-xs text-gray-700">Business Growth, User Growth, Orders, and Conversion Rate calculations</p>
               </div>
-              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="flex items-center gap-2 mb-1">
                   <FileText className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Always Shown</p>
                 </div>
                 <p className="text-xs text-gray-700">Overview metrics (Total Businesses, Active Businesses, Incomplete Businesses) show all-time counts regardless of date range</p>
               </div>
-              <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 md:col-span-2">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                <div className="flex items-center gap-2 mb-1">
                   <DollarSign className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Revenue Calculations</p>
                 </div>
