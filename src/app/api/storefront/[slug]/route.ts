@@ -504,6 +504,8 @@ export async function GET(
       }
       
       // PERFORMANCE OPTIMIZATION: Fetch only needed fields for collections/groups/brands
+      // NOTE: Individual COUNT queries per entity were removed due to N+1 performance issues
+      // TODO (Future): Use MongoDB aggregation for batch counting if stock-filtered counts are needed
       // Fetch collections if menu enabled OR filtering enabled for collections
       if (business.customMenuEnabled || customFilterSettings.collectionsEnabled) {
         const collectionsRaw = await prisma.collection.findMany({
@@ -520,33 +522,7 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
-        
-        // Count products for each collection (with stock filtering) - run in parallel
-        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
-        const collectionsWithCounts = await Promise.all(
-          collectionsRaw.map(async (collection) => {
-            const productCount = await prisma.product.count({
-              where: {
-                businessId: { in: businessIds },
-                isActive: true,
-                price: { gt: 0 },
-                collectionIds: { has: collection.id }, // Product must have this collection ID in array
-                OR: [
-                  { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-                ],
-                ...(business.hideProductsWithoutPhotos && {
-                  images: { isEmpty: false }
-                })
-              }
-            })
-            return { ...collection, productCount }
-          })
-        )
-        
-        // Filter out collections with 0 products before deduplication
-        const collectionsWithProducts = collectionsWithCounts.filter((c: any) => c.productCount > 0)
-        collections = deduplicateByName(collectionsWithProducts)
+        collections = deduplicateByName(collectionsRaw)
       }
       
       // Fetch groups if menu enabled OR filtering enabled for groups
@@ -565,33 +541,7 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
-        
-        // Count products for each group (with stock filtering) - run in parallel
-        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
-        const groupsWithCounts = await Promise.all(
-          groupsRaw.map(async (group) => {
-            const productCount = await prisma.product.count({
-              where: {
-                businessId: { in: businessIds },
-                isActive: true,
-                price: { gt: 0 },
-                groupIds: { has: group.id }, // Product must have this group ID in array
-                OR: [
-                  { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-                ],
-                ...(business.hideProductsWithoutPhotos && {
-                  images: { isEmpty: false }
-                })
-              }
-            })
-            return { ...group, productCount }
-          })
-        )
-        
-        // Filter out groups with 0 products before deduplication
-        const groupsWithProducts = groupsWithCounts.filter((g: any) => g.productCount > 0)
-        groups = deduplicateByName(groupsWithProducts)
+        groups = deduplicateByName(groupsRaw)
       }
       
       // Fetch brands if filtering enabled for brands
@@ -610,33 +560,7 @@ export async function GET(
           },
           orderBy: { sortOrder: 'asc' }
         })
-        
-        // Count products for each brand (with stock filtering) - run in parallel
-        // FIX Bug #4: Include products with variants (can't check variant stock at DB level)
-        const brandsWithCounts = await Promise.all(
-          brandsRaw.map(async (brand) => {
-            const productCount = await prisma.product.count({
-              where: {
-                businessId: { in: businessIds },
-                isActive: true,
-                price: { gt: 0 },
-                brandId: brand.id, // Product must have this brandId
-                OR: [
-                  { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-                ],
-                ...(business.hideProductsWithoutPhotos && {
-                  images: { isEmpty: false }
-                })
-              }
-            })
-            return { ...brand, productCount }
-          })
-        )
-        
-        // Filter out brands with 0 products before deduplication
-        const brandsWithProducts = brandsWithCounts.filter((b: any) => b.productCount > 0)
-        brands = deduplicateByName(brandsWithProducts)
+        brands = deduplicateByName(brandsRaw)
       }
     }
 
