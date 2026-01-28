@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Menu, User, Settings, LogOut, ChevronDown, Bell, Store, ExternalLink, Cog, CreditCard } from 'lucide-react'
+import { Menu, User, Settings, LogOut, ChevronDown, Bell, Store, ExternalLink, Cog, CreditCard, Plus, Crown } from 'lucide-react'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -13,12 +13,23 @@ interface AdminHeaderProps {
   businessId: string
 }
 
+interface StoreLimits {
+  canCreate: boolean
+  currentCount: number
+  limit: number
+  limitReached: boolean
+  suggestedUpgrade?: 'PRO' | 'BUSINESS'
+  planName: string
+  isUnlimited: boolean
+}
+
 export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [storeLimits, setStoreLimits] = useState<StoreLimits | null>(null)
   
   const { businesses, currentBusiness, userRole } = useBusiness() // ADD userRole
   const { data: session } = useSession()
@@ -41,6 +52,25 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
     url.searchParams.set('businessId', businessId)
     return url.pathname + url.search
   }
+
+  // Fetch store limits when business dropdown is opened
+  useEffect(() => {
+    const fetchStoreLimits = async () => {
+      try {
+        const response = await fetch('/api/user/store-limits')
+        if (response.ok) {
+          const data = await response.json()
+          setStoreLimits(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch store limits:', error)
+      }
+    }
+
+    if (isBusinessDropdownOpen && !storeLimits) {
+      fetchStoreLimits()
+    }
+  }, [isBusinessDropdownOpen, storeLimits])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -233,13 +263,54 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                   ))}
                 </div>
                 <div className="border-t border-gray-100 py-1">
+                  {/* Store count and limit */}
+                  {storeLimits && (
+                    <div className="px-4 py-2 text-xs text-gray-500">
+                      {storeLimits.isUnlimited 
+                        ? `${storeLimits.currentCount} stores`
+                        : `${storeLimits.currentCount} / ${storeLimits.limit} stores`
+                      }
+                    </div>
+                  )}
+                  
+                  {/* Create New Business - Check limits */}
+                  {storeLimits?.canCreate ? (
+                    <Link
+                      href="/setup"
+                      className="flex items-center px-4 py-2 text-sm text-teal-600 hover:bg-teal-50"
+                      onClick={() => setIsBusinessDropdownOpen(false)}
+                    >
+                      <Plus className="w-4 h-4 mr-3" />
+                      Create New Store
+                    </Link>
+                  ) : storeLimits?.limitReached && storeLimits?.suggestedUpgrade ? (
+                    <Link
+                      href={`/admin/stores/${businessId}/settings/billing`}
+                      className="flex items-center px-4 py-2 text-sm text-amber-600 hover:bg-amber-50"
+                      onClick={() => setIsBusinessDropdownOpen(false)}
+                    >
+                      <Crown className="w-4 h-4 mr-3" />
+                      Upgrade for more stores
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/setup"
+                      className="flex items-center px-4 py-2 text-sm text-teal-600 hover:bg-teal-50"
+                      onClick={() => setIsBusinessDropdownOpen(false)}
+                    >
+                      <Plus className="w-4 h-4 mr-3" />
+                      Create New Store
+                    </Link>
+                  )}
+
+                  {/* Manage All Stores */}
                   <Link
-                    href="/setup"
-                    className="flex items-center px-4 py-2 text-sm text-teal-600 hover:bg-teal-50"
+                    href="/admin/stores"
+                    className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                     onClick={() => setIsBusinessDropdownOpen(false)}
                   >
                     <Store className="w-4 h-4 mr-3" />
-                    Create New Business
+                    Manage All Stores
                   </Link>
                 </div>
               </div>

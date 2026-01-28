@@ -3,11 +3,13 @@ import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 import { sendVerificationEmail, sendUserCreatedNotification } from '@/lib/email'
 import crypto from 'crypto'
+import { calculateTrialEndDate, calculateGraceEndDate } from '@/lib/trial'
 
+type ValidPlan = 'STARTER' | 'PRO' | 'BUSINESS'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password } = await request.json()
+    const { name, email, password, plan: requestedPlan } = await request.json()
 
     // Validate input
     // if (!name || !email || !password) {
@@ -17,6 +19,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Validate plan selection (default to PRO if not specified)
+    const validPlans: ValidPlan[] = ['STARTER', 'PRO', 'BUSINESS']
+    const selectedPlan: ValidPlan = validPlans.includes(requestedPlan) ? requestedPlan : 'PRO'
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -37,7 +43,12 @@ export async function POST(request: NextRequest) {
     const verificationToken = crypto.randomBytes(32).toString('hex')
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    // Create user
+    // Calculate trial dates
+    const trialEndsAt = calculateTrialEndDate()
+    const graceEndsAt = calculateGraceEndDate(trialEndsAt)
+
+    // Create user with trial
+    // Note: Using type assertion as Prisma types may not reflect new schema fields immediately
     const user = await prisma.user.create({
       data: {
         name,
@@ -45,8 +56,13 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         role: 'BUSINESS_OWNER',
         verificationToken,
-        verificationExpiry
-      }
+        verificationExpiry,
+        // Set selected plan and trial dates
+        plan: selectedPlan,
+        trialEndsAt,
+        graceEndsAt,
+        trialUsed: true
+      } as any
     })
 
     // Send verification email

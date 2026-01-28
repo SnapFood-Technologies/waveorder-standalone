@@ -59,6 +59,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Normal flow: Get user's own businesses
+    // First, get the user's default business preference
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id }
+    })
+    
+    const defaultBusinessId = (user as any)?.defaultBusinessId as string | null
+
     const businessUsers = await prisma.businessUser.findMany({
       where: {
         userId: session.user.id
@@ -78,16 +85,34 @@ export async function GET(request: NextRequest) {
             setupWizardCompleted: true
           }
         }
+      },
+      orderBy: {
+        business: {
+          createdAt: 'asc'
+        }
       }
     })
 
-    const businesses = businessUsers.map(bu => ({
+    // Map businesses and add role
+    let businesses = businessUsers.map(bu => ({
       ...bu.business,
       role: bu.role
     }))
 
+    // Sort businesses: default business first, then by creation date
+    if (defaultBusinessId) {
+      businesses = businesses.sort((a, b) => {
+        if (a.id === defaultBusinessId) return -1
+        if (b.id === defaultBusinessId) return 1
+        return 0
+      })
+    }
+
     return NextResponse.json(
-      { businesses },
+      { 
+        businesses,
+        defaultBusinessId: defaultBusinessId || businesses[0]?.id || null
+      },
       { status: 200 }
     )
 

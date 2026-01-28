@@ -1,13 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, Waves } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, Waves, Sparkles } from 'lucide-react'
+
+type Plan = 'STARTER' | 'PRO' | 'BUSINESS'
+
+const PLAN_NAMES: Record<Plan, string> = {
+  STARTER: 'Starter',
+  PRO: 'Pro',
+  BUSINESS: 'Business'
+}
 
 export default function RegisterComponent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Get plan from URL params (default to PRO)
+  const planParam = searchParams.get('plan')?.toUpperCase() as Plan | null
+  const selectedPlan: Plan = planParam && ['STARTER', 'PRO', 'BUSINESS'].includes(planParam) 
+    ? planParam 
+    : 'PRO'
   
   const [formData, setFormData] = useState({
     name: '',
@@ -65,7 +80,10 @@ export default function RegisterComponent() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          plan: selectedPlan
+        })
       })
 
       // Check if response is ok before parsing JSON
@@ -207,9 +225,15 @@ export default function RegisterComponent() {
             <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             Start building your WhatsApp ordering system today
           </p>
+          
+          {/* Plan & Trial Badge */}
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium">
+            <Sparkles className="w-4 h-4" />
+            Starting {PLAN_NAMES[selectedPlan]} plan with 14-day free trial
+          </div>
         </div>
 
         {/* Error Message */}

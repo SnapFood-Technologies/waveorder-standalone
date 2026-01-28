@@ -109,12 +109,14 @@ interface RoleChangedParams extends BaseEmailParams {
 }
 
 // Add these interfaces
+type PlanType = 'STARTER' | 'PRO' | 'BUSINESS'
+
 interface SubscriptionChangeEmailParams {
   to: string
   name: string
-  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed'
-  oldPlan?: 'STARTER' | 'PRO'
-  newPlan: 'STARTER' | 'PRO'
+  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted'
+  oldPlan?: PlanType
+  newPlan: PlanType
   billingInterval?: 'monthly' | 'annual'
   amount?: number
   nextBillingDate?: Date
@@ -144,7 +146,7 @@ interface BusinessCreatedEmailParams {
   businessName: string
   setupUrl: string
   dashboardUrl: string
-  subscriptionPlan?: 'STARTER' | 'PRO' // Add this
+  subscriptionPlan?: PlanType
 }
 
 
@@ -229,7 +231,7 @@ const createBusinessCreatedEmailContent = (
   businessName: string, 
   setupUrl: string,
   dashboardUrl: string,
-  subscriptionPlan: 'STARTER' | 'PRO' = 'STARTER'
+  subscriptionPlan: PlanType = 'STARTER'
 ) => `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
@@ -348,9 +350,9 @@ const createVerificationEmailContent = (name: string, verificationUrl: string) =
 // Add email templates
 const createSubscriptionChangeEmailContent = (
   name: string,
-  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed',
-  oldPlan: 'STARTER' | 'PRO' | undefined,
-  newPlan: 'STARTER' | 'PRO',
+  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted',
+  oldPlan: PlanType | undefined,
+  newPlan: PlanType,
   billingInterval: 'monthly' | 'annual' | undefined,
   amount: number | undefined,
   nextBillingDate: Date | undefined
@@ -359,27 +361,52 @@ const createSubscriptionChangeEmailContent = (
   const isDowngrade = changeType === 'downgraded'
   const isCanceled = changeType === 'canceled'
   const isRenewed = changeType === 'renewed'
+  const isTrialConverted = changeType === 'trial_converted'
+
+  // Plan display names
+  const planNames: Record<PlanType, string> = {
+    STARTER: 'Starter',
+    PRO: 'Pro',
+    BUSINESS: 'Business'
+  }
 
   let title = ''
   let message = ''
   let badgeColor = ''
   let badgeText = ''
 
-  if (isUpgrade) {
-    title = '🎉 Welcome to WaveOrder PRO!'
-    message = `Your account has been successfully upgraded to the PRO plan. You now have access to all premium features including unlimited products, advanced analytics, custom domains, inventory management, and priority support.`
-    badgeColor = 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
-    badgeText = '👑 PRO Plan Active'
+  if (isUpgrade || isTrialConverted) {
+    const planName = planNames[newPlan]
+    if (newPlan === 'BUSINESS') {
+      title = `🎉 Welcome to WaveOrder ${planName}!`
+      message = `Your account has been successfully ${isTrialConverted ? 'converted from trial to' : 'upgraded to'} the ${planName} plan. You now have access to all premium features including unlimited products, unlimited stores, team access, custom domains, API access, and dedicated support.`
+      badgeColor = 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
+      badgeText = `🏢 ${planName} Plan Active`
+    } else if (newPlan === 'PRO') {
+      title = `🎉 Welcome to WaveOrder ${planName}!`
+      message = `Your account has been successfully ${isTrialConverted ? 'converted from trial to' : 'upgraded to'} the ${planName} plan. You now have access to all premium features including unlimited products, advanced analytics, delivery scheduling, and priority support.`
+      badgeColor = 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+      badgeText = `👑 ${planName} Plan Active`
+    } else {
+      title = `Welcome to WaveOrder ${planName}!`
+      message = `Your account is now on the ${planName} plan. ${isTrialConverted ? 'Your trial has been converted to a paid subscription.' : ''}`
+      badgeColor = 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)'
+      badgeText = `✓ ${planName} Plan Active`
+    }
   } else if (isDowngrade || isCanceled) {
     title = 'Subscription Changed'
-    message = `Your PRO subscription has been canceled. You'll continue to have access to all PRO features until ${nextBillingDate?.toLocaleDateString() || 'the end of your billing period'}, after which your account will be downgraded to the Starter plan.`
+    const oldPlanName = oldPlan ? planNames[oldPlan] : 'your current plan'
+    message = `Your ${oldPlanName} subscription has been canceled. You'll continue to have access to all features until ${nextBillingDate?.toLocaleDateString() || 'the end of your billing period'}, after which your account will be downgraded.`
     badgeColor = 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)'
     badgeText = 'Subscription Ending'
   } else if (isRenewed) {
+    const planName = planNames[newPlan]
     title = '✅ Subscription Renewed'
-    message = `Your PRO subscription has been successfully renewed. Thank you for continuing with WaveOrder!`
-    badgeColor = 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
-    badgeText = '👑 PRO Renewed'
+    message = `Your ${planName} subscription has been successfully renewed. Thank you for continuing with WaveOrder!`
+    badgeColor = newPlan === 'BUSINESS' 
+      ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' 
+      : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+    badgeText = newPlan === 'BUSINESS' ? `🏢 ${planName} Renewed` : `👑 ${planName} Renewed`
   }
 
   return `
@@ -799,11 +826,18 @@ export async function sendSubscriptionChangeEmail({
   )
   const html = createEmailTemplate(content, 'Subscription Update')
 
-  const subjectMap = {
-    upgraded: '🎉 Welcome to WaveOrder PRO!',
+  const planNames: Record<PlanType, string> = {
+    STARTER: 'Starter',
+    PRO: 'Pro',
+    BUSINESS: 'Business'
+  }
+  
+  const subjectMap: Record<SubscriptionChangeEmailParams['changeType'], string> = {
+    upgraded: `🎉 Welcome to WaveOrder ${planNames[newPlan]}!`,
     downgraded: 'Your WaveOrder Subscription Has Changed',
-    canceled: 'Your WaveOrder PRO Subscription Has Been Canceled',
-    renewed: '✅ Your WaveOrder PRO Subscription Has Been Renewed'
+    canceled: 'Your WaveOrder Subscription Has Been Canceled',
+    renewed: `✅ Your WaveOrder ${planNames[newPlan]} Subscription Has Been Renewed`,
+    trial_converted: `🎉 Your WaveOrder ${planNames[newPlan]} Trial Has Been Converted`
   }
 
   try {

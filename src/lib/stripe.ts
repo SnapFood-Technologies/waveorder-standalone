@@ -9,60 +9,98 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export const PLANS = {
   STARTER: {
     name: 'Starter',
-    price: 6,
-    annualPrice: 5,
+    price: 19,
+    annualPrice: 16,           // ~17% discount ($192/year)
     priceId: process.env.STRIPE_STARTER_PRICE_ID!,
     annualPriceId: process.env.STRIPE_STARTER_ANNUAL_PRICE_ID!,
     freePriceId: process.env.STRIPE_STARTER_FREE_PRICE_ID!,
     description: 'Perfect for getting started',
     features: [
-      'Up to 30 products',
-      '10 categories',
-      'Basic WhatsApp orders',
-      'Mobile catalog',
-      'Manual product entry',
-      'Basic branding',
+      'Up to 50 products',
+      '1 store/catalog',
+      'Basic analytics',
+      'WhatsApp ordering',
       'CSV import',
-      'Basic order analytics',
+      'Email support',
     ],
     limits: {
-      products: 30,
-      categories: 10,
+      products: 50,
+      categories: 15,
+      stores: 1,
       customDomain: false,
       advancedAnalytics: false,
       inventoryManagement: false,
       wholesalePricing: false,
       prioritySupport: false,
       advancedBranding: false,
+      teamMembers: 0,
+      apiAccess: false,
+      scheduling: false,
+      customerInsights: false,
     },
   },
   PRO: {
     name: 'Pro',
-    price: 12,
-    annualPrice: 10,
+    price: 39,
+    annualPrice: 32,           // ~17% discount ($384/year)
     priceId: process.env.STRIPE_PRO_PRICE_ID!,
     annualPriceId: process.env.STRIPE_PRO_ANNUAL_PRICE_ID!,
     freePriceId: process.env.STRIPE_PRO_FREE_PRICE_ID!,
     description: 'For growing businesses',
     features: [
       'Unlimited products',
-      'Unlimited categories',
-      'Advanced branding (colors, logo)',
-      'Advanced order analytics',
-      'Inventory management',
-      'Custom domains',
-      'Wholesale pricing',
-      'Priority support'
+      'Up to 5 stores/catalogs',
+      'Full analytics',
+      'Delivery scheduling',
+      'Customer insights',
+      'Priority support',
     ],
     limits: {
       products: Infinity,
       categories: Infinity,
+      stores: 5,
+      customDomain: false,
+      advancedAnalytics: true,
+      inventoryManagement: true,
+      wholesalePricing: true,
+      prioritySupport: true,
+      advancedBranding: true,
+      teamMembers: 0,
+      apiAccess: false,
+      scheduling: true,
+      customerInsights: true,
+    },
+  },
+  BUSINESS: {
+    name: 'Business',
+    price: 79,
+    annualPrice: 66,           // ~17% discount ($792/year)
+    priceId: process.env.STRIPE_BUSINESS_PRICE_ID!,
+    annualPriceId: process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID!,
+    freePriceId: process.env.STRIPE_BUSINESS_FREE_PRICE_ID!,
+    description: 'For enterprises and teams',
+    features: [
+      'Everything in Pro',
+      'Unlimited stores/catalogs',
+      'Team access (5 users)',
+      'Custom domain',
+      'API access',
+      'Dedicated support',
+    ],
+    limits: {
+      products: Infinity,
+      categories: Infinity,
+      stores: Infinity,
       customDomain: true,
       advancedAnalytics: true,
       inventoryManagement: true,
       wholesalePricing: true,
       prioritySupport: true,
       advancedBranding: true,
+      teamMembers: 5,
+      apiAccess: true,
+      scheduling: true,
+      customerInsights: true,
     },
   },
 } as const
@@ -98,6 +136,29 @@ export function canAddCategory(userPlan: PlanId, currentCategoryCount: number): 
   return currentCategoryCount < limits.categories
 }
 
+// Helper function to check store limit
+export function canAddStore(userPlan: PlanId, currentStoreCount: number): boolean {
+  const limits = getPlanLimits(userPlan)
+  return currentStoreCount < limits.stores
+}
+
+// Helper function to get store limit
+export function getStoreLimit(userPlan: PlanId): number {
+  return PLANS[userPlan].limits.stores
+}
+
+// Plan hierarchy for comparison (higher = more features)
+export const PLAN_HIERARCHY: Record<PlanId, number> = {
+  STARTER: 1,
+  PRO: 2,
+  BUSINESS: 3
+}
+
+// Check if plan has access to required plan level
+export function hasPlanAccess(userPlan: PlanId, requiredPlan: PlanId): boolean {
+  return PLAN_HIERARCHY[userPlan] >= PLAN_HIERARCHY[requiredPlan]
+}
+
 // Stripe customer and subscription management
 export async function createStripeCustomer(email: string, name?: string) {
   return await stripe.customers.create({
@@ -130,14 +191,15 @@ export async function createSubscriptionByPlan(
   plan: PlanId,
   billingType: 'monthly' | 'yearly' | 'free'
 ) {
+  const planData = PLANS[plan]
   let priceId: string
   
   if (billingType === 'free') {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.freePriceId : PLANS.PRO.freePriceId
+    priceId = planData.freePriceId
   } else if (billingType === 'yearly') {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.annualPriceId : PLANS.PRO.annualPriceId
+    priceId = planData.annualPriceId
   } else {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.priceId : PLANS.PRO.priceId
+    priceId = planData.priceId
   }
   
   return await stripe.subscriptions.create({
@@ -220,14 +282,15 @@ export function mapStripePlanToDb(stripePriceId: string): PlanId {
 }
 
 export function getPriceId(plan: PlanId, billingType: 'monthly' | 'yearly' | 'free'): string {
+  const planData = PLANS[plan]
   let priceId: string | undefined
   
   if (billingType === 'free') {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.freePriceId : PLANS.PRO.freePriceId
+    priceId = planData.freePriceId
   } else if (billingType === 'yearly') {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.annualPriceId : PLANS.PRO.annualPriceId
+    priceId = planData.annualPriceId
   } else {
-    priceId = plan === 'STARTER' ? PLANS.STARTER.priceId : PLANS.PRO.priceId
+    priceId = planData.priceId
   }
   
   if (!priceId || priceId.trim() === '') {
@@ -245,19 +308,11 @@ export function getPriceId(plan: PlanId, billingType: 'monthly' | 'yearly' | 'fr
 export function getBillingTypeFromPriceId(priceId: string): 'monthly' | 'yearly' | 'free' | null {
   if (!priceId || priceId.trim() === '') return null
   
-  // Check free price IDs
-  if (PLANS.STARTER.freePriceId === priceId || PLANS.PRO.freePriceId === priceId) {
-    return 'free'
-  }
-  
-  // Check yearly price IDs
-  if (PLANS.STARTER.annualPriceId === priceId || PLANS.PRO.annualPriceId === priceId) {
-    return 'yearly'
-  }
-  
-  // Check monthly price IDs
-  if (PLANS.STARTER.priceId === priceId || PLANS.PRO.priceId === priceId) {
-    return 'monthly'
+  // Check all plans for matching price IDs
+  for (const planData of Object.values(PLANS)) {
+    if (planData.freePriceId === priceId) return 'free'
+    if (planData.annualPriceId === priceId) return 'yearly'
+    if (planData.priceId === priceId) return 'monthly'
   }
   
   return null
