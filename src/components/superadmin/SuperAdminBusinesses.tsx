@@ -122,6 +122,7 @@ export function SuperAdminBusinesses() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
   const [planFilter, setPlanFilter] = useState('all');
+  const [countryFilter, setCountryFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -159,7 +160,7 @@ export function SuperAdminBusinesses() {
   // Fetch businesses
   useEffect(() => {
     fetchBusinesses();
-  }, [debouncedSearchQuery, statusFilter, planFilter, currentPage]);
+  }, [debouncedSearchQuery, statusFilter, planFilter, countryFilter, currentPage]);
 
   const fetchBusinesses = async () => {
     try {
@@ -170,6 +171,7 @@ export function SuperAdminBusinesses() {
         search: debouncedSearchQuery,
         status: statusFilter,
         plan: planFilter,
+        country: countryFilter,
         page: currentPage.toString(),
         limit: pagination.limit.toString()
       });
@@ -574,6 +576,16 @@ export function SuperAdminBusinesses() {
     <option value="all">All Plans</option>
     <option value="starter">Starter</option>
     <option value="pro">Pro</option>
+  </select>
+
+  <select
+    value={countryFilter}
+    onChange={(e) => setCountryFilter(e.target.value)}
+    className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+  >
+    <option value="all">All Countries</option>
+    <option value="AL">🇦🇱 Albania</option>
+    <option value="GR">🇬🇷 Greece</option>
   </select>
 
   <div className="text-sm text-gray-600 text-center sm:text-left">

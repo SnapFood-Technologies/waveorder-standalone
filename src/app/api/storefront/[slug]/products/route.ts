@@ -4,6 +4,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
+// Helper function to normalize diacritics for search
+// Converts diacritic characters to their base form AND vice versa
+// e.g., "Pjate" → ["Pjate", "Pjatë"], "Lugë" → ["Lugë", "Luge"]
+function getSearchVariants(searchTerm: string): string[] {
+  // Map base characters to their diacritic versions (Albanian focused)
+  const baseToDiacritic: Record<string, string> = {
+    'e': 'ë', 'E': 'Ë',
+    'c': 'ç', 'C': 'Ç',
+  }
+  
+  // Map diacritics to base characters
+  const diacriticToBase: Record<string, string> = {
+    'ë': 'e', 'Ë': 'E',
+    'ç': 'c', 'Ç': 'C',
+    'è': 'e', 'é': 'e', 'ê': 'e', 'ē': 'e',
+    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ē': 'E',
+  }
+  
+  const variants = new Set<string>()
+  variants.add(searchTerm)
+  
+  // Create variant with diacritics removed (base form)
+  let baseForm = searchTerm
+  for (const [diacritic, base] of Object.entries(diacriticToBase)) {
+    baseForm = baseForm.split(diacritic).join(base)
+  }
+  variants.add(baseForm)
+  
+  // Create variant with diacritics added (for Albanian: e→ë, c→ç)
+  let diacriticForm = searchTerm
+  for (const [base, diacritic] of Object.entries(baseToDiacritic)) {
+    diacriticForm = diacriticForm.split(base).join(diacritic)
+  }
+  variants.add(diacriticForm)
+  
+  return Array.from(variants)
+}
+
 // Helper function to calculate effective price
 function calculateEffectivePrice(price: number, originalPrice: number | null, saleStartDate: Date | null, saleEndDate: Date | null): { effectivePrice: number; effectiveOriginalPrice: number | null } {
   const now = new Date()
@@ -207,20 +245,22 @@ export async function GET(
       { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
     ]
 
-    // Search filter (name or description)
+    // Search filter (name or description) with diacritic-insensitive matching
+    // e.g., "Pjate" matches "Pjatë", "Luge" matches "Lugë"
     if (searchTerm.trim()) {
-      // Combine search OR with stock conditions using AND
+      const searchVariants = getSearchVariants(searchTerm.trim())
+      
+      // Build OR conditions for all search variants
+      const searchConditions: any[] = []
+      for (const variant of searchVariants) {
+        searchConditions.push({ name: { contains: variant, mode: 'insensitive' } })
+        searchConditions.push({ description: { contains: variant, mode: 'insensitive' } })
+        searchConditions.push({ descriptionAl: { contains: variant, mode: 'insensitive' } })
+      }
+      
       productWhere.AND = [
-        {
-          OR: [
-            { name: { contains: searchTerm, mode: 'insensitive' } },
-            { description: { contains: searchTerm, mode: 'insensitive' } },
-            { descriptionAl: { contains: searchTerm, mode: 'insensitive' } }
-          ]
-        },
-        {
-          OR: stockConditions
-        }
+        { OR: searchConditions },
+        { OR: stockConditions }
       ]
     } else {
       // No search term, just apply stock conditions

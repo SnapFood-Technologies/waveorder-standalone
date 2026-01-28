@@ -351,6 +351,33 @@ function getEmailLabels(language: string = 'en'): Record<string, string> {
       pickup: 'Marrje',
       dineIn: 'Në vend',
       order: 'Porosi'
+    },
+    el: {
+      orderUpdate: 'Παραγγελία',
+      orderPlaced: 'Παραγγελία Υποβλήθηκε',
+      orderReceived: 'Παραγγελία Ελήφθη',
+      thankYouForOrder: 'Ευχαριστούμε για την παραγγελία σας!',
+      orderPlacedMessage: 'Λάβαμε την παραγγελία σας και η ομάδα μας την εξετάζει.',
+      nextSteps: 'Τι Ακολουθεί;',
+      orderConfirmedEmail: 'Μόλις επιβεβαιωθεί η παραγγελία σας, θα λάβετε ένα ακόμη email με τα στοιχεία επιβεβαίωσης και τον εκτιμώμενο χρόνο προετοιμασίας/παράδοσης.',
+      orderNumberLabel: 'Αριθμός Παραγγελίας',
+      weWillNotifyYou: 'Θα σας ειδοποιήσουμε μέσω email όταν ενημερωθεί η κατάσταση της παραγγελίας σας. Μπορείτε να παρακολουθήσετε την παραγγελία σας χρησιμοποιώντας τον αριθμό παραγγελίας παραπάνω.',
+      orderItems: 'Προϊόντα Παραγγελίας',
+      orderSummary: 'Σύνοψη Παραγγελίας',
+      total: 'Σύνολο',
+      deliveryAddress: 'Διεύθυνση Παράδοσης',
+      pickupLocation: 'Τοποθεσία Παραλαβής',
+      expectedDelivery: 'Αναμενόμενη Παράδοση',
+      pickupTime: 'Ώρα Παραλαβής',
+      arrivalTime: 'Ώρα Άφιξης',
+      questionsAboutOrder: 'Ερωτήσεις σχετικά με την παραγγελία σας;',
+      contactUs: 'Επικοινωνήστε μαζί μας:',
+      automatedNotification: 'Αυτή είναι μια αυτοματοποιημένη ειδοποίηση από',
+      doNotReply: 'Παρακαλώ μην απαντήσετε σε αυτό το email.',
+      delivery: 'Παράδοση',
+      pickup: 'Παραλαβή',
+      dineIn: 'Επιτόπια Κατανάλωση',
+      order: 'Παραγγελία'
     }
   }
 

@@ -21,12 +21,20 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || 'all'
     const plan = searchParams.get('plan') || 'all'
+    const country = searchParams.get('country') || 'all'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
     // Build where conditions
     const whereConditions: any = {}
+    
+    // Country filter by phone prefix
+    if (country === 'AL') {
+      whereConditions.whatsappNumber = { startsWith: '+355' }
+    } else if (country === 'GR') {
+      whereConditions.whatsappNumber = { startsWith: '+30' }
+    }
 
     // Handle incomplete filter separately - filter in memory due to Prisma/MongoDB null handling issues
     // Skip building whereConditions for incomplete - we'll handle it in the query section
@@ -89,6 +97,12 @@ export async function GET(request: NextRequest) {
       }
       if (plan !== 'all') {
         baseConditions.subscriptionPlan = plan.toUpperCase()
+      }
+      // Country filter by phone prefix
+      if (country === 'AL') {
+        baseConditions.whatsappNumber = { startsWith: '+355' }
+      } else if (country === 'GR') {
+        baseConditions.whatsappNumber = { startsWith: '+30' }
       }
 
       // Get all businesses matching search/plan

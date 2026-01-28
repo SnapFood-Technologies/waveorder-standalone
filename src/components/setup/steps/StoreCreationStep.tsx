@@ -76,6 +76,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     storeSlug: data.storeSlug || ''
   })
   const [showAlbanianCode, setShowAlbanianCode] = useState(false)
+  const [showGreekCode, setShowGreekCode] = useState(false)
   const [isOtherCountry, setIsOtherCountry] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
@@ -85,29 +86,40 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
   // Get currency symbol from data
   const currencySymbol = getCurrencySymbol(data.currency || 'USD')
 
-  // Detect Albanian user and set defaults
+  // Detect Albanian/Greek user and set defaults
   useEffect(() => {
     const isAlbanianUser = detectAlbanianUser()
+    const isGreekUser = detectGreekUser()
     setShowAlbanianCode(isAlbanianUser)
+    setShowGreekCode(isGreekUser)
     
-    // Auto-select Albanian country code if detected and not already set
-    if (isAlbanianUser && !data.whatsappNumber) {
-      setFormData(prev => ({ ...prev, countryCode: '+355' }))
+    // Auto-select country code if detected and not already set
+    if (!data.whatsappNumber) {
+      if (isGreekUser) {
+        setFormData(prev => ({ ...prev, countryCode: '+30' }))
+      } else if (isAlbanianUser) {
+        setFormData(prev => ({ ...prev, countryCode: '+355' }))
+      }
     }
   }, [data.whatsappNumber])
 
   // Get visible country codes based on detection
   const getVisibleCountryCodes = () => {
-    const codes = showAlbanianCode
-      ? [
-          { code: '+355', country: 'AL', flag: '🇦🇱' },
-          { code: '+34', country: 'ES', flag: '🇪🇸' },
-          { code: '+1', country: 'US', flag: '🇺🇸' }
-        ]
-      : [
-          { code: '+1', country: 'US', flag: '🇺🇸' },
-          { code: '+34', country: 'ES', flag: '🇪🇸' }
-        ]
+    const codes: Array<{ code: string; country: string; flag: string }> = []
+    
+    // Show Greece first if Greek user detected
+    if (showGreekCode) {
+      codes.push({ code: '+30', country: 'GR', flag: '🇬🇷' })
+    }
+    
+    // Show Albania if Albanian user detected
+    if (showAlbanianCode) {
+      codes.push({ code: '+355', country: 'AL', flag: '🇦🇱' })
+    }
+    
+    // Always show common codes
+    codes.push({ code: '+1', country: 'US', flag: '🇺🇸' })
+    codes.push({ code: '+34', country: 'ES', flag: '🇪🇸' })
     
     // Add "Other" option
     codes.push({ code: 'OTHER', country: 'OTHER', flag: '🌍' })
@@ -130,7 +142,14 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
 
   useEffect(() => {
     if (data.whatsappNumber) {
-      if (data.whatsappNumber.startsWith('+355')) {
+      if (data.whatsappNumber.startsWith('+30')) {
+        setFormData(prev => ({
+          ...prev,
+          countryCode: '+30',
+          whatsappNumber: data.whatsappNumber.replace('+30', '')
+        }))
+        setIsOtherCountry(false)
+      } else if (data.whatsappNumber.startsWith('+355')) {
         setFormData(prev => ({
           ...prev,
           countryCode: '+355',
