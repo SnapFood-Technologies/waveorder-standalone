@@ -21,7 +21,8 @@ import {
   Info,
   AlertCircle,
   ArrowRight,
-  MapPin
+  MapPin,
+  Share2
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 
@@ -738,39 +739,39 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         </div>
       )}
 
-      {/* PRO Plan CTAs */}
+      {/* PRO Plan Quick Actions */}
       {business.subscriptionPlan === 'PRO' && (
-        <>
-          {/* CTA to Advanced Analytics */}
-          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 text-white">
-            <h3 className="font-semibold text-lg mb-2">Need Geographic Insights?</h3>
-            <p className="text-sm text-teal-50 mb-4">
-              Get detailed insights about geographic data, cities, and traffic sources with Advanced Analytics.
-            </p>
-            <Link 
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Insights</h3>
+          <p className="text-sm text-gray-600 mb-4">Deep dive into your analytics with these PRO features</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link
               href={`/admin/stores/${businessId}/advanced-analytics`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg font-medium text-sm hover:bg-teal-50 transition-colors"
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-teal-300 transition-all duration-200 group"
             >
-              <span>View Advanced Analytics</span>
-              <ArrowRight className="w-4 h-4" />
+              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-teal-200 transition-colors">
+                <MapPin className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Geographic Insights</h4>
+                <p className="text-sm text-gray-600">View traffic sources, cities, and regions</p>
+              </div>
             </Link>
-          </div>
-
-          {/* CTA to Product Shares Analytics */}
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-6 text-white">
-            <h3 className="font-semibold text-lg mb-2">Track Product Shares</h3>
-            <p className="text-sm text-purple-50 mb-4">
-              See how your products are being shared and which products drive the most traffic.
-            </p>
-            <Link 
+            
+            <Link
               href={`/admin/stores/${businessId}/product-shares`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors"
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-all duration-200 group"
             >
-              <span>View Product Shares</span>
-              <ArrowRight className="w-4 h-4" />
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
+                <Share2 className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Product Shares</h4>
+                <p className="text-sm text-gray-600">Track shared products and traffic</p>
+              </div>
             </Link>
           </div>
-        </>
+        </div>
       )}
     </div>
   )
