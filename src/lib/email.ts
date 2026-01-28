@@ -114,12 +114,13 @@ type PlanType = 'STARTER' | 'PRO' | 'BUSINESS'
 interface SubscriptionChangeEmailParams {
   to: string
   name: string
-  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted'
+  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted' | 'trial_ending' | 'trial_expired'
   oldPlan?: PlanType
   newPlan: PlanType
   billingInterval?: 'monthly' | 'annual'
   amount?: number
   nextBillingDate?: Date
+  updatePaymentUrl?: string
 }
 
 interface PaymentFailedEmailParams {
@@ -350,18 +351,21 @@ const createVerificationEmailContent = (name: string, verificationUrl: string) =
 // Add email templates
 const createSubscriptionChangeEmailContent = (
   name: string,
-  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted',
+  changeType: 'upgraded' | 'downgraded' | 'canceled' | 'renewed' | 'trial_converted' | 'trial_ending' | 'trial_expired',
   oldPlan: PlanType | undefined,
   newPlan: PlanType,
   billingInterval: 'monthly' | 'annual' | undefined,
   amount: number | undefined,
-  nextBillingDate: Date | undefined
+  nextBillingDate: Date | undefined,
+  updatePaymentUrl?: string
 ) => {
   const isUpgrade = changeType === 'upgraded'
   const isDowngrade = changeType === 'downgraded'
   const isCanceled = changeType === 'canceled'
   const isRenewed = changeType === 'renewed'
   const isTrialConverted = changeType === 'trial_converted'
+  const isTrialEnding = changeType === 'trial_ending'
+  const isTrialExpired = changeType === 'trial_expired'
 
   // Plan display names
   const planNames: Record<PlanType, string> = {
@@ -375,7 +379,17 @@ const createSubscriptionChangeEmailContent = (
   let badgeColor = ''
   let badgeText = ''
 
-  if (isUpgrade || isTrialConverted) {
+  if (isTrialEnding) {
+    title = '⏰ Your Free Trial is Ending Soon!'
+    message = `Your 14-day free trial will end on ${nextBillingDate?.toLocaleDateString() || 'soon'}. To continue using all Pro features, please add a payment method and choose a plan before your trial expires.`
+    badgeColor = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+    badgeText = '⏰ Trial Ending Soon'
+  } else if (isTrialExpired) {
+    title = '📋 Your Free Trial Has Ended'
+    message = `Your 14-day free trial has expired. Your account has been downgraded to Starter limits. You have a 7-day grace period to subscribe and restore full access to your data.`
+    badgeColor = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+    badgeText = '⚠️ Trial Expired'
+  } else if (isUpgrade || isTrialConverted) {
     const planName = planNames[newPlan]
     if (newPlan === 'BUSINESS') {
       title = `🎉 Welcome to WaveOrder ${planName}!`
@@ -461,7 +475,7 @@ const createSubscriptionChangeEmailContent = (
     <div style="font-size: 14px; line-height: 1.6;">
       <div style="display: flex; align-items: start; margin-bottom: 8px;">
         <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
-        <span style="color: #92400e;">❌ Unlimited products (limited to 30)</span>
+        <span style="color: #92400e;">❌ Unlimited products (limited to 50)</span>
       </div>
       <div style="display: flex; align-items: start; margin-bottom: 8px;">
         <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
@@ -469,11 +483,11 @@ const createSubscriptionChangeEmailContent = (
       </div>
       <div style="display: flex; align-items: start; margin-bottom: 8px;">
         <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
-        <span style="color: #92400e;">❌ Custom domains</span>
+        <span style="color: #92400e;">❌ Customer insights</span>
       </div>
       <div style="display: flex; align-items: start;">
         <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
-        <span style="color: #92400e;">❌ Inventory management</span>
+        <span style="color: #92400e;">❌ Delivery scheduling</span>
       </div>
     </div>
     <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #fde68a;">
@@ -481,6 +495,39 @@ const createSubscriptionChangeEmailContent = (
         Changed your mind? You can reactivate your PRO subscription anytime from your dashboard.
       </p>
     </div>
+  </div>
+  ` : ''}
+  
+  ${(isTrialEnding || isTrialExpired) ? `
+  <div style="background-color: ${isTrialExpired ? '#fef2f2' : '#fffbeb'}; border-left: 4px solid ${isTrialExpired ? '#ef4444' : '#f59e0b'}; padding: 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+    <h3 style="color: ${isTrialExpired ? '#991b1b' : '#92400e'}; margin: 0 0 12px; font-size: 16px; font-weight: 600;">
+      ${isTrialExpired ? 'What Happens Now' : 'What You\'ll Lose if You Don\'t Subscribe'}
+    </h3>
+    <div style="font-size: 14px; line-height: 1.6;">
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: ${isTrialExpired ? '#ef4444' : '#f59e0b'}; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: ${isTrialExpired ? '#dc2626' : '#92400e'};">${isTrialExpired ? '📦 Limited to 50 products (Starter limit)' : '❌ Unlimited products → 50 products limit'}</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: ${isTrialExpired ? '#ef4444' : '#f59e0b'}; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: ${isTrialExpired ? '#dc2626' : '#92400e'};">${isTrialExpired ? '📊 Basic analytics only' : '❌ Full analytics → Basic analytics'}</span>
+      </div>
+      <div style="display: flex; align-items: start; margin-bottom: 8px;">
+        <div style="width: 6px; height: 6px; background: ${isTrialExpired ? '#ef4444' : '#f59e0b'}; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: ${isTrialExpired ? '#dc2626' : '#92400e'};">${isTrialExpired ? '🏪 1 store only' : '❌ 5 stores → 1 store'}</span>
+      </div>
+      <div style="display: flex; align-items: start;">
+        <div style="width: 6px; height: 6px; background: ${isTrialExpired ? '#ef4444' : '#f59e0b'}; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
+        <span style="color: ${isTrialExpired ? '#dc2626' : '#92400e'};">${isTrialExpired ? '❌ No customer insights or scheduling' : '❌ Customer insights & scheduling removed'}</span>
+      </div>
+    </div>
+    ${isTrialExpired ? `
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #fecaca;">
+      <p style="color: #dc2626; margin: 0; font-size: 14px; font-weight: 500;">
+        ⏰ You have 7 days to subscribe before your account is locked.
+      </p>
+    </div>
+    ` : ''}
   </div>
   ` : ''}
   
@@ -493,7 +540,12 @@ const createSubscriptionChangeEmailContent = (
   </div>
   
   <div style="text-align: center; margin: 32px 0;">
-    <a href="${process.env.NEXTAUTH_URL}/admin/stores" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);">
+    ${(isTrialEnding || isTrialExpired) && updatePaymentUrl ? `
+    <a href="${updatePaymentUrl}" style="display: inline-block; background: linear-gradient(135deg, ${isTrialExpired ? '#ef4444' : '#f59e0b'} 0%, ${isTrialExpired ? '#dc2626' : '#d97706'} 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(${isTrialExpired ? '239, 68, 68' : '245, 158, 11'}, 0.4); margin-right: 12px;">
+      ${isTrialExpired ? 'Subscribe Now' : 'Add Payment Method'}
+    </a>
+    ` : ''}
+    <a href="${process.env.NEXTAUTH_URL}/admin/stores" style="display: inline-block; background: ${(isTrialEnding || isTrialExpired) ? '#f3f4f6; color: #374151' : 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white'}; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; ${(isTrialEnding || isTrialExpired) ? '' : 'box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);'}">
       Go to Dashboard
     </a>
   </div>
@@ -813,7 +865,8 @@ export async function sendSubscriptionChangeEmail({
   newPlan,
   billingInterval,
   amount,
-  nextBillingDate
+  nextBillingDate,
+  updatePaymentUrl
 }: SubscriptionChangeEmailParams) {
   const content = createSubscriptionChangeEmailContent(
     name,
@@ -822,7 +875,8 @@ export async function sendSubscriptionChangeEmail({
     newPlan,
     billingInterval,
     amount,
-    nextBillingDate
+    nextBillingDate,
+    updatePaymentUrl
   )
   const html = createEmailTemplate(content, 'Subscription Update')
 
@@ -837,7 +891,9 @@ export async function sendSubscriptionChangeEmail({
     downgraded: 'Your WaveOrder Subscription Has Changed',
     canceled: 'Your WaveOrder Subscription Has Been Canceled',
     renewed: `✅ Your WaveOrder ${planNames[newPlan]} Subscription Has Been Renewed`,
-    trial_converted: `🎉 Your WaveOrder ${planNames[newPlan]} Trial Has Been Converted`
+    trial_converted: `🎉 Your WaveOrder ${planNames[newPlan]} Trial Has Been Converted`,
+    trial_ending: '⏰ Your WaveOrder Free Trial is Ending Soon!',
+    trial_expired: '📋 Your WaveOrder Free Trial Has Ended'
   }
 
   try {

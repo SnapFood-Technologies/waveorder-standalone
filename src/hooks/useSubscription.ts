@@ -2,13 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
-type TrialStatus = 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED'
+type TrialStatus = 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED' | 'STARTER_LIMITED'
 
 interface SubscriptionData {
   businessId: string
   businessName: string
   subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS'
-  subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED'
+  subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED' | 'TRIALING' | 'TRIAL_EXPIRED'
   hasProAccess: boolean
   hasBusinessAccess: boolean
   userRole: 'OWNER' | 'MANAGER' | 'STAFF'
@@ -19,8 +19,10 @@ interface SubscriptionData {
   isTrialActive: boolean
   isGracePeriod: boolean
   isExpired: boolean
+  isStarterLimited: boolean
   isPaid: boolean
   canAccessFeatures: boolean
+  effectivePlan: 'STARTER' | 'PRO' | 'BUSINESS' // The plan features they have access to
   showTrialWarning: boolean
   showGraceWarning: boolean
   showExpiredWarning: boolean
@@ -63,17 +65,20 @@ export function useSubscription() {
     isPro: subscription?.hasProAccess || false,
     isBusiness: subscription?.hasBusinessAccess || false,
     isStarter: subscription?.subscriptionPlan === 'STARTER',
+    // Effective plan (what features they can actually use)
+    effectivePlan: subscription?.effectivePlan || subscription?.subscriptionPlan || 'STARTER',
     // Trial status
     trialStatus: subscription?.trialStatus || 'PAID',
     trialDaysRemaining: subscription?.trialDaysRemaining || 0,
     graceDaysRemaining: subscription?.graceDaysRemaining || 0,
     isTrialActive: subscription?.isTrialActive || false,
     isGracePeriod: subscription?.isGracePeriod || false,
-    isExpired: subscription?.isExpired || false,
+    isExpired: subscription?.isExpired || subscription?.isStarterLimited || false,
+    isStarterLimited: subscription?.isStarterLimited || false,
     canAccessFeatures: subscription?.canAccessFeatures ?? true,
     // Warning flags for UI
     showTrialWarning: subscription?.showTrialWarning || false,
     showGraceWarning: subscription?.showGraceWarning || false,
-    showExpiredWarning: subscription?.showExpiredWarning || false
+    showExpiredWarning: subscription?.showExpiredWarning || subscription?.isStarterLimited || false
   }
 }

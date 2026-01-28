@@ -244,7 +244,7 @@ export default function PricingComponent() {
                   
                   <div className="space-y-4">
                     <Link
-                      href={`/auth/register?plan=${plan.planId}`}
+                      href="/auth/register"
                       className={`block text-center px-6 py-4 rounded-xl font-semibold transition-all transform hover:-translate-y-0.5 ${plan.buttonStyle}`}
                     >
                       {plan.buttonText}

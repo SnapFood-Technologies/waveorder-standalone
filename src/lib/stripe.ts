@@ -236,6 +236,36 @@ export async function createPaidSubscription(
   })
 }
 
+/**
+ * Create a Pro subscription with 14-day free trial
+ * No credit card required - trial is managed by Stripe
+ * After trial ends, subscription pauses until payment method is added
+ */
+export async function createTrialSubscription(customerId: string) {
+  return await stripe.subscriptions.create({
+    customer: customerId,
+    items: [
+      {
+        price: PLANS.PRO.priceId,
+      },
+    ],
+    trial_period_days: 14,
+    payment_settings: {
+      save_default_payment_method: 'on_subscription'
+    },
+    trial_settings: {
+      end_behavior: {
+        missing_payment_method: 'pause'
+      }
+    },
+    metadata: {
+      plan: 'PRO',
+      billingType: 'trial',
+      source: 'waveorder_platform'
+    }
+  })
+}
+
 export async function updateSubscription(
   subscriptionId: string,
   newPriceId: string,

@@ -54,6 +54,14 @@ export async function POST(req: NextRequest) {
           await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
           break
 
+        case 'customer.subscription.trial_will_end':
+          await handleTrialWillEnd(event.data.object as Stripe.Subscription)
+          break
+
+        case 'customer.subscription.paused':
+          await handleSubscriptionPaused(event.data.object as Stripe.Subscription)
+          break
+
         case 'invoice.payment_succeeded':
           await handlePaymentSucceeded(event.data.object as Stripe.Invoice)
           break
@@ -444,6 +452,129 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     }
   } catch (error) {
     console.error('❌ Error handling payment failed:', error)
+    throw error
+  }
+}
+
+/**
+ * Handle trial ending in 3 days - send reminder email
+ */
+async function handleTrialWillEnd(sub: Stripe.Subscription) {
+  try {
+    const customerId = sub.customer as string
+    const user = await prisma.user.findFirst({
+      where: { stripeCustomerId: customerId }
+    })
+
+    if (!user) {
+      console.error(`❌ User not found for trial_will_end: ${customerId}`)
+      return
+    }
+
+    // Calculate trial end date
+    const trialEndDate = sub.trial_end ? new Date(sub.trial_end * 1000) : null
+
+    // 📧 SEND TRIAL ENDING REMINDER EMAIL
+    try {
+      // Create portal session for adding payment method
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.NEXTAUTH_URL}/admin/stores`,
+      })
+
+      await sendSubscriptionChangeEmail({
+        to: user.email,
+        name: user.name || 'there',
+        changeType: 'trial_ending',
+        oldPlan: 'PRO',
+        newPlan: 'PRO',
+        nextBillingDate: trialEndDate || undefined,
+        updatePaymentUrl: portalSession.url
+      })
+      console.log('✅ Sent trial ending reminder email to:', user.email)
+    } catch (emailError) {
+      console.error('❌ Failed to send trial ending email:', emailError)
+    }
+  } catch (error) {
+    console.error('❌ Error handling trial_will_end:', error)
+    throw error
+  }
+}
+
+/**
+ * Handle subscription paused (trial ended without payment method)
+ * Downgrade user to Starter limits but keep account active
+ */
+async function handleSubscriptionPaused(sub: Stripe.Subscription) {
+  try {
+    const customerId = sub.customer as string
+    const user = await prisma.user.findFirst({
+      where: { stripeCustomerId: customerId },
+      include: {
+        businesses: {
+          include: { business: true }
+        }
+      }
+    })
+
+    if (!user) {
+      console.error(`❌ User not found for subscription paused: ${customerId}`)
+      return
+    }
+
+    // Calculate grace period end (7 days from now)
+    const graceEndsAt = new Date()
+    graceEndsAt.setDate(graceEndsAt.getDate() + 7)
+
+    await prisma.$transaction(async (tx) => {
+      // Downgrade user to Starter with grace period
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          plan: 'STARTER',
+          graceEndsAt
+        } as any
+      })
+
+      // Downgrade all user's businesses
+      if (user.businesses) {
+        for (const bu of user.businesses) {
+          await tx.business.update({
+            where: { id: bu.businessId },
+            data: {
+              subscriptionPlan: 'STARTER',
+              subscriptionStatus: 'TRIAL_EXPIRED',
+              graceEndsAt
+            } as any
+          })
+        }
+      }
+    })
+
+    // 📧 SEND TRIAL EXPIRED EMAIL
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.NEXTAUTH_URL}/admin/stores`,
+      })
+
+      await sendSubscriptionChangeEmail({
+        to: user.email,
+        name: user.name || 'there',
+        changeType: 'trial_expired',
+        oldPlan: 'PRO',
+        newPlan: 'STARTER',
+        nextBillingDate: graceEndsAt,
+        updatePaymentUrl: portalSession.url
+      })
+      console.log('✅ Sent trial expired email to:', user.email)
+    } catch (emailError) {
+      console.error('❌ Failed to send trial expired email:', emailError)
+    }
+
+    console.log(`✅ User ${user.email} downgraded to Starter after trial expired`)
+  } catch (error) {
+    console.error('❌ Error handling subscription paused:', error)
     throw error
   }
 }

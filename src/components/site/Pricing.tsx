@@ -150,7 +150,7 @@ export default function Pricing() {
               
               <div className="space-y-3">
                 <Link
-                  href={`/auth/register?plan=${plan.planId}`}
+                  href="/auth/register"
                   className={`block text-center px-6 py-3 rounded-lg font-semibold transition-colors ${plan.buttonStyle}`}
                 >
                   {plan.buttonText}

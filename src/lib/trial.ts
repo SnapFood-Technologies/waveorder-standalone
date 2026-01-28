@@ -1,5 +1,5 @@
 // lib/trial.ts
-// Trial management utilities for plan-specific free trials
+// Trial management utilities - Stripe-managed trials with database backup
 
 import { prisma } from '@/lib/prisma'
 import type { User, Business } from '@prisma/client'
@@ -9,17 +9,33 @@ export const TRIAL_DAYS = 14
 export const GRACE_DAYS = 7
 
 // Trial status types
-export type TrialStatus = 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED'
+export type TrialStatus = 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED' | 'STARTER_LIMITED'
+
+/**
+ * Subscription status from Stripe that indicates trial/payment state
+ */
+export type StripeSubscriptionStatus = 
+  | 'active'           // Paid and active
+  | 'trialing'         // In trial period
+  | 'past_due'         // Payment failed, in retry period
+  | 'paused'           // Trial ended without payment
+  | 'canceled'         // Subscription canceled
+  | 'incomplete'       // Setup incomplete
+  | 'incomplete_expired'
 
 /**
  * Get the trial status for a user
- * - PAID: User has no trial dates (paid subscription)
- * - TRIAL_ACTIVE: Within 14-day trial period
- * - GRACE_PERIOD: Trial ended, within 7-day grace period
- * - EXPIRED: Grace period ended, account locked until payment
+ * Primary source: Stripe subscription status
+ * Fallback: Database trial dates (for backward compatibility)
+ * 
+ * - PAID: Active paid subscription
+ * - TRIAL_ACTIVE: In Stripe trial period
+ * - GRACE_PERIOD: Trial ended, within grace period (paused in Stripe)
+ * - STARTER_LIMITED: Downgraded to Starter limits
+ * - EXPIRED: Grace period ended, account needs payment
  */
 export function getTrialStatus(user: Pick<User, 'trialEndsAt' | 'graceEndsAt'>): TrialStatus {
-  // No trial dates = paid user
+  // No trial dates = paid user or never had trial
   if (!user.trialEndsAt) return 'PAID'
   
   const now = new Date()
@@ -27,11 +43,11 @@ export function getTrialStatus(user: Pick<User, 'trialEndsAt' | 'graceEndsAt'>):
   // Within trial period
   if (now < user.trialEndsAt) return 'TRIAL_ACTIVE'
   
-  // Within grace period
+  // Within grace period (7 days after trial)
   if (user.graceEndsAt && now < user.graceEndsAt) return 'GRACE_PERIOD'
   
-  // Expired
-  return 'EXPIRED'
+  // Past grace period - limited to Starter
+  return 'STARTER_LIMITED'
 }
 
 /**
@@ -198,20 +214,46 @@ export function getTrialInfo(user: Pick<User, 'trialEndsAt' | 'graceEndsAt' | 'p
   const trialDaysRemaining = getTrialDaysRemaining(user)
   const graceDaysRemaining = getGraceDaysRemaining(user)
   
+  // Determine effective plan based on trial status
+  const isOnTrial = status === 'TRIAL_ACTIVE'
+  const effectivePlan = isOnTrial ? 'PRO' : (status === 'STARTER_LIMITED' || status === 'GRACE_PERIOD') ? 'STARTER' : user.plan
+  
   return {
     status,
     trialDaysRemaining,
     graceDaysRemaining,
     isTrialActive: status === 'TRIAL_ACTIVE',
     isGracePeriod: status === 'GRACE_PERIOD',
-    isExpired: status === 'EXPIRED',
+    isExpired: status === 'STARTER_LIMITED',
+    isStarterLimited: status === 'STARTER_LIMITED',
     isPaid: status === 'PAID',
-    canAccessFeatures: status !== 'EXPIRED',
+    canAccessFeatures: status !== 'STARTER_LIMITED' || graceDaysRemaining > 0,
     plan: user.plan,
+    effectivePlan, // The plan features they currently have access to
     // Warning levels for UI
     showTrialWarning: status === 'TRIAL_ACTIVE' && trialDaysRemaining <= 3,
     showGraceWarning: status === 'GRACE_PERIOD',
-    showExpiredWarning: status === 'EXPIRED'
+    showExpiredWarning: status === 'STARTER_LIMITED'
+  }
+}
+
+/**
+ * Get trial status from Stripe subscription status
+ */
+export function getTrialStatusFromStripe(stripeStatus: StripeSubscriptionStatus): TrialStatus {
+  switch (stripeStatus) {
+    case 'active':
+      return 'PAID'
+    case 'trialing':
+      return 'TRIAL_ACTIVE'
+    case 'paused':
+    case 'past_due':
+      return 'GRACE_PERIOD'
+    case 'canceled':
+    case 'incomplete_expired':
+      return 'STARTER_LIMITED'
+    default:
+      return 'STARTER_LIMITED'
   }
 }
 
@@ -233,6 +275,11 @@ export function getBusinessTrialInfo(business: Pick<Business, 'trialEndsAt' | 'g
     }
   }
   
+  // Determine effective plan based on trial status
+  const isOnTrial = status === 'TRIAL_ACTIVE'
+  const isStarterLimited = status === 'EXPIRED' || status === 'GRACE_PERIOD'
+  const effectivePlan = isOnTrial ? 'PRO' : isStarterLimited ? 'STARTER' : business.subscriptionPlan
+  
   return {
     status,
     trialDaysRemaining,
@@ -240,9 +287,11 @@ export function getBusinessTrialInfo(business: Pick<Business, 'trialEndsAt' | 'g
     isTrialActive: status === 'TRIAL_ACTIVE',
     isGracePeriod: status === 'GRACE_PERIOD',
     isExpired: status === 'EXPIRED',
+    isStarterLimited: status === 'EXPIRED',
     isPaid: status === 'PAID',
-    canAccessFeatures: status !== 'EXPIRED',
+    canAccessFeatures: status !== 'EXPIRED' || graceDaysRemaining > 0,
     plan: business.subscriptionPlan,
+    effectivePlan, // The plan features they currently have access to
     showTrialWarning: status === 'TRIAL_ACTIVE' && trialDaysRemaining <= 3,
     showGraceWarning: status === 'GRACE_PERIOD',
     showExpiredWarning: status === 'EXPIRED'
