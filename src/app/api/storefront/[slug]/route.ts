@@ -270,10 +270,7 @@ export async function GET(
                 price: { gt: 0 },
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
-                  // FIX: Include products with variants - they might have variant stock even if product stock is 0
-                  // This is more permissive but avoids hiding categories that have displayable products via variants
-                  { variants: { some: {} } } // Products with at least one variant
+                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -536,8 +533,7 @@ export async function GET(
                 collectionIds: { has: collection.id }, // Product must have this collection ID in array
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
-                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
+                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -582,8 +578,7 @@ export async function GET(
                 groupIds: { has: group.id }, // Product must have this group ID in array
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
-                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
+                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
@@ -628,8 +623,7 @@ export async function GET(
                 brandId: brand.id, // Product must have this brandId
                 OR: [
                   { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } }, // Products that track inventory must have stock > 0
-                  { variants: { some: {} } } // FIX: Products with variants (might have variant stock)
+                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
                 ],
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
