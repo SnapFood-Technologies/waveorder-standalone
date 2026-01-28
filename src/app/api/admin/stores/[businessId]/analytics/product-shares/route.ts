@@ -20,14 +20,14 @@ export async function GET(
     const endDate = searchParams.get('endDate')
 
     // Verify user has access to this business
-    const userBusiness = await prisma.userBusiness.findFirst({
+    const businessUser = await prisma.businessUser.findFirst({
       where: {
         userId: session.user.id,
         businessId: businessId
       }
     })
 
-    if (!userBusiness && session.user.role !== 'SUPER_ADMIN') {
+    if (!businessUser && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
