@@ -653,8 +653,9 @@ model ProductVariant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Performance index for loading variants by product
+  // Performance indexes
   @@index([productId])
+  @@index([productId, stock])
 }
 
 model InventoryActivity {
