@@ -45,7 +45,7 @@ interface FormData {
   businessName: string
   slug: string
   businessType: string
-  subscriptionPlan: 'STARTER' | 'PRO'
+  subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS'
   billingType: 'monthly' | 'yearly' | 'free'
   ownerName: string
   ownerEmail: string
@@ -691,7 +691,7 @@ export function CreateBusinessForm() {
                         </label>
                         <div className="space-y-4">
                           {/* Plan Type Selection */}
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-3 gap-3">
                             <button
                               type="button"
                               onClick={() => setFormData({ ...formData, subscriptionPlan: 'STARTER' })}
@@ -701,34 +701,60 @@ export function CreateBusinessForm() {
                                   : 'border-gray-200 hover:border-teal-300'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-semibold text-gray-900">Starter</div>
-                                  <div className="text-xs text-gray-600 mt-1">$6/month or $5/year</div>
-                                </div>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="font-semibold text-gray-900">Starter</div>
                                 {formData.subscriptionPlan === 'STARTER' && (
                                   <Check className="w-5 h-5 text-teal-600" />
                                 )}
                               </div>
+                              <div className="text-xs text-gray-600">$19/mo or $16/mo yearly</div>
+                              <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
+                                <li>• 50 products</li>
+                                <li>• 1 store</li>
+                              </ul>
                             </button>
                             <button
                               type="button"
                               onClick={() => setFormData({ ...formData, subscriptionPlan: 'PRO' })}
-                              className={`p-4 border-2 rounded-lg text-left transition-all ${
+                              className={`p-4 border-2 rounded-lg text-left transition-all relative ${
                                 formData.subscriptionPlan === 'PRO'
                                   ? 'border-purple-500 bg-purple-50'
                                   : 'border-gray-200 hover:border-purple-300'
                               }`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-semibold text-gray-900">Pro</div>
-                                  <div className="text-xs text-gray-600 mt-1">$12/month or $10/year</div>
-                                </div>
+                              <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-purple-600 text-white text-xs font-medium rounded">Popular</span>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="font-semibold text-gray-900">Pro</div>
                                 {formData.subscriptionPlan === 'PRO' && (
                                   <Check className="w-5 h-5 text-purple-600" />
                                 )}
                               </div>
+                              <div className="text-xs text-gray-600">$39/mo or $32/mo yearly</div>
+                              <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
+                                <li>• Unlimited products</li>
+                                <li>• 5 stores</li>
+                              </ul>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, subscriptionPlan: 'BUSINESS' })}
+                              className={`p-4 border-2 rounded-lg text-left transition-all ${
+                                formData.subscriptionPlan === 'BUSINESS'
+                                  ? 'border-indigo-500 bg-indigo-50'
+                                  : 'border-gray-200 hover:border-indigo-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="font-semibold text-gray-900">Business</div>
+                                {formData.subscriptionPlan === 'BUSINESS' && (
+                                  <Check className="w-5 h-5 text-indigo-600" />
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-600">$79/mo or $66/mo yearly</div>
+                              <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
+                                <li>• Unlimited stores</li>
+                                <li>• Team access</li>
+                              </ul>
                             </button>
                           </div>
 

@@ -34,9 +34,9 @@ export async function PATCH(
       return NextResponse.json({ message: 'Business ID is required' }, { status: 400 })
     }
 
-    if (!subscriptionPlan || !['STARTER', 'PRO'].includes(subscriptionPlan)) {
+    if (!subscriptionPlan || !['STARTER', 'PRO', 'BUSINESS'].includes(subscriptionPlan)) {
       return NextResponse.json({ 
-        message: 'Valid subscription plan (STARTER or PRO) is required' 
+        message: 'Valid subscription plan (STARTER, PRO, or BUSINESS) is required' 
       }, { status: 400 })
     }
 
@@ -87,7 +87,7 @@ export async function PATCH(
 
     const owner = ownerRelation.user
     console.log(`Owner found: ${owner.email}, Has Stripe Customer: ${!!owner.stripeCustomerId}`)
-    const currentPlan = business.subscriptionPlan as 'STARTER' | 'PRO'
+    const currentPlan = business.subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS'
 
     // Handle Stripe subscription update
     let stripeSubscription: Stripe.Subscription | null = null
@@ -96,7 +96,7 @@ export async function PATCH(
     try {
       // Validate price ID exists
       try {
-        newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO', billingType)
+        newPriceId = getPriceId(subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS', billingType)
         console.log(`Price ID for ${subscriptionPlan} (${billingType}): ${newPriceId ? 'FOUND' : 'MISSING'}`)
       } catch (priceError: any) {
         console.error('Error getting price ID:', priceError)
@@ -148,7 +148,7 @@ export async function PATCH(
         console.log(`Creating new subscription for business ${businessId}: ${subscriptionPlan} (${billingType})`)
         stripeSubscription = await createSubscriptionByPlan(
           stripeCustomerId,
-          subscriptionPlan as 'STARTER' | 'PRO',
+          subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS',
           billingType
         )
         console.log('✅ New subscription created:', stripeSubscription.id)
@@ -173,7 +173,7 @@ export async function PATCH(
         // Create new subscription with new plan/billing type
         stripeSubscription = await createSubscriptionByPlan(
           stripeCustomerId,
-          subscriptionPlan as 'STARTER' | 'PRO',
+          subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS',
           billingType
         )
         console.log('✅ New subscription created:', stripeSubscription.id)

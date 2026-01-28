@@ -382,7 +382,7 @@ export function SuperAdminBusinesses() {
     }
   };
 
-  const handleUpdateSubscription = async (subscriptionPlan: 'STARTER' | 'PRO', billingType: 'monthly' | 'yearly' | 'free') => {
+  const handleUpdateSubscription = async (subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS', billingType: 'monthly' | 'yearly' | 'free') => {
     if (!businessToChangeSubscription) return;
 
     try {
@@ -574,6 +574,7 @@ export function SuperAdminBusinesses() {
     <option value="all">All Plans</option>
     <option value="starter">Starter</option>
     <option value="pro">Pro</option>
+    <option value="business">Business</option>
   </select>
 
   <div className="text-sm text-gray-600 text-center sm:text-left">
@@ -714,7 +715,9 @@ export function SuperAdminBusinesses() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            business.subscriptionPlan === 'PRO'
+                            business.subscriptionPlan === 'BUSINESS'
+                              ? 'bg-indigo-100 text-indigo-800'
+                              : business.subscriptionPlan === 'PRO'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
@@ -1019,7 +1022,9 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
               {business.isActive ? 'Active' : 'Inactive'}
             </span>
             <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-              business.subscriptionPlan === 'PRO'
+              business.subscriptionPlan === 'BUSINESS'
+                ? 'bg-indigo-100 text-indigo-800'
+                : business.subscriptionPlan === 'PRO'
                 ? 'bg-purple-100 text-purple-800'
                 : 'bg-gray-100 text-gray-800'
             }`}>
@@ -1513,17 +1518,17 @@ interface SubscriptionChangeModalProps {
   isOpen: boolean;
   business: Business | null;
   onClose: () => void;
-  onUpdate: (plan: 'STARTER' | 'PRO', billingType: 'monthly' | 'yearly' | 'free') => void;
+  onUpdate: (plan: 'STARTER' | 'PRO' | 'BUSINESS', billingType: 'monthly' | 'yearly' | 'free') => void;
   loading: boolean;
 }
 
 function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading }: SubscriptionChangeModalProps) {
-  const [selectedPlan, setSelectedPlan] = useState<'STARTER' | 'PRO'>('STARTER');
+  const [selectedPlan, setSelectedPlan] = useState<'STARTER' | 'PRO' | 'BUSINESS'>('STARTER');
   const [selectedBillingType, setSelectedBillingType] = useState<'monthly' | 'yearly' | 'free'>('free');
 
   useEffect(() => {
     if (business) {
-      setSelectedPlan(business.subscriptionPlan as 'STARTER' | 'PRO');
+      setSelectedPlan(business.subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS');
       // Default to free since we don't store billing type in business model
       setSelectedBillingType('free');
     }
@@ -1537,7 +1542,7 @@ function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-lg w-full">
+      <div className="bg-white rounded-lg max-w-2xl w-full">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -1567,7 +1572,9 @@ function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading 
             </label>
             <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                business.subscriptionPlan === 'PRO'
+                business.subscriptionPlan === 'BUSINESS'
+                  ? 'bg-indigo-100 text-indigo-800'
+                  : business.subscriptionPlan === 'PRO'
                   ? 'bg-purple-100 text-purple-800'
                   : 'bg-gray-100 text-gray-800'
               }`}>
@@ -1581,7 +1588,7 @@ function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading 
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Select New Plan *
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={() => setSelectedPlan('STARTER')}
@@ -1592,35 +1599,66 @@ function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading 
                     : 'border-gray-200 hover:border-teal-300'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">Starter</div>
-                    <div className="text-xs text-gray-600 mt-1">$6/month or $5/year</div>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-gray-900">Starter</div>
                   {selectedPlan === 'STARTER' && (
                     <Check className="w-5 h-5 text-teal-600" />
                   )}
                 </div>
+                <div className="text-xs text-gray-600">$19/mo or $16/mo yearly</div>
+                <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                  <li>• 50 products</li>
+                  <li>• 1 store</li>
+                  <li>• Basic analytics</li>
+                </ul>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedPlan('PRO')}
                 disabled={loading}
-                className={`p-4 border-2 rounded-lg text-left transition-all ${
+                className={`p-4 border-2 rounded-lg text-left transition-all relative ${
                   selectedPlan === 'PRO'
                     ? 'border-purple-500 bg-purple-50'
                     : 'border-gray-200 hover:border-purple-300'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">Pro</div>
-                    <div className="text-xs text-gray-600 mt-1">$12/month or $10/year</div>
-                  </div>
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-purple-600 text-white text-xs font-medium rounded">Popular</span>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-gray-900">Pro</div>
                   {selectedPlan === 'PRO' && (
                     <Check className="w-5 h-5 text-purple-600" />
                   )}
                 </div>
+                <div className="text-xs text-gray-600">$39/mo or $32/mo yearly</div>
+                <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                  <li>• Unlimited products</li>
+                  <li>• 5 stores</li>
+                  <li>• Full analytics</li>
+                </ul>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPlan('BUSINESS')}
+                disabled={loading}
+                className={`p-4 border-2 rounded-lg text-left transition-all ${
+                  selectedPlan === 'BUSINESS'
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-indigo-300'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-semibold text-gray-900">Business</div>
+                  {selectedPlan === 'BUSINESS' && (
+                    <Check className="w-5 h-5 text-indigo-600" />
+                  )}
+                </div>
+                <div className="text-xs text-gray-600">$79/mo or $66/mo yearly</div>
+                <ul className="text-xs text-gray-500 mt-2 space-y-1">
+                  <li>• Everything in Pro</li>
+                  <li>• Unlimited stores</li>
+                  <li>• Team access (5)</li>
+                  <li>• API access</li>
+                </ul>
               </button>
             </div>
           </div>
@@ -1653,7 +1691,7 @@ function SubscriptionChangeModal({ isOpen, business, onClose, onUpdate, loading 
                     : 'border-gray-200 hover:border-gray-300 text-gray-700'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Yearly
+                Yearly (17% off)
               </button>
               <button
                 type="button"
