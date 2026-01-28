@@ -59,9 +59,10 @@ export async function trackVisitorSession(
       return
     }
 
-    // Parse URL to extract UTM parameters
+    // Parse URL to extract UTM parameters and product share ID
     const searchParams = new URL(url).searchParams
     const utmParams = extractUTMParams(searchParams)
+    const productShareId = searchParams.get('ps') || undefined // Product share tracking
 
     // Parse referrer data
     const referrerData = extractReferrerData(referrer)
@@ -120,6 +121,8 @@ export async function trackVisitorSession(
         deviceType: deviceData?.deviceType || undefined,
         browser: deviceData?.browser || undefined,
         os: deviceData?.os || undefined,
+        // Product share tracking
+        productShareId: productShareId || undefined,
         // Technical metadata
         ipAddress: ipAddress || undefined,
         userAgent: userAgent || undefined,

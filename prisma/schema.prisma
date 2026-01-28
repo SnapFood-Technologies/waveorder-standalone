@@ -929,6 +929,9 @@ model VisitorSession {
   browser    String? // "Chrome", "Safari", etc.
   os         String? // "iOS", "Android", "Windows"
 
+  // Product Share Tracking
+  productShareId String? @db.ObjectId // Product ID if visit came from a product share link
+
   // Technical Metadata
   ipAddress String? // Client IP (consider hashing for privacy)
   userAgent String? // User agent string

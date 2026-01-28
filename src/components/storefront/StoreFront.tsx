@@ -1953,10 +1953,10 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
     }
   }, [searchParams, products])
 
-  // Share product handler - creates URL with encoded product ID
+  // Share product handler - creates URL with encoded product ID and tracking params
   const handleShareProduct = useCallback((productId: string) => {
     const encoded = encodeBase62(productId)
-    const shareUrl = `${window.location.origin}/${storeData.slug}?p=${encoded}`
+    const shareUrl = `${window.location.origin}/${storeData.slug}?p=${encoded}&utm_source=product_share&ps=${productId}`
     
     // Copy to clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {

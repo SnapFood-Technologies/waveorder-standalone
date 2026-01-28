@@ -31,7 +31,7 @@ interface AnalyticsProps {
 
 export default function Analytics({ businessId }: AnalyticsProps) {
   const [data, setData] = useState<any>(null)
-  const [business, setBusiness] = useState<any>({ currency: 'USD' })
+  const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '' })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [dateRange, setDateRange] = useState({
@@ -51,7 +51,10 @@ export default function Analytics({ businessId }: AnalyticsProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const result = await response.json()
-        setBusiness({ currency: result.business.currency })
+        setBusiness({ 
+          currency: result.business.currency,
+          subscriptionPlan: result.business.subscriptionPlan 
+        })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -735,20 +738,40 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         </div>
       )}
 
-      {/* CTA to Advanced Analytics */}
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 text-white">
-        <h3 className="font-semibold text-lg mb-2">Need Geographic Insights?</h3>
-        <p className="text-sm text-teal-50 mb-4">
-          Get detailed insights about geographic data, cities, and traffic sources with Advanced Analytics.
-        </p>
-        <Link 
-          href={`/admin/stores/${businessId}/advanced-analytics`}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg font-medium text-sm hover:bg-teal-50 transition-colors"
-        >
-          <span>View Advanced Analytics</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
+      {/* PRO Plan CTAs */}
+      {business.subscriptionPlan === 'PRO' && (
+        <>
+          {/* CTA to Advanced Analytics */}
+          <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 text-white">
+            <h3 className="font-semibold text-lg mb-2">Need Geographic Insights?</h3>
+            <p className="text-sm text-teal-50 mb-4">
+              Get detailed insights about geographic data, cities, and traffic sources with Advanced Analytics.
+            </p>
+            <Link 
+              href={`/admin/stores/${businessId}/advanced-analytics`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-600 rounded-lg font-medium text-sm hover:bg-teal-50 transition-colors"
+            >
+              <span>View Advanced Analytics</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* CTA to Product Shares Analytics */}
+          <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-6 text-white">
+            <h3 className="font-semibold text-lg mb-2">Track Product Shares</h3>
+            <p className="text-sm text-purple-50 mb-4">
+              See how your products are being shared and which products drive the most traffic.
+            </p>
+            <Link 
+              href={`/admin/stores/${businessId}/product-shares`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors"
+            >
+              <span>View Product Shares</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   )
 }
