@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const whereConditions: any = {}
     
-    // Country filter by phone prefix
+    // Country filter by phone prefix (using contains since startsWith may have issues)
     if (country === 'AL') {
-      whereConditions.whatsappNumber = { startsWith: '+355' }
+      whereConditions.whatsappNumber = { contains: '+355' }
     } else if (country === 'GR') {
-      whereConditions.whatsappNumber = { startsWith: '+30' }
+      whereConditions.whatsappNumber = { contains: '+30' }
     }
 
     // Handle incomplete filter separately - filter in memory due to Prisma/MongoDB null handling issues
@@ -98,11 +98,11 @@ export async function GET(request: NextRequest) {
       if (plan !== 'all') {
         baseConditions.subscriptionPlan = plan.toUpperCase()
       }
-      // Country filter by phone prefix
+      // Country filter by phone prefix (using contains since startsWith may have issues)
       if (country === 'AL') {
-        baseConditions.whatsappNumber = { startsWith: '+355' }
+        baseConditions.whatsappNumber = { contains: '+355' }
       } else if (country === 'GR') {
-        baseConditions.whatsappNumber = { startsWith: '+30' }
+        baseConditions.whatsappNumber = { contains: '+30' }
       }
 
       // Get all businesses matching search/plan

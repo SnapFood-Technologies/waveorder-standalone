@@ -584,8 +584,8 @@ export function SuperAdminBusinesses() {
     className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
   >
     <option value="all">All Countries</option>
-    <option value="AL">🇦🇱 Albania</option>
-    <option value="GR">🇬🇷 Greece</option>
+    <option value="AL">Albania</option>
+    <option value="GR">Greece</option>
   </select>
 
   <div className="text-sm text-gray-600 text-center sm:text-left">

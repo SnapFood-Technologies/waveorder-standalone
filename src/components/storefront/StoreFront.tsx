@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { encodeBase62, decodeBase62, isValidBase62 } from '@/utils/base62'
 import { 
   Search, 
   ShoppingCart, 
@@ -1733,6 +1735,8 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 }
 
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
+  // URL params for product sharing
+  const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -1928,6 +1932,45 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
       localStorage.setItem('cart', JSON.stringify(allCartItems))
     }
   }, [cart, storeData.id])
+
+  // Handle product sharing URL parameter - open product modal if ?p= param exists
+  useEffect(() => {
+    const productParam = searchParams.get('p')
+    if (productParam && isValidBase62(productParam)) {
+      const productId = decodeBase62(productParam)
+      if (productId) {
+        // Find the product in our loaded products or fetch it
+        const product = products.find(p => p.id === productId)
+        if (product) {
+          // Open the product modal
+          setSelectedProduct(product)
+          const availableVariant = product.variants?.find((v: any) => v.stock > 0)
+          setSelectedVariant(availableVariant || (product.variants?.length > 0 ? product.variants[0] : null))
+          setSelectedModifiers([])
+          setShowProductModal(true)
+        }
+      }
+    }
+  }, [searchParams, products])
+
+  // Share product handler - creates URL with encoded product ID
+  const handleShareProduct = useCallback((productId: string) => {
+    const encoded = encodeBase62(productId)
+    const shareUrl = `${window.location.origin}/${storeData.slug}?p=${encoded}`
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      // Success - copied feedback handled in modal
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = shareUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+    })
+  }, [storeData.slug])
 
   // Scroll to top button visibility
   useEffect(() => {
@@ -4114,11 +4157,12 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           currencySymbol={currencySymbol}
           primaryColor={primaryColor}
           translations={translations}
-          cart={cart} // Add this line
+          cart={cart}
           showError={showError}
-          featuredBadgeColor={storeData.featuredBadgeColor} // Only this new prop
+          featuredBadgeColor={storeData.featuredBadgeColor}
           storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
           businessSlug={storeData.slug}
+          onShareProduct={handleShareProduct}
         />
       )}
 
@@ -5086,7 +5130,8 @@ function ProductModal({
   showError,
   featuredBadgeColor = '#EF4444', // Only add this new prop
   storefrontLanguage = 'en', // Add language prop
-  businessSlug = '' // Add business slug prop
+  businessSlug = '', // Add business slug prop
+  onShareProduct // Add share callback
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -5103,10 +5148,12 @@ function ProductModal({
   featuredBadgeColor?: string // Only add this
   storefrontLanguage?: string // Add language prop
   businessSlug?: string // Add business slug prop
+  onShareProduct?: (productId: string) => void // Add share callback
 }) {
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentImageUrl, setCurrentImageUrl] = useState<string>('')
+  const [showCopied, setShowCopied] = useState(false)
 
   // Exception slugs: Always use English description, fallback to Albanian only if English is empty
   const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
@@ -5241,9 +5288,30 @@ function ProductModal({
         <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors">
-              <X className="w-5 h-5 text-gray-600" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Share Button */}
+              <button 
+                onClick={() => {
+                  if (onShareProduct) {
+                    onShareProduct(product.id)
+                    setShowCopied(true)
+                    setTimeout(() => setShowCopied(false), 2000)
+                  }
+                }}
+                className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors relative"
+                title={translations.share || 'Share'}
+              >
+                {showCopied ? (
+                  <Check className="w-5 h-5 text-green-600" />
+                ) : (
+                  <Share2 className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+              {/* Close Button */}
+              <button onClick={onClose} className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
           </div>
         </div>
         
