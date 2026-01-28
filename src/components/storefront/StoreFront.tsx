@@ -2876,9 +2876,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           // If adding items, check stock limits
           if (change > 0) {
             // Find the original product and variant to check stock
-            const originalProduct = storeData.categories
-              .flatMap((cat: any) => cat.products)
-              .find((p: any) => p.id === item.productId)
+            // First check in the paginated products array, then fallback to categories
+            let originalProduct = products.find((p: any) => p.id === item.productId)
+            
+            if (!originalProduct) {
+              // Fallback to categories (for products loaded initially)
+              originalProduct = storeData.categories
+                .flatMap((cat: any) => cat.products || [])
+                .find((p: any) => p.id === item.productId)
+            }
             
             if (!originalProduct) return item // Safety check
             
