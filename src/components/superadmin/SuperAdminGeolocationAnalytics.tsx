@@ -7,13 +7,11 @@ import {
   MapPin,
   Building2,
   Eye,
-  Users,
   Smartphone,
   Monitor,
   Tablet,
   RefreshCw,
-  TrendingUp,
-  Repeat
+  TrendingUp
 } from 'lucide-react'
 
 interface GeolocationData {
@@ -35,11 +33,8 @@ interface GeolocationData {
     country: string
     browsers: Array<{ browser: string; count: number }>
   }>
-  customersByCountry: Array<{ country: string; orders: number }>
-  customersByCity: Array<{ city: string; orders: number }>
-  repeatCustomersByCountry: Array<{ country: string; count: number }>
   totalViews: number
-  totalOrders: number
+  totalBusinesses: number
   uniqueCountries: number
   uniqueCities: number
 }
@@ -58,10 +53,31 @@ const getCountryFlag = (country: string): string => {
     'UK': '🇬🇧',
     'United Kingdom': '🇬🇧',
     'Brazil': '🇧🇷',
+    'Kosovo': '🇽🇰',
+    'North Macedonia': '🇲🇰',
+    'The Netherlands': '🇳🇱',
+    'Netherlands': '🇳🇱',
+    'Portugal': '🇵🇹',
+    'Belgium': '🇧🇪',
+    'Austria': '🇦🇹',
+    'Switzerland': '🇨🇭',
+    'Poland': '🇵🇱',
+    'Romania': '🇷🇴',
+    'Bulgaria': '🇧🇬',
+    'Serbia': '🇷🇸',
+    'Croatia': '🇭🇷',
+    'Slovenia': '🇸🇮',
+    'Montenegro': '🇲🇪',
+    'Bosnia and Herzegovina': '🇧🇦',
+    'Turkey': '🇹🇷',
+    'Cyprus': '🇨🇾',
     'AL': '🇦🇱',
     'GR': '🇬🇷',
     'US': '🇺🇸',
-    'ES': '🇪🇸'
+    'ES': '🇪🇸',
+    'XK': '🇽🇰',
+    'MK': '🇲🇰',
+    'NL': '🇳🇱'
   }
   return flags[country] || '🌍'
 }
@@ -87,7 +103,7 @@ function SimpleBarChart({
     <div className="space-y-3">
       {displayData.map((item, index) => (
         <div key={index} className="flex items-center gap-3">
-          <div className="w-24 text-sm text-gray-700 truncate flex items-center gap-1">
+          <div className="w-36 text-sm text-gray-700 truncate flex items-center gap-1">
             <span>{getCountryFlag(item[labelKey])}</span>
             <span>{item[labelKey]}</span>
           </div>
@@ -272,20 +288,20 @@ export function SuperAdminGeolocationAnalytics() {
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-gray-600 text-sm mb-1">
-            <Users className="w-4 h-4" />
-            Orders
+            <Building2 className="w-4 h-4" />
+            Businesses
           </div>
-          <p className="text-2xl font-bold text-gray-900">{data.totalOrders.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-gray-900">{data.totalBusinesses.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Business Distribution Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-blue-600" />
+          <Building2 className="w-5 h-5 text-gray-500" />
           Business Distribution
         </h2>
-        <p className="text-sm text-gray-600 mb-6">Where your businesses are located</p>
+        <p className="text-sm text-gray-600 mb-6">Active businesses with country data, grouped by location</p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* By Country */}
@@ -335,10 +351,10 @@ export function SuperAdminGeolocationAnalytics() {
       {/* Storefront Traffic Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-          <Eye className="w-5 h-5 text-green-600" />
+          <Eye className="w-5 h-5 text-gray-500" />
           Storefront Traffic
         </h2>
-        <p className="text-sm text-gray-600 mb-6">Where your visitors are coming from</p>
+        <p className="text-sm text-gray-600 mb-6">Page views from VisitorSession tracking, grouped by visitor location (IP-based geolocation)</p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Top Countries */}
@@ -383,10 +399,10 @@ export function SuperAdminGeolocationAnalytics() {
       {/* Traffic Trends */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-purple-600" />
+          <TrendingUp className="w-5 h-5 text-gray-500" />
           Traffic Trends by Country
         </h2>
-        <p className="text-sm text-gray-600 mb-6">Daily views from top countries</p>
+        <p className="text-sm text-gray-600 mb-6">Daily storefront visits from the top 5 countries over the selected time period</p>
         
         {data.trafficTrends.length > 0 && data.topCountriesForTrends.length > 0 ? (
           <SimpleTrendChart 
@@ -401,10 +417,10 @@ export function SuperAdminGeolocationAnalytics() {
       {/* Device & Browser Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-          <Smartphone className="w-5 h-5 text-orange-600" />
+          <Smartphone className="w-5 h-5 text-gray-500" />
           Device & Browser
         </h2>
-        <p className="text-sm text-gray-600 mb-6">How visitors access your storefronts</p>
+        <p className="text-sm text-gray-600 mb-6">Visitor device types and browsers parsed from user-agent data, grouped by country</p>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Mobile vs Desktop */}
@@ -487,70 +503,6 @@ export function SuperAdminGeolocationAnalytics() {
         </div>
       </div>
 
-      {/* Customer Distribution Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
-          <Users className="w-5 h-5 text-pink-600" />
-          Customer Distribution
-        </h2>
-        <p className="text-sm text-gray-600 mb-6">Where your orders are being delivered</p>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Orders by Country */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Orders by Country</h3>
-            {data.customersByCountry.length > 0 ? (
-              <div className="space-y-2">
-                {data.customersByCountry.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{getCountryFlag(item.country)} {item.country}</span>
-                    <span className="text-sm font-medium text-gray-900">{item.orders}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No order data available</p>
-            )}
-          </div>
-          
-          {/* Orders by City */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Orders by City</h3>
-            {data.customersByCity.length > 0 ? (
-              <div className="space-y-2">
-                {data.customersByCity.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{item.city}</span>
-                    <span className="text-sm font-medium text-gray-900">{item.orders}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No city data available</p>
-            )}
-          </div>
-          
-          {/* Repeat Customers */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-4 flex items-center gap-2">
-              <Repeat className="w-4 h-4 text-pink-500" />
-              Repeat Customers
-            </h3>
-            {data.repeatCustomersByCountry.length > 0 ? (
-              <div className="space-y-2">
-                {data.repeatCustomersByCountry.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-sm text-gray-700">{getCountryFlag(item.country)} {item.country}</span>
-                    <span className="text-sm font-medium text-gray-900">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">No repeat customer data</p>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

@@ -16,24 +16,31 @@ export async function GET(request: NextRequest) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
-    // 1. Businesses by country
+    // 1. Businesses by country (active only)
     const businessesByCountry = await prisma.business.groupBy({
       by: ['country'],
       where: {
-        country: { not: null }
+        country: { not: null },
+        isActive: true
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
 
-    // Also count businesses without country
+    // Also count active businesses without country
     const businessesWithoutCountry = await prisma.business.count({
-      where: { country: null }
+      where: { 
+        country: null,
+        isActive: true
+      }
     })
 
-    // 2. Businesses by city (extract from address - top 10)
+    // 2. Businesses by city (extract from address - top 10, active only)
     const allBusinesses = await prisma.business.findMany({
-      where: { address: { not: null } },
+      where: { 
+        address: { not: null },
+        isActive: true
+      },
       select: { address: true, country: true }
     })
 
@@ -184,102 +191,25 @@ export async function GET(request: NextRequest) {
           .map(([browser, count]) => ({ browser, count }))
       }))
 
-    // 8. Customer locations (from orders)
-    const ordersWithAddress = await prisma.order.findMany({
+    // Total stats - merge old Analytics + new VisitorSession (same as superadmin dashboard)
+    const oldPageViews = await prisma.analytics.aggregate({
       where: {
-        deliveryAddress: { not: null },
-        createdAt: { gte: startDate }
+        date: { gte: startDate }
       },
-      select: {
-        deliveryAddress: true,
-        customerId: true
-      }
+      _sum: { visitors: true }
     })
-
-    // Parse country from delivery address
-    const customerCountryCounts: Record<string, number> = {}
-    const customerCityCounts: Record<string, number> = {}
     
-    ordersWithAddress.forEach(order => {
-      if (order.deliveryAddress) {
-        const parts = order.deliveryAddress.split(',').map(p => p.trim())
-        if (parts.length >= 1) {
-          // Country is usually last part
-          const country = parts[parts.length - 1]
-          if (country && country.length > 1) {
-            customerCountryCounts[country] = (customerCountryCounts[country] || 0) + 1
-          }
-          // City is usually second to last
-          if (parts.length >= 2) {
-            const cityPart = parts[parts.length - 2]
-            const city = cityPart.replace(/\d+/g, '').trim()
-            if (city && city.length > 2) {
-              customerCityCounts[city] = (customerCityCounts[city] || 0) + 1
-            }
-          }
-        }
-      }
-    })
-
-    const customersByCountry = Object.entries(customerCountryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([country, orders]) => ({ country, orders }))
-
-    const customersByCity = Object.entries(customerCityCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([city, orders]) => ({ city, orders }))
-
-    // 9. Repeat customers by country
-    const repeatCustomerOrders = await prisma.order.groupBy({
-      by: ['customerId'],
-      where: {
-        createdAt: { gte: startDate }
-      },
-      _count: { id: true },
-      having: {
-        id: { _count: { gt: 1 } }
-      }
-    })
-
-    const repeatCustomerIds = repeatCustomerOrders.map(r => r.customerId)
-    
-    const repeatCustomerAddresses = await prisma.order.findMany({
-      where: {
-        customerId: { in: repeatCustomerIds },
-        deliveryAddress: { not: null }
-      },
-      select: {
-        customerId: true,
-        deliveryAddress: true
-      },
-      distinct: ['customerId']
-    })
-
-    const repeatCustomerCountryCounts: Record<string, number> = {}
-    repeatCustomerAddresses.forEach(order => {
-      if (order.deliveryAddress) {
-        const parts = order.deliveryAddress.split(',').map(p => p.trim())
-        const country = parts[parts.length - 1]
-        if (country && country.length > 1) {
-          repeatCustomerCountryCounts[country] = (repeatCustomerCountryCounts[country] || 0) + 1
-        }
-      }
-    })
-
-    const repeatCustomersByCountry = Object.entries(repeatCustomerCountryCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([country, count]) => ({ country, count }))
-
-    // Total stats
-    const totalViews = await prisma.visitorSession.count({
+    const newPageViews = await prisma.visitorSession.count({
       where: { visitedAt: { gte: startDate } }
     })
+    
+    const totalViews = (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
 
-    const totalOrders = await prisma.order.count({
-      where: { createdAt: { gte: startDate } }
+    const totalBusinessesWithCountry = await prisma.business.count({
+      where: { 
+        country: { not: null },
+        isActive: true
+      }
     })
 
     return NextResponse.json({
@@ -308,14 +238,9 @@ export async function GET(request: NextRequest) {
         mobileVsDesktopByCountry,
         topBrowsersByRegion,
         
-        // Customer distribution
-        customersByCountry,
-        customersByCity,
-        repeatCustomersByCountry,
-        
         // Summary
         totalViews,
-        totalOrders,
+        totalBusinesses: totalBusinessesWithCountry,
         uniqueCountries: viewsByCountry.length,
         uniqueCities: viewsByCity.length
       }
