@@ -710,6 +710,17 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         <Star className="w-4 h-4 mr-2" />
         <span className="whitespace-nowrap">{form.featured ? 'Featured' : 'Not Featured'}</span>
         </button>
+
+        {/* View Analytics Button - Only for existing products and PRO plans */}
+        {isEditing && isPro && (
+        <Link
+            href={addParams(`/admin/stores/${businessId}/products/${productId}/analytics`)}
+            className="flex items-center justify-center px-4 py-2 bg-blue-100 text-blue-800 hover:bg-blue-200 rounded-lg transition-colors"
+        >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            <span className="whitespace-nowrap">View Analytics</span>
+        </Link>
+        )}
     </div>
     </div>
 
