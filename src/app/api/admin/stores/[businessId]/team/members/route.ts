@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { canInviteMembers } from '@/lib/permissions'
+import { logTeamAudit } from '@/lib/team-audit'
 
 
 export async function GET(
@@ -147,6 +148,24 @@ export async function POST(
       )
     }
 
+    // Rate limiting: max 10 invitations per hour per business
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+    const recentInvitations = await prisma.teamInvitation.count({
+      where: {
+        businessId,
+        createdAt: {
+          gte: oneHourAgo
+        }
+      }
+    })
+
+    if (recentInvitations >= 10) {
+      return NextResponse.json(
+        { message: 'Too many invitations sent. Please wait before sending more.' },
+        { status: 429 }
+      )
+    }
+
     // Generate invitation token
     const token = generateInviteToken()
     
@@ -184,6 +203,16 @@ export async function POST(
       inviteUrl
     })
 
+    // Log audit event
+    await logTeamAudit({
+      businessId,
+      actorId: session.user.id,
+      actorEmail: session.user.email || '',
+      action: 'MEMBER_INVITED',
+      targetEmail: email,
+      details: { role, invitationId: invitation.id }
+    })
+
     return NextResponse.json({
       success: true,
       invitation: {
@@ -205,6 +234,6 @@ export async function POST(
 }
 
 function generateInviteToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15)
+  // Use crypto.randomUUID() for secure token generation
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8)
 }
