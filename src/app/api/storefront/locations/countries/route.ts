@@ -1,38 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - Get all countries (public endpoint for storefront)
+// GET - Get countries where business has postal pricing configured
 export async function GET(request: NextRequest) {
   try {
-    console.log('[Countries API] Starting to fetch countries...')
-    
-    const countries = await prisma.country.findMany({
-      select: {
-        id: true,
-        name: true,
-        code: true
-      },
-      orderBy: { name: 'asc' }
+    const { searchParams } = new URL(request.url)
+    const slug = searchParams.get('slug')
+
+    if (!slug) {
+      return NextResponse.json({ data: [] })
+    }
+
+    // Get business by slug
+    const business = await prisma.business.findUnique({
+      where: { slug },
+      select: { id: true }
     })
 
-    console.log(`[Countries API] Successfully fetched ${countries.length} countries`)
+    if (!business) {
+      return NextResponse.json({ data: [] })
+    }
+
+    // Get all distinct city names from PostalPricing for this business
+    const postalPricings = await prisma.postalPricing.findMany({
+      where: {
+        businessId: business.id,
+        deletedAt: null
+      },
+      select: { cityName: true },
+      distinct: ['cityName']
+    })
+
+    if (postalPricings.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
+
+    const cityNames = postalPricings.map(p => p.cityName)
+
+    // Find cities in the City table matching these names
+    const cities = await prisma.city.findMany({
+      where: { name: { in: cityNames } },
+      select: { stateId: true },
+      distinct: ['stateId']
+    })
+
+    if (cities.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
+
+    // Get states to find country IDs
+    const states = await prisma.state.findMany({
+      where: { id: { in: cities.map(c => c.stateId) } },
+      select: { countryId: true },
+      distinct: ['countryId']
+    })
+
+    if (states.length === 0) {
+      return NextResponse.json({ data: [] })
+    }
+
+    // Get countries
+    const countries = await prisma.country.findMany({
+      where: { id: { in: states.map(s => s.countryId) } },
+      select: { id: true, name: true, code: true },
+      orderBy: { name: 'asc' }
+    })
     
     return NextResponse.json({ data: countries })
   } catch (error: any) {
-    console.error('[Countries API] Error fetching countries:', {
-      message: error?.message,
-      name: error?.name,
-      stack: error?.stack,
-      code: error?.code,
-      meta: error?.meta
-    })
-    
-    return NextResponse.json(
-      { 
-        message: 'Failed to fetch countries',
-        error: process.env.NODE_ENV === 'development' ? error?.message : undefined
-      },
-      { status: 500 }
-    )
+    console.error('[Countries API] Error:', error?.message)
+    return NextResponse.json({ message: 'Failed to fetch countries' }, { status: 500 })
   }
 }

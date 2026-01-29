@@ -2274,7 +2274,8 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   const fetchCountries = async () => {
     setLoadingCountries(true)
     try {
-      const response = await fetch('/api/storefront/locations/countries')
+      // Pass business slug to filter countries by postal pricing availability
+      const response = await fetch(`/api/storefront/locations/countries?slug=${encodeURIComponent(storeData.slug)}`)
       if (response.ok) {
         const data = await response.json()
         setCountries(data.data || [])
