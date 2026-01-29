@@ -37,7 +37,12 @@ export async function GET(
       where: { id: businessId },
       select: {
         id: true,
-        businessHours: true
+        businessHours: true,
+        slotDuration: true,
+        slotCapacity: true,
+        deliveryBufferMinutes: true,
+        pickupBufferMinutes: true,
+        holidayHours: true
       }
     })
 
@@ -47,7 +52,14 @@ export async function GET(
 
     return NextResponse.json({ 
       // @ts-ignore
-      businessHours: business.businessHours as BusinessHours || null
+      businessHours: business.businessHours as BusinessHours || null,
+      schedulingConfig: {
+        slotDuration: business.slotDuration,
+        slotCapacity: business.slotCapacity,
+        deliveryBufferMinutes: business.deliveryBufferMinutes,
+        pickupBufferMinutes: business.pickupBufferMinutes,
+        holidayHours: business.holidayHours
+      }
     })
 
   } catch (error) {
