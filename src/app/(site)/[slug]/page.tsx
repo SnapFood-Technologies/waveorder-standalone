@@ -175,17 +175,34 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   // FIXED: Use store's language setting from database
   const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
+  const isGreek = storeData.language === 'el'
 
   // Check if store should be indexed
   const shouldIndex = storeData.isIndexable && !storeData.noIndex && !storeData.isTemporarilyClosed
 
   const businessDefaults = getBusinessTypeDefaults(storeData.businessType, isAlbanian)
   
-  // Use Albanian SEO fields if available and language is Albanian, otherwise fall back to default
-  const businessDescription = isAlbanian && storeData.descriptionAl ? storeData.descriptionAl : storeData.description
-  const seoTitle = isAlbanian && storeData.seoTitleAl ? storeData.seoTitleAl : storeData.seoTitle
-  const seoDescription = isAlbanian && storeData.seoDescriptionAl ? storeData.seoDescriptionAl : storeData.seoDescription
-  const seoKeywords = isAlbanian && storeData.seoKeywordsAl ? storeData.seoKeywordsAl : storeData.seoKeywords
+  // Use localized SEO fields based on language, otherwise fall back to default
+  const businessDescription = isAlbanian && storeData.descriptionAl 
+    ? storeData.descriptionAl 
+    : isGreek && storeData.descriptionEl
+      ? storeData.descriptionEl
+      : storeData.description
+  const seoTitle = isAlbanian && storeData.seoTitleAl 
+    ? storeData.seoTitleAl 
+    : isGreek && storeData.seoTitleEl
+      ? storeData.seoTitleEl
+      : storeData.seoTitle
+  const seoDescription = isAlbanian && storeData.seoDescriptionAl 
+    ? storeData.seoDescriptionAl 
+    : isGreek && storeData.seoDescriptionEl
+      ? storeData.seoDescriptionEl
+      : storeData.seoDescription
+  const seoKeywords = isAlbanian && storeData.seoKeywordsAl 
+    ? storeData.seoKeywordsAl 
+    : isGreek && storeData.seoKeywordsEl
+      ? storeData.seoKeywordsEl
+      : storeData.seoKeywords
   
   const title = seoTitle || `${storeData.name} - ${businessDefaults.titleSuffix}`
   const description = seoDescription || `${isAlbanian ? 'Porosit nga' : 'Order from'} ${storeData.name}. ${businessDescription || businessDefaults.description}`

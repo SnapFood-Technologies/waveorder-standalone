@@ -744,10 +744,15 @@ export async function GET(
       noIndex: business.noIndex,
       isIndexable: business.isIndexable,
       
-      // SEO (Albanian) - NEW
+      // SEO (Albanian)
       seoTitleAl: business.seoTitleAl,
       seoDescriptionAl: business.seoDescriptionAl,
       seoKeywordsAl: business.seoKeywordsAl,
+      
+      // SEO (Greek)
+      seoTitleEl: business.seoTitleEl,
+      seoDescriptionEl: business.seoDescriptionEl,
+      seoKeywordsEl: business.seoKeywordsEl,
       
       // Business Hours
       businessHours: business.businessHours,
