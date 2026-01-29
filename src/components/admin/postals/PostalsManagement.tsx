@@ -8,11 +8,14 @@ interface Postal {
   id?: string
   name: string
   nameAl?: string
+  nameEl?: string
   type: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   deliveryTime?: string
   deliveryTimeAl?: string
+  deliveryTimeEl?: string
   logo?: string
   isActive: boolean
   _count?: {
@@ -184,11 +187,14 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
           postal={editingPostal || {
             name: '',
             nameAl: '',
+            nameEl: '',
             type: 'normal',
             description: '',
             descriptionAl: '',
+            descriptionEl: '',
             deliveryTime: '',
             deliveryTimeAl: '',
+            deliveryTimeEl: '',
             logo: '',
             isActive: true
           }}
@@ -408,6 +414,17 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Name (Greek)
+          </label>
+          <input
+            type="text"
+            value={formData.nameEl || ''}
+            onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Type *
           </label>
           <select
@@ -456,6 +473,17 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description (Greek)
+          </label>
+          <textarea
+            value={formData.descriptionEl || ''}
+            onChange={(e) => setFormData({ ...formData, descriptionEl: e.target.value })}
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Delivery Time (English)
           </label>
           <input
@@ -475,6 +503,18 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             value={formData.deliveryTimeAl || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
             placeholder="e.g., 3-5 ditë"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Delivery Time (Greek)
+          </label>
+          <input
+            type="text"
+            value={formData.deliveryTimeEl || ''}
+            onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
+            placeholder="e.g., 3-5 ημέρες"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>

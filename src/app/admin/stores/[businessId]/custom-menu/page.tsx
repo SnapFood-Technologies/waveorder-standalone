@@ -11,6 +11,7 @@ interface MenuItem {
   type: 'group' | 'collection' | 'category' | 'link'
   name: string
   nameAl?: string | null
+  nameEl?: string | null
   targetId?: string
   url?: string
   sortOrder: number
@@ -19,6 +20,7 @@ interface MenuItem {
     id: string
     name: string
     nameAl?: string | null
+    nameEl?: string | null
   }
 }
 
@@ -26,6 +28,7 @@ interface AvailableEntity {
   id: string
   name: string
   nameAl?: string | null
+  nameEl?: string | null
 }
 
 export default function CustomMenuPage() {
@@ -48,6 +51,7 @@ export default function CustomMenuPage() {
     targetId: '',
     name: '',
     nameAl: '',
+    nameEl: '',
     url: ''
   })
   const [business, setBusiness] = useState<{ language?: string } | null>(null)
@@ -120,6 +124,7 @@ export default function CustomMenuPage() {
         targetId: item.targetId || '',
         name: item.name,
         nameAl: item.nameAl || '',
+        nameEl: item.nameEl || '',
         url: item.url || ''
       })
     } else {
@@ -129,6 +134,7 @@ export default function CustomMenuPage() {
         targetId: '',
         name: '',
         nameAl: '',
+        nameEl: '',
         url: ''
       })
     }
@@ -386,7 +392,7 @@ export default function CustomMenuPage() {
                 </label>
                 <select
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any, targetId: '', name: '', nameAl: '' })}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as any, targetId: '', name: '', nameAl: '', nameEl: '' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
                   disabled={!!editingItem || submitting}
                 >
@@ -477,6 +483,21 @@ export default function CustomMenuPage() {
                         type="text"
                         value={formData.nameAl}
                         onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                        disabled={submitting}
+                      />
+                    </div>
+                  )}
+
+                  {business?.language === 'el' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Display Name (Greek) <span className="text-gray-400 text-xs">(Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.nameEl}
+                        onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
                         disabled={submitting}
                       />

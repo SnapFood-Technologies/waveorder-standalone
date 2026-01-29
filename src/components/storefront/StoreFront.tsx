@@ -973,7 +973,9 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
 {(() => {
   const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
     ? storeData.descriptionAl 
-    : storeData.description
+    : storeData.language === 'el' && storeData.descriptionEl
+      ? storeData.descriptionEl
+      : storeData.description
   
   return displayDescription && (
     <div className="bg-gray-50 p-4 rounded-xl">
@@ -1555,6 +1557,7 @@ interface StoreData {
   slug: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   logo?: string
   coverImage?: string
   coverBackgroundSize?: string
@@ -1619,8 +1622,10 @@ interface Category {
   ids?: string[] // Merged IDs for marketplace deduplication (optional)
   name: string
   nameAl?: string
+  nameEl?: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   parentId?: string
   parent?: {
     id: string
@@ -1631,8 +1636,10 @@ interface Category {
     id: string
     name: string
     nameAl?: string
+    nameEl?: string
     description?: string
     descriptionAl?: string
+    descriptionEl?: string
     image?: string
     sortOrder: number
   }>
@@ -1648,6 +1655,7 @@ interface Product {
   name: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   images: string[]
   price: number
   originalPrice?: number
@@ -3262,7 +3270,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           {(() => {
   const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
     ? storeData.descriptionAl 
-    : storeData.description
+    : storeData.language === 'el' && storeData.descriptionEl
+      ? storeData.descriptionEl
+      : storeData.description
   
   return displayDescription && (
     <p className="text-gray-500 text-md sm:text-md mb-3">{displayDescription}</p>
@@ -4943,19 +4953,24 @@ function ProductCard({
   const noFallbackSlugs = ['neps-shop']
   const isNoFallbackSlug = noFallbackSlugs.includes(businessSlug)
   
-  // Use Albanian description if language is Albanian (unless exception slug)
+  // Use Albanian/Greek description if language matches (unless exception slug)
   const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
+  const useGreek = !isExceptionSlug && storefrontLanguage === 'el'
   
-  // For exception slugs: prioritize English, use Albanian only if English is empty/missing
-  // For no fallback slugs: use Albanian only if available, don't fallback to English
-  // For others: use Albanian if language is Albanian, otherwise English
+  // For exception slugs: prioritize English, use Albanian/Greek only if English is empty/missing
+  // For no fallback slugs: use Albanian/Greek only if available, don't fallback to English
+  // For others: use Albanian/Greek if language matches, otherwise English
   const displayDescription = isExceptionSlug
-    ? (product.description || product.descriptionAl || '')
+    ? (product.description || product.descriptionAl || product.descriptionEl || '')
     : isNoFallbackSlug && useAlbanian
     ? (product.descriptionAl || '')
+    : isNoFallbackSlug && useGreek
+    ? (product.descriptionEl || '')
     : (useAlbanian && product.descriptionAl 
       ? product.descriptionAl 
-      : product.description)
+      : useGreek && product.descriptionEl
+        ? product.descriptionEl
+        : product.description)
   
   // Calculate total quantity in cart for this product (all variants)
   const totalInCart = cart
@@ -5169,19 +5184,24 @@ function ProductModal({
   const noFallbackSlugs = ['neps-shop']
   const isNoFallbackSlug = noFallbackSlugs.includes(businessSlug)
   
-  // Use Albanian description if language is Albanian (unless exception slug)
+  // Use Albanian/Greek description if language matches (unless exception slug)
   const useAlbanian = !isExceptionSlug && (storefrontLanguage === 'sq' || storefrontLanguage === 'al')
+  const useGreek = !isExceptionSlug && storefrontLanguage === 'el'
   
-  // For exception slugs: prioritize English, use Albanian only if English is empty/missing
-  // For no fallback slugs: use Albanian only if available, don't fallback to English
-  // For others: use Albanian if language is Albanian, otherwise English
+  // For exception slugs: prioritize English, use Albanian/Greek only if English is empty/missing
+  // For no fallback slugs: use Albanian/Greek only if available, don't fallback to English
+  // For others: use Albanian/Greek if language matches, otherwise English
   const displayDescription = isExceptionSlug
-    ? (product.description || product.descriptionAl || '')
+    ? (product.description || product.descriptionAl || product.descriptionEl || '')
     : isNoFallbackSlug && useAlbanian
     ? (product.descriptionAl || '')
+    : isNoFallbackSlug && useGreek
+    ? (product.descriptionEl || '')
     : (useAlbanian && product.descriptionAl 
       ? product.descriptionAl 
-      : product.description)
+      : useGreek && product.descriptionEl
+        ? product.descriptionEl
+        : product.description)
 
   // Map variant names to Albanian
   const getVariantDisplayName = (variantName: string): string => {

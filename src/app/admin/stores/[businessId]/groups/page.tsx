@@ -9,6 +9,7 @@ interface Group {
   id: string
   name: string
   nameAl?: string | null
+  nameEl?: string | null
   description?: string | null
   sortOrder: number
   isActive: boolean
@@ -41,6 +42,7 @@ export default function GroupsPage() {
   const [formData, setFormData] = useState({
     name: '',
     nameAl: '',
+    nameEl: '',
     description: '',
     sortOrder: 0,
     isActive: true
@@ -107,6 +109,7 @@ export default function GroupsPage() {
     setFormData({
       name: group.name,
       nameAl: group.nameAl || '',
+      nameEl: group.nameEl || '',
       description: group.description || '',
       sortOrder: group.sortOrder,
       isActive: group.isActive
@@ -145,6 +148,7 @@ export default function GroupsPage() {
     setFormData({
       name: '',
       nameAl: '',
+      nameEl: '',
       description: '',
       sortOrder: 0,
       isActive: true
@@ -332,6 +336,21 @@ export default function GroupsPage() {
                       onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                       placeholder="e.g., Elektronikë"
+                    />
+                  </div>
+                )}
+
+                {business?.language === 'el' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Name (Greek)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.nameEl}
+                      onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder="e.g., Ηλεκτρονικά"
                     />
                   </div>
                 )}

@@ -228,8 +228,10 @@ export async function GET(
         id: true,
         name: true,
         nameAl: true,
+        nameEl: true,
         description: true,
         descriptionAl: true,
+        descriptionEl: true,
         image: true,
         parentId: true,
         sortOrder: true,
@@ -240,6 +242,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             hideParentInStorefront: true
           }
         },
@@ -251,8 +254,10 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             description: true,
             descriptionAl: true,
+            descriptionEl: true,
             image: true,
             sortOrder: true
           }
@@ -357,6 +362,7 @@ export async function GET(
       // Transform products (same logic as products API)
       const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
       const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
+      const useGreek = storefrontLanguage === 'el'
       const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
       const isExceptionSlug = exceptionSlugs.includes(slug)
 
@@ -393,10 +399,12 @@ export async function GET(
           )
 
           const productDescription = isExceptionSlug
-            ? (product.description || product.descriptionAl || '')
+            ? (product.description || product.descriptionAl || (product as any).descriptionEl || '')
             : (useAlbanian && product.descriptionAl 
               ? product.descriptionAl 
-              : product.description)
+              : useGreek && (product as any).descriptionEl 
+                ? (product as any).descriptionEl 
+                : product.description)
 
           return {
             id: product.id,
@@ -517,6 +525,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true,
             isActive: true
           },
@@ -536,6 +545,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true,
             isActive: true
           },
@@ -555,6 +565,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true,
             isActive: true
           },
@@ -781,13 +792,14 @@ export async function GET(
         // Get storefront language (default to business language or 'en')
         const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
         const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
+        const useGreek = storefrontLanguage === 'el'
         
         // Get Uncategorized name overrides (for storefront display only)
         const uncategorizedNameOverride = business.uncategorizedNameOverride || null
         const uncategorizedNameOverrideAl = business.uncategorizedNameOverrideAl || null
         
         // Helper function to apply Uncategorized name override for storefront display
-        const getCategoryDisplayName = (categoryName: string, categoryNameAl?: string | null): string => {
+        const getCategoryDisplayName = (categoryName: string, categoryNameAl?: string | null, categoryNameEl?: string | null): string => {
           // Only apply override if category name is exactly "Uncategorized"
           if (categoryName === 'Uncategorized') {
             if (useAlbanian && uncategorizedNameOverrideAl) {
@@ -798,7 +810,9 @@ export async function GET(
             }
           }
           // Return normal category name (with language preference)
-          return useAlbanian && categoryNameAl ? categoryNameAl : categoryName
+          if (useAlbanian && categoryNameAl) return categoryNameAl
+          if (useGreek && categoryNameEl) return categoryNameEl
+          return categoryName
         }
         
         // PERFORMANCE OPTIMIZATION: Build categories WITHOUT products
@@ -820,7 +834,7 @@ export async function GET(
           const map = new Map<string, any>()
           
           for (const category of categories) {
-            const displayName = getCategoryDisplayName(category.name, category.nameAl)
+            const displayName = getCategoryDisplayName(category.name, category.nameAl, category.nameEl)
             const key = `${displayName}_${category.parentId || 'root'}` // Include parentId to allow same names at different levels
             
             if (map.has(key)) {
@@ -852,14 +866,14 @@ export async function GET(
             return {
               id: category.id,
               ids: category.ids, // Array of IDs if deduplicated
-              name: getCategoryDisplayName(category.name, category.nameAl),
-              description: useAlbanian && category.descriptionAl ? category.descriptionAl : category.description,
+              name: getCategoryDisplayName(category.name, category.nameAl, category.nameEl),
+              description: useAlbanian && category.descriptionAl ? category.descriptionAl : useGreek && category.descriptionEl ? category.descriptionEl : category.description,
               nameAl: category.nameAl,
               descriptionAl: category.descriptionAl,
               parentId: category.parentId,
               parent: category.parent ? {
                 id: category.parent.id,
-                name: getCategoryDisplayName(category.parent.name, category.parent.nameAl),
+                name: getCategoryDisplayName(category.parent.name, category.parent.nameAl, category.parent.nameEl),
                 hideParentInStorefront: category.parent.hideParentInStorefront
               } : null,
               hideParentInStorefront: category.hideParentInStorefront,
@@ -868,8 +882,8 @@ export async function GET(
               productCount, // Include product count for filtering
               children: category.children ? (category.children as any[]).map((child: any) => ({
                 id: child.id,
-                name: getCategoryDisplayName(child.name, child.nameAl),
-                description: useAlbanian && child.descriptionAl ? child.descriptionAl : child.description,
+                name: getCategoryDisplayName(child.name, child.nameAl, child.nameEl),
+                description: useAlbanian && child.descriptionAl ? child.descriptionAl : useGreek && child.descriptionEl ? child.descriptionEl : child.description,
                 nameAl: child.nameAl,
                 descriptionAl: child.descriptionAl,
                 image: child.image,

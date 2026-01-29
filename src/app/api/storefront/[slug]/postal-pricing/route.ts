@@ -78,11 +78,14 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             description: true,
             descriptionAl: true,
+            descriptionEl: true,
             deliveryTime: true,
             deliveryTimeAl: true,
+            deliveryTimeEl: true,
             logo: true,
             isActive: true
           }
@@ -117,13 +120,15 @@ export async function GET(
         price: p.price,
         priceWithoutTax: p.priceWithoutTax,
         type: p.type,
-        postal_name: storefrontLanguage === 'sq' && postal.nameAl ? postal.nameAl : postal.name,
+        postal_name: storefrontLanguage === 'sq' && postal.nameAl ? postal.nameAl : storefrontLanguage === 'el' && postal.nameEl ? postal.nameEl : postal.name,
         postal_name_en: postal.name,
         postal_name_al: postal.nameAl,
+        postal_name_el: postal.nameEl,
         logo: postal.logo,
         delivery_time: p.deliveryTime || postal.deliveryTime || undefined,
         delivery_time_al: p.deliveryTimeAl || postal.deliveryTimeAl || undefined,
-        description: storefrontLanguage === 'sq' && postal.descriptionAl ? postal.descriptionAl : postal.description || undefined,
+        delivery_time_el: p.deliveryTimeEl || postal.deliveryTimeEl || undefined,
+        description: storefrontLanguage === 'sq' && postal.descriptionAl ? postal.descriptionAl : storefrontLanguage === 'el' && postal.descriptionEl ? postal.descriptionEl : postal.description || undefined,
         min_order_value: p.minOrderValue !== undefined && p.minOrderValue !== null ? p.minOrderValue : undefined,
         max_order_value: p.maxOrderValue !== undefined && p.maxOrderValue !== null ? p.maxOrderValue : undefined
       }

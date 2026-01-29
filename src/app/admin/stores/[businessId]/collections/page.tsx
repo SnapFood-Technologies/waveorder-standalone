@@ -20,6 +20,7 @@ interface Collection {
   id: string
   name: string
   nameAl?: string | null
+  nameEl?: string | null
   description?: string | null
   image?: string | null
   sortOrder: number
@@ -52,6 +53,7 @@ export default function CollectionsPage() {
   const [formData, setFormData] = useState({
     name: '',
     nameAl: '',
+    nameEl: '',
     description: '',
     image: '',
     isActive: true,
@@ -101,6 +103,7 @@ export default function CollectionsPage() {
       setFormData({
         name: collection.name,
         nameAl: collection.nameAl || '',
+        nameEl: collection.nameEl || '',
         description: collection.description || '',
         image: collection.image || '',
         isActive: collection.isActive,
@@ -111,6 +114,7 @@ export default function CollectionsPage() {
       setFormData({
         name: '',
         nameAl: '',
+        nameEl: '',
         description: '',
         image: '',
         isActive: true,
@@ -353,6 +357,20 @@ export default function CollectionsPage() {
                     type="text"
                     value={formData.nameAl}
                     onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {business?.language === 'el' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Collection Name (Greek)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nameEl}
+                    onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>

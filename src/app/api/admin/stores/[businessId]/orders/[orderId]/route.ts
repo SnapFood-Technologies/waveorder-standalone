@@ -261,8 +261,10 @@ export async function GET(
                 id: true,
                 name: true,
                 nameAl: true,
+                nameEl: true,
                 deliveryTime: true,
-                deliveryTimeAl: true
+                deliveryTimeAl: true,
+                deliveryTimeEl: true
               }
             }
           }
@@ -275,8 +277,10 @@ export async function GET(
           postalPricing = {
             name: foundPostalPricing.postal?.name || 'Postal Service',
             nameAl: foundPostalPricing.postal?.nameAl || null,
+            nameEl: foundPostalPricing.postal?.nameEl || null,
             deliveryTime: foundPostalPricing.deliveryTime || foundPostalPricing.postal?.deliveryTime || null,
             deliveryTimeAl: foundPostalPricing.deliveryTimeAl || foundPostalPricing.postal?.deliveryTimeAl || null,
+            deliveryTimeEl: foundPostalPricing.deliveryTimeEl || foundPostalPricing.postal?.deliveryTimeEl || null,
             price: foundPostalPricing.price
           }
         }
@@ -553,8 +557,10 @@ export async function PUT(
                       id: true,
                       name: true,
                       nameAl: true,
+                      nameEl: true,
                       deliveryTime: true,
-                      deliveryTimeAl: true
+                      deliveryTimeAl: true,
+                      deliveryTimeEl: true
                     }
                   }
                 }
@@ -567,8 +573,10 @@ export async function PUT(
                 fetchedPostalPricing = {
                   name: foundPostalPricing.postal?.name || 'Postal Service',
                   nameAl: foundPostalPricing.postal?.nameAl || null,
+                  nameEl: foundPostalPricing.postal?.nameEl || null,
                   deliveryTime: foundPostalPricing.deliveryTime || foundPostalPricing.postal?.deliveryTime || null,
                   deliveryTimeAl: foundPostalPricing.deliveryTimeAl || foundPostalPricing.postal?.deliveryTimeAl || null,
+                  deliveryTimeEl: foundPostalPricing.deliveryTimeEl || foundPostalPricing.postal?.deliveryTimeEl || null,
                   price: foundPostalPricing.price
                 }
               }
@@ -587,19 +595,26 @@ export async function PUT(
           if (updatedOrder.business.businessType === 'RETAIL' && fetchedPostalPricing) {
             // Get localized postal service name
             const language = updatedOrder.business.language || 'en'
-            const postalName = (language === 'sq' || language === 'al') && fetchedPostalPricing.nameAl 
+            const isAlbanian = language === 'sq' || language === 'al'
+            const isGreek = language === 'el'
+            const postalName = isAlbanian && fetchedPostalPricing.nameAl 
               ? fetchedPostalPricing.nameAl 
-              : fetchedPostalPricing.name || 'Postal Service'
+              : isGreek && fetchedPostalPricing.nameEl
+                ? fetchedPostalPricing.nameEl
+                : fetchedPostalPricing.name || 'Postal Service'
             
             // Get localized delivery time
-            const postalDeliveryTime = (language === 'sq' || language === 'al') && fetchedPostalPricing.deliveryTimeAl
+            const postalDeliveryTime = isAlbanian && fetchedPostalPricing.deliveryTimeAl
               ? fetchedPostalPricing.deliveryTimeAl
-              : fetchedPostalPricing.deliveryTime || null
+              : isGreek && fetchedPostalPricing.deliveryTimeEl
+                ? fetchedPostalPricing.deliveryTimeEl
+                : fetchedPostalPricing.deliveryTime || null
             
             postalPricingDetails = {
               name: postalName,
               nameEn: fetchedPostalPricing.name || 'Postal Service',
               nameAl: fetchedPostalPricing.nameAl || null,
+              nameEl: fetchedPostalPricing.nameEl || null,
               deliveryTime: postalDeliveryTime,
               price: fetchedPostalPricing.price || 0
             }

@@ -99,8 +99,10 @@ export async function PUT(
       data: {
         name: productData.name,
         nameAl: productData.nameAl || null,
+        nameEl: productData.nameEl || null,
         description: productData.description || null,
         descriptionAl: productData.descriptionAl || null,
+        descriptionEl: productData.descriptionEl || null,
         images: productData.images || [],
         price: productData.price,
         originalPrice: productData.originalPrice || null,

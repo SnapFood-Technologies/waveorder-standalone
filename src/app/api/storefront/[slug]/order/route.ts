@@ -1305,8 +1305,10 @@ export async function POST(
               id: true,
               name: true,
               nameAl: true,
+              nameEl: true,
               deliveryTime: true,
-              deliveryTimeAl: true
+              deliveryTimeAl: true,
+              deliveryTimeEl: true
             }
           }
         }
@@ -1323,17 +1325,24 @@ export async function POST(
       }
 
       // Store postal pricing details for WhatsApp message
-      // Use Albanian name if language is Albanian, otherwise use English name
-      const useAlbanianName = (business.language || 'en') === 'sq'
+      // Use Albanian/Greek name if language matches, otherwise use English name
+      const businessLang = business.language || 'en'
+      const useAlbanianName = businessLang === 'sq'
+      const useGreekName = businessLang === 'el'
       postalPricingDetails = {
         name: useAlbanianName 
           ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
-          : (postalPricing.postal?.name || 'Postal Service'),
+          : useGreekName
+            ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
+            : (postalPricing.postal?.name || 'Postal Service'),
         nameEn: postalPricing.postal?.name || 'Postal Service',
         nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+        nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
         deliveryTime: useAlbanianName
           ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-          : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null)
+          : useGreekName
+            ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+            : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null)
       }
 
       // Use postal pricing fee
@@ -1744,8 +1753,10 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
                 select: {
                   name: true,
                   nameAl: true,
+                  nameEl: true,
                   deliveryTime: true,
-                  deliveryTimeAl: true
+                  deliveryTimeAl: true,
+                  deliveryTimeEl: true
                 }
               }
             }
@@ -1753,15 +1764,21 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
 
           if (postalPricing) {
             const isAlbanian = business.language === 'sq' || business.language === 'al'
+            const isGreek = business.language === 'el'
             postalPricingDetails = {
               name: isAlbanian
                 ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
-                : (postalPricing.postal?.name || 'Postal Service'),
+                : isGreek
+                  ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
+                  : (postalPricing.postal?.name || 'Postal Service'),
               nameEn: postalPricing.postal?.name || 'Postal Service',
               nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+              nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
               deliveryTime: isAlbanian
                 ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-                : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+                : isGreek
+                  ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                  : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
               price: postalPricing.price
             }
           }
@@ -1922,8 +1939,10 @@ try {
               select: {
                 name: true,
                 nameAl: true,
+                nameEl: true,
                 deliveryTime: true,
-                deliveryTimeAl: true
+                deliveryTimeAl: true,
+                deliveryTimeEl: true
               }
             }
           }
@@ -1931,15 +1950,21 @@ try {
 
         if (postalPricing) {
           const isAlbanian = business.language === 'sq' || business.language === 'al'
+          const isGreek = business.language === 'el'
           postalPricingDetails = {
             name: isAlbanian
               ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
-              : (postalPricing.postal?.name || 'Postal Service'),
+              : isGreek
+                ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
+                : (postalPricing.postal?.name || 'Postal Service'),
             nameEn: postalPricing.postal?.name || 'Postal Service',
             nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+            nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
             deliveryTime: isAlbanian
               ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-              : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+              : isGreek
+                ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
             price: postalPricing.price
           }
         }

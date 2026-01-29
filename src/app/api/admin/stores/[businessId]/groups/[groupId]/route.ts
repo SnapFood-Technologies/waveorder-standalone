@@ -78,7 +78,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, nameAl, description, sortOrder, isActive, metadata } = body
+    const { name, nameAl, nameEl, description, sortOrder, isActive, metadata } = body
 
     // Check if group exists
     const existingGroup = await prisma.group.findFirst({
@@ -112,6 +112,7 @@ export async function PUT(
       data: {
         name: name ?? existingGroup.name,
         nameAl: nameAl !== undefined ? nameAl : existingGroup.nameAl,
+        nameEl: nameEl !== undefined ? nameEl : existingGroup.nameEl,
         description: description !== undefined ? description : existingGroup.description,
         sortOrder: sortOrder !== undefined ? sortOrder : existingGroup.sortOrder,
         isActive: isActive !== undefined ? isActive : existingGroup.isActive,

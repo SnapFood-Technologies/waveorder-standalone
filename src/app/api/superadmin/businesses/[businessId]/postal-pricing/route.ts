@@ -51,6 +51,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             logo: true
           }

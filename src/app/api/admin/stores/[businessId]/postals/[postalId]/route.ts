@@ -61,7 +61,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, nameAl, type, description, descriptionAl, deliveryTime, deliveryTimeAl, logo, isActive } = body
+    const { name, nameAl, nameEl, type, description, descriptionAl, descriptionEl, deliveryTime, deliveryTimeAl, deliveryTimeEl, logo, isActive } = body
 
     // Validate type
     if (type && !['normal', 'fast'].includes(type)) {
@@ -91,11 +91,14 @@ export async function PUT(
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(nameAl !== undefined && { nameAl: nameAl?.trim() || null }),
+        ...(nameEl !== undefined && { nameEl: nameEl?.trim() || null }),
         ...(type !== undefined && { type }),
         ...(description !== undefined && { description: description?.trim() || null }),
         ...(descriptionAl !== undefined && { descriptionAl: descriptionAl?.trim() || null }),
+        ...(descriptionEl !== undefined && { descriptionEl: descriptionEl?.trim() || null }),
         ...(deliveryTime !== undefined && { deliveryTime: deliveryTime?.trim() || null }),
         ...(deliveryTimeAl !== undefined && { deliveryTimeAl: deliveryTimeAl?.trim() || null }),
+        ...(deliveryTimeEl !== undefined && { deliveryTimeEl: deliveryTimeEl?.trim() || null }),
         ...(logo !== undefined && { logo: logo?.trim() || null }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) })
       }

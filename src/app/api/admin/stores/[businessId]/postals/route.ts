@@ -52,7 +52,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { name, nameAl, type, description, descriptionAl, deliveryTime, deliveryTimeAl, logo, isActive } = body
+    const { name, nameAl, nameEl, type, description, descriptionAl, descriptionEl, deliveryTime, deliveryTimeAl, deliveryTimeEl, logo, isActive } = body
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -74,11 +74,14 @@ export async function POST(
         businessId,
         name: name.trim(),
         nameAl: nameAl?.trim() || null,
+        nameEl: nameEl?.trim() || null,
         type: type || 'normal',
         description: description?.trim() || null,
         descriptionAl: descriptionAl?.trim() || null,
+        descriptionEl: descriptionEl?.trim() || null,
         deliveryTime: deliveryTime?.trim() || null,
         deliveryTimeAl: deliveryTimeAl?.trim() || null,
+        deliveryTimeEl: deliveryTimeEl?.trim() || null,
         logo: logo?.trim() || null,
         isActive: isActive !== undefined ? Boolean(isActive) : true
       }

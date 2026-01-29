@@ -35,7 +35,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            nameAl: true
+            nameAl: true,
+            nameEl: true
           }
         },
         children: {
@@ -43,6 +44,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true
           },
           orderBy: { sortOrder: 'asc' }
@@ -183,8 +185,10 @@ export async function POST(
       data: {
         name: categoryData.name,
         nameAl: categoryData.nameAl || null,
+        nameEl: categoryData.nameEl || null,
         description: categoryData.description || null,
         descriptionAl: categoryData.descriptionAl || null,
+        descriptionEl: categoryData.descriptionEl || null,
         parentId: categoryData.parentId || null,
         hideParentInStorefront: categoryData.hideParentInStorefront ?? false,
         image: categoryData.image || null,
@@ -197,7 +201,8 @@ export async function POST(
           select: {
             id: true,
             name: true,
-            nameAl: true
+            nameAl: true,
+            nameEl: true
           }
         },
         children: {
@@ -205,6 +210,7 @@ export async function POST(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true
           },
           orderBy: { sortOrder: 'asc' }
