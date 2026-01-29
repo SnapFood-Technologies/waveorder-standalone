@@ -1,72 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - Get countries where business has postal pricing configured
+// GET - Get countries for storefront (filtered by business shipping settings)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const slug = searchParams.get('slug')
 
+    // If no slug provided, return empty (admin panel uses this without slug)
     if (!slug) {
-      return NextResponse.json({ data: [] })
+      const countries = await prisma.country.findMany({
+        select: { id: true, name: true, code: true },
+        orderBy: { name: 'asc' }
+      })
+      return NextResponse.json({ data: countries })
     }
 
-    // Get business by slug
+    // Get business by slug with shippingCountries and country
     const business = await prisma.business.findUnique({
       where: { slug },
-      select: { id: true }
+      select: { 
+        id: true,
+        country: true,
+        shippingCountries: true
+      }
     })
 
     if (!business) {
       return NextResponse.json({ data: [] })
     }
 
-    // Get all distinct city names from PostalPricing for this business
-    const postalPricings = await prisma.postalPricing.findMany({
-      where: {
-        businessId: business.id,
-        deletedAt: null
-      },
-      select: { cityName: true },
-      distinct: ['cityName']
-    })
-
-    if (postalPricings.length === 0) {
-      return NextResponse.json({ data: [] })
+    // If business has shippingCountries configured, use those
+    if (business.shippingCountries && business.shippingCountries.length > 0) {
+      const countries = await prisma.country.findMany({
+        where: {
+          code: { in: business.shippingCountries }
+        },
+        select: { id: true, name: true, code: true },
+        orderBy: { name: 'asc' }
+      })
+      return NextResponse.json({ data: countries })
     }
 
-    const cityNames = postalPricings.map(p => p.cityName)
-
-    // Find cities in the City table matching these names
-    const cities = await prisma.city.findMany({
-      where: { name: { in: cityNames } },
-      select: { stateId: true },
-      distinct: ['stateId']
-    })
-
-    if (cities.length === 0) {
-      return NextResponse.json({ data: [] })
+    // If no shippingCountries configured, default to business's own country only
+    if (business.country) {
+      const countries = await prisma.country.findMany({
+        where: {
+          code: business.country
+        },
+        select: { id: true, name: true, code: true },
+        orderBy: { name: 'asc' }
+      })
+      return NextResponse.json({ data: countries })
     }
 
-    // Get states to find country IDs
-    const states = await prisma.state.findMany({
-      where: { id: { in: cities.map(c => c.stateId) } },
-      select: { countryId: true },
-      distinct: ['countryId']
-    })
-
-    if (states.length === 0) {
-      return NextResponse.json({ data: [] })
-    }
-
-    // Get countries
-    const countries = await prisma.country.findMany({
-      where: { id: { in: states.map(s => s.countryId) } },
-      select: { id: true, name: true, code: true },
-      orderBy: { name: 'asc' }
-    })
-    
-    return NextResponse.json({ data: countries })
+    // Fallback: no country configured, return empty
+    return NextResponse.json({ data: [] })
   } catch (error: any) {
     console.error('[Countries API] Error:', error?.message)
     return NextResponse.json({ message: 'Failed to fetch countries' }, { status: 500 })

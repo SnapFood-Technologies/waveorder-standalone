@@ -66,7 +66,8 @@ export async function GET(
         storeLatitude: true,
         storeLongitude: true,
         uncategorizedNameOverride: true,
-        uncategorizedNameOverrideAl: true
+        uncategorizedNameOverrideAl: true,
+        shippingCountries: true
       }
     })
 
@@ -213,6 +214,7 @@ export async function PUT(
         storeLongitude: data.storeLongitude ? parseFloat(data.storeLongitude) : null,
         uncategorizedNameOverride: data.uncategorizedNameOverride?.trim() || null,
         uncategorizedNameOverrideAl: data.uncategorizedNameOverrideAl?.trim() || null,
+        shippingCountries: Array.isArray(data.shippingCountries) ? data.shippingCountries : [],
         updatedAt: new Date()
       },
       select: {
@@ -259,7 +261,8 @@ export async function PUT(
         noIndex: true,
         noFollow: true,
         storeLatitude: true,
-        storeLongitude: true
+        storeLongitude: true,
+        shippingCountries: true
       }
     })
 

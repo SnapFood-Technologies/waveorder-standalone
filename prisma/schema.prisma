@@ -230,9 +230,10 @@ model Business {
   // Uncategorized category name override (for storefront display only)
   uncategorizedNameOverride   String? // Override "Uncategorized" name in English for storefront
   uncategorizedNameOverrideAl String? // Override "Uncategorized" name in Albanian for storefront
-  deliveryFee                 Float   @default(0)
-  minimumOrder                Float   @default(0)
-  deliveryRadius              Float   @default(10)
+  deliveryFee                 Float    @default(0)
+  minimumOrder                Float    @default(0)
+  deliveryRadius              Float    @default(10)
+  shippingCountries           String[] @default([]) // Array of country codes (e.g., ["AL", "XK", "MK"])
 
   // Payment settings
   paymentMethods      PaymentMethod[]

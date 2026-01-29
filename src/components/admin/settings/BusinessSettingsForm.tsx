@@ -89,6 +89,9 @@ interface BusinessSettings {
   // Uncategorized category name override (for storefront display only)
   uncategorizedNameOverride?: string
   uncategorizedNameOverrideAl?: string
+  
+  // Shipping countries (for RETAIL businesses)
+  shippingCountries?: string[]
 }
 
 // Country detection utility
@@ -316,8 +319,12 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     isTemporarilyClosed: false,
     isIndexable: true,
     noIndex: false,
-    noFollow: false
+    noFollow: false,
+    shippingCountries: []
   })
+  
+  const [availableCountries, setAvailableCountries] = useState<Array<{ id: string; name: string; code: string }>>([])
+  const [loadingCountries, setLoadingCountries] = useState(false)
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -340,6 +347,25 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       fetchSettings()
     }
   }, [businessId])
+
+  // Fetch available countries for shipping settings
+  useEffect(() => {
+    const fetchCountries = async () => {
+      setLoadingCountries(true)
+      try {
+        const response = await fetch('/api/storefront/locations/countries')
+        if (response.ok) {
+          const data = await response.json()
+          setAvailableCountries(data.data || [])
+        }
+      } catch (error) {
+        console.error('Error fetching countries:', error)
+      } finally {
+        setLoadingCountries(false)
+      }
+    }
+    fetchCountries()
+  }, [])
 
   const fetchSettings = async () => {
     try {
@@ -1050,6 +1076,73 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   Auto-detected from address. You can change it manually if needed.
                 </p>
               </div>
+
+              {/* Shipping Countries - Only for RETAIL businesses */}
+              {settings.businessType === 'RETAIL' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Shipping Countries
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    {loadingCountries ? (
+                      <p className="text-sm text-gray-500">Loading countries...</p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {(settings.shippingCountries || []).map(code => {
+                            const country = availableCountries.find(c => c.code === code)
+                            return country ? (
+                              <span 
+                                key={code}
+                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-teal-100 text-teal-800"
+                              >
+                                {country.name}
+                                <button
+                                  type="button"
+                                  onClick={() => setSettings(prev => ({
+                                    ...prev,
+                                    shippingCountries: (prev.shippingCountries || []).filter(c => c !== code)
+                                  }))}
+                                  className="ml-2 text-teal-600 hover:text-teal-800"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ) : null
+                          })}
+                          {(settings.shippingCountries || []).length === 0 && (
+                            <span className="text-sm text-gray-500 italic">No countries selected - only your business country will be shown</span>
+                          )}
+                        </div>
+                        <select
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900"
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value && !(settings.shippingCountries || []).includes(e.target.value)) {
+                              setSettings(prev => ({
+                                ...prev,
+                                shippingCountries: [...(prev.shippingCountries || []), e.target.value]
+                              }))
+                            }
+                          }}
+                        >
+                          <option value="">Add a shipping country...</option>
+                          {availableCountries
+                            .filter(c => !(settings.shippingCountries || []).includes(c.code))
+                            .map(country => (
+                              <option key={country.code} value={country.code}>
+                                {country.name} ({country.code})
+                              </option>
+                            ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the countries you ship to. If no countries are selected, only your business country will be available in the checkout.
+                  </p>
+                </div>
+              )}
 
               <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
