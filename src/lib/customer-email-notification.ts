@@ -32,6 +32,7 @@ interface CustomerOrderData {
     name: string // Localized postal service name
     nameEn: string
     nameAl: string
+    nameEl: string
     deliveryTime: string | null // Localized delivery time
     price: number
   } | null
