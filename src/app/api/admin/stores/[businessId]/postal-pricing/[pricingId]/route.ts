@@ -28,6 +28,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             logo: true
           }
@@ -67,7 +68,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { postalId, cityName, type, price, priceWithoutTax, minOrderValue, maxOrderValue, deliveryTime, deliveryTimeAl, notes } = body
+    const { postalId, cityName, type, price, priceWithoutTax, minOrderValue, maxOrderValue, deliveryTime, deliveryTimeAl, deliveryTimeEl, notes } = body
 
     // Check if pricing exists and belongs to business
     const existingPricing = await prisma.postalPricing.findFirst({
@@ -129,6 +130,7 @@ export async function PUT(
         ...(maxOrderValue !== undefined && { maxOrderValue: maxOrderValue !== null ? parseFloat(maxOrderValue) : null }),
         ...(deliveryTime !== undefined && { deliveryTime: deliveryTime?.trim() || null }),
         ...(deliveryTimeAl !== undefined && { deliveryTimeAl: deliveryTimeAl?.trim() || null }),
+        ...(deliveryTimeEl !== undefined && { deliveryTimeEl: deliveryTimeEl?.trim() || null }),
         ...(notes !== undefined && { notes: notes?.trim() || null })
       },
       include: {
@@ -137,6 +139,7 @@ export async function PUT(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             logo: true
           }

@@ -27,7 +27,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            nameAl: true
+            nameAl: true,
+            nameEl: true
           }
         },
         children: {
@@ -35,6 +36,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true
           },
           orderBy: { sortOrder: 'asc' }
@@ -130,8 +132,10 @@ export async function PUT(
     const updateData: any = {}
     if (categoryData.name !== undefined) updateData.name = categoryData.name
     if (categoryData.nameAl !== undefined) updateData.nameAl = categoryData.nameAl || null
+    if (categoryData.nameEl !== undefined) updateData.nameEl = categoryData.nameEl || null
     if (categoryData.description !== undefined) updateData.description = categoryData.description || null
     if (categoryData.descriptionAl !== undefined) updateData.descriptionAl = categoryData.descriptionAl || null
+    if (categoryData.descriptionEl !== undefined) updateData.descriptionEl = categoryData.descriptionEl || null
     if (categoryData.parentId !== undefined) updateData.parentId = categoryData.parentId || null
     if (categoryData.hideParentInStorefront !== undefined) updateData.hideParentInStorefront = categoryData.hideParentInStorefront
     if (categoryData.image !== undefined) updateData.image = categoryData.image || null
@@ -156,7 +160,8 @@ export async function PUT(
           select: {
             id: true,
             name: true,
-            nameAl: true
+            nameAl: true,
+            nameEl: true
           }
         },
         children: {
@@ -164,6 +169,7 @@ export async function PUT(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             sortOrder: true
           },
           orderBy: { sortOrder: 'asc' }

@@ -80,8 +80,10 @@ interface Business {
 interface ProductForm {
   name: string
   nameAl?: string
+  nameEl?: string
   description: string
   descriptionAl?: string
+  descriptionEl?: string
   images: string[]
   price: number
   originalPrice?: number
@@ -151,7 +153,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al' | 'el'>('en')
 
   const [successMessage, setSuccessMessage] = useState<{
     type: 'create' | 'update'
@@ -183,8 +185,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           groupsFeatureEnabled: data.business.groupsFeatureEnabled || false
         })
         // Set default language based on business language
-        if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq') {
-          setActiveLanguage('en') // Start with English, but show Albanian fields
+        if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq' || 
+            data.business.language === 'el' || data.business.storefrontLanguage === 'el') {
+          setActiveLanguage('en') // Start with English, but show multi-language fields
         }
       }
     } catch (error) {
@@ -742,8 +745,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
               <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
 
-                {/* Language Toggle - Only show if business language is Albanian */}
-                {business.language === 'sq' && (
+                {/* Language Toggle - Show for Albanian or Greek businesses */}
+                {(business.language === 'sq' || business.language === 'el') && (
                   <div className="flex gap-2 mb-4">
                     <button
                       type="button"
@@ -756,50 +759,65 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     >
                       English
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveLanguage('al')}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeLanguage === 'al'
-                          ? 'bg-teal-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      Albanian
-                    </button>
+                    {business.language === 'sq' && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveLanguage('al')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          activeLanguage === 'al'
+                            ? 'bg-teal-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Albanian
+                      </button>
+                    )}
+                    {business.language === 'el' && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveLanguage('el')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          activeLanguage === 'el'
+                            ? 'bg-teal-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Greek
+                      </button>
+                    )}
                   </div>
                 )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Product Name {activeLanguage === 'al' && business.language === 'sq' ? '(Albanian)' : ''} *
+                    Product Name {activeLanguage === 'al' ? '(Albanian)' : activeLanguage === 'el' ? '(Greek)' : ''} *
                   </label>
                   <input
                     type="text"
-                    required={activeLanguage === 'en' || !(business.language === 'sq' || business.storefrontLanguage === 'sq')}
-                    value={activeLanguage === 'en' ? form.name : (form.nameAl || '')}
+                    required={activeLanguage === 'en' || !(business.language === 'sq' || business.language === 'el' || business.storefrontLanguage === 'sq' || business.storefrontLanguage === 'el')}
+                    value={activeLanguage === 'en' ? form.name : activeLanguage === 'el' ? (form.nameEl || '') : (form.nameAl || '')}
                     onChange={(e) => setForm(prev => ({ 
                       ...prev, 
-                      [activeLanguage === 'en' ? 'name' : 'nameAl']: e.target.value 
+                      [activeLanguage === 'en' ? 'name' : activeLanguage === 'el' ? 'nameEl' : 'nameAl']: e.target.value 
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                    placeholder={activeLanguage === 'en' ? "Enter product name" : "Shkruani emrin e produktit"}
+                    placeholder={activeLanguage === 'en' ? "Enter product name" : activeLanguage === 'el' ? "Εισάγετε το όνομα του προϊόντος" : "Shkruani emrin e produktit"}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description {activeLanguage === 'al' && business.language === 'sq' ? '(Albanian)' : ''}
+                    Description {activeLanguage === 'al' ? '(Albanian)' : activeLanguage === 'el' ? '(Greek)' : ''}
                   </label>
                   <textarea
-                    value={activeLanguage === 'en' ? form.description : (form.descriptionAl || '')}
+                    value={activeLanguage === 'en' ? form.description : activeLanguage === 'el' ? (form.descriptionEl || '') : (form.descriptionAl || '')}
                     onChange={(e) => setForm(prev => ({ 
                       ...prev, 
-                      [activeLanguage === 'en' ? 'description' : 'descriptionAl']: e.target.value 
+                      [activeLanguage === 'en' ? 'description' : activeLanguage === 'el' ? 'descriptionEl' : 'descriptionAl']: e.target.value 
                     }))}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                    placeholder={activeLanguage === 'en' ? "Describe your product..." : "Përshkruani produktin tuaj..."}
+                    placeholder={activeLanguage === 'en' ? "Describe your product..." : activeLanguage === 'el' ? "Περιγράψτε το προϊόν σας..." : "Përshkruani produktin tuaj..."}
                   />
                 </div>
 

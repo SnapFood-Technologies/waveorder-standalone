@@ -70,7 +70,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { name, nameAl, description, logo, website, sortOrder, isActive, metadata } = body
+    const { name, nameAl, nameEl, description, logo, website, sortOrder, isActive, metadata } = body
 
     // Validate required fields
     if (name !== undefined && (!name || name.trim() === '')) {
@@ -116,6 +116,7 @@ export async function PUT(
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(nameAl !== undefined && { nameAl: nameAl?.trim() || null }),
+        ...(nameEl !== undefined && { nameEl: nameEl?.trim() || null }),
         ...(description !== undefined && { description: description?.trim() || null }),
         ...(logo !== undefined && { logo: logo || null }),
         ...(website !== undefined && { website: website?.trim() || null }),

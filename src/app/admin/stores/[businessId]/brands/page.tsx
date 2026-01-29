@@ -20,6 +20,7 @@ interface Brand {
   id: string
   name: string
   nameAl?: string | null
+  nameEl?: string | null
   description?: string | null
   logo?: string | null
   website?: string | null
@@ -52,6 +53,7 @@ export default function BrandsPage() {
   const [formData, setFormData] = useState({
     name: '',
     nameAl: '',
+    nameEl: '',
     description: '',
     logo: '',
     website: '',
@@ -101,6 +103,7 @@ export default function BrandsPage() {
       setFormData({
         name: brand.name,
         nameAl: brand.nameAl || '',
+        nameEl: brand.nameEl || '',
         description: brand.description || '',
         logo: brand.logo || '',
         website: brand.website || '',
@@ -111,6 +114,7 @@ export default function BrandsPage() {
       setFormData({
         name: '',
         nameAl: '',
+        nameEl: '',
         description: '',
         logo: '',
         website: '',
@@ -364,6 +368,20 @@ export default function BrandsPage() {
                     type="text"
                     value={formData.nameAl}
                     onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {business?.language === 'el' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Brand Name (Greek)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.nameEl}
+                    onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>

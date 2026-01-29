@@ -50,7 +50,7 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true 
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { sortOrder: 'asc' }
       }),
       prisma.collection.findMany({
@@ -58,7 +58,7 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true 
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { sortOrder: 'asc' }
       }),
       prisma.category.findMany({
@@ -66,13 +66,13 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true 
         },
-        select: { id: true, name: true, nameAl: true, parentId: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true, parentId: true },
         orderBy: { sortOrder: 'asc' }
       })
     ])
     
     // Deduplicate entities by name for originators (merge entities with same name from different businesses)
-    const deduplicateByName = <T extends { id: string; name: string; nameAl?: string | null }>(entities: T[]): T[] => {
+    const deduplicateByName = <T extends { id: string; name: string; nameAl?: string | null; nameEl?: string | null }>(entities: T[]): T[] => {
       if (!hasConnections || entities.length === 0) return entities
       
       const nameMap = new Map<string, T & { ids: string[] }>()
@@ -147,7 +147,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { type, targetId, name, nameAl, url } = body
+    const { type, targetId, name, nameAl, nameEl, url } = body
 
     // Get business to check for connected businesses (needed for validation and creation)
     const businessForValidation = await prisma.business.findUnique({
@@ -196,7 +196,7 @@ export async function POST(
             id: targetId, 
             businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
           },
-          select: { name: true, nameAl: true }
+          select: { name: true, nameAl: true, nameEl: true }
         })
       } else if (type === 'collection') {
         targetEntity = await prisma.collection.findFirst({
@@ -204,7 +204,7 @@ export async function POST(
             id: targetId, 
             businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
           },
-          select: { name: true, nameAl: true }
+          select: { name: true, nameAl: true, nameEl: true }
         })
       } else if (type === 'category') {
         targetEntity = await prisma.category.findFirst({
@@ -212,7 +212,7 @@ export async function POST(
             id: targetId, 
             businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
           },
-          select: { name: true, nameAl: true }
+          select: { name: true, nameAl: true, nameEl: true }
         })
       }
 
@@ -248,6 +248,7 @@ export async function POST(
     if (type === 'link') {
       newMenuItem.name = name
       newMenuItem.nameAl = nameAl || null
+      newMenuItem.nameEl = nameEl || null
       newMenuItem.url = url
     } else {
       // Auto-populate from target entity (use the same businessIds as validation)
@@ -257,7 +258,7 @@ export async function POST(
               id: targetId, 
               businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
             }, 
-            select: { name: true, nameAl: true } 
+            select: { name: true, nameAl: true, nameEl: true } 
           })
         : type === 'collection'
         ? await prisma.collection.findFirst({ 
@@ -265,18 +266,19 @@ export async function POST(
               id: targetId, 
               businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
             }, 
-            select: { name: true, nameAl: true } 
+            select: { name: true, nameAl: true, nameEl: true } 
           })
         : await prisma.category.findFirst({ 
             where: { 
               id: targetId, 
               businessId: hasConnectionsForValidation ? { in: businessIdsForValidation } : businessId 
             }, 
-            select: { name: true, nameAl: true } 
+            select: { name: true, nameAl: true, nameEl: true } 
           })
 
       newMenuItem.name = targetEntity?.name || 'Unnamed'
       newMenuItem.nameAl = targetEntity?.nameAl || null
+      newMenuItem.nameEl = targetEntity?.nameEl || null
       newMenuItem.targetId = targetId
     }
 

@@ -8,6 +8,7 @@ interface Postal {
   id: string
   name: string
   nameAl?: string
+  nameEl?: string
   type: string
   logo?: string
 }
@@ -23,6 +24,7 @@ interface PostalPricing {
   maxOrderValue?: number
   deliveryTime?: string
   deliveryTimeAl?: string
+  deliveryTimeEl?: string
   notes?: string
   postal?: Postal
 }
@@ -241,6 +243,7 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
             maxOrderValue: undefined,
             deliveryTime: '',
             deliveryTimeAl: '',
+            deliveryTimeEl: '',
             notes: ''
           }}
           postals={postals}
@@ -531,6 +534,18 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
             value={formData.deliveryTimeAl || ''}
             onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
             placeholder="e.g., 3-5 ditë"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Delivery Time (Greek)
+          </label>
+          <input
+            type="text"
+            value={formData.deliveryTimeEl || ''}
+            onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
+            placeholder="e.g., 3-5 ημέρες"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           />
         </div>

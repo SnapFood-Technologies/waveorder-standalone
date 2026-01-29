@@ -46,6 +46,7 @@ export async function GET(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             logo: true
           }
@@ -94,7 +95,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { postalId, cityName, type, price, priceWithoutTax, minOrderValue, maxOrderValue, deliveryTime, deliveryTimeAl, notes } = body
+    const { postalId, cityName, type, price, priceWithoutTax, minOrderValue, maxOrderValue, deliveryTime, deliveryTimeAl, deliveryTimeEl, notes } = body
 
     if (!postalId || !cityName || !cityName.trim() || price === undefined) {
       return NextResponse.json(
@@ -146,6 +147,7 @@ export async function POST(
         maxOrderValue: maxOrderValue !== undefined ? parseFloat(maxOrderValue) : null,
         deliveryTime: deliveryTime?.trim() || null,
         deliveryTimeAl: deliveryTimeAl?.trim() || null,
+        deliveryTimeEl: deliveryTimeEl?.trim() || null,
         notes: notes?.trim() || null
       },
       include: {
@@ -154,6 +156,7 @@ export async function POST(
             id: true,
             name: true,
             nameAl: true,
+            nameEl: true,
             type: true,
             logo: true
           }

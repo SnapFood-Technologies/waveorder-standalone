@@ -256,6 +256,7 @@ export async function GET(
         searchConditions.push({ name: { contains: variant, mode: 'insensitive' } })
         searchConditions.push({ description: { contains: variant, mode: 'insensitive' } })
         searchConditions.push({ descriptionAl: { contains: variant, mode: 'insensitive' } })
+        searchConditions.push({ descriptionEl: { contains: variant, mode: 'insensitive' } })
       }
       
       productWhere.AND = [
@@ -301,6 +302,7 @@ export async function GET(
           name: true,
           description: true,
           descriptionAl: true,
+          descriptionEl: true,
           images: true,
           price: true,
           originalPrice: true,
@@ -347,6 +349,7 @@ export async function GET(
     // Get storefront language
     const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
     const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
+    const useGreek = storefrontLanguage === 'el'
     const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
     const isExceptionSlug = exceptionSlugs.includes(slug)
 
@@ -375,16 +378,19 @@ export async function GET(
         )
 
         const productDescription = isExceptionSlug
-          ? (product.description || product.descriptionAl || '')
+          ? (product.description || product.descriptionAl || product.descriptionEl || '')
           : (useAlbanian && product.descriptionAl 
             ? product.descriptionAl 
-            : product.description)
+            : useGreek && product.descriptionEl
+              ? product.descriptionEl
+              : product.description)
 
         return {
           id: product.id,
           name: product.name,
           description: productDescription,
           descriptionAl: product.descriptionAl,
+          descriptionEl: product.descriptionEl,
           images: product.images,
           price: productPricing.effectivePrice,
           originalPrice: productPricing.effectiveOriginalPrice,

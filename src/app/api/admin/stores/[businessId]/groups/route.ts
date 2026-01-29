@@ -93,7 +93,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { name, nameAl, description, sortOrder, isActive, metadata } = body
+    const { name, nameAl, nameEl, description, sortOrder, isActive, metadata } = body
 
     if (!name) {
       return NextResponse.json({ message: 'Group name is required' }, { status: 400 })
@@ -116,6 +116,7 @@ export async function POST(
         businessId,
         name,
         nameAl: nameAl || null,
+        nameEl: nameEl || null,
         description: description || null,
         sortOrder: sortOrder ?? 0,
         isActive: isActive ?? true,

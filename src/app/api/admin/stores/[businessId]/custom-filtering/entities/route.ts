@@ -43,7 +43,7 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { name: 'asc' }
       }),
       prisma.collection.findMany({
@@ -51,7 +51,7 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { name: 'asc' }
       }),
       prisma.group.findMany({
@@ -59,7 +59,7 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { name: 'asc' }
       }),
       prisma.brand.findMany({
@@ -67,13 +67,13 @@ export async function GET(
           businessId: hasConnections ? { in: businessIds } : businessId,
           isActive: true
         },
-        select: { id: true, name: true, nameAl: true },
+        select: { id: true, name: true, nameAl: true, nameEl: true },
         orderBy: { name: 'asc' }
       })
     ])
 
     // Deduplicate entities by name for originators (merge entities with same name from different businesses)
-    const deduplicateByName = <T extends { id: string; name: string; nameAl?: string | null }>(entities: T[]): T[] => {
+    const deduplicateByName = <T extends { id: string; name: string; nameAl?: string | null; nameEl?: string | null }>(entities: T[]): T[] => {
       if (!hasConnections || entities.length === 0) return entities
       
       const nameMap = new Map<string, T & { ids: string[] }>()

@@ -1262,7 +1262,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         <p className="text-sm font-medium text-gray-900">
                           {business?.language === 'sq' && order.postalPricing.nameAl 
                             ? order.postalPricing.nameAl 
-                            : order.postalPricing.name}
+                            : business?.language === 'el' && order.postalPricing.nameEl
+                              ? order.postalPricing.nameEl
+                              : order.postalPricing.name}
                         </p>
                         {business?.language === 'sq' && order.postalPricing.deliveryTimeAl ? (
                           <p className="text-xs text-gray-600 mt-1">

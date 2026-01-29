@@ -254,10 +254,15 @@ export default async function StorePage({ params, searchParams }: PageProps) {
 
   // FIXED: Use store's language setting from database
   const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
+  const isGreek = storeData.language === 'el'
 
   const priceRange = getPriceRange(storeData.categories, storeData.currency)
   const primaryImage = storeData.ogImage || storeData.coverImage || storeData.logo
-  const businessDescription = isAlbanian && storeData.descriptionAl ? storeData.descriptionAl : storeData.description
+  const businessDescription = isAlbanian && storeData.descriptionAl 
+    ? storeData.descriptionAl 
+    : isGreek && storeData.descriptionEl
+      ? storeData.descriptionEl
+      : storeData.description
 
   // Build opening hours schema from business hours JSON
   const buildOpeningHoursSchema = (businessHours: any) => {

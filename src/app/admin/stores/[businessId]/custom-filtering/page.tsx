@@ -25,6 +25,7 @@ interface AvailableEntity {
   id: string
   name: string
   nameAl?: string | null
+  nameEl?: string | null
 }
 
 export default function CustomFilteringPage() {

@@ -180,7 +180,7 @@ model Business {
   phone              String?
   email              String?
   address            String?
-  country            String?  // ISO country code (e.g., "AL", "GR", "US")
+  country            String? // ISO country code (e.g., "AL", "GR", "US")
   storeLatitude      Float?
   storeLongitude     Float?
   website            String?
@@ -212,10 +212,10 @@ model Business {
   logoPadding   String? // e.g., '0px', '4px', '6px', '8px'
   logoObjectFit String? // 'cover' or 'contain', default 'cover'
 
-  deliveryZones DeliveryZone[]
-  postals       Postal[]
-  postalPricing PostalPricing[]
-  externalSyncs ExternalSync[]
+  deliveryZones    DeliveryZone[]
+  postals          Postal[]
+  postalPricing    PostalPricing[]
+  externalSyncs    ExternalSync[]
   externalSyncLogs ExternalSyncLog[]
 
   // Settings
@@ -297,6 +297,12 @@ model Business {
   seoKeywordsAl    String?
   descriptionAl    String?
 
+  // Greek SEO Configuration
+  seoTitleEl       String?
+  seoDescriptionEl String?
+  seoKeywordsEl    String?
+  descriptionEl    String?
+
   isIndexable Boolean @default(false)
 
   // Order Notification Settings (to business)
@@ -370,9 +376,9 @@ model Business {
   // Support relations
   supportTickets  SupportTicket[]
   supportMessages SupportMessage[]
-  
+
   // System logs
-  systemLogs      SystemLog[]
+  systemLogs SystemLog[]
 
   onboardingCompleted  Boolean @default(false)
   onboardingStep       Int     @default(0)
@@ -468,6 +474,8 @@ model Category {
   // Multi-language fields
   nameAl        String? // Albanian name
   descriptionAl String? // Albanian description
+  nameEl        String? // Greek name
+  descriptionEl String? // Greek description
 
   // Subcategory support
   parentId String?    @db.ObjectId // Parent category ID (null = top-level)
@@ -501,8 +509,10 @@ model Product {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   nameAl        String? // Albanian product name
+  nameEl        String? // Greek product name
   description   String?
   descriptionAl String? // Albanian product description
+  descriptionEl String? // Greek product description
   images        String[]
   price         Float
   originalPrice Float?
@@ -562,6 +572,7 @@ model Brand {
   businessId  String  @db.ObjectId
   name        String
   nameAl      String? // Albanian name
+  nameEl      String? // Greek name
   description String?
   logo        String?
   website     String?
@@ -588,6 +599,7 @@ model Collection {
   businessId  String  @db.ObjectId
   name        String
   nameAl      String? // Albanian name
+  nameEl      String? // Greek name
   description String?
   image       String?
   sortOrder   Int     @default(0)
@@ -614,6 +626,7 @@ model Group {
   businessId  String  @db.ObjectId
   name        String
   nameAl      String? // Albanian name
+  nameEl      String? // Greek name
   description String?
   sortOrder   Int     @default(0)
   isActive    Boolean @default(true)
@@ -774,11 +787,14 @@ model Postal {
   businessId     String  @db.ObjectId
   name           String // e.g., "Posta Shqiptare"
   nameAl         String? // Albanian name
+  nameEl         String? // Greek name
   type           String  @default("normal") // "normal" or "fast"
   description    String?
   descriptionAl  String?
+  descriptionEl  String?
   deliveryTime   String? // e.g., "3-5 days"
   deliveryTimeAl String? // Albanian delivery time
+  deliveryTimeEl String? // Greek delivery time
   logo           String? // Logo path
   isActive       Boolean @default(true)
 
@@ -804,6 +820,7 @@ model PostalPricing {
   maxOrderValue   Float? // Maximum order for this pricing
   deliveryTime    String? // Override postal default
   deliveryTimeAl  String? // Albanian override
+  deliveryTimeEl  String? // Greek override
   notes           String?
   deletedAt       DateTime?
 
@@ -865,10 +882,10 @@ model Order {
 }
 
 model OrderItem {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
   quantity      Int
   price         Float
-  originalPrice Float?  // Original price before discount (if applicable)
+  originalPrice Float? // Original price before discount (if applicable)
 
   orderId   String  @db.ObjectId
   productId String  @db.ObjectId
@@ -1377,12 +1394,12 @@ model ExternalSync {
   lastSyncStatus          String? // 'success', 'failed', 'partial'
   lastSyncError           String?
   syncFrequency           String? // Optional: 'manual', 'hourly', 'daily', etc. (for future use)
-  
-  // Safeguards to prevent concurrent syncs
-  isRunning               Boolean   @default(false) // True when sync is in progress
-  syncStartedAt           DateTime? // When current sync started (for stale lock detection)
 
-  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Safeguards to prevent concurrent syncs
+  isRunning     Boolean   @default(false) // True when sync is in progress
+  syncStartedAt DateTime? // When current sync started (for stale lock detection)
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   logs     ExternalSyncLog[] // History of all sync runs
 
   createdAt DateTime @default(now())
@@ -1394,35 +1411,35 @@ model ExternalSync {
 
 // Sync log history - stores every sync run
 model ExternalSyncLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  syncId          String   @db.ObjectId
-  businessId      String   @db.ObjectId
-  
-  // Sync details
-  status          String   // 'success', 'failed', 'partial', 'running'
-  error           String?  // Error message if failed
-  processedCount  Int      @default(0) // Number of products processed
-  skippedCount    Int      @default(0) // Number of products skipped
-  errorCount      Int      @default(0) // Number of products with errors
-  
-  // Pagination info
-  currentPage     Int?     // Current page synced
-  totalPages      Int?     // Total pages available
-  perPage         Int?     // Products per page
-  syncAllPages    Boolean  @default(false) // Whether all pages were synced
-  
-  // Timing
-  startedAt       DateTime @default(now())
-  completedAt     DateTime? // Null if still running or crashed
-  
-  // Duration in milliseconds (calculated)
-  duration        Int?     // completedAt - startedAt in ms
-  
-  // Additional metadata
-  metadata        Json?    // Store additional info (errors array, etc.)
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  syncId     String @db.ObjectId
+  businessId String @db.ObjectId
 
-  sync    ExternalSync @relation(fields: [syncId], references: [id], onDelete: Cascade)
-  business Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  // Sync details
+  status         String // 'success', 'failed', 'partial', 'running'
+  error          String? // Error message if failed
+  processedCount Int     @default(0) // Number of products processed
+  skippedCount   Int     @default(0) // Number of products skipped
+  errorCount     Int     @default(0) // Number of products with errors
+
+  // Pagination info
+  currentPage  Int? // Current page synced
+  totalPages   Int? // Total pages available
+  perPage      Int? // Products per page
+  syncAllPages Boolean @default(false) // Whether all pages were synced
+
+  // Timing
+  startedAt   DateTime  @default(now())
+  completedAt DateTime? // Null if still running or crashed
+
+  // Duration in milliseconds (calculated)
+  duration Int? // completedAt - startedAt in ms
+
+  // Additional metadata
+  metadata Json? // Store additional info (errors array, etc.)
+
+  sync     ExternalSync @relation(fields: [syncId], references: [id], onDelete: Cascade)
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1435,38 +1452,38 @@ model ExternalSyncLog {
 
 // System logs for tracking errors, 404s, and system events
 model SystemLog {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  logType     String   // 'storefront_404', 'storefront_error', 'products_error', 'system_error'
-  severity    String   // 'error', 'warning', 'info'
-  
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  logType  String // 'storefront_404', 'storefront_error', 'products_error', 'system_error'
+  severity String // 'error', 'warning', 'info'
+
   // Request context
-  slug        String?  // Storefront slug (if applicable)
-  businessId  String?  @db.ObjectId // Business ID (if applicable)
-  business    Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
-  endpoint    String   // API endpoint or route
-  method      String   // HTTP method
-  statusCode  Int?     // HTTP status code
-  
+  slug       String? // Storefront slug (if applicable)
+  businessId String?   @db.ObjectId // Business ID (if applicable)
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  endpoint   String // API endpoint or route
+  method     String // HTTP method
+  statusCode Int? // HTTP status code
+
   // Error details
   errorMessage String? // Error message
   errorStack   String? // Error stack trace (if available)
-  
+
   // Request metadata
-  ipAddress   String?  // Client IP address
-  userAgent   String?  // User agent
-  referrer    String?  // Referrer URL
-  url         String   // Full request URL
-  
+  ipAddress String? // Client IP address
+  userAgent String? // User agent
+  referrer  String? // Referrer URL
+  url       String // Full request URL
+
   // Location data (parsed from IP)
-  country     String?
-  city        String?
-  region      String?
-  
+  country String?
+  city    String?
+  region  String?
+
   // Additional context
-  metadata    Json?    // Additional context data
-  
-  createdAt   DateTime @default(now())
-  
+  metadata Json? // Additional context data
+
+  createdAt DateTime @default(now())
+
   @@index([logType])
   @@index([severity])
   @@index([slug])

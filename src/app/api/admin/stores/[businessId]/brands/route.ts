@@ -96,7 +96,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { name, nameAl, description, logo, website, sortOrder, isActive, metadata } = body
+    const { name, nameAl, nameEl, description, logo, website, sortOrder, isActive, metadata } = body
 
     // Validate required fields
     if (!name || name.trim() === '') {
@@ -127,6 +127,7 @@ export async function POST(
         businessId,
         name: name.trim(),
         nameAl: nameAl?.trim() || null,
+        nameEl: nameEl?.trim() || null,
         description: description?.trim() || null,
         logo: logo || null,
         website: website?.trim() || null,

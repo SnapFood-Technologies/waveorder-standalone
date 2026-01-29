@@ -20,8 +20,10 @@ interface Category {
   id: string
   name: string
   nameAl?: string
+  nameEl?: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   parentId?: string
   parent?: {
     id: string
@@ -700,8 +702,10 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
   const [form, setForm] = useState({
     name: category?.name || '',
     nameAl: category?.nameAl || '',
+    nameEl: category?.nameEl || '',
     description: category?.description || '',
     descriptionAl: category?.descriptionAl || '',
+    descriptionEl: category?.descriptionEl || '',
     parentId: category?.parentId || '',
     hideParentInStorefront: category?.hideParentInStorefront ?? false,
     image: category?.image || '',
@@ -709,7 +713,7 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
   })
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'al' | 'el'>('en')
 
   // Fetch business language
   useEffect(() => {
@@ -850,8 +854,8 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
-          {/* Language Toggle - Only show if business supports Albanian */}
-          {(businessLanguage === 'sq') && (
+          {/* Language Toggle - Show for Albanian or Greek businesses */}
+          {(businessLanguage === 'sq' || businessLanguage === 'el') && (
             <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
               <button
                 type="button"
@@ -864,48 +868,63 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
               >
                 English
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveLanguage('al')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
-                  activeLanguage === 'al'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Albanian
-              </button>
+              {businessLanguage === 'sq' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveLanguage('al')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                    activeLanguage === 'al'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Albanian
+                </button>
+              )}
+              {businessLanguage === 'el' && (
+                <button
+                  type="button"
+                  onClick={() => setActiveLanguage('el')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+                    activeLanguage === 'el'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Greek
+                </button>
+              )}
             </div>
           )}
 
           {/* Category Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category Name {activeLanguage === 'en' ? '(English)' : '(Albanian)'} *
+              Category Name {activeLanguage === 'en' ? '(English)' : activeLanguage === 'el' ? '(Greek)' : '(Albanian)'} *
             </label>
             <input
               type="text"
               required={activeLanguage === 'en'}
-              value={activeLanguage === 'en' ? form.name : form.nameAl}
+              value={activeLanguage === 'en' ? form.name : activeLanguage === 'el' ? form.nameEl : form.nameAl}
               onChange={(e) => setForm(prev => ({ 
                 ...prev, 
-                [activeLanguage === 'en' ? 'name' : 'nameAl']: e.target.value 
+                [activeLanguage === 'en' ? 'name' : activeLanguage === 'el' ? 'nameEl' : 'nameAl']: e.target.value 
               }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder={activeLanguage === 'en' ? "e.g., Main Courses" : "e.g., Kryesor"}
+              placeholder={activeLanguage === 'en' ? "e.g., Main Courses" : activeLanguage === 'el' ? "π.χ., Κυρίως Πιάτα" : "e.g., Kryesor"}
             />
           </div>
 
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description {activeLanguage === 'en' ? '(English)' : '(Albanian)'}
+              Description {activeLanguage === 'en' ? '(English)' : activeLanguage === 'el' ? '(Greek)' : '(Albanian)'}
             </label>
             <textarea
-              value={activeLanguage === 'en' ? form.description : form.descriptionAl}
+              value={activeLanguage === 'en' ? form.description : activeLanguage === 'el' ? form.descriptionEl : form.descriptionAl}
               onChange={(e) => setForm(prev => ({ 
                 ...prev, 
-                [activeLanguage === 'en' ? 'description' : 'descriptionAl']: e.target.value 
+                [activeLanguage === 'en' ? 'description' : activeLanguage === 'el' ? 'descriptionEl' : 'descriptionAl']: e.target.value 
               }))}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
