@@ -100,8 +100,10 @@ interface Order {
   postalPricing: {
     name: string
     nameAl: string | null
+    nameEl: string | null
     deliveryTime: string | null
     deliveryTimeAl: string | null
+    deliveryTimeEl: string | null
     price: number
   } | null
   createdAt: string

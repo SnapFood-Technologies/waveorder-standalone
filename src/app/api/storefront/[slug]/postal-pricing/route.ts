@@ -24,7 +24,8 @@ export async function GET(
       select: {
         id: true,
         businessType: true,
-        currency: true
+        currency: true,
+        storefrontLanguage: true
       }
     })
 
@@ -111,9 +112,9 @@ export async function GET(
     console.log(`Active postal pricing records: ${activePricing.length} (out of ${allPricing.length} total)`)
 
     // Format response
+    const storefrontLanguage = business.storefrontLanguage || 'en'
     const data = activePricing.map(p => {
       const postal = p.postal
-      const storefrontLanguage = 'sq' // Default to Albanian, can be made dynamic later
       
       return {
         id: p.id,

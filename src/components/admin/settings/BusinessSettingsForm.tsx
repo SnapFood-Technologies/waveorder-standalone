@@ -36,6 +36,7 @@ interface BusinessSettings {
   slug: string
   description?: string
   descriptionAl?: string
+  descriptionEl?: string
   businessType: string
   address?: string
   country?: string  // ISO country code (e.g., "AL", "GR", "US")
