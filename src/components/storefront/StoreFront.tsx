@@ -971,9 +971,10 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
           <div className="overflow-y-auto max-h-[calc(85vh-100px)] p-6 space-y-6">
             {/* Business Description */}
 {(() => {
-  const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
+  const lang = storeData.storefrontLanguage || storeData.language || 'en'
+  const displayDescription = (lang === 'sq' || lang === 'al') && storeData.descriptionAl 
     ? storeData.descriptionAl 
-    : storeData.language === 'el' && storeData.descriptionEl
+    : lang === 'el' && storeData.descriptionEl
       ? storeData.descriptionEl
       : storeData.description
   
@@ -3268,9 +3269,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           </div>
                         
           {(() => {
-  const displayDescription = storeData.language === 'sq' && storeData.descriptionAl 
+  const lang = storeData.storefrontLanguage || storeData.language || 'en'
+  const displayDescription = (lang === 'sq' || lang === 'al') && storeData.descriptionAl 
     ? storeData.descriptionAl 
-    : storeData.language === 'el' && storeData.descriptionEl
+    : lang === 'el' && storeData.descriptionEl
       ? storeData.descriptionEl
       : storeData.description
   

@@ -318,6 +318,7 @@ export async function GET(
           name: true,
           description: true,
           descriptionAl: true,
+          descriptionEl: true,
           images: true,
           price: true,
           originalPrice: true,
@@ -668,6 +669,7 @@ export async function GET(
       slug: business.slug,
       description: business.description,
       descriptionAl: business.descriptionAl, // ALBANIAN
+      descriptionEl: business.descriptionEl, // GREEK
       logo: business.logo,
       coverImage: business.coverImage,
       coverBackgroundSize: business.coverBackgroundSize,
