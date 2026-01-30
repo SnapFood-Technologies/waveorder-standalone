@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
     // Exclude test businesses from all analytics
-    const excludeTestCondition = { testMode: { not: true } }
+    // Use 'in' to handle null/missing testMode field (existing businesses before this field was added)
+    const excludeTestCondition = { testMode: { in: [false, null] } }
 
     // Parallel queries for better performance
     const [
