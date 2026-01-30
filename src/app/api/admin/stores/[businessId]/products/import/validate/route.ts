@@ -25,6 +25,7 @@ interface ValidatedProduct {
   category: string
   stock: number
   sku: string | null
+  imageUrl: string | null
 }
 
 export async function POST(
@@ -212,13 +213,40 @@ export async function POST(
       // All validations passed - add to valid products
       const description = (row.description || '').toString().trim()
       
+      // Handle image URL (optional) - accept 'image', 'image_url', or 'imageurl'
+      const imageUrlRaw = (row.image || row.image_url || row.imageurl || '').toString().trim()
+      let imageUrl: string | null = null
+      
+      if (imageUrlRaw) {
+        // Basic URL validation
+        try {
+          const url = new URL(imageUrlRaw)
+          if (url.protocol === 'http:' || url.protocol === 'https:') {
+            imageUrl = imageUrlRaw
+          } else {
+            warnings.push({
+              row: rowNum,
+              field: 'image',
+              message: `Invalid image URL protocol (must be http or https): ${imageUrlRaw.substring(0, 50)}...`
+            })
+          }
+        } catch {
+          warnings.push({
+            row: rowNum,
+            field: 'image',
+            message: `Invalid image URL format: ${imageUrlRaw.substring(0, 50)}...`
+          })
+        }
+      }
+      
       validProducts.push({
         name,
         description,
         price: Math.round(price * 100) / 100, // Round to 2 decimal places
         category,
         stock: isNaN(stock) ? 0 : stock,
-        sku
+        sku,
+        imageUrl
       })
 
       categories.add(category)

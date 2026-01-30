@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, Download, ArrowLeft, FileText, CheckCircle, AlertCircle, Info, AlertTriangle, X, ChevronRight, Package, Tag } from 'lucide-react'
 import Link from 'next/link'
@@ -30,6 +30,7 @@ interface ValidatedProduct {
   category: string
   stock: number
   sku: string | null
+  imageUrl: string | null
 }
 
 interface ValidationResult {
@@ -65,6 +66,26 @@ export default function ImportPage({ businessId }: ImportPageProps) {
   const [importResult, setImportResult] = useState<any>(null)
   const [error, setError] = useState<string>('')
   const [skipInvalidRows, setSkipInvalidRows] = useState(false)
+  const [replaceAll, setReplaceAll] = useState(false)
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [existingProductCount, setExistingProductCount] = useState(0)
+
+  // Fetch existing product count on mount
+  useEffect(() => {
+    const fetchProductCount = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/products?limit=1`)
+        if (response.ok) {
+          const data = await response.json()
+          setExistingProductCount(data.pagination?.total || 0)
+        }
+      } catch (error) {
+        console.error('Error fetching product count:', error)
+      }
+    }
+    fetchProductCount()
+  }, [businessId])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -78,11 +99,11 @@ export default function ImportPage({ businessId }: ImportPageProps) {
   }
 
   const downloadSampleCsv = () => {
-    const csvContent = `name,price,category,description,stock,sku
-Margherita Pizza,12.99,Main Courses,Classic pizza with tomato and mozzarella,50,PIZZA-001
-Caesar Salad,8.99,Appetizers,Fresh romaine with caesar dressing,30,SALAD-001
-Chocolate Cake,6.99,Desserts,Rich chocolate cake slice,20,CAKE-001
-Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
+    const csvContent = `name,price,category,description,stock,sku,image
+Margherita Pizza,12.99,Main Courses,Classic pizza with tomato and mozzarella,50,PIZZA-001,https://example.com/pizza.jpg
+Caesar Salad,8.99,Appetizers,Fresh romaine with caesar dressing,30,SALAD-001,https://example.com/salad.jpg
+Chocolate Cake,6.99,Desserts,Rich chocolate cake slice,20,CAKE-001,
+Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001,https://example.com/coffee.jpg`
 
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
@@ -126,6 +147,14 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
   const handleImport = async () => {
     if (!file) return
 
+    // If replaceAll is selected and there are existing products, show confirmation
+    if (replaceAll && existingProductCount > 0 && !showReplaceConfirm) {
+      setShowReplaceConfirm(true)
+      return
+    }
+
+    setShowReplaceConfirm(false)
+    setConfirmText('')
     setUploading(true)
     setError('')
 
@@ -134,6 +163,9 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
       formData.append('file', file)
       if (skipInvalidRows) {
         formData.append('skipInvalidRows', 'true')
+      }
+      if (replaceAll) {
+        formData.append('replaceAll', 'true')
       }
 
       const response = await fetch(`/api/admin/stores/${businessId}/products/import`, {
@@ -163,6 +195,9 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
     setImportResult(null)
     setError('')
     setSkipInvalidRows(false)
+    setReplaceAll(false)
+    setShowReplaceConfirm(false)
+    setConfirmText('')
   }
 
   const formatCurrency = (amount: number) => {
@@ -354,6 +389,10 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                       <span><strong>sku</strong></span>
                       <span className="text-gray-600">optional</span>
                     </li>
+                    <li className="flex justify-between">
+                      <span><strong>image</strong></span>
+                      <span className="text-gray-600">optional</span>
+                    </li>
                   </ul>
                 </div>
 
@@ -364,6 +403,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                     <li>• Stock defaults to 0 if not specified</li>
                     <li>• Price should be in decimal format (e.g., 12.99)</li>
                     <li>• SKU must be unique if provided</li>
+                    <li>• Image should be a valid URL (http/https)</li>
                     <li>• File size limit: 5MB</li>
                   </ul>
                 </div>
@@ -533,6 +573,7 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                       <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
                       <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
                       <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
+                      <th className="px-6 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Image</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -550,6 +591,15 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                         <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">{formatCurrency(product.price)}</td>
                         <td className="px-6 py-4 text-sm text-gray-600 text-right">{product.stock}</td>
                         <td className="px-6 py-4 font-mono text-xs text-gray-500">{product.sku || '-'}</td>
+                        <td className="px-6 py-4 text-center">
+                          {product.imageUrl ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="text-xs text-gray-400">-</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -558,22 +608,72 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
             </div>
           )}
 
-          {/* Options */}
-          {validationResult.errors.length > 0 && validationResult.validRows > 0 && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={skipInvalidRows}
-                  onChange={(e) => setSkipInvalidRows(e.target.checked)}
-                  className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  Skip invalid rows and import only valid products ({validationResult.validRows} products)
-                </span>
-              </label>
+          {/* Import Options */}
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Import Options</h3>
             </div>
-          )}
+            <div className="p-6 space-y-4">
+              {/* Import Mode */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-3">Import Mode</p>
+                <div className="space-y-2">
+                  <label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={!replaceAll}
+                      onChange={() => setReplaceAll(false)}
+                      className="w-4 h-4 text-teal-600 border-gray-300 focus:ring-teal-500 mt-0.5"
+                    />
+                    <div className="ml-3">
+                      <span className="text-sm font-medium text-gray-900">Add to existing products</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Keep your current {existingProductCount} products and add {validationResult.validRows} new ones
+                      </p>
+                    </div>
+                  </label>
+                  <label className="flex items-start p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input
+                      type="radio"
+                      name="importMode"
+                      checked={replaceAll}
+                      onChange={() => setReplaceAll(true)}
+                      className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500 mt-0.5"
+                    />
+                    <div className="ml-3">
+                      <span className="text-sm font-medium text-gray-900">Replace all products</span>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Delete all {existingProductCount} existing products and import {validationResult.validRows} new ones
+                      </p>
+                      {replaceAll && existingProductCount > 0 && (
+                        <p className="text-xs text-red-600 mt-1 font-medium">
+                          ⚠️ This will permanently delete all existing products!
+                        </p>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Skip Invalid Rows */}
+              {validationResult.errors.length > 0 && validationResult.validRows > 0 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={skipInvalidRows}
+                      onChange={(e) => setSkipInvalidRows(e.target.checked)}
+                      className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      Skip invalid rows and import only valid products ({validationResult.validRows} products)
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
@@ -633,9 +733,14 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
             <div className="text-center">
               <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Successful!</h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-2">
                 Successfully imported {importResult.importedCount} products
               </p>
+              {importResult.wasReplaceAll && importResult.deletedCount > 0 && (
+                <p className="text-sm text-gray-500 mb-4">
+                  {importResult.deletedCount} existing products were replaced
+                </p>
+              )}
               
               <div className="flex gap-3 justify-center">
                 <Link
@@ -651,6 +756,60 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                   Import More
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Replace All Confirmation Modal */}
+      {showReplaceConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Delete All Products?
+              </h3>
+              <p className="text-gray-600">
+                This will permanently delete <strong className="text-red-600">{existingProductCount}</strong> existing products and replace them with {validationResult?.validRows || 0} new products.
+              </p>
+              <p className="text-sm text-red-600 mt-2 font-medium">
+                This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type <strong className="text-red-600">DELETE ALL</strong> to confirm:
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="DELETE ALL"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-center font-mono"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowReplaceConfirm(false)
+                  setConfirmText('')
+                }}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={confirmText !== 'DELETE ALL' || uploading}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {uploading ? 'Deleting & Importing...' : 'Delete & Import'}
+              </button>
             </div>
           </div>
         </div>
