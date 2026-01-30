@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Exclude test businesses from archived analytics
-    // Use 'in' to handle null/missing testMode field (existing businesses before this field was added)
-    const excludeTestCondition = { testMode: { in: [false, null] } }
+    // Use NOT to handle null/missing testMode field (existing businesses before this field was added)
+    const excludeTestCondition = { NOT: { testMode: true } }
 
     // Fetch incomplete and inactive businesses (excluding test businesses)
     const [allBusinesses, inactiveBusinesses] = await Promise.all([

@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - days)
 
     // Exclude test businesses from all analytics
-    // Use 'in' to handle null/missing testMode field (existing businesses before this field was added)
-    const excludeTestCondition = { testMode: { in: [false, null] } }
+    // Use NOT to handle null/missing testMode field (existing businesses before this field was added)
+    const excludeTestCondition = { NOT: { testMode: true } }
 
     // 1. Businesses by country (active only, excluding test)
     const businessesByCountry = await prisma.business.groupBy({

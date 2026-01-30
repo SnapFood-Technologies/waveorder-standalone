@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
     const whereConditions: any = {}
     
     // Exclude test businesses by default (unless includeTest is true)
-    // Use 'in' to handle null/missing testMode field (existing businesses before this field was added)
+    // Use NOT to handle null/missing testMode field (existing businesses before this field was added)
     if (!includeTest) {
-      whereConditions.testMode = { in: [false, null] }
+      whereConditions.NOT = { testMode: true }
     }
     
     // Country filter - case-insensitive match
@@ -92,9 +92,9 @@ export async function GET(request: NextRequest) {
       // Fetch ALL businesses first (with search and plan filters applied)
       const baseConditions: any = {}
       
-      // Exclude test businesses by default (use 'in' to handle null/missing field)
+      // Exclude test businesses by default (use NOT to handle null/missing field)
       if (!includeTest) {
-        baseConditions.testMode = { in: [false, null] }
+        baseConditions.NOT = { testMode: true }
       }
       
       if (search) {
