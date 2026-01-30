@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Clock, MessageSquare, User, Calendar, AlertCircle, CheckCircle, XCircle, Building2, UserCheck } from 'lucide-react'
-import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
+import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-utils'
 import { SuperAdminTicketComments } from './SuperAdminTicketComments'
 
 interface Ticket {

@@ -1,4 +1,6 @@
 // lib/email.ts - WaveOrder email service
+// NOTE: This file should only be imported by server-side code (API routes)
+// For client components, use support-utils.ts instead
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)

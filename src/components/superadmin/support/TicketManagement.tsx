@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Filter, Search, Ticket, Clock, CheckCircle, AlertCircle, XCircle, User, Building2, UserCheck } from 'lucide-react'
-import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
+import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-utils'
 
 interface Ticket {
   id: string

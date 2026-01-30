@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Clock, MessageSquare, User, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { TicketComments } from './TicketComments'
-import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
+import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-utils'
 
 interface Ticket {
   id: string
