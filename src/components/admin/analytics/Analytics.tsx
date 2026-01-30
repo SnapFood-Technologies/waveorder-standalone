@@ -523,24 +523,6 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </div>
           )}
 
-          {/* Link to detailed product analytics */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-blue-900">Want more detailed product analytics?</h4>
-                <p className="text-sm text-blue-700 mt-1">
-                  View individual product views, add-to-cart rates, and conversion metrics.
-                </p>
-              </div>
-              <Link
-                href={`/admin/stores/${businessId}/analytics/products`}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-              >
-                View Product Analytics
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </div>
-          </div>
         </div>
       )}
 
@@ -763,6 +745,24 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Insights</h3>
           <p className="text-sm text-gray-600 mb-4">Deep dive into your analytics with these PRO features</p>
+          
+          {/* Product Analytics - Full width row */}
+          <div className="mb-4">
+            <Link
+              href={`/admin/stores/${businessId}/analytics/products`}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
+                <Package className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Product Analytics</h4>
+                <p className="text-sm text-gray-600">View product views, add-to-cart rates, and conversion metrics</p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Geographic & Product Shares - 2 column grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               href={`/admin/stores/${businessId}/advanced-analytics`}

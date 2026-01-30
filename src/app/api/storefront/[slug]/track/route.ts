@@ -11,6 +11,54 @@ type EventType = typeof VALID_EVENT_TYPES[number]
 const VALID_SOURCES = ['product_card', 'product_modal', 'search', 'featured', 'category', 'related'] as const
 type EventSource = typeof VALID_SOURCES[number]
 
+// Rate limiting: max 100 events per sessionId per hour
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+const RATE_LIMIT_MAX_EVENTS = 100
+
+// In-memory rate limit store (for serverless, consider Redis in production)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+// Clean up expired entries periodically
+function cleanupRateLimitStore() {
+  const now = Date.now()
+  for (const [key, value] of rateLimitStore.entries()) {
+    if (now > value.resetTime) {
+      rateLimitStore.delete(key)
+    }
+  }
+}
+
+// Check and update rate limit for a session
+function checkRateLimit(sessionId: string | null, businessId: string): { allowed: boolean; remaining: number } {
+  if (!sessionId) {
+    // No session ID = allow but with reduced limit (IP-based would be better but more complex)
+    return { allowed: true, remaining: RATE_LIMIT_MAX_EVENTS }
+  }
+
+  const key = `${businessId}:${sessionId}`
+  const now = Date.now()
+  
+  // Clean up occasionally (1 in 100 requests)
+  if (Math.random() < 0.01) {
+    cleanupRateLimitStore()
+  }
+
+  const entry = rateLimitStore.get(key)
+  
+  if (!entry || now > entry.resetTime) {
+    // New window
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
+    return { allowed: true, remaining: RATE_LIMIT_MAX_EVENTS - 1 }
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_EVENTS) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  entry.count++
+  return { allowed: true, remaining: RATE_LIMIT_MAX_EVENTS - entry.count }
+}
+
 interface TrackEventRequest {
   productId: string
   eventType: EventType
@@ -79,6 +127,15 @@ export async function POST(
       return NextResponse.json(
         { error: 'Business is not active' },
         { status: 403 }
+      )
+    }
+
+    // Rate limiting check (100 events per sessionId per hour)
+    const rateLimit = checkRateLimit(sessionId || null, business.id)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Maximum 100 events per hour.' },
+        { status: 429 }
       )
     }
 
@@ -173,6 +230,16 @@ export async function PUT(
       return NextResponse.json(
         { success: true }, // Silent fail for batch
         { status: 200 }
+      )
+    }
+
+    // Rate limiting check for batch - use first sessionId or check without session
+    const sessionId = events[0]?.sessionId || null
+    const rateLimit = checkRateLimit(sessionId, business.id)
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Maximum 100 events per hour.' },
+        { status: 429 }
       )
     }
 

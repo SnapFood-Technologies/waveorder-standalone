@@ -434,6 +434,45 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
                   </p>
                 )}
               </div>
+              
+              {/* Download Errors CSV Button */}
+              <div className="mt-4 pt-4 border-t border-red-200">
+                <button
+                  onClick={() => {
+                    // Create CSV content with error annotations
+                    const errorsByRow = new Map<number, ValidationError[]>()
+                    validationResult.errors.forEach(err => {
+                      if (!errorsByRow.has(err.row)) {
+                        errorsByRow.set(err.row, [])
+                      }
+                      errorsByRow.get(err.row)!.push(err)
+                    })
+                    
+                    // Build CSV with error column
+                    let csvContent = 'row,field,value,error\n'
+                    validationResult.errors.forEach(err => {
+                      const escapedValue = String(err.value || '').replace(/"/g, '""')
+                      const escapedError = err.error.replace(/"/g, '""')
+                      csvContent += `${err.row},"${err.field}","${escapedValue}","${escapedError}"\n`
+                    })
+                    
+                    const blob = new Blob([csvContent], { type: 'text/csv' })
+                    const url = window.URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'import-errors.csv'
+                    a.click()
+                    window.URL.revokeObjectURL(url)
+                  }}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Errors CSV
+                </button>
+                <p className="text-xs text-red-600 mt-2">
+                  Download a CSV file with all validation errors to help fix your data
+                </p>
+              </div>
             </div>
           )}
 

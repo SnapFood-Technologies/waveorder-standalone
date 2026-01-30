@@ -59,7 +59,7 @@ export async function GET(
         break
     }
 
-    // Fetch product events (views and add-to-cart)
+    // Fetch product events (views and add-to-cart) with sessionId for abandoned cart tracking
     const productEvents = await prisma.productEvent.findMany({
       where: {
         businessId,
@@ -70,7 +70,9 @@ export async function GET(
       },
       select: {
         productId: true,
-        eventType: true
+        eventType: true,
+        sessionId: true,
+        createdAt: true
       }
     })
 
@@ -124,6 +126,54 @@ export async function GET(
         ordersByProduct.set(item.productId, existing)
       }
     }
+
+    // Calculate abandoned cart rate
+    // Definition: Sessions with add_to_cart but no order within 24 hours
+    const addToCartSessions = new Map<string, { productIds: Set<string>; timestamp: Date }>()
+    
+    for (const event of productEvents) {
+      if (event.eventType === 'add_to_cart' && event.sessionId) {
+        const existing = addToCartSessions.get(event.sessionId) || { 
+          productIds: new Set<string>(), 
+          timestamp: event.createdAt 
+        }
+        existing.productIds.add(event.productId)
+        // Keep the earliest add_to_cart timestamp for this session
+        if (event.createdAt < existing.timestamp) {
+          existing.timestamp = event.createdAt
+        }
+        addToCartSessions.set(event.sessionId, existing)
+      }
+    }
+
+    // Check which sessions resulted in orders (within 24 hours of add_to_cart)
+    let abandonedCarts = 0
+    let convertedCarts = 0
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
+
+    for (const [sessionId, cartData] of addToCartSessions) {
+      const cartTime = cartData.timestamp.getTime()
+      const cartProductIds = cartData.productIds
+      
+      // Check if any order was placed within 24 hours containing any of the cart products
+      const hasOrder = orders.some(order => {
+        const orderTime = order.createdAt.getTime()
+        const withinWindow = orderTime >= cartTime && orderTime <= cartTime + TWENTY_FOUR_HOURS
+        const hasMatchingProduct = order.items.some(item => cartProductIds.has(item.productId))
+        return withinWindow && hasMatchingProduct
+      })
+
+      if (hasOrder) {
+        convertedCarts++
+      } else {
+        abandonedCarts++
+      }
+    }
+
+    const totalCartSessions = abandonedCarts + convertedCarts
+    const abandonedCartRate = totalCartSessions > 0
+      ? Math.round((abandonedCarts / totalCartSessions) * 1000) / 10
+      : 0
 
     // Get all product IDs that have any activity
     const allProductIds = new Set([
@@ -238,7 +288,12 @@ export async function GET(
           overallViewToCartRate,
           overallCartToOrderRate,
           overallConversionRate,
-          uniqueProducts: analyticsData.length
+          uniqueProducts: analyticsData.length,
+          // Abandoned cart metrics
+          abandonedCarts,
+          convertedCarts,
+          totalCartSessions,
+          abandonedCartRate
         },
         bestSellers,
         mostViewed,

@@ -50,6 +50,11 @@ interface AnalyticsData {
     overallCartToOrderRate: number
     overallConversionRate: number
     uniqueProducts: number
+    // Abandoned cart metrics
+    abandonedCarts: number
+    convertedCarts: number
+    totalCartSessions: number
+    abandonedCartRate: number
   }
   bestSellers: ProductData[]
   mostViewed: ProductData[]
@@ -316,6 +321,52 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
           </div>
         </div>
       </div>
+
+      {/* Abandoned Cart Insights */}
+      {data.summary.totalCartSessions > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Cart Abandonment</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <ShoppingCart className="w-5 h-5 text-orange-600" />
+                <span className="text-2xl font-bold text-orange-700">{data.summary.abandonedCartRate}%</span>
+              </div>
+              <p className="text-sm text-orange-600">Cart Abandonment Rate</p>
+              <p className="text-xs text-orange-500 mt-1">
+                Carts not converted within 24h
+              </p>
+            </div>
+            
+            <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingDown className="w-5 h-5 text-red-600" />
+                <span className="text-2xl font-bold text-red-700">{formatNumber(data.summary.abandonedCarts)}</span>
+              </div>
+              <p className="text-sm text-red-600">Abandoned Carts</p>
+              <p className="text-xs text-red-500 mt-1">
+                Sessions with items left in cart
+              </p>
+            </div>
+            
+            <div className="text-center p-4 bg-emerald-50 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+                <span className="text-2xl font-bold text-emerald-700">{formatNumber(data.summary.convertedCarts)}</span>
+              </div>
+              <p className="text-sm text-emerald-600">Converted Carts</p>
+              <p className="text-xs text-emerald-500 mt-1">
+                Sessions that completed purchase
+              </p>
+            </div>
+          </div>
+          
+          <p className="text-xs text-gray-500 mt-4">
+            Based on {formatNumber(data.summary.totalCartSessions)} unique sessions with add-to-cart events. 
+            A cart is considered abandoned if no order containing those products is placed within 24 hours.
+          </p>
+        </div>
+      )}
 
       {/* Products Table */}
       <div className="bg-white rounded-lg border border-gray-200">
