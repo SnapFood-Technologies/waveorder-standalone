@@ -329,6 +329,7 @@ export async function GET(request: NextRequest) {
         billingType: billingType,
         subscriptionStatus: business.subscriptionStatus,
         isActive: business.isActive,
+        testMode: business.testMode,
         deactivatedAt: business.deactivatedAt,
         deactivationReason: business.deactivationReason,
         currency: business.currency,
