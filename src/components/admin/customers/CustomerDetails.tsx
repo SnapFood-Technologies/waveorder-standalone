@@ -54,7 +54,16 @@ interface CustomerStats {
   totalOrders: number
   totalSpent: number
   averageOrderValue: number
+  firstOrderDate: string | null
   lastOrderDate: string | null
+}
+
+interface FavoriteProduct {
+  productId: string
+  productName: string
+  productImage: string | null
+  timesOrdered: number
+  totalQuantity: number
 }
 
 interface Business {
@@ -71,8 +80,10 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
     totalOrders: 0,
     totalSpent: 0,
     averageOrderValue: 0,
+    firstOrderDate: null,
     lastOrderDate: null
   })
+  const [favorites, setFavorites] = useState<FavoriteProduct[]>([])
   const [business, setBusiness] = useState<Business>({ currency: 'USD', name: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +120,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             totalOrders,
             totalSpent: 0, // Will be calculated from orders
             averageOrderValue: 0,
+            firstOrderDate: null,
             lastOrderDate: null
           })
         } else if (customerResponse.status === 404) {
@@ -130,14 +142,26 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
           )
           const totalSpent = completedOrders.reduce((sum: number, order: Order) => sum + order.total, 0)
           const avgOrderValue = completedOrders.length > 0 ? totalSpent / completedOrders.length : 0
-          const lastOrder = fetchedOrders.length > 0 ? fetchedOrders[0] : null
+          
+          // Get first and last order dates
+          const orderDates = fetchedOrders.map((o: Order) => new Date(o.createdAt).getTime())
+          const firstOrder = orderDates.length > 0 ? new Date(Math.min(...orderDates)).toISOString() : null
+          const lastOrder = orderDates.length > 0 ? new Date(Math.max(...orderDates)).toISOString() : null
           
           setStats(prev => ({
             ...prev,
             totalSpent,
             averageOrderValue: avgOrderValue,
-            lastOrderDate: lastOrder ? lastOrder.createdAt : null
+            firstOrderDate: firstOrder,
+            lastOrderDate: lastOrder
           }))
+        }
+
+        // Fetch customer favorites
+        const favoritesResponse = await fetch(`/api/admin/stores/${businessId}/customers/${customerId}/favorites`)
+        if (favoritesResponse.ok) {
+          const favoritesData = await favoritesResponse.json()
+          setFavorites(favoritesData.favorites?.slice(0, 5) || [])
         }
       } catch (error) {
         console.error('Error fetching customer data:', error)
@@ -355,50 +379,67 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-blue-100 rounded-lg">
               <ShoppingBag className="w-5 h-5 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-500">Total Orders</p>
+              <p className="text-xl font-bold text-gray-900">{stats.totalOrders}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-emerald-100 rounded-lg">
               <Wallet className="w-5 h-5 text-emerald-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Total Spent</p>
-              <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent)}</p>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-500">Total Spent</p>
+              <p className="text-xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-purple-100 rounded-lg">
               <Wallet className="w-5 h-5 text-purple-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Avg Order Value</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.averageOrderValue)}</p>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-500">Avg Order</p>
+              <p className="text-xl font-bold text-gray-900">{formatCurrency(stats.averageOrderValue)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <div className="p-2 bg-teal-100 rounded-lg">
+              <Calendar className="w-5 h-5 text-teal-600" />
+            </div>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-500">First Order</p>
+              <p className="text-sm font-bold text-gray-900">
+                {stats.firstOrderDate 
+                  ? formatDateShort(stats.firstOrderDate)
+                  : 'Never'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className="p-2 bg-orange-100 rounded-lg">
               <Calendar className="w-5 h-5 text-orange-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-500">Last Order</p>
+            <div className="ml-3">
+              <p className="text-xs font-medium text-gray-500">Last Order</p>
               <p className="text-sm font-bold text-gray-900">
                 {stats.lastOrderDate 
                   ? formatDateShort(stats.lastOrderDate)
@@ -409,6 +450,26 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
           </div>
         </div>
       </div>
+
+      {/* Favorite Products */}
+      {favorites.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Favorite Products</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {favorites.map((product, index) => (
+              <div key={product.productId} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span className="text-lg font-bold text-gray-300">#{index + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{product.productName}</p>
+                  <p className="text-xs text-gray-500">
+                    {product.timesOrdered} orders • {product.totalQuantity} items
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">

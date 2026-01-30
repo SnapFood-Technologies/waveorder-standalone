@@ -192,6 +192,9 @@ export async function GET(
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search') || ''
+    const sortBy = searchParams.get('sortBy') || 'recent' // orders, spent, recent, name
+    const sortOrder = searchParams.get('sortOrder') || 'desc' // asc, desc
+    const repeatOnly = searchParams.get('repeatOnly') === 'true' // Only customers with 2+ orders
 
     const skip = (page - 1) * limit
 
@@ -207,39 +210,93 @@ export async function GET(
       ]
     }
 
-    const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
-        where: whereClause,
-        include: {
-          _count: {
-            select: {
-              orders: true
-            }
+    // Fetch customers with orders for aggregation
+    const customersWithOrders = await prisma.customer.findMany({
+      where: whereClause,
+      include: {
+        orders: {
+          select: {
+            id: true,
+            total: true,
+            status: true,
+            paymentStatus: true,
+            createdAt: true
           }
-        },
-        orderBy: {
-          createdAt: 'desc'
-        },
-        skip,
-        take: limit
-      }),
-      prisma.customer.count({ where: whereClause })
-    ])
+        }
+      }
+    })
 
-    return NextResponse.json({
-      customers: customers.map(customer => ({
+    // Calculate aggregations for each customer
+    const customersWithStats = customersWithOrders.map(customer => {
+      // Only count completed orders for revenue (DELIVERED/PICKED_UP/READY + PAID)
+      const completedOrders = customer.orders.filter(o => 
+        ['DELIVERED', 'PICKED_UP', 'READY'].includes(o.status) && 
+        o.paymentStatus === 'PAID'
+      )
+      
+      const totalOrders = customer.orders.length
+      const totalSpent = completedOrders.reduce((sum, o) => sum + o.total, 0)
+      const orderDates = customer.orders.map(o => new Date(o.createdAt).getTime())
+      const firstOrderDate = orderDates.length > 0 ? new Date(Math.min(...orderDates)) : null
+      const lastOrderDate = orderDates.length > 0 ? new Date(Math.max(...orderDates)) : null
+      const isRepeatCustomer = totalOrders >= 2
+
+      return {
         id: customer.id,
         name: customer.name,
         phone: customer.phone,
         email: customer.email,
         tier: customer.tier,
-        totalOrders: customer._count.orders,
+        totalOrders,
+        totalSpent,
+        firstOrderDate,
+        lastOrderDate,
+        isRepeatCustomer,
         addressJson: customer.addressJson,
         tags: customer.tags,
         notes: customer.notes,
         addedByAdmin: customer.addedByAdmin,
         createdAt: customer.createdAt
-      })),
+      }
+    })
+
+    // Filter for repeat customers if requested
+    let filteredCustomers = repeatOnly 
+      ? customersWithStats.filter(c => c.isRepeatCustomer)
+      : customersWithStats
+
+    // Sort customers based on sortBy parameter
+    filteredCustomers.sort((a, b) => {
+      let comparison = 0
+      
+      switch (sortBy) {
+        case 'orders':
+          comparison = a.totalOrders - b.totalOrders
+          break
+        case 'spent':
+          comparison = a.totalSpent - b.totalSpent
+          break
+        case 'recent':
+          const aDate = a.lastOrderDate?.getTime() || a.createdAt.getTime()
+          const bDate = b.lastOrderDate?.getTime() || b.createdAt.getTime()
+          comparison = aDate - bDate
+          break
+        case 'name':
+          comparison = a.name.localeCompare(b.name)
+          break
+        default:
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      }
+      
+      return sortOrder === 'desc' ? -comparison : comparison
+    })
+
+    // Paginate results
+    const total = filteredCustomers.length
+    const paginatedCustomers = filteredCustomers.slice(skip, skip + limit)
+
+    return NextResponse.json({
+      customers: paginatedCustomers,
       pagination: {
         page,
         limit,

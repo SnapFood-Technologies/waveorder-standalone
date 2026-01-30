@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Plus, Users, Phone, Mail, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Search, Plus, Users, Phone, Mail, ChevronLeft, ChevronRight, Eye, ArrowUpDown, Repeat, DollarSign, Calendar } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 
@@ -14,6 +14,10 @@ interface Customer {
   email: string | null
   tier: 'REGULAR' | 'VIP' | 'WHOLESALE'
   totalOrders: number
+  totalSpent: number
+  firstOrderDate: string | null
+  lastOrderDate: string | null
+  isRepeatCustomer: boolean
   addressJson: any
   tags: string[]
   notes: string | null
@@ -28,6 +32,17 @@ interface Pagination {
   pages: number
 }
 
+interface Business {
+  currency: string
+}
+
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Most Recent' },
+  { value: 'orders', label: 'Most Orders' },
+  { value: 'spent', label: 'Highest Spent' },
+  { value: 'name', label: 'Name (A-Z)' }
+]
+
 export default function CustomersList({ businessId }: CustomersListProps) {
   const { addParams } = useImpersonation(businessId)
   
@@ -36,6 +51,8 @@ export default function CustomersList({ businessId }: CustomersListProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<string>('recent')
+  const [repeatOnly, setRepeatOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -43,6 +60,23 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     total: 0,
     pages: 0
   })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+
+  // Fetch business data for currency
+  useEffect(() => {
+    const fetchBusinessData = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBusiness({ currency: data.business.currency })
+        }
+      } catch (error) {
+        console.error('Error fetching business data:', error)
+      }
+    }
+    fetchBusinessData()
+  }, [businessId])
 
   // Debounce search query
   useEffect(() => {
@@ -62,7 +96,10 @@ export default function CustomersList({ businessId }: CustomersListProps) {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        search: debouncedSearchQuery
+        search: debouncedSearchQuery,
+        sortBy,
+        sortOrder: sortBy === 'name' ? 'asc' : 'desc',
+        repeatOnly: repeatOnly.toString()
       })
 
       const response = await fetch(`/api/admin/stores/${businessId}/customers?${params}`)
@@ -80,7 +117,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
 
   useEffect(() => {
     fetchCustomers()
-  }, [businessId, currentPage, debouncedSearchQuery])
+  }, [businessId, currentPage, debouncedSearchQuery, sortBy, repeatOnly])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
@@ -100,13 +137,25 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     return styles[tier as keyof typeof styles] || styles.REGULAR
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-'
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+    }
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   if (loading && customers.length === 0) {
@@ -160,12 +209,32 @@ export default function CustomersList({ businessId }: CustomersListProps) {
             />
           </div>
 
-          {/* Tier Filter and Count */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            {/* Sort By */}
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 text-gray-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              >
+                {SORT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tier Filter */}
             <select
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             >
               <option value="all">All Tiers</option>
               <option value="regular">Regular</option>
@@ -173,7 +242,23 @@ export default function CustomersList({ businessId }: CustomersListProps) {
               <option value="wholesale">Wholesale</option>
             </select>
 
-            <div className="text-sm text-gray-600">
+            {/* Repeat Customers Toggle */}
+            <button
+              onClick={() => {
+                setRepeatOnly(!repeatOnly)
+                setCurrentPage(1)
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                repeatOnly
+                  ? 'bg-teal-100 text-teal-700 border border-teal-300'
+                  : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              <Repeat className="w-4 h-4" />
+              Repeat Only
+            </button>
+
+            <div className="text-sm text-gray-600 whitespace-nowrap">
               {pagination.total} customers
             </div>
           </div>
@@ -219,16 +304,13 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tier
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Orders
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tags
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total Spent
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Added
+                      Last Order
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -246,11 +328,26 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                               <Users className="w-5 h-5 text-teal-600" />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {customer.name}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {customer.name}
+                                </span>
+                                {customer.isRepeatCustomer && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                    <Repeat className="w-3 h-3 mr-0.5" />
+                                    Repeat
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-sm text-gray-500">
-                                {customer.addedByAdmin ? 'Added by admin' : 'Self-registered'}
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getTierBadge(customer.tier)}`}>
+                                  {customer.tier}
+                                </span>
+                                {customer.tags.length > 0 && (
+                                  <span className="text-xs text-gray-500">
+                                    {customer.tags.length} tag{customer.tags.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -265,47 +362,28 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                             {customer.email && (
                               <div className="flex items-center text-sm text-gray-600">
                                 <Mail className="w-3 h-3 mr-2 text-gray-400" />
-                                {customer.email}
+                                <span className="truncate max-w-[150px]">{customer.email}</span>
                               </div>
                             )}
                           </div>
                         </td>
                         
                         <td className="px-6 py-4 text-center">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierBadge(customer.tier)}`}>
-                            {customer.tier}
-                          </span>
-                        </td>
-                        
-                        <td className="px-6 py-4 text-center">
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-900">
-                              {customer.totalOrders}
-                            </div>
-                        
+                          <div className="text-sm font-medium text-gray-900">
+                            {customer.totalOrders}
                           </div>
                         </td>
                         
-                        <td className="px-6 py-4">
-                          <div className="flex flex-wrap gap-1">
-                            {customer.tags.slice(0, 2).map((tag, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {customer.tags.length > 2 && (
-                              <span className="text-xs text-gray-500">
-                                +{customer.tags.length - 2}
-                              </span>
-                            )}
+                        <td className="px-6 py-4 text-right">
+                          <div className="text-sm font-medium text-gray-900">
+                            {formatCurrency(customer.totalSpent)}
                           </div>
                         </td>
                         
-                        <td className="px-6 py-4 text-right text-sm text-gray-500">
-                          {formatDate(customer.createdAt)}
+                        <td className="px-6 py-4 text-right">
+                          <div className="text-sm text-gray-500">
+                            {formatDate(customer.lastOrderDate)}
+                          </div>
                         </td>
                         
                         <td className="px-6 py-4 text-right">
