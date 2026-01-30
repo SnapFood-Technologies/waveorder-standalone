@@ -730,7 +730,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                       outerRadius={100}
                       paddingAngle={2}
                       dataKey="value"
-                      label={({ name, percent }: { name: string; percent: number }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={(props: any) => `${props.name} ${(props.percent * 100).toFixed(0)}%`}
                       labelLine={true}
                     >
                       {data.ordersByStatus.map((status: any, index: number) => {
