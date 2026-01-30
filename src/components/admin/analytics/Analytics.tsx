@@ -522,6 +522,25 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               </p>
             </div>
           )}
+
+          {/* Link to detailed product analytics */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-blue-900">Want more detailed product analytics?</h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  View individual product views, add-to-cart rates, and conversion metrics.
+                </p>
+              </div>
+              <Link
+                href={`/admin/stores/${businessId}/analytics/products`}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+              >
+                View Product Analytics
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

@@ -368,6 +368,7 @@ model Business {
   customers          Customer[]
   analytics          Analytics[]
   visitorSessions    VisitorSession[]
+  productEvents      ProductEvent[]
   orderNotifications OrderNotification[]
   anomalies          Anomaly[]
   brands             Brand[]
@@ -549,6 +550,7 @@ model Product {
   variants   ProductVariant[]
   modifiers  ProductModifier[]
   orderItems OrderItem[]
+  events     ProductEvent[]
 
   metaTitle       String?
   metaDescription String?
@@ -1014,6 +1016,31 @@ model Analytics {
   @@index([businessId, city])
   @@index([businessId, source])
   @@index([businessId, campaign])
+}
+
+// Product analytics events - tracks views and add-to-cart actions
+model ProductEvent {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  productId  String   @db.ObjectId
+  eventType  String   // "view", "add_to_cart"
+  sessionId  String?  // Anonymous session ID (UUID from localStorage)
+  
+  // Context
+  source     String?  // "product_card", "product_modal", "search", "featured"
+  
+  // Timestamps
+  createdAt  DateTime @default(now())
+  
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Performance indexes for analytics queries
+  @@index([businessId, productId])
+  @@index([businessId, eventType])
+  @@index([businessId, createdAt])
+  @@index([productId, eventType])
+  @@index([businessId, productId, eventType, createdAt])
 }
 
 enum UserRole {

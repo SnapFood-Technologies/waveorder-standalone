@@ -1862,6 +1862,95 @@ const showError = (message: string, type: 'error' | 'warning' | 'info' = 'error'
   }, 5000)
 }
 
+// ============================================
+// PRODUCT ANALYTICS TRACKING
+// ============================================
+
+// Track recently viewed products to debounce (don't track same product twice within 30 seconds)
+const recentlyViewedProducts = useRef<Map<string, number>>(new Map())
+const VIEW_DEBOUNCE_MS = 30000 // 30 seconds
+
+// Get or create anonymous session ID for analytics tracking
+const getSessionId = useCallback(() => {
+  if (typeof window === 'undefined') return null
+  
+  const SESSION_KEY = 'waveorder_session_id'
+  let sessionId = localStorage.getItem(SESSION_KEY)
+  
+  if (!sessionId) {
+    // Generate a UUID-like session ID
+    sessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0
+      const v = c === 'x' ? r : (r & 0x3 | 0x8)
+      return v.toString(16)
+    })
+    localStorage.setItem(SESSION_KEY, sessionId)
+  }
+  
+  return sessionId
+}, [])
+
+// Track product event (view or add_to_cart)
+const trackProductEvent = useCallback((
+  productId: string, 
+  eventType: 'view' | 'add_to_cart',
+  source?: string
+) => {
+  // Don't track if no business slug
+  if (!storeData?.slug) return
+  
+  // For view events, check debounce
+  if (eventType === 'view') {
+    const lastViewTime = recentlyViewedProducts.current.get(productId)
+    const now = Date.now()
+    
+    if (lastViewTime && (now - lastViewTime) < VIEW_DEBOUNCE_MS) {
+      return // Skip - already viewed recently
+    }
+    
+    // Update last view time
+    recentlyViewedProducts.current.set(productId, now)
+    
+    // Clean up old entries (keep map from growing indefinitely)
+    if (recentlyViewedProducts.current.size > 100) {
+      const cutoff = now - VIEW_DEBOUNCE_MS
+      for (const [id, time] of recentlyViewedProducts.current.entries()) {
+        if (time < cutoff) {
+          recentlyViewedProducts.current.delete(id)
+        }
+      }
+    }
+  }
+  
+  const sessionId = getSessionId()
+  
+  // Use sendBeacon for reliable delivery (doesn't block page navigation)
+  const data = JSON.stringify({
+    productId,
+    eventType,
+    sessionId,
+    source
+  })
+  
+  const url = `/api/storefront/${storeData.slug}/track`
+  
+  // Try sendBeacon first (best for analytics - doesn't block)
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    const blob = new Blob([data], { type: 'application/json' })
+    navigator.sendBeacon(url, blob)
+  } else {
+    // Fallback to fetch with keepalive
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: data,
+      keepalive: true
+    }).catch(() => {
+      // Silent fail - don't affect user experience
+    })
+  }
+}, [storeData?.slug, getSessionId])
+
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup' | 'dineIn'>(getDefaultDeliveryType())
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
@@ -2575,6 +2664,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       
     if (!hasStock) return
     
+    // Track product view event (debounced)
+    trackProductEvent(product.id, 'view', 'product_modal')
+    
     setSelectedProduct(product)
     // Set default variant to first available variant with stock
     const availableVariant = product.variants.find(v => v.stock > 0)
@@ -2849,6 +2941,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       totalPrice,
       businessId: storeData.id // Store which business this item belongs to
     }
+  
+    // Track add-to-cart event
+    trackProductEvent(product.id, 'add_to_cart', 'product_modal')
   
     setCart(prev => {
       const existingIndex = prev.findIndex(item => item.id === cartItemId)
