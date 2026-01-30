@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Exclude test businesses from all analytics
-    const excludeTestCondition = { testMode: { not: true } }
+    // Use 'in' to handle null/missing testMode field (existing businesses before this field was added)
+    const excludeTestCondition = { testMode: { in: [false, null] } }
 
     // Fetch all data in parallel for performance
     const [
