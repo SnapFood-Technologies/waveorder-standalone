@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Clock, MessageSquare, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
-import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-helpers'
+import { getTicketStatusColor, getTicketPriorityColor, getTicketTypeDisplayName } from '@/lib/support-utils'
 
 interface Ticket {
   id: string

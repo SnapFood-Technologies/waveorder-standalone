@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Bell, Ticket, MessageSquare, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
-import { getNotificationTypeDisplayName } from '@/lib/support-helpers'
+import { getNotificationTypeDisplayName } from '@/lib/support-utils'
 
 interface Notification {
   id: string

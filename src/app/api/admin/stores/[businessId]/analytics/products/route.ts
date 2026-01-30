@@ -11,12 +11,14 @@ interface ProductAnalyticsData {
   categoryName: string
   views: number
   addToCarts: number
-  orders: number
-  revenue: number
-  quantity: number
+  ordersPlaced: number      // All orders (shows customer intent/demand)
+  ordersCompleted: number   // Only delivered/picked_up/ready + paid
+  revenue: number           // Revenue from completed orders only
+  quantityPlaced: number    // Total quantity ordered
+  quantityCompleted: number // Quantity from completed orders
   viewToCartRate: number
-  cartToOrderRate: number
-  conversionRate: number
+  cartToOrderRate: number   // Based on ordersPlaced (customer action)
+  conversionRate: number    // Based on ordersPlaced (customer action)
 }
 
 export async function GET(
@@ -89,21 +91,29 @@ export async function GET(
       eventsByProduct.set(event.productId, existing)
     }
 
-    // Fetch completed orders with items in the date range
-    const orders = await prisma.order.findMany({
+    // Fetch ALL orders with items in the date range (for "Orders Placed" metric)
+    const allOrders = await prisma.order.findMany({
       where: {
         businessId,
         createdAt: {
           gte: startDate,
           lte: endDate
-        },
-        // Only count completed orders
-        status: {
-          in: ['DELIVERED', 'PICKED_UP', 'READY']
-        },
-        paymentStatus: 'PAID'
+        }
       },
       include: {
+        items: {
+          select: {
+            productId: true,
+            quantity: true,
+            price: true
+          }
+        }
+      },
+      select: {
+        id: true,
+        status: true,
+        paymentStatus: true,
+        createdAt: true,
         items: {
           select: {
             productId: true,
@@ -114,14 +124,52 @@ export async function GET(
       }
     })
 
-    // Aggregate order data by product
-    const ordersByProduct = new Map<string, { orders: number; quantity: number; revenue: number }>()
+    // Separate completed orders (for revenue calculation)
+    const completedOrders = allOrders.filter(order => 
+      ['DELIVERED', 'PICKED_UP', 'READY'].includes(order.status) && 
+      order.paymentStatus === 'PAID'
+    )
     
-    for (const order of orders) {
+    // Use allOrders for abandoned cart check (any order counts as conversion)
+    const orders = allOrders
+
+    // Aggregate order data by product - track both placed and completed separately
+    const ordersByProduct = new Map<string, { 
+      ordersPlaced: number; 
+      ordersCompleted: number; 
+      quantityPlaced: number;
+      quantityCompleted: number; 
+      revenue: number 
+    }>()
+    
+    // Count ALL orders (Orders Placed)
+    for (const order of allOrders) {
       for (const item of order.items) {
-        const existing = ordersByProduct.get(item.productId) || { orders: 0, quantity: 0, revenue: 0 }
-        existing.orders++
-        existing.quantity += item.quantity
+        const existing = ordersByProduct.get(item.productId) || { 
+          ordersPlaced: 0, 
+          ordersCompleted: 0, 
+          quantityPlaced: 0,
+          quantityCompleted: 0, 
+          revenue: 0 
+        }
+        existing.ordersPlaced++
+        existing.quantityPlaced += item.quantity
+        ordersByProduct.set(item.productId, existing)
+      }
+    }
+    
+    // Count completed orders and revenue separately
+    for (const order of completedOrders) {
+      for (const item of order.items) {
+        const existing = ordersByProduct.get(item.productId) || { 
+          ordersPlaced: 0, 
+          ordersCompleted: 0, 
+          quantityPlaced: 0,
+          quantityCompleted: 0, 
+          revenue: 0 
+        }
+        existing.ordersCompleted++
+        existing.quantityCompleted += item.quantity
         existing.revenue += item.price * item.quantity
         ordersByProduct.set(item.productId, existing)
       }
@@ -209,18 +257,25 @@ export async function GET(
       if (!product) continue // Skip if product no longer exists
 
       const events = eventsByProduct.get(productId) || { views: 0, addToCarts: 0 }
-      const orderData = ordersByProduct.get(productId) || { orders: 0, quantity: 0, revenue: 0 }
+      const orderData = ordersByProduct.get(productId) || { 
+        ordersPlaced: 0, 
+        ordersCompleted: 0, 
+        quantityPlaced: 0,
+        quantityCompleted: 0, 
+        revenue: 0 
+      }
 
       const viewToCartRate = events.views > 0 
         ? (events.addToCarts / events.views) * 100 
         : 0
       
+      // Use ordersPlaced for conversion rates (customer action)
       const cartToOrderRate = events.addToCarts > 0 
-        ? (orderData.orders / events.addToCarts) * 100 
+        ? (orderData.ordersPlaced / events.addToCarts) * 100 
         : 0
       
       const conversionRate = events.views > 0 
-        ? (orderData.orders / events.views) * 100 
+        ? (orderData.ordersPlaced / events.views) * 100 
         : 0
 
       analyticsData.push({
@@ -230,9 +285,11 @@ export async function GET(
         categoryName: product.category?.name || 'Uncategorized',
         views: events.views,
         addToCarts: events.addToCarts,
-        orders: orderData.orders,
+        ordersPlaced: orderData.ordersPlaced,
+        ordersCompleted: orderData.ordersCompleted,
         revenue: orderData.revenue,
-        quantity: orderData.quantity,
+        quantityPlaced: orderData.quantityPlaced,
+        quantityCompleted: orderData.quantityCompleted,
         viewToCartRate: Math.round(viewToCartRate * 10) / 10,
         cartToOrderRate: Math.round(cartToOrderRate * 10) / 10,
         conversionRate: Math.round(conversionRate * 10) / 10
@@ -242,24 +299,26 @@ export async function GET(
     // Calculate totals
     const totalViews = analyticsData.reduce((sum, p) => sum + p.views, 0)
     const totalAddToCarts = analyticsData.reduce((sum, p) => sum + p.addToCarts, 0)
-    const totalOrders = analyticsData.reduce((sum, p) => sum + p.orders, 0)
+    const totalOrdersPlaced = analyticsData.reduce((sum, p) => sum + p.ordersPlaced, 0)
+    const totalOrdersCompleted = analyticsData.reduce((sum, p) => sum + p.ordersCompleted, 0)
     const totalRevenue = analyticsData.reduce((sum, p) => sum + p.revenue, 0)
     
     const overallViewToCartRate = totalViews > 0 
       ? Math.round((totalAddToCarts / totalViews) * 1000) / 10 
       : 0
     
+    // Use ordersPlaced for conversion rates (customer action)
     const overallCartToOrderRate = totalAddToCarts > 0 
-      ? Math.round((totalOrders / totalAddToCarts) * 1000) / 10 
+      ? Math.round((totalOrdersPlaced / totalAddToCarts) * 1000) / 10 
       : 0
     
     const overallConversionRate = totalViews > 0 
-      ? Math.round((totalOrders / totalViews) * 1000) / 10 
+      ? Math.round((totalOrdersPlaced / totalViews) * 1000) / 10 
       : 0
 
-    // Sort and slice for different lists
+    // Sort and slice for different lists - use ordersPlaced for sorting
     const bestSellers = [...analyticsData]
-      .sort((a, b) => b.orders - a.orders)
+      .sort((a, b) => b.ordersPlaced - a.ordersPlaced)
       .slice(0, limit)
 
     const mostViewed = [...analyticsData]
@@ -272,9 +331,9 @@ export async function GET(
       .sort((a, b) => b.views - a.views)
       .slice(0, limit)
 
-    // Low performing: products with add-to-carts but no orders
+    // Low performing: products with add-to-carts but no orders placed
     const lowPerforming = [...analyticsData]
-      .filter(p => p.addToCarts > 0 && p.orders === 0)
+      .filter(p => p.addToCarts > 0 && p.ordersPlaced === 0)
       .sort((a, b) => b.addToCarts - a.addToCarts)
       .slice(0, limit)
 
@@ -283,8 +342,9 @@ export async function GET(
         summary: {
           totalViews,
           totalAddToCarts,
-          totalOrders,
-          totalRevenue,
+          totalOrdersPlaced,     // All orders (customer intent)
+          totalOrdersCompleted,  // Fulfilled orders only
+          totalRevenue,          // From completed orders only
           overallViewToCartRate,
           overallCartToOrderRate,
           overallConversionRate,
