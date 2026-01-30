@@ -42,6 +42,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'unzkbvyeaefcpooqeenz.supabase.co',
+        port: '',
+        pathname: '/storage/**',
+      },
     ],
   },
   serverExternalPackages: ['@prisma/client', '@prisma/instrumentation'],

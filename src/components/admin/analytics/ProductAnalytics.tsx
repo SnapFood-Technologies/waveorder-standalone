@@ -10,7 +10,7 @@ import {
   ShoppingBag, 
   TrendingUp,
   TrendingDown,
-  DollarSign,
+  Wallet,
   Percent,
   RefreshCw,
   ArrowLeft,
@@ -276,7 +276,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-5 h-5 text-emerald-600" />
+            <Wallet className="w-5 h-5 text-emerald-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.summary.totalRevenue)}</p>
           <p className="text-sm text-gray-600">Revenue</p>

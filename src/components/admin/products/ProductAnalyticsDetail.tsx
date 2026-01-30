@@ -8,7 +8,7 @@ import {
   Eye, 
   ShoppingCart, 
   ShoppingBag, 
-  DollarSign,
+  Wallet,
   Percent,
   RefreshCw,
   ArrowLeft,
@@ -17,7 +17,8 @@ import {
   Package,
   TrendingUp,
   TrendingDown,
-  Calendar
+  Calendar,
+  Pencil
 } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
 
@@ -299,7 +300,7 @@ export default function ProductAnalyticsDetail({ businessId, productId }: Produc
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-5 h-5 text-emerald-600" />
+            <Wallet className="w-5 h-5 text-emerald-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.summary.totalRevenue)}</p>
           <p className="text-sm text-gray-600">Revenue</p>
@@ -450,20 +451,38 @@ export default function ProductAnalyticsDetail({ businessId, productId }: Produc
         </div>
       )}
 
-      {/* Navigation Links */}
-      <div className="flex gap-3">
-        <Link
-          href={addParams(`/admin/stores/${businessId}/products/${productId}`)}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Edit Product
-        </Link>
-        <Link
-          href={addParams(`/admin/stores/${businessId}/analytics/products`)}
-          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          All Product Analytics
-        </Link>
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Actions</h3>
+        <p className="text-sm text-gray-600 mb-4">Navigate to related pages</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            href={addParams(`/admin/stores/${businessId}/products/${productId}`)}
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-teal-300 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-teal-200 transition-colors">
+              <Pencil className="w-6 h-6 text-teal-600" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Edit Product</h4>
+              <p className="text-sm text-gray-600">Update product details, pricing, and inventory</p>
+            </div>
+          </Link>
+          
+          <Link
+            href={addParams(`/admin/stores/${businessId}/analytics/products`)}
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
+          >
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">All Product Analytics</h4>
+              <p className="text-sm text-gray-600">View analytics for all your products</p>
+            </div>
+          </Link>
+        </div>
       </div>
     </div>
   )
