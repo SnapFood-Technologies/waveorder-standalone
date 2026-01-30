@@ -100,15 +100,6 @@ export async function GET(
           lte: endDate
         }
       },
-      include: {
-        items: {
-          select: {
-            productId: true,
-            quantity: true,
-            price: true
-          }
-        }
-      },
       select: {
         id: true,
         status: true,
