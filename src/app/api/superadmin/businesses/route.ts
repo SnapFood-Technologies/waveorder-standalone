@@ -22,12 +22,18 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all'
     const plan = searchParams.get('plan') || 'all'
     const country = searchParams.get('country') || 'all'
+    const includeTest = searchParams.get('includeTest') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
     // Build where conditions
     const whereConditions: any = {}
+    
+    // Exclude test businesses by default (unless includeTest is true)
+    if (!includeTest) {
+      whereConditions.testMode = { not: true }
+    }
     
     // Country filter - case-insensitive match
     if (country !== 'all') {
@@ -84,6 +90,12 @@ export async function GET(request: NextRequest) {
     if (status === 'incomplete') {
       // Fetch ALL businesses first (with search and plan filters applied)
       const baseConditions: any = {}
+      
+      // Exclude test businesses by default
+      if (!includeTest) {
+        baseConditions.testMode = { not: true }
+      }
+      
       if (search) {
         baseConditions.OR = [
           { name: { contains: search, mode: 'insensitive' } },

@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thisWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
+    // Exclude test businesses from all analytics
+    const excludeTestCondition = { testMode: { not: true } }
+
     // Parallel queries for better performance
     const [
       totalBusinessesAllTime,
@@ -51,12 +54,14 @@ export async function GET(request: NextRequest) {
       oldPageViews,
       newPageViews
     ] = await Promise.all([
-      // Total businesses (all time)
-      prisma.business.count(),
-      
-      // Active businesses (all time)
+      // Total businesses (all time, excluding test)
       prisma.business.count({
-        where: { isActive: true }
+        where: excludeTestCondition
+      }),
+      
+      // Active businesses (all time, excluding test)
+      prisma.business.count({
+        where: { isActive: true, ...excludeTestCondition }
       }),
       
       // Total users (all time) - fetch to filter by active businesses
@@ -79,13 +84,14 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Businesses created in selected period (fetch to filter deactivated in memory)
+      // Businesses created in selected period (fetch to filter deactivated in memory, excluding test)
       prisma.business.findMany({
         where: {
           createdAt: {
             gte: startDate,
             lte: endDate
-          }
+          },
+          ...excludeTestCondition
         },
         select: {
           deactivatedAt: true
@@ -116,25 +122,27 @@ export async function GET(request: NextRequest) {
         }
       }),
       
-      // Current month businesses (for growth calculation - fetch to filter deactivated)
+      // Current month businesses (for growth calculation - fetch to filter deactivated, excluding test)
       prisma.business.findMany({
         where: {
           createdAt: {
             gte: currentMonth
-          }
+          },
+          ...excludeTestCondition
         },
         select: {
           deactivatedAt: true
         }
       }),
       
-      // Last month businesses (for growth calculation - fetch to filter deactivated)
+      // Last month businesses (for growth calculation - fetch to filter deactivated, excluding test)
       prisma.business.findMany({
         where: {
           createdAt: {
             gte: lastMonth,
             lt: currentMonth
-          }
+          },
+          ...excludeTestCondition
         },
         select: {
           deactivatedAt: true

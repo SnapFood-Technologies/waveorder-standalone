@@ -49,6 +49,7 @@ interface Business {
   isActive: boolean;
   deactivatedAt?: string | null;
   deactivationReason?: string | null;
+  testMode?: boolean;
   currency: string;
   whatsappNumber: string;
   address?: string;
@@ -123,6 +124,7 @@ export function SuperAdminBusinesses() {
   const [statusFilter, setStatusFilter] = useState('active');
   const [planFilter, setPlanFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
+  const [includeTestBusinesses, setIncludeTestBusinesses] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
@@ -160,7 +162,7 @@ export function SuperAdminBusinesses() {
   // Fetch businesses
   useEffect(() => {
     fetchBusinesses();
-  }, [debouncedSearchQuery, statusFilter, planFilter, countryFilter, currentPage]);
+  }, [debouncedSearchQuery, statusFilter, planFilter, countryFilter, includeTestBusinesses, currentPage]);
 
   const fetchBusinesses = async () => {
     try {
@@ -172,6 +174,7 @@ export function SuperAdminBusinesses() {
         status: statusFilter,
         plan: planFilter,
         country: countryFilter,
+        includeTest: includeTestBusinesses.toString(),
         page: currentPage.toString(),
         limit: pagination.limit.toString()
       });
@@ -588,6 +591,17 @@ export function SuperAdminBusinesses() {
     <option value="GR">Greece</option>
   </select>
 
+  {/* Test Businesses Checkbox */}
+  <label className="flex items-center gap-2 cursor-pointer">
+    <input
+      type="checkbox"
+      checked={includeTestBusinesses}
+      onChange={(e) => setIncludeTestBusinesses(e.target.checked)}
+      className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+    />
+    <span className="text-sm text-gray-700">Include test businesses</span>
+  </label>
+
   <div className="text-sm text-gray-600 text-center sm:text-left">
     {pagination.total} businesses
   </div>
@@ -752,13 +766,20 @@ export function SuperAdminBusinesses() {
                       
                       <td className="px-6 py-4">
                         <div className="flex flex-col items-start gap-2">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            business.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {business.isActive ? 'Active' : 'Inactive'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              business.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {business.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                            {business.testMode && (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                                Test
+                              </span>
+                            )}
+                          </div>
                           {!business.isActive && business.deactivatedAt && (
                             <div className="text-xs text-gray-600 space-y-1">
                               <div className="flex items-center gap-1">
@@ -1030,6 +1051,11 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             }`}>
               {business.isActive ? 'Active' : 'Inactive'}
             </span>
+            {business.testMode && (
+              <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800">
+                Test Mode
+              </span>
+            )}
             <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
               business.subscriptionPlan === 'PRO'
                 ? 'bg-purple-100 text-purple-800'

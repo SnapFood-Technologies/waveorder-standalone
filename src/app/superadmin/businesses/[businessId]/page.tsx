@@ -49,6 +49,7 @@ interface BusinessDetails {
   isActive: boolean
   deactivatedAt?: string | null
   deactivationReason?: string | null
+  testMode?: boolean
   currency: string
   whatsappNumber: string
   address?: string
@@ -259,6 +260,30 @@ export default function BusinessDetailsPage() {
     }
   }
 
+  const toggleTestMode = async () => {
+    if (!business) return
+    
+    try {
+      const response = await fetch(`/api/superadmin/businesses/${businessId}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testMode: !business.testMode
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setBusiness(data.business)
+      } else {
+        alert('Failed to update test mode')
+      }
+    } catch (error) {
+      console.error('Error toggling test mode:', error)
+      alert('Failed to update test mode')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -342,7 +367,7 @@ export default function BusinessDetailsPage() {
           {/* Status and Plan */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Status & Subscription</h2>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mb-4">
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                 business.isActive
                   ? 'bg-green-100 text-green-800'
@@ -362,6 +387,35 @@ export default function BusinessDetailsPage() {
                   </span>
                 )}
               </span>
+              {business.testMode && (
+                <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800">
+                  Test Mode
+                </span>
+              )}
+            </div>
+            
+            {/* Test Mode Toggle */}
+            <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-orange-900 mb-1">
+                  Test Mode
+                </h3>
+                <p className="text-xs text-orange-700">
+                  Test businesses are excluded from analytics and dashboard statistics
+                </p>
+              </div>
+              <button
+                onClick={toggleTestMode}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  business.testMode ? 'bg-orange-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    business.testMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 

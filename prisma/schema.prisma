@@ -389,6 +389,7 @@ model Business {
   isActive           Boolean             @default(true)
   deactivatedAt      DateTime?
   deactivationReason String?
+  testMode           Boolean             @default(false) // Test businesses excluded from analytics
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   TeamInvitation     TeamInvitation[]
