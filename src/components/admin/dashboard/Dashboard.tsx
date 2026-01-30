@@ -7,6 +7,7 @@ import { RecentOrdersWidget } from '@/components/admin/dashboard/RecentOrdersWid
 import { RecentCustomersWidget } from '@/components/admin/dashboard/RecentCustomersWidget'
 import { QuickActionsWidget } from '@/components/admin/dashboard/QuickActionsWidget'
 import { BusinessStorefrontViewsChart } from '@/components/admin/dashboard/BusinessStorefrontViewsChart'
+import { ProductPerformanceWidget } from '@/components/admin/dashboard/ProductPerformanceWidget'
 import { useSubscription } from '@/hooks/useSubscription'
 
 interface DashboardProps {
@@ -43,6 +44,11 @@ export function Dashboard({ businessId }: DashboardProps) {
 
         {/* Recent Customers */}
         <RecentCustomersWidget businessId={businessId} />
+
+        {/* Product Performance - Only for PRO plans */}
+        {!subscriptionLoading && isPro && (
+          <ProductPerformanceWidget businessId={businessId} />
+        )}
 
         {/* Storefront Page Views - Only for PRO plans */}
         {!subscriptionLoading && isPro && (
