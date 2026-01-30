@@ -290,8 +290,9 @@ export async function GET(
     // Calculate totals
     const totalViews = analyticsData.reduce((sum, p) => sum + p.views, 0)
     const totalAddToCarts = analyticsData.reduce((sum, p) => sum + p.addToCarts, 0)
-    const totalOrdersPlaced = analyticsData.reduce((sum, p) => sum + p.ordersPlaced, 0)
-    const totalOrdersCompleted = analyticsData.reduce((sum, p) => sum + p.ordersCompleted, 0)
+    // Use actual order counts, not sum of per-product appearances
+    const totalOrdersPlaced = allOrders.length
+    const totalOrdersCompleted = completedOrders.length
     const totalRevenue = analyticsData.reduce((sum, p) => sum + p.revenue, 0)
     
     const overallViewToCartRate = totalViews > 0 
