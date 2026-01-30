@@ -48,6 +48,12 @@ const nextConfig = {
         port: '',
         pathname: '/storage/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'admin.bybest.shop',
+        port: '',
+        pathname: '/storage/**',
+      },
     ],
   },
   serverExternalPackages: ['@prisma/client', '@prisma/instrumentation'],
