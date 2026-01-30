@@ -516,32 +516,40 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
 
           {/* Preview Table */}
           {validationResult.preview.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <Package className="w-5 h-5 text-gray-600 mr-2" />
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="flex items-center px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <Package className="w-5 h-5 text-teal-600 mr-2" />
                 <h3 className="text-lg font-semibold text-gray-900">
                   Preview (First 10 Products)
                 </h3>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full">
                   <thead>
-                    <tr className="text-left text-gray-500 border-b">
-                      <th className="pb-2 pr-4">Name</th>
-                      <th className="pb-2 pr-4">Category</th>
-                      <th className="pb-2 pr-4 text-right">Price</th>
-                      <th className="pb-2 pr-4 text-right">Stock</th>
-                      <th className="pb-2">SKU</th>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {validationResult.preview.map((product, index) => (
-                      <tr key={index} className="border-t border-gray-100">
-                        <td className="py-2 pr-4 font-medium">{product.name}</td>
-                        <td className="py-2 pr-4">{product.category}</td>
-                        <td className="py-2 pr-4 text-right">{formatCurrency(product.price)}</td>
-                        <td className="py-2 pr-4 text-right">{product.stock}</td>
-                        <td className="py-2 font-mono text-xs">{product.sku || '-'}</td>
+                      <tr key={index} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-gray-900">{product.name}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">{formatCurrency(product.price)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 text-right">{product.stock}</td>
+                        <td className="px-6 py-4 font-mono text-xs text-gray-500">{product.sku || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -568,20 +576,43 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001`
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3 justify-end">
-            <button
-              onClick={resetForm}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Start Over
-            </button>
-            <button
-              onClick={handleImport}
-              disabled={uploading || (validationResult.validRows === 0) || (validationResult.errors.length > 0 && !skipInvalidRows)}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {uploading ? 'Importing...' : `Import ${validationResult.validRows} Products`}
-            </button>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Ready to Import?</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {validationResult.validRows} valid products will be imported
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={resetForm}
+                  className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Start Over
+                </button>
+                <button
+                  onClick={handleImport}
+                  disabled={uploading || (validationResult.validRows === 0) || (validationResult.errors.length > 0 && !skipInvalidRows)}
+                  className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center"
+                >
+                  {uploading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Import {validationResult.validRows} Products
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
 
           {error && (

@@ -10,7 +10,7 @@ import {
   ShoppingCart, 
   TrendingUp,
   Package,
-  ArrowRight,
+  ExternalLink,
   RefreshCw
 } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
@@ -103,13 +103,22 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
           <BarChart3 className="w-5 h-5 text-teal-600" />
           <h3 className="text-lg font-semibold text-gray-900">Product Performance</h3>
         </div>
-        <button
-          onClick={fetchProductAnalytics}
-          className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={fetchProductAnalytics}
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          <Link
+            href={addParams(`/admin/stores/${businessId}/analytics/products`)}
+            className="p-1.5 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded transition-colors"
+            title="View All Analytics"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -141,15 +150,21 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
 
       {/* Top Products */}
       {topProducts.length > 0 && (
-        <>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Top Selling Products</h4>
-          <div className="space-y-2">
+        <div className="border-t border-gray-100 pt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-medium text-gray-700">Top Selling Products</h4>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span className="w-12 text-center">Views</span>
+              <span className="w-12 text-center">Orders</span>
+            </div>
+          </div>
+          <div className="space-y-1">
             {topProducts.slice(0, 5).map((product, index) => (
               <div 
                 key={product.productId}
                 className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
               >
-                <span className="text-sm text-gray-400 font-medium w-5">{index + 1}</span>
+                <span className="text-xs text-gray-400 font-medium w-4">{index + 1}</span>
                 {product.productImage ? (
                   <Image
                     src={product.productImage}
@@ -168,24 +183,19 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
                     {product.productName}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">{product.orders}</p>
-                  <p className="text-xs text-gray-500">orders</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 text-center">
+                    <span className="text-sm text-gray-600">{formatNumber(product.views)}</span>
+                  </div>
+                  <div className="w-12 text-center">
+                    <span className="text-sm font-medium text-gray-900">{product.orders}</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
-
-      {/* View All Link */}
-      <Link
-        href={addParams(`/admin/stores/${businessId}/analytics/products`)}
-        className="mt-4 flex items-center justify-center gap-2 w-full py-2 text-sm font-medium text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
-      >
-        View All Product Analytics
-        <ArrowRight className="w-4 h-4" />
-      </Link>
     </div>
   )
 }
