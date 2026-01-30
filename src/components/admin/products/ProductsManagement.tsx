@@ -723,7 +723,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                         className="flex-1 px-3 py-2 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 transition-colors text-center"
                       >
                         <Edit className="w-3 h-3 inline mr-1" />
-                        Edit
+                        Manage
                       </Link>
                       
                       <button
