@@ -581,10 +581,9 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
             <div className="mt-4 pt-4 border-t border-blue-200">
               <button
                 onClick={() => setShowHelpModal(true)}
-                className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:text-blue-900 transition-colors"
+                className="text-sm font-medium text-blue-700 hover:text-blue-900 underline transition-colors"
               >
-                <HelpCircle className="w-4 h-4" />
-                Need more understanding of these values?
+                Learn more
               </button>
             </div>
           </div>
@@ -618,7 +617,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
               </div>
 
               {/* Modal Content */}
-              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {/* Summary Cards Section */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
