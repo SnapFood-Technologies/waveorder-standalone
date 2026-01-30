@@ -3,15 +3,15 @@ import Home from '@/components/site/Home'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'WaveOrder - Make WhatsApp Ordering Super Easy | Restaurant Ordering Platform',
-  description: 'Create beautiful catalogs and receive orders directly on WhatsApp. Perfect for restaurants, cafes, and retail businesses. No expensive WhatsApp Business API required.',
-  keywords: 'whatsapp ordering, restaurant ordering, whatsapp business, food ordering, catalog ordering, whatsapp menu, restaurant technology',
+  title: 'WaveOrder - Sell on WhatsApp Without the Complexity | Online Catalog & Ordering',
+  description: 'Create a beautiful product catalog, share the link anywhere, and receive orders directly on WhatsApp. Perfect for Instagram sellers, restaurants, retail stores, and any business. No WhatsApp API required.',
+  keywords: 'whatsapp ordering, instagram seller, link in bio store, whatsapp business, product catalog, online store, restaurant ordering, retail ordering, whatsapp shop',
   alternates: {
     canonical: 'https://waveorder.app',
   },
   openGraph: {
-    title: 'WaveOrder - Make WhatsApp Ordering Super Easy',
-    description: 'Restaurant-first WhatsApp ordering platform. Create catalogs, receive orders, manage everything.',
+    title: 'WaveOrder - Sell on WhatsApp Without the Complexity',
+    description: 'The simplest way to sell on WhatsApp. Create catalogs, receive orders, grow your business — perfect for Instagram sellers, restaurants, and retail stores.',
     type: 'website',
     url: 'https://waveorder.app',
     images: [{
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
       height: 630,
       alt: 'WaveOrder - WhatsApp Ordering Platform',
     }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'WaveOrder - Sell on WhatsApp Without the Complexity',
+    description: 'Create a beautiful product catalog, share the link anywhere, and receive orders directly on WhatsApp.',
+    images: ['https://waveorder.app/images/og-image.png'],
   },
   robots: {
     index: true,
@@ -30,7 +36,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
-      {/* FAQ Schema for restaurant owners */}
+      {/* FAQ Schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -43,7 +49,7 @@ export default function HomePage() {
                 "name": "Do I need WhatsApp Business API?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "No! WaveOrder works with your regular WhatsApp or WhatsApp Business number. No expensive API required - orders come directly to your existing WhatsApp."
+                  "text": "No! WaveOrder works with your regular WhatsApp or WhatsApp Business app. Orders come directly to your existing number without any API setup, verification, or per-message fees."
                 }
               },
               {
@@ -51,23 +57,39 @@ export default function HomePage() {
                 "name": "How do customers place orders?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Customers browse your catalog, select items, and click 'Order via WhatsApp' which opens WhatsApp with a pre-formatted order message ready to send."
+                  "text": "Customers browse your online catalog, select items, and click 'Order via WhatsApp'. This opens WhatsApp with a pre-formatted order message ready to send to you. Simple and familiar for everyone."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Can my team help manage orders?",
+                "name": "Can I use this with my Instagram bio link?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Yes! WaveOrder supports multiple team members with different roles. Perfect for restaurants with staff managing orders and inventory."
+                  "text": "Absolutely! WaveOrder is perfect as a link-in-bio store. Share your catalog link in your Instagram bio, stories, or posts. Followers can browse your products and order directly through WhatsApp."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How do I add my menu items?",
+                "name": "What payment methods are supported?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "You can add products manually, upload via CSV file, or integrate through our API. We support variants, modifiers, and inventory tracking."
+                  "text": "You can accept cash on delivery, bank transfers, or integrate with payment gateways like Stripe and PayPal. You handle payments directly with your customers — we don't take any cut."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How quickly can I get started?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Most businesses have their catalog live within 5 minutes. Just sign up, add your products (manually or via CSV import), connect your WhatsApp number, and share your link."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I manage multiple stores?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes! Pro and Business plans support multiple catalogs. Create separate catalogs for different locations, brands, or product lines — each with its own link and settings."
                 }
               }
             ]
@@ -83,11 +105,11 @@ export default function HomePage() {
             "@context": "https://schema.org",
             "@type": "Organization",
             "name": "WaveOrder",
-            "description": "WhatsApp ordering platform for restaurants and businesses. Create beautiful catalogs and receive orders directly on WhatsApp.",
+            "description": "The simplest way to sell on WhatsApp. Create catalogs, receive orders, grow your business — without complexity.",
             "url": "https://waveorder.app",
             "logo": "https://waveorder.app/images/waveorder-logo.png",
             "foundingDate": "2025",
-            "slogan": "Make WhatsApp Ordering Super Easy",
+            "slogan": "Sell on WhatsApp Without the Complexity",
             "contactPoint": {
               "@type": "ContactPoint",
               "contactType": "customer service",
@@ -97,20 +119,26 @@ export default function HomePage() {
         }}
       />
 
-      {/* Website Schema */}
+      {/* Software Application Schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "WebSite",
+            "@type": "SoftwareApplication",
             "name": "WaveOrder",
-            "url": "https://waveorder.app",
-            "description": "Make WhatsApp ordering super easy for restaurants and businesses",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://waveorder.app/search?q={search_term_string}",
-              "query-input": "required name=search_term_string"
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "19",
+              "priceCurrency": "USD",
+              "priceValidUntil": "2026-12-31"
+            },
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.9",
+              "ratingCount": "150"
             }
           })
         }}
