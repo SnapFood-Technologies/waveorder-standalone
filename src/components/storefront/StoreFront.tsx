@@ -2031,25 +2031,56 @@ const trackProductEvent = useCallback((
     }
   }, [cart, storeData.id])
 
-  // Handle product sharing URL parameter - open product modal if ?p= param exists
+  // Handle product sharing URL parameter - open product modal if ?p= or ?ps= param exists
   useEffect(() => {
-    const productParam = searchParams.get('p')
-    if (productParam && isValidBase62(productParam)) {
-      const productId = decodeBase62(productParam)
-      if (productId) {
-        // Find the product in our loaded products or fetch it
-        const product = products.find(p => p.id === productId)
-        if (product) {
-          // Open the product modal
-          setSelectedProduct(product)
-          const availableVariant = product.variants?.find((v: any) => v.stock > 0)
-          setSelectedVariant(availableVariant || (product.variants?.length > 0 ? product.variants[0] : null))
-          setSelectedModifiers([])
-          setShowProductModal(true)
+    // Try ps (raw product ID) first, then fall back to decoding p (Base62 encoded)
+    const rawProductId = searchParams.get('ps')
+    const encodedProductId = searchParams.get('p')
+    
+    let productId: string | null = null
+    
+    if (rawProductId && /^[0-9a-fA-F]{24}$/.test(rawProductId)) {
+      // Use raw product ID directly (more reliable)
+      productId = rawProductId
+    } else if (encodedProductId && isValidBase62(encodedProductId)) {
+      // Fall back to decoding Base62
+      productId = decodeBase62(encodedProductId)
+    }
+    
+    if (productId) {
+      // Find the product in our loaded products
+      const product = products.find(p => p.id === productId)
+      if (product) {
+        // Open the product modal
+        setSelectedProduct(product)
+        const availableVariant = product.variants?.find((v: any) => v.stock > 0)
+        setSelectedVariant(availableVariant || (product.variants?.length > 0 ? product.variants[0] : null))
+        setSelectedModifiers([])
+        setShowProductModal(true)
+      } else if (products.length > 0) {
+        // Product not in loaded products - fetch it directly from API
+        const fetchSharedProduct = async () => {
+          try {
+            const response = await fetch(`/api/storefront/${storeData.slug}/products?productId=${productId}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data.products && data.products.length > 0) {
+                const fetchedProduct = data.products[0]
+                setSelectedProduct(fetchedProduct)
+                const availableVariant = fetchedProduct.variants?.find((v: any) => v.stock > 0)
+                setSelectedVariant(availableVariant || (fetchedProduct.variants?.length > 0 ? fetchedProduct.variants[0] : null))
+                setSelectedModifiers([])
+                setShowProductModal(true)
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch shared product:', error)
+          }
         }
+        fetchSharedProduct()
       }
     }
-  }, [searchParams, products])
+  }, [searchParams, products, storeData.slug])
 
   // Share product handler - creates URL with encoded product ID and tracking params
   const handleShareProduct = useCallback((productId: string) => {

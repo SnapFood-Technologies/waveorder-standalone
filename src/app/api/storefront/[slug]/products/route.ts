@@ -79,6 +79,9 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
     
+    // Single product fetch parameter (for share links)
+    const singleProductId = searchParams.get('productId')
+    
     // Filter parameters
     const priceMin = searchParams.get('priceMin') ? parseFloat(searchParams.get('priceMin')!) : null
     const priceMax = searchParams.get('priceMax') ? parseFloat(searchParams.get('priceMax')!) : null
@@ -134,6 +137,105 @@ export async function GET(
     const businessIds = hasConnections 
       ? [business.id, ...business.connectedBusinesses]
       : [business.id]
+
+    // SINGLE PRODUCT FETCH: If productId is provided, fetch just that product (for share links)
+    if (singleProductId) {
+      const singleProduct = await prisma.product.findFirst({
+        where: {
+          id: singleProductId,
+          businessId: { in: businessIds },
+          isActive: true,
+          price: { gt: 0 }
+        },
+        include: {
+          category: {
+            select: { id: true, name: true, nameAl: true, nameEl: true }
+          },
+          brand: {
+            select: { id: true, name: true, logo: true }
+          }
+        }
+      }) as any
+
+      if (!singleProduct) {
+        return NextResponse.json({
+          products: [],
+          pagination: { page: 1, limit: 1, total: 0, hasMore: false },
+          message: 'Product not found'
+        })
+      }
+
+      // Calculate effective price for the single product
+      const { effectivePrice, effectiveOriginalPrice } = calculateEffectivePrice(
+        singleProduct.price,
+        singleProduct.originalPrice,
+        singleProduct.saleStartDate,
+        singleProduct.saleEndDate
+      )
+
+      // Parse modifiers and variants JSON
+      let parsedModifiers = []
+      let parsedVariants = []
+      
+      try {
+        if (singleProduct.modifiers) {
+          parsedModifiers = typeof singleProduct.modifiers === 'string' 
+            ? JSON.parse(singleProduct.modifiers) 
+            : singleProduct.modifiers
+        }
+      } catch {
+        parsedModifiers = []
+      }
+      
+      try {
+        if (singleProduct.variants) {
+          parsedVariants = typeof singleProduct.variants === 'string' 
+            ? JSON.parse(singleProduct.variants) 
+            : singleProduct.variants
+        }
+      } catch {
+        parsedVariants = []
+      }
+
+      const formattedProduct = {
+        id: singleProduct.id,
+        name: singleProduct.name,
+        nameAl: singleProduct.nameAl,
+        nameEl: singleProduct.nameEl,
+        description: singleProduct.description,
+        descriptionAl: singleProduct.descriptionAl,
+        descriptionEl: singleProduct.descriptionEl,
+        price: effectivePrice,
+        originalPrice: effectiveOriginalPrice,
+        images: singleProduct.images || [],
+        categoryId: singleProduct.categoryId,
+        categoryName: singleProduct.category?.name || null,
+        categoryNameAl: singleProduct.category?.nameAl || null,
+        categoryNameEl: singleProduct.category?.nameEl || null,
+        stock: singleProduct.stock,
+        trackInventory: singleProduct.trackInventory,
+        modifiers: parsedModifiers,
+        variants: parsedVariants,
+        sortOrder: singleProduct.sortOrder,
+        businessId: singleProduct.businessId,
+        brandId: singleProduct.brandId,
+        brand: singleProduct.brand ? {
+          id: singleProduct.brand.id,
+          name: singleProduct.brand.name,
+          logo: singleProduct.brand.logo
+        } : null
+      }
+
+      return NextResponse.json({
+        products: [formattedProduct],
+        pagination: {
+          page: 1,
+          limit: 1,
+          total: 1,
+          hasMore: false
+        }
+      })
+    }
 
     // Get category info to handle parent/child relationships
     // OPTIMIZATION: Use a single query to get category + children in parallel
