@@ -19,6 +19,7 @@ interface ValidatedProduct {
   category: string
   stock: number
   sku: string | null
+  imageUrl: string | null
 }
 
 export async function POST(
@@ -37,6 +38,7 @@ export async function POST(
     const formData = await request.formData()
     const file = formData.get('file') as File
     const skipInvalidRows = formData.get('skipInvalidRows') === 'true'
+    const replaceAll = formData.get('replaceAll') === 'true'
 
     if (!file) {
       return NextResponse.json({ message: 'No file provided' }, { status: 400 })
@@ -63,13 +65,14 @@ export async function POST(
     const errors: ValidationError[] = []
     const skippedRows: number[] = []
 
-    // Get existing SKUs to check for duplicates
+    // Get existing SKUs to check for duplicates (skip if replacing all)
     const existingProducts = await prisma.product.findMany({
       where: { businessId },
-      select: { sku: true }
+      select: { id: true, sku: true }
     })
-    const existingSkus = new Set(existingProducts.map(p => p.sku).filter(Boolean))
+    const existingSkus = replaceAll ? new Set<string>() : new Set(existingProducts.map(p => p.sku).filter(Boolean))
     const seenSkusInFile = new Set<string>()
+    const existingProductCount = existingProducts.length
 
     // Validate each row
     for (let i = 0; i < rows.length; i++) {
@@ -124,6 +127,22 @@ export async function POST(
 
       if (rowValid) {
         categories.add(String(row.category).trim())
+        
+        // Handle image URL (accept 'image', 'image_url', or 'imageurl')
+        const imageUrlRaw = row.image || row.image_url || row.imageurl || ''
+        let imageUrl: string | null = null
+        if (imageUrlRaw && String(imageUrlRaw).trim()) {
+          const urlStr = String(imageUrlRaw).trim()
+          try {
+            const url = new URL(urlStr)
+            if (url.protocol === 'http:' || url.protocol === 'https:') {
+              imageUrl = urlStr
+            }
+          } catch {
+            // Invalid URL, skip silently
+          }
+        }
+        
         validProducts.push({
           row: rowNum,
           name: String(row.name).trim(),
@@ -131,7 +150,8 @@ export async function POST(
           price: parseFloat(row.price),
           category: String(row.category).trim(),
           stock: row.stock !== undefined && row.stock !== null && row.stock !== '' ? parseInt(row.stock) : 0,
-          sku: row.sku ? String(row.sku).trim() : null
+          sku: row.sku ? String(row.sku).trim() : null,
+          imageUrl
         })
       } else {
         skippedRows.push(rowNum)
@@ -162,6 +182,26 @@ export async function POST(
         errors,
         skippedRows
       }, { status: 400 })
+    }
+
+    // If replaceAll is true, delete all existing products first
+    let deletedCount = 0
+    if (replaceAll && existingProductCount > 0) {
+      // Delete product events first (due to foreign key constraint)
+      await prisma.productEvent.deleteMany({
+        where: { businessId }
+      })
+      
+      // Delete inventory activities
+      await prisma.inventoryActivity.deleteMany({
+        where: { businessId }
+      })
+      
+      // Delete all existing products
+      const deleteResult = await prisma.product.deleteMany({
+        where: { businessId }
+      })
+      deletedCount = deleteResult.count
     }
 
     // Create categories
@@ -214,7 +254,7 @@ export async function POST(
             sku: productData.sku,
             businessId,
             categoryId,
-            images: []
+            images: productData.imageUrl ? [productData.imageUrl] : []
           }
         })
 
@@ -247,7 +287,9 @@ export async function POST(
       importErrors,
       skippedRows,
       newCategoriesCreated: newCategories.length,
-      products: createdProducts.map(p => ({ id: p.id, name: p.name }))
+      products: createdProducts.map(p => ({ id: p.id, name: p.name })),
+      deletedCount: replaceAll ? deletedCount : 0,
+      wasReplaceAll: replaceAll
     })
 
   } catch (error) {
