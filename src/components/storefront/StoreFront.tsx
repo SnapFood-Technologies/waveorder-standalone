@@ -2032,7 +2032,11 @@ const trackProductEvent = useCallback((
   }, [cart, storeData.id])
 
   // Handle product sharing URL parameter - open product modal if ?p= or ?ps= param exists
+  // Only runs once per page load to prevent reopening on pagination/filtering
   useEffect(() => {
+    // Skip if already handled this share link
+    if (shareHandledRef.current) return
+    
     // Try ps (raw product ID) first, then fall back to decoding p (Base62 encoded)
     const rawProductId = searchParams.get('ps')
     const encodedProductId = searchParams.get('p')
@@ -2051,6 +2055,8 @@ const trackProductEvent = useCallback((
       // Find the product in our loaded products
       const product = products.find(p => p.id === productId)
       if (product) {
+        // Mark as handled before opening modal
+        shareHandledRef.current = true
         // Open the product modal
         setSelectedProduct(product)
         const availableVariant = product.variants?.find((v: any) => v.stock > 0)
@@ -2058,6 +2064,8 @@ const trackProductEvent = useCallback((
         setSelectedModifiers([])
         setShowProductModal(true)
       } else if (products.length > 0) {
+        // Mark as handled before fetching
+        shareHandledRef.current = true
         // Product not in loaded products - fetch it directly from API
         const fetchSharedProduct = async () => {
           try {
@@ -2343,6 +2351,8 @@ const trackProductEvent = useCallback((
   const isFetchingRef = useRef(false)
   // Track when main menu category is clicked to ensure it takes priority over modal filter
   const mainMenuClickedRef = useRef(false)
+  // Track if share link has been handled (to prevent reopening modal on pagination/filtering)
+  const shareHandledRef = useRef(false)
   
   // Load more products on scroll (infinite scroll)
   useEffect(() => {
