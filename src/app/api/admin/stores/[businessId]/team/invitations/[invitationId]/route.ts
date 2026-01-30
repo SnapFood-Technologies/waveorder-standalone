@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { canInviteMembers } from '@/lib/permissions'
+import { logTeamAudit } from '@/lib/team-audit'
 
 
 export async function POST(
@@ -127,6 +128,16 @@ export async function POST(
       inviteUrl
     })
 
+    // Log audit event
+    await logTeamAudit({
+      businessId,
+      actorId: session.user.id,
+      actorEmail: session.user.email || '',
+      action: 'INVITATION_RESENT',
+      targetEmail: invitation.email,
+      details: { invitationId: invitation.id, role: invitation.role }
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Invitation resent successfully',
@@ -200,6 +211,16 @@ export async function DELETE(
       data: { status: 'CANCELLED' }
     })
 
+    // Log audit event
+    await logTeamAudit({
+      businessId,
+      actorId: session.user.id,
+      actorEmail: session.user.email || '',
+      action: 'INVITATION_CANCELLED',
+      targetEmail: invitation.email,
+      details: { invitationId: invitation.id, role: invitation.role }
+    })
+
     return NextResponse.json({
       success: true,
       message: 'Invitation cancelled successfully'
@@ -215,6 +236,6 @@ export async function DELETE(
 }
 
 function generateInviteToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15)
+  // Use crypto.randomUUID() for secure token generation
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8)
 }

@@ -12,10 +12,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch incomplete and inactive businesses
+    // Exclude test businesses from archived analytics
+    const excludeTestCondition = { testMode: { not: true } }
+
+    // Fetch incomplete and inactive businesses (excluding test businesses)
     const [allBusinesses, inactiveBusinesses] = await Promise.all([
-      // Fetch all businesses for incomplete check
+      // Fetch all businesses for incomplete check (excluding test)
       prisma.business.findMany({
+        where: excludeTestCondition,
         select: {
           id: true,
           name: true,
@@ -28,10 +32,11 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Inactive businesses with deactivation info
+      // Inactive businesses with deactivation info (excluding test)
       prisma.business.findMany({
         where: {
-          isActive: false
+          isActive: false,
+          ...excludeTestCondition
         },
         select: {
           id: true,

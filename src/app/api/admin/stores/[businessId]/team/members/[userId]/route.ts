@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { canUpdateMemberRoles, canRemoveMembers, canManageUserRole, canRemoveUser } from '@/lib/permissions'
 import { sendRoleChangedEmail, sendTeamMemberRemovedEmail } from '@/lib/email'
+import { logTeamAudit } from '@/lib/team-audit'
 
 
 export async function PATCH(
@@ -122,6 +123,17 @@ export async function PATCH(
       console.error('Failed to send role change email:', emailError)
       // Don't fail the request if email fails
     }
+
+    // Log audit event
+    await logTeamAudit({
+      businessId,
+      actorId: session.user.id,
+      actorEmail: session.user.email || '',
+      action: 'MEMBER_ROLE_CHANGED',
+      targetId: userId,
+      targetEmail: user?.email || '',
+      details: { oldRole: targetUser.role, newRole }
+    })
 
     return NextResponse.json({
       success: true,
@@ -247,6 +259,17 @@ export async function DELETE(
       console.error('Failed to send removal email:', emailError)
       // Don't fail the request if email fails
     }
+
+    // Log audit event
+    await logTeamAudit({
+      businessId,
+      actorId: session.user.id,
+      actorEmail: session.user.email || '',
+      action: 'MEMBER_REMOVED',
+      targetId: userId,
+      targetEmail: user?.email || '',
+      details: { role: targetUser.role }
+    })
 
     return NextResponse.json({
       success: true,

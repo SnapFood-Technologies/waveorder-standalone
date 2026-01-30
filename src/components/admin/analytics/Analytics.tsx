@@ -25,6 +25,7 @@ import {
   Share2
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
 interface AnalyticsProps {
   businessId: string
@@ -712,6 +713,60 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Orders by Status</h3>
               <p className="text-sm text-gray-600 mb-4">Distribution of orders across different statuses</p>
+              
+              {/* Pie Chart Visualization */}
+              <div className="mb-8">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={data.ordersByStatus.map((status: any) => ({
+                        name: status.status.toLowerCase().replace(/_/g, ' '),
+                        value: status.count,
+                        status: status.status
+                      }))}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={2}
+                      dataKey="value"
+                      label={(props: any) => `${props.name} ${(props.percent * 100).toFixed(0)}%`}
+                      labelLine={true}
+                    >
+                      {data.ordersByStatus.map((status: any, index: number) => {
+                        const pieColors: Record<string, string> = {
+                          PENDING: '#eab308',
+                          CONFIRMED: '#3b82f6',
+                          PREPARING: '#f97316',
+                          READY: '#a855f7',
+                          PICKED_UP: '#06b6d4',
+                          OUT_FOR_DELIVERY: '#06b6d4',
+                          DELIVERED: '#22c55e',
+                          CANCELLED: '#ef4444',
+                          REFUNDED: '#6b7280'
+                        }
+                        return (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={pieColors[status.status] || '#14b8a6'} 
+                          />
+                        )
+                      })}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [`${value} orders`, name]}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Detailed List */}
               <div className="space-y-3">
                 {data.ordersByStatus.map((status: any) => {
                   const statusColors: Record<string, string> = {
@@ -719,6 +774,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                     CONFIRMED: 'bg-blue-500',
                     PREPARING: 'bg-orange-500',
                     READY: 'bg-purple-500',
+                    PICKED_UP: 'bg-cyan-500',
                     OUT_FOR_DELIVERY: 'bg-cyan-500',
                     DELIVERED: 'bg-green-500',
                     CANCELLED: 'bg-red-500',

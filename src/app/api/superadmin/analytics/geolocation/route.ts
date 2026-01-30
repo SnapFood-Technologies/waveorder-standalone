@@ -16,30 +16,36 @@ export async function GET(request: NextRequest) {
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - days)
 
-    // 1. Businesses by country (active only)
+    // Exclude test businesses from all analytics
+    const excludeTestCondition = { testMode: { not: true } }
+
+    // 1. Businesses by country (active only, excluding test)
     const businessesByCountry = await prisma.business.groupBy({
       by: ['country'],
       where: {
         country: { not: null },
-        isActive: true
+        isActive: true,
+        ...excludeTestCondition
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
     })
 
-    // Also count active businesses without country
+    // Also count active businesses without country (excluding test)
     const businessesWithoutCountry = await prisma.business.count({
       where: { 
         country: null,
-        isActive: true
+        isActive: true,
+        ...excludeTestCondition
       }
     })
 
-    // 2. Businesses by city (extract from address - top 10, active only)
+    // 2. Businesses by city (extract from address - top 10, active only, excluding test)
     const allBusinesses = await prisma.business.findMany({
       where: { 
         address: { not: null },
-        isActive: true
+        isActive: true,
+        ...excludeTestCondition
       },
       select: { address: true, country: true }
     })
@@ -66,24 +72,26 @@ export async function GET(request: NextRequest) {
       .slice(0, 10)
       .map(([city, count]) => ({ city, count }))
 
-    // 3. Top countries by page views (from VisitorSession)
+    // 3. Top countries by page views (from VisitorSession, excluding test businesses)
     const viewsByCountry = await prisma.visitorSession.groupBy({
       by: ['country'],
       where: {
         country: { not: null },
-        visitedAt: { gte: startDate }
+        visitedAt: { gte: startDate },
+        business: excludeTestCondition
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
       take: 15
     })
 
-    // 4. Top cities by page views
+    // 4. Top cities by page views (excluding test businesses)
     const viewsByCity = await prisma.visitorSession.groupBy({
       by: ['city'],
       where: {
         city: { not: null },
-        visitedAt: { gte: startDate }
+        visitedAt: { gte: startDate },
+        business: excludeTestCondition
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },

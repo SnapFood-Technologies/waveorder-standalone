@@ -452,7 +452,8 @@ export async function GET(
     const storefrontLanguage = business.storefrontLanguage || business.language || 'en'
     const useAlbanian = storefrontLanguage === 'al' || storefrontLanguage === 'sq'
     const useGreek = storefrontLanguage === 'el'
-    const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch']
+    // Exception slugs: always show English names/descriptions (product data is in English)
+    const exceptionSlugs = ['swarovski', 'swatch', 'villeroy-boch', 'naia-studio']
     const isExceptionSlug = exceptionSlugs.includes(slug)
 
     // Transform products
@@ -479,6 +480,16 @@ export async function GET(
           product.saleEndDate
         )
 
+        // Product name localization - ONLY for naia-studio
+        // Greek storefront → nameEl first, fallback to name
+        // English storefront → name first, fallback to nameEl
+        // All other stores → use default name
+        const productName = slug === 'naia-studio'
+          ? (useGreek
+              ? (product.nameEl || product.name || '')
+              : (product.name || product.nameEl || ''))
+          : product.name
+
         const productDescription = isExceptionSlug
           ? (product.description || product.descriptionAl || product.descriptionEl || '')
           : (useAlbanian && product.descriptionAl 
@@ -489,7 +500,7 @@ export async function GET(
 
         return {
           id: product.id,
-          name: product.name,
+          name: productName,
           description: productDescription,
           descriptionAl: product.descriptionAl,
           descriptionEl: product.descriptionEl,

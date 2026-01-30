@@ -118,6 +118,25 @@ export async function GET(
     const conversionRate = totalViews > 0 ? ((completedOrdersCount / totalViews) * 100).toFixed(2) : 0
     const avgOrderValue = completedOrdersCount > 0 ? totalRevenue / completedOrdersCount : 0
 
+    // Calculate bounce rate from VisitorSession data
+    // A "bounce" is when a visitor only has one session/pageview
+    // Group sessions by IP to identify visitors with single visits
+    const visitorsByIp = new Map<string, number>()
+    visitorSessions.forEach(session => {
+      const ip = session.ipAddress || 'unknown'
+      visitorsByIp.set(ip, (visitorsByIp.get(ip) || 0) + 1)
+    })
+    
+    const totalUniqueVisitorsFromSessions = visitorsByIp.size
+    const singleVisitVisitors = Array.from(visitorsByIp.values()).filter(count => count === 1).length
+    const bounceRate = totalUniqueVisitorsFromSessions > 0 
+      ? Math.round((singleVisitVisitors / totalUniqueVisitorsFromSessions) * 100)
+      : 0
+    
+    // Session duration: We don't have exit time tracking yet, so this remains estimated
+    // For a real implementation, you would need to track when visitors leave or add pageview events
+    const avgSessionDuration = 180 // Placeholder - requires additional tracking implementation
+
     // Calculate previous period for comparison
     const periodDuration = endDate.getTime() - startDate.getTime()
     const prevStartDate = new Date(startDate.getTime() - periodDuration)
@@ -434,8 +453,8 @@ export async function GET(
           revenue: totalRevenue, // Only revenue from completed orders
           conversionRate: parseFloat(conversionRate as string),
           avgOrderValue,
-          bounceRate: 35, // Placeholder - would need session duration tracking
-          avgSessionDuration: 180, // Placeholder - would need session duration tracking
+          bounceRate, // Calculated from VisitorSession data (single-visit visitors / total visitors)
+          avgSessionDuration, // Placeholder - requires exit time tracking implementation
           viewsGrowth: parseFloat(viewsGrowth as string),
           revenueGrowth: parseFloat(revenueGrowth as string)
         },

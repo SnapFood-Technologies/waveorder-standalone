@@ -38,6 +38,9 @@ export async function GET(request: NextRequest) {
         startDate.setDate(now.getDate() - 30)
     }
 
+    // Exclude test businesses from all analytics
+    const excludeTestCondition = { testMode: { not: true } }
+
     // Fetch all data in parallel for performance
     const [
       totalBusinesses,
@@ -51,11 +54,13 @@ export async function GET(request: NextRequest) {
       incompleteBusinesses,
       inactiveBusinesses
     ] = await Promise.all([
-      // Total counts
-      prisma.business.count(),
-      // Active businesses count
+      // Total counts (excluding test businesses)
       prisma.business.count({
-        where: { isActive: true }
+        where: excludeTestCondition
+      }),
+      // Active businesses count (excluding test businesses)
+      prisma.business.count({
+        where: { isActive: true, ...excludeTestCondition }
       }),
       prisma.user.count({
         where: {
@@ -64,9 +69,13 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.order.count(),
+      prisma.order.count({
+        where: {
+          business: excludeTestCondition
+        }
+      }),
       
-      // Paid and completed orders for revenue
+      // Paid and completed orders for revenue (excluding test businesses)
       // - DELIVERY orders: DELIVERED + PAID
       // - PICKUP orders: PICKED_UP + PAID
       // - DINE_IN orders: PICKED_UP + PAID
@@ -86,7 +95,8 @@ export async function GET(request: NextRequest) {
           },
           createdAt: {
             gte: startDate
-          }
+          },
+          business: excludeTestCondition
         },
         select: {
           total: true,
@@ -95,10 +105,11 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Businesses with order counts for top performers (only active businesses)
+      // Businesses with order counts for top performers (only active businesses, excluding test)
       prisma.business.findMany({
         where: {
-          isActive: true // Only count active businesses for revenue calculations
+          isActive: true, // Only count active businesses for revenue calculations
+          ...excludeTestCondition
         },
         select: {
           id: true,
@@ -167,12 +178,13 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Orders for analytics
+      // Orders for analytics (excluding test businesses)
       prisma.order.findMany({
         where: {
           createdAt: {
             gte: startDate
-          }
+          },
+          business: excludeTestCondition
         },
         select: {
           createdAt: true,
@@ -180,9 +192,10 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Fetch all businesses first (we'll filter for incomplete in memory)
+      // Fetch all businesses first (we'll filter for incomplete in memory, excluding test)
       // Prisma/MongoDB has issues with null checks in nested OR conditions
       prisma.business.findMany({
+        where: excludeTestCondition,
         select: {
           id: true,
           name: true,
@@ -195,10 +208,11 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Inactive businesses with deactivation info
+      // Inactive businesses with deactivation info (excluding test)
       prisma.business.findMany({
         where: {
-          isActive: false
+          isActive: false,
+          ...excludeTestCondition
         },
         select: {
           id: true,

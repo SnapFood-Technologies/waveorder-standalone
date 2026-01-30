@@ -7,7 +7,10 @@ import {
   AlertTriangle,
   XCircle,
   ArrowLeft,
-  Archive
+  Archive,
+  CheckCircle,
+  X,
+  Loader2
 } from 'lucide-react'
 
 interface ArchivedData {
@@ -30,6 +33,11 @@ export function SuperAdminAnalyticsArchived() {
   const [data, setData] = useState<ArchivedData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [activateModal, setActivateModal] = useState<{ isOpen: boolean; business: { id: string; name: string } | null }>({
+    isOpen: false,
+    business: null
+  })
+  const [activating, setActivating] = useState(false)
 
   useEffect(() => {
     fetchArchivedData()
@@ -53,6 +61,37 @@ export function SuperAdminAnalyticsArchived() {
       setError(error instanceof Error ? error.message : 'Failed to load archived data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleActivateBusiness = async () => {
+    if (!activateModal.business) return
+
+    try {
+      setActivating(true)
+      const response = await fetch(`/api/superadmin/businesses/${activateModal.business.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: true })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to activate business')
+      }
+
+      // Remove the activated business from the list
+      setData(prev => prev ? {
+        ...prev,
+        inactiveBusinesses: prev.inactiveBusinesses.filter(b => b.id !== activateModal.business?.id)
+      } : null)
+
+      setActivateModal({ isOpen: false, business: null })
+    } catch (error) {
+      console.error('Error activating business:', error)
+      alert(error instanceof Error ? error.message : 'Failed to activate business')
+    } finally {
+      setActivating(false)
     }
   }
 
@@ -195,6 +234,7 @@ export function SuperAdminAnalyticsArchived() {
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Business</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Deactivated</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Reason</th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -215,6 +255,15 @@ export function SuperAdminAnalyticsArchived() {
                         <span className="text-gray-400 italic">No reason provided</span>
                       )}
                     </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => setActivateModal({ isOpen: true, business: { id: business.id, name: business.name } })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        Activate
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -227,6 +276,72 @@ export function SuperAdminAnalyticsArchived() {
           </div>
         )}
       </div>
+
+      {/* Activate Confirmation Modal */}
+      {activateModal.isOpen && activateModal.business && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => !activating && setActivateModal({ isOpen: false, business: null })} />
+            
+            <div className="relative inline-block w-full max-w-md p-6 my-8 text-left align-middle bg-white rounded-xl shadow-xl transform transition-all">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Activate Business</h3>
+                </div>
+                <button
+                  onClick={() => !activating && setActivateModal({ isOpen: false, business: null })}
+                  disabled={activating}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="mb-6">
+                <p className="text-gray-600">
+                  Are you sure you want to activate <span className="font-semibold text-gray-900">{activateModal.business.name}</span>?
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  This will restore the business storefront and allow customers to access it again.
+                </p>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setActivateModal({ isOpen: false, business: null })}
+                  disabled={activating}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleActivateBusiness}
+                  disabled={activating}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {activating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Activating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Yes, Activate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

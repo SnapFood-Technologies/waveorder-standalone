@@ -389,9 +389,11 @@ model Business {
   isActive           Boolean             @default(true)
   deactivatedAt      DateTime?
   deactivationReason String?
+  testMode           Boolean             @default(false) // Test businesses excluded from analytics
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   TeamInvitation     TeamInvitation[]
+  TeamAuditLog       TeamAuditLog[]
   InventoryActivity  InventoryActivity[]
 }
 
@@ -917,6 +919,42 @@ model TeamInvitation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Audit Log for tracking sensitive team actions
+model TeamAuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Who performed the action
+  actorId    String   @db.ObjectId
+  actorEmail String
+
+  // Action details
+  action     TeamAuditAction
+  targetId   String?          // ID of the affected user/invitation
+  targetEmail String?         // Email of the affected user
+  
+  // Additional context
+  details    String?          // JSON string with additional details
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt  DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([actorId])
+}
+
+enum TeamAuditAction {
+  MEMBER_INVITED
+  MEMBER_ROLE_CHANGED
+  MEMBER_REMOVED
+  INVITATION_RESENT
+  INVITATION_CANCELLED
+  INVITATION_ACCEPTED
 }
 
 // Individual visitor sessions - stores each visit separately (no aggregation)
