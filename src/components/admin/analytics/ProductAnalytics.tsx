@@ -17,7 +17,9 @@ import {
   BarChart3,
   AlertCircle,
   ExternalLink,
-  Package
+  Package,
+  HelpCircle,
+  X
 } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
 
@@ -85,6 +87,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
   const [selectedPeriod, setSelectedPeriod] = useState('month')
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'most-viewed' | 'opportunity' | 'low-performing'>('best-sellers')
   const [business, setBusiness] = useState<{ currency: string }>({ currency: 'USD' })
+  const [showHelpModal, setShowHelpModal] = useState(false)
 
   useEffect(() => {
     fetchBusinessData()
@@ -537,7 +540,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <div className="flex items-start gap-3">
           <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-800">
+          <div className="text-sm text-blue-800 w-full">
             <p className="font-medium mb-3">Understanding Your Analytics</p>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -573,9 +576,194 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
                 </ul>
               </div>
             </div>
+
+            {/* CTA for detailed help */}
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <button
+                onClick={() => setShowHelpModal(true)}
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 hover:text-blue-900 transition-colors"
+              >
+                <HelpCircle className="w-4 h-4" />
+                Need more understanding of these values?
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Detailed Help Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowHelpModal(false)} />
+            
+            <div className="relative inline-block w-full max-w-3xl p-6 my-8 text-left align-middle bg-white rounded-xl shadow-xl transform transition-all">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <HelpCircle className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Analytics Guide</h3>
+                    <p className="text-sm text-gray-500">Detailed explanation of all metrics</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowHelpModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+                {/* Summary Cards Section */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-600" />
+                    Summary Cards
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex gap-3">
+                      <Eye className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-800">Total Product Views</p>
+                        <p className="text-gray-600">Number of times customers opened product details. Each view indicates customer interest.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <ShoppingCart className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-800">Add to Carts</p>
+                        <p className="text-gray-600">Number of times products were added to cart. Shows purchase intent.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <ShoppingBag className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-800">Orders Placed</p>
+                        <p className="text-gray-600">Total unique orders submitted by customers (any status). Represents customer demand.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Package className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-800">Orders Completed</p>
+                        <p className="text-gray-600">Orders that are delivered/picked up AND paid. Represents actual fulfillment.</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Wallet className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-gray-800">Revenue</p>
+                        <p className="text-gray-600">Total money earned from completed orders only. Does not include pending orders.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversion Funnel Section */}
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                    Conversion Funnel
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-800">View to Cart Rate</p>
+                      <p className="text-gray-600">Percentage of views that resulted in add-to-cart. Formula: (Add to Carts ÷ Views) × 100</p>
+                      <p className="text-xs text-purple-600 mt-1">Higher = Products are appealing to customers</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Cart to Order Rate</p>
+                      <p className="text-gray-600">Percentage of cart additions that became orders. Formula: (Orders Placed ÷ Add to Carts) × 100</p>
+                      <p className="text-xs text-purple-600 mt-1">Lower rate may indicate checkout issues or price concerns</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Overall Conversion</p>
+                      <p className="text-gray-600">Percentage of views that resulted in orders. Formula: (Orders Placed ÷ Views) × 100</p>
+                      <p className="text-xs text-purple-600 mt-1">Your overall sales effectiveness metric</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Table Section */}
+                <div className="bg-teal-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    📋 Product Table Columns
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-800">Views</p>
+                      <p className="text-gray-600">How many times this specific product was viewed</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Add to Cart (with %)</p>
+                      <p className="text-gray-600">Number of cart additions. The percentage shows view-to-cart rate for this product.</p>
+                      <p className="text-xs text-teal-600 mt-1">Example: "2 (100%)" = 2 add-to-carts from 2 views</p>
+                      <p className="text-xs text-orange-600">Note: Can exceed 100% if product is added multiple times without viewing</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Placed (with items)</p>
+                      <p className="text-gray-600">Number of orders containing this product. "X items" shows total quantity ordered.</p>
+                      <p className="text-xs text-teal-600 mt-1">Example: "1 (2 items)" = 1 order with 2 units of this product</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Completed (with items)</p>
+                      <p className="text-gray-600">Number of fulfilled orders containing this product. Only counts delivered & paid orders.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Revenue</p>
+                      <p className="text-gray-600">Total revenue from completed orders for this product only.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Conversion %</p>
+                      <p className="text-gray-600">Overall conversion rate for this product. Formula: (Orders Placed ÷ Views) × 100</p>
+                      <p className="text-xs text-teal-600 mt-1">Green = 5%+, Yellow = 2-5%, Red = below 2%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cart Abandonment Section */}
+                <div className="bg-orange-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    🛒 Cart Abandonment
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <p className="font-medium text-gray-800">Cart Abandonment Rate</p>
+                      <p className="text-gray-600">Percentage of shopping sessions where items were added to cart but no order was placed within 24 hours.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Abandoned Carts</p>
+                      <p className="text-gray-600">Number of sessions with items left in cart without completing purchase.</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-800">Converted Carts</p>
+                      <p className="text-gray-600">Number of sessions that successfully completed a purchase.</p>
+                    </div>
+                    <p className="text-xs text-orange-600 mt-2">
+                      Tip: High abandonment rate may indicate issues with checkout process, shipping costs, or payment options.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="mt-6 pt-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => setShowHelpModal(false)}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
