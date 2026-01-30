@@ -32,9 +32,11 @@ interface ProductData {
   categoryName: string
   views: number
   addToCarts: number
-  orders: number
+  ordersPlaced: number      // All orders (customer intent)
+  ordersCompleted: number   // Fulfilled orders only
   revenue: number
-  quantity: number
+  quantityPlaced: number
+  quantityCompleted: number
   viewToCartRate: number
   cartToOrderRate: number
   conversionRate: number
@@ -44,7 +46,8 @@ interface AnalyticsData {
   summary: {
     totalViews: number
     totalAddToCarts: number
-    totalOrders: number
+    totalOrdersPlaced: number     // All orders (customer intent)
+    totalOrdersCompleted: number  // Fulfilled orders only
     totalRevenue: number
     overallViewToCartRate: number
     overallCartToOrderRate: number
@@ -156,10 +159,10 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
   }
 
   const tabs = [
-    { id: 'best-sellers' as const, label: 'Best Sellers', icon: ShoppingBag, description: 'Products with most orders' },
+    { id: 'best-sellers' as const, label: 'Best Sellers', icon: ShoppingBag, description: 'Products with most orders placed' },
     { id: 'most-viewed' as const, label: 'Most Viewed', icon: Eye, description: 'Products with most views' },
     { id: 'opportunity' as const, label: 'Opportunity', icon: TrendingUp, description: 'High views, low conversions' },
-    { id: 'low-performing' as const, label: 'Needs Attention', icon: AlertCircle, description: 'Add to carts but no orders' }
+    { id: 'low-performing' as const, label: 'Needs Attention', icon: AlertCircle, description: 'Add to carts but no orders placed' }
   ]
 
   if (loading) {
@@ -249,7 +252,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <Eye className="w-5 h-5 text-blue-600" />
@@ -268,10 +271,18 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <ShoppingBag className="w-5 h-5 text-green-600" />
+            <ShoppingBag className="w-5 h-5 text-teal-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatNumber(data.summary.totalOrders)}</p>
-          <p className="text-sm text-gray-600">Orders</p>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(data.summary.totalOrdersPlaced)}</p>
+          <p className="text-sm text-gray-600">Orders Placed</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <Package className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatNumber(data.summary.totalOrdersCompleted)}</p>
+          <p className="text-sm text-gray-600">Orders Completed</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -305,7 +316,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
             </div>
             <p className="text-sm text-purple-600">Cart to Order Rate</p>
             <p className="text-xs text-purple-500 mt-1">
-              {formatNumber(data.summary.totalAddToCarts)} carts → {formatNumber(data.summary.totalOrders)} orders
+              {formatNumber(data.summary.totalAddToCarts)} carts → {formatNumber(data.summary.totalOrdersPlaced)} orders placed
             </p>
           </div>
           
@@ -316,7 +327,7 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
             </div>
             <p className="text-sm text-green-600">Overall Conversion</p>
             <p className="text-xs text-green-500 mt-1">
-              {formatNumber(data.summary.totalViews)} views → {formatNumber(data.summary.totalOrders)} orders
+              {formatNumber(data.summary.totalViews)} views → {formatNumber(data.summary.totalOrdersPlaced)} orders placed
             </p>
           </div>
         </div>
@@ -421,7 +432,10 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
                     Add to Cart
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Orders
+                    <span title="All orders placed by customers">Placed</span>
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span title="Orders that have been delivered/completed and paid">Completed</span>
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Revenue
@@ -475,9 +489,15 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
                       )}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-medium text-gray-900">{product.orders}</span>
+                      <span className="text-sm font-medium text-teal-700">{product.ordersPlaced}</span>
                       <span className="text-xs text-gray-500 block">
-                        {product.quantity} items
+                        {product.quantityPlaced} items
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-sm font-medium text-green-700">{product.ordersCompleted}</span>
+                      <span className="text-xs text-gray-500 block">
+                        {product.quantityCompleted} items
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -513,17 +533,46 @@ export default function ProductAnalytics({ businessId }: ProductAnalyticsProps) 
         )}
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      {/* Info Banner - Understanding Metrics */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <div className="flex items-start gap-3">
           <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
           <div className="text-sm text-blue-800">
-            <p className="font-medium mb-1">About Product Analytics</p>
-            <p>
-              This data tracks product views and add-to-cart events from your storefront.
-              Views are tracked when customers open a product modal, and add-to-cart events
-              are tracked when they add items to their cart.
-            </p>
+            <p className="font-medium mb-3">Understanding Your Analytics</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="font-medium text-blue-900 mb-1">📊 Tracking Events</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong>Views:</strong> When a customer opens a product modal</li>
+                  <li><strong>Add to Cart:</strong> When a customer adds an item to their cart</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">📦 Order Metrics</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong className="text-teal-700">Orders Placed:</strong> All orders submitted by customers (shows demand)</li>
+                  <li><strong className="text-green-700">Orders Completed:</strong> Delivered/picked up orders that are paid (actual fulfillment)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">💰 Revenue & Conversion</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong>Revenue:</strong> Calculated from completed orders only</li>
+                  <li><strong>Conversion Rate:</strong> Based on orders placed (customer action)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">🛒 Cart Abandonment</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li>A cart is abandoned if no order is placed within 24 hours</li>
+                  <li>Helps identify checkout friction points</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>

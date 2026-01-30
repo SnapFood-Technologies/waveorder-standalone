@@ -109,8 +109,8 @@ export async function GET(
       }
     }
 
-    // Fetch order items for this product
-    const orderItems = await prisma.orderItem.findMany({
+    // Fetch ALL order items for this product (Orders Placed)
+    const allOrderItems = await prisma.orderItem.findMany({
       where: {
         productId,
         order: {
@@ -118,11 +118,7 @@ export async function GET(
           createdAt: {
             gte: startDate,
             lte: endDate
-          },
-          status: {
-            in: ['DELIVERED', 'PICKED_UP', 'READY']
-          },
-          paymentStatus: 'PAID'
+          }
         }
       },
       select: {
@@ -130,31 +126,41 @@ export async function GET(
         price: true,
         order: {
           select: {
-            createdAt: true
+            createdAt: true,
+            status: true,
+            paymentStatus: true
           }
         }
       }
     })
 
-    const totalOrders = orderItems.length
-    const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0)
-    const totalRevenue = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    // Filter completed orders (for revenue calculation)
+    const completedOrderItems = allOrderItems.filter(item => 
+      ['DELIVERED', 'PICKED_UP', 'READY'].includes(item.order.status) && 
+      item.order.paymentStatus === 'PAID'
+    )
 
-    // Calculate conversion rates
+    const totalOrdersPlaced = allOrderItems.length
+    const totalOrdersCompleted = completedOrderItems.length
+    const totalQuantityPlaced = allOrderItems.reduce((sum, item) => sum + item.quantity, 0)
+    const totalQuantityCompleted = completedOrderItems.reduce((sum, item) => sum + item.quantity, 0)
+    const totalRevenue = completedOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+
+    // Calculate conversion rates (based on ordersPlaced - customer action)
     const viewToCartRate = totalViews > 0 
       ? Math.round((totalAddToCarts / totalViews) * 1000) / 10 
       : 0
     
     const cartToOrderRate = totalAddToCarts > 0 
-      ? Math.round((totalOrders / totalAddToCarts) * 1000) / 10 
+      ? Math.round((totalOrdersPlaced / totalAddToCarts) * 1000) / 10 
       : 0
     
     const conversionRate = totalViews > 0 
-      ? Math.round((totalOrders / totalViews) * 1000) / 10 
+      ? Math.round((totalOrdersPlaced / totalViews) * 1000) / 10 
       : 0
 
-    // Build daily trends for chart
-    const dailyTrends = buildDailyTrends(productEvents, orderItems, startDate, endDate)
+    // Build daily trends for chart (using all orders for trends)
+    const dailyTrends = buildDailyTrends(productEvents, allOrderItems, startDate, endDate)
 
     return NextResponse.json({
       data: {
@@ -168,9 +174,11 @@ export async function GET(
         summary: {
           totalViews,
           totalAddToCarts,
-          totalOrders,
-          totalQuantity,
-          totalRevenue,
+          totalOrdersPlaced,     // All orders (customer intent)
+          totalOrdersCompleted,  // Fulfilled orders only
+          totalQuantityPlaced,
+          totalQuantityCompleted,
+          totalRevenue,          // From completed orders only
           viewToCartRate,
           cartToOrderRate,
           conversionRate
@@ -201,7 +209,7 @@ export async function GET(
 // Build daily trends for charting
 function buildDailyTrends(
   events: Array<{ eventType: string; createdAt: Date }>,
-  orderItems: Array<{ order: { createdAt: Date }; quantity: number }>,
+  orderItems: Array<{ order: { createdAt: Date; status: string; paymentStatus: string }; quantity: number }>,
   startDate: Date,
   endDate: Date
 ) {

@@ -38,8 +38,10 @@ interface AnalyticsData {
   summary: {
     totalViews: number
     totalAddToCarts: number
-    totalOrders: number
-    totalQuantity: number
+    totalOrdersPlaced: number     // All orders (customer intent)
+    totalOrdersCompleted: number  // Fulfilled orders only
+    totalQuantityPlaced: number
+    totalQuantityCompleted: number
     totalRevenue: number
     viewToCartRate: number
     cartToOrderRate: number
@@ -273,7 +275,7 @@ export default function ProductAnalyticsDetail({ businessId, productId }: Produc
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <Eye className="w-5 h-5 text-blue-600" />
@@ -292,10 +294,18 @@ export default function ProductAnalyticsDetail({ businessId, productId }: Produc
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <ShoppingBag className="w-5 h-5 text-green-600" />
+            <ShoppingBag className="w-5 h-5 text-teal-600" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{data.summary.totalOrders}</p>
-          <p className="text-sm text-gray-600">Orders ({data.summary.totalQuantity} items)</p>
+          <p className="text-2xl font-bold text-gray-900">{data.summary.totalOrdersPlaced}</p>
+          <p className="text-sm text-gray-600">Orders Placed ({data.summary.totalQuantityPlaced} items)</p>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <Package className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{data.summary.totalOrdersCompleted}</p>
+          <p className="text-sm text-gray-600">Completed ({data.summary.totalQuantityCompleted} items)</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -482,6 +492,50 @@ export default function ProductAnalyticsDetail({ businessId, productId }: Produc
               <p className="text-sm text-gray-600">View analytics for all your products</p>
             </div>
           </Link>
+        </div>
+      </div>
+
+      {/* Info Banner - Understanding Metrics */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <BarChart3 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-3">Understanding Your Analytics</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="font-medium text-blue-900 mb-1">📊 Tracking Events</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong>Views:</strong> When a customer opens the product modal</li>
+                  <li><strong>Add to Cart:</strong> When a customer adds this item to cart</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">📦 Order Metrics</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong className="text-teal-700">Orders Placed:</strong> All orders with this product (demand)</li>
+                  <li><strong className="text-green-700">Orders Completed:</strong> Delivered/picked up + paid (fulfillment)</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">💰 Revenue & Conversion</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li><strong>Revenue:</strong> From completed orders only</li>
+                  <li><strong>Conversion Rate:</strong> Based on orders placed</li>
+                </ul>
+              </div>
+              
+              <div>
+                <p className="font-medium text-blue-900 mb-1">📈 Trends Chart</p>
+                <ul className="text-xs space-y-1 text-blue-700">
+                  <li>Shows daily views, carts, and orders placed</li>
+                  <li>Helps identify patterns and peak days</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -25,14 +25,16 @@ interface ProductData {
   productImage: string | null
   views: number
   addToCarts: number
-  orders: number
+  ordersPlaced: number
+  ordersCompleted: number
   conversionRate: number
 }
 
 interface SummaryData {
   totalViews: number
   totalAddToCarts: number
-  totalOrders: number
+  totalOrdersPlaced: number
+  totalOrdersCompleted: number
   overallConversionRate: number
 }
 
@@ -122,7 +124,7 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="text-center p-3 bg-blue-50 rounded-lg">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Eye className="w-4 h-4 text-blue-600" />
@@ -139,6 +141,14 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
           <p className="text-xs text-purple-600">Add to Carts</p>
         </div>
         
+        <div className="text-center p-3 bg-teal-50 rounded-lg" title="All orders submitted by customers">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <Package className="w-4 h-4 text-teal-600" />
+            <span className="text-xl font-bold text-teal-700">{formatNumber(summary.totalOrdersPlaced)}</span>
+          </div>
+          <p className="text-xs text-teal-600">Orders Placed</p>
+        </div>
+        
         <div className="text-center p-3 bg-green-50 rounded-lg">
           <div className="flex items-center justify-center gap-1 mb-1">
             <TrendingUp className="w-4 h-4 text-green-600" />
@@ -153,9 +163,10 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
         <div className="border-t border-gray-100 pt-4">
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-gray-700">Top Selling Products</h4>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span className="w-12 text-center">Views</span>
-              <span className="w-12 text-center">Orders</span>
+            <div className="flex items-center gap-3 text-xs text-gray-500">
+              <span className="w-10 text-center">Views</span>
+              <span className="w-10 text-center" title="Orders placed by customers">Placed</span>
+              <span className="w-10 text-center" title="Completed & paid orders">Done</span>
             </div>
           </div>
           <div className="space-y-1">
@@ -183,12 +194,15 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
                     {product.productName}
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 text-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 text-center">
                     <span className="text-sm text-gray-600">{formatNumber(product.views)}</span>
                   </div>
-                  <div className="w-12 text-center">
-                    <span className="text-sm font-medium text-gray-900">{product.orders}</span>
+                  <div className="w-10 text-center">
+                    <span className="text-sm font-medium text-teal-700">{product.ordersPlaced}</span>
+                  </div>
+                  <div className="w-10 text-center">
+                    <span className="text-sm font-medium text-green-700">{product.ordersCompleted}</span>
                   </div>
                 </div>
               </div>
@@ -196,6 +210,13 @@ export function ProductPerformanceWidget({ businessId }: ProductPerformanceWidge
           </div>
         </div>
       )}
+
+      {/* Info Note */}
+      <div className="border-t border-gray-100 pt-3 mt-4">
+        <p className="text-xs text-gray-500">
+          <strong>Placed:</strong> All orders • <strong>Done:</strong> Delivered & paid • Data from this month
+        </p>
+      </div>
     </div>
   )
 }

@@ -470,8 +470,18 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {data.products.topProducts.length > 0 ? (
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
-                <p className="text-sm text-gray-600 mt-1">Best performing products by revenue in the selected period</p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
+                    <p className="text-sm text-gray-600 mt-1">Best performing products by revenue in the selected period</p>
+                  </div>
+                  <Link
+                    href={`/admin/stores/${businessId}/analytics/products`}
+                    className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                  >
+                    View Detailed Analytics <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -523,6 +533,23 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </div>
           )}
 
+          {/* Info Note */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">About This Data</p>
+                <p className="text-blue-700">
+                  This shows <strong>actual sales data</strong> from completed orders. For detailed tracking including 
+                  views, add-to-carts, conversion rates, and the difference between <strong>Orders Placed</strong> vs 
+                  <strong> Orders Completed</strong>, visit the{' '}
+                  <Link href={`/admin/stores/${businessId}/analytics/products`} className="underline font-medium">
+                    Product Analytics
+                  </Link> page.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
