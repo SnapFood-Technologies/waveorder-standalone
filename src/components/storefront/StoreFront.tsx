@@ -713,22 +713,28 @@ function AddressAutocomplete({
 
 // Detect country from user's location and business data
 function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'BB' | 'DEFAULT' {
-    // TESTING OVERRIDE: Check user's location first for Greece testing
-    if (typeof window !== 'undefined') {
-      const browserLanguage = navigator.language.toLowerCase()
-      if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
-        return 'GR'
-      }
-      
-      try {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-        if (timezone === 'Europe/Athens') {
-          return 'GR'
-        }
-      } catch (error) {
-        // Timezone detection failed
-      }
-    }
+    // TODO: The testing override below was commented out because it caused a bug where
+    // customers from Greece visiting non-Greek stores (e.g., Barbados) would see Greek addresses
+    // instead of the store's country addresses. The detection should be based on
+    // STORE data (phone number, coordinates), not the CUSTOMER's browser settings.
+    // If you need to re-enable for testing, uncomment - but remember to comment again before deploy.
+    
+    // // TESTING OVERRIDE: Check user's location first for Greece testing
+    // if (typeof window !== 'undefined') {
+    //   const browserLanguage = navigator.language.toLowerCase()
+    //   if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
+    //     return 'GR'
+    //   }
+    //   
+    //   try {
+    //     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    //     if (timezone === 'Europe/Athens') {
+    //       return 'GR'
+    //     }
+    //   } catch (error) {
+    //     // Timezone detection failed
+    //   }
+    // }
     
     // PRIMARY: Check business latitude/longitude coordinates
     if (storeData.storeLatitude && storeData.storeLongitude) {

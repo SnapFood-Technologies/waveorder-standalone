@@ -97,22 +97,28 @@ interface BusinessSettings {
 // Country detection utility
 // Updated Country detection utility
 function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'BB' | 'DEFAULT' {
-  // TESTING OVERRIDE: Check user's location first for Greece testing ONLY
-  if (typeof window !== 'undefined') {
-    const browserLanguage = navigator.language.toLowerCase()
-    if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
-      return 'GR'
-    }
-    
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      if (timezone === 'Europe/Athens') {
-        return 'GR'
-      }
-    } catch (error) {
-      // Timezone detection failed
-    }
-  }
+  // TODO: The testing override below was commented out because it caused a bug where
+  // Greek users managing non-Greek businesses (e.g., Barbados) would see Greek addresses
+  // instead of the business's country addresses. The detection should be based on
+  // BUSINESS data (phone number, coordinates), not the USER's browser settings.
+  // If you need to re-enable for testing, uncomment - but remember to comment again before deploy.
+  
+  // // TESTING OVERRIDE: Check user's location first for Greece testing ONLY
+  // if (typeof window !== 'undefined') {
+  //   const browserLanguage = navigator.language.toLowerCase()
+  //   if (browserLanguage.startsWith('el') || browserLanguage.includes('gr')) {
+  //     return 'GR'
+  //   }
+  //   
+  //   try {
+  //     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  //     if (timezone === 'Europe/Athens') {
+  //       return 'GR'
+  //     }
+  //   } catch (error) {
+  //     // Timezone detection failed
+  //   }
+  // }
   
   // PRIMARY: Check business latitude/longitude coordinates
   if (business.storeLatitude && business.storeLongitude) {
