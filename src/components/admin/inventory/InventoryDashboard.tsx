@@ -35,6 +35,7 @@ interface InventoryStats {
 
 interface Business {
   currency: string
+  showStockBadge?: boolean
 }
 
 interface Product {
@@ -65,9 +66,10 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
   const { addParams } = useImpersonation(businessId)
   
   const [stats, setStats] = useState<InventoryStats | null>(null)
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', showStockBadge: false })
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
+  const [savingBadge, setSavingBadge] = useState(false)
 
   useEffect(() => {
     fetchBusinessData()
@@ -79,10 +81,34 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ 
+          currency: data.business.currency,
+          showStockBadge: data.business.showStockBadge ?? false
+        })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
+    }
+  }
+  
+  const toggleStockBadge = async () => {
+    setSavingBadge(true)
+    const newValue = !business.showStockBadge
+    
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showStockBadge: newValue })
+      })
+      
+      if (response.ok) {
+        setBusiness(prev => ({ ...prev, showStockBadge: newValue }))
+      }
+    } catch (error) {
+      console.error('Error updating stock badge setting:', error)
+    } finally {
+      setSavingBadge(false)
     }
   }
 
@@ -195,6 +221,33 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
             <Plus className="w-4 h-4 mr-2" />
             Adjust Stock
           </Link>
+        </div>
+      </div>
+
+      {/* Stock Badge Display Setting */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-gray-900">Show Stock Status Badge on Storefront</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              When enabled, customers will see "In Stock", "Low Stock", or "Out of Stock" badges on product cards. 
+              Out of stock products will be visible (but not purchasable) instead of hidden.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={toggleStockBadge}
+            disabled={savingBadge}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+              business.showStockBadge ? 'bg-teal-600' : 'bg-gray-200'
+            } ${savingBadge ? 'opacity-50 cursor-wait' : ''}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                business.showStockBadge ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
       </div>
 

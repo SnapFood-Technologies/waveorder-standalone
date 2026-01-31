@@ -1663,6 +1663,7 @@ interface Product {
   sku?: string
   stock: number
   trackInventory?: boolean
+  lowStockAlert?: number
   featured: boolean
   variants: ProductVariant[]
   modifiers: ProductModifier[]
@@ -4145,6 +4146,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
                         businessSlug={storeData.slug}
                         isFiltering={isFiltering}
+                        showStockBadge={storeData.showStockBadge}
                       />
                     ))}
                     {/* Subtle loading indicator for pagination - 3 bouncing dots */}
@@ -5068,7 +5070,8 @@ function ProductCard({
   featuredBadgeColor = '#EF4444', // Only add this new prop
   storefrontLanguage = 'en', // Add language prop
   businessSlug = '', // Add business slug prop
-  isFiltering = false // Gray out card while filtering
+  isFiltering = false, // Gray out card while filtering
+  showStockBadge = false // Show stock status badge
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -5081,6 +5084,7 @@ function ProductCard({
   storefrontLanguage?: string // Add language prop
   businessSlug?: string // Add business slug prop
   isFiltering?: boolean // Gray out card while filtering
+  showStockBadge?: boolean // Show stock status badge
 }) {
   const hasImage = product.images.length > 0
   
@@ -5127,6 +5131,42 @@ function ProductCard({
       : product.stock > 0
   
   const isOutOfStock = !hasStock
+  
+  // Calculate stock status for badge (only when showStockBadge is enabled)
+  const getStockStatus = (): { label: string; color: string; bgColor: string } | null => {
+    if (!showStockBadge) return null
+    if (!product.trackInventory) return null // Don't show badge for products that don't track inventory
+    
+    // Get total stock (considering variants if any)
+    const totalStock = product.variants.length > 0 
+      ? product.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+      : product.stock || 0
+    
+    // Use product's lowStockAlert threshold or default to 5
+    const lowStockThreshold = product.lowStockAlert || 5
+    
+    if (totalStock <= 0) {
+      return { 
+        label: translations.outOfStock || 'Out of Stock', 
+        color: 'text-red-700', 
+        bgColor: 'bg-red-100' 
+      }
+    } else if (totalStock <= lowStockThreshold) {
+      return { 
+        label: translations.lowStock || 'Low Stock', 
+        color: 'text-orange-700', 
+        bgColor: 'bg-orange-100' 
+      }
+    } else {
+      return { 
+        label: translations.inStock || 'In Stock', 
+        color: 'text-green-700', 
+        bgColor: 'bg-green-100' 
+      }
+    }
+  }
+  
+  const stockStatus = getStockStatus()
 
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 ${
@@ -5151,6 +5191,13 @@ function ProductCard({
                     style={{ backgroundColor: featuredBadgeColor }}
                   >
                     {translations.popular || 'Popular'}
+                  </span>
+                )}
+                {stockStatus && (
+                  <span 
+                    className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${stockStatus.bgColor} ${stockStatus.color}`}
+                  >
+                    {stockStatus.label}
                   </span>
                 )}
               </div>
@@ -6334,8 +6381,8 @@ function OrderPanel({
             />
           )}
 
-          {/* Enhanced Time Selection - Hide for RETAIL businesses */}
-          {storeData.businessType !== 'RETAIL' && (
+          {/* Enhanced Time Selection - Hide for RETAIL businesses or when scheduling is disabled */}
+          {storeData.businessType !== 'RETAIL' && storeData.schedulingEnabled !== false && (
             <TimeSelection
               deliveryType={deliveryType}
               selectedTime={customerInfo.deliveryTime}

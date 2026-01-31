@@ -243,11 +243,15 @@ model Business {
   businessHours Json?
   
   // Scheduling configuration
+  schedulingEnabled     Boolean @default(true)  // Enable/disable scheduling (false = instant orders only)
   slotDuration          Int     @default(30)  // Time slot duration in minutes (15, 30, 60)
   slotCapacity          Int?                  // Max orders per time slot (null = unlimited)
   deliveryBufferMinutes Int     @default(45)  // Buffer time for delivery orders
   pickupBufferMinutes   Int     @default(20)  // Buffer time for pickup orders
   holidayHours          Json?                 // Special hours for specific dates: { "2026-12-25": { closed: true }, "2026-12-31": { open: "10:00", close: "15:00" } }
+  
+  // Inventory display settings
+  showStockBadge        Boolean @default(false) // Show stock status badge on storefront (In Stock/Low Stock/Out of Stock)
 
   // WhatsApp settings
   messageTemplate  String?

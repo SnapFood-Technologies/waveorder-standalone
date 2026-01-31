@@ -20,6 +20,7 @@ export async function GET(
       where: { id: businessId },
       select: {
         id: true,
+        schedulingEnabled: true,
         slotDuration: true,
         slotCapacity: true,
         deliveryBufferMinutes: true,
@@ -35,6 +36,7 @@ export async function GET(
 
     return NextResponse.json({
       scheduling: {
+        schedulingEnabled: business.schedulingEnabled,
         slotDuration: business.slotDuration,
         slotCapacity: business.slotCapacity,
         deliveryBufferMinutes: business.deliveryBufferMinutes,
@@ -65,6 +67,7 @@ export async function PUT(
 
     const body = await request.json()
     const { 
+      schedulingEnabled,
       slotDuration, 
       slotCapacity, 
       deliveryBufferMinutes, 
@@ -151,6 +154,7 @@ export async function PUT(
 
     // Build update data
     const updateData: any = {}
+    if (schedulingEnabled !== undefined) updateData.schedulingEnabled = schedulingEnabled
     if (slotDuration !== undefined) updateData.slotDuration = slotDuration
     if (slotCapacity !== undefined) updateData.slotCapacity = slotCapacity
     if (deliveryBufferMinutes !== undefined) updateData.deliveryBufferMinutes = deliveryBufferMinutes
@@ -161,6 +165,7 @@ export async function PUT(
       where: { id: businessId },
       data: updateData,
       select: {
+        schedulingEnabled: true,
         slotDuration: true,
         slotCapacity: true,
         deliveryBufferMinutes: true,
@@ -172,6 +177,7 @@ export async function PUT(
     return NextResponse.json({
       message: 'Scheduling configuration updated successfully',
       scheduling: {
+        schedulingEnabled: business.schedulingEnabled,
         slotDuration: business.slotDuration,
         slotCapacity: business.slotCapacity,
         deliveryBufferMinutes: business.deliveryBufferMinutes,

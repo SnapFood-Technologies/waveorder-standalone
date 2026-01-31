@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { Clock, Save, CheckCircle, Calendar, Plus, Trash2, AlertCircle } from 'lucide-react'
 
 interface SchedulingConfig {
+  schedulingEnabled: boolean
   slotDuration: number
   slotCapacity: number | null
   deliveryBufferMinutes: number
@@ -53,6 +54,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 
 export function SchedulingConfiguration({ businessId }: SchedulingConfigurationProps) {
   const [config, setConfig] = useState<SchedulingConfig>({
+    schedulingEnabled: true,
     slotDuration: 30,
     slotCapacity: null,
     deliveryBufferMinutes: 45,
@@ -81,6 +83,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         const data = await response.json()
         if (data.scheduling) {
           setConfig({
+            schedulingEnabled: data.scheduling.schedulingEnabled ?? true,
             slotDuration: data.scheduling.slotDuration || 30,
             slotCapacity: data.scheduling.slotCapacity,
             deliveryBufferMinutes: data.scheduling.deliveryBufferMinutes || 45,
@@ -223,8 +226,33 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
       )}
 
       <div className="space-y-6">
+        {/* Enable Scheduling Toggle */}
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div>
+            <label className="block text-sm font-medium text-gray-900">
+              Enable Order Scheduling
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Allow customers to schedule orders for specific times. When disabled, only instant orders are accepted.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setConfig({ ...config, schedulingEnabled: !config.schedulingEnabled })}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+              config.schedulingEnabled ? 'bg-teal-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                config.schedulingEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Slot Duration */}
-        <div>
+        <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Time Slot Duration
           </label>
@@ -232,6 +260,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
             value={config.slotDuration}
             onChange={(e) => setConfig({ ...config, slotDuration: Number(e.target.value) })}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            disabled={!config.schedulingEnabled}
           >
             {SLOT_DURATION_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -243,7 +272,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         </div>
 
         {/* Slot Capacity */}
-        <div>
+        <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Orders per Time Slot
           </label>
@@ -259,6 +288,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               })}
               placeholder="Unlimited"
               className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              disabled={!config.schedulingEnabled}
             />
             <span className="text-sm text-gray-500">
               {config.slotCapacity ? `Max ${config.slotCapacity} orders per slot` : 'No limit'}
@@ -270,7 +300,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         </div>
 
         {/* Buffer Times */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Delivery Preparation Time
@@ -279,6 +309,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               value={config.deliveryBufferMinutes}
               onChange={(e) => setConfig({ ...config, deliveryBufferMinutes: Number(e.target.value) })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              disabled={!config.schedulingEnabled}
             >
               {BUFFER_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -297,6 +328,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               value={config.pickupBufferMinutes}
               onChange={(e) => setConfig({ ...config, pickupBufferMinutes: Number(e.target.value) })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              disabled={!config.schedulingEnabled}
             >
               {BUFFER_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -309,7 +341,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         </div>
 
         {/* Holiday Hours */}
-        <div className="border-t border-gray-200 pt-6">
+        <div className={`border-t border-gray-200 pt-6 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className="text-sm font-medium text-gray-900 flex items-center">

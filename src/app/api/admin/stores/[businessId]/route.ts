@@ -129,6 +129,9 @@ export async function GET(
         customMenuEnabled: true,
         customFilteringEnabled: true,
         
+        // Inventory display
+        showStockBadge: true,
+        
         // Status
         isActive: true,
         createdAt: true,
@@ -241,6 +244,64 @@ export async function PUT(
     console.error('Error updating business:', error)
     return NextResponse.json(
       { error: 'Failed to update business' },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH handler for partial updates (individual fields)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  try {
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    
+    if (!access.authorized) {
+      return NextResponse.json(
+        { error: access.error },
+        { status: access.status }
+      )
+    }
+
+    const body = await request.json()
+    
+    // Whitelist of allowed fields for PATCH
+    const allowedFields = ['showStockBadge', 'schedulingEnabled']
+    const updateData: any = {}
+    
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field]
+      }
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      )
+    }
+
+    await prisma.business.update({
+      where: { id: businessId },
+      data: {
+        ...updateData,
+        updatedAt: new Date()
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Settings updated successfully'
+    })
+
+  } catch (error) {
+    console.error('Error updating business settings:', error)
+    return NextResponse.json(
+      { error: 'Failed to update settings' },
       { status: 500 }
     )
   }
