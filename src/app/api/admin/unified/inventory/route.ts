@@ -42,22 +42,8 @@ export async function GET(request: NextRequest) {
           where: { businessId, isActive: true }
         })
 
-        // Get low stock products (stock > 0 but below threshold)
+        // Get low stock products (stock > 0 but at or below 10 units)
         const lowStockCount = await prisma.product.count({
-          where: {
-            businessId,
-            isActive: true,
-            trackInventory: true,
-            stock: { gt: 0 },
-            lowStockAlert: { not: null },
-            AND: {
-              stock: { lte: prisma.product.fields.lowStockAlert }
-            }
-          }
-        })
-
-        // Simplified: count products with stock <= 5 as low stock
-        const lowStockSimple = await prisma.product.count({
           where: {
             businessId,
             isActive: true,
@@ -81,7 +67,7 @@ export async function GET(request: NextRequest) {
           name: bu.business.name,
           slug: bu.business.slug,
           totalProducts,
-          lowStockCount: lowStockSimple,
+          lowStockCount,
           outOfStockCount,
           totalValue: 0 // Would need to calculate stock * price
         }

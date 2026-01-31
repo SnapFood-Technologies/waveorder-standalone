@@ -14,12 +14,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'all'
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '25')
+    const skip = parseInt(searchParams.get('skip') || '0')
 
     // Get all businesses for this user
     const businessUsers = await prisma.businessUser.findMany({
       where: { userId: session.user.id },
-      select: { businessId: true, business: { select: { name: true, slug: true } } }
+      select: { businessId: true, business: { select: { name: true, slug: true, currency: true } } }
     })
 
     if (businessUsers.length === 0) {
@@ -38,11 +39,17 @@ export async function GET(request: NextRequest) {
       whereClause.status = status
     }
 
-    // Fetch orders from all businesses
+    // Get total count for pagination
+    const totalOrders = await prisma.order.count({
+      where: whereClause
+    })
+
+    // Fetch orders from all businesses with pagination
     const orders = await prisma.order.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
       take: limit,
+      skip: skip,
       select: {
         id: true,
         orderNumber: true,
@@ -65,6 +72,7 @@ export async function GET(request: NextRequest) {
         businessId: order.businessId,
         businessName: business?.name || 'Unknown',
         businessSlug: business?.slug || '',
+        currency: business?.currency || 'USD',
         customerName: order.customer?.name || 'Guest',
         total: order.total,
         status: order.status,
@@ -72,7 +80,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ orders: formattedOrders })
+    return NextResponse.json({ 
+      orders: formattedOrders,
+      total: totalOrders,
+      hasMore: skip + orders.length < totalOrders
+    })
 
   } catch (error) {
     console.error('Error fetching unified orders:', error)

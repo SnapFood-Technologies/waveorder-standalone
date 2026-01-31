@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { 
   LayoutDashboard, 
   ArrowLeft,
@@ -14,7 +15,8 @@ import {
   Eye,
   Package,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 
 interface StoreStats {
@@ -35,9 +37,12 @@ interface StoreData {
 }
 
 export default function UnifiedDashboardPage() {
+  const router = useRouter()
   const [stores, setStores] = useState<StoreData[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState('30')
+  const [insufficientStores, setInsufficientStores] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -46,13 +51,22 @@ export default function UnifiedDashboardPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
+      setError(null)
       const response = await fetch(`/api/admin/analytics/compare-stores?period=${period}`)
       if (response.ok) {
         const data = await response.json()
-        setStores(data.stores || [])
+        // Check if user has enough stores
+        if (!data.stores || data.stores.length < 2) {
+          setInsufficientStores(true)
+        } else {
+          setStores(data.stores)
+        }
+      } else {
+        setError('Failed to load dashboard data')
       }
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError('Failed to connect to server')
     } finally {
       setLoading(false)
     }
@@ -101,6 +115,33 @@ export default function UnifiedDashboardPage() {
     )
   }
 
+  // Show message if user doesn't have enough stores
+  if (insufficientStores) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Store className="w-8 h-8 text-gray-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Multi-Store Feature</h2>
+            <p className="text-gray-600 mb-6">
+              The unified dashboard is available when you have 2 or more stores. 
+              Create another store to access cross-store analytics and management.
+            </p>
+            <Link
+              href="/admin/stores"
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Stores
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,6 +175,24 @@ export default function UnifiedDashboardPage() {
             </select>
           </div>
         </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">{error}</p>
+              <p className="text-xs text-red-600 mt-1">Please try again or contact support if the issue persists.</p>
+            </div>
+            <button
+              onClick={fetchData}
+              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center gap-1"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Mixed Currency Warning */}
         {hasMixedCurrencies && (
