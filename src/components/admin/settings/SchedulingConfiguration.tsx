@@ -341,7 +341,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         </div>
 
         {/* Holiday Hours */}
-        <div className={`border-t border-gray-200 pt-6 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}
+        <div className={`border-t border-gray-200 pt-6 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className="text-sm font-medium text-gray-900 flex items-center">

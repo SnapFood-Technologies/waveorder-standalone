@@ -744,7 +744,10 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
         {activeSection === 'hours' && (
           <div className="space-y-6">
             <BusinessHoursManagement businessId={businessId} />
-            <SchedulingConfiguration businessId={businessId} />
+            {/* Hide scheduling configuration for RETAIL businesses (they don't use time slots) */}
+            {business.businessType !== 'RETAIL' && (
+              <SchedulingConfiguration businessId={businessId} />
+            )}
           </div>
         )}
       </div>
