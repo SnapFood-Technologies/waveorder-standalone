@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { DeliveryZonesManagement } from '../delivery/DeliveryZonesManagement'
 import { BusinessHoursManagement } from './BusinessHoursManagement'
+import { SchedulingConfiguration } from './SchedulingConfiguration'
 import { PostalsManagement } from '../postals/PostalsManagement'
 import { PostalPricingManagement } from '../postals/PostalPricingManagement'
 
@@ -741,7 +742,13 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
         )}
 
         {activeSection === 'hours' && (
-          <BusinessHoursManagement businessId={businessId} />
+          <div className="space-y-6">
+            <BusinessHoursManagement businessId={businessId} />
+            {/* Hide scheduling configuration for RETAIL businesses (they don't use time slots) */}
+            {business.businessType !== 'RETAIL' && (
+              <SchedulingConfiguration businessId={businessId} />
+            )}
+          </div>
         )}
       </div>
 

@@ -128,7 +128,8 @@ export async function GET(
       language: businessData.language,
       storefrontLanguage: businessData.storefrontLanguage,
       connectedBusinesses: businessData.connectedBusinesses,
-      hideProductsWithoutPhotos: businessData.hideProductsWithoutPhotos
+      hideProductsWithoutPhotos: businessData.hideProductsWithoutPhotos,
+      showStockBadge: businessData.showStockBadge ?? false
     }
 
 
@@ -342,10 +343,13 @@ export async function GET(
 
     // Stock filter: Only show products with stock > 0 OR products that don't track inventory
     // For products with variants, we'll check variant stock in post-processing
-    const stockConditions: any[] = [
-      { trackInventory: false }, // Products that don't track inventory always show
-      { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-    ]
+    // When showStockBadge is enabled, include all products (even out of stock)
+    const stockConditions: any[] = business.showStockBadge 
+      ? [] // No stock filter when badge is enabled
+      : [
+          { trackInventory: false }, // Products that don't track inventory always show
+          { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+        ]
 
     // Search filter (name or description) with diacritic-insensitive matching
     // e.g., "Pjate" matches "Pjatë", "Luge" matches "Lugë"
@@ -361,14 +365,20 @@ export async function GET(
         searchConditions.push({ descriptionEl: { contains: variant, mode: 'insensitive' } })
       }
       
-      productWhere.AND = [
-        { OR: searchConditions },
-        { OR: stockConditions }
-      ]
-    } else {
-      // No search term, just apply stock conditions
+      if (stockConditions.length > 0) {
+        productWhere.AND = [
+          { OR: searchConditions },
+          { OR: stockConditions }
+        ]
+      } else {
+        // No stock filter (showStockBadge enabled)
+        productWhere.OR = searchConditions
+      }
+    } else if (stockConditions.length > 0) {
+      // No search term, just apply stock conditions (if not showing badge)
       productWhere.OR = stockConditions
     }
+    // If showStockBadge is enabled and no search term, no OR conditions needed
 
     // Build orderBy clause
     let orderBy: any = { stock: 'desc' }
@@ -411,6 +421,7 @@ export async function GET(
           sku: true,
           stock: true,
           trackInventory: true,
+          lowStockAlert: true,
           featured: true,
           metaTitle: true,
           metaDescription: true,
@@ -457,10 +468,13 @@ export async function GET(
     const isExceptionSlug = exceptionSlugs.includes(slug)
 
     // Transform products
-    // Note: We've already filtered products with 0 stock at the database level
+    // Note: We've already filtered products with 0 stock at the database level (unless showStockBadge is enabled)
     // But we still need to check variants since variant stock can't be filtered at DB level easily
     const transformedProducts = products
       .filter((product: any) => {
+        // If showStockBadge is enabled, show all products including out of stock
+        if (business.showStockBadge) return true
+        
         // For products with variants, check if any variant has stock
         if (product.trackInventory && product.variants && product.variants.length > 0) {
           return product.variants.some((v: any) => v.stock > 0)
@@ -510,6 +524,7 @@ export async function GET(
           sku: product.sku,
           stock: product.stock,
           trackInventory: product.trackInventory,
+          lowStockAlert: product.lowStockAlert,
           featured: product.featured,
           metaTitle: product.metaTitle,
           metaDescription: product.metaDescription,

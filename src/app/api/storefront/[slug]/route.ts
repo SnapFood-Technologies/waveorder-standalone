@@ -273,10 +273,14 @@ export async function GET(
                 businessId: { in: businessIds },
                 isActive: true,
                 price: { gt: 0 },
-                OR: [
-                  { trackInventory: false }, // Products that don't track inventory always show
-                  { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-                ],
+                // Only filter by stock if showStockBadge is disabled (default behavior)
+                // When showStockBadge is enabled, include all products (even out of stock)
+                ...(!business.showStockBadge && {
+                  OR: [
+                    { trackInventory: false }, // Products that don't track inventory always show
+                    { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
+                  ]
+                }),
                 ...(business.hideProductsWithoutPhotos && {
                   images: { isEmpty: false }
                 })
@@ -325,6 +329,7 @@ export async function GET(
           sku: true,
           stock: true,
           trackInventory: true,
+          lowStockAlert: true,
           featured: true,
           metaTitle: true,
           metaDescription: true,
@@ -379,9 +384,14 @@ export async function GET(
         }
       }
 
-      // Filter out products with no stock and limit to 50 after filtering (matching pagination limit)
+      // Filter out products with no stock (only if showStockBadge is disabled)
+      // When showStockBadge is enabled, include all products (even out of stock)
       initialProducts = initialProductsRaw
         .filter((product: any) => {
+          // If showStockBadge is enabled, show all products including out of stock
+          if (business.showStockBadge) return true
+          
+          // Default behavior: filter out out-of-stock products
           if (product.trackInventory) {
             if (product.variants && product.variants.length > 0) {
               return product.variants.some((v: any) => v.stock > 0)
@@ -418,6 +428,7 @@ export async function GET(
             sku: product.sku,
             stock: product.stock,
             trackInventory: product.trackInventory,
+            lowStockAlert: product.lowStockAlert,
             featured: product.featured,
             metaTitle: product.metaTitle,
             metaDescription: product.metaDescription,
@@ -759,6 +770,19 @@ export async function GET(
       isOpen: isOpen && !business.isTemporarilyClosed,
       nextOpenTime,
       openingHoursSchema,
+      
+      // Scheduling Configuration
+      schedulingEnabled: business.schedulingEnabled ?? true,
+      schedulingConfig: {
+        slotDuration: business.slotDuration || 30,
+        slotCapacity: business.slotCapacity,
+        deliveryBufferMinutes: business.deliveryBufferMinutes || 45,
+        pickupBufferMinutes: business.pickupBufferMinutes || 20,
+        holidayHours: business.holidayHours || {}
+      },
+      
+      // Inventory display settings
+      showStockBadge: business.showStockBadge ?? false,
       
       // Custom Features
       customMenuEnabled: business.customMenuEnabled,
