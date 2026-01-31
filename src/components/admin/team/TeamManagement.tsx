@@ -22,7 +22,12 @@ import {
   ChevronDown,
   Shield,
   Settings,
-  Eye
+  Eye,
+  History,
+  UserMinus,
+  UserCog,
+  Send,
+  XCircle
 } from 'lucide-react'
 import { 
   canInviteMembers, 
@@ -54,6 +59,20 @@ interface TeamInvitation {
   sentAt: string
 }
 
+interface AuditLog {
+  id: string
+  actorEmail: string
+  action: 'MEMBER_INVITED' | 'MEMBER_ROLE_CHANGED' | 'MEMBER_REMOVED' | 'INVITATION_RESENT' | 'INVITATION_CANCELLED' | 'INVITATION_ACCEPTED'
+  targetEmail?: string
+  details?: {
+    role?: string
+    oldRole?: string
+    newRole?: string
+    invitationId?: string
+  }
+  createdAt: string
+}
+
 interface TeamManagementProps {
   businessId: string
 }
@@ -70,6 +89,9 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('ALL')
   const [showRolePermissions, setShowRolePermissions] = useState(false)
+  const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'activity'>('members')
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+  const [auditLoading, setAuditLoading] = useState(false)
   
   // Confirmation modals
   const [cancelInviteModal, setCancelInviteModal] = useState<string | null>(null)
@@ -139,6 +161,67 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
     } catch (error) {
       console.error('Error fetching invitations:', error)
       throw error
+    }
+  }
+
+  const fetchAuditLogs = async () => {
+    try {
+      setAuditLoading(true)
+      const response = await fetch(`/api/admin/stores/${businessId}/team/audit?limit=50`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch audit logs')
+      }
+      const data = await response.json()
+      setAuditLogs(data.logs || [])
+    } catch (error) {
+      console.error('Error fetching audit logs:', error)
+    } finally {
+      setAuditLoading(false)
+    }
+  }
+
+  // Fetch audit logs when activity tab is selected
+  useEffect(() => {
+    if (activeTab === 'activity' && auditLogs.length === 0) {
+      fetchAuditLogs()
+    }
+  }, [activeTab])
+
+  const getAuditActionIcon = (action: string) => {
+    switch (action) {
+      case 'MEMBER_INVITED':
+        return <UserPlus className="w-4 h-4 text-teal-600" />
+      case 'MEMBER_ROLE_CHANGED':
+        return <UserCog className="w-4 h-4 text-blue-600" />
+      case 'MEMBER_REMOVED':
+        return <UserMinus className="w-4 h-4 text-red-600" />
+      case 'INVITATION_RESENT':
+        return <Send className="w-4 h-4 text-orange-600" />
+      case 'INVITATION_CANCELLED':
+        return <XCircle className="w-4 h-4 text-gray-600" />
+      case 'INVITATION_ACCEPTED':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      default:
+        return <History className="w-4 h-4 text-gray-400" />
+    }
+  }
+
+  const getAuditActionText = (log: AuditLog) => {
+    switch (log.action) {
+      case 'MEMBER_INVITED':
+        return `invited ${log.targetEmail} as ${log.details?.role || 'member'}`
+      case 'MEMBER_ROLE_CHANGED':
+        return `changed ${log.targetEmail}'s role from ${log.details?.oldRole} to ${log.details?.newRole}`
+      case 'MEMBER_REMOVED':
+        return `removed ${log.targetEmail} from the team`
+      case 'INVITATION_RESENT':
+        return `resent invitation to ${log.targetEmail}`
+      case 'INVITATION_CANCELLED':
+        return `cancelled invitation for ${log.targetEmail}`
+      case 'INVITATION_ACCEPTED':
+        return `${log.targetEmail} accepted the invitation`
+      default:
+        return `performed action on ${log.targetEmail || 'team'}`
     }
   }
 
@@ -367,7 +450,53 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
         )}
       </div>
 
-      {/* Search and Filter */}
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'members'
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Members ({members.length})
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('invitations')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'invitations'
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Invitations ({filteredInvitations.length})
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'activity'
+                ? 'border-teal-500 text-teal-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Activity Log
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      {/* Search and Filter - Only show for members tab */}
+      {activeTab === 'members' && (
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -394,8 +523,10 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
           </select>
         </div>
       </div>
+      )}
 
-      {/* Active Members */}
+      {/* Active Members - Show only on members tab */}
+      {activeTab === 'members' && (
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Active Members</h2>
@@ -426,9 +557,10 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
           )}
         </div>
       </div>
+      )}
 
-      {/* Pending Invitations */}
-      {filteredInvitations.length > 0 && (
+      {/* Pending Invitations - Show only on invitations tab */}
+      {activeTab === 'invitations' && (
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Pending Invitations</h2>
@@ -438,7 +570,22 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
           </div>
           
           <div className="divide-y divide-gray-200">
-            {filteredInvitations.map((invitation) => (
+            {filteredInvitations.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <Mail className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No pending invitations</p>
+                {canInvite && (
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="mt-4 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Invite Member
+                  </button>
+                )}
+              </div>
+            ) : (
+            filteredInvitations.map((invitation) => (
               <div key={invitation.id} className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
@@ -485,8 +632,73 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
                   </div>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Activity Log - Show only on activity tab */}
+      {activeTab === 'activity' && (
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Activity Log</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Track all team-related actions
+            </p>
+          </div>
+          
+          <div className="divide-y divide-gray-200">
+            {auditLoading ? (
+              <div className="px-6 py-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+                <p className="text-gray-500 mt-4">Loading activity...</p>
+              </div>
+            ) : auditLogs.length === 0 ? (
+              <div className="px-6 py-12 text-center">
+                <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No activity recorded yet</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Activity will appear here when team members are invited, roles are changed, or members are removed.
+                </p>
+              </div>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="px-6 py-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {getAuditActionIcon(log.action)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-medium">{log.actorEmail}</span>
+                        {' '}
+                        <span className="text-gray-600">{getAuditActionText(log)}</span>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(log.createdAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          {auditLogs.length > 0 && (
+            <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
+              <p className="text-xs text-gray-500 text-center">
+                Showing last {auditLogs.length} activities
+              </p>
+            </div>
+          )}
         </div>
       )}
 
