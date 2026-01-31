@@ -68,12 +68,12 @@ model User {
   subscription     Subscription?    @relation(fields: [subscriptionId], references: [id])
 
   // Trial tracking
-  trialEndsAt      DateTime?        // When 14-day trial expires
-  graceEndsAt      DateTime?        // When 7-day grace period expires (after trial)
-  trialUsed        Boolean          @default(false) // Prevent re-using trial
-  
+  trialEndsAt DateTime? // When 14-day trial expires
+  graceEndsAt DateTime? // When 7-day grace period expires (after trial)
+  trialUsed   Boolean   @default(false) // Prevent re-using trial
+
   // Multi-store preference
-  defaultBusinessId String?         @db.ObjectId
+  defaultBusinessId String? @db.ObjectId
 
   role       UserRole       @default(BUSINESS_OWNER)
   accounts   Account[]
@@ -198,8 +198,8 @@ model Business {
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
 
   // Trial tracking (business-level)
-  trialEndsAt        DateTime?
-  graceEndsAt        DateTime?
+  trialEndsAt DateTime?
+  graceEndsAt DateTime?
 
   createdByAdmin Boolean @default(false)
 

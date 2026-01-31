@@ -199,13 +199,15 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       name: 'Customers', 
       href: `${baseUrl}/customers`, 
       icon: Users, 
+      // @ts-ignore
       requiredPlan: 'STARTER'
     },
     { 
       name: 'Appearance', 
       href: `${baseUrl}/appearance`, 
       icon: Palette, 
-      requiredPlan: 'STARTER'
+      // @ts-ignore
+      requiredPlan: 'STARTER' as Plan
     },
     { 
       name: 'Marketing', 
