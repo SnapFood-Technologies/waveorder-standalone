@@ -694,7 +694,7 @@ export async function GET(
       email: business.email,
       address: business.address,
       website: business.website,
-      whatsappNumber: business.whatsappNumber,
+      whatsappNumber: business.whatsappNumber || business.configuration?.whatsappNumber || business.configuration?.whatsappSettings?.whatsappNumber,
       businessType: business.businessType,
       
       // Branding
