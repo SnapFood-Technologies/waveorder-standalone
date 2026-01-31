@@ -112,12 +112,12 @@ const COUNTRY_CONFIGS = {
       return clean
     }
   },
-  TT: { // Trinidad and Tobago - 7 digits after +1868
-    prefix: '+1868',
+  BB: { // Barbados - 7 digits after +1246
+    prefix: '+1246',
     placeholder: '123 4567',
-    pattern: /^(\+1868|1868)\d{7}$/,
-    flag: '🇹🇹',
-    name: 'Trinidad and Tobago',
+    pattern: /^(\+1246|1246)\d{7}$/,
+    flag: '🇧🇧',
+    name: 'Barbados',
     format: (num: string) => {
       const clean = num.replace(/\D/g, '')
       if (clean.length >= 7) {
@@ -173,9 +173,9 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
       return 'MK'
     }
     
-    // Trinidad and Tobago boundaries: approximately 10.0-11.4°N, -61.9 to -60.5°W
-    if (lat >= 10.0 && lat <= 11.4 && lng >= -61.9 && lng <= -60.5) {
-      return 'TT'
+    // Barbados boundaries: approximately 13.0-13.4°N, -59.7 to -59.4°W
+    if (lat >= 13.0 && lat <= 13.4 && lng >= -59.7 && lng <= -59.4) {
+      return 'BB'
     }
     
     // United States boundaries: approximately 24-71°N, -180 to -66°W
@@ -191,7 +191,7 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
   if (storeData?.whatsappNumber?.startsWith('+34')) return 'ES'
   if (storeData?.whatsappNumber?.startsWith('+383')) return 'XK'
   if (storeData?.whatsappNumber?.startsWith('+389')) return 'MK'
-  if (storeData?.whatsappNumber?.startsWith('+1868')) return 'TT' // Trinidad - must be before generic +1
+  if (storeData?.whatsappNumber?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
   if (storeData?.whatsappNumber?.startsWith('+1')) return 'US'
   
   // TERTIARY: Check business indicators
@@ -212,7 +212,7 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('+34')) return 'ES'
   if (phoneValue.startsWith('+383')) return 'XK'
   if (phoneValue.startsWith('+389')) return 'MK'
-  if (phoneValue.startsWith('+1868')) return 'TT' // Trinidad - must be before generic +1
+  if (phoneValue.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
   if (phoneValue.startsWith('+1')) return 'US'
   
   // If no + but starts with country code
@@ -222,7 +222,7 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('34')) return 'ES'
   if (phoneValue.startsWith('383')) return 'XK'
   if (phoneValue.startsWith('389')) return 'MK'
-  if (phoneValue.startsWith('1868')) return 'TT' // Trinidad - must be before generic 1
+  if (phoneValue.startsWith('1246')) return 'BB' // Barbados - must be before generic 1
   if (phoneValue.startsWith('1')) return 'US'
   
   return 'DEFAULT'
@@ -330,8 +330,8 @@ export function PhoneInput({
         return translations.invalidKosovoPhone || 'Please enter a valid Kosovo phone number'
       case 'MK':
         return translations.invalidNorthMacedoniaPhone || 'Please enter a valid North Macedonia phone number'
-      case 'TT':
-        return translations.invalidTrinidadPhone || 'Please enter a valid Trinidad and Tobago phone number'
+      case 'BB':
+        return translations.invalidBarbadosPhone || 'Please enter a valid Barbados phone number'
       default:
         return translations.invalidPhone || 'Please enter a valid phone number'
     }
@@ -354,8 +354,8 @@ export function PhoneInput({
         return translations.phoneFormatKosovo || 'Format: +383 44 123 456'
       case 'MK':
         return translations.phoneFormatNorthMacedonia || 'Format: +389 70 123 456'
-      case 'TT':
-        return translations.phoneFormatTrinidad || 'Format: +1868 123 4567'
+      case 'BB':
+        return translations.phoneFormatBarbados || 'Format: +1246 123 4567'
       case 'US':
         return translations.phoneFormatUS || 'Format: +1 (555) 123-4567'
       default:

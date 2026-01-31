@@ -119,7 +119,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
     
     // Always show common codes
     codes.push({ code: '+1', country: 'US', flag: '🇺🇸' })
-    codes.push({ code: '+1868', country: 'TT', flag: '🇹🇹' })
+    codes.push({ code: '+1246', country: 'BB', flag: '🇧🇧' })
     codes.push({ code: '+34', country: 'ES', flag: '🇪🇸' })
     
     // Add "Other" option
@@ -164,12 +164,12 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
           whatsappNumber: data.whatsappNumber.replace('+34', '')
         }))
         setIsOtherCountry(false)
-      } else if (data.whatsappNumber.startsWith('+1868')) {
-        // Trinidad - must be checked before generic +1
+      } else if (data.whatsappNumber.startsWith('+1246')) {
+        // Barbados - must be checked before generic +1
         setFormData(prev => ({
           ...prev,
-          countryCode: '+1868',
-          whatsappNumber: data.whatsappNumber.replace('+1868', '')
+          countryCode: '+1246',
+          whatsappNumber: data.whatsappNumber.replace('+1246', '')
         }))
         setIsOtherCountry(false)
       } else if (data.whatsappNumber.startsWith('+1')) {

@@ -895,7 +895,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       <option value="America/Chicago">Central Time (Chicago)</option>
       <option value="America/Denver">Mountain Time (Denver)</option>
       <option value="America/Los_Angeles">Pacific Time (Los Angeles)</option>
-      <option value="America/Port_of_Spain">Trinidad and Tobago (Port of Spain)</option>
+      <option value="America/Barbados">Barbados</option>
       <option value="Europe/London">London</option>
       <option value="Europe/Paris">Paris</option>
       <option value="Europe/Rome">Rome</option>
@@ -1069,9 +1069,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                 >
                   <option value="">Select country</option>
                   <option value="AL">Albania</option>
+                  <option value="BB">Barbados</option>
                   <option value="GR">Greece</option>
                   <option value="ES">Spain</option>
-                  <option value="TT">Trinidad and Tobago</option>
                   <option value="US">USA</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">

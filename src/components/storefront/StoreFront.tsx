@@ -643,8 +643,8 @@ function AddressAutocomplete({
           return ['it'] // Italy business - only Italy addresses
         case 'ES':
           return ['es'] // Spain business - only Spain addresses
-        case 'TT':
-          return ['tt'] // Trinidad and Tobago business - only TT addresses
+        case 'BB':
+          return ['bb'] // Barbados business - only Barbados addresses
         default:
           return ['us'] // Default fallback
       }
@@ -712,7 +712,7 @@ function AddressAutocomplete({
   
 
 // Detect country from user's location and business data
-function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'TT' | 'DEFAULT' {
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'BB' | 'DEFAULT' {
     // TESTING OVERRIDE: Check user's location first for Greece testing
     if (typeof window !== 'undefined') {
       const browserLanguage = navigator.language.toLowerCase()
@@ -765,9 +765,9 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         return 'MK'
       }
       
-      // Trinidad and Tobago boundaries: approximately 10.0-11.4°N, -61.9 to -60.5°W
-      if (lat >= 10.0 && lat <= 11.4 && lng >= -61.9 && lng <= -60.5) {
-        return 'TT'
+      // Barbados boundaries: approximately 13.0-13.4°N, -59.7 to -59.4°W
+      if (lat >= 13.0 && lat <= 13.4 && lng >= -59.7 && lng <= -59.4) {
+        return 'BB'
       }
       
       // United States boundaries: approximately 24-71°N, -180 to -66°W
@@ -783,7 +783,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.whatsappNumber?.startsWith('+34')) return 'ES'
     if (storeData.whatsappNumber?.startsWith('+383')) return 'XK'
     if (storeData.whatsappNumber?.startsWith('+389')) return 'MK'
-    if (storeData.whatsappNumber?.startsWith('+1868')) return 'TT' // Trinidad - must be before generic +1
+    if (storeData.whatsappNumber?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
     if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
     
     // TERTIARY: Check other user location indicators
@@ -806,7 +806,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         if (timezone === 'Europe/Madrid') return 'ES'
         if (timezone === 'Europe/Belgrade' || timezone === 'Europe/Pristina') return 'XK'
         if (timezone === 'Europe/Skopje') return 'MK'
-        if (timezone === 'America/Port_of_Spain') return 'TT'
+        if (timezone === 'America/Barbados') return 'BB'
       } catch (error) {
         // Timezone detection failed
       }
