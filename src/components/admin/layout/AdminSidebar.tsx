@@ -48,13 +48,13 @@ interface AdminSidebarProps {
   businessId: string
 }
 
-type Plan = 'STARTER' | 'PRO'
+type Plan = 'STARTER' | 'PRO' | 'BUSINESS'
 
 interface NavigationItem {
   name: string
   href?: string
   icon: any
-  requiredPlan: Plan
+  requiredPlan?: Plan
   badge?: string
   children?: NavigationItem[]
 }
@@ -348,13 +348,15 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     },
   ]
 
-  const isFeatureAvailable = (requiredPlan: Plan): boolean => {
+  const isFeatureAvailable = (requiredPlan?: Plan): boolean => {
+    if (!requiredPlan) return true // No plan required = always available
     const planHierarchy: Record<Plan, number> = {
       'STARTER': 0,
-      'PRO': 1
+      'PRO': 1,
+      'BUSINESS': 2
     }
     
-    return planHierarchy[subscription.plan] >= planHierarchy[requiredPlan]
+    return (planHierarchy[subscription.plan] || 0) >= planHierarchy[requiredPlan]
   }
 
   const toggleExpanded = (itemName: string) => {
