@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { canInviteMembers } from '@/lib/permissions'
 import { logTeamAudit } from '@/lib/team-audit'
+import { getPlanLimits } from '@/lib/stripe'
 
 
 export async function GET(
@@ -96,6 +97,54 @@ export async function POST(
 
     if (!businessUser || !canInviteMembers(businessUser.role)) {
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
+    }
+
+    // Get business owner's plan to check team member limit
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const planLimits = getPlanLimits(userPlan)
+    
+    // Check if plan allows team members
+    if (planLimits.teamMembers === 0) {
+      return NextResponse.json({ 
+        message: `Team access is not available on the ${userPlan} plan. Please upgrade to the Business plan to add team members.`,
+        code: 'TEAM_ACCESS_NOT_AVAILABLE',
+        plan: userPlan
+      }, { status: 403 })
+    }
+    
+    // Count current team members (excluding owner)
+    const currentTeamCount = await prisma.businessUser.count({
+      where: { 
+        businessId,
+        role: { not: 'OWNER' }
+      }
+    })
+    
+    // Also count pending invitations
+    const pendingInvitations = await prisma.teamInvitation.count({
+      where: {
+        businessId,
+        status: 'PENDING'
+      }
+    })
+    
+    const totalTeamSize = currentTeamCount + pendingInvitations
+    
+    // Check if user can add more team members
+    if (totalTeamSize >= planLimits.teamMembers) {
+      return NextResponse.json({ 
+        message: `Team member limit reached. Your ${userPlan} plan allows up to ${planLimits.teamMembers} team members. You currently have ${currentTeamCount} members and ${pendingInvitations} pending invitations.`,
+        code: 'TEAM_LIMIT_REACHED',
+        currentCount: currentTeamCount,
+        pendingCount: pendingInvitations,
+        limit: planLimits.teamMembers,
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const { email, role } = await request.json()

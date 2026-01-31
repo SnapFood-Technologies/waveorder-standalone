@@ -9,7 +9,7 @@ interface Business {
   id: string
   name: string
   slug: string
-  subscriptionPlan: 'STARTER' | 'PRO'
+  subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS'
   setupWizardCompleted: boolean
   onboardingCompleted: boolean
   role: 'OWNER' | 'MANAGER' | 'STAFF'
@@ -17,7 +17,7 @@ interface Business {
 
 interface BusinessContextValue {
   businesses: Business[]
-  subscription: { plan: 'STARTER' | 'PRO'; isActive: boolean }
+  subscription: { plan: 'STARTER' | 'PRO' | 'BUSINESS'; isActive: boolean }
   loading: boolean
   currentBusiness: Business | null
   accessChecked: boolean

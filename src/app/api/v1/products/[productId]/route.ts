@@ -1,6 +1,7 @@
 // app/api/v1/products/[productId]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { hasFeature } from '@/lib/stripe'
 
 
 // Helper to extract API key (business ID) from request
@@ -20,17 +21,37 @@ function getApiKey(request: NextRequest): string | null {
   return null
 }
 
-// Verify business exists
-async function verifyBusiness(businessId: string): Promise<boolean> {
+// Verify business exists and check API access
+async function verifyBusinessAndApiAccess(businessId: string): Promise<{ valid: boolean; hasApiAccess: boolean; plan?: string }> {
   try {
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: { id: true }
     })
-    return !!business
+    
+    if (!business) {
+      return { valid: false, hasApiAccess: false }
+    }
+    
+    // Get business owner's plan to check API access
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const hasApiAccess = hasFeature(userPlan, 'apiAccess')
+    
+    return { valid: true, hasApiAccess, plan: userPlan }
   } catch (error) {
-    return false
+    return { valid: false, hasApiAccess: false }
   }
+}
+
+// Legacy function for backwards compatibility
+async function verifyBusiness(businessId: string): Promise<boolean> {
+  const result = await verifyBusinessAndApiAccess(businessId)
+  return result.valid
 }
 
 export async function PUT(
@@ -54,8 +75,9 @@ export async function PUT(
       )
     }
     
-    // Verify business exists
-    const businessExists = await verifyBusiness(businessId)
+    // Verify business exists and check API access
+    const { valid: businessExists, hasApiAccess, plan } = await verifyBusinessAndApiAccess(businessId)
+    
     if (!businessExists) {
       return NextResponse.json(
         { 
@@ -64,6 +86,20 @@ export async function PUT(
           code: 'UNAUTHORIZED'
         },
         { status: 401 }
+      )
+    }
+    
+    // Check if plan allows API access (Business plan only)
+    if (!hasApiAccess) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: `API access is not available on the ${plan} plan. Please upgrade to the BUSINESS plan to use the API.`,
+          code: 'FEATURE_NOT_AVAILABLE',
+          feature: 'apiAccess',
+          plan
+        },
+        { status: 403 }
       )
     }
     

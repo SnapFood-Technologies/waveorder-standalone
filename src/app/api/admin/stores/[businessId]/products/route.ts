@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { syncProductToOmniGateway } from '@/lib/omnigateway'
+import { canAddProduct, getPlanLimits } from '@/lib/stripe'
 
 
 export async function GET(
@@ -257,6 +258,31 @@ export async function POST(
     
     if (!access.authorized) {
       return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    // Get business owner's plan to check product limit
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const planLimits = getPlanLimits(userPlan)
+    
+    // Count current products for this business
+    const currentProductCount = await prisma.product.count({
+      where: { businessId }
+    })
+    
+    // Check if user can add more products
+    if (!canAddProduct(userPlan, currentProductCount)) {
+      return NextResponse.json({ 
+        message: `Product limit reached. Your ${userPlan} plan allows up to ${planLimits.products} products. Please upgrade to add more products.`,
+        code: 'PRODUCT_LIMIT_REACHED',
+        currentCount: currentProductCount,
+        limit: planLimits.products,
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const productData = await request.json()

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { hasFeature } from '@/lib/stripe'
 
 export async function GET(
   request: NextRequest,
@@ -14,6 +15,23 @@ export async function GET(
     
     if (!access.authorized) {
       return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    // Check if user's plan includes scheduling feature
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    
+    if (!hasFeature(userPlan, 'scheduling')) {
+      return NextResponse.json({ 
+        message: 'Scheduling is not available on the STARTER plan. Please upgrade to PRO or BUSINESS to access scheduling features.',
+        code: 'FEATURE_NOT_AVAILABLE',
+        feature: 'scheduling',
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const business = await prisma.business.findUnique({
@@ -63,6 +81,23 @@ export async function PUT(
     
     if (!access.authorized) {
       return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    // Check if user's plan includes scheduling feature
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    
+    if (!hasFeature(userPlan, 'scheduling')) {
+      return NextResponse.json({ 
+        message: 'Scheduling is not available on the STARTER plan. Please upgrade to PRO or BUSINESS to access scheduling features.',
+        code: 'FEATURE_NOT_AVAILABLE',
+        feature: 'scheduling',
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const body = await request.json()
