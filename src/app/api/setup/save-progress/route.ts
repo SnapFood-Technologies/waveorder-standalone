@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
+import { createStripeCustomer, createFreeSubscription, canAddStore } from '@/lib/stripe'
 
 
 export async function POST(request: NextRequest) {
@@ -54,6 +54,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (!business) {
+      // Check store limit before creating a new business
+      const userPlan = (user.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+      const existingBusinessCount = await prisma.businessUser.count({
+        where: { userId: user.id, role: 'OWNER' }
+      })
+      
+      if (!canAddStore(userPlan, existingBusinessCount)) {
+        const limitMap = { STARTER: 1, PRO: 5, BUSINESS: Infinity }
+        return NextResponse.json({ 
+          message: `Store limit reached. Your ${userPlan} plan allows ${limitMap[userPlan]} store(s). Upgrade your plan to add more stores.`,
+          error: 'STORE_LIMIT_REACHED'
+        }, { status: 403 })
+      }
+
       // Create new business if it doesn't exist
       business = await prisma.business.create({
         data: {

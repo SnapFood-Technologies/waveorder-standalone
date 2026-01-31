@@ -1,7 +1,7 @@
 // src/app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe, mapStripePlanToDb, PLANS } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId } from '@/lib/stripe'
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
 
         case 'customer.subscription.deleted':
           await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+          break
+
+        case 'customer.subscription.trial_will_end':
+          await handleTrialWillEnd(event.data.object as Stripe.Subscription)
+          break
+
+        case 'customer.subscription.paused':
+          await handleSubscriptionPaused(event.data.object as Stripe.Subscription)
           break
 
         case 'invoice.payment_succeeded':
@@ -123,6 +131,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
     }
 
     const oldPlan = user.plan || 'STARTER'
+    const wasOnTrial = !!(user as any).trialEndsAt
 
     await prisma.$transaction(async (tx) => {
       // Create subscription record
@@ -131,7 +140,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
           stripeId: sub.id,
           status: sub.status,
           priceId: priceId,
-          plan: plan,
+          plan: plan as any,
           // @ts-ignore
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           // @ts-ignore
@@ -139,47 +148,57 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
         }
       })
 
-      // Update user with subscription
+      // Update user with subscription and clear trial dates (converting to paid)
       await tx.user.update({
         where: { id: user.id },
         data: {
           subscriptionId: subscription.id,
-          plan: plan
-        }
+          plan: plan as any,
+          // Clear trial dates since user is now paying
+          trialEndsAt: null,
+          graceEndsAt: null
+        } as any
       })
 
-      // Sync all user's businesses with the new plan
-      await tx.business.updateMany({
-        where: {
-          users: {
-            some: {
-              userId: user.id
-            }
-          }
-        },
-        data: {
-          subscriptionPlan: plan,
-          subscriptionStatus: 'ACTIVE'
-        }
+      // Sync all user's businesses with the new plan and clear trial dates
+      const userBusinesses = await tx.businessUser.findMany({
+        where: { userId: user.id },
+        select: { businessId: true }
       })
+      
+      for (const bu of userBusinesses) {
+        await tx.business.update({
+          where: { id: bu.businessId },
+          data: {
+            subscriptionPlan: plan as any,
+            subscriptionStatus: 'ACTIVE',
+            trialEndsAt: null,
+            graceEndsAt: null
+          } as any
+        })
+      }
     })
 
-    // 📧 SEND UPGRADE EMAIL
-    if (plan === 'PRO' && oldPlan !== 'PRO') {
+    // 📧 SEND EMAIL
+    const planData = PLANS[plan]
+    const oldPlanLevel = PLAN_HIERARCHY[oldPlan as PlanId] || 1
+    const newPlanLevel = PLAN_HIERARCHY[plan] || 1
+    
+    if (newPlanLevel > oldPlanLevel || wasOnTrial) {
       try {
-        const isAnnual = priceId === PLANS.PRO.annualPriceId
+        const isAnnual = priceId === planData.annualPriceId
         await sendSubscriptionChangeEmail({
           to: user.email,
           name: user.name || 'there',
-          changeType: 'upgraded',
-          oldPlan: oldPlan as 'STARTER' | 'PRO',
-          newPlan: 'PRO',
+          changeType: wasOnTrial ? 'trial_converted' : 'upgraded',
+          oldPlan: oldPlan as 'STARTER' | 'PRO' | 'BUSINESS',
+          newPlan: plan as 'STARTER' | 'PRO' | 'BUSINESS',
           billingInterval: isAnnual ? 'annual' : 'monthly',
-          amount: isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price,
+          amount: isAnnual ? planData.annualPrice : planData.price,
           // @ts-ignore
           nextBillingDate: new Date(sub.current_period_end * 1000)
         })
-        console.log('✅ Sent upgrade email to:', user.email)
+        console.log('✅ Sent upgrade/conversion email to:', user.email)
       } catch (emailError) {
         console.error('❌ Failed to send upgrade email:', emailError)
         // Don't fail the webhook if email fails
@@ -217,7 +236,7 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
         data: {
           status: sub.status,
           priceId: priceId,
-          plan: plan,
+          plan: plan as any,
           // @ts-ignore
           currentPeriodStart: new Date(sub.current_period_start * 1000),
           // @ts-ignore
@@ -229,7 +248,7 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       // Update all users on this subscription
       await tx.user.updateMany({
         where: { subscriptionId: subscription.id },
-        data: { plan: plan }
+        data: { plan: plan as any }
       })
 
       // Sync all businesses owned by these users
@@ -243,7 +262,7 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
           }
         },
         data: {
-          subscriptionPlan: plan,
+          subscriptionPlan: plan as any,
           subscriptionStatus: sub.status === 'active' ? 'ACTIVE' : 'INACTIVE'
         }
       })
@@ -252,17 +271,20 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
     // 📧 SEND EMAIL IF PLAN CHANGED
     if (user && oldPlan !== plan) {
       try {
-        const isAnnual = priceId === PLANS.PRO.annualPriceId
-        const changeType = plan === 'PRO' ? 'upgraded' : 'downgraded'
+        const planData = PLANS[plan]
+        const isAnnual = priceId === planData.annualPriceId
+        const oldPlanLevel = PLAN_HIERARCHY[oldPlan as PlanId] || 1
+        const newPlanLevel = PLAN_HIERARCHY[plan] || 1
+        const changeType = newPlanLevel > oldPlanLevel ? 'upgraded' : 'downgraded'
         
         await sendSubscriptionChangeEmail({
           to: user.email,
           name: user.name || 'there',
           changeType: changeType,
-          oldPlan: oldPlan as 'STARTER' | 'PRO',
-          newPlan: plan as 'STARTER' | 'PRO',
+          oldPlan: oldPlan as 'STARTER' | 'PRO' | 'BUSINESS',
+          newPlan: plan as 'STARTER' | 'PRO' | 'BUSINESS',
           billingInterval: isAnnual ? 'annual' : 'monthly',
-          amount: plan === 'PRO' ? (isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price) : undefined,
+          amount: changeType === 'upgraded' ? (isAnnual ? planData.annualPrice : planData.price) : undefined,
           // @ts-ignore
           nextBillingDate: new Date(sub.current_period_end * 1000)
         })
@@ -364,20 +386,22 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
           where: { stripeCustomerId: customerId }
         })
 
-        // 📧 SEND RENEWAL EMAIL
-        if (user && user.plan === 'PRO') {
+        // 📧 SEND RENEWAL EMAIL for any paid plan
+        if (user && user.plan && PLAN_HIERARCHY[user.plan as PlanId] > 0) {
           try {
             const priceId = sub.items.data[0].price.id
-            const isAnnual = priceId === PLANS.PRO.annualPriceId
+            const plan = mapStripePlanToDb(priceId)
+            const planData = PLANS[plan]
+            const isAnnual = priceId === planData.annualPriceId
             
             await sendSubscriptionChangeEmail({
               to: user.email,
               name: user.name || 'there',
               changeType: 'renewed',
-              oldPlan: 'PRO',
-              newPlan: 'PRO',
+              oldPlan: plan as 'STARTER' | 'PRO' | 'BUSINESS',
+              newPlan: plan as 'STARTER' | 'PRO' | 'BUSINESS',
               billingInterval: isAnnual ? 'annual' : 'monthly',
-              amount: isAnnual ? PLANS.PRO.annualPrice : PLANS.PRO.price,
+              amount: isAnnual ? planData.annualPrice : planData.price,
               // @ts-ignore
               nextBillingDate: new Date(sub.current_period_end * 1000)
             })
@@ -428,6 +452,129 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     }
   } catch (error) {
     console.error('❌ Error handling payment failed:', error)
+    throw error
+  }
+}
+
+/**
+ * Handle trial ending in 3 days - send reminder email
+ */
+async function handleTrialWillEnd(sub: Stripe.Subscription) {
+  try {
+    const customerId = sub.customer as string
+    const user = await prisma.user.findFirst({
+      where: { stripeCustomerId: customerId }
+    })
+
+    if (!user) {
+      console.error(`❌ User not found for trial_will_end: ${customerId}`)
+      return
+    }
+
+    // Calculate trial end date
+    const trialEndDate = sub.trial_end ? new Date(sub.trial_end * 1000) : null
+
+    // 📧 SEND TRIAL ENDING REMINDER EMAIL
+    try {
+      // Create portal session for adding payment method
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.NEXTAUTH_URL}/admin/stores`,
+      })
+
+      await sendSubscriptionChangeEmail({
+        to: user.email,
+        name: user.name || 'there',
+        changeType: 'trial_ending',
+        oldPlan: 'PRO',
+        newPlan: 'PRO',
+        nextBillingDate: trialEndDate || undefined,
+        updatePaymentUrl: portalSession.url
+      })
+      console.log('✅ Sent trial ending reminder email to:', user.email)
+    } catch (emailError) {
+      console.error('❌ Failed to send trial ending email:', emailError)
+    }
+  } catch (error) {
+    console.error('❌ Error handling trial_will_end:', error)
+    throw error
+  }
+}
+
+/**
+ * Handle subscription paused (trial ended without payment method)
+ * Downgrade user to Starter limits but keep account active
+ */
+async function handleSubscriptionPaused(sub: Stripe.Subscription) {
+  try {
+    const customerId = sub.customer as string
+    const user = await prisma.user.findFirst({
+      where: { stripeCustomerId: customerId },
+      include: {
+        businesses: {
+          include: { business: true }
+        }
+      }
+    })
+
+    if (!user) {
+      console.error(`❌ User not found for subscription paused: ${customerId}`)
+      return
+    }
+
+    // Calculate grace period end (7 days from now)
+    const graceEndsAt = new Date()
+    graceEndsAt.setDate(graceEndsAt.getDate() + 7)
+
+    await prisma.$transaction(async (tx) => {
+      // Downgrade user to Starter with grace period
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          plan: 'STARTER',
+          graceEndsAt
+        } as any
+      })
+
+      // Downgrade all user's businesses
+      if (user.businesses) {
+        for (const bu of user.businesses) {
+          await tx.business.update({
+            where: { id: bu.businessId },
+            data: {
+              subscriptionPlan: 'STARTER',
+              subscriptionStatus: 'TRIAL_EXPIRED',
+              graceEndsAt
+            } as any
+          })
+        }
+      }
+    })
+
+    // 📧 SEND TRIAL EXPIRED EMAIL
+    try {
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.NEXTAUTH_URL}/admin/stores`,
+      })
+
+      await sendSubscriptionChangeEmail({
+        to: user.email,
+        name: user.name || 'there',
+        changeType: 'trial_expired',
+        oldPlan: 'PRO',
+        newPlan: 'STARTER',
+        nextBillingDate: graceEndsAt,
+        updatePaymentUrl: portalSession.url
+      })
+      console.log('✅ Sent trial expired email to:', user.email)
+    } catch (emailError) {
+      console.error('❌ Failed to send trial expired email:', emailError)
+    }
+
+    console.log(`✅ User ${user.email} downgraded to Starter after trial expired`)
+  } catch (error) {
+    console.error('❌ Error handling subscription paused:', error)
     throw error
   }
 }

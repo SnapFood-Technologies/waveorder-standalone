@@ -10,10 +10,12 @@ import {
   CreditCard,
   Package,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Building2,
+  Clock
 } from 'lucide-react'
 
-type Plan = 'STARTER' | 'PRO'
+type Plan = 'STARTER' | 'PRO' | 'BUSINESS'
 
 interface UserSubscription {
   plan: Plan
@@ -24,41 +26,58 @@ interface UserSubscription {
   stripeCustomerId?: string
   subscriptionId?: string
   billingType?: 'monthly' | 'yearly' | 'free' | null
+  // Trial info
+  trialStatus?: 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED'
+  trialDaysRemaining?: number
+  graceDaysRemaining?: number
+  isTrialActive?: boolean
+  isGracePeriod?: boolean
 }
 
 const PLANS = {
   STARTER: {
     name: 'Starter',
-    price: 6,
-    annualPrice: 5,
+    price: 19,
+    annualPrice: 16,
     description: 'Perfect for getting started',
     icon: Package,
     features: [
-      'Up to 30 products',
-      '10 categories',
-      'Basic WhatsApp orders',
-      'Mobile catalog',
-      'Manual product entry',
-      'Basic branding',
+      'Up to 50 products',
+      '1 store/catalog',
+      'Basic analytics',
+      'WhatsApp ordering',
       'CSV import',
-      'Basic order analytics',
+      'Email support',
     ]
   },
   PRO: {
     name: 'Pro',
-    price: 12,
-    annualPrice: 10,
+    price: 39,
+    annualPrice: 32,
     description: 'For growing businesses',
     icon: Crown,
     features: [
       'Unlimited products',
-      'Unlimited categories',
-      'Advanced branding (colors, logo)',
-      'Advanced order analytics',
-      'Inventory management',
-      'Custom domains',
-      'Wholesale pricing',
-      'Priority support'
+      'Up to 5 stores/catalogs',
+      'Full analytics & insights',
+      'Delivery scheduling',
+      'Customer insights',
+      'Priority support',
+    ]
+  },
+  BUSINESS: {
+    name: 'Business',
+    price: 79,
+    annualPrice: 66,
+    description: 'For teams & enterprises',
+    icon: Building2,
+    features: [
+      'Everything in Pro',
+      'Unlimited stores/catalogs',
+      'Team access (5 users)',
+      'Custom domain',
+      'API access',
+      'Dedicated support',
     ]
   }
 }
@@ -99,16 +118,21 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     }
   }
 
+  const PLAN_HIERARCHY = { STARTER: 1, PRO: 2, BUSINESS: 3 }
+
   const handleUpgrade = async (planId: Plan) => {
     if (!subscription) return
 
-    if (planId === 'STARTER') {
+    const currentLevel = PLAN_HIERARCHY[subscription.plan]
+    const targetLevel = PLAN_HIERARCHY[planId]
+
+    if (targetLevel < currentLevel) {
       // Show downgrade confirmation modal
       setShowDowngradeModal(true)
       return
     }
 
-    // Upgrade to PRO
+    // Upgrade to higher plan
     setIsUpgrading(planId)
     setError(null)
     
@@ -218,9 +242,9 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   }
 
   const currentPlan = PLANS[subscription.plan]
-  const price = billingInterval === 'annual' ? (PLANS.PRO.annualPrice || 12) : PLANS.PRO.price
-  const savings = (PLANS.PRO.price * 12) - ((PLANS.PRO.annualPrice || 10) * 12)
   const isFreePlan = subscription.billingType === 'free'
+  const isTrialActive = subscription.isTrialActive || subscription.trialStatus === 'TRIAL_ACTIVE'
+  const isGracePeriod = subscription.isGracePeriod || subscription.trialStatus === 'GRACE_PERIOD'
 
   return (
     <div className="space-y-6">
@@ -242,6 +266,40 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
         </div>
       )}
 
+      {/* Trial Warning Banner */}
+      {isTrialActive && subscription.trialDaysRemaining !== undefined && subscription.trialDaysRemaining <= 3 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <Clock className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-yellow-800">
+                Your free trial ends in {subscription.trialDaysRemaining} day{subscription.trialDaysRemaining !== 1 ? 's' : ''}
+              </p>
+              <p className="text-sm text-yellow-700 mt-1">
+                Add a payment method to continue using all features of {currentPlan.name}.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grace Period Warning Banner */}
+      {isGracePeriod && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertTriangle className="w-5 h-5 text-orange-600 mr-2 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-orange-800">
+                Trial ended - {subscription.graceDaysRemaining} day{subscription.graceDaysRemaining !== 1 ? 's' : ''} remaining in grace period
+              </p>
+              <p className="text-sm text-orange-700 mt-1">
+                Your account will be paused after the grace period. Add a payment method to continue.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Current Plan Status */}
       <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 text-white">
         <div className="flex items-center justify-between">
@@ -250,16 +308,23 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               <currentPlan.icon className="w-6 h-6" />
               <h2 className="text-xl font-semibold">
                 Current Plan: {currentPlan.name}
+                {isTrialActive && (
+                  <span className="ml-2 text-sm bg-white/20 px-2 py-1 rounded-full">
+                    Trial - {subscription.trialDaysRemaining} days left
+                  </span>
+                )}
               </h2>
             </div>
             <p className="text-teal-100">
               {isFreePlan
                 ? 'You are currently on a special free plan'
-                : subscription.plan === 'STARTER' 
-                ? 'You are currently on the Starter plan'
+                : isTrialActive
+                ? `Enjoying full ${currentPlan.name} features during your free trial`
+                : isGracePeriod
+                ? 'Grace period - add payment to continue'
                 : subscription.cancelAtPeriodEnd
-                ? `Your PRO plan will end on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}`
-                : `Your PRO plan is active${subscription.currentPeriodEnd ? ` until ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}`
+                ? `Your ${currentPlan.name} plan will end on ${subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}`
+                : `Your ${currentPlan.name} plan is active${subscription.currentPeriodEnd ? ` until ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` : ''}`
               }
             </p>
             {isFreePlan && (
@@ -268,7 +333,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               </p>
             )}
           </div>
-          {subscription.plan !== 'STARTER' && !isFreePlan && (
+          {!isFreePlan && !isTrialActive && !isGracePeriod && (
             <button
               onClick={handleManageBilling}
               className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
@@ -304,14 +369,14 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               }`}
             >
               Annual
-              <span className="ml-1.5 text-xs text-green-600">(Save ${savings}/year)</span>
+              <span className="ml-1.5 text-xs text-green-600">(Save 17%)</span>
             </button>
           </div>
         </div>
       )}
 
       {/* Plans Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {Object.entries(PLANS).map(([key, plan]) => {
           const planKey = key as Plan
           const isCurrentPlan = subscription.plan === planKey
@@ -407,8 +472,10 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                   className={`w-full py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
                     isCurrentPlan
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : planKey === 'PRO'
-                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : PLAN_HIERARCHY[planKey] > PLAN_HIERARCHY[subscription.plan]
+                      ? planKey === 'BUSINESS'
+                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        : 'bg-purple-600 hover:bg-purple-700 text-white'
                       : 'bg-gray-600 hover:bg-gray-700 text-white'
                   } ${isUpgrading === planKey ? 'opacity-50' : ''}`}
                 >
@@ -419,10 +486,10 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                     </>
                   ) : isCurrentPlan ? (
                     'Current Plan'
-                  ) : planKey === 'PRO' ? (
-                    'Upgrade to PRO'
+                  ) : PLAN_HIERARCHY[planKey] > PLAN_HIERARCHY[subscription.plan] ? (
+                    `Upgrade to ${plan.name}`
                   ) : (
-                    'Downgrade to Starter'
+                    `Downgrade to ${plan.name}`
                   )}
                 </button>
               )}
@@ -443,26 +510,30 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feature</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Starter</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pro</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Business</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {[
-                { feature: 'Products', starter: '30', pro: 'Unlimited' },
-                { feature: 'Categories', starter: '10', pro: 'Unlimited' },
-                { feature: 'WhatsApp Orders', starter: '✅', pro: '✅' },
-                { feature: 'Basic Branding', starter: '✅', pro: '✅' },
-                { feature: 'CSV Import', starter: '✅', pro: '✅' },
-                { feature: 'Basic Analytics', starter: '✅', pro: '✅' },
-                { feature: 'Advanced Branding', starter: '❌', pro: '✅' },
-                { feature: 'Advanced Analytics', starter: '❌', pro: '✅' },
-                { feature: 'Inventory Management', starter: '❌', pro: '✅' },
-                { feature: 'Custom Domains', starter: '❌', pro: '✅' },
-                { feature: 'Priority Support', starter: '❌', pro: '✅' },
+                { feature: 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
+                { feature: 'Stores/Catalogs', starter: '1', pro: '5', business: 'Unlimited' },
+                { feature: 'WhatsApp Orders', starter: '✅', pro: '✅', business: '✅' },
+                { feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' },
+                { feature: 'Basic Analytics', starter: '✅', pro: '✅', business: '✅' },
+                { feature: 'Full Analytics', starter: '❌', pro: '✅', business: '✅' },
+                { feature: 'Customer Insights', starter: '❌', pro: '✅', business: '✅' },
+                { feature: 'Delivery Scheduling', starter: '❌', pro: '✅', business: '✅' },
+                { feature: 'Team Access', starter: '❌', pro: '❌', business: '5 users' },
+                { feature: 'Custom Domain', starter: '❌', pro: '❌', business: '✅' },
+                { feature: 'API Access', starter: '❌', pro: '❌', business: '✅' },
+                { feature: 'Priority Support', starter: '❌', pro: '✅', business: '✅' },
+                { feature: 'Dedicated Support', starter: '❌', pro: '❌', business: '✅' },
               ].map((row, index) => (
                 <tr key={index}>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.feature}</td>
                   <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.starter}</td>
                   <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.pro}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 text-center">{row.business}</td>
                 </tr>
               ))}
             </tbody>

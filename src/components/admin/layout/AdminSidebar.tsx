@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   Waves,
+  Store,
   Boxes,
   BarChart3,
   Percent,
@@ -48,13 +49,13 @@ interface AdminSidebarProps {
   businessId: string
 }
 
-type Plan = 'STARTER' | 'PRO'
+type Plan = 'STARTER' | 'PRO' | 'BUSINESS'
 
 interface NavigationItem {
   name: string
   href?: string
   icon: any
-  requiredPlan: Plan
+  requiredPlan?: Plan
   badge?: string
   children?: NavigationItem[]
 }
@@ -72,6 +73,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [groupsEnabled, setGroupsEnabled] = useState(false)
   const [customMenuEnabled, setCustomMenuEnabled] = useState(false)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
+  const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
+  const [storeCount, setStoreCount] = useState(1)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -88,7 +91,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     return url.pathname + url.search
   }
 
-  // Fetch feature flags
+  // Fetch feature flags and user role
   useEffect(() => {
     const fetchFeatureFlags = async () => {
       try {
@@ -100,13 +103,49 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setGroupsEnabled(data.business?.groupsFeatureEnabled || false)
           setCustomMenuEnabled(data.business?.customMenuEnabled || false)
           setCustomFilteringEnabled(data.business?.customFilteringEnabled || false)
+          // Set user role from response (if available) or fetch separately
+          if (data.userRole) {
+            setUserRole(data.userRole)
+          }
         }
       } catch (error) {
         console.error('Error fetching feature flags:', error)
       }
     }
+    
+    // Fetch user's role for this business
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/user-role`)
+        if (response.ok) {
+          const data = await response.json()
+          setUserRole(data.role)
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+
+    // Fetch user's store count (for showing/hiding Switch Store)
+    const fetchStoreCount = async () => {
+      try {
+        const response = await fetch('/api/user/businesses')
+        if (response.ok) {
+          const data = await response.json()
+          setStoreCount(data.businesses?.length || 1)
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+    
     fetchFeatureFlags()
+    fetchUserRole()
+    fetchStoreCount()
   }, [businessId])
+  
+  // Check if user can access products (STAFF cannot)
+  const canAccessProducts = userRole !== 'STAFF'
 
   const baseUrl = `/admin/stores/${businessId}`
 
@@ -123,7 +162,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: ShoppingBag, 
       requiredPlan: 'STARTER'
     },
-    { 
+    // Products menu - hidden for STAFF role (they can only view/manage orders)
+    // @ts-ignore
+    ...(canAccessProducts ? [{ 
       name: 'Products', 
       icon: Package, 
       requiredPlan: 'STARTER',
@@ -169,18 +210,20 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
       ]
-    },
+    }] : []),
     { 
       name: 'Customers', 
       href: `${baseUrl}/customers`, 
       icon: Users, 
+      // @ts-ignore
       requiredPlan: 'STARTER'
     },
     { 
       name: 'Appearance', 
       href: `${baseUrl}/appearance`, 
       icon: Palette, 
-      requiredPlan: 'STARTER'
+      // @ts-ignore
+      requiredPlan: 'STARTER' as Plan
     },
     { 
       name: 'Marketing', 
@@ -323,13 +366,15 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     },
   ]
 
-  const isFeatureAvailable = (requiredPlan: Plan): boolean => {
+  const isFeatureAvailable = (requiredPlan?: Plan): boolean => {
+    if (!requiredPlan) return true // No plan required = always available
     const planHierarchy: Record<Plan, number> = {
       'STARTER': 0,
-      'PRO': 1
+      'PRO': 1,
+      'BUSINESS': 2
     }
     
-    return planHierarchy[subscription.plan] >= planHierarchy[requiredPlan]
+    return (planHierarchy[subscription.plan] || 0) >= planHierarchy[requiredPlan]
   }
 
   const toggleExpanded = (itemName: string) => {
@@ -466,7 +511,22 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             </button>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {/* Switch Store Link - Only show for users with multiple stores */}
+          {storeCount > 1 && (
+            <div className="px-4 pt-4 pb-2">
+              <Link
+                href="/admin/stores"
+                onClick={onClose}
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200"
+              >
+                <Store className="w-4 h-4 mr-2" />
+                <span>Switch Store</span>
+                <ChevronRight className="w-4 h-4 ml-auto" />
+              </Link>
+            </div>
+          )}
+
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map(renderNavigationItem)}
           </nav>
 

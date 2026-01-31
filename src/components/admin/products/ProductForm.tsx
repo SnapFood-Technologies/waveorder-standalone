@@ -155,6 +155,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const [activeTab, setActiveTab] = useState('basic')
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'al' | 'el'>('en')
 
+  const [limitError, setLimitError] = useState<{ currentCount: number; limit: number; plan: string } | null>(null)
+
   const [successMessage, setSuccessMessage] = useState<{
     type: 'create' | 'update'
     productName: string
@@ -470,6 +472,18 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         setTimeout(() => {
           router.push(addParams(`/admin/stores/${businessId}/products`))
         }, 2000)
+      } else {
+        const errorData = await response.json()
+        // Handle product limit reached error
+        if (errorData.code === 'PRODUCT_LIMIT_REACHED') {
+          setLimitError({
+            currentCount: errorData.currentCount,
+            limit: errorData.limit,
+            plan: errorData.plan
+          })
+        } else {
+          alert(errorData.message || 'Error saving product')
+        }
       }
     } catch (error) {
       console.error('Error saving product:', error)
@@ -668,6 +682,39 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         </div>
       </div>
     )}
+
+    {/* Product Limit Reached Alert */}
+    {limitError && (
+      <div className="fixed top-4 right-4 z-50 max-w-md">
+        <div className="bg-white border border-amber-200 rounded-lg shadow-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-amber-800">Product Limit Reached</h4>
+              <p className="text-sm text-amber-700 mt-1">
+                Your {limitError.plan} plan allows up to {limitError.limit} products. 
+                You currently have {limitError.currentCount}.
+              </p>
+              <Link
+                href={addParams(`/admin/stores/${businessId}/settings/billing`)}
+                className="inline-block mt-3 px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors"
+              >
+                Upgrade to add more products
+              </Link>
+            </div>
+            <button
+              onClick={() => setLimitError(null)}
+              className="text-amber-400 hover:text-amber-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
      {/* Header */}
     <div className="flex flex-col gap-4 mb-6">
     <div className="flex items-start gap-4">

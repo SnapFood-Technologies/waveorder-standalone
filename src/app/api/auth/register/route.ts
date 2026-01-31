@@ -4,14 +4,12 @@ import { hash } from 'bcryptjs'
 import { sendVerificationEmail, sendUserCreatedNotification } from '@/lib/email'
 import crypto from 'crypto'
 
-
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json()
 
     // Validate input
-    // if (!name || !email || !password) {
-      if (!email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -37,7 +35,7 @@ export async function POST(request: NextRequest) {
     const verificationToken = crypto.randomBytes(32).toString('hex')
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
 
-    // Create user
+    // Create user - plan selection happens in setup wizard, not during registration
     const user = await prisma.user.create({
       data: {
         name,

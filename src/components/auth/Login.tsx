@@ -67,15 +67,25 @@ export default function LoginComponent() {
           }
         }
   
-        // EXISTING business logic unchanged
+        // Fetch user's businesses and determine redirect
         const response = await fetch('/api/user/businesses')
         const data = await response.json()
         
         if (data.businesses?.length > 0) {
-          if (data.businesses[0].setupWizardCompleted && data.businesses[0].onboardingCompleted) {
-            router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
-          } else {
+          // Check if any business needs setup completion
+          const needsSetup = data.businesses.some(
+            (b: any) => !b.setupWizardCompleted || !b.onboardingCompleted
+          )
+          
+          if (needsSetup) {
             router.push('/setup')
+          } else if (data.businesses.length > 1) {
+            // Multiple stores - go to store list
+            router.push('/admin/stores')
+          } else {
+            // Single store - go directly to dashboard
+            // API returns default store first, so businesses[0] is correct
+            router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
           }
         } else {
           router.push('/setup')

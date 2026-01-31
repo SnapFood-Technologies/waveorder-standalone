@@ -11,9 +11,12 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Eye,
+  ExternalLink
 } from 'lucide-react'
 import { AuthMethodIcon } from './AuthMethodIcon'
+import Link from 'next/link'
 
 interface User {
   id: string
@@ -226,6 +229,9 @@ export function SuperAdminUsers() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Joined
                     </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -256,6 +262,11 @@ export function SuperAdminUsers() {
                       <td className="px-6 py-4">
                         {user.businesses.length > 0 ? (
                           <div className="space-y-1">
+                            {user.businesses.length > 1 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mb-1">
+                                Multi-store ({user.businesses.length})
+                              </span>
+                            )}
                             {user.businesses.slice(0, 2).map((business) => (
                               <div key={business.businessId} className="flex items-center text-sm">
                                 <Building2 className="w-3 h-3 mr-2 text-gray-400" />
@@ -277,6 +288,17 @@ export function SuperAdminUsers() {
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-2 text-gray-400" />
                           {formatDate(user.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Link
+                            href={`/superadmin/users/${user.id}`}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                          >
+                            <Eye className="w-4 h-4 mr-1.5" />
+                            View Account
+                          </Link>
                         </div>
                       </td>
                     </tr>

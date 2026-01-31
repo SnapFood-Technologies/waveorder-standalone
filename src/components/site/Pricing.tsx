@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Pricing() {
@@ -11,40 +11,55 @@ export default function Pricing() {
   const plans = [
     {
       name: "Starter",
-      monthlyPrice: 6,
-      yearlyPrice: 5,
+      monthlyPrice: 19,
+      yearlyPrice: 16,
       description: "Perfect for getting started",
       features: [
-        "Up to 30 products",
-        "10 categories",
-        "Basic WhatsApp orders",
-        "Mobile catalog",
-        "Manual product entry",
-        "Basic branding",
+        "Up to 50 products",
+        "1 store/catalog",
+        "Basic analytics",
+        "WhatsApp ordering",
         "CSV import",
-        "Basic order analytics",
+        "Email support",
       ],
-      buttonText: "Get Started",
-      buttonStyle: "border-2 border-teal-600 text-teal-600 hover:bg-teal-50"
+      buttonText: "Start Free Trial",
+      buttonStyle: "border-2 border-gray-300 text-gray-700 hover:bg-gray-50",
+      planId: "STARTER"
     },
     {
       name: "Pro",
-      monthlyPrice: 12,
-      yearlyPrice: 10,
+      monthlyPrice: 39,
+      yearlyPrice: 32,
       description: "For growing businesses",
       features: [
         "Unlimited products",
-        "Unlimited categories",
-        "Advanced branding (colors, logo)",
-        "Advanced order analytics",
-        "Inventory management",
-        "Custom domains",
-        "Wholesale pricing",
-        "Priority support"
+        "Up to 5 stores/catalogs",
+        "Full analytics & insights",
+        "Delivery scheduling",
+        "Customer insights",
+        "Priority support",
       ],
-      buttonText: "Get Started",
+      buttonText: "Start Free Trial",
       buttonStyle: "bg-teal-600 text-white hover:bg-teal-700",
-      popular: true
+      popular: true,
+      planId: "PRO"
+    },
+    {
+      name: "Business",
+      monthlyPrice: 79,
+      yearlyPrice: 66,
+      description: "For teams & enterprises",
+      features: [
+        "Everything in Pro",
+        "Unlimited stores/catalogs",
+        "Team access (5 users)",
+        "Custom domain",
+        "API access",
+        "Dedicated support",
+      ],
+      buttonText: "Start Free Trial",
+      buttonStyle: "border-2 border-teal-600 text-teal-600 hover:bg-teal-50",
+      planId: "BUSINESS"
     }
   ]
 
@@ -55,9 +70,15 @@ export default function Pricing() {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             Choose the plan that fits your business needs
           </p>
+          
+          {/* Free Trial Badge */}
+          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-8">
+            <Sparkles className="w-4 h-4" />
+            14-day free trial on all plans - No credit card required
+          </div>
           
           {/* Billing Toggle */}
           <div className="inline-flex bg-gray-200 rounded-lg p-1">
@@ -84,7 +105,7 @@ export default function Pricing() {
           </div>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <div
               key={index}
@@ -108,12 +129,12 @@ export default function Pricing() {
                     ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
                   </span>
                   <span className="text-gray-600 ml-2">
-                    {`per month${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                    {`/mo${billingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
                   </span>
                 </div>
-                {billingCycle === 'yearly' && plan.monthlyPrice > 0 && (
+                {billingCycle === 'yearly' && (
                   <p className="text-sm text-emerald-600 font-medium">
-                    Save ${(plan.monthlyPrice * 12) - (plan.yearlyPrice * 12)} per year
+                    Save ${(plan.monthlyPrice - plan.yearlyPrice) * 12} per year
                   </p>
                 )}
               </div>
@@ -135,20 +156,25 @@ export default function Pricing() {
                   {plan.buttonText}
                 </Link>
                 
-                {plan.name === 'Starter' && (
-                  <p className="text-center text-sm text-gray-500">
-                    Cancel anytime
-                  </p>
-                )}
-                
-                {plan.popular && (
-                  <p className="text-center text-sm text-gray-500">
-                    Cancel anytime, no questions asked
-                  </p>
-                )}
+                <p className="text-center text-sm text-gray-500">
+                  14 days free, then ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}/mo
+                </p>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Additional Info */}
+        <div className="mt-12 text-center">
+          <p className="text-gray-600">
+            All plans include WhatsApp ordering, mobile-optimized storefront, and basic support.
+          </p>
+          <p className="text-gray-500 text-sm mt-2">
+            Need a custom solution?{' '}
+            <Link href="/contact" className="text-teal-600 hover:underline">
+              Contact us
+            </Link>
+          </p>
         </div>
       </div>
     </section>

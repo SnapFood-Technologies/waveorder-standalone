@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { hasFeature } from '@/lib/stripe'
 
 
 export async function GET(
@@ -15,6 +16,25 @@ export async function GET(
     
     if (!access.authorized) {
       return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    // Check if user's plan includes customer insights feature
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const hasCustomerInsights = hasFeature(userPlan, 'customerInsights')
+    
+    // If no customer insights, return 403 with upgrade message
+    if (!hasCustomerInsights) {
+      return NextResponse.json({ 
+        message: 'Customer insights are not available on the STARTER plan. Please upgrade to PRO or BUSINESS to view detailed customer information.',
+        code: 'FEATURE_NOT_AVAILABLE',
+        feature: 'customerInsights',
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const customer = await prisma.customer.findFirst({
