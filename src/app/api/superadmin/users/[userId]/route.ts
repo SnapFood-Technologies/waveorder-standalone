@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { getPlanLimits } from '@/lib/stripe'
 
 export async function GET(
   request: NextRequest,
@@ -96,6 +97,17 @@ export async function GET(
       totalProducts: user.businesses.reduce((sum, bu) => sum + (bu.business._count?.products || 0), 0)
     }
 
+    // Calculate store limits based on plan
+    const userPlan = (user.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const planLimits = getPlanLimits(userPlan)
+    const storeLimit = {
+      current: user.businesses.length,
+      limit: planLimits.stores,
+      isUnlimited: planLimits.stores === -1,
+      atLimit: planLimits.stores !== -1 && user.businesses.length >= planLimits.stores,
+      nearLimit: planLimits.stores !== -1 && user.businesses.length >= planLimits.stores - 1
+    }
+
     // Calculate trial info
     let trialInfo = null
     if (user.trialEndsAt) {
@@ -155,7 +167,9 @@ export async function GET(
         productsCount: bu.business._count?.products || 0
       })),
       // Stats
-      stats
+      stats,
+      // Store limits
+      storeLimit
     }
 
     return NextResponse.json({ user: formattedUser })

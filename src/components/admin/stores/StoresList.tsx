@@ -17,6 +17,8 @@ import {
   Loader2,
   ArrowRight
 } from 'lucide-react'
+import { StoreComparison } from './StoreComparison'
+import { QuickCreateStoreModal } from './QuickCreateStoreModal'
 
 interface StoreData {
   id: string
@@ -48,6 +50,9 @@ export function StoresList() {
   const [storeLimits, setStoreLimits] = useState<StoreLimits | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [defaultStoreId, setDefaultStoreId] = useState<string | null>(null)
+  const [settingDefault, setSettingDefault] = useState<string | null>(null)
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -62,17 +67,21 @@ export function StoresList() {
 
   const fetchData = async () => {
     try {
-      // Fetch stores and limits in parallel
-      const [storesRes, limitsRes] = await Promise.all([
+      // Fetch stores, limits, and default store in parallel
+      const [storesRes, limitsRes, defaultRes] = await Promise.all([
         fetch('/api/user/businesses'),
-        fetch('/api/user/store-limits')
+        fetch('/api/user/store-limits'),
+        fetch('/api/user/default-store')
       ])
 
       if (storesRes.ok) {
         const storesData = await storesRes.json()
         setStores(storesData.businesses || [])
-      } else {
-        setError('Failed to load stores')
+      }
+
+      if (defaultRes.ok) {
+        const defaultData = await defaultRes.json()
+        setDefaultStoreId(defaultData.defaultBusinessId)
       }
 
       if (limitsRes.ok) {
@@ -83,6 +92,25 @@ export function StoresList() {
       setError('An error occurred while loading data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const setAsDefaultStore = async (businessId: string) => {
+    try {
+      setSettingDefault(businessId)
+      const response = await fetch('/api/user/default-store', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId })
+      })
+
+      if (response.ok) {
+        setDefaultStoreId(businessId)
+      }
+    } catch (err) {
+      console.error('Error setting default store:', err)
+    } finally {
+      setSettingDefault(null)
     }
   }
 
@@ -189,15 +217,23 @@ export function StoresList() {
           </div>
         )}
 
+        {/* Store Comparison - Only show for users with 2+ stores */}
+        {stores.length >= 2 && (
+          <StoreComparison className="mb-6" />
+        )}
+
         {/* Stores Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {stores.map((store) => {
             const trialStatus = getTrialStatus(store)
+            const isDefault = defaultStoreId === store.id || (!defaultStoreId && stores[0]?.id === store.id)
             
             return (
               <div
                 key={store.id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+                className={`bg-white rounded-xl border overflow-hidden hover:shadow-lg transition-shadow ${
+                  isDefault ? 'border-teal-500 ring-1 ring-teal-500' : 'border-gray-200'
+                }`}
               >
                 {/* Trial/Grace Warning Banner */}
                 {trialStatus && trialStatus.type !== 'expired' && (
@@ -237,9 +273,16 @@ export function StoresList() {
                       </div>
                     </div>
                     
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPlanBadgeColor(store.subscriptionPlan)}`}>
-                      {store.subscriptionPlan}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {isDefault && (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-teal-100 text-teal-700">
+                          Default
+                        </span>
+                      )}
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${getPlanBadgeColor(store.subscriptionPlan)}`}>
+                        {store.subscriptionPlan}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
@@ -278,6 +321,17 @@ export function StoresList() {
                       <Settings className="w-4 h-4" />
                     </Link>
                   </div>
+
+                  {/* Set as Default button - only show for non-default stores when user has multiple stores */}
+                  {stores.length > 1 && !isDefault && (
+                    <button
+                      onClick={() => setAsDefaultStore(store.id)}
+                      disabled={settingDefault === store.id}
+                      className="mt-3 w-full text-center text-sm text-gray-500 hover:text-teal-600 transition-colors disabled:opacity-50"
+                    >
+                      {settingDefault === store.id ? 'Setting...' : 'Set as default store'}
+                    </button>
+                  )}
                 </div>
               </div>
             )
@@ -285,18 +339,29 @@ export function StoresList() {
 
           {/* Create New Store Card */}
           {storeLimits?.canCreate && (
-            <Link
-              href="/setup"
-              className="bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-teal-500 p-6 flex flex-col items-center justify-center text-center transition-colors min-h-[200px]"
-            >
+            <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-6 flex flex-col items-center justify-center text-center min-h-[200px]">
               <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mb-4">
                 <Plus className="w-6 h-6 text-teal-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Create New Store</h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 mb-4">
                 Set up another store or catalog
               </p>
-            </Link>
+              <div className="flex flex-col gap-2 w-full">
+                <button
+                  onClick={() => setShowQuickCreate(true)}
+                  className="w-full px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors"
+                >
+                  Quick Create
+                </button>
+                <Link
+                  href="/setup"
+                  className="w-full px-4 py-2 border border-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors text-center"
+                >
+                  Full Setup Wizard
+                </Link>
+              </div>
+            </div>
           )}
 
           {/* Upgrade Card (when limit reached) */}
@@ -339,6 +404,12 @@ export function StoresList() {
           </div>
         )}
       </div>
+
+      {/* Quick Create Modal */}
+      <QuickCreateStoreModal
+        isOpen={showQuickCreate}
+        onClose={() => setShowQuickCreate(false)}
+      />
     </div>
   )
 }

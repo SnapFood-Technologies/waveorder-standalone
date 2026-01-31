@@ -262,6 +262,11 @@ export function SuperAdminUsers() {
                       <td className="px-6 py-4">
                         {user.businesses.length > 0 ? (
                           <div className="space-y-1">
+                            {user.businesses.length > 1 && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 mb-1">
+                                Multi-store ({user.businesses.length})
+                              </span>
+                            )}
                             {user.businesses.slice(0, 2).map((business) => (
                               <div key={business.businessId} className="flex items-center text-sm">
                                 <Building2 className="w-3 h-3 mr-2 text-gray-400" />

@@ -13,8 +13,10 @@ import {
   Image as ImageIcon,
   Save,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Crown
 } from 'lucide-react'
+import Link from 'next/link'
 
 interface Category {
   id: string
@@ -64,6 +66,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
+  const [limitError, setLimitError] = useState<{ currentCount: number; limit: number; plan: string } | null>(null)
 
   useEffect(() => {
     fetchCategories()
@@ -529,6 +532,43 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
         </div>
       )}
 
+      {/* Category Limit Reached Alert */}
+      {limitError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+          <div className="flex items-start space-x-4">
+            <div className="bg-amber-100 p-3 rounded-lg">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-amber-800 mb-1">Category Limit Reached</h3>
+              <p className="text-amber-700 mb-2">
+                You have reached the maximum number of categories for your plan.
+              </p>
+              <p className="text-sm text-amber-600 mb-4">
+                Your <span className="font-semibold">{limitError.plan}</span> plan allows up to{' '}
+                <span className="font-semibold">{limitError.limit}</span> categories. You currently have{' '}
+                <span className="font-semibold">{limitError.currentCount}</span>.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href={`/admin/stores/${businessId}/settings/billing`}
+                  className="inline-flex items-center px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to add more categories
+                </Link>
+                <button
+                  onClick={() => setLimitError(null)}
+                  className="px-4 py-2 text-amber-700 hover:text-amber-800"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Category Form Modal */}
       {showForm && (
         <CategoryForm
@@ -549,6 +589,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
             setShowForm(false)
             setEditingCategory(null)
           }}
+          onLimitError={(error) => setLimitError(error)}
         />
       )}
 
@@ -694,9 +735,10 @@ interface CategoryFormProps {
   category: Category | null
   onSave: (category: Category) => void
   onCancel: () => void
+  onLimitError?: (error: { currentCount: number; limit: number; plan: string }) => void
 }
 
-function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormProps) {
+function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: CategoryFormProps) {
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [businessLanguage, setBusinessLanguage] = useState<string>('en')
   const [form, setForm] = useState({
@@ -823,7 +865,17 @@ function CategoryForm({ businessId, category, onSave, onCancel }: CategoryFormPr
         onSave(data.category)
       } else {
         const errorData = await response.json()
-        alert(errorData.message || 'Error saving category')
+        // Handle category limit reached error
+        if (errorData.code === 'CATEGORY_LIMIT_REACHED' && onLimitError) {
+          onLimitError({
+            currentCount: errorData.currentCount,
+            limit: errorData.limit,
+            plan: errorData.plan
+          })
+          onCancel() // Close the form
+        } else {
+          alert(errorData.message || 'Error saving category')
+        }
       }
     } catch (error) {
       console.error('Error saving category:', error)

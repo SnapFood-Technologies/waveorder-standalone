@@ -57,6 +57,14 @@ interface Subscription {
   canceledAt: string | null
 }
 
+interface StoreLimit {
+  current: number
+  limit: number
+  isUnlimited: boolean
+  atLimit: boolean
+  nearLimit: boolean
+}
+
 interface UserData {
   id: string
   name: string
@@ -75,6 +83,7 @@ interface UserData {
     totalOrders: number
     totalProducts: number
   }
+  storeLimit?: StoreLimit
 }
 
 interface SuperAdminUserDetailsProps {
@@ -347,10 +356,26 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
           {/* Businesses */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Building2 className="w-5 h-5 mr-2 text-gray-400" />
-                Businesses ({user.businesses.length})
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <Building2 className="w-5 h-5 mr-2 text-gray-400" />
+                  Businesses ({user.storeLimit 
+                    ? (user.storeLimit.isUnlimited 
+                        ? user.businesses.length 
+                        : `${user.businesses.length}/${user.storeLimit.limit}`)
+                    : user.businesses.length})
+                </h2>
+                {user.storeLimit?.atLimit && !user.storeLimit.isUnlimited && (
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
+                    Limit Reached
+                  </span>
+                )}
+                {user.storeLimit?.nearLimit && !user.storeLimit.atLimit && !user.storeLimit.isUnlimited && (
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                    Near Limit
+                  </span>
+                )}
+              </div>
             </div>
             <div className="divide-y divide-gray-200">
               {user.businesses.length === 0 ? (
@@ -505,7 +530,18 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                   <Building2 className="w-4 h-4" />
                   <span className="text-sm">Businesses</span>
                 </div>
-                <span className="text-lg font-semibold text-gray-900">{user.stats.totalBusinesses}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-gray-900">
+                    {user.storeLimit 
+                      ? (user.storeLimit.isUnlimited 
+                          ? user.stats.totalBusinesses 
+                          : `${user.stats.totalBusinesses}/${user.storeLimit.limit}`)
+                      : user.stats.totalBusinesses}
+                  </span>
+                  {user.storeLimit?.atLimit && !user.storeLimit.isUnlimited && (
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                  )}
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-gray-600">
