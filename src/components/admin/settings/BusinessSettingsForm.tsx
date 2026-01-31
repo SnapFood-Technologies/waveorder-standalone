@@ -96,7 +96,7 @@ interface BusinessSettings {
 
 // Country detection utility
 // Updated Country detection utility
-function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'DEFAULT' {
+function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'BB' | 'DEFAULT' {
   // TESTING OVERRIDE: Check user's location first for Greece testing ONLY
   if (typeof window !== 'undefined') {
     const browserLanguage = navigator.language.toLowerCase()
@@ -139,6 +139,11 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
       return 'ES'
     }
     
+    // Barbados boundaries: approximately 13.0-13.4°N, -59.7 to -59.4°W
+    if (lat >= 13.0 && lat <= 13.4 && lng >= -59.7 && lng <= -59.4) {
+      return 'BB'
+    }
+    
     // United States boundaries: approximately 24-71°N, -180 to -66°W
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
       return 'US'
@@ -150,6 +155,7 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
   if (business.whatsappNumber?.startsWith('+30') || business.phone?.startsWith('+30')) return 'GR'
   if (business.whatsappNumber?.startsWith('+39') || business.phone?.startsWith('+39')) return 'IT'
   if (business.whatsappNumber?.startsWith('+34') || business.phone?.startsWith('+34')) return 'ES'
+  if (business.whatsappNumber?.startsWith('+1246') || business.phone?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
   if (business.whatsappNumber?.startsWith('+1') || business.phone?.startsWith('+1')) return 'US'
   
   // TERTIARY: Check other user location indicators (for non-Greece countries only)
@@ -249,6 +255,8 @@ function AddressAutocomplete({
           return ['it']
         case 'ES':
           return ['es']
+        case 'BB':
+          return ['bb'] // Barbados addresses only
         case 'US':
           return ['us']
         default:
