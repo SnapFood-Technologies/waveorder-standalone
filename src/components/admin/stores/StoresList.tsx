@@ -15,7 +15,11 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  LayoutDashboard,
+  PieChart,
+  ShoppingBag,
+  Boxes
 } from 'lucide-react'
 import { StoreComparison } from './StoreComparison'
 import { QuickCreateStoreModal } from './QuickCreateStoreModal'
@@ -225,9 +229,65 @@ export function StoresList() {
           </div>
         )}
 
+        {/* Cross-Store Quick Actions - Only show for users with 2+ stores */}
+        {stores.length >= 2 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Cross-Store Tools</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Link
+                href="/admin/unified/dashboard"
+                className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-lg border border-teal-200 p-4 hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <LayoutDashboard className="w-5 h-5 text-teal-600" />
+                  <ArrowRight className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-semibold text-gray-900">Unified Dashboard</h4>
+                <p className="text-xs text-gray-600 mt-1">Overview of all stores</p>
+              </Link>
+              
+              <Link
+                href="/admin/unified/analytics"
+                className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200 p-4 hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <PieChart className="w-5 h-5 text-purple-600" />
+                  <ArrowRight className="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-semibold text-gray-900">Cross-Store Analytics</h4>
+                <p className="text-xs text-gray-600 mt-1">Combined insights</p>
+              </Link>
+              
+              <Link
+                href="/admin/unified/orders"
+                className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-4 hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <ShoppingBag className="w-5 h-5 text-blue-600" />
+                  <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-semibold text-gray-900">All Orders</h4>
+                <p className="text-xs text-gray-600 mt-1">Orders from all stores</p>
+              </Link>
+              
+              <Link
+                href="/admin/unified/inventory"
+                className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200 p-4 hover:shadow-md transition-shadow group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Boxes className="w-5 h-5 text-amber-600" />
+                  <ArrowRight className="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-semibold text-gray-900">Inventory Overview</h4>
+                <p className="text-xs text-gray-600 mt-1">Stock across stores</p>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Store Comparison - Only show for users with 2+ stores */}
         {stores.length >= 2 && (
-          <StoreComparison className="mb-6" />
+          <StoreComparison className="mb-6" showQuickActions={false} />
         )}
 
         {/* Stores Grid */}
