@@ -228,26 +228,29 @@ export async function GET(request: NextRequest) {
       })
     ])
 
-    // Calculate total page views (from old Analytics + new VisitorSession)
+    // Calculate total page views (from old Analytics + new VisitorSession, excluding test businesses)
     const oldPageViews = await prisma.analytics.aggregate({
       where: {
-        date: { gte: startDate, lte: now }
+        date: { gte: startDate, lte: now },
+        business: excludeTestCondition
       },
       _sum: { visitors: true }
     })
     
     const newPageViews = await prisma.visitorSession.count({
       where: {
-        visitedAt: { gte: startDate, lte: now }
+        visitedAt: { gte: startDate, lte: now },
+        business: excludeTestCondition
       }
     })
     
     const totalPageViews = (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
 
-    // Get time-series data for page views (for chart)
+    // Get time-series data for page views (for chart, excluding test businesses)
     const oldAnalyticsData = await prisma.analytics.findMany({
       where: {
-        date: { gte: startDate, lte: now }
+        date: { gte: startDate, lte: now },
+        business: excludeTestCondition
       },
       select: {
         date: true,
@@ -258,7 +261,8 @@ export async function GET(request: NextRequest) {
 
     const newVisitorSessions = await prisma.visitorSession.findMany({
       where: {
-        visitedAt: { gte: startDate, lte: now }
+        visitedAt: { gte: startDate, lte: now },
+        business: excludeTestCondition
       },
       select: {
         visitedAt: true

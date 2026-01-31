@@ -105,7 +105,8 @@ export async function GET(request: NextRequest) {
     const trafficTrends = await prisma.visitorSession.findMany({
       where: {
         country: { in: topCountries },
-        visitedAt: { gte: startDate }
+        visitedAt: { gte: startDate },
+        business: excludeTestCondition
       },
       select: {
         country: true,
@@ -167,13 +168,14 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10)
 
-    // 7. Top browsers by region
+    // 7. Top browsers by region (excluding test businesses)
     const browsersByCountry = await prisma.visitorSession.groupBy({
       by: ['country', 'browser'],
       where: {
         country: { not: null },
         browser: { not: null },
-        visitedAt: { gte: startDate }
+        visitedAt: { gte: startDate },
+        business: excludeTestCondition
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } }
@@ -201,23 +203,30 @@ export async function GET(request: NextRequest) {
       }))
 
     // Total stats - merge old Analytics + new VisitorSession (same as superadmin dashboard)
+    // Exclude test businesses from views
     const oldPageViews = await prisma.analytics.aggregate({
       where: {
-        date: { gte: startDate }
+        date: { gte: startDate },
+        business: excludeTestCondition
       },
       _sum: { visitors: true }
     })
     
     const newPageViews = await prisma.visitorSession.count({
-      where: { visitedAt: { gte: startDate } }
+      where: { 
+        visitedAt: { gte: startDate },
+        business: excludeTestCondition
+      }
     })
     
     const totalViews = (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
 
+    // Exclude test businesses from count
     const totalBusinessesWithCountry = await prisma.business.count({
       where: { 
         country: { not: null },
-        isActive: true
+        isActive: true,
+        ...excludeTestCondition
       }
     })
 

@@ -173,26 +173,28 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Total page views from old Analytics (legacy data)
+      // Total page views from old Analytics (legacy data, excluding test businesses)
       prisma.analytics.aggregate({
         where: {
           date: {
             gte: startDate,
             lte: endDate
-          }
+          },
+          business: excludeTestCondition
         },
         _sum: {
           visitors: true
         }
       }),
       
-      // Total page views from new VisitorSession (new tracking)
+      // Total page views from new VisitorSession (new tracking, excluding test businesses)
       prisma.visitorSession.count({
         where: {
           visitedAt: {
             gte: startDate,
             lte: endDate
-          }
+          },
+          business: excludeTestCondition
         }
       })
     ])
