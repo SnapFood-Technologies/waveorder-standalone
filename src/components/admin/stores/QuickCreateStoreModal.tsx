@@ -90,7 +90,7 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full">
+      <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
@@ -116,7 +116,7 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
               value={storeName}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="My Awesome Store"
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               autoFocus
             />
           </div>
