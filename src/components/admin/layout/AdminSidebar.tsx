@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   Waves,
+  Store,
   Boxes,
   BarChart3,
   Percent,
@@ -73,6 +74,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [customMenuEnabled, setCustomMenuEnabled] = useState(false)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
+  const [storeCount, setStoreCount] = useState(1)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -123,9 +125,23 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         console.error('Error fetching user role:', error)
       }
     }
+
+    // Fetch user's store count (for showing/hiding Switch Store)
+    const fetchStoreCount = async () => {
+      try {
+        const response = await fetch('/api/user/businesses')
+        if (response.ok) {
+          const data = await response.json()
+          setStoreCount(data.businesses?.length || 1)
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
     
     fetchFeatureFlags()
     fetchUserRole()
+    fetchStoreCount()
   }, [businessId])
   
   // Check if user can access products (STAFF cannot)
@@ -495,7 +511,22 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             </button>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          {/* Switch Store Link - Only show for users with multiple stores */}
+          {storeCount > 1 && (
+            <div className="px-4 pt-4 pb-2">
+              <Link
+                href="/admin/stores"
+                onClick={onClose}
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200"
+              >
+                <Store className="w-4 h-4 mr-2" />
+                <span>Switch Store</span>
+                <ChevronRight className="w-4 h-4 ml-auto" />
+              </Link>
+            </div>
+          )}
+
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map(renderNavigationItem)}
           </nav>
 

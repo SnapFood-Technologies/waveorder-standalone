@@ -76,7 +76,15 @@ export function StoresList() {
 
       if (storesRes.ok) {
         const storesData = await storesRes.json()
-        setStores(storesData.businesses || [])
+        const businesses = storesData.businesses || []
+        
+        // If user has only 1 store, redirect directly to dashboard
+        if (businesses.length === 1) {
+          router.push(`/admin/stores/${businesses[0].id}/dashboard`)
+          return
+        }
+        
+        setStores(businesses)
       }
 
       if (defaultRes.ok) {

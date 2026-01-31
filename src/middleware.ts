@@ -49,10 +49,20 @@ export async function middleware(request: NextRequest) {
         const data = await businessesResponse.json()
         
         if (data.businesses?.length > 0) {
-          const business = data.businesses[0]
+          // Check if any business needs setup completion
+          const needsSetup = data.businesses.some(
+            (b: any) => !b.setupWizardCompleted || !b.onboardingCompleted
+          )
           
-          if (business.setupWizardCompleted && business.onboardingCompleted) {
-            return NextResponse.redirect(new URL(`/admin/stores/${business.id}/dashboard`, request.url))
+          if (!needsSetup) {
+            if (data.businesses.length > 1) {
+              // Multiple stores - go to store list
+              return NextResponse.redirect(new URL('/admin/stores', request.url))
+            } else {
+              // Single store - go directly to dashboard
+              // API returns default store first, so businesses[0] is correct
+              return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
+            }
           }
         }
       }
