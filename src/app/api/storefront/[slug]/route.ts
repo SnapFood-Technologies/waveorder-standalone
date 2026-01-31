@@ -760,6 +760,15 @@ export async function GET(
       nextOpenTime,
       openingHoursSchema,
       
+      // Scheduling Configuration
+      schedulingConfig: {
+        slotDuration: business.slotDuration || 30,
+        slotCapacity: business.slotCapacity,
+        deliveryBufferMinutes: business.deliveryBufferMinutes || 45,
+        pickupBufferMinutes: business.pickupBufferMinutes || 20,
+        holidayHours: business.holidayHours || {}
+      },
+      
       // Custom Features
       customMenuEnabled: business.customMenuEnabled,
       customMenuItems: business.customMenuItems || [],
