@@ -1616,6 +1616,8 @@ interface StoreData {
   groups?: any[]
   brands?: any[]
   initialProducts?: any[]  // Initial products from server-side render
+  schedulingEnabled?: boolean  // Enable/disable order scheduling
+  showStockBadge?: boolean  // Show stock status badge on product cards
 }
 
 interface Category {
