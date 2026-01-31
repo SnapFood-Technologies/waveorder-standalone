@@ -67,6 +67,14 @@ model User {
   subscriptionId   String?          @db.ObjectId
   subscription     Subscription?    @relation(fields: [subscriptionId], references: [id])
 
+  // Trial tracking
+  trialEndsAt      DateTime?        // When 14-day trial expires
+  graceEndsAt      DateTime?        // When 7-day grace period expires (after trial)
+  trialUsed        Boolean          @default(false) // Prevent re-using trial
+  
+  // Multi-store preference
+  defaultBusinessId String?         @db.ObjectId
+
   role       UserRole       @default(BUSINESS_OWNER)
   accounts   Account[]
   sessions   Session[]
@@ -188,6 +196,10 @@ model Business {
   businessType       BusinessType       @default(RESTAURANT)
   subscriptionPlan   SubscriptionPlan   @default(STARTER)
   subscriptionStatus SubscriptionStatus @default(ACTIVE)
+
+  // Trial tracking (business-level)
+  trialEndsAt        DateTime?
+  graceEndsAt        DateTime?
 
   createdByAdmin Boolean @default(false)
 
@@ -1129,6 +1141,7 @@ enum BusinessType {
 enum SubscriptionPlan {
   STARTER
   PRO
+  BUSINESS
 }
 
 enum SubscriptionStatus {
