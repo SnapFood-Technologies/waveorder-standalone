@@ -12,7 +12,7 @@ export const PERMISSIONS = {
   UPDATE_BILLING: ['OWNER'],
   
   // Products & Inventory
-  MANAGE_PRODUCTS: ['OWNER', 'MANAGER', 'STAFF'],
+  MANAGE_PRODUCTS: ['OWNER', 'MANAGER'],  // STAFF should only view/manage orders, not products
   MANAGE_INVENTORY: ['OWNER', 'MANAGER'],
   
   // Orders
@@ -120,7 +120,7 @@ export function getRoleDescription(role: BusinessRole): string {
     case 'MANAGER':
       return 'Can manage products, orders, and invite staff members'
     case 'STAFF':
-      return 'Can view and manage orders and products'
+      return 'Can view and manage orders only'
     default:
       return 'Limited access'
   }

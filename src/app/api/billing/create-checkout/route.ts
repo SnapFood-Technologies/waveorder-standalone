@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate plan - only PRO is allowed for upgrades
-    if (!planId || planId !== 'PRO') {
+    // Validate plan - PRO and BUSINESS are allowed for upgrades
+    if (!planId || !['PRO', 'BUSINESS'].includes(planId)) {
       return NextResponse.json(
-        { message: 'Invalid plan selected. Only PRO plan upgrades are available.' },
+        { message: 'Invalid plan selected. PRO or BUSINESS plan upgrades are available.' },
         { status: 400 }
       )
     }
@@ -93,10 +93,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check if already on PRO
-    if (user.plan === 'PRO') {
+    // Check if already on the same or higher plan
+    const planHierarchy: Record<string, number> = { 'STARTER': 0, 'PRO': 1, 'BUSINESS': 2 }
+    const currentPlanLevel = planHierarchy[user.plan || 'STARTER'] || 0
+    const targetPlanLevel = planHierarchy[planId] || 0
+    
+    if (targetPlanLevel <= currentPlanLevel) {
       return NextResponse.json(
-        { message: 'You are already on the PRO plan' },
+        { message: `You are already on the ${user.plan} plan or higher. Downgrades are not supported through this checkout.` },
         { status: 400 }
       )
     }

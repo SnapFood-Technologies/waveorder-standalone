@@ -72,6 +72,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [groupsEnabled, setGroupsEnabled] = useState(false)
   const [customMenuEnabled, setCustomMenuEnabled] = useState(false)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
+  const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -88,7 +89,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     return url.pathname + url.search
   }
 
-  // Fetch feature flags
+  // Fetch feature flags and user role
   useEffect(() => {
     const fetchFeatureFlags = async () => {
       try {
@@ -100,13 +101,35 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setGroupsEnabled(data.business?.groupsFeatureEnabled || false)
           setCustomMenuEnabled(data.business?.customMenuEnabled || false)
           setCustomFilteringEnabled(data.business?.customFilteringEnabled || false)
+          // Set user role from response (if available) or fetch separately
+          if (data.userRole) {
+            setUserRole(data.userRole)
+          }
         }
       } catch (error) {
         console.error('Error fetching feature flags:', error)
       }
     }
+    
+    // Fetch user's role for this business
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}/user-role`)
+        if (response.ok) {
+          const data = await response.json()
+          setUserRole(data.role)
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+    
     fetchFeatureFlags()
+    fetchUserRole()
   }, [businessId])
+  
+  // Check if user can access products (STAFF cannot)
+  const canAccessProducts = userRole !== 'STAFF'
 
   const baseUrl = `/admin/stores/${businessId}`
 
@@ -123,7 +146,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: ShoppingBag, 
       requiredPlan: 'STARTER'
     },
-    { 
+    // Products menu - hidden for STAFF role (they can only view/manage orders)
+    // @ts-ignore
+    ...(canAccessProducts ? [{ 
       name: 'Products', 
       icon: Package, 
       requiredPlan: 'STARTER',
@@ -169,7 +194,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
       ]
-    },
+    }] : []),
     { 
       name: 'Customers', 
       href: `${baseUrl}/customers`, 

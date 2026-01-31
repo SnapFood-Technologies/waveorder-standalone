@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { canAddCategory, getPlanLimits } from '@/lib/stripe'
 
 
 export async function GET(
@@ -141,6 +142,31 @@ export async function POST(
     
     if (!access.authorized) {
       return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    // Get business owner's plan to check category limit
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+    const planLimits = getPlanLimits(userPlan)
+    
+    // Count current categories for this business
+    const currentCategoryCount = await prisma.category.count({
+      where: { businessId }
+    })
+    
+    // Check if user can add more categories
+    if (!canAddCategory(userPlan, currentCategoryCount)) {
+      return NextResponse.json({ 
+        message: `Category limit reached. Your ${userPlan} plan allows up to ${planLimits.categories} categories. Please upgrade to add more categories.`,
+        code: 'CATEGORY_LIMIT_REACHED',
+        currentCount: currentCategoryCount,
+        limit: planLimits.categories,
+        plan: userPlan
+      }, { status: 403 })
     }
 
     const categoryData = await request.json()
