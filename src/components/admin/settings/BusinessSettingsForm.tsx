@@ -139,8 +139,8 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
       return 'ES'
     }
     
-    // Barbados boundaries: approximately 13.0-13.4°N, -59.7 to -59.4°W
-    if (lat >= 13.0 && lat <= 13.4 && lng >= -59.7 && lng <= -59.4) {
+    // Barbados boundaries: approximately 13.0-13.35°N, -59.70 to -59.40°W (expanded for full island)
+    if (lat >= 13.0 && lat <= 13.35 && lng >= -59.70 && lng <= -59.40) {
       return 'BB'
     }
     
@@ -606,7 +606,8 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'USD', label: 'US Dollar ($)', symbol: '$' },
     { value: 'EUR', label: 'Euro (€)', symbol: '€' },
     { value: 'ALL', label: 'Albanian Lek (L)', symbol: 'L' },
-    { value: 'GBP', label: 'British Pound (£)', symbol: '£' }
+    { value: 'GBP', label: 'British Pound (£)', symbol: '£' },
+    { value: 'BBD', label: 'Barbadian Dollar (Bds$)', symbol: 'Bds$' }
   ]
 
   const schemaTypes = [

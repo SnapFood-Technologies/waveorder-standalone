@@ -46,6 +46,7 @@ const getCurrencySymbol = (currency: string) => {
     case 'EUR': return '€'
     case 'ALL': return 'L'
     case 'GBP': return '£'
+    case 'BBD': return 'Bds$'
     default: return '$'
   }
 }
