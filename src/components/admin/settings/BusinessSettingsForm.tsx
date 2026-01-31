@@ -150,13 +150,16 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
     }
   }
   
-  // SECONDARY: Check whatsapp number prefix
-  if (business.whatsappNumber?.startsWith('+355') || business.phone?.startsWith('+355')) return 'AL'
-  if (business.whatsappNumber?.startsWith('+30') || business.phone?.startsWith('+30')) return 'GR'
-  if (business.whatsappNumber?.startsWith('+39') || business.phone?.startsWith('+39')) return 'IT'
-  if (business.whatsappNumber?.startsWith('+34') || business.phone?.startsWith('+34')) return 'ES'
-  if (business.whatsappNumber?.startsWith('+1246') || business.phone?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
-  if (business.whatsappNumber?.startsWith('+1') || business.phone?.startsWith('+1')) return 'US'
+  // SECONDARY: Check whatsapp number prefix (check both direct field and configuration)
+  const whatsapp = business.whatsappNumber || business.configuration?.whatsappNumber || business.configuration?.whatsappSettings?.whatsappNumber
+  const phone = business.phone
+  
+  if (whatsapp?.startsWith('+355') || phone?.startsWith('+355')) return 'AL'
+  if (whatsapp?.startsWith('+30') || phone?.startsWith('+30')) return 'GR'
+  if (whatsapp?.startsWith('+39') || phone?.startsWith('+39')) return 'IT'
+  if (whatsapp?.startsWith('+34') || phone?.startsWith('+34')) return 'ES'
+  if (whatsapp?.startsWith('+1246') || phone?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
+  if (whatsapp?.startsWith('+1') || phone?.startsWith('+1')) return 'US'
   
   // TERTIARY: Check other user location indicators (for non-Greece countries only)
   if (typeof window !== 'undefined') {
