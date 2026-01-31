@@ -643,6 +643,8 @@ function AddressAutocomplete({
           return ['it'] // Italy business - only Italy addresses
         case 'ES':
           return ['es'] // Spain business - only Spain addresses
+        case 'TT':
+          return ['tt'] // Trinidad and Tobago business - only TT addresses
         default:
           return ['us'] // Default fallback
       }
@@ -710,7 +712,7 @@ function AddressAutocomplete({
   
 
 // Detect country from user's location and business data
-function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'DEFAULT' {
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'TT' | 'DEFAULT' {
     // TESTING OVERRIDE: Check user's location first for Greece testing
     if (typeof window !== 'undefined') {
       const browserLanguage = navigator.language.toLowerCase()
@@ -763,6 +765,11 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         return 'MK'
       }
       
+      // Trinidad and Tobago boundaries: approximately 10.0-11.4°N, -61.9 to -60.5°W
+      if (lat >= 10.0 && lat <= 11.4 && lng >= -61.9 && lng <= -60.5) {
+        return 'TT'
+      }
+      
       // United States boundaries: approximately 24-71°N, -180 to -66°W
       if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
         return 'US'
@@ -776,6 +783,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.whatsappNumber?.startsWith('+34')) return 'ES'
     if (storeData.whatsappNumber?.startsWith('+383')) return 'XK'
     if (storeData.whatsappNumber?.startsWith('+389')) return 'MK'
+    if (storeData.whatsappNumber?.startsWith('+1868')) return 'TT' // Trinidad - must be before generic +1
     if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
     
     // TERTIARY: Check other user location indicators
@@ -798,6 +806,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         if (timezone === 'Europe/Madrid') return 'ES'
         if (timezone === 'Europe/Belgrade' || timezone === 'Europe/Pristina') return 'XK'
         if (timezone === 'Europe/Skopje') return 'MK'
+        if (timezone === 'America/Port_of_Spain') return 'TT'
       } catch (error) {
         // Timezone detection failed
       }

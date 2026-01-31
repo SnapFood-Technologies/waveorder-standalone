@@ -992,6 +992,7 @@ export function CreateBusinessForm() {
                           <option value="AL">Albania</option>
                           <option value="GR">Greece</option>
                           <option value="ES">Spain</option>
+                          <option value="TT">Trinidad and Tobago</option>
                           <option value="US">USA</option>
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
@@ -1081,6 +1082,9 @@ export function CreateBusinessForm() {
                             <option value="America/Chicago">Central Time (Chicago)</option>
                             <option value="America/Denver">Mountain Time (Denver)</option>
                             <option value="America/Los_Angeles">Pacific Time (Los Angeles)</option>
+                          </optgroup>
+                          <optgroup label="Caribbean">
+                            <option value="America/Port_of_Spain">Trinidad and Tobago (Port of Spain)</option>
                           </optgroup>
                           <optgroup label="Europe">
                             <option value="Europe/London">London</option>
