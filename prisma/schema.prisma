@@ -241,6 +241,13 @@ model Business {
 
   // Business hours
   businessHours Json?
+  
+  // Scheduling configuration
+  slotDuration          Int     @default(30)  // Time slot duration in minutes (15, 30, 60)
+  slotCapacity          Int?                  // Max orders per time slot (null = unlimited)
+  deliveryBufferMinutes Int     @default(45)  // Buffer time for delivery orders
+  pickupBufferMinutes   Int     @default(20)  // Buffer time for pickup orders
+  holidayHours          Json?                 // Special hours for specific dates: { "2026-12-25": { closed: true }, "2026-12-31": { open: "10:00", close: "15:00" } }
 
   // WhatsApp settings
   messageTemplate  String?
@@ -522,6 +529,7 @@ model Product {
   originalPrice Float?
   sku           String?
   stock         Int      @default(0)
+  reservedStock Int      @default(0)  // Stock reserved for pending orders
   isActive      Boolean  @default(true)
   featured      Boolean  @default(false)
 
@@ -656,6 +664,7 @@ model ProductVariant {
   price         Float
   originalPrice Float? // Regular price before sale
   stock         Int     @default(0)
+  reservedStock Int     @default(0)  // Stock reserved for pending orders
   sku           String?
   productId     String  @db.ObjectId
   metadata      Json? // For storing external system data (e.g., articleNo, attributes, images, sale dates)
