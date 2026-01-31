@@ -119,6 +119,21 @@ const COUNTRY_CONFIGS = {
       return clean
     }
   },
+  BB: {
+    prefix: '+1246',
+    placeholder: '(246) 123-4567',
+    pattern: /^(\+1246|1246)[2-9]\d{6}$/,
+    flag: '🇧🇧',
+    name: 'Barbados',
+    allowedAddressCountries: ['bb'],
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 7) {
+        return clean.replace(/(\d{3})(\d{4})/, '$1-$2')
+      }
+      return clean
+    }
+  },
   XK: {
     prefix: '+383',
     placeholder: '44 123 456',
@@ -163,6 +178,7 @@ const ADDRESS_COUNTRIES = [
   { code: 'AL', name: 'Albania', flag: '🇦🇱' },
   { code: 'US', name: 'United States', flag: '🇺🇸' },
   { code: 'GR', name: 'Greece', flag: '🇬🇷' },
+  { code: 'BB', name: 'Barbados', flag: '🇧🇧' },
   { code: 'IT', name: 'Italy', flag: '🇮🇹' },
   { code: 'FR', name: 'France', flag: '🇫🇷' },
   { code: 'DE', name: 'Germany', flag: '🇩🇪' },
@@ -186,6 +202,8 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (lat >= 35.5 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) return 'IT'
     // Spain boundaries
     if (lat >= 36.0 && lat <= 43.8 && lng >= -9.3 && lng <= 4.3) return 'ES'
+    // Barbados boundaries: approximately 13.0-13.35°N, -59.70 to -59.40°W
+    if (lat >= 13.0 && lat <= 13.35 && lng >= -59.70 && lng <= -59.40) return 'BB'
     // US boundaries
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) return 'US'
   }
@@ -196,6 +214,7 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
     if (storeData.whatsappNumber.startsWith('+30')) return 'GR'
     if (storeData.whatsappNumber.startsWith('+39')) return 'IT'
     if (storeData.whatsappNumber.startsWith('+34')) return 'ES'
+    if (storeData.whatsappNumber.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
     if (storeData.whatsappNumber.startsWith('+1')) return 'US'
   }
   
@@ -222,6 +241,7 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('+30')) return 'GR'
   if (phoneValue.startsWith('+39')) return 'IT'
   if (phoneValue.startsWith('+34')) return 'ES'
+  if (phoneValue.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
   if (phoneValue.startsWith('+1')) return 'US'
   
   // Without + prefix
@@ -229,6 +249,7 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('30')) return 'GR'
   if (phoneValue.startsWith('39')) return 'IT'
   if (phoneValue.startsWith('34')) return 'ES'
+  if (phoneValue.startsWith('1246')) return 'BB' // Barbados - must be before generic 1
   if (phoneValue.startsWith('1')) return 'US'
   
   return 'OTHER'

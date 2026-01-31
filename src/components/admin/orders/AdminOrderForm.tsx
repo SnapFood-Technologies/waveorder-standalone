@@ -94,7 +94,8 @@ const COUNTRY_CONFIGS = {
   US: { prefix: '+1', placeholder: '(555) 123-4567', pattern: /^(\+1|1)[2-9]\d{9}$/, flag: '🇺🇸', name: 'United States' },
   GR: { prefix: '+30', placeholder: '694 123 4567', pattern: /^(\+30|30)0?[2-9]\d{9}$/, flag: '🇬🇷', name: 'Greece' },
   IT: { prefix: '+39', placeholder: '345 123 4567', pattern: /^(\+39|39)0?[3]\d{8,9}$/, flag: '🇮🇹', name: 'Italy' },
-  ES: { prefix: '+34', placeholder: '612 345 678', pattern: /^(\+34|34)[6-9]\d{8}$/, flag: '🇪🇸', name: 'Spain' }
+  ES: { prefix: '+34', placeholder: '612 345 678', pattern: /^(\+34|34)[6-9]\d{8}$/, flag: '🇪🇸', name: 'Spain' },
+  BB: { prefix: '+1246', placeholder: '(246) 123-4567', pattern: /^(\+1246|1246)[2-9]\d{6}$/, flag: '🇧🇧', name: 'Barbados' }
 }
 
 // Google Places Hook (reusing from CustomerForm)

@@ -77,7 +77,9 @@ const getCountryFlag = (country: string): string => {
     'ES': '🇪🇸',
     'XK': '🇽🇰',
     'MK': '🇲🇰',
-    'NL': '🇳🇱'
+    'NL': '🇳🇱',
+    'Barbados': '🇧🇧',
+    'BB': '🇧🇧'
   }
   return flags[country] || '🌍'
 }
