@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
       totalBusinesses,
       activeBusinesses,
       totalUsers,
+      activeUsersData,
+      multiStoreUsersData,
+      testModeBusinesses,
       totalOrders,
       deliveredOrders,
       businesses,
@@ -63,12 +66,44 @@ export async function GET(request: NextRequest) {
       prisma.business.count({
         where: { isActive: true, ...excludeTestCondition }
       }),
+      // Total users (excluding super admins)
       prisma.user.count({
         where: {
           role: {
             not: 'SUPER_ADMIN'
           }
         }
+      }),
+      // Active users - users that have at least one active, non-test business
+      prisma.user.findMany({
+        where: {
+          role: { not: 'SUPER_ADMIN' },
+          businesses: {
+            some: {
+              business: {
+                isActive: true,
+                ...excludeTestCondition
+              }
+            }
+          }
+        },
+        select: { id: true }
+      }),
+      // Multi-store users - users with more than 1 store
+      prisma.user.findMany({
+        where: {
+          role: { not: 'SUPER_ADMIN' }
+        },
+        select: {
+          id: true,
+          _count: {
+            select: { businesses: true }
+          }
+        }
+      }),
+      // Test mode businesses count
+      prisma.business.count({
+        where: { testMode: true }
       }),
       prisma.order.count({
         where: {
@@ -450,12 +485,19 @@ export async function GET(request: NextRequest) {
     // Calculate incomplete businesses count (all businesses, not just in date range)
     const incompleteCount = incompleteBusinessesFiltered.length
 
+    // Calculate active users and multi-store users
+    const activeUsers = activeUsersData.length
+    const multiStoreUsers = multiStoreUsersData.filter(u => u._count.businesses > 1).length
+
     return NextResponse.json({
       overview: {
         totalBusinesses,
         activeBusinesses,
         incompleteBusinesses: incompleteCount,
         totalUsers,
+        activeUsers, // Users with at least one active non-test business
+        multiStoreUsers, // Users with more than 1 store
+        testModeBusinesses, // Test mode businesses count
         totalOrders,
         totalRevenue,
         pageViews: totalPageViews, // Total page views across all businesses

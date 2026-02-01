@@ -320,6 +320,16 @@ export async function GET(request: NextRequest) {
         })
       }
 
+      // Check if owner has multiple stores (multi-store user)
+      let storeCount = 1
+      let isMultiStore = false
+      if (owner?.id) {
+        storeCount = await prisma.businessUser.count({
+          where: { userId: owner.id }
+        })
+        isMultiStore = storeCount > 1
+      }
+
       return {
         id: business.id,
         name: business.name,
@@ -351,6 +361,8 @@ export async function GET(request: NextRequest) {
           createdAt: owner.createdAt,
           authMethod
         } : null,
+        isMultiStore,
+        storeCount,
         stats: {
           totalOrders: business._count.orders,
           // Revenue: Paid orders that are completed/fulfilled

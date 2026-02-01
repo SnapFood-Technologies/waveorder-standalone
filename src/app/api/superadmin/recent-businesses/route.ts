@@ -16,7 +16,8 @@ export async function GET() {
 
     const businesses = await prisma.business.findMany({
       where: {
-        isActive: true // Only show active businesses in recent registrations
+        isActive: true, // Only show active businesses in recent registrations
+        NOT: { testMode: true } // Exclude test businesses
       },
       take: 10,
       orderBy: {
@@ -39,6 +40,7 @@ export async function GET() {
           include: {
             user: {
               select: {
+                id: true,
                 name: true,
                 email: true,
                 password: true,
@@ -52,6 +54,11 @@ export async function GET() {
                   select: {
                     priceId: true
                   }
+                },
+                businesses: {
+                  select: {
+                    businessId: true
+                  }
                 }
               }
             }
@@ -61,7 +68,8 @@ export async function GET() {
     })
 
     const formattedBusinesses = businesses.map(business => {
-      const owner = business.users[0]?.user
+      const ownerRelation = business.users[0]
+      const owner = ownerRelation?.user
       let authMethod = 'email'
       
       if (owner?.accounts?.length > 0) {
@@ -81,6 +89,10 @@ export async function GET() {
       const subscriptionPriceId = owner?.subscription?.priceId
       const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
 
+      // Check if owner has multiple stores
+      const storeCount = owner?.businesses?.length || 0
+      const isMultiStore = storeCount > 1
+
       return {
         id: business.id,
         name: business.name,
@@ -94,7 +106,9 @@ export async function GET() {
         businessType: business.businessType,
         logo: business.logo,
         createdByAdmin: business.createdByAdmin,
-        authMethod
+        authMethod,
+        isMultiStore,
+        storeCount
       }
     })
 

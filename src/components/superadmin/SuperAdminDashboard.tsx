@@ -23,7 +23,8 @@ import {
   Calendar,
   ArrowUpRight,
   Info,
-  X
+  X,
+  Store
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import { StorefrontViewsChart } from './StorefrontViewsChart';
@@ -37,7 +38,6 @@ interface DashboardStats {
   totalPageViews: number;
 }
 
-// In SuperAdminDashboard.tsx, update the interface:
 interface RecentBusiness {
   id: string;
   name: string;
@@ -52,6 +52,8 @@ interface RecentBusiness {
   logo?: string;
   createdByAdmin: boolean;
   authMethod: string;
+  isMultiStore?: boolean;
+  storeCount?: number;
 }
 
 interface DateRange {
@@ -457,8 +459,14 @@ export function SuperAdminDashboard() {
                         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                           {getBusinessIcon(business)}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-sm font-medium text-gray-900">{business.name}</p>
+                          {business.isMultiStore && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full" title={`Owner has ${business.storeCount} stores`}>
+                              <Store className="w-3 h-3" />
+                              Multi-Store
+                            </span>
+                          )}
                           {isBusinessIncomplete(business) && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                               <span>Incomplete</span>

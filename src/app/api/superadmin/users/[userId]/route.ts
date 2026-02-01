@@ -56,6 +56,7 @@ export async function GET(
                 subscriptionPlan: true,
                 subscriptionStatus: true,
                 isActive: true,
+                testMode: true,
                 createdAt: true,
                 _count: {
                   select: {
@@ -162,6 +163,7 @@ export async function GET(
         subscriptionPlan: bu.business.subscriptionPlan,
         subscriptionStatus: bu.business.subscriptionStatus,
         isActive: bu.business.isActive,
+        testMode: bu.business.testMode || false,
         createdAt: bu.business.createdAt,
         ordersCount: bu.business._count?.orders || 0,
         productsCount: bu.business._count?.products || 0

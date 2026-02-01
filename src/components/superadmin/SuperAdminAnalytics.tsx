@@ -21,7 +21,10 @@ import {
   Filter,
   HelpCircle,
   Archive,
-  ArrowRight
+  ArrowRight,
+  Store,
+  FlaskConical,
+  UserCheck
 } from 'lucide-react'
 
 interface AnalyticsData {
@@ -30,6 +33,9 @@ interface AnalyticsData {
     activeBusinesses: number
     incompleteBusinesses: number
     totalUsers: number
+    activeUsers: number
+    multiStoreUsers: number
+    testModeBusinesses: number
     totalOrders: number
     totalRevenue: number
     pageViews: number
@@ -191,8 +197,37 @@ export function SuperAdminAnalytics() {
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatNumber(data.overview.totalUsers)}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {formatNumber(data.overview.activeUsers)} active
+              </p>
             </div>
             <Users className="w-10 h-10 text-purple-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Multi-Store Users</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatNumber(data.overview.multiStoreUsers)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Users with 2+ stores</p>
+            </div>
+            <Store className="w-10 h-10 text-teal-500" />
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Test Mode Businesses</p>
+              <p className="text-2xl font-bold text-gray-900 mt-2">
+                {formatNumber(data.overview.testModeBusinesses)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Hidden from analytics</p>
+            </div>
+            <FlaskConical className="w-10 h-10 text-orange-500" />
           </div>
         </div>
 
@@ -338,14 +373,28 @@ export function SuperAdminAnalytics() {
                 <Users className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Total Users</p>
-                  <p className="text-xs text-gray-600 mt-1">All registered users (excluding super admins)</p>
+                  <p className="text-xs text-gray-600 mt-1">All registered users (excluding super admins). Active count shows users with at least one active, non-test business.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Store className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Multi-Store Users</p>
+                  <p className="text-xs text-gray-600 mt-1">Users who own or manage more than one store (multi-catalog feature users)</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <FlaskConical className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Test Mode Businesses</p>
+                  <p className="text-xs text-gray-600 mt-1">Businesses marked as test mode. Excluded from all other analytics metrics.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <ShoppingCart className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Total Orders</p>
-                  <p className="text-xs text-gray-600 mt-1">All orders placed across all businesses</p>
+                  <p className="text-xs text-gray-600 mt-1">All orders placed across all businesses (excluding test mode)</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">

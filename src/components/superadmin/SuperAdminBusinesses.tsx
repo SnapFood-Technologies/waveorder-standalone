@@ -33,6 +33,7 @@ import {
   CreditCard,
   Loader2,
   Check,
+  Store,
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import Link from 'next/link'
@@ -63,6 +64,8 @@ interface Business {
   setupWizardCompleted: boolean;
   createdByAdmin: boolean;
   marketplaceRole?: 'originator' | 'supplier' | null;
+  isMultiStore?: boolean;
+  storeCount?: number;
   owner: {
     id: string;
     name: string;
@@ -689,8 +692,14 @@ export function SuperAdminBusinesses() {
                             {getBusinessIcon(business)}
                           </div>
                           <div className="ml-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <div className="text-sm font-medium text-gray-900">{business.name}</div>
+                              {business.isMultiStore && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-teal-100 text-teal-800 rounded-full" title={`Owner has ${business.storeCount} stores`}>
+                                  <Store className="w-3 h-3" />
+                                  Multi-Store
+                                </span>
+                              )}
                               {isBusinessIncomplete(business) && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
                                   <span>Incomplete</span>

@@ -18,7 +18,8 @@ import {
   XCircle,
   AlertCircle,
   Copy,
-  Check
+  Check,
+  FlaskConical
 } from 'lucide-react'
 import { AuthMethodIcon } from './AuthMethodIcon'
 import Link from 'next/link'
@@ -32,6 +33,7 @@ interface Business {
   subscriptionPlan: string
   subscriptionStatus: string
   isActive: boolean
+  testMode: boolean
   createdAt: string
   ordersCount: number
   productsCount: number
@@ -356,13 +358,13 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
           {/* Businesses */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center">
                   <Building2 className="w-5 h-5 mr-2 text-gray-400" />
                   Businesses ({user.storeLimit 
                     ? (user.storeLimit.isUnlimited 
-                        ? user.businesses.length 
-                        : `${user.businesses.length}/${user.storeLimit.limit}`)
+                        ? `${user.businesses.length} / Unlimited`
+                        : `${user.businesses.length}/${user.storeLimit.limit || '∞'}`)
                     : user.businesses.length})
                 </h2>
                 {user.storeLimit?.atLimit && !user.storeLimit.isUnlimited && (
@@ -373,6 +375,12 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                 {user.storeLimit?.nearLimit && !user.storeLimit.atLimit && !user.storeLimit.isUnlimited && (
                   <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
                     Near Limit
+                  </span>
+                )}
+                {user.businesses.some(b => b.testMode) && (
+                  <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                    <FlaskConical className="w-3 h-3" />
+                    Has Test Businesses
                   </span>
                 )}
               </div>
@@ -388,7 +396,7 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                   <div key={business.id} className="p-6 hover:bg-gray-50 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap">
                           <h3 className="font-medium text-gray-900">{business.name}</h3>
                           {getPlanBadge(business.subscriptionPlan)}
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -396,6 +404,12 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                           }`}>
                             {business.isActive ? 'Active' : 'Inactive'}
                           </span>
+                          {business.testMode && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              <FlaskConical className="w-3 h-3" />
+                              Test Mode
+                            </span>
+                          )}
                         </div>
                         <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
                           <span className="capitalize">{business.businessType.toLowerCase().replace('_', ' ')}</span>
@@ -534,8 +548,8 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                   <span className="text-lg font-semibold text-gray-900">
                     {user.storeLimit 
                       ? (user.storeLimit.isUnlimited 
-                          ? user.stats.totalBusinesses 
-                          : `${user.stats.totalBusinesses}/${user.storeLimit.limit}`)
+                          ? `${user.stats.totalBusinesses} / ∞`
+                          : `${user.stats.totalBusinesses}/${user.storeLimit.limit || '∞'}`)
                       : user.stats.totalBusinesses}
                   </span>
                   {user.storeLimit?.atLimit && !user.storeLimit.isUnlimited && (
