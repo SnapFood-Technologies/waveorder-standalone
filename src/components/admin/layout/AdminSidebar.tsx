@@ -263,8 +263,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       }
     ] : []),
     
+    // PRO and BUSINESS plan features (BUSINESS includes all PRO features)
     // @ts-ignore
-    ...(subscription.plan === 'PRO' ? [
+    ...((subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') ? [
       { 
         name: 'Inventory', 
         icon: Boxes,
