@@ -42,9 +42,10 @@ interface StoreData {
 interface StoreComparisonProps {
   className?: string
   showQuickActions?: boolean
+  businessId?: string
 }
 
-export function StoreComparison({ className = '', showQuickActions = true }: StoreComparisonProps) {
+export function StoreComparison({ className = '', showQuickActions = true, businessId }: StoreComparisonProps) {
   const [stores, setStores] = useState<StoreData[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('30')
@@ -229,10 +230,10 @@ export function StoreComparison({ className = '', showQuickActions = true }: Sto
       </div>
 
       {/* Quick Actions - CTAs to Cross-Store Features */}
-      {showQuickActions && (
+      {showQuickActions && businessId && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link
-            href="/admin/unified/dashboard"
+            href={`/admin/stores/${businessId}/unified/dashboard`}
             className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-lg border border-teal-200 p-4 hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center justify-between mb-2">
@@ -244,7 +245,7 @@ export function StoreComparison({ className = '', showQuickActions = true }: Sto
           </Link>
           
           <Link
-            href="/admin/unified/analytics"
+            href={`/admin/stores/${businessId}/unified/analytics`}
             className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200 p-4 hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center justify-between mb-2">
@@ -256,7 +257,7 @@ export function StoreComparison({ className = '', showQuickActions = true }: Sto
           </Link>
           
           <Link
-            href="/admin/unified/orders"
+            href={`/admin/stores/${businessId}/unified/orders`}
             className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-4 hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center justify-between mb-2">
@@ -268,7 +269,7 @@ export function StoreComparison({ className = '', showQuickActions = true }: Sto
           </Link>
           
           <Link
-            href="/admin/unified/inventory"
+            href={`/admin/stores/${businessId}/unified/inventory`}
             className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-200 p-4 hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center justify-between mb-2">

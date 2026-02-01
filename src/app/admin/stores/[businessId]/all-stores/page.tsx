@@ -284,7 +284,7 @@ export default function AllStoresPage() {
           <div className="p-4 sm:p-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <Link
-                href="/admin/unified/dashboard"
+                href={`/admin/stores/${currentBusinessId}/unified/dashboard`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -294,7 +294,7 @@ export default function AllStoresPage() {
               </Link>
               
               <Link
-                href="/admin/unified/analytics"
+                href={`/admin/stores/${currentBusinessId}/unified/analytics`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -304,7 +304,7 @@ export default function AllStoresPage() {
               </Link>
               
               <Link
-                href="/admin/unified/orders"
+                href={`/admin/stores/${currentBusinessId}/unified/orders`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -314,7 +314,7 @@ export default function AllStoresPage() {
               </Link>
               
               <Link
-                href="/admin/unified/inventory"
+                href={`/admin/stores/${currentBusinessId}/unified/inventory`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all group"
               >
                 <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -329,7 +329,7 @@ export default function AllStoresPage() {
 
       {/* Store Comparison */}
       {stores.length >= 2 && (
-        <StoreComparison className="" showQuickActions={false} />
+        <StoreComparison className="" showQuickActions={false} businessId={currentBusinessId} />
       )}
 
       {/* Stores List */}
