@@ -553,13 +553,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
                   ? 'Advanced features and analytics'
                   : 'Full access with team & API'}
               </p>
-              {subscription.plan === 'STARTER' && (
+              {(subscription.plan === 'STARTER' || subscription.plan === 'PRO') && (
                 <Link 
                   href={addImpersonationParams(`/admin/stores/${businessId}/settings/billing`)}
                   className="text-xs underline hover:no-underline"
                   onClick={onClose}
                 >
-                  View Plans →
+                  {subscription.plan === 'STARTER' ? 'View Plans →' : 'Upgrade to Business →'}
                 </Link>
               )}
             </div>
