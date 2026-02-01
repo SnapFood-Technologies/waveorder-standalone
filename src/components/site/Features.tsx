@@ -124,7 +124,7 @@ export default function Features() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-20 pb-6 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
+      <section className="pt-20 pb-6 bg-teal-50 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -137,7 +137,7 @@ export default function Features() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/auth/register"
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-teal-500 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
               >
                 Start 14-Day Free Trial
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -169,7 +169,7 @@ export default function Features() {
             {mainFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
-                <div key={index} className={`bg-gradient-to-br ${feature.gradient} rounded-2xl p-6 sm:p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
+                <div key={index} className={`bg-gray-50 bg-gradient-to-br ${feature.gradient} rounded-2xl p-6 sm:p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
                   {/* Mobile-first: Stacked layout */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-6">
                     {/* Icon and Title Section */}
@@ -227,7 +227,7 @@ export default function Features() {
               const IconComponent = feature.icon
               return (
                 <div key={index} className={`bg-white rounded-2xl p-6 border-2 ${feature.color} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
-                  <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mb-4">
+                  <div className="w-14 h-14 bg-gray-100 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mb-4">
                     <IconComponent className="w-7 h-7 text-gray-600" />
                   </div>
                   <div className="mb-3">
@@ -257,8 +257,8 @@ export default function Features() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-            <Link href="/instagram-sellers" className="bg-gradient-to-br from-pink-50 to-purple-50 border-pink-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-              <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 flex items-center justify-center">
+            <Link href="/instagram-sellers" className="bg-pink-50 bg-gradient-to-br from-pink-50 to-purple-50 border-pink-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-pink-500 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 flex items-center justify-center">
                 <span className="text-3xl">📸</span>
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-pink-600 transition-colors">Instagram Sellers</h3>
@@ -267,7 +267,7 @@ export default function Features() {
                 Learn more <ChevronRight className="w-4 h-4 ml-1" />
               </span>
             </Link>
-            <Link href="/restaurants" className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+            <Link href="/restaurants" className="bg-orange-50 bg-gradient-to-br from-orange-50 to-red-50 border-orange-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
               <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-[#f97066] flex items-center justify-center">
                 <span className="text-3xl">🍽️</span>
               </div>
@@ -277,7 +277,7 @@ export default function Features() {
                 Learn more <ChevronRight className="w-4 h-4 ml-1" />
               </span>
             </Link>
-            <Link href="/retail" className="bg-gradient-to-br from-violet-50 to-indigo-50 border-violet-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+            <Link href="/retail" className="bg-violet-50 bg-gradient-to-br from-violet-50 to-indigo-50 border-violet-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
               <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-violet-500 flex items-center justify-center">
                 <span className="text-3xl">🛍️</span>
               </div>
@@ -292,7 +292,7 @@ export default function Features() {
       </section>
 
       {/* Key Benefits Section */}
-      <section className="py-20 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <section className="py-20 bg-teal-50 bg-gradient-to-br from-teal-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -345,7 +345,7 @@ export default function Features() {
               const IconComponent = benefit.icon
               return (
                 <div key={index} className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-teal-500 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
                     <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
@@ -361,7 +361,7 @@ export default function Features() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
+      <section className="py-20 bg-teal-600 bg-gradient-to-r from-teal-600 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Transform Your WhatsApp Orders?

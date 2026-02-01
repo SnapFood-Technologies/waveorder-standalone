@@ -11,9 +11,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-b from-teal-50 to-white relative overflow-hidden">
+      <section className="pt-24 pb-16 bg-teal-50 bg-gradient-to-b from-teal-50 to-white relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-teal-100/50 to-transparent opacity-50 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-teal-100/50 bg-gradient-to-l from-teal-100/50 to-transparent opacity-50 pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -110,7 +110,7 @@ export default function Home() {
                     {/* Products */}
                     <div className="p-3 space-y-3">
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center text-2xl">👗</div>
+                        <div className="w-14 h-14 bg-teal-100 bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center text-2xl">👗</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Summer Dress</h4>
                           <p className="text-xs text-gray-500">Floral print, sizes S-L</p>
@@ -119,7 +119,7 @@ export default function Home() {
                         <button className="w-7 h-7 bg-teal-600 text-white rounded-full self-center text-lg">+</button>
                       </div>
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center text-2xl">👜</div>
+                        <div className="w-14 h-14 bg-teal-100 bg-gradient-to-br from-teal-100 to-teal-200 rounded-lg flex items-center justify-center text-2xl">👜</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Leather Handbag</h4>
                           <p className="text-xs text-gray-500">Brown, premium quality</p>
@@ -200,7 +200,7 @@ export default function Home() {
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <Link href="/instagram-sellers" className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-pink-500 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600">
                 <Camera className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Instagram Sellers</h3>
@@ -433,8 +433,8 @@ export default function Home() {
                   </div>
                   
                   {/* Chart placeholder */}
-                  <div className="h-32 bg-gradient-to-t from-teal-100 to-transparent rounded-xl relative overflow-hidden">
-                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-teal-500/30 to-transparent" 
+                  <div className="h-32 bg-teal-100 bg-gradient-to-t from-teal-100 to-transparent rounded-xl relative overflow-hidden">
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-teal-500/30 bg-gradient-to-t from-teal-500/30 to-transparent" 
                       style={{
                         clipPath: 'polygon(0 100%, 5% 80%, 15% 60%, 25% 70%, 35% 40%, 45% 50%, 55% 30%, 65% 45%, 75% 20%, 85% 35%, 95% 10%, 100% 25%, 100% 100%)'
                       }}

@@ -23,7 +23,7 @@ export default function RestaurantsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-b from-orange-50 to-white relative overflow-hidden">
+      <section className="pt-24 pb-16 bg-orange-50 bg-gradient-to-b from-orange-50 to-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="max-w-xl">
@@ -113,7 +113,7 @@ export default function RestaurantsPage() {
                   {/* Menu Items */}
                   <div className="p-3 space-y-3">
                     <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                      <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center text-2xl">🍝</div>
+                      <div className="w-14 h-14 bg-orange-100 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center text-2xl">🍝</div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-sm">Spaghetti Carbonara</h4>
                         <p className="text-xs text-gray-500">Egg, parmesan, pancetta</p>
@@ -122,7 +122,7 @@ export default function RestaurantsPage() {
                       <button className="w-7 h-7 bg-[#f97066] text-white rounded-full self-center text-lg">+</button>
                     </div>
                     <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                      <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center text-2xl">🍕</div>
+                      <div className="w-14 h-14 bg-red-100 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center text-2xl">🍕</div>
                       <div className="flex-1">
                         <h4 className="font-semibold text-sm">Margherita Pizza</h4>
                         <p className="text-xs text-gray-500">Tomato, mozzarella, basil</p>

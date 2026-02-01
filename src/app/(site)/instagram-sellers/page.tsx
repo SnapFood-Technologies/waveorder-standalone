@@ -23,7 +23,7 @@ export default function InstagramSellersPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50 relative overflow-hidden">
+      <section className="pt-24 pb-16 bg-pink-50 bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-xl">
@@ -34,7 +34,7 @@ export default function InstagramSellersPage() {
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Turn Your Bio Link Into a <span className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 bg-clip-text text-transparent">Professional Store</span>
+                Turn Your Bio Link Into a <span className="text-pink-600 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 bg-clip-text [-webkit-background-clip:text] text-transparent">Professional Store</span>
               </h1>
               
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
@@ -44,7 +44,7 @@ export default function InstagramSellersPage() {
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link 
                   href="/auth/register"
-                  className="px-8 py-4 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white text-lg font-semibold rounded-full hover:opacity-90 transition-all hover:-translate-y-0.5 hover:shadow-xl inline-flex items-center justify-center"
+                  className="px-8 py-4 bg-pink-500 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white text-lg font-semibold rounded-full hover:opacity-90 transition-all hover:-translate-y-0.5 hover:shadow-xl inline-flex items-center justify-center"
                 >
                   Start Free Trial
                   <ArrowRight className="w-5 h-5 ml-2" />
@@ -80,7 +80,7 @@ export default function InstagramSellersPage() {
                 <div className="bg-gray-900 rounded-[40px] p-3 shadow-2xl">
                   <div className="bg-white rounded-[32px] overflow-hidden">
                     {/* Phone Header */}
-                    <div className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 p-4 text-white">
+                    <div className="bg-pink-500 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 p-4 text-white">
                       <div className="flex justify-between items-center text-xs mb-3">
                         <span>9:41 AM</span>
                         <div className="flex gap-2">
@@ -100,7 +100,7 @@ export default function InstagramSellersPage() {
                     
                     {/* Tabs */}
                     <div className="flex gap-2 p-3 border-b border-gray-100">
-                      <span className="px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-medium rounded-full">All</span>
+                      <span className="px-4 py-1.5 bg-pink-500 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-medium rounded-full">All</span>
                       <span className="px-4 py-1.5 text-gray-400 text-sm">Rings</span>
                       <span className="px-4 py-1.5 text-gray-400 text-sm">Necklaces</span>
                     </div>
@@ -108,27 +108,27 @@ export default function InstagramSellersPage() {
                     {/* Products */}
                     <div className="p-3 space-y-3">
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center text-2xl">💍</div>
+                        <div className="w-14 h-14 bg-amber-100 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg flex items-center justify-center text-2xl">💍</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Gold Moon Ring</h4>
                           <p className="text-xs text-gray-500">Adjustable, 18K plated</p>
                           <span className="text-pink-600 font-bold text-sm">$34.99</span>
                         </div>
-                        <button className="w-7 h-7 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full self-center text-lg">+</button>
+                        <button className="w-7 h-7 bg-pink-500 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full self-center text-lg">+</button>
                       </div>
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center text-2xl">📿</div>
+                        <div className="w-14 h-14 bg-purple-100 bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg flex items-center justify-center text-2xl">📿</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Crystal Pendant</h4>
                           <p className="text-xs text-gray-500">Amethyst, silver chain</p>
                           <span className="text-pink-600 font-bold text-sm">$45.00</span>
                         </div>
-                        <button className="w-7 h-7 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full self-center text-lg">+</button>
+                        <button className="w-7 h-7 bg-pink-500 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full self-center text-lg">+</button>
                       </div>
                     </div>
                     
                     {/* Cart Button */}
-                    <div className="m-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-xl flex items-center justify-center gap-2 font-semibold">
+                    <div className="m-3 bg-pink-500 bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-xl flex items-center justify-center gap-2 font-semibold">
                       <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
                       Order via WhatsApp
                     </div>
@@ -196,7 +196,7 @@ export default function InstagramSellersPage() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-2xl hover:-translate-y-1 transition-all hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-r from-orange-100 to-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-6">
+              <div className="w-14 h-14 bg-pink-100 bg-gradient-to-r from-orange-100 to-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-6">
                 <Camera className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Stunning Product Pages</h3>
@@ -204,7 +204,7 @@ export default function InstagramSellersPage() {
             </div>
 
             <div className="bg-white p-8 rounded-2xl hover:-translate-y-1 transition-all hover:shadow-lg">
-              <div className="w-14 h-14 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
+              <div className="w-14 h-14 bg-purple-100 bg-gradient-to-r from-pink-100 to-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6">
                 <ShoppingBag className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Size & Variant Options</h3>
@@ -257,7 +257,7 @@ export default function InstagramSellersPage() {
           
           <div className="space-y-12">
             <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">1</div>
+              <div className="w-12 h-12 bg-pink-500 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">1</div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Upload Your Products</h3>
                 <p className="text-gray-600">Add photos, prices, sizes, and descriptions. Takes minutes, not hours.</p>
@@ -265,7 +265,7 @@ export default function InstagramSellersPage() {
             </div>
             
             <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">2</div>
+              <div className="w-12 h-12 bg-purple-500 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">2</div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Add Link to Bio</h3>
                 <p className="text-gray-600">Put your WaveOrder link in your Instagram bio. Share in stories when you post new items.</p>
@@ -273,7 +273,7 @@ export default function InstagramSellersPage() {
             </div>
             
             <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
+              <div className="w-12 h-12 bg-violet-500 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">3</div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Receive Orders on WhatsApp</h3>
                 <p className="text-gray-600">Customers browse your store, select items, and tap to order. You get a clean, formatted message with everything you need.</p>
@@ -281,7 +281,7 @@ export default function InstagramSellersPage() {
             </div>
             
             <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">4</div>
+              <div className="w-12 h-12 bg-indigo-500 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">4</div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Confirm & Ship</h3>
                 <p className="text-gray-600">Reply to confirm payment method and shipping. No more lost orders or confusion.</p>
@@ -292,7 +292,7 @@ export default function InstagramSellersPage() {
       </section>
 
       {/* Testimonial */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white">
+      <section className="py-20 bg-pink-500 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center mb-6 text-3xl">
             💕
@@ -324,7 +324,7 @@ export default function InstagramSellersPage() {
           </p>
           <Link 
             href="/auth/register"
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white text-lg font-semibold rounded-full hover:opacity-90 transition-all hover:-translate-y-0.5 hover:shadow-xl"
+            className="inline-flex items-center px-8 py-4 bg-pink-500 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white text-lg font-semibold rounded-full hover:opacity-90 transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
             Start Your 14-Day Free Trial
             <ArrowRight className="w-5 h-5 ml-2" />

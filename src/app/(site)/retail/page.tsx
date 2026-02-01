@@ -23,7 +23,7 @@ export default function RetailPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-gradient-to-b from-violet-50 to-white relative overflow-hidden">
+      <section className="pt-24 pb-16 bg-violet-50 bg-gradient-to-b from-violet-50 to-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-xl">
@@ -108,7 +108,7 @@ export default function RetailPage() {
                     {/* Products */}
                     <div className="p-3 space-y-3">
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-violet-100 to-violet-200 rounded-lg flex items-center justify-center text-2xl">🎧</div>
+                        <div className="w-14 h-14 bg-violet-100 bg-gradient-to-br from-violet-100 to-violet-200 rounded-lg flex items-center justify-center text-2xl">🎧</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Wireless Headphones</h4>
                           <p className="text-xs text-gray-500">Black · Noise cancelling</p>
@@ -117,7 +117,7 @@ export default function RetailPage() {
                         <button className="w-7 h-7 bg-violet-600 text-white rounded-full self-center text-lg">+</button>
                       </div>
                       <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center text-2xl">⌚</div>
+                        <div className="w-14 h-14 bg-blue-100 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center text-2xl">⌚</div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-sm">Smart Watch Pro</h4>
                           <p className="text-xs text-gray-500">Silver · 45mm</p>
