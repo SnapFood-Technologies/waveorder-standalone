@@ -78,12 +78,21 @@ export function StoresList() {
         fetch('/api/user/default-store')
       ])
 
+      let userPlan = 'STARTER'
+      
+      if (limitsRes.ok) {
+        const limitsData = await limitsRes.json()
+        setStoreLimits(limitsData)
+        userPlan = limitsData.planName || 'STARTER'
+      }
+
       if (storesRes.ok) {
         const storesData = await storesRes.json()
         const businesses = storesData.businesses || []
         
-        // If user has only 1 store, redirect directly to dashboard
-        if (businesses.length === 1) {
+        // Only redirect STARTER users with 1 store (they can't create more)
+        // PRO/BUSINESS users can stay to create more stores
+        if (businesses.length === 1 && userPlan === 'STARTER') {
           router.push(`/admin/stores/${businesses[0].id}/dashboard`)
           return
         }
@@ -94,11 +103,6 @@ export function StoresList() {
       if (defaultRes.ok) {
         const defaultData = await defaultRes.json()
         setDefaultStoreId(defaultData.defaultBusinessId)
-      }
-
-      if (limitsRes.ok) {
-        const limitsData = await limitsRes.json()
-        setStoreLimits(limitsData)
       }
     } catch (err) {
       setError('An error occurred while loading data')
