@@ -70,15 +70,15 @@ export default function Home() {
             {/* Right - Phone Mockup */}
             <div className="relative flex justify-center lg:justify-end">
               {/* Floating badges */}
-              <div className="absolute -left-4 top-8 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              <div className="absolute right-0 top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
                 <span className="text-teal-500">✓</span> New order received!
               </div>
-              <div className="absolute -right-4 bottom-24 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
+              <div className="absolute left-0 bottom-16 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
                 📱 Works on any device
               </div>
               
               {/* Phone Frame */}
-              <div className="w-72 md:w-80">
+              <div className="w-[310px]">
                 <div className="bg-gray-900 rounded-[40px] p-3 shadow-2xl">
                   <div className="bg-white rounded-[32px] overflow-hidden">
                     {/* Phone Header */}

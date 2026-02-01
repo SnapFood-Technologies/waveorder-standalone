@@ -11,6 +11,9 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [industriesOpen, setIndustriesOpen] = useState(false)
   const [useCasesOpen, setUseCasesOpen] = useState(false)
+  const [mobileIndustriesOpen, setMobileIndustriesOpen] = useState(false)
+
+  const closeMenu = () => setIsMenuOpen(false)
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -49,24 +52,23 @@ export default function Header() {
               onMouseEnter={() => setIndustriesOpen(true)}
               onMouseLeave={() => setIndustriesOpen(false)}
             >
-              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors">
+              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors py-2">
                 <span>Industries</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               {industriesOpen && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                  <Link href="/restaurants" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Restaurants & Cafes
-                  </Link>
-                  <Link href="/retail" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Retail & E-commerce
-                  </Link>
-                  <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Salons & Spas
-                  </Link>
-                  <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Professional Services
-                  </Link>
+                <div className="absolute top-full left-0 pt-1 w-56 z-50">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                    <Link href="/restaurants" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Restaurants & Cafes
+                    </Link>
+                    <Link href="/retail" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Retail & E-commerce
+                    </Link>
+                    <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Instagram Sellers
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -77,21 +79,23 @@ export default function Header() {
               onMouseEnter={() => setUseCasesOpen(true)}
               onMouseLeave={() => setUseCasesOpen(false)}
             >
-              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors">
+              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors py-2">
                 <span>Use Cases</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               {useCasesOpen && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                  <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Instagram Sellers
-                  </Link>
-                  <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    WhatsApp Business
-                  </Link>
-                  <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
-                    Link-in-Bio Stores
-                  </Link>
+                <div className="absolute top-full left-0 pt-1 w-56 z-50">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                    <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Instagram Sellers
+                    </Link>
+                    <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      WhatsApp Business
+                    </Link>
+                    <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Link-in-Bio Stores
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -133,7 +137,10 @@ export default function Header() {
 
           <button
             className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {
+              setIsMenuOpen(!isMenuOpen)
+              if (!isMenuOpen) setMobileIndustriesOpen(false) // Reset submenu when opening
+            }}
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -142,37 +149,45 @@ export default function Header() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
-            <div className="flex flex-col space-y-4">
-              {/* Industries Section */}
-              <div className="space-y-2">
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Industries</span>
-                <Link href="/restaurants" className="block text-gray-700 hover:text-teal-600 font-medium pl-2">
-                  Restaurants & Cafes
-                </Link>
-                <Link href="/retail" className="block text-gray-700 hover:text-teal-600 font-medium pl-2">
-                  Retail & E-commerce
-                </Link>
-                <Link href="/instagram-sellers" className="block text-gray-700 hover:text-teal-600 font-medium pl-2">
-                  Instagram Sellers
-                </Link>
+            <div className="flex flex-col space-y-2">
+              {/* Industries Section - Collapsible */}
+              <div>
+                <button
+                  onClick={() => setMobileIndustriesOpen(!mobileIndustriesOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 font-medium"
+                >
+                  <span>Industries</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileIndustriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileIndustriesOpen && (
+                  <div className="pl-4 space-y-2 pb-2">
+                    <Link href="/restaurants" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Restaurants & Cafes
+                    </Link>
+                    <Link href="/retail" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Retail & E-commerce
+                    </Link>
+                    <Link href="/instagram-sellers" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Instagram Sellers
+                    </Link>
+                  </div>
+                )}
               </div>
               
-              <div className="border-t border-gray-100 pt-4 space-y-2">
-                <Link href="/features" className="block text-gray-700 hover:text-teal-600 font-medium">
-                  Features
-                </Link>
-                <Link href="/pricing" className="block text-gray-700 hover:text-teal-600 font-medium">
-                  Pricing
-                </Link>
-                <Link href="/demo" className="block text-gray-700 hover:text-teal-600 font-medium">
-                  Demo
-                </Link>
-              </div>
+              <Link href="/features" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
+                Features
+              </Link>
+              <Link href="/pricing" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
+                Pricing
+              </Link>
+              <Link href="/demo" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
+                Demo
+              </Link>
               
-              <div className="pt-4 border-t border-gray-100">
+              <div className="pt-4 border-t border-gray-100 space-y-3">
                 {session ? (
                   <button
-                    onClick={handleDashboardClick}
+                    onClick={() => { closeMenu(); handleDashboardClick(); }}
                     className="block w-full bg-teal-600 text-white px-6 py-2.5 rounded-full font-semibold text-center hover:bg-teal-700 transition-colors"
                   >
                     <div className="flex items-center justify-center space-x-2">
@@ -182,11 +197,12 @@ export default function Header() {
                   </button>
                 ) : (
                   <>
-                    <Link href="/auth/login" className="block text-gray-700 hover:text-teal-600 font-medium mb-3">
+                    <Link href="/auth/login" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
                       Sign In
                     </Link>
                     <Link
                       href="/auth/register"
+                      onClick={closeMenu}
                       className="block bg-teal-600 text-white px-6 py-2.5 rounded-full font-semibold text-center hover:bg-teal-700 transition-colors"
                     >
                       Start Free Trial
