@@ -35,7 +35,11 @@ export default function SiteLayout({
     '/terms',
     '/cookies',
     '/api',
-    '/admin'
+    '/admin',
+    // Industry landing pages
+    '/instagram-sellers',
+    '/restaurants',
+    '/retail'
   ]
   
   const isBusinessSlug = !appRoutes.some(route => 

@@ -8,10 +8,7 @@ This document tracks decisions that need to be made during the homepage redesign
 
 | # | Question | Options | Decision | Notes |
 |---|----------|---------|----------|-------|
-| 1 | Do we need Albania address on footer? | A) Keep full address (Sami Frashëri Street, Tiranë, Albania) | **PENDING** | Current footer shows: Electral Shpk., Sami Frashëri Street, Tiranë, Albania |
-| | | B) Remove address, keep company name only | | |
-| | | C) Remove both address and company name | | |
-| | | D) Replace with generic "Worldwide" or similar | | |
+| 1 | Do we need Albania address on footer? | A) Keep full address (Sami Frashëri Street, Tiranë, Albania) | **A) Keep as-is** | Current footer shows: Electral Shpk., Sami Frashëri Street, Tiranë, Albania |
 
 ---
 
@@ -19,8 +16,7 @@ This document tracks decisions that need to be made during the homepage redesign
 
 | # | Question | Options | Decision | Notes |
 |---|----------|---------|----------|-------|
-| 2 | Should copyright say "WaveOrder" or "Electral Shpk."? | A) © 2026 WaveOrder. All rights reserved. | **PENDING** | HTML reference uses "WaveOrder" |
-| | | B) © 2026 Electral Shpk. All rights reserved. | | Current footer uses "Electral Shpk." |
+| 2 | Should copyright say "WaveOrder" or "Electral Shpk."? | A) © 2026 WaveOrder. All rights reserved. / B) © 2026 Electral Shpk. All rights reserved. | **B) Keep Electral Shpk.** | Current footer uses "Electral Shpk." |
 
 ---
 
@@ -28,8 +24,7 @@ This document tracks decisions that need to be made during the homepage redesign
 
 | # | Question | Options | Decision | Notes |
 |---|----------|---------|----------|-------|
-| 3 | Are the testimonials (Maria K., Antonio T., Linda S.) real or fictional? | A) Use as-is (fictional/example) | **PENDING** | From HTML reference |
-| | | B) Replace with real customer testimonials | | |
+| 3 | Are the testimonials (Maria K., Antonio T., Linda S.) real or fictional? | A) Use as-is (fictional/example) / B) Replace with real customer testimonials | **A) Keep as-is** | From HTML reference |
 
 ---
 
@@ -37,18 +32,28 @@ This document tracks decisions that need to be made during the homepage redesign
 
 | # | Question | Options | Decision | Notes |
 |---|----------|---------|----------|-------|
-| 4 | Should /salons page be created now or later? | A) Create now as placeholder | **PENDING** | Mentioned in requirements but marked as "future" |
-| | | B) Skip for now, only create 3 pages | | |
+| 4 | Should /salons page be created now or later? | A) Create now as placeholder / B) Skip for now, only create 3 pages | **B) Skip for now** | Will create later when needed |
 
 ---
 
-## How to Use This Document
+## Summary
 
-1. Review each question
-2. Add your decision in the "Decision" column
-3. Add any relevant notes
-4. Once decided, I will implement accordingly
+All decisions made on February 1, 2026:
+- ✅ Footer: Keep full Albania address
+- ✅ Copyright: Keep "Electral Shpk."
+- ✅ Testimonials: Keep fictional examples as-is
+- ⏸️ Salons page: Skip for now (3 landing pages only: restaurants, retail, instagram-sellers)
 
 ---
 
-*Last updated: January 28, 2026*
+## TODO: Re-evaluate Later
+
+The following items were skipped and should be re-evaluated in the future:
+
+- [ ] **Salons landing page** (`/salons`) - Consider creating when targeting beauty/salon industry
+- [ ] **Testimonials** - Consider replacing with real customer testimonials when available
+- [ ] **Additional industry pages** - Evaluate need for other verticals (cafes, florists, etc.)
+
+---
+
+*Last updated: February 1, 2026*

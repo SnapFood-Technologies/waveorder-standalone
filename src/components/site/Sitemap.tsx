@@ -28,7 +28,28 @@ export default function Sitemap() {
         { 
           title: "Get Started", 
           href: "/auth/register", 
-          description: "Sign up for your WaveOrder account and create your first WhatsApp catalog. Starter plan at $6/month." 
+          description: "Sign up for your WaveOrder account and create your first WhatsApp catalog. Plans starting at $19/month." 
+        }
+      ]
+    },
+    {
+      title: "Industries",
+      description: "Solutions tailored for different business types",
+      links: [
+        { 
+          title: "Instagram Sellers", 
+          href: "/instagram-sellers", 
+          description: "Turn your bio link into a professional store. Perfect for social sellers and influencers." 
+        },
+        { 
+          title: "Restaurants", 
+          href: "/restaurants", 
+          description: "Accept food orders via WhatsApp with digital menus and delivery management." 
+        },
+        { 
+          title: "Retail Stores", 
+          href: "/retail", 
+          description: "Create product catalogs for retail businesses with inventory management." 
         }
       ]
     },
@@ -65,7 +86,7 @@ export default function Sitemap() {
         { 
           title: "Sign Up", 
           href: "/auth/register", 
-          description: "Create your WaveOrder account to start building WhatsApp catalogs. Starter plan at $6/month." 
+          description: "Create your WaveOrder account to start building WhatsApp catalogs. Plans starting at $19/month." 
         },
         { 
           title: "Log In", 

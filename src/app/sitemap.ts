@@ -94,6 +94,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+    // Industry landing pages
+    {
+      url: `${baseUrl}/instagram-sellers`,
+      lastModified: formatDate('2026-02-01'),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/restaurants`,
+      lastModified: formatDate('2026-02-01'),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/retail`,
+      lastModified: formatDate('2026-02-01'),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ]
 
   let businessPages: MetadataRoute.Sitemap = []
