@@ -23,7 +23,7 @@ export default function InstagramSellersPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-pink-50 bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50 relative overflow-hidden">
+      <section className="pt-16 md:pt-24 bg-pink-50 bg-gradient-to-br from-pink-50 via-purple-50 to-orange-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="max-w-xl">

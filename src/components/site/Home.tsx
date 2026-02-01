@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-24 pb-16 bg-teal-50 bg-gradient-to-b from-teal-50 to-white relative overflow-hidden">
+      <section className="pt-16 md:pt-24 bg-teal-50 bg-gradient-to-b from-teal-50 to-white relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-teal-100/50 bg-gradient-to-l from-teal-100/50 to-transparent opacity-50 pointer-events-none" />
         
