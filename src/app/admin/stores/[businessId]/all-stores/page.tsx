@@ -475,20 +475,12 @@ export default function AllStoresPage() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <button
-                  onClick={() => setShowQuickCreate(true)}
-                  className="flex-1 sm:flex-none px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors"
-                >
-                  Quick Create
-                </button>
-                <Link
-                  href="/setup"
-                  className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 bg-white text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors text-center"
-                >
-                  Full Setup
-                </Link>
-              </div>
+              <button
+                onClick={() => setShowQuickCreate(true)}
+                className="w-full sm:w-auto px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                Create Store
+              </button>
             </div>
           </div>
         )}
