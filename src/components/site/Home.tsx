@@ -69,11 +69,13 @@ export default function Home() {
 
             {/* Right - Phone Mockup */}
             <div className="relative flex justify-center lg:justify-end">
-              {/* Floating badges */}
-              <div className="absolute right-0 top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              {/* New order received - top left of phone frame */}
+              <div className="absolute left-0 lg:left-[100px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
                 <span className="text-teal-500">✓</span> New order received!
               </div>
-              <div className="absolute left-0 bottom-16 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
+              
+              {/* Works on any device - bottom right of phone frame */}
+              <div className="absolute right-0 bottom-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
                 📱 Works on any device
               </div>
               

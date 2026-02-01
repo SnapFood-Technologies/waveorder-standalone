@@ -136,9 +136,14 @@ export default function RetailPage() {
                 </div>
               </div>
               
-              {/* Floating elements */}
-              <div className="absolute right-0 top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              {/* 2 items in cart - top left of phone frame */}
+              <div className="absolute left-0 lg:left-[100px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
                 <span className="text-violet-500">📦</span> 2 items in cart
+              </div>
+              
+              {/* Multi-store support - bottom right of phone frame */}
+              <div className="absolute right-0 bottom-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
+                🏪 Multi-store support
               </div>
             </div>
           </div>
