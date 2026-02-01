@@ -329,31 +329,34 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
       // Build complete WhatsApp number
       const completeWhatsappNumber = isOtherCountry
         ? formData.whatsappNumber.trim()
-        : `${formData.phonePrefix}${formData.whatsappNumber.replace(/[^\d]/g, '')}`
+        : formData.whatsappNumber.trim() 
+          ? `${formData.phonePrefix}${formData.whatsappNumber.replace(/[^\d]/g, '')}`
+          : ''
 
-      const response = await fetch('/api/setup/save-progress', {
+      // Use dedicated create-store API (matches SuperAdmin quality)
+      const response = await fetch('/api/user/create-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          step: 'complete',
-          data: {
-            businessName: formData.storeName.trim(),
-            storeSlug: formData.slug.trim(),
-            businessType: formData.businessType,
-            whatsappNumber: completeWhatsappNumber || '',
-            currency: formData.currency,
-            language: formData.language,
-            businessGoals: formData.businessGoals,
-            deliveryMethods: {
-              delivery: formData.deliveryEnabled,
-              pickup: formData.pickupEnabled,
-              deliveryFee: parseFloat(formData.deliveryFee) || 0,
-              deliveryRadius: parseFloat(formData.deliveryRadius) || 10,
-              estimatedDeliveryTime: formData.estimatedDeliveryTime,
-              estimatedPickupTime: formData.estimatedPickupTime
-            },
-            quickCreate: true
-          }
+          storeName: formData.storeName.trim(),
+          slug: formData.slug.trim(),
+          businessType: formData.businessType,
+          whatsappNumber: completeWhatsappNumber,
+          address: formData.address,
+          country: formData.country,
+          storeLatitude: formData.storeLatitude,
+          storeLongitude: formData.storeLongitude,
+          currency: formData.currency,
+          language: formData.language,
+          timezone: formData.timezone,
+          deliveryEnabled: formData.deliveryEnabled,
+          pickupEnabled: formData.pickupEnabled,
+          deliveryFee: parseFloat(formData.deliveryFee) || 0,
+          deliveryRadius: parseFloat(formData.deliveryRadius) || 10,
+          estimatedDeliveryTime: formData.estimatedDeliveryTime,
+          estimatedPickupTime: formData.estimatedPickupTime,
+          paymentMethods: ['CASH'],
+          businessGoals: formData.businessGoals
         })
       })
 

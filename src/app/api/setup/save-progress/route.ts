@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           whatsappNumber: data.whatsappNumber || '',
           subscriptionPlan: data.subscriptionPlan || 'STARTER',
           subscriptionStatus: 'ACTIVE',
-          onboardingStep: step,
+          onboardingStep: step === 'complete' ? 99 : (typeof step === 'number' ? step : parseInt(step) || 0),
           users: {
             create: {
               userId: user.id,
@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
     } else {
       // Update existing business with all the new fields
       const updateData: any = {
-        onboardingStep: step,
+        // onboardingStep is Int - handle 'complete' string or number
+        onboardingStep: step === 'complete' ? 99 : (typeof step === 'number' ? step : parseInt(step) || 0),
       }
 
       // Only update fields that are provided
