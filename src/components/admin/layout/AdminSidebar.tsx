@@ -525,7 +525,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           {(subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') && (
             <div className="px-4 pt-4 pb-2">
               <Link
-                href="/admin/stores"
+                href={addImpersonationParams(`/admin/stores/${businessId}/all-stores`)}
                 onClick={onClose}
                 className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200"
               >
