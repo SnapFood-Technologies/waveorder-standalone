@@ -261,10 +261,14 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
               </div>
               
               <div className="py-1">
-                <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <Link 
+                  href="/superadmin/settings"
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsDropdownOpen(false)}
+                >
                   <Settings className="w-4 h-4 mr-3" />
                   Settings
-                </button>
+                </Link>
               </div>
               
               <div className="border-t border-gray-100">
