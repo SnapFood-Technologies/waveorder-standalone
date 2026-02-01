@@ -198,7 +198,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <Link href="/instagram-sellers" className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600">
                 <Camera className="w-8 h-8 text-white" />
@@ -222,14 +222,6 @@ export default function Home() {
               <h3 className="font-semibold text-gray-900 mb-2">Retail & E-commerce</h3>
               <p className="text-sm text-gray-500">Full product catalogs with categories, variants, and scheduling for pickup or delivery.</p>
             </Link>
-            
-            <div className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group cursor-pointer">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-pink-500">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Salons & Services</h3>
-              <p className="text-sm text-gray-500">Showcase your services with pricing. Let clients book through WhatsApp conversations.</p>
-            </div>
           </div>
         </div>
       </section>

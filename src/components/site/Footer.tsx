@@ -80,11 +80,6 @@ export default function Footer() {
                   Retail Stores
                 </Link>
               </li>
-              <li>
-                <Link href="/features" className="text-gray-400 hover:text-white transition-colors">
-                  Salons & Spas
-                </Link>
-              </li>
             </ul>
           </div>
           
