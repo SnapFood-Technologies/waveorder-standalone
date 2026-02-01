@@ -137,7 +137,7 @@ export default function RetailPage() {
               </div>
               
               {/* 2 items in cart - top left of phone frame */}
-              <div className="absolute left-0 lg:left-[100px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              <div className="absolute left-0 lg:left-[140px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
                 <span className="text-violet-500">📦</span> 2 items in cart
               </div>
               
