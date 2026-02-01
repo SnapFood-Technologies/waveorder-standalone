@@ -77,15 +77,13 @@ export default function LoginComponent() {
             (b: any) => !b.setupWizardCompleted || !b.onboardingCompleted
           )
           
+          // API returns default store first, so businesses[0] is correct
+          const defaultBusinessId = data.businesses[0].id
           if (needsSetup) {
             router.push('/setup')
-          } else if (data.businesses.length > 1) {
-            // Multiple stores - go to store list
-            router.push('/admin/stores')
           } else {
-            // Single store - go directly to dashboard
-            // API returns default store first, so businesses[0] is correct
-            router.push(`/admin/stores/${data.businesses[0].id}/dashboard`)
+            // Always go to default store's dashboard (single or multi-store)
+            router.push(`/admin/stores/${defaultBusinessId}/dashboard`)
           }
         } else {
           router.push('/setup')

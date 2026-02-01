@@ -612,7 +612,7 @@ export default function StoreReadyStep({ data, onComplete, onBack, setupToken }:
         }
         
         // Redirect to dashboard
-        window.location.href = data.redirectUrl || `/admin/stores/${data.business.slug}/dashboard`
+        window.location.href = data.redirectUrl || `/admin/stores/${data.business.id}/dashboard`
       } else {
         console.error('Failed to complete setup')
       }

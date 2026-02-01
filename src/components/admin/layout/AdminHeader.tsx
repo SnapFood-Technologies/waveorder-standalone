@@ -305,7 +305,7 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
 
                   {/* Manage All Stores */}
                   <Link
-                    href="/admin/stores"
+                    href={addImpersonationParams(`/admin/stores/${businessId}/all-stores`)}
                     className="flex items-center px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                     onClick={() => setIsBusinessDropdownOpen(false)}
                   >

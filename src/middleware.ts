@@ -55,14 +55,10 @@ export async function middleware(request: NextRequest) {
           )
           
           if (!needsSetup) {
-            if (data.businesses.length > 1) {
-              // Multiple stores - go to store list
-              return NextResponse.redirect(new URL('/admin/stores', request.url))
-            } else {
-              // Single store - go directly to dashboard
-              // API returns default store first, so businesses[0] is correct
-              return NextResponse.redirect(new URL(`/admin/stores/${data.businesses[0].id}/dashboard`, request.url))
-            }
+            // API returns default store first, so businesses[0] is correct
+            const defaultBusinessId = data.businesses[0].id
+            // Always go to default store's dashboard (single or multi-store)
+            return NextResponse.redirect(new URL(`/admin/stores/${defaultBusinessId}/dashboard`, request.url))
           }
         }
       }

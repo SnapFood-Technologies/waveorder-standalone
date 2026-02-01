@@ -547,7 +547,7 @@ const createSubscriptionChangeEmailContent = (
       ${isTrialExpired ? 'Subscribe Now' : 'Add Payment Method'}
     </a>
     ` : ''}
-    <a href="${process.env.NEXTAUTH_URL}/admin/stores" style="display: inline-block; background: ${(isTrialEnding || isTrialExpired) ? '#f3f4f6; color: #374151' : 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white'}; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; ${(isTrialEnding || isTrialExpired) ? '' : 'box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);'}">
+    <a href="${process.env.NEXTAUTH_URL}/login" style="display: inline-block; background: ${(isTrialEnding || isTrialExpired) ? '#f3f4f6; color: #374151' : 'linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white'}; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; ${(isTrialEnding || isTrialExpired) ? '' : 'box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);'}">
       Go to Dashboard
     </a>
   </div>

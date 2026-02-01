@@ -137,6 +137,15 @@ export default function UnifiedAnalyticsPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Back Link */}
+      <Link 
+        href={`/admin/stores/${businessId}/all-stores`}
+        className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+      >
+        <ArrowLeft className="w-4 h-4 mr-1.5" />
+        Back to All Stores
+      </Link>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">

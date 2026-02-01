@@ -118,6 +118,15 @@ export default function UnifiedInventoryPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Back Link */}
+      <Link 
+        href={`/admin/stores/${businessId}/all-stores`}
+        className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+      >
+        <ArrowLeft className="w-4 h-4 mr-1.5" />
+        Back to All Stores
+      </Link>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
