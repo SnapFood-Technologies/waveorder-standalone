@@ -18,12 +18,12 @@ export default function Sitemap() {
         { 
           title: "Pricing", 
           href: "/pricing", 
-          description: "Transparent pricing plans for businesses of all sizes with Starter and Pro options" 
+          description: "Transparent pricing plans for businesses of all sizes: Starter ($19/mo), Pro ($39/mo), and Business ($79/mo)" 
         },
         { 
           title: "Demo", 
           href: "/demo", 
-          description: "Interactive demos showcasing restaurant catalogs and WhatsApp ordering experience" 
+          description: "Interactive demos showcasing product catalogs and WhatsApp ordering experience for various industries" 
         },
         { 
           title: "Get Started", 
