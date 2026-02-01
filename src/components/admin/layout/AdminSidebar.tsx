@@ -531,19 +531,35 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           </nav>
 
           <div className="p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-4 text-white">
+            <div className={`rounded-lg p-4 text-white ${
+              subscription.plan === 'BUSINESS' 
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                : subscription.plan === 'PRO'
+                ? 'bg-gradient-to-r from-teal-500 to-emerald-500'
+                : 'bg-gradient-to-r from-gray-500 to-gray-600'
+            }`}>
               <h3 className="font-semibold text-sm mb-1">
-                {subscription.plan === 'STARTER' ? 'Pro Features Available' : 'Pro Plan Active'}
-              </h3>
-              <p className="text-xs text-teal-100 mb-3">
                 {subscription.plan === 'STARTER' 
-                  ? 'Unlock inventory, discounts, analytics, team & domain management' 
-                  : 'Enjoying advanced features and analytics'}
+                  ? 'Upgrade Available' 
+                  : subscription.plan === 'PRO'
+                  ? 'Pro Plan Active'
+                  : 'Business Plan Active'}
+              </h3>
+              <p className="text-xs opacity-90 mb-2">
+                {subscription.plan === 'STARTER' 
+                  ? 'Unlock scheduling, analytics & more' 
+                  : subscription.plan === 'PRO'
+                  ? 'Advanced features and analytics'
+                  : 'Full access with team & API'}
               </p>
-              {subscription.plan === 'PRO' && (
-                <div className="text-xs text-teal-100">
-                  Thanks for being a Pro user!
-                </div>
+              {subscription.plan === 'STARTER' && (
+                <Link 
+                  href={addImpersonationParams(`/admin/stores/${businessId}/settings/billing`)}
+                  className="text-xs underline hover:no-underline"
+                  onClick={onClose}
+                >
+                  View Plans →
+                </Link>
               )}
             </div>
           </div>
