@@ -124,7 +124,7 @@ export default function Features() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="pt-20 pb-6 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
+      <section className="pt-20 pb-6 bg-teal-50 bg-gradient-to-br from-teal-50 via-white to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
@@ -137,9 +137,9 @@ export default function Features() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 href="/auth/register"
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-teal-500 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-lg font-semibold rounded-xl hover:from-teal-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 inline-flex items-center justify-center"
               >
-                Get Started
+                Start 14-Day Free Trial
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>
               <Link 
@@ -169,7 +169,7 @@ export default function Features() {
             {mainFeatures.map((feature, index) => {
               const IconComponent = feature.icon
               return (
-                <div key={index} className={`bg-gradient-to-br ${feature.gradient} rounded-2xl p-6 sm:p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
+                <div key={index} className={`bg-gray-50 bg-gradient-to-br ${feature.gradient} rounded-2xl p-6 sm:p-8 border-2 border-white/50 hover:border-gray-200 hover:shadow-xl transition-all duration-300`}>
                   {/* Mobile-first: Stacked layout */}
                   <div className="flex flex-col sm:flex-row sm:items-start sm:space-x-6">
                     {/* Icon and Title Section */}
@@ -227,7 +227,7 @@ export default function Features() {
               const IconComponent = feature.icon
               return (
                 <div key={index} className={`bg-white rounded-2xl p-6 border-2 ${feature.color} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
-                  <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mb-4">
+                  <div className="w-14 h-14 bg-gray-100 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center mb-4">
                     <IconComponent className="w-7 h-7 text-gray-600" />
                   </div>
                   <div className="mb-3">
@@ -244,39 +244,55 @@ export default function Features() {
         </div>
       </section>
 
-      {/* Business Types Section */}
+      {/* Industries Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Perfect for Any Business
+              Built for Every Business
             </h2>
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-              While optimized for food businesses, WaveOrder works great for many business types
+              Whether you sell on Instagram, run a restaurant, or manage a retail store — WaveOrder adapts to how you work.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {[
-              { name: "Restaurants", icon: "🍽️", description: "Full menu management with modifiers and variants", color: "from-red-50 to-orange-50 border-red-100" },
-              { name: "Cafes", icon: "☕", description: "Perfect for coffee shops and quick service", color: "from-amber-50 to-yellow-50 border-amber-100" },
-              { name: "Retail Stores", icon: "🛍️", description: "Product catalogs with inventory tracking", color: "from-blue-50 to-indigo-50 border-blue-100" },
-              { name: "Grocery Stores", icon: "🛒", description: "Large product catalogs with categories", color: "from-green-50 to-emerald-50 border-green-100" },
-              { name: "Jewelry Stores", icon: "💎", description: "High-value items with detailed descriptions", color: "from-purple-50 to-pink-50 border-purple-100" },
-              { name: "Florists", icon: "🌸", description: "Seasonal products and custom arrangements", color: "from-rose-50 to-pink-50 border-rose-100" }
-            ].map((business, index) => (
-              <div key={index} className={`bg-gradient-to-br ${business.color} p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}>
-                <div className="text-4xl sm:text-5xl mb-4 sm:mb-6">{business.icon}</div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{business.name}</h3>
-                <p className="text-gray-700 leading-relaxed text-sm sm:text-base">{business.description}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            <Link href="/instagram-sellers" className="bg-pink-50 bg-gradient-to-br from-pink-50 to-purple-50 border-pink-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-pink-500 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 flex items-center justify-center">
+                <span className="text-3xl">📸</span>
               </div>
-            ))}
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-pink-600 transition-colors">Instagram Sellers</h3>
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4">Turn your bio link into a professional store. Let followers browse and order without leaving WhatsApp.</p>
+              <span className="inline-flex items-center text-pink-600 font-medium text-sm">
+                Learn more <ChevronRight className="w-4 h-4 ml-1" />
+              </span>
+            </Link>
+            <Link href="/restaurants" className="bg-orange-50 bg-gradient-to-br from-orange-50 to-red-50 border-orange-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-[#f97066] flex items-center justify-center">
+                <span className="text-3xl">🍽️</span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors">Restaurants & Cafes</h3>
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4">Digital menus with ordering. Customers browse, select, and send orders straight to your phone.</p>
+              <span className="inline-flex items-center text-orange-600 font-medium text-sm">
+                Learn more <ChevronRight className="w-4 h-4 ml-1" />
+              </span>
+            </Link>
+            <Link href="/retail" className="bg-violet-50 bg-gradient-to-br from-violet-50 to-indigo-50 border-violet-100 p-6 sm:p-8 rounded-2xl border-2 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-20 h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-violet-500 flex items-center justify-center">
+                <span className="text-3xl">🛍️</span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-violet-600 transition-colors">Retail & E-commerce</h3>
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base mb-4">Full product catalogs with categories, variants, and scheduling for pickup or delivery.</p>
+              <span className="inline-flex items-center text-violet-600 font-medium text-sm">
+                Learn more <ChevronRight className="w-4 h-4 ml-1" />
+              </span>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Key Benefits Section */}
-      <section className="py-20 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <section className="py-20 bg-teal-50 bg-gradient-to-br from-teal-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -329,7 +345,7 @@ export default function Features() {
               const IconComponent = benefit.icon
               return (
                 <div key={index} className="bg-white rounded-2xl p-6 sm:p-8 border border-gray-200 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-teal-500 bg-gradient-to-br from-teal-500 to-emerald-500 text-white rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
                     <IconComponent className="w-7 h-7 sm:w-8 sm:h-8" />
                   </div>
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{benefit.title}</h3>
@@ -345,7 +361,7 @@ export default function Features() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-teal-600 to-emerald-600">
+      <section className="py-20 bg-teal-600 bg-gradient-to-r from-teal-600 to-emerald-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Transform Your WhatsApp Orders?
@@ -358,7 +374,7 @@ export default function Features() {
               href="/auth/register"
               className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-teal-600 text-lg font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-lg"
             >
-              Get Started
+              Start 14-Day Free Trial
               <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
             <Link 

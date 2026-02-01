@@ -3,9 +3,9 @@ import Features from '@/components/site/Features'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Features - WhatsApp Ordering Platform for Restaurants | WaveOrder',
-  description: 'Discover all WaveOrder features: direct WhatsApp orders, mobile catalogs, team collaboration, inventory management, analytics, and more. No API fees required.',
-  keywords: 'whatsapp ordering features, restaurant ordering system, mobile catalog, inventory management, team collaboration, order analytics, whatsapp business',
+  title: 'Features - WhatsApp Ordering Platform for Any Business | WaveOrder',
+  description: 'Discover all WaveOrder features: direct WhatsApp orders, mobile catalogs, product analytics, multi-store support, customer insights, and more. No API fees required.',
+  keywords: 'whatsapp ordering features, instagram sellers, restaurant ordering, retail catalog, mobile catalog, inventory management, team collaboration, order analytics, whatsapp business',
   alternates: {
     canonical: 'https://waveorder.app/features',
   },
@@ -38,7 +38,7 @@ export default function FeaturesPage() {
             "@context": "https://schema.org",
             "@type": "WebPage",
             "name": "WaveOrder Features",
-            "description": "Complete WhatsApp ordering platform features for restaurants and businesses",
+            "description": "Complete WhatsApp ordering platform features for Instagram sellers, restaurants, and retail businesses",
             "url": "https://waveorder.app/features",
             "mainEntity": {
               "@type": "SoftwareApplication",

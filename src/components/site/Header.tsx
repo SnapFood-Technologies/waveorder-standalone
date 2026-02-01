@@ -4,11 +4,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Waves, LayoutDashboard } from 'lucide-react'
+import { Menu, X, Waves, LayoutDashboard, ChevronDown } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [industriesOpen, setIndustriesOpen] = useState(false)
+  const [useCasesOpen, setUseCasesOpen] = useState(false)
+  const [mobileIndustriesOpen, setMobileIndustriesOpen] = useState(false)
+
+  const closeMenu = () => setIsMenuOpen(false)
   const { data: session } = useSession()
   const router = useRouter()
 
@@ -30,7 +35,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-3">
@@ -40,21 +45,69 @@ export default function Header() {
             <span className="text-xl font-bold text-gray-900">WaveOrder</span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/features" className="text-gray-700 hover:text-teal-600 font-medium">
+          <nav className="hidden md:flex items-center space-x-6">
+            {/* Industries Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setIndustriesOpen(true)}
+              onMouseLeave={() => setIndustriesOpen(false)}
+            >
+              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors py-2">
+                <span>Industries</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {industriesOpen && (
+                <div className="absolute top-full left-0 pt-1 w-56 z-50">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                    <Link href="/restaurants" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Restaurants & Cafes
+                    </Link>
+                    <Link href="/retail" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Retail & E-commerce
+                    </Link>
+                    <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Instagram Sellers
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Use Cases Dropdown */}
+            <div 
+              className="relative"
+              onMouseEnter={() => setUseCasesOpen(true)}
+              onMouseLeave={() => setUseCasesOpen(false)}
+            >
+              <button className="flex items-center space-x-1 text-gray-600 hover:text-teal-600 font-medium transition-colors py-2">
+                <span>Use Cases</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {useCasesOpen && (
+                <div className="absolute top-full left-0 pt-1 w-56 z-50">
+                  <div className="bg-white rounded-xl shadow-lg border border-gray-100 py-2">
+                    <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Instagram Sellers
+                    </Link>
+                    <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      WhatsApp Business
+                    </Link>
+                    <Link href="/features" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Link-in-Bio Stores
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Link href="/features" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">
               Features
             </Link>
-            <Link href="/pricing" className="text-gray-700 hover:text-teal-600 font-medium">
+            <Link href="/pricing" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">
               Pricing
             </Link>
-            <Link href="/demo" className="text-gray-700 hover:text-teal-600 font-medium">
+            <Link href="/demo" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">
               Demo
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-teal-600 font-medium">
-              About
-            </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-teal-600 font-medium">
-              Contact
             </Link>
           </nav>
 
@@ -62,21 +115,21 @@ export default function Header() {
             {session ? (
               <button
                 onClick={handleDashboardClick}
-                className="bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-colors flex items-center space-x-2"
+                className="bg-teal-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-teal-700 transition-all hover:-translate-y-0.5 hover:shadow-lg flex items-center space-x-2"
               >
                 <LayoutDashboard className="w-4 h-4" />
                 <span>Dashboard</span>
               </button>
             ) : (
               <>
-                <Link href="/auth/login" className="text-gray-700 hover:text-teal-600 font-medium">
+                <Link href="/auth/login" className="text-gray-600 hover:text-teal-600 font-medium transition-colors">
                   Sign In
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-teal-700 transition-colors"
+                  className="bg-teal-600 text-white px-6 py-2 rounded-full font-semibold hover:bg-teal-700 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                 >
-                  Get Started
+                  Start Free Trial
                 </Link>
               </>
             )}
@@ -84,35 +137,58 @@ export default function Header() {
 
           <button
             className="md:hidden p-2"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={() => {
+              setIsMenuOpen(!isMenuOpen)
+              if (!isMenuOpen) setMobileIndustriesOpen(false) // Reset submenu when opening
+            }}
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
+        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-4">
-              <Link href="/features" className="text-gray-700 hover:text-teal-600 font-medium">
+          <div className="md:hidden py-4 border-t border-gray-100">
+            <div className="flex flex-col space-y-2">
+              {/* Industries Section - Collapsible */}
+              <div>
+                <button
+                  onClick={() => setMobileIndustriesOpen(!mobileIndustriesOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 font-medium"
+                >
+                  <span>Industries</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileIndustriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileIndustriesOpen && (
+                  <div className="pl-4 space-y-2 pb-2">
+                    <Link href="/restaurants" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Restaurants & Cafes
+                    </Link>
+                    <Link href="/retail" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Retail & E-commerce
+                    </Link>
+                    <Link href="/instagram-sellers" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Instagram Sellers
+                    </Link>
+                  </div>
+                )}
+              </div>
+              
+              <Link href="/features" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
                 Features
               </Link>
-              <Link href="/pricing" className="text-gray-700 hover:text-teal-600 font-medium">
+              <Link href="/pricing" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
                 Pricing
               </Link>
-              <Link href="/demo" className="text-gray-700 hover:text-teal-600 font-medium">
+              <Link href="/demo" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
                 Demo
               </Link>
-              <Link href="/about" className="text-gray-700 hover:text-teal-600 font-medium">
-                About
-              </Link>
-              <Link href="/contact" className="text-gray-700 hover:text-teal-600 font-medium">
-                Contact
-              </Link>
-              <div className="pt-4 border-t border-gray-200">
+              
+              <div className="pt-4 border-t border-gray-100 space-y-3">
                 {session ? (
                   <button
-                    onClick={handleDashboardClick}
-                    className="block w-full bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold text-center hover:bg-teal-700 transition-colors"
+                    onClick={() => { closeMenu(); handleDashboardClick(); }}
+                    className="block w-full bg-teal-600 text-white px-6 py-2.5 rounded-full font-semibold text-center hover:bg-teal-700 transition-colors"
                   >
                     <div className="flex items-center justify-center space-x-2">
                       <LayoutDashboard className="w-4 h-4" />
@@ -121,14 +197,15 @@ export default function Header() {
                   </button>
                 ) : (
                   <>
-                    <Link href="/auth/login" className="block text-gray-700 hover:text-teal-600 font-medium mb-2">
+                    <Link href="/auth/login" onClick={closeMenu} className="block text-gray-700 hover:text-teal-600 font-medium py-2">
                       Sign In
                     </Link>
                     <Link
                       href="/auth/register"
-                      className="block bg-teal-600 text-white px-6 py-2 rounded-lg font-semibold text-center hover:bg-teal-700 transition-colors"
+                      onClick={closeMenu}
+                      className="block bg-teal-600 text-white px-6 py-2.5 rounded-full font-semibold text-center hover:bg-teal-700 transition-colors"
                     >
-                      Get Started
+                      Start Free Trial
                     </Link>
                   </>
                 )}

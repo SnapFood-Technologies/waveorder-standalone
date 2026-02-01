@@ -1,64 +1,83 @@
 // src/components/site/Footer.tsx
 import Link from 'next/link'
-import { Waves, MapPin, Phone, Mail, Building } from 'lucide-react'
+import { Waves } from 'lucide-react'
 
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           
-          {/* Company Info - spans 2 cols on mobile, 2 cols on desktop */}
-          <div className="sm:col-span-2">
-            <div className="flex items-center mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-teal-400 to-emerald-400 rounded-lg flex items-center justify-center mr-3">
-                <Waves className="w-5 h-5 text-white" />
+          {/* Brand */}
+          <div className="lg:col-span-1">
+            <Link href="/" className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
+                <Waves className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-bold">WaveOrder</span>
-            </div>
-            <p className="text-gray-300 mb-6 max-w-md leading-relaxed">
-              WhatsApp ordering platform for businesses of all types. 
-              Create beautiful catalogs, receive orders directly on WhatsApp, and manage operations efficiently.
+              <span className="text-xl font-bold">WaveOrder</span>
+            </Link>
+            <p className="text-gray-400 leading-relaxed max-w-xs">
+              The simplest way to sell on WhatsApp. Create catalogs, receive orders, grow your business — without complexity.
             </p>
             
-            <div className="space-y-3">
-              <div className="flex items-center text-gray-300">
-                <Mail className="w-4 h-4 mr-3 flex-shrink-0" />
-                <span>hello@waveorder.app</span>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <Building className="w-4 h-4 mr-3 flex-shrink-0" />
-                <span>Electral Shpk.</span>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <MapPin className="w-4 h-4 mr-3 flex-shrink-0" />
-                <span>Sami Frashëri Street, Tiranë, Albania</span>
-              </div>
+            {/* Social Links */}
+            <div className="flex gap-3 mt-6">
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-teal-600 transition-colors">
+                <span>📷</span>
+              </a>
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-teal-600 transition-colors">
+                <span>🐦</span>
+              </a>
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-teal-600 transition-colors">
+                <span>💼</span>
+              </a>
             </div>
           </div>
           
-          {/* Platform Links */}
+          {/* Product Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Platform</h3>
+            <h3 className="text-lg font-semibold mb-4">Product</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/features" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/features" className="text-gray-400 hover:text-white transition-colors">
                   Features
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/pricing" className="text-gray-400 hover:text-white transition-colors">
                   Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/demo" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/demo" className="text-gray-400 hover:text-white transition-colors">
                   Demo
                 </Link>
               </li>
               <li>
-                <Link href="/auth/register" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/auth/register" className="text-gray-400 hover:text-white transition-colors">
                   Get Started
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          {/* Industries Links */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Industries</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/instagram-sellers" className="text-gray-400 hover:text-white transition-colors">
+                  Instagram Sellers
+                </Link>
+              </li>
+              <li>
+                <Link href="/restaurants" className="text-gray-400 hover:text-white transition-colors">
+                  Restaurants
+                </Link>
+              </li>
+              <li>
+                <Link href="/retail" className="text-gray-400 hover:text-white transition-colors">
+                  Retail Stores
                 </Link>
               </li>
             </ul>
@@ -69,23 +88,23 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Company</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/about" className="text-gray-400 hover:text-white transition-colors">
                   About
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white transition-colors">
+                <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="/sitemap" className="text-gray-300 hover:text-white transition-colors">
-                  Sitemap
+                <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                  Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/resources" className="text-gray-300 hover:text-white transition-colors">
-                  Resources
+                <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
+                  Terms of Service
                 </Link>
               </li>
             </ul>
@@ -94,21 +113,13 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-800 mt-12 pt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm mb-4 sm:mb-0">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">
               © 2026 Electral Shpk. All rights reserved.
             </p>
-            <div className="flex space-x-6 text-sm">
-              <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
-                Privacy
-              </Link>
-              <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
-                Terms
-              </Link>
-              <Link href="/cookies" className="text-gray-400 hover:text-white transition-colors">
-                Cookies
-              </Link>
-            </div>
+            <p className="text-gray-500 text-sm">
+              Made with ❤️ for businesses worldwide
+            </p>
           </div>
         </div>
       </div>
