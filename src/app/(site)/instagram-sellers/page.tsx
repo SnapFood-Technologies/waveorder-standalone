@@ -314,12 +314,12 @@ export default function InstagramSellersPage() {
       <FAQ />
 
       {/* CTA Section */}
-      <section className="py-20 bg-gray-900 text-white">
+      <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Turn Followers Into Customers?
+        <h2 className="text-3xl font-semibold text-gray-900 md:text-4xl mb-4">
+           Ready to Turn Followers Into Customers?
           </h2>
-          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Join thousands of Instagram sellers using WaveOrder to sell smarter. Set up takes 5 minutes.
           </p>
           <Link 
