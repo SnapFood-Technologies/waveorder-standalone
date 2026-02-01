@@ -778,7 +778,8 @@ export async function GET(
         slotCapacity: business.slotCapacity,
         deliveryBufferMinutes: business.deliveryBufferMinutes || 45,
         pickupBufferMinutes: business.pickupBufferMinutes || 20,
-        holidayHours: business.holidayHours || {}
+        holidayHours: business.holidayHours || {},
+        maxAdvanceBookingDays: business.maxAdvanceBookingDays || 7
       },
       
       // Inventory display settings

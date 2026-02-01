@@ -11,6 +11,7 @@ interface SchedulingConfig {
   deliveryBufferMinutes: number
   pickupBufferMinutes: number
   holidayHours: Record<string, { open?: string; close?: string; closed?: boolean }>
+  maxAdvanceBookingDays: number
 }
 
 interface SchedulingConfigurationProps {
@@ -39,6 +40,14 @@ const BUFFER_OPTIONS = [
   { value: 120, label: '2 hours' }
 ]
 
+const ADVANCE_BOOKING_OPTIONS = [
+  { value: 4, label: '4 days' },
+  { value: 7, label: '7 days (1 week)' },
+  { value: 14, label: '14 days (2 weeks)' },
+  { value: 30, label: '30 days (1 month)' },
+  { value: 60, label: '60 days (2 months)' }
+]
+
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const hour = Math.floor(i / 2)
   const minute = i % 2 === 0 ? '00' : '30'
@@ -59,7 +68,8 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
     slotCapacity: null,
     deliveryBufferMinutes: 45,
     pickupBufferMinutes: 20,
-    holidayHours: {}
+    holidayHours: {},
+    maxAdvanceBookingDays: 7
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -88,7 +98,8 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
             slotCapacity: data.scheduling.slotCapacity,
             deliveryBufferMinutes: data.scheduling.deliveryBufferMinutes || 45,
             pickupBufferMinutes: data.scheduling.pickupBufferMinutes || 20,
-            holidayHours: data.scheduling.holidayHours || {}
+            holidayHours: data.scheduling.holidayHours || {},
+            maxAdvanceBookingDays: data.scheduling.maxAdvanceBookingDays || 7
           })
         }
       }
@@ -338,6 +349,26 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               Minimum time before pickup slot can be booked
             </p>
           </div>
+        </div>
+
+        {/* Max Advance Booking Days */}
+        <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Advance Booking Window
+          </label>
+          <select
+            value={config.maxAdvanceBookingDays}
+            onChange={(e) => setConfig({ ...config, maxAdvanceBookingDays: Number(e.target.value) })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            disabled={!config.schedulingEnabled}
+          >
+            {ADVANCE_BOOKING_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            How far in advance customers can schedule their orders
+          </p>
         </div>
 
         {/* Holiday Hours */}

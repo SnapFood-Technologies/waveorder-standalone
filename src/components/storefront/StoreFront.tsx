@@ -1322,7 +1322,10 @@ function TimeSelection({
     }
   }, [forceScheduleMode])
 
-  const availableDates = Array.from({ length: 7 }, (_, i) => {
+  // Get max advance booking days from scheduling config (default 7)
+  const maxAdvanceBookingDays = storeData.schedulingConfig?.maxAdvanceBookingDays || 7
+  
+  const availableDates = Array.from({ length: maxAdvanceBookingDays }, (_, i) => {
     const date = new Date()
     date.setDate(date.getDate() + i)
     return date
@@ -1432,32 +1435,64 @@ function TimeSelection({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {translations.selectDate || 'Select Date'}
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              {availableDates.slice(0, 4).map((date, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedDate(date)}
-                  className={`p-3 border-2 rounded-xl text-center transition-all ${
-                    selectedDate.toDateString() === date.toDateString()
-                      ? 'border-transparent text-white'
-                      : 'border-gray-200 hover:border-gray-200 text-gray-700'
-                  }`}
-                  style={{ 
-                    backgroundColor: selectedDate.toDateString() === date.toDateString() 
-                      ? primaryColor : 'white'
-                  }}
-                >
-                  <div className="text-sm font-medium">
-                    {index === 0 ? translations.today || 'Today' : 
-                     index === 1 ? translations.tomorrow || 'Tomorrow' :
-                     date.toLocaleDateString(locale, { weekday: 'short' })}
-                  </div>
-                  <div className="text-xs opacity-80">
-                    {date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
-                  </div>
-                </button>
-              ))}
-            </div>
+            {/* Date picker - grid for 4 days or less, scrollable for more */}
+            {maxAdvanceBookingDays <= 4 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {availableDates.map((date, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedDate(date)}
+                    className={`p-3 border-2 rounded-xl text-center transition-all ${
+                      selectedDate.toDateString() === date.toDateString()
+                        ? 'border-transparent text-white'
+                        : 'border-gray-200 hover:border-gray-200 text-gray-700'
+                    }`}
+                    style={{ 
+                      backgroundColor: selectedDate.toDateString() === date.toDateString() 
+                        ? primaryColor : 'white'
+                    }}
+                  >
+                    <div className="text-sm font-medium">
+                      {index === 0 ? translations.today || 'Today' : 
+                       index === 1 ? translations.tomorrow || 'Tomorrow' :
+                       date.toLocaleDateString(locale, { weekday: 'short' })}
+                    </div>
+                    <div className="text-xs opacity-80">
+                      {date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto -mx-2 px-2 pb-2">
+                <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
+                  {availableDates.map((date, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedDate(date)}
+                      className={`flex-shrink-0 p-3 border-2 rounded-xl text-center transition-all min-w-[80px] ${
+                        selectedDate.toDateString() === date.toDateString()
+                          ? 'border-transparent text-white'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-700 bg-white'
+                      }`}
+                      style={{ 
+                        backgroundColor: selectedDate.toDateString() === date.toDateString() 
+                          ? primaryColor : undefined
+                      }}
+                    >
+                      <div className="text-sm font-medium">
+                        {index === 0 ? translations.today || 'Today' : 
+                         index === 1 ? translations.tomorrow || 'Tomorrow' :
+                         date.toLocaleDateString(locale, { weekday: 'short' })}
+                      </div>
+                      <div className="text-xs opacity-80">
+                        {date.toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Time Selection */}

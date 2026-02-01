@@ -261,6 +261,7 @@ model Business {
   deliveryBufferMinutes Int     @default(45) // Buffer time for delivery orders
   pickupBufferMinutes   Int     @default(20) // Buffer time for pickup orders
   holidayHours          Json? // Special hours for specific dates: { "2026-12-25": { closed: true }, "2026-12-31": { open: "10:00", close: "15:00" } }
+  maxAdvanceBookingDays Int     @default(7) // Maximum days in advance customers can schedule orders (4, 7, 14, 30, 60)
 
   // Inventory display settings
   showStockBadge Boolean @default(false) // Show stock status badge on storefront (In Stock/Low Stock/Out of Stock)

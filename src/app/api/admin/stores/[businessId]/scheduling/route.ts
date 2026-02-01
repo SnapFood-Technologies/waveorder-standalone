@@ -44,7 +44,8 @@ export async function GET(
         deliveryBufferMinutes: true,
         pickupBufferMinutes: true,
         holidayHours: true,
-        businessHours: true
+        businessHours: true,
+        maxAdvanceBookingDays: true
       }
     })
 
@@ -60,7 +61,8 @@ export async function GET(
         deliveryBufferMinutes: business.deliveryBufferMinutes,
         pickupBufferMinutes: business.pickupBufferMinutes,
         holidayHours: business.holidayHours || {},
-        businessHours: business.businessHours || {}
+        businessHours: business.businessHours || {},
+        maxAdvanceBookingDays: business.maxAdvanceBookingDays
       }
     })
 
@@ -107,7 +109,8 @@ export async function PUT(
       slotCapacity, 
       deliveryBufferMinutes, 
       pickupBufferMinutes,
-      holidayHours 
+      holidayHours,
+      maxAdvanceBookingDays
     } = body
 
     // Validate slot duration
@@ -141,6 +144,16 @@ export async function PUT(
       if (typeof pickupBufferMinutes !== 'number' || pickupBufferMinutes < 0 || pickupBufferMinutes > 240) {
         return NextResponse.json({ 
           message: 'Pickup buffer must be between 0 and 240 minutes' 
+        }, { status: 400 })
+      }
+    }
+
+    // Validate max advance booking days
+    if (maxAdvanceBookingDays !== undefined) {
+      const validDays = [4, 7, 14, 30, 60]
+      if (!validDays.includes(maxAdvanceBookingDays)) {
+        return NextResponse.json({ 
+          message: 'Max advance booking days must be 4, 7, 14, 30, or 60' 
         }, { status: 400 })
       }
     }
@@ -195,6 +208,7 @@ export async function PUT(
     if (deliveryBufferMinutes !== undefined) updateData.deliveryBufferMinutes = deliveryBufferMinutes
     if (pickupBufferMinutes !== undefined) updateData.pickupBufferMinutes = pickupBufferMinutes
     if (holidayHours !== undefined) updateData.holidayHours = holidayHours
+    if (maxAdvanceBookingDays !== undefined) updateData.maxAdvanceBookingDays = maxAdvanceBookingDays
 
     const business = await prisma.business.update({
       where: { id: businessId },
@@ -205,7 +219,8 @@ export async function PUT(
         slotCapacity: true,
         deliveryBufferMinutes: true,
         pickupBufferMinutes: true,
-        holidayHours: true
+        holidayHours: true,
+        maxAdvanceBookingDays: true
       }
     })
 
@@ -217,7 +232,8 @@ export async function PUT(
         slotCapacity: business.slotCapacity,
         deliveryBufferMinutes: business.deliveryBufferMinutes,
         pickupBufferMinutes: business.pickupBufferMinutes,
-        holidayHours: business.holidayHours || {}
+        holidayHours: business.holidayHours || {},
+        maxAdvanceBookingDays: business.maxAdvanceBookingDays
       }
     })
 
