@@ -24,129 +24,131 @@ export default function RestaurantsPage() {
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="pt-24 pb-16 bg-gradient-to-b from-orange-50 to-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="max-w-xl">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 bg-white border border-orange-200 px-4 py-2 rounded-full text-sm font-medium text-orange-700 shadow-sm mb-6">
-                <Utensils className="w-4 h-4" />
-                For Restaurants, Cafes & Food Businesses
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-xl">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 bg-white border border-orange-200 px-4 py-2 rounded-full text-sm font-medium text-orange-700 shadow-sm mb-6">
+              <Utensils className="w-4 h-4" />
+              For Restaurants, Cafes & Food Businesses
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+              Stop Paying <span className="text-[#f97066]">30% Commission</span> on Every Order
+            </h1>
+            
+            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+              Create a beautiful digital menu, share the link, and receive orders directly on WhatsApp. Keep all your profits — no commissions, no middlemen.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <Link 
+                href="/auth/register"
+                className="px-8 py-4 bg-[#f97066] text-white text-lg font-semibold rounded-full hover:bg-[#e85c52] transition-all hover:-translate-y-0.5 hover:shadow-xl inline-flex items-center justify-center"
+              >
+                Start Free Trial
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Stop Paying <span className="text-[#f97066]">30% Commission</span> on Every Order
-              </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Create a beautiful digital menu, share the link, and receive orders directly on WhatsApp. Keep all your profits — no commissions, no middlemen.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link 
-                  href="/auth/register"
-                  className="px-8 py-4 bg-[#f97066] text-white text-lg font-semibold rounded-full hover:bg-[#e85c52] transition-all hover:-translate-y-0.5 hover:shadow-xl inline-flex items-center justify-center"
-                >
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
-                
-                <Link 
-                  href="/demo" 
-                  className="px-8 py-4 border-2 border-gray-200 text-gray-700 text-lg font-semibold rounded-full hover:border-[#f97066] hover:text-[#f97066] transition-colors inline-flex items-center justify-center"
-                >
-                  See Demo Menu
-                </Link>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center text-gray-700">
-                  <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
-                  <span>Digital menu with QR codes</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
-                  <span>Zero commissions on orders</span>
-                </div>
-                <div className="flex items-center text-gray-700">
-                  <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
-                  <span>Pickup & delivery scheduling</span>
-                </div>
-              </div>
+              <Link 
+                href="/demo" 
+                className="px-8 py-4 border-2 border-gray-200 text-gray-700 text-lg font-semibold rounded-full hover:border-[#f97066] hover:text-[#f97066] transition-colors inline-flex items-center justify-center"
+              >
+                See Demo Menu
+              </Link>
             </div>
 
-            {/* Phone Mockup - Restaurant Style */}
-            <div className="relative flex justify-center lg:justify-end">
-              <div className="w-[310px]">
-                <div className="bg-gray-900 rounded-[40px] p-3 shadow-2xl">
-                  <div className="bg-white rounded-[32px] overflow-hidden">
-                    {/* Phone Header */}
-                    <div className="bg-[#f97066] p-4 text-white">
-                      <div className="flex justify-between items-center text-xs mb-3">
-                        <span>9:41 AM</span>
-                        <div className="flex gap-2">
-                          <span className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-sm">🔍</span>
-                          <span className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-sm">🛒</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">Pasta Paradise</h3>
-                        <p className="text-sm text-white/90">Italian Restaurant</p>
-                      </div>
-                      <div className="flex gap-4 mt-2 text-xs">
-                        <span>🕐 Open until 10 PM</span>
-                        <span>🚗 Delivery available</span>
-                      </div>
-                    </div>
-                    
-                    {/* Tabs */}
-                    <div className="flex gap-2 p-3 border-b border-gray-100">
-                      <span className="px-4 py-1.5 bg-[#f97066] text-white text-sm font-medium rounded-full">All</span>
-                      <span className="px-4 py-1.5 text-gray-400 text-sm">Pasta</span>
-                      <span className="px-4 py-1.5 text-gray-400 text-sm">Pizza</span>
-                    </div>
-                    
-                    {/* Menu Items */}
-                    <div className="p-3 space-y-3">
-                      <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center text-2xl">🍝</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">Spaghetti Carbonara</h4>
-                          <p className="text-xs text-gray-500">Egg, parmesan, pancetta</p>
-                          <span className="text-[#f97066] font-bold text-sm">$16.99</span>
-                        </div>
-                        <button className="w-7 h-7 bg-[#f97066] text-white rounded-full self-center text-lg">+</button>
-                      </div>
-                      <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
-                        <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center text-2xl">🍕</div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm">Margherita Pizza</h4>
-                          <p className="text-xs text-gray-500">Tomato, mozzarella, basil</p>
-                          <span className="text-[#f97066] font-bold text-sm">$14.99</span>
-                        </div>
-                        <button className="w-7 h-7 bg-[#f97066] text-white rounded-full self-center text-lg">+</button>
-                      </div>
-                    </div>
-                    
-                    {/* Order Button */}
-                    <div className="m-3 bg-[#f97066] text-white p-4 rounded-xl flex items-center justify-center gap-2 font-semibold">
-                      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
-                      Order via WhatsApp · $31.98
-                    </div>
-                  </div>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center text-gray-700">
+                <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
+                <span>Digital menu with QR codes</span>
               </div>
-              
-              {/* Floating elements */}
-              <div className="absolute right-0 top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
-                <span className="text-green-500">✓</span> New order received!
+              <div className="flex items-center text-gray-700">
+                <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
+                <span>Zero commissions on orders</span>
               </div>
-              <div className="absolute left-0 bottom-16 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
-                💰 $0 commission
+              <div className="flex items-center text-gray-700">
+                <Check className="w-5 h-5 text-[#f97066] mr-3 flex-shrink-0" />
+                <span>Pickup & delivery scheduling</span>
               </div>
             </div>
           </div>
+
+          {/* Phone Mockup - Restaurant Style */}
+          <div className="relative flex justify-center lg:justify-end">
+            {/* New order received - top left of phone frame */}
+            <div className="absolute left-0 top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              <span className="text-green-500">✓</span> New order received!
+            </div>
+
+            <div className="w-[310px]">
+              <div className="bg-gray-900 rounded-[40px] p-3 shadow-2xl">
+                <div className="bg-white rounded-[32px] overflow-hidden">
+                  {/* Phone Header */}
+                  <div className="bg-[#f97066] p-4 text-white">
+                    <div className="flex justify-between items-center text-xs mb-3">
+                      <span>9:41 AM</span>
+                      <div className="flex gap-2">
+                        <span className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-sm">🔍</span>
+                        <span className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-sm">🛒</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Pasta Paradise</h3>
+                      <p className="text-sm text-white/90">Italian Restaurant</p>
+                    </div>
+                    <div className="flex gap-4 mt-2 text-xs">
+                      <span>🕐 Open until 10 PM</span>
+                      <span>🚗 Delivery available</span>
+                    </div>
+                  </div>
+                  
+                  {/* Tabs */}
+                  <div className="flex gap-2 p-3 border-b border-gray-100">
+                    <span className="px-4 py-1.5 bg-[#f97066] text-white text-sm font-medium rounded-full">All</span>
+                    <span className="px-4 py-1.5 text-gray-400 text-sm">Pasta</span>
+                    <span className="px-4 py-1.5 text-gray-400 text-sm">Pizza</span>
+                  </div>
+                  
+                  {/* Menu Items */}
+                  <div className="p-3 space-y-3">
+                    <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-orange-200 rounded-lg flex items-center justify-center text-2xl">🍝</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm">Spaghetti Carbonara</h4>
+                        <p className="text-xs text-gray-500">Egg, parmesan, pancetta</p>
+                        <span className="text-[#f97066] font-bold text-sm">$16.99</span>
+                      </div>
+                      <button className="w-7 h-7 bg-[#f97066] text-white rounded-full self-center text-lg">+</button>
+                    </div>
+                    <div className="flex gap-3 p-3 bg-gray-50 rounded-xl">
+                      <div className="w-14 h-14 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center text-2xl">🍕</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm">Margherita Pizza</h4>
+                        <p className="text-xs text-gray-500">Tomato, mozzarella, basil</p>
+                        <span className="text-[#f97066] font-bold text-sm">$14.99</span>
+                      </div>
+                      <button className="w-7 h-7 bg-[#f97066] text-white rounded-full self-center text-lg">+</button>
+                    </div>
+                  </div>
+                  
+                  {/* Order Button */}
+                  <div className="m-3 bg-[#f97066] text-white p-4 rounded-xl flex items-center justify-center gap-2 font-semibold">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+                    Order via WhatsApp · $31.98
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* $0 commission - bottom right of phone frame */}
+            <div className="absolute right-0 bottom-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
+              💰 $0 commission
+            </div>
+          </div>
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* Commission Comparison */}
       <section className="py-20 bg-[#0d4f4f] text-white relative overflow-hidden">
