@@ -75,6 +75,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
+  const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
+  const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -126,22 +128,29 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       }
     }
 
-    // Fetch user's store count (for showing/hiding Switch Store)
-    const fetchStoreCount = async () => {
+    // Fetch user's stores (for showing/hiding Switch Store and store switcher)
+    const fetchStores = async () => {
       try {
         const response = await fetch('/api/user/businesses')
         if (response.ok) {
           const data = await response.json()
-          setStoreCount(data.businesses?.length || 1)
+          const businessList = data.businesses || []
+          setStoreCount(businessList.length || 1)
+          setStores(businessList.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            slug: b.slug,
+            logo: b.logo || null
+          })))
         }
       } catch (error) {
-        console.error('Error fetching user role:', error)
+        console.error('Error fetching stores:', error)
       }
     }
     
     fetchFeatureFlags()
     fetchUserRole()
-    fetchStoreCount()
+    fetchStores()
   }, [businessId])
   
   // Check if user can access products (STAFF cannot)
@@ -512,8 +521,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             </button>
           </div>
 
-          {/* Switch Store Link - Only show for users with multiple stores */}
-          {storeCount > 1 && (
+          {/* Manage Stores Link - Only show for PRO/BUSINESS users */}
+          {(subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') && (
             <div className="px-4 pt-4 pb-2">
               <Link
                 href="/admin/stores"
@@ -521,7 +530,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
                 className="flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors border border-gray-200"
               >
                 <Store className="w-4 h-4 mr-2" />
-                <span>Switch Store</span>
+                <span>Manage Stores</span>
                 <ChevronRight className="w-4 h-4 ml-auto" />
               </Link>
             </div>
@@ -530,6 +539,65 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
             {navigation.map(renderNavigationItem)}
           </nav>
+
+          {/* Store Switcher - Only show for users with 2+ stores */}
+          {storeCount > 1 && (
+            <div className="px-4 py-3 border-t border-gray-200">
+              <div className="relative">
+                <button
+                  onClick={() => setShowStoreSwitcher(!showStoreSwitcher)}
+                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {stores.find(s => s.id === businessId)?.logo ? (
+                    <img 
+                      src={stores.find(s => s.id === businessId)?.logo || ''} 
+                      alt="" 
+                      className="w-8 h-8 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                      <Store className="w-4 h-4 text-teal-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {stores.find(s => s.id === businessId)?.name || 'Current Store'}
+                    </p>
+                    <p className="text-xs text-gray-500">Switch store</p>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showStoreSwitcher ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {/* Dropdown */}
+                {showStoreSwitcher && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50">
+                    <div className="py-1 max-h-48 overflow-y-auto">
+                      {stores.filter(s => s.id !== businessId).map((store) => (
+                        <Link
+                          key={store.id}
+                          href={isImpersonating ? `/admin/stores/${store.id}/dashboard?impersonate=true&businessId=${store.id}` : `/admin/stores/${store.id}/dashboard`}
+                          onClick={() => {
+                            setShowStoreSwitcher(false)
+                            onClose()
+                          }}
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors"
+                        >
+                          {store.logo ? (
+                            <img src={store.logo} alt="" className="w-6 h-6 rounded object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                              <Store className="w-3 h-3 text-gray-500" />
+                            </div>
+                          )}
+                          <span className="text-sm text-gray-700 truncate">{store.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="p-4 border-t border-gray-200">
             <div className={`rounded-lg p-4 text-white ${
@@ -553,6 +621,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
                   ? 'Advanced features and analytics'
                   : 'Full access with team & API'}
               </p>
+              <div className="text-xs opacity-75 mb-2">
+                {subscription.plan === 'STARTER' 
+                  ? 'Thanks for being a Starter user!'
+                  : subscription.plan === 'PRO'
+                  ? 'Thanks for being a Pro user!'
+                  : 'Thanks for being a Business user!'}
+              </div>
               {(subscription.plan === 'STARTER' || subscription.plan === 'PRO') && (
                 <Link 
                   href={addImpersonationParams(`/admin/stores/${businessId}/settings/billing`)}
