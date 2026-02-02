@@ -98,7 +98,8 @@ model User {
   assignedLeads Lead[] @relation("LeadAssignee")
   
   // Team Member profile (optional - links user account to team member)
-  teamMember TeamMember?
+  // One-to-many to avoid unique constraint issues with null userId
+  teamMembers TeamMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1569,7 +1570,7 @@ model TeamMember {
   department  TeamDepartment?
   
   // Optional User Connection (for system access)
-  userId      String?    @unique @db.ObjectId
+  userId      String?    @db.ObjectId
   user        User?      @relation(fields: [userId], references: [id])
   
   // Team Member Location (where they are based)
