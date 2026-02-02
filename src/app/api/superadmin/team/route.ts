@@ -184,32 +184,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Build create data - only include userId if it has a value (unique constraint)
+    const createData: any = {
+      name: data.name,
+      email: data.email.toLowerCase(),
+      phone: data.phone || null,
+      avatar: data.avatar || null,
+      title: data.title || null,
+      role: data.role,
+      department: data.department || null,
+      country: data.country || null,
+      city: data.city || null,
+      timezone: data.timezone || null,
+      territory: data.territory || null,
+      region: data.region || null,
+      countries: data.countries || [],
+      monthlyLeadQuota: data.monthlyLeadQuota || null,
+      monthlyRevenueTarget: data.monthlyRevenueTarget || null,
+      quarterlyTarget: data.quarterlyTarget || null,
+      isActive: data.isActive ?? true,
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      bio: data.bio || null,
+      skills: data.skills || [],
+      notes: data.notes || null
+    }
+    
+    // Only set userId if it has a value (to avoid unique constraint with null)
+    if (data.userId) {
+      createData.userId = data.userId
+    }
+
     // Create the team member
     const teamMember = await prisma.teamMember.create({
-      data: {
-        name: data.name,
-        email: data.email.toLowerCase(),
-        phone: data.phone || null,
-        avatar: data.avatar || null,
-        title: data.title || null,
-        role: data.role,
-        department: data.department || null,
-        userId: data.userId || null,
-        country: data.country || null,
-        city: data.city || null,
-        timezone: data.timezone || null,
-        territory: data.territory || null,
-        region: data.region || null,
-        countries: data.countries || [],
-        monthlyLeadQuota: data.monthlyLeadQuota || null,
-        monthlyRevenueTarget: data.monthlyRevenueTarget || null,
-        quarterlyTarget: data.quarterlyTarget || null,
-        isActive: data.isActive ?? true,
-        startDate: data.startDate ? new Date(data.startDate) : null,
-        bio: data.bio || null,
-        skills: data.skills || [],
-        notes: data.notes || null
-      },
+      data: createData,
       include: {
         user: {
           select: {
