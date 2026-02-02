@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
           isActive: true,
           createdAt: true,
           onboardingCompleted: true,
-          setupWizardCompleted: true
+          setupWizardCompleted: true,
+          trialEndsAt: true
         }
       })
 
@@ -82,7 +83,8 @@ export async function GET(request: NextRequest) {
             isActive: true,
             createdAt: true,
             onboardingCompleted: true,
-            setupWizardCompleted: true
+            setupWizardCompleted: true,
+            trialEndsAt: true
           }
         }
       },

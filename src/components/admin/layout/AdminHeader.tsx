@@ -23,6 +23,16 @@ interface StoreLimits {
   isUnlimited: boolean
 }
 
+// Helper to check trial status
+function getTrialInfo(trialEndsAt: string | null): { isOnTrial: boolean; daysLeft: number } {
+  if (!trialEndsAt) return { isOnTrial: false, daysLeft: 0 }
+  const now = new Date()
+  const trialEnd = new Date(trialEndsAt)
+  if (trialEnd <= now) return { isOnTrial: false, daysLeft: 0 }
+  const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return { isOnTrial: true, daysLeft }
+}
+
 export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isBusinessDropdownOpen, setIsBusinessDropdownOpen] = useState(false)
@@ -210,7 +220,13 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                     {currentBusiness.name}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {currentBusiness.subscriptionPlan} Plan
+                    {(() => {
+                      const trial = getTrialInfo(currentBusiness.trialEndsAt)
+                      if (trial.isOnTrial) {
+                        return <span className="text-amber-600">Trial ({trial.daysLeft}d left)</span>
+                      }
+                      return `${currentBusiness.subscriptionPlan} Plan`
+                    })()}
                   </p>
                 </div>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -232,7 +248,13 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                     <ExternalLink className="w-3 h-3 text-gray-400 hover:text-teal-600 transition-colors" />
                   </div>
                   <p className="text-xs text-gray-500">
-                    {currentBusiness.subscriptionPlan} Plan
+                    {(() => {
+                      const trial = getTrialInfo(currentBusiness.trialEndsAt)
+                      if (trial.isOnTrial) {
+                        return <span className="text-amber-600">Trial ({trial.daysLeft}d left)</span>
+                      }
+                      return `${currentBusiness.subscriptionPlan} Plan`
+                    })()}
                   </p>
                 </div>
               </Link>
@@ -254,7 +276,15 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                       <Store className="w-4 h-4 mr-3 text-gray-400" />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{business.name}</p>
-                        <p className="text-xs text-gray-500">{business.subscriptionPlan} Plan</p>
+                        <p className="text-xs text-gray-500">
+                          {(() => {
+                            const trial = getTrialInfo(business.trialEndsAt)
+                            if (trial.isOnTrial) {
+                              return <span className="text-amber-600">Trial ({trial.daysLeft}d)</span>
+                            }
+                            return `${business.subscriptionPlan} Plan`
+                          })()}
+                        </p>
                       </div>
                       {business.id === businessId && (
                         <div className="w-2 h-2 bg-teal-500 rounded-full ml-2" />

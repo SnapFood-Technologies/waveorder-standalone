@@ -241,6 +241,31 @@ export async function getUserSubscriptionStatus(userId: string) {
   const subscriptionPriceId = user.subscription?.priceId
   const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
 
+  // Calculate trial status
+  const now = new Date()
+  const trialEndsAt = (user as any).trialEndsAt ? new Date((user as any).trialEndsAt) : null
+  const graceEndsAt = (user as any).graceEndsAt ? new Date((user as any).graceEndsAt) : null
+  
+  let trialStatus: 'PAID' | 'TRIAL_ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED' = 'PAID'
+  let trialDaysRemaining = 0
+  let graceDaysRemaining = 0
+  let isTrialActive = false
+  let isGracePeriod = false
+
+  if (trialEndsAt) {
+    if (now < trialEndsAt) {
+      trialStatus = 'TRIAL_ACTIVE'
+      trialDaysRemaining = Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      isTrialActive = true
+    } else if (graceEndsAt && now < graceEndsAt) {
+      trialStatus = 'GRACE_PERIOD'
+      graceDaysRemaining = Math.ceil((graceEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      isGracePeriod = true
+    } else if (graceEndsAt && now >= graceEndsAt) {
+      trialStatus = 'EXPIRED'
+    }
+  }
+
   return {
     plan: user.plan,
     isActive: user.subscription?.status === 'active',
@@ -249,7 +274,15 @@ export async function getUserSubscriptionStatus(userId: string) {
     cancelAtPeriodEnd: user.subscription?.cancelAtPeriodEnd || false,
     stripeCustomerId: user.stripeCustomerId,
     subscriptionId: user.subscription?.stripeId,
-    billingType: billingType
+    billingType: billingType,
+    // Trial info
+    trialStatus,
+    trialDaysRemaining,
+    graceDaysRemaining,
+    isTrialActive,
+    isGracePeriod,
+    trialEndsAt: (user as any).trialEndsAt,
+    graceEndsAt: (user as any).graceEndsAt
   }
 }
 

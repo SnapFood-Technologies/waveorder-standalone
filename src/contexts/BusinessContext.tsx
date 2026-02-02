@@ -13,6 +13,7 @@ interface Business {
   setupWizardCompleted: boolean
   onboardingCompleted: boolean
   role: 'OWNER' | 'MANAGER' | 'STAFF'
+  trialEndsAt: string | null
 }
 
 interface BusinessContextValue {
