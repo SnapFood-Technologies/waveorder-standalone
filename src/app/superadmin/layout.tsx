@@ -5,6 +5,7 @@ import { SuperAdminHeader } from '@/components/superadmin/layout/SuperAdminHeade
 import { SuperAdminSidebar } from '@/components/superadmin/layout/SuperAdminSidebar'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { Toaster } from 'react-hot-toast'
 
 export default function SuperAdminLayout({
   children,
@@ -44,8 +45,10 @@ export default function SuperAdminLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <SuperAdminSidebar 
+    <>
+      <Toaster position="top-right" />
+      <div className="flex h-screen bg-gray-50">
+        <SuperAdminSidebar 
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         // @ts-ignore
@@ -71,6 +74,7 @@ export default function SuperAdminLayout({
           </div>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

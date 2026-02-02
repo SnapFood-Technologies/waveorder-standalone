@@ -161,6 +161,8 @@ export function DeliveryZonesManagement({ businessId }: DeliveryZonesManagementP
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business?.currency || 'USD'] || business?.currency || 'USD'

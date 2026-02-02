@@ -93,7 +93,10 @@ const phonePrefixes = [
 const currencies = [
   { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
   { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro },
-  { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote }
+  { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote },
+  { code: 'BHD', name: 'Bahraini Dinar', symbol: 'BD', icon: Banknote },
+  { code: 'GBP', name: 'British Pound', symbol: '£', icon: Banknote },
+  { code: 'BBD', name: 'Barbadian Dollar', symbol: 'Bds$', icon: Banknote }
 ]
 
 const languages = [
@@ -1119,6 +1122,12 @@ export function CreateBusinessForm() {
                             <option value="Europe/Athens">Athens</option>
                             <option value="Europe/Madrid">Madrid</option>
                             <option value="Europe/Tirane">Tirana</option>
+                          </optgroup>
+                          <optgroup label="Middle East">
+                            <option value="Asia/Bahrain">Bahrain (GMT+3)</option>
+                            <option value="Asia/Dubai">Dubai (GMT+4)</option>
+                            <option value="Asia/Riyadh">Riyadh (GMT+3)</option>
+                            <option value="Asia/Kuwait">Kuwait (GMT+3)</option>
                           </optgroup>
                         </select>
                       </div>

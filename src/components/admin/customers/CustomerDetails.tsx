@@ -180,6 +180,8 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
       GEL: '₾',
     }
     

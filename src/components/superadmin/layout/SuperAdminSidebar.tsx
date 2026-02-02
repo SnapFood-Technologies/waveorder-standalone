@@ -24,7 +24,9 @@ import {
   Globe,
   DollarSign,
   Megaphone,
-  LayoutDashboard
+  LayoutDashboard,
+  UserPlus,
+  UsersRound
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -48,6 +50,8 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     { name: 'Dashboard', href: '/superadmin/dashboard', icon: BarChart3 },
     { name: 'Businesses', href: '/superadmin/businesses', icon: Building2 },
     { name: 'Users', href: '/superadmin/users', icon: Users },
+    { name: 'Team', href: '/superadmin/team', icon: UsersRound },
+    { name: 'Leads', href: '/superadmin/leads', icon: UserPlus },
     { 
       name: 'Analytics', 
       icon: TrendingUp,

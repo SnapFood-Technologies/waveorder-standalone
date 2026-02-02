@@ -3,6 +3,26 @@
 import { useState } from 'react'
 import { SetupData } from '../Setup'
 import { Check, ArrowLeft, Sparkles, Zap, Building2 } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
+
+// Helper to log client-side errors
+const logClientError = async (logType: string, errorMessage: string, metadata?: Record<string, any>) => {
+  try {
+    await fetch('/api/log/client', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        logType,
+        severity: 'error',
+        errorMessage,
+        metadata,
+        url: window.location.href
+      })
+    })
+  } catch (e) {
+    console.error('Failed to log error:', e)
+  }
+}
 
 interface PricingStepProps {
   data: SetupData
@@ -99,7 +119,16 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
       }
     } catch (error) {
       console.error('Error creating checkout:', error)
-      alert('Error processing request. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Log to system logs
+      logClientError('checkout_error', errorMsg, { 
+        planId, 
+        billingInterval,
+        step: 'pricing'
+      })
+      
+      toast.error('Error processing request. Please try again.')
       setLoading(false)
       setLoadingAction(null)
     }
@@ -125,7 +154,15 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
       }
     } catch (error) {
       console.error('Error starting trial:', error)
-      alert('Error starting trial. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      
+      // Log to system logs for SuperAdmin visibility
+      logClientError('trial_start_error', errorMsg, { 
+        step: 'pricing',
+        action: 'start_trial'
+      })
+      
+      toast.error('Error starting trial. Please try again.')
       setLoading(false)
       setLoadingAction(null)
     }
@@ -141,6 +178,7 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <Toaster position="top-center" />
       <div className="text-center mb-12">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           Choose your WaveOrder plan

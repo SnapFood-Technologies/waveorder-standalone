@@ -153,6 +153,8 @@ export default function CustomersList({ businessId }: CustomersListProps) {
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     const symbol = currencySymbols[business.currency] || business.currency
     return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

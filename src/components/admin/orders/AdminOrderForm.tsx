@@ -582,6 +582,8 @@ export default function AdminOrderForm({
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency

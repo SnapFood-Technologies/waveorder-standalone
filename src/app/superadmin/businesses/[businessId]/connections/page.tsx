@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Link2, Plus, Search, X, Loader2, Store, AlertCircle, ChevronLeft, AlertTriangle, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Business {
   id: string
@@ -95,10 +96,10 @@ export default function BusinessConnectionsPage() {
         await fetchAvailableBusinesses()
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to connect')
+        toast.error(data.error || 'Failed to connect')
       }
     } catch (error) {
-      alert('An error occurred while connecting')
+      toast.error('An error occurred while connecting')
     } finally {
       setConnecting(null)
     }
@@ -124,10 +125,10 @@ export default function BusinessConnectionsPage() {
         await fetchConnectedBusinesses()
       } else {
         const data = await response.json()
-        alert(data.error || 'Failed to disconnect')
+        toast.error(data.error || 'Failed to disconnect')
       }
     } catch (error) {
-      alert('An error occurred while disconnecting')
+      toast.error('An error occurred while disconnecting')
     } finally {
       setIsDisconnecting(false)
       setDisconnecting(null)
