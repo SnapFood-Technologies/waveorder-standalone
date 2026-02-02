@@ -51,6 +51,8 @@ interface BusinessDetails {
   deactivatedAt?: string | null
   deactivationReason?: string | null
   testMode?: boolean
+  trialEndsAt?: string | null
+  graceEndsAt?: string | null
   currency: string
   whatsappNumber: string
   address?: string
@@ -103,6 +105,21 @@ interface BusinessDetails {
   externalSystemEndpoints?: any
   externalBrandIds?: any
   connectedBusinesses?: string[]
+}
+
+// Helper to check if business is on trial
+function isOnTrial(business: BusinessDetails): boolean {
+  if (!business.trialEndsAt) return false
+  return new Date(business.trialEndsAt) > new Date()
+}
+
+// Helper to get trial days remaining
+function getTrialDaysRemaining(business: BusinessDetails): number {
+  if (!business.trialEndsAt) return 0
+  const now = new Date()
+  const trialEnd = new Date(business.trialEndsAt)
+  if (trialEnd <= now) return 0
+  return Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 const businessTypeIcons: Record<string, any> = {
@@ -376,8 +393,15 @@ export default function BusinessDetailsPage() {
               }`}>
                 {business.isActive ? 'Active' : 'Inactive'}
               </span>
+              {isOnTrial(business) && (
+                <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-amber-100 text-amber-800">
+                  Trial ({getTrialDaysRemaining(business)} days left)
+                </span>
+              )}
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                business.subscriptionPlan === 'PRO'
+                business.subscriptionPlan === 'BUSINESS'
+                  ? 'bg-indigo-100 text-indigo-800'
+                  : business.subscriptionPlan === 'PRO'
                   ? 'bg-purple-100 text-purple-800'
                   : 'bg-gray-100 text-gray-800'
               }`}>
