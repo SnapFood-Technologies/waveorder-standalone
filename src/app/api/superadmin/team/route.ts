@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // If userId provided, check it's not already linked
     if (data.userId) {
-      const existingLink = await prisma.teamMember.findUnique({
+      const existingLink = await prisma.teamMember.findFirst({
         where: { userId: data.userId }
       })
       if (existingLink) {
