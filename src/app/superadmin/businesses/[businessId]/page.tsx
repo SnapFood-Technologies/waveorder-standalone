@@ -1281,8 +1281,82 @@ export default function BusinessDetailsPage() {
               </button>
             </div>
           </div>
+
+          {/* Account Managers */}
+          <AccountManagersSection businessId={businessId} />
         </div>
       </div>
+    </div>
+  )
+}
+
+// Account Managers Section Component
+function AccountManagersSection({ businessId }: { businessId: string }) {
+  const [accountManagers, setAccountManagers] = useState<Array<{
+    id: string
+    name: string
+    email: string
+    role: string
+    avatar: string | null
+  }>>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAccountManagers()
+  }, [businessId])
+
+  const fetchAccountManagers = async () => {
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/account-managers`)
+      if (res.ok) {
+        const data = await res.json()
+        setAccountManagers(data.accountManagers || [])
+      }
+    } catch (error) {
+      console.error('Error fetching account managers:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Users className="w-5 h-5 mr-2 text-purple-600" />
+        Account Managers
+      </h3>
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading...</p>
+      ) : accountManagers.length === 0 ? (
+        <p className="text-sm text-gray-500">No account manager assigned</p>
+      ) : (
+        <div className="space-y-2">
+          {accountManagers.map(am => (
+            <div key={am.id} className="flex items-center p-2 bg-gray-50 rounded-lg">
+              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                {am.avatar ? (
+                  <img src={am.avatar} alt={am.name} className="w-8 h-8 rounded-full" />
+                ) : (
+                  <span className="text-purple-700 text-sm font-medium">
+                    {am.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{am.name}</p>
+                <p className="text-xs text-gray-500 truncate">{am.email}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      <Link
+        href="/superadmin/team"
+        className="mt-3 text-xs text-teal-600 hover:underline inline-flex items-center"
+      >
+        Manage team assignments
+        <ArrowRight className="w-3 h-3 ml-1" />
+      </Link>
     </div>
   )
 }

@@ -1033,82 +1033,169 @@ function TeamMemberDetailModal({
           )}
 
           {activeTab === 'businesses' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-gray-600">{assignedBusinesses.length} businesses assigned</p>
-              </div>
-
-              {/* Assign New Business */}
-              {unassignedBusinesses.length > 0 && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Assign Business</h4>
-                  <div className="flex gap-2">
-                    <select
-                      id="assignBusiness"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>Select a business...</option>
-                      {unassignedBusinesses.map((biz) => (
-                        <option key={biz.id} value={biz.id}>
-                          {biz.name} ({biz.subscriptionPlan})
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => {
-                        const select = document.getElementById('assignBusiness') as HTMLSelectElement
-                        if (select.value) {
-                          handleAssignBusiness(select.value)
-                        }
-                      }}
-                      disabled={assignLoading}
-                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
-                    >
-                      {assignLoading ? '...' : 'Assign'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Assigned Businesses List */}
-              {assignedBusinesses.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No businesses assigned yet</p>
-              ) : (
-                <div className="space-y-2">
-                  {assignedBusinesses.map((biz) => (
-                    <div key={biz.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                      <div className="flex items-center">
-                        <Building2 className="w-5 h-5 text-gray-400 mr-3" />
-                        <div>
-                          <p className="font-medium text-gray-900">{biz.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {biz.subscriptionPlan} • {biz._count.products} products • {biz._count.orders} orders
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/superadmin/businesses/${biz.id}`}
-                          className="p-2 text-gray-400 hover:text-gray-600"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleUnassignBusiness(biz.id)}
-                          className="p-2 text-red-400 hover:text-red-600"
-                        >
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <BusinessAssignmentTab 
+              memberId={member.id}
+              assignedBusinesses={assignedBusinesses}
+              unassignedBusinesses={unassignedBusinesses}
+              assignLoading={assignLoading}
+              onAssign={handleAssignBusiness}
+              onUnassign={handleUnassignBusiness}
+              onRefresh={fetchBusinesses}
+            />
           )}
         </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-200 flex justify-between">
+          <button
+            onClick={handleDelete}
+            disabled={loading || member._count.assignedLeads > 0 || member._count.assignedBusinesses > 0}
+            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50"
+          >
+            Delete Member
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Close
+          </button>
+        </div>
       </div>
+    </div>
+  )
+}
+
+// Business Assignment Tab Component with searchable dropdown
+function BusinessAssignmentTab({
+  memberId,
+  assignedBusinesses,
+  unassignedBusinesses,
+  assignLoading,
+  onAssign,
+  onUnassign,
+  onRefresh
+}: {
+  memberId: string
+  assignedBusinesses: any[]
+  unassignedBusinesses: any[]
+  assignLoading: boolean
+  onAssign: (id: string) => Promise<void>
+  onUnassign: (id: string) => Promise<void>
+  onRefresh: () => void
+}) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  // Filter businesses based on search
+  const filteredBusinesses = unassignedBusinesses.filter(biz => 
+    biz.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    biz.slug.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleSelectBusiness = async (businessId: string) => {
+    await onAssign(businessId)
+    setSearchQuery('')
+    setShowDropdown(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-gray-600">{assignedBusinesses.length} businesses assigned</p>
+      </div>
+
+      {/* Searchable Business Assignment */}
+      {unassignedBusinesses.length > 0 && (
+        <div className="p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Assign Business</h4>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search businesses by name or slug..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setShowDropdown(true)
+              }}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+            {showDropdown && searchQuery.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hide">
+                {filteredBusinesses.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-gray-500">No businesses found</p>
+                ) : (
+                  filteredBusinesses.slice(0, 10).map(biz => (
+                    <button
+                      key={biz.id}
+                      onClick={() => handleSelectBusiness(biz.id)}
+                      disabled={assignLoading}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0"
+                    >
+                      {biz.logo ? (
+                        <img src={biz.logo} alt={biz.name} className="w-8 h-8 rounded object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-gray-400" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{biz.name}</p>
+                        <p className="text-xs text-gray-500">/{biz.slug} • {biz.subscriptionPlan}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            {unassignedBusinesses.length} businesses available for assignment
+          </p>
+        </div>
+      )}
+
+      {/* Assigned Businesses List */}
+      {assignedBusinesses.length === 0 ? (
+        <p className="text-center text-gray-500 py-8">No businesses assigned yet</p>
+      ) : (
+        <div className="space-y-2">
+          {assignedBusinesses.map((biz) => (
+            <div key={biz.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="flex items-center">
+                {biz.logo ? (
+                  <img src={biz.logo} alt={biz.name} className="w-10 h-10 rounded object-cover mr-3" />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center mr-3">
+                    <Building2 className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">{biz.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {biz.subscriptionPlan} • {biz._count.products} products • {biz._count.orders} orders
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/superadmin/businesses/${biz.id}`}
+                  className="p-2 text-gray-400 hover:text-gray-600"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Link>
+                <button
+                  onClick={() => onUnassign(biz.id)}
+                  className="p-2 text-red-400 hover:text-red-600"
+                >
+                  <XCircle className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

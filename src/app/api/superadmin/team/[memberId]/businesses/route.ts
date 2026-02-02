@@ -25,6 +25,7 @@ export async function GET(
         id: true,
         name: true,
         slug: true,
+        logo: true,
         businessType: true,
         subscriptionPlan: true,
         subscriptionStatus: true,
@@ -51,6 +52,7 @@ export async function GET(
         id: true,
         name: true,
         slug: true,
+        logo: true,
         subscriptionPlan: true,
         accountManagerId: true
       },
