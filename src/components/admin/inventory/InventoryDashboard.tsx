@@ -132,6 +132,8 @@ export default function InventoryDashboard({ businessId }: InventoryDashboardPro
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency

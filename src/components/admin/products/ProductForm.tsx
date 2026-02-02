@@ -26,6 +26,7 @@ import {
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useImpersonation } from '@/lib/impersonation'
+import toast from 'react-hot-toast'
 
 interface ProductFormProps {
   businessId: string
@@ -303,18 +304,22 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency
     return `${symbol}${amount.toFixed(2)}`
   }
 
-  const getCurrencySymbol = () => {
+    const getCurrencySymbol = () => {
     const currencySymbols: Record<string, string> = {
       USD: '$',
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     return currencySymbols[business.currency] || business.currency
   }
@@ -482,7 +487,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
             plan: errorData.plan
           })
         } else {
-          alert(errorData.message || 'Error saving product')
+          toast.error(errorData.message || 'Error saving product')
         }
       }
     } catch (error) {

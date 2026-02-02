@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Edit2, Trash2, Loader2, Tag, AlertTriangle, ChevronLeft } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Group {
   id: string
@@ -133,10 +134,10 @@ export default function GroupsPage() {
         setGroupToDelete(null)
       } else {
         const data = await response.json()
-        alert(data.message || 'Failed to delete group')
+        toast.error(data.message || 'Failed to delete group')
       }
     } catch (error) {
-      alert('An error occurred while deleting the group')
+      toast.error('An error occurred while deleting the group')
     } finally {
       setSubmitting(false)
     }

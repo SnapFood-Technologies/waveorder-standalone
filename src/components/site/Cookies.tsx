@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Cookie, Settings, Check, X, Shield, BarChart3, Palette, Target, Eye, Globe, Smartphone } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function Cookies() {
   const [preferences, setPreferences] = useState({
@@ -27,7 +28,7 @@ export default function Cookies() {
   const savePreferences = () => {
     // In a real implementation, this would save to localStorage or send to server
     setShowPreferences(false)
-    alert('Cookie preferences saved successfully!')
+    toast.success('Cookie preferences saved successfully!')
   }
 
   const sections = [
@@ -102,8 +103,10 @@ export default function Cookies() {
   ]
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
+    <>
+      <Toaster position="top-center" />
+      <div className="min-h-screen bg-white">
+        {/* Hero Section */}
       <section className="pt-20 pb-16 bg-gradient-to-br from-orange-50 via-white to-amber-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -574,6 +577,7 @@ export default function Cookies() {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   )
 }

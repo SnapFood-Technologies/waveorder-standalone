@@ -612,6 +612,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'USD', label: 'US Dollar ($)', symbol: '$' },
     { value: 'EUR', label: 'Euro (€)', symbol: '€' },
     { value: 'ALL', label: 'Albanian Lek (L)', symbol: 'L' },
+    { value: 'BHD', label: 'Bahraini Dinar (BD)', symbol: 'BD' },
     { value: 'GBP', label: 'British Pound (£)', symbol: '£' },
     { value: 'BBD', label: 'Barbadian Dollar (Bds$)', symbol: 'Bds$' }
   ]

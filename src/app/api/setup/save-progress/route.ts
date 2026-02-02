@@ -89,6 +89,38 @@ export async function POST(request: NextRequest) {
           }
         }
       })
+      
+      // Auto-link lead if exists with matching email
+      if (user.email) {
+        const matchingLead = await prisma.lead.findFirst({
+          where: { 
+            email: user.email.toLowerCase(),
+            convertedToId: null // Not already linked
+          }
+        })
+        if (matchingLead) {
+          await prisma.lead.update({
+            where: { id: matchingLead.id },
+            data: {
+              status: 'WON',
+              convertedAt: new Date(),
+              convertedToId: business.id,
+              conversionNotes: 'Auto-linked: Business created with matching email'
+            }
+          })
+          // Log the activity
+          await prisma.leadActivity.create({
+            data: {
+              leadId: matchingLead.id,
+              type: 'STATUS_CHANGE',
+              title: 'Auto-converted to WON',
+              description: `Business "${business.name}" created with matching email. Lead auto-linked.`,
+              performedById: user.id,
+              performedBy: 'System (Auto-link)'
+            }
+          })
+        }
+      }
     } else {
       // Update existing business with all the new fields
       const updateData: any = {

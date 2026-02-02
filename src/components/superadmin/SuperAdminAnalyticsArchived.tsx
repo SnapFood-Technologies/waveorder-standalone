@@ -12,6 +12,7 @@ import {
   X,
   Loader2
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface ArchivedData {
   incompleteBusinesses: {
@@ -89,7 +90,7 @@ export function SuperAdminAnalyticsArchived() {
       setActivateModal({ isOpen: false, business: null })
     } catch (error) {
       console.error('Error activating business:', error)
-      alert(error instanceof Error ? error.message : 'Failed to activate business')
+      toast.error(error instanceof Error ? error.message : 'Failed to activate business')
     } finally {
       setActivating(false)
     }
