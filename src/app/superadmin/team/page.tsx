@@ -1134,7 +1134,7 @@ function BusinessAssignmentTab({
                       className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-0"
                     >
                       {biz.logo ? (
-                        <img src={biz.logo} alt={biz.name} className="w-8 h-8 rounded object-cover" />
+                        <img src={biz.logo} alt={biz.name} className="w-8 h-8 rounded object-contain" />
                       ) : (
                         <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
                           <Building2 className="w-4 h-4 text-gray-400" />
@@ -1165,7 +1165,7 @@ function BusinessAssignmentTab({
             <div key={biz.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
               <div className="flex items-center">
                 {biz.logo ? (
-                  <img src={biz.logo} alt={biz.name} className="w-10 h-10 rounded object-cover mr-3" />
+                  <img src={biz.logo} alt={biz.name} className="w-10 h-10 rounded object-contain mr-3" />
                 ) : (
                   <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center mr-3">
                     <Building2 className="w-5 h-5 text-gray-400" />
