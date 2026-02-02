@@ -154,10 +154,10 @@ export async function PUT(
     
     const allowedFields = [
       'name', 'email', 'phone', 'avatar', 'title', 'role', 'department',
-      'userId', 'territory', 'region', 'countries', 'monthlyLeadQuota',
-      'monthlyRevenueTarget', 'quarterlyTarget', 'isActive', 'startDate',
-      'bio', 'skills', 'notes', 'totalLeadsAssigned', 'totalLeadsConverted',
-      'totalRevenue', 'conversionRate'
+      'userId', 'country', 'city', 'timezone', 'territory', 'region', 'countries', 
+      'monthlyLeadQuota', 'monthlyRevenueTarget', 'quarterlyTarget', 'isActive', 
+      'startDate', 'bio', 'skills', 'notes', 'totalLeadsAssigned', 
+      'totalLeadsConverted', 'totalRevenue', 'conversionRate'
     ]
 
     allowedFields.forEach(field => {

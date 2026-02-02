@@ -22,6 +22,9 @@ interface TeamMember {
   department: string | null
   userId: string | null
   user: { id: string; name: string; email: string } | null
+  country: string | null
+  city: string | null
+  timezone: string | null
   territory: string | null
   region: string | null
   countries: string[]
@@ -317,6 +320,12 @@ export default function TeamPage() {
                     {member.phone}
                   </div>
                 )}
+                {(member.city || member.country) && (
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Globe className="w-4 h-4 mr-2 text-gray-400" />
+                    {[member.city, member.country].filter(Boolean).join(', ')}
+                  </div>
+                )}
                 {member.territory && (
                   <div className="flex items-center text-sm text-gray-600">
                     <MapPin className="w-4 h-4 mr-2 text-gray-400" />
@@ -412,6 +421,9 @@ function CreateTeamMemberModal({
     role: 'ACCOUNT_MANAGER',
     department: 'SALES',
     userId: '',
+    country: '',
+    city: '',
+    timezone: '',
     territory: '',
     region: '',
     monthlyLeadQuota: '',
@@ -568,9 +580,66 @@ function CreateTeamMemberModal({
             </div>
           </div>
 
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input
+                type="text"
+                value={formData.country}
+                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                placeholder="e.g., United States"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="e.g., New York"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+              <select
+                value={formData.timezone}
+                onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="">Select timezone</option>
+                <optgroup label="Americas">
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="America/Barbados">Barbados (AST)</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Paris">Paris (CET)</option>
+                  <option value="Europe/Tirane">Tirana (CET)</option>
+                  <option value="Europe/Athens">Athens (EET)</option>
+                </optgroup>
+                <optgroup label="Middle East">
+                  <option value="Asia/Dubai">Dubai (GST)</option>
+                  <option value="Asia/Bahrain">Bahrain (AST)</option>
+                  <option value="Asia/Riyadh">Riyadh (AST)</option>
+                  <option value="Asia/Kuwait">Kuwait (AST)</option>
+                </optgroup>
+                <optgroup label="Asia Pacific">
+                  <option value="Asia/Singapore">Singapore (SGT)</option>
+                  <option value="Asia/Tokyo">Tokyo (JST)</option>
+                  <option value="Australia/Sydney">Sydney (AEST)</option>
+                </optgroup>
+              </select>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Territory</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sales Territory</label>
               <input
                 type="text"
                 value={formData.territory}
@@ -580,7 +649,7 @@ function CreateTeamMemberModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Sales Region</label>
               <input
                 type="text"
                 value={formData.region}
@@ -861,6 +930,19 @@ function TeamMemberDetailModal({
                       )}
                     </div>
                   </div>
+
+                  {(member.country || member.city) && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Location</h4>
+                      <p className="flex items-center text-gray-700">
+                        <Globe className="w-4 h-4 mr-2 text-gray-400" />
+                        {[member.city, member.country].filter(Boolean).join(', ')}
+                      </p>
+                      {member.timezone && (
+                        <p className="text-sm text-gray-500 ml-6">{member.timezone}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-1">Role & Department</h4>

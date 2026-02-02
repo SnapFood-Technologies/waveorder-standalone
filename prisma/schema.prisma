@@ -1572,7 +1572,12 @@ model TeamMember {
   userId      String?    @unique @db.ObjectId
   user        User?      @relation(fields: [userId], references: [id])
   
-  // Territory & Region
+  // Team Member Location (where they are based)
+  country     String?    // Country (e.g., "United States", "Albania")
+  city        String?    // City (e.g., "New York", "Tirana")
+  timezone    String?    // Timezone (e.g., "America/New_York", "Europe/Tirane")
+  
+  // Territory & Region (sales coverage)
   territory   String?    // Geographic territory (e.g., "North America", "Europe")
   region      String?    // Specific region (e.g., "Northeast US", "UK")
   countries   String[]   // Countries they handle
