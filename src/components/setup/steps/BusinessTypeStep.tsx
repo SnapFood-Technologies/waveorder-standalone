@@ -36,7 +36,10 @@ const businessTypes = [
 const allCurrencies = [
   { code: 'USD', name: 'US Dollar', symbol: '$', icon: DollarSign },
   { code: 'EUR', name: 'Euro', symbol: '€', icon: Euro },
-  { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote }
+  { code: 'ALL', name: 'Albanian Lek', symbol: 'L', icon: Banknote },
+  { code: 'BHD', name: 'Bahraini Dinar', symbol: 'BD', icon: Banknote },
+  { code: 'GBP', name: 'British Pound', symbol: '£', icon: Banknote },
+  { code: 'BBD', name: 'Barbadian Dollar', symbol: 'Bds$', icon: Banknote }
 ]
 
 const languages = [

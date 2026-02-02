@@ -194,6 +194,8 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[currency] || currency

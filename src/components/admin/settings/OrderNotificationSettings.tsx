@@ -214,7 +214,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
       USD: '$',
       EUR: '€',
       GBP: '£',
-      ALL: 'L'
+      ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency

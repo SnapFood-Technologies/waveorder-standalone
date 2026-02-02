@@ -94,7 +94,8 @@ export function DashboardMetrics({ businessId }: DashboardMetricsProps) {
       EUR: '€',
       GBP: '£',
       ALL: 'L', // Albanian Lek
-      // Add more currencies as needed
+      BHD: 'BD', // Bahraini Dinar
+      BBD: 'Bds$', // Barbadian Dollar
     }
     
     const symbol = currencySymbols[business.currency] || business.currency

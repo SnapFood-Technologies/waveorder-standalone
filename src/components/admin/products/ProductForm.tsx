@@ -303,18 +303,22 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     
     const symbol = currencySymbols[business.currency] || business.currency
     return `${symbol}${amount.toFixed(2)}`
   }
 
-  const getCurrencySymbol = () => {
+    const getCurrencySymbol = () => {
     const currencySymbols: Record<string, string> = {
       USD: '$',
       EUR: '€',
       GBP: '£',
       ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
     }
     return currencySymbols[business.currency] || business.currency
   }
