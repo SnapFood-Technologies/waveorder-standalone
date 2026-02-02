@@ -585,7 +585,12 @@ export default function SystemLogsPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">404 Not Found</span>
+                  <span 
+                    className="text-sm text-gray-600 cursor-help border-b border-dotted border-gray-400"
+                    title="Includes bot probes, hack attempts, and invalid URLs. Not all are real store lookups."
+                  >
+                    404 Not Found *
+                  </span>
                   <div className="flex items-center gap-2">
                     <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
                       <div 
@@ -596,6 +601,7 @@ export default function SystemLogsPage() {
                     <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.storefrontStats.notFound.toLocaleString()}</span>
                   </div>
                 </div>
+                <p className="text-xs text-gray-400 mt-1">* May include bot probes, hack attempts, and noisy traffic</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Errors</span>
                   <div className="flex items-center gap-2">

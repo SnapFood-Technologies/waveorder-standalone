@@ -87,7 +87,7 @@ export async function POST(request: Request) {
           where: { id: bu.businessId },
           data: {
             subscriptionPlan: 'PRO',
-            subscriptionStatus: 'TRIALING',
+            subscriptionStatus: 'ACTIVE',
             trialEndsAt,
             graceEndsAt
           } as any
