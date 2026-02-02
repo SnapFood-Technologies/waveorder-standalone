@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     
     // Filter out obvious non-store slugs (hack attempts, files, etc.)
     const suspiciousPatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
-    const suspiciousExact = ['wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator', 'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config', 'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug', 'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts', 'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json', 'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon', 'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain', 'clientaccesspolicy']
+    const suspiciousExact = ['wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator', 'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config', 'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug', 'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts', 'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json', 'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon', 'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain', 'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register', 'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup', 'install', 'superadmin']
     const topSlugsByLogs = allSlugsByLogs
       .filter(item => {
         if (!item.slug) return false

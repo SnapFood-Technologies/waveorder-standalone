@@ -226,10 +226,18 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating team member:', error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { 
+        message: 'Internal server error',
+        debug: {
+          error: error.message || String(error),
+          code: error.code,
+          name: error.name,
+          meta: error.meta
+        }
+      },
       { status: 500 }
     )
   }
