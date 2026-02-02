@@ -23,6 +23,7 @@ interface Lead {
   priority: string
   score: number
   assignedTo: { id: string; name: string; email: string } | null
+  teamMember: { id: string; name: string; email: string; role: string; avatar: string | null } | null
   businessType: string | null
   estimatedValue: number | null
   expectedPlan: string | null
@@ -50,6 +51,15 @@ interface TeamMember {
   id: string
   name: string | null
   email: string
+  _count: { assignedLeads: number }
+}
+
+interface SalesTeamMember {
+  id: string
+  name: string
+  email: string
+  role: string
+  avatar: string | null
   _count: { assignedLeads: number }
 }
 
@@ -109,6 +119,7 @@ export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [salesTeam, setSalesTeam] = useState<SalesTeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
   
@@ -152,6 +163,7 @@ export default function LeadsPage() {
         setTotalPages(data.pagination.pages)
         setTotal(data.pagination.total)
         setTeamMembers(data.teamMembers)
+        setSalesTeam(data.salesTeam || [])
       } else {
         toast.error('Failed to fetch leads')
       }
@@ -457,7 +469,9 @@ export default function LeadsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      {lead.assignedTo ? (
+                      {lead.teamMember ? (
+                        <span className="text-sm text-gray-600">{lead.teamMember.name}</span>
+                      ) : lead.assignedTo ? (
                         <span className="text-sm text-gray-600">{lead.assignedTo.name || lead.assignedTo.email}</span>
                       ) : (
                         <span className="text-sm text-gray-400">Unassigned</span>
@@ -521,6 +535,7 @@ export default function LeadsPage() {
       {showCreateModal && (
         <CreateLeadModal
           teamMembers={teamMembers}
+          salesTeam={salesTeam}
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => { fetchLeads(); fetchStats(); setShowCreateModal(false); }}
         />
@@ -531,6 +546,7 @@ export default function LeadsPage() {
         <LeadDetailModal
           lead={selectedLead}
           teamMembers={teamMembers}
+          salesTeam={salesTeam}
           onClose={() => { setShowDetailModal(false); setSelectedLead(null); }}
           onUpdate={() => { fetchLeads(); fetchStats(); }}
         />
@@ -541,11 +557,13 @@ export default function LeadsPage() {
 
 // Create Lead Modal Component
 function CreateLeadModal({ 
-  teamMembers, 
+  teamMembers,
+  salesTeam,
   onClose, 
   onSuccess 
 }: { 
   teamMembers: TeamMember[]
+  salesTeam: SalesTeamMember[]
   onClose: () => void
   onSuccess: () => void
 }) {
@@ -563,7 +581,7 @@ function CreateLeadModal({
     businessType: '',
     expectedPlan: '',
     estimatedValue: '',
-    assignedToId: '',
+    teamMemberId: '',
     notes: '',
     nextFollowUpAt: ''
   })
@@ -579,7 +597,7 @@ function CreateLeadModal({
         body: JSON.stringify({
           ...formData,
           estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
-          assignedToId: formData.assignedToId || null
+          teamMemberId: formData.teamMemberId || null
         })
       })
 
@@ -745,18 +763,26 @@ function CreateLeadModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Sales Team)</label>
               <select
-                value={formData.assignedToId}
-                onChange={(e) => setFormData({ ...formData, assignedToId: e.target.value })}
+                value={formData.teamMemberId}
+                onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">Unassigned</option>
-                {teamMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name || member.email}
-                  </option>
-                ))}
+                {salesTeam.length > 0 ? (
+                  salesTeam.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name} ({member._count.assignedLeads} leads)
+                    </option>
+                  ))
+                ) : (
+                  teamMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name || member.email}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
             <div>
@@ -807,11 +833,13 @@ function CreateLeadModal({
 function LeadDetailModal({ 
   lead, 
   teamMembers,
+  salesTeam,
   onClose, 
   onUpdate 
 }: { 
   lead: Lead
   teamMembers: TeamMember[]
+  salesTeam: SalesTeamMember[]
   onClose: () => void
   onUpdate: () => void
 }) {
@@ -830,7 +858,7 @@ function LeadDetailModal({
     businessType: lead.businessType || '',
     expectedPlan: lead.expectedPlan || '',
     estimatedValue: lead.estimatedValue?.toString() || '',
-    assignedToId: lead.assignedTo?.id || '',
+    teamMemberId: lead.teamMember?.id || '',
     notes: lead.notes || '',
     nextFollowUpAt: lead.nextFollowUpAt ? lead.nextFollowUpAt.split('T')[0] : ''
   })
@@ -852,7 +880,7 @@ function LeadDetailModal({
         body: JSON.stringify({
           ...formData,
           estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
-          assignedToId: formData.assignedToId || null
+          teamMemberId: formData.teamMemberId || null
         })
       })
 
@@ -1074,18 +1102,26 @@ function LeadDetailModal({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To (Sales Team)</label>
                       <select
-                        value={formData.assignedToId}
-                        onChange={(e) => setFormData({ ...formData, assignedToId: e.target.value })}
+                        value={formData.teamMemberId}
+                        onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       >
                         <option value="">Unassigned</option>
-                        {teamMembers.map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name || member.email}
-                          </option>
-                        ))}
+                        {salesTeam.length > 0 ? (
+                          salesTeam.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name}
+                            </option>
+                          ))
+                        ) : (
+                          teamMembers.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {member.name || member.email}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </div>
                   </div>
@@ -1147,7 +1183,7 @@ function LeadDetailModal({
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Assigned To</h4>
                       <p className="text-gray-700">
-                        {lead.assignedTo?.name || lead.assignedTo?.email || 'Unassigned'}
+                        {lead.teamMember?.name || lead.assignedTo?.name || lead.assignedTo?.email || 'Unassigned'}
                       </p>
                     </div>
                   </div>

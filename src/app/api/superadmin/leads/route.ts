@@ -66,6 +66,15 @@ export async function GET(request: NextRequest) {
               email: true
             }
           },
+          teamMember: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              avatar: true
+            }
+          },
           activities: {
             orderBy: { createdAt: 'desc' },
             take: 3
@@ -106,7 +115,28 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
-    // Get team members for assignment dropdown
+    // Get team members for assignment dropdown (from TeamMember model)
+    const teamMembersFromModel = await prisma.teamMember.findMany({
+      where: { 
+        isActive: true,
+        role: {
+          in: ['SALES_REPRESENTATIVE', 'ACCOUNT_EXECUTIVE', 'ACCOUNT_MANAGER', 'SALES_MANAGER', 'CUSTOMER_SUCCESS_MANAGER']
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        avatar: true,
+        _count: {
+          select: { assignedLeads: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    // Also get SuperAdmin users for backwards compatibility
     const teamMembers = await prisma.user.findMany({
       where: { role: 'SUPER_ADMIN' },
       select: {
@@ -132,7 +162,8 @@ export async function GET(request: NextRequest) {
         byStatus: statusCounts,
         bySource: sourceCounts
       },
-      teamMembers
+      teamMembers,
+      salesTeam: teamMembersFromModel
     })
 
   } catch (error) {
@@ -177,7 +208,8 @@ export async function POST(request: NextRequest) {
         priority: data.priority || 'MEDIUM',
         score: data.score || 0,
         assignedToId: data.assignedToId || null,
-        assignedAt: data.assignedToId ? new Date() : null,
+        assignedAt: data.assignedToId || data.teamMemberId ? new Date() : null,
+        teamMemberId: data.teamMemberId || null,
         businessType: data.businessType || null,
         estimatedValue: data.estimatedValue || null,
         expectedPlan: data.expectedPlan || null,
@@ -194,6 +226,14 @@ export async function POST(request: NextRequest) {
             id: true,
             name: true,
             email: true
+          }
+        },
+        teamMember: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true
           }
         }
       }

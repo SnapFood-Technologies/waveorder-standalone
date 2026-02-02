@@ -94,8 +94,11 @@ model User {
   // SuperAdmin settings
   superAdminSettings SuperAdminSettings?
 
-  // Lead assignments (for SuperAdmin team)
+  // Lead assignments (for SuperAdmin team) - Legacy, use TeamMember instead
   assignedLeads Lead[] @relation("LeadAssignee")
+  
+  // Team Member profile (optional - links user account to team member)
+  teamMember TeamMember?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -387,6 +390,10 @@ model Business {
 
   // Business Connections (marketplace/multi-business features)
   connectedBusinesses String[] @db.ObjectId
+  
+  // Account Manager Assignment
+  accountManagerId String?      @db.ObjectId
+  accountManager   TeamMember?  @relation("AccountManagerBusinesses", fields: [accountManagerId], references: [id])
 
   users              BusinessUser[]
   categories         Category[]
@@ -1546,6 +1553,118 @@ model ExternalSyncLog {
   @@index([syncId, startedAt])
 }
 
+// Team Member management for SuperAdmin
+model TeamMember {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Profile Information
+  name        String
+  email       String     @unique
+  phone       String?
+  avatar      String?    // Profile picture URL
+  title       String?    // Job title (e.g., "Senior Account Manager")
+  
+  // Role and Department
+  role        TeamRole
+  department  TeamDepartment?
+  
+  // Optional User Connection (for system access)
+  userId      String?    @unique @db.ObjectId
+  user        User?      @relation(fields: [userId], references: [id])
+  
+  // Territory & Region
+  territory   String?    // Geographic territory (e.g., "North America", "Europe")
+  region      String?    // Specific region (e.g., "Northeast US", "UK")
+  countries   String[]   // Countries they handle
+  
+  // Targets & Goals
+  monthlyLeadQuota    Int?      // Target leads per month
+  monthlyRevenueTarget Float?   // Revenue target per month
+  quarterlyTarget     Float?    // Quarterly revenue target
+  
+  // Performance Metrics (can be calculated or manually updated)
+  totalLeadsAssigned  Int       @default(0)
+  totalLeadsConverted Int       @default(0)
+  totalRevenue        Float     @default(0)
+  conversionRate      Float     @default(0)
+  
+  // Status
+  isActive    Boolean    @default(true)
+  startDate   DateTime?  // When they joined
+  
+  // Bio & Notes
+  bio         String?
+  skills      String[]
+  notes       String?
+  
+  // Relations
+  assignedLeads      Lead[]    @relation("TeamMemberLeads")
+  assignedBusinesses Business[] @relation("AccountManagerBusinesses")
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([role])
+  @@index([department])
+  @@index([isActive])
+  @@index([territory])
+}
+
+enum TeamRole {
+  // Sales & Revenue
+  SALES_REPRESENTATIVE
+  ACCOUNT_EXECUTIVE
+  ACCOUNT_MANAGER
+  SALES_MANAGER
+  
+  // Marketing
+  MARKETING_MANAGER
+  CONTENT_SPECIALIST
+  GROWTH_MANAGER
+  
+  // Customer Success
+  CUSTOMER_SUCCESS_MANAGER
+  SUPPORT_SPECIALIST
+  ONBOARDING_SPECIALIST
+  
+  // Technology
+  DEVELOPER
+  TECHNICAL_SUPPORT
+  PRODUCT_MANAGER
+  
+  // Executive
+  CEO
+  CTO
+  COO
+  CFO
+  VP_SALES
+  VP_MARKETING
+  VP_ENGINEERING
+  VP_CUSTOMER_SUCCESS
+  
+  // Operations
+  OPERATIONS_MANAGER
+  PROJECT_MANAGER
+  
+  // Other
+  INTERN
+  CONTRACTOR
+  OTHER
+}
+
+enum TeamDepartment {
+  SALES
+  MARKETING
+  CUSTOMER_SUCCESS
+  ENGINEERING
+  PRODUCT
+  OPERATIONS
+  EXECUTIVE
+  FINANCE
+  HR
+  OTHER
+}
+
 // Lead/Prospect management for SuperAdmin
 model Lead {
   id          String     @id @default(auto()) @map("_id") @db.ObjectId
@@ -1567,10 +1686,14 @@ model Lead {
   priority    LeadPriority @default(MEDIUM)
   score       Int        @default(0) // Lead score (0-100)
   
-  // Assignment
+  // Assignment (supports both User and TeamMember)
   assignedToId String?   @db.ObjectId
   assignedTo   User?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
   assignedAt   DateTime?
+  
+  // Team Member Assignment (preferred over User assignment)
+  teamMemberId String?      @db.ObjectId
+  teamMember   TeamMember?  @relation("TeamMemberLeads", fields: [teamMemberId], references: [id])
   
   // Business Interest
   businessType   String?  // What type of business they want (restaurant, retail, etc.)

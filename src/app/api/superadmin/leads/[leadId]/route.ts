@@ -107,14 +107,14 @@ export async function PUT(
       })
     }
 
-    // Track assignment change
-    if (data.assignedToId !== undefined && data.assignedToId !== currentLead.assignedToId) {
-      updateData.assignedToId = data.assignedToId || null
-      updateData.assignedAt = data.assignedToId ? new Date() : null
+    // Track team member assignment change
+    if (data.teamMemberId !== undefined && data.teamMemberId !== currentLead.teamMemberId) {
+      updateData.teamMemberId = data.teamMemberId || null
+      updateData.assignedAt = data.teamMemberId ? new Date() : null
       
-      if (data.assignedToId) {
-        const assignee = await prisma.user.findUnique({
-          where: { id: data.assignedToId },
+      if (data.teamMemberId) {
+        const assignee = await prisma.teamMember.findUnique({
+          where: { id: data.teamMemberId },
           select: { name: true, email: true }
         })
         activities.push({
@@ -134,6 +134,14 @@ export async function PUT(
           performedById: session.user.id,
           performedBy: session.user.name || session.user.email || 'Unknown'
         })
+      }
+    }
+    
+    // Track legacy user assignment change (backwards compatibility)
+    if (data.assignedToId !== undefined && data.assignedToId !== currentLead.assignedToId) {
+      updateData.assignedToId = data.assignedToId || null
+      if (!data.teamMemberId) {
+        updateData.assignedAt = data.assignedToId ? new Date() : null
       }
     }
 
