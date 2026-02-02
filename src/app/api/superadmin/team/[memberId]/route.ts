@@ -138,7 +138,7 @@ export async function PUT(
 
     // If userId changed, check it's not already linked
     if (data.userId && data.userId !== existingMember.userId) {
-      const existingLink = await prisma.teamMember.findUnique({
+      const existingLink = await prisma.teamMember.findFirst({
         where: { userId: data.userId }
       })
       if (existingLink) {
