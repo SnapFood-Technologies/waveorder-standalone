@@ -179,7 +179,9 @@ export default function SystemLogsPage() {
       order_created: 'Order Created',
       order_error: 'Order Error',
       system_error: 'System Error',
+      trial_error: 'Trial Error',
       trial_start_error: 'Trial Start Error',
+      subscription_error: 'Subscription Error',
       checkout_error: 'Checkout Error',
       client_error: 'Client Error'
     }
@@ -308,7 +310,9 @@ export default function SystemLogsPage() {
                   <option value="order_error">Order Error</option>
                 </optgroup>
                 <optgroup label="Onboarding">
+                  <option value="trial_error">Trial Error</option>
                   <option value="trial_start_error">Trial Start Error</option>
+                  <option value="subscription_error">Subscription Error</option>
                   <option value="checkout_error">Checkout Error</option>
                 </optgroup>
                 <optgroup label="System">
@@ -695,7 +699,7 @@ export default function SystemLogsPage() {
               </div>
             </div>
 
-            {/* Top Stores by Logs (Last 7 Days) */}
+            {/* Top Stores by Activity (Last 7 Days) */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-orange-600" />
@@ -738,27 +742,35 @@ export default function SystemLogsPage() {
                 <Calendar className="w-5 h-5 text-indigo-600" />
                 Logs by Day (Last 7 Days)
               </h3>
-              <div className="flex items-end justify-between gap-2 h-32">
-                {analytics.logsByDay.slice().reverse().map((item) => {
+              <div className="flex items-end justify-between gap-2" style={{ height: 140 }}>
+                {(() => {
+                  const chartHeight = 100 // pixels for bar area
                   const maxCount = Math.max(...analytics.logsByDay.map(d => d.count))
-                  const heightPercent = maxCount > 0 ? (item.count / maxCount) * 100 : 0
-                  const date = new Date(item.date)
-                  return (
-                    <div key={item.date} className="flex flex-col items-center flex-1">
-                      <span className="text-xs text-gray-600 mb-1">{item.count.toLocaleString()}</span>
-                      <div 
-                        className="w-full bg-indigo-500 rounded-t-sm min-h-[4px]" 
-                        style={{ height: `${Math.max(heightPercent, 4)}%` }}
-                      />
-                      <span className="text-xs text-gray-500 mt-2">
-                        {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                  )
-                })}
+                  
+                  return analytics.logsByDay.slice().reverse().map((item) => {
+                    // Calculate height in pixels (not percentage) for accurate rendering
+                    const heightPx = maxCount > 0 
+                      ? Math.max((item.count / maxCount) * chartHeight, item.count > 0 ? 4 : 2)
+                      : 2
+                    const date = new Date(item.date)
+                    
+                    return (
+                      <div key={item.date} className="flex flex-col items-center flex-1">
+                        <span className="text-xs text-gray-600 mb-1">{item.count.toLocaleString()}</span>
+                        <div 
+                          className="w-full bg-indigo-500 rounded-t-sm" 
+                          style={{ height: heightPx }}
+                        />
+                        <span className="text-xs text-gray-500 mt-2">
+                          {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             </div>
           )}

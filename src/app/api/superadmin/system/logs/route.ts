@@ -109,11 +109,14 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where: { logType: 'storefront_error' } })
     ])
 
-    // Get top slugs with most logs (last 7 days)
+    // Get top slugs with most activity (last 7 days)
+    // Exclude obvious hack attempts (files with extensions like .php, .png, .xml, etc.)
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     
-    const topSlugsByLogs = await prisma.systemLog.groupBy({
+    // First get all slugs, then filter out file extensions in JS
+    // (MongoDB doesn't support regex NOT CONTAINS easily in groupBy)
+    const allSlugsByLogs = await prisma.systemLog.groupBy({
       by: ['slug'],
       where: {
         slug: { not: null },
@@ -121,8 +124,25 @@ export async function GET(request: NextRequest) {
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
-      take: 10
+      take: 50 // Get more to filter
     })
+    
+    // Filter out obvious non-store slugs (hack attempts, files, etc.)
+    const suspiciousPatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
+    const suspiciousExact = ['wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator', 'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config', 'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug', 'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts', 'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json', 'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon', 'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain', 'clientaccesspolicy']
+    const topSlugsByLogs = allSlugsByLogs
+      .filter(item => {
+        if (!item.slug) return false
+        const slug = item.slug.toLowerCase()
+        // Exclude file extensions
+        if (suspiciousPatterns.test(slug)) return false
+        // Exclude exact matches (common hack targets)
+        if (suspiciousExact.includes(slug)) return false
+        // Exclude slugs starting with . (hidden files/folders)
+        if (slug.startsWith('.')) return false
+        return true
+      })
+      .slice(0, 10)
 
     // Get logs by day (last 7 days) - using Prisma groupBy workaround
     // Since MongoDB doesn't support DATE() function, we'll fetch recent logs and aggregate in JS
