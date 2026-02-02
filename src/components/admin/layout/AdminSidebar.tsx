@@ -65,7 +65,19 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const searchParams = useSearchParams()
   const { data: session } = useSession()
   
-  const { subscription } = useBusiness()
+  const { subscription, currentBusiness } = useBusiness()
+  
+  // Helper to check trial status
+  const getTrialInfo = () => {
+    if (!currentBusiness?.trialEndsAt) return { isOnTrial: false, daysLeft: 0 }
+    const now = new Date()
+    const trialEnd = new Date(currentBusiness.trialEndsAt)
+    if (trialEnd <= now) return { isOnTrial: false, daysLeft: 0 }
+    const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return { isOnTrial: true, daysLeft }
+  }
+  
+  const trialInfo = getTrialInfo()
   
   const [expandedItems, setExpandedItems] = useState<string[]>(['Settings'])
   const [brandsEnabled, setBrandsEnabled] = useState(false)
@@ -601,40 +613,48 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
 
           <div className="p-4 border-t border-gray-200">
             <div className={`rounded-lg p-4 text-white ${
-              subscription.plan === 'BUSINESS' 
+              trialInfo.isOnTrial
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                : subscription.plan === 'BUSINESS' 
                 ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
                 : subscription.plan === 'PRO'
                 ? 'bg-gradient-to-r from-teal-500 to-emerald-500'
                 : 'bg-gradient-to-r from-gray-500 to-gray-600'
             }`}>
               <h3 className="font-semibold text-sm mb-1">
-                {subscription.plan === 'STARTER' 
+                {trialInfo.isOnTrial
+                  ? `Trial - ${trialInfo.daysLeft} days left`
+                  : subscription.plan === 'STARTER' 
                   ? 'Upgrade Available' 
                   : subscription.plan === 'PRO'
                   ? 'Pro Plan Active'
                   : 'Business Plan Active'}
               </h3>
               <p className="text-xs opacity-90 mb-2">
-                {subscription.plan === 'STARTER' 
+                {trialInfo.isOnTrial
+                  ? `Enjoying ${subscription.plan} features`
+                  : subscription.plan === 'STARTER' 
                   ? 'Unlock scheduling, analytics & more' 
                   : subscription.plan === 'PRO'
                   ? 'Advanced features and analytics'
                   : 'Full access with team & API'}
               </p>
               <div className="text-xs opacity-75 mb-2">
-                {subscription.plan === 'STARTER' 
+                {trialInfo.isOnTrial
+                  ? 'Upgrade before trial ends to keep features'
+                  : subscription.plan === 'STARTER' 
                   ? 'Thanks for being a Starter user!'
                   : subscription.plan === 'PRO'
                   ? 'Thanks for being a Pro user!'
                   : 'Thanks for being a Business user!'}
               </div>
-              {(subscription.plan === 'STARTER' || subscription.plan === 'PRO') && (
+              {(trialInfo.isOnTrial || subscription.plan === 'STARTER' || subscription.plan === 'PRO') && (
                 <Link 
                   href={addImpersonationParams(`/admin/stores/${businessId}/settings/billing`)}
                   className="text-xs underline hover:no-underline"
                   onClick={onClose}
                 >
-                  {subscription.plan === 'STARTER' ? 'View Plans →' : 'Upgrade to Business →'}
+                  {trialInfo.isOnTrial ? 'Upgrade Now →' : subscription.plan === 'STARTER' ? 'View Plans →' : 'Upgrade to Business →'}
                 </Link>
               )}
             </div>
