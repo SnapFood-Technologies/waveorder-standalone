@@ -41,21 +41,27 @@ export async function GET(
       orderBy: { name: 'asc' }
     })
 
-    // Get unassigned businesses (for assignment dropdown)
-    const unassignedBusinesses = await prisma.business.findMany({
+    // Get all active, non-test businesses and filter in JS (MongoDB null/undefined handling is tricky)
+    const allBusinesses = await prisma.business.findMany({
       where: { 
-        accountManagerId: null,
-        isActive: true
+        isActive: true,           // Only active
+        NOT: { testMode: true }   // Exclude test mode
       },
       select: {
         id: true,
         name: true,
         slug: true,
-        subscriptionPlan: true
+        subscriptionPlan: true,
+        accountManagerId: true
       },
       orderBy: { name: 'asc' },
-      take: 100
+      take: 200
     })
+    
+    // Filter to get unassigned (no accountManagerId or null/undefined)
+    const unassignedBusinesses = allBusinesses
+      .filter(b => !b.accountManagerId)
+      .map(({ accountManagerId, ...rest }) => rest) // Remove accountManagerId from response
 
     return NextResponse.json({
       assignedBusinesses,
