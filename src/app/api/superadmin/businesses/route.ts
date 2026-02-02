@@ -340,6 +340,8 @@ export async function GET(request: NextRequest) {
         subscriptionStatus: business.subscriptionStatus,
         isActive: business.isActive,
         testMode: business.testMode,
+        trialEndsAt: business.trialEndsAt,
+        graceEndsAt: business.graceEndsAt,
         deactivatedAt: business.deactivatedAt,
         deactivationReason: business.deactivationReason,
         currency: business.currency,

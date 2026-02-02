@@ -45,7 +45,12 @@ export default function Error({
     error.message?.includes('Network')
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8">
+    <>
+      {/* Prevent indexing of error pages */}
+      <head>
+        <meta name="robots" content="noindex, nofollow" />
+      </head>
+      <div className="min-h-screen bg-white flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="max-w-lg mx-auto text-center">
         {/* Error Visual */}
         <div className="mb-8">
@@ -112,5 +117,6 @@ export default function Error({
         </div>
       </div>
     </div>
+    </>
   )
 }
