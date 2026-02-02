@@ -94,6 +94,9 @@ model User {
   // SuperAdmin settings
   superAdminSettings SuperAdminSettings?
 
+  // Lead assignments (for SuperAdmin team)
+  assignedLeads Lead[] @relation("LeadAssignee")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -1541,6 +1544,139 @@ model ExternalSyncLog {
   @@index([businessId])
   @@index([businessId, startedAt])
   @@index([syncId, startedAt])
+}
+
+// Lead/Prospect management for SuperAdmin
+model Lead {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Contact Information
+  name        String
+  email       String?
+  phone       String?
+  company     String?    // Company/Business name
+  country     String?    // Country code or name
+  
+  // Lead Source & Tracking
+  source      LeadSource @default(WEBSITE)
+  sourceDetail String?   // Additional source info (e.g., "Contact Form", "Demo Request")
+  referredBy  String?    // Who referred them
+  
+  // Status & Priority
+  status      LeadStatus @default(NEW)
+  priority    LeadPriority @default(MEDIUM)
+  score       Int        @default(0) // Lead score (0-100)
+  
+  // Assignment
+  assignedToId String?   @db.ObjectId
+  assignedTo   User?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedAt   DateTime?
+  
+  // Business Interest
+  businessType   String?  // What type of business they want (restaurant, retail, etc.)
+  estimatedValue Float?   // Estimated potential value
+  expectedPlan   String?  // Expected subscription plan (STARTER, PRO, BUSINESS)
+  
+  // Communication
+  lastContactedAt DateTime?
+  nextFollowUpAt  DateTime?
+  contactCount    Int      @default(0)
+  
+  // Conversion Tracking
+  convertedAt     DateTime?
+  convertedToId   String?  @db.ObjectId // Business ID if converted
+  conversionNotes String?
+  
+  // Notes & Activities
+  notes       String?
+  tags        String[]
+  
+  // Metadata
+  ipAddress   String?
+  userAgent   String?
+  landingPage String?    // Which page they came from
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  // Activities/interactions log
+  activities  LeadActivity[]
+  
+  @@index([status])
+  @@index([assignedToId])
+  @@index([source])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([status, assignedToId])
+  @@index([nextFollowUpAt])
+}
+
+// Lead Activity/Interaction Log
+model LeadActivity {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  leadId      String   @db.ObjectId
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  type        LeadActivityType
+  title       String
+  description String?
+  
+  // Who performed the activity
+  performedById String? @db.ObjectId
+  performedBy   String? // Name of who did it (in case user is deleted)
+  
+  // Additional data
+  metadata    Json?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([leadId])
+  @@index([leadId, createdAt])
+}
+
+enum LeadSource {
+  WEBSITE        // Website contact form
+  DEMO_REQUEST   // Demo request
+  REFERRAL       // Referred by existing customer
+  SOCIAL         // Social media (Instagram, Facebook, etc.)
+  EMAIL          // Email outreach
+  PHONE          // Phone inquiry
+  PARTNER        // Partner referral
+  EVENT          // Trade show/event
+  ADVERTISING    // Paid advertising
+  ORGANIC        // Organic search
+  OTHER          // Other sources
+}
+
+enum LeadStatus {
+  NEW            // Just created, not yet contacted
+  CONTACTED      // Initial contact made
+  QUALIFIED      // Qualified as potential customer
+  DEMO_SCHEDULED // Demo scheduled
+  NEGOTIATING    // In negotiation/pricing discussion
+  WON            // Converted to customer
+  LOST           // Did not convert
+  NURTURING      // Long-term nurture (not ready now)
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum LeadActivityType {
+  NOTE           // General note
+  EMAIL_SENT     // Email sent to lead
+  EMAIL_RECEIVED // Email received from lead
+  CALL           // Phone call
+  MEETING        // Meeting (virtual or in-person)
+  DEMO           // Demo given
+  FOLLOW_UP      // Follow-up scheduled
+  STATUS_CHANGE  // Status changed
+  ASSIGNED       // Lead assigned to someone
+  CREATED        // Lead created
 }
 
 // System logs for tracking errors, 404s, and system events
