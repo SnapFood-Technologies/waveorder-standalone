@@ -5,14 +5,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createStripeCustomer, createTrialSubscription } from '@/lib/stripe'
 import { TRIAL_DAYS, calculateTrialEndDate, calculateGraceEndDate } from '@/lib/trial'
+import { logSystemEvent } from '@/lib/systemLog'
 
-export async function POST() {
+export async function POST(request: Request) {
+  let currentStep = 'init'
+  let userId: string | undefined
+  let userEmail: string | undefined
+  
   try {
+    currentStep = 'session'
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
+    userEmail = session.user.email
 
+    currentStep = 'find_user'
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
@@ -27,6 +35,7 @@ export async function POST() {
     if (!user) {
       return NextResponse.json({ message: 'User not found' }, { status: 404 })
     }
+    userId = user.id
 
     // Check if user has already used their trial
     if ((user as any).trialUsed) {
@@ -36,7 +45,9 @@ export async function POST() {
     }
 
     // Create Stripe customer if doesn't exist
+    currentStep = 'stripe_customer'
     let stripeCustomerId = user.stripeCustomerId
+    
     if (!stripeCustomerId) {
       const stripeCustomer = await createStripeCustomer(user.email, user.name || undefined)
       stripeCustomerId = stripeCustomer.id
@@ -48,13 +59,16 @@ export async function POST() {
     }
 
     // Create Pro subscription with 14-day trial in Stripe
+    currentStep = 'stripe_subscription'
     const subscription = await createTrialSubscription(stripeCustomerId)
 
     // Calculate trial dates
+    currentStep = 'calculate_dates'
     const trialEndsAt = calculateTrialEndDate()
     const graceEndsAt = calculateGraceEndDate(trialEndsAt)
 
     // Update user with trial info
+    currentStep = 'update_user'
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -66,6 +80,7 @@ export async function POST() {
     })
 
     // Update all user's businesses with trial info
+    currentStep = 'update_businesses'
     if (user.businesses && user.businesses.length > 0) {
       for (const bu of user.businesses) {
         await prisma.business.update({
@@ -92,8 +107,40 @@ export async function POST() {
       message: `Pro trial started successfully. You have ${TRIAL_DAYS} days to explore all Pro features.`
     })
 
-  } catch (error) {
-    console.error('Start trial error:', error)
+  } catch (error: any) {
+    // Log to system logs for SuperAdmin visibility
+    await logSystemEvent({
+      logType: 'trial_error',
+      severity: 'error',
+      endpoint: '/api/setup/start-trial',
+      method: 'POST',
+      statusCode: 500,
+      url: request.url,
+      errorMessage: error.message || 'Unknown error',
+      errorStack: error.stack?.split('\n').slice(0, 5).join('\n'),
+      metadata: {
+        step: currentStep,
+        userId,
+        userEmail,
+        errorType: error.type || error.name,
+        errorCode: error.code,
+        stripeError: error.raw?.message || null
+      }
+    })
+    
+    // Return more specific error messages
+    if (error.type === 'StripeInvalidRequestError') {
+      return NextResponse.json({ 
+        message: `Payment system error: ${error.message}` 
+      }, { status: 500 })
+    }
+    
+    if (error.code === 'resource_missing') {
+      return NextResponse.json({ 
+        message: 'Payment plan not configured. Please contact support.' 
+      }, { status: 500 })
+    }
+    
     return NextResponse.json({ 
       message: 'Failed to start trial. Please try again.' 
     }, { status: 500 })

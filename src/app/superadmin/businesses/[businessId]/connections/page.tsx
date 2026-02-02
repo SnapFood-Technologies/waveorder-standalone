@@ -277,7 +277,7 @@ export default function BusinessConnectionsPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-6">
               {availableBusinesses.length === 0 ? (
                 <div className="text-center py-12">
                   <Store className="w-12 h-12 text-gray-400 mx-auto mb-4" />

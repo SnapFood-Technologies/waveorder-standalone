@@ -179,7 +179,9 @@ export default function SystemLogsPage() {
       order_created: 'Order Created',
       order_error: 'Order Error',
       system_error: 'System Error',
+      trial_error: 'Trial Error',
       trial_start_error: 'Trial Start Error',
+      subscription_error: 'Subscription Error',
       checkout_error: 'Checkout Error',
       client_error: 'Client Error'
     }
@@ -308,7 +310,9 @@ export default function SystemLogsPage() {
                   <option value="order_error">Order Error</option>
                 </optgroup>
                 <optgroup label="Onboarding">
+                  <option value="trial_error">Trial Error</option>
                   <option value="trial_start_error">Trial Start Error</option>
+                  <option value="subscription_error">Subscription Error</option>
                   <option value="checkout_error">Checkout Error</option>
                 </optgroup>
                 <optgroup label="System">
