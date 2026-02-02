@@ -90,6 +90,60 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where: { logType: 'storefront_404' } })
     ])
 
+    // Get log type distribution for analytics
+    const logTypeDistribution = await prisma.systemLog.groupBy({
+      by: ['logType'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } }
+    })
+
+    // Get order-related stats
+    const [orderCreatedCount, orderErrorCount] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'order_created' } }),
+      prisma.systemLog.count({ where: { logType: 'order_error' } })
+    ])
+
+    // Get storefront-related stats
+    const [storefrontSuccessCount, storefrontErrorCount] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'storefront_success' } }),
+      prisma.systemLog.count({ where: { logType: 'storefront_error' } })
+    ])
+
+    // Get top slugs with most logs (last 7 days)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    const topSlugsByLogs = await prisma.systemLog.groupBy({
+      by: ['slug'],
+      where: {
+        slug: { not: null },
+        createdAt: { gte: sevenDaysAgo }
+      },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: 10
+    })
+
+    // Get logs by day (last 7 days) - using Prisma groupBy workaround
+    // Since MongoDB doesn't support DATE() function, we'll fetch recent logs and aggregate in JS
+    const recentLogs = await prisma.systemLog.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
+      orderBy: { createdAt: 'desc' }
+    })
+    
+    // Aggregate by day in JavaScript
+    const logsByDayMap = new Map<string, number>()
+    recentLogs.forEach(log => {
+      const dateKey = log.createdAt.toISOString().split('T')[0]
+      logsByDayMap.set(dateKey, (logsByDayMap.get(dateKey) || 0) + 1)
+    })
+    
+    const logsByDay = Array.from(logsByDayMap.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 7)
+
     return NextResponse.json({
       logs: logs.map(log => ({
         ...log,
@@ -107,6 +161,28 @@ export async function GET(request: NextRequest) {
         warnings: warningLogs,
         info: infoLogs,
         storefront404s
+      },
+      analytics: {
+        logTypeDistribution: logTypeDistribution.map(item => ({
+          logType: item.logType,
+          count: item._count.id
+        })),
+        orderStats: {
+          created: orderCreatedCount,
+          errors: orderErrorCount,
+          total: orderCreatedCount + orderErrorCount
+        },
+        storefrontStats: {
+          success: storefrontSuccessCount,
+          errors: storefrontErrorCount,
+          notFound: storefront404s,
+          total: storefrontSuccessCount + storefrontErrorCount + storefront404s
+        },
+        topSlugsByLogs: topSlugsByLogs.map(item => ({
+          slug: item.slug,
+          count: item._count.id
+        })),
+        logsByDay: logsByDay
       }
     })
   } catch (error) {
