@@ -31,6 +31,8 @@ interface Lead {
   nextFollowUpAt: string | null
   contactCount: number
   convertedAt: string | null
+  convertedToId: string | null
+  convertedBusiness?: { id: string; name: string; slug: string; subscriptionPlan: string; createdAt: string } | null
   notes: string | null
   tags: string[]
   createdAt: string
@@ -763,7 +765,7 @@ function CreateLeadModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To (Sales Team)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assign To</label>
               <select
                 value={formData.teamMemberId}
                 onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
@@ -860,8 +862,56 @@ function LeadDetailModal({
     estimatedValue: lead.estimatedValue?.toString() || '',
     teamMemberId: lead.teamMember?.id || '',
     notes: lead.notes || '',
-    nextFollowUpAt: lead.nextFollowUpAt ? lead.nextFollowUpAt.split('T')[0] : ''
+    nextFollowUpAt: lead.nextFollowUpAt ? lead.nextFollowUpAt.split('T')[0] : '',
+    convertedToId: lead.convertedToId || ''
   })
+  
+  // Business search state
+  const [businessSearch, setBusinessSearch] = useState('')
+  const [businessResults, setBusinessResults] = useState<Array<{ id: string; name: string; slug: string; email: string | null; subscriptionPlan: string }>>([])
+  const [searchingBusiness, setSearchingBusiness] = useState(false)
+  const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string; slug: string } | null>(
+    lead.convertedBusiness || null
+  )
+  
+  // Search for businesses
+  const searchBusinesses = async (query: string) => {
+    if (query.length < 2) {
+      setBusinessResults([])
+      return
+    }
+    setSearchingBusiness(true)
+    try {
+      const res = await fetch(`/api/superadmin/leads/search-business?q=${encodeURIComponent(query)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBusinessResults(data.businesses || [])
+      }
+    } catch (error) {
+      console.error('Error searching businesses:', error)
+    } finally {
+      setSearchingBusiness(false)
+    }
+  }
+  
+  // Auto-search by email when status changes to WON
+  const checkEmailMatch = async () => {
+    if (lead.email && !selectedBusiness) {
+      try {
+        const res = await fetch(`/api/superadmin/leads/search-business?email=${encodeURIComponent(lead.email)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.exactMatch && data.businesses.length > 0) {
+            setSelectedBusiness(data.businesses[0])
+            setFormData(prev => ({ ...prev, convertedToId: data.businesses[0].id }))
+            toast.success(`Auto-matched with business: ${data.businesses[0].name}`)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking email match:', error)
+      }
+    }
+  }
 
   // Activity form
   const [showActivityForm, setShowActivityForm] = useState(false)
@@ -880,7 +930,8 @@ function LeadDetailModal({
         body: JSON.stringify({
           ...formData,
           estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : null,
-          teamMemberId: formData.teamMemberId || null
+          teamMemberId: formData.teamMemberId || null,
+          convertedToId: formData.status === 'WON' ? (formData.convertedToId || null) : null
         })
       })
 
@@ -1081,7 +1132,14 @@ function LeadDetailModal({
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                       <select
                         value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        onChange={(e) => {
+                          const newStatus = e.target.value
+                          setFormData({ ...formData, status: newStatus })
+                          // Auto-check for matching business when marking as WON
+                          if (newStatus === 'WON' && !selectedBusiness) {
+                            checkEmailMatch()
+                          }
+                        }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       >
                         {Object.entries(statusConfig).map(([key, { label }]) => (
@@ -1102,7 +1160,7 @@ function LeadDetailModal({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To (Sales Team)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
                       <select
                         value={formData.teamMemberId}
                         onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
@@ -1125,6 +1183,72 @@ function LeadDetailModal({
                       </select>
                     </div>
                   </div>
+
+                  {/* Business Link (shown when status is WON) */}
+                  {formData.status === 'WON' && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <label className="block text-sm font-medium text-green-800 mb-2">
+                        🎉 Link to Converted Business
+                      </label>
+                      {selectedBusiness ? (
+                        <div className="flex items-center justify-between bg-white border border-green-300 rounded-lg p-3">
+                          <div>
+                            <p className="font-medium text-gray-900">{selectedBusiness.name}</p>
+                            <p className="text-sm text-gray-500">/{selectedBusiness.slug}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedBusiness(null)
+                              setFormData(prev => ({ ...prev, convertedToId: '' }))
+                            }}
+                            className="text-red-500 hover:text-red-700 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search business by name, slug, or email..."
+                            value={businessSearch}
+                            onChange={(e) => {
+                              setBusinessSearch(e.target.value)
+                              searchBusinesses(e.target.value)
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                          />
+                          {searchingBusiness && (
+                            <p className="text-sm text-gray-500 mt-1">Searching...</p>
+                          )}
+                          {businessResults.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                              {businessResults.map(business => (
+                                <button
+                                  key={business.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedBusiness(business)
+                                    setFormData(prev => ({ ...prev, convertedToId: business.id }))
+                                    setBusinessSearch('')
+                                    setBusinessResults([])
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                                >
+                                  <p className="font-medium text-gray-900">{business.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    /{business.slug} • {business.subscriptionPlan}
+                                    {business.email && ` • ${business.email}`}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -1218,6 +1342,38 @@ function LeadDetailModal({
                       </div>
                     </div>
                   </div>
+
+                  {/* Converted Business */}
+                  {(lead.convertedBusiness || lead.status === 'WON') && (
+                    <div className="col-span-2 bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-green-800 mb-2">🎉 Converted Customer</h4>
+                      {lead.convertedBusiness ? (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">{lead.convertedBusiness.name}</p>
+                            <p className="text-sm text-gray-500">
+                              /{lead.convertedBusiness.slug} • {lead.convertedBusiness.subscriptionPlan}
+                            </p>
+                            {lead.convertedAt && (
+                              <p className="text-xs text-green-600 mt-1">
+                                Converted on {new Date(lead.convertedAt).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                          <a
+                            href={`/superadmin/businesses?search=${lead.convertedBusiness.slug}`}
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            View Business
+                          </a>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-green-700">
+                          Status is WON but no business linked yet. Click Edit to link a business.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {lead.notes && (
                     <div className="col-span-2">

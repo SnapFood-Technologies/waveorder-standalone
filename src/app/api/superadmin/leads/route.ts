@@ -115,13 +115,10 @@ export async function GET(request: NextRequest) {
       return acc
     }, {} as Record<string, number>)
 
-    // Get team members for assignment dropdown (from TeamMember model)
+    // Get all active team members for assignment dropdown
     const teamMembersFromModel = await prisma.teamMember.findMany({
       where: { 
-        isActive: true,
-        role: {
-          in: ['SALES_REPRESENTATIVE', 'ACCOUNT_EXECUTIVE', 'ACCOUNT_MANAGER', 'SALES_MANAGER', 'CUSTOMER_SUCCESS_MANAGER']
-        }
+        isActive: true
       },
       select: {
         id: true,
