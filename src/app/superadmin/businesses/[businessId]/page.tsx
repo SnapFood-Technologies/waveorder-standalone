@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
+import toast from 'react-hot-toast'
 
 interface BusinessDetails {
   id: string
@@ -252,11 +253,11 @@ export default function BusinessDetailsPage() {
         const data = await response.json()
         setBusiness(data.business)
       } else {
-        alert('Failed to update setting')
+        toast.error('Failed to update setting')
       }
     } catch (error) {
       console.error('Error toggling setting:', error)
-      alert('Failed to update setting')
+      toast.error('Failed to update setting')
     }
   }
 
@@ -276,11 +277,11 @@ export default function BusinessDetailsPage() {
         const data = await response.json()
         setBusiness(data.business)
       } else {
-        alert('Failed to update test mode')
+        toast.error('Failed to update test mode')
       }
     } catch (error) {
       console.error('Error toggling test mode:', error)
-      alert('Failed to update test mode')
+      toast.error('Failed to update test mode')
     }
   }
 

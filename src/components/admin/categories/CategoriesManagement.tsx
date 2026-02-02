@@ -17,6 +17,7 @@ import {
   Crown
 } from 'lucide-react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface Category {
   id: string
@@ -183,11 +184,11 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
         setCategoryToDelete(null)
       } else {
         const errorData = await response.json()
-        alert(errorData.message || 'Error deleting category')
+        toast.error(errorData.message || 'Error deleting category')
       }
     } catch (error) {
       console.error('Error deleting category:', error)
-      alert('Error deleting category. Please try again.')
+      toast.error('Error deleting category. Please try again.')
     } finally {
       setIsDeleting(false)
     }
@@ -874,12 +875,12 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
           })
           onCancel() // Close the form
         } else {
-          alert(errorData.message || 'Error saving category')
+          toast.error(errorData.message || 'Error saving category')
         }
       }
     } catch (error) {
       console.error('Error saving category:', error)
-      alert('Error saving category. Please try again.')
+      toast.error('Error saving category. Please try again.')
     } finally {
       setSaving(false)
     }

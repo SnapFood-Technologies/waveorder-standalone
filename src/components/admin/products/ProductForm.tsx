@@ -26,6 +26,7 @@ import {
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useImpersonation } from '@/lib/impersonation'
+import toast from 'react-hot-toast'
 
 interface ProductFormProps {
   businessId: string
@@ -486,7 +487,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
             plan: errorData.plan
           })
         } else {
-          alert(errorData.message || 'Error saving product')
+          toast.error(errorData.message || 'Error saving product')
         }
       }
     } catch (error) {

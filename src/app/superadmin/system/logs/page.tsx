@@ -178,7 +178,10 @@ export default function SystemLogsPage() {
       products_error: 'Products Error',
       order_created: 'Order Created',
       order_error: 'Order Error',
-      system_error: 'System Error'
+      system_error: 'System Error',
+      trial_start_error: 'Trial Start Error',
+      checkout_error: 'Checkout Error',
+      client_error: 'Client Error'
     }
     return labels[logType] || logType
   }
@@ -304,8 +307,13 @@ export default function SystemLogsPage() {
                   <option value="order_created">Order Created</option>
                   <option value="order_error">Order Error</option>
                 </optgroup>
+                <optgroup label="Onboarding">
+                  <option value="trial_start_error">Trial Start Error</option>
+                  <option value="checkout_error">Checkout Error</option>
+                </optgroup>
                 <optgroup label="System">
                   <option value="system_error">System Error</option>
+                  <option value="client_error">Client Error</option>
                 </optgroup>
               </select>
             </div>

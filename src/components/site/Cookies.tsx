@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Cookie, Settings, Check, X, Shield, BarChart3, Palette, Target, Eye, Globe, Smartphone } from 'lucide-react'
+import toast, { Toaster } from 'react-hot-toast'
 
 export default function Cookies() {
   const [preferences, setPreferences] = useState({
@@ -27,7 +28,7 @@ export default function Cookies() {
   const savePreferences = () => {
     // In a real implementation, this would save to localStorage or send to server
     setShowPreferences(false)
-    alert('Cookie preferences saved successfully!')
+    toast.success('Cookie preferences saved successfully!')
   }
 
   const sections = [
