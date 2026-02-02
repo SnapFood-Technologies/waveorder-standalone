@@ -33,6 +33,7 @@ export async function GET() {
         whatsappNumber: true,
         address: true,
         createdByAdmin: true,
+        trialEndsAt: true,
         users: {
           where: {
             role: 'OWNER'
@@ -108,7 +109,8 @@ export async function GET() {
         createdByAdmin: business.createdByAdmin,
         authMethod,
         isMultiStore,
-        storeCount
+        storeCount,
+        trialEndsAt: business.trialEndsAt?.toISOString() || null
       }
     })
 

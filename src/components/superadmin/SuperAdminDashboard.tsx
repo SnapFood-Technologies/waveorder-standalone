@@ -54,6 +54,22 @@ interface RecentBusiness {
   authMethod: string;
   isMultiStore?: boolean;
   storeCount?: number;
+  trialEndsAt?: string | null;
+}
+
+// Helper to check if business is on trial
+function isOnTrial(trialEndsAt?: string | null): boolean {
+  if (!trialEndsAt) return false;
+  return new Date(trialEndsAt) > new Date();
+}
+
+// Helper to get trial days remaining
+function getTrialDaysRemaining(trialEndsAt?: string | null): number {
+  if (!trialEndsAt) return 0;
+  const now = new Date();
+  const trialEnd = new Date(trialEndsAt);
+  if (trialEnd <= now) return 0;
+  return Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 interface DateRange {
@@ -514,18 +530,27 @@ export function SuperAdminDashboard() {
                       </p>
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        business.subscriptionPlan === 'PRO' 
-                          ? 'bg-purple-100 text-purple-700' 
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {business.subscriptionPlan}
-                        {business.billingType && (
-                          <span className="ml-1 text-gray-600">
-                            ({business.billingType === 'free' ? 'Free' : business.billingType === 'monthly' ? 'Monthly' : 'Yearly'})
+                      <div className="flex items-center justify-center gap-1 flex-wrap">
+                        {isOnTrial(business.trialEndsAt) && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">
+                            Trial ({getTrialDaysRemaining(business.trialEndsAt)}d)
                           </span>
                         )}
-                      </span>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          business.subscriptionPlan === 'BUSINESS'
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : business.subscriptionPlan === 'PRO' 
+                            ? 'bg-purple-100 text-purple-700' 
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {business.subscriptionPlan}
+                          {business.billingType && (
+                            <span className="ml-1 text-gray-600">
+                              ({business.billingType === 'free' ? 'Free' : business.billingType === 'monthly' ? 'Monthly' : 'Yearly'})
+                            </span>
+                          )}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-3 px-3 text-right">
                       <span className="text-sm text-gray-500">

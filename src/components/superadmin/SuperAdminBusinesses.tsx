@@ -66,6 +66,8 @@ interface Business {
   marketplaceRole?: 'originator' | 'supplier' | null;
   isMultiStore?: boolean;
   storeCount?: number;
+  trialEndsAt?: string | null;
+  graceEndsAt?: string | null;
   owner: {
     id: string;
     name: string;
@@ -80,6 +82,21 @@ interface Business {
     totalProducts: number;
     supplierProductCount?: number; // For originators: total products from suppliers
   };
+}
+
+// Helper to check if business is on trial
+function isOnTrial(business: Business): boolean {
+  if (!business.trialEndsAt) return false;
+  return new Date(business.trialEndsAt) > new Date();
+}
+
+// Helper to get trial days remaining
+function getTrialDaysRemaining(business: Business): number {
+  if (!business.trialEndsAt) return 0;
+  const now = new Date();
+  const trialEnd = new Date(business.trialEndsAt);
+  if (trialEnd <= now) return 0;
+  return Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 interface CreateBusinessData {
@@ -751,6 +768,11 @@ export function SuperAdminBusinesses() {
                       
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
+                          {isOnTrial(business) && (
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                              Trial ({getTrialDaysRemaining(business)}d)
+                            </span>
+                          )}
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             business.subscriptionPlan === 'BUSINESS'
                               ? 'bg-indigo-100 text-indigo-800'
@@ -1068,6 +1090,11 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             {business.testMode && (
               <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-orange-100 text-orange-800">
                 Test Mode
+              </span>
+            )}
+            {isOnTrial(business) && (
+              <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-amber-100 text-amber-800">
+                Trial ({getTrialDaysRemaining(business)} days left)
               </span>
             )}
             <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
