@@ -75,15 +75,6 @@ export async function GET(request: NextRequest) {
               avatar: true
             }
           },
-          convertedTo: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              subscriptionPlan: true,
-              createdAt: true
-            }
-          },
           activities: {
             orderBy: { createdAt: 'desc' },
             take: 3
@@ -101,6 +92,31 @@ export async function GET(request: NextRequest) {
       }),
       prisma.lead.count({ where: whereConditions })
     ])
+
+    // Fetch converted businesses for leads that have convertedToId
+    const convertedBusinessIds = leads
+      .filter(lead => lead.convertedToId)
+      .map(lead => lead.convertedToId as string)
+    
+    const convertedBusinesses = convertedBusinessIds.length > 0
+      ? await prisma.business.findMany({
+          where: { id: { in: convertedBusinessIds } },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            subscriptionPlan: true,
+            createdAt: true
+          }
+        })
+      : []
+    
+    // Map businesses to leads
+    const businessMap = new Map(convertedBusinesses.map(b => [b.id, b]))
+    const leadsWithBusinesses = leads.map(lead => ({
+      ...lead,
+      convertedTo: lead.convertedToId ? businessMap.get(lead.convertedToId) || null : null
+    }))
 
     // Get summary statistics
     const stats = await prisma.lead.groupBy({
@@ -156,7 +172,7 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json({
-      leads,
+      leads: leadsWithBusinesses,
       pagination: {
         page,
         limit,
