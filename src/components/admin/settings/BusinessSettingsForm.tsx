@@ -96,7 +96,7 @@ interface BusinessSettings {
 
 // Country detection utility
 // Updated Country detection utility
-function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'BB' | 'DEFAULT' {
+function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'BB' | 'BH' | 'GB' | 'DEFAULT' {
   // TODO: The testing override below was commented out because it caused a bug where
   // Greek users managing non-Greek businesses (e.g., Barbados) would see Greek addresses
   // instead of the business's country addresses. The detection should be based on
@@ -150,6 +150,16 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
       return 'BB'
     }
     
+    // Bahrain boundaries: approximately 25.5-26.4°N, 50.3-50.9°E
+    if (lat >= 25.5 && lat <= 26.4 && lng >= 50.3 && lng <= 50.9) {
+      return 'BH'
+    }
+    
+    // United Kingdom boundaries: approximately 49.9-60.9°N, -8.6 to 1.8°E
+    if (lat >= 49.9 && lat <= 60.9 && lng >= -8.6 && lng <= 1.8) {
+      return 'GB'
+    }
+    
     // United States boundaries: approximately 24-71°N, -180 to -66°W
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
       return 'US'
@@ -161,9 +171,11 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
   const phone = business.phone
   
   if (whatsapp?.startsWith('+355') || phone?.startsWith('+355')) return 'AL'
+  if (whatsapp?.startsWith('+973') || phone?.startsWith('+973')) return 'BH' // Bahrain
   if (whatsapp?.startsWith('+30') || phone?.startsWith('+30')) return 'GR'
   if (whatsapp?.startsWith('+39') || phone?.startsWith('+39')) return 'IT'
   if (whatsapp?.startsWith('+34') || phone?.startsWith('+34')) return 'ES'
+  if (whatsapp?.startsWith('+44') || phone?.startsWith('+44')) return 'GB' // United Kingdom
   if (whatsapp?.startsWith('+1246') || phone?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
   if (whatsapp?.startsWith('+1') || phone?.startsWith('+1')) return 'US'
   
@@ -183,8 +195,10 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       if (timezone === 'Europe/Tirane') return 'AL'
+      if (timezone === 'Asia/Bahrain') return 'BH'
       if (timezone === 'Europe/Rome') return 'IT'
       if (timezone === 'Europe/Madrid') return 'ES'
+      if (timezone === 'Europe/London') return 'GB'
     } catch (error) {
       // Timezone detection failed
     }
@@ -192,9 +206,20 @@ function detectBusinessCountry(business: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' 
   
   // FALLBACK: Check business language and currency
   if (business.currency === 'ALL' || business.language === 'sq') return 'AL'
+  if (business.currency === 'BHD') return 'BH' // Bahraini Dinar
+  if (business.currency === 'GBP') return 'GB' // British Pound
   if (business.currency === 'EUR' && business.language === 'el') return 'GR'
   if (business.currency === 'EUR' && business.language === 'it') return 'IT'
   if (business.currency === 'EUR' && business.language === 'es') return 'ES'
+  
+  // Check if country is already set on business
+  if (business.country === 'BH') return 'BH'
+  if (business.country === 'GB') return 'GB'
+  if (business.country === 'AL') return 'AL'
+  if (business.country === 'GR') return 'GR'
+  if (business.country === 'IT') return 'IT'
+  if (business.country === 'ES') return 'ES'
+  if (business.country === 'BB') return 'BB'
   
   return 'US'
 }
@@ -258,6 +283,8 @@ function AddressAutocomplete({
       switch (detectedCountry) {
         case 'AL':
           return ['al']
+        case 'BH':
+          return ['bh'] // Bahrain
         case 'GR':
           return ['gr', 'al', 'it', 'us']
         case 'IT':
@@ -265,11 +292,13 @@ function AddressAutocomplete({
         case 'ES':
           return ['es']
         case 'BB':
-          return ['bb'] // Barbados addresses only
+          return ['bb'] // Barbados
+        case 'GB':
+          return ['gb'] // United Kingdom
         case 'US':
           return ['us']
         default:
-          return ['us']
+          return [] // Allow all countries if not detected
       }
     }
     
