@@ -1777,6 +1777,8 @@ const getCurrencySymbol = (currency: string) => {
     case 'EUR': return '€'
     case 'ALL': return 'L'
     case 'BBD': return 'Bds$'
+    case 'BHD': return 'BD'  // Bahraini Dinar
+    case 'GBP': return '£'   // British Pound
     default: return '$'
   }
 }
