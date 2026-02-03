@@ -32,7 +32,7 @@ interface Lead {
   contactCount: number
   convertedAt: string | null
   convertedToId: string | null
-  convertedBusiness?: { id: string; name: string; slug: string; subscriptionPlan: string; createdAt: string } | null
+  convertedTo?: { id: string; name: string; slug: string; subscriptionPlan: string; createdAt: string } | null
   notes: string | null
   tags: string[]
   createdAt: string
@@ -871,7 +871,7 @@ function LeadDetailModal({
   const [businessResults, setBusinessResults] = useState<Array<{ id: string; name: string; slug: string; email: string | null; subscriptionPlan: string }>>([])
   const [searchingBusiness, setSearchingBusiness] = useState(false)
   const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string; slug: string } | null>(
-    lead.convertedBusiness || null
+    lead.convertedTo || null
   )
   
   // Search for businesses
@@ -1344,15 +1344,15 @@ function LeadDetailModal({
                   </div>
 
                   {/* Converted Business */}
-                  {(lead.convertedBusiness || lead.status === 'WON') && (
+                  {(lead.convertedTo || lead.status === 'WON') && (
                     <div className="col-span-2 bg-green-50 border border-green-200 rounded-lg p-4">
                       <h4 className="text-sm font-medium text-green-800 mb-2">🎉 Converted Customer</h4>
-                      {lead.convertedBusiness ? (
+                      {lead.convertedTo ? (
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900">{lead.convertedBusiness.name}</p>
+                            <p className="font-medium text-gray-900">{lead.convertedTo.name}</p>
                             <p className="text-sm text-gray-500">
-                              /{lead.convertedBusiness.slug} • {lead.convertedBusiness.subscriptionPlan}
+                              /{lead.convertedTo.slug} • {lead.convertedTo.subscriptionPlan}
                             </p>
                             {lead.convertedAt && (
                               <p className="text-xs text-green-600 mt-1">
@@ -1361,7 +1361,7 @@ function LeadDetailModal({
                             )}
                           </div>
                           <a
-                            href={`/superadmin/businesses?search=${lead.convertedBusiness.slug}`}
+                            href={`/superadmin/businesses/${lead.convertedTo.id}`}
                             className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
                           >
                             View Business
