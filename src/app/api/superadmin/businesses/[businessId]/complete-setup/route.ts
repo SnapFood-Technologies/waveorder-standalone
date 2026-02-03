@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { logSystemEvent } from '@/lib/systemLog'
 import bcrypt from 'bcryptjs'
 
 export async function POST(
@@ -91,13 +90,24 @@ export async function POST(
     // Update owner password if provided
     let passwordUpdated = false
     if (data.ownerId && data.newPassword) {
-      // Verify the owner exists and uses email auth
+      // Verify the owner exists and check auth method
       const owner = await prisma.user.findUnique({
         where: { id: data.ownerId },
-        select: { id: true, authMethod: true }
+        select: { 
+          id: true, 
+          password: true,
+          accounts: { select: { provider: true } }
+        }
       })
 
-      if (owner && owner.authMethod !== 'google' && owner.authMethod !== 'oauth') {
+      // Determine auth method (same logic as other endpoints)
+      let isOAuthUser = false
+      if (owner?.accounts && owner.accounts.length > 0) {
+        isOAuthUser = true // Has OAuth accounts (google or other)
+      }
+
+      // Only update password for non-OAuth users (email or magic-link)
+      if (owner && !isOAuthUser) {
         const hashedPassword = await bcrypt.hash(data.newPassword, 12)
         await prisma.user.update({
           where: { id: data.ownerId },
@@ -108,18 +118,11 @@ export async function POST(
     }
 
     // Log the action
-    await logSystemEvent({
-      logType: 'admin_action',
-      message: `Setup completed for business: ${updatedBusiness.name}`,
-      severity: 'info',
-      metadata: {
-        businessId,
-        businessName: updatedBusiness.name,
-        completedBy: session.user.email,
-        fieldsUpdated: Object.keys(updateData),
-        markedComplete: data.markAsComplete,
-        passwordUpdated
-      }
+    console.log(`[SuperAdmin] Setup completed for business: ${updatedBusiness.name} by ${session.user.email}`, {
+      businessId,
+      fieldsUpdated: Object.keys(updateData),
+      markedComplete: data.markAsComplete,
+      passwordUpdated
     })
 
     return NextResponse.json({ 
