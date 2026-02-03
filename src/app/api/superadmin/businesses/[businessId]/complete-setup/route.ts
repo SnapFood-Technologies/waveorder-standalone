@@ -117,26 +117,37 @@ export async function POST(
     if (data.billingType) {
       updateData.billingType = data.billingType
       
+      // Check if already on active trial
+      const isCurrentlyOnTrial = existingBusiness.trialEndsAt && 
+        new Date(existingBusiness.trialEndsAt) > new Date()
+      
       // Handle trial setting
       if (data.billingType === 'trial') {
-        // Set 14-day trial
-        const trialEnd = new Date()
-        trialEnd.setDate(trialEnd.getDate() + 14)
-        updateData.trialEndsAt = trialEnd
-        
-        // Also update the owner's trial fields
-        if (owner) {
-          await prisma.user.update({
-            where: { id: owner.id },
-            data: {
-              trialUsed: true,
-              trialEndsAt: trialEnd,
-              graceEndsAt: null
-            }
-          })
+        // Only set new trial if NOT already on trial
+        if (!isCurrentlyOnTrial) {
+          const trialEnd = new Date()
+          trialEnd.setDate(trialEnd.getDate() + 14)
+          updateData.trialEndsAt = trialEnd
+          
+          // Also update the owner's trial fields
+          if (owner) {
+            await prisma.user.update({
+              where: { id: owner.id },
+              data: {
+                trialUsed: true,
+                trialEndsAt: trialEnd,
+                graceEndsAt: null
+              }
+            })
+          }
         }
+        // If already on trial, keep existing trial dates (no changes)
       } else if (data.billingType === 'free') {
         // Clear trial dates for free plans
+        updateData.trialEndsAt = null
+        updateData.graceEndsAt = null
+      } else if (data.billingType === 'monthly' || data.billingType === 'yearly') {
+        // For paid plans, clear trial dates
         updateData.trialEndsAt = null
         updateData.graceEndsAt = null
       }

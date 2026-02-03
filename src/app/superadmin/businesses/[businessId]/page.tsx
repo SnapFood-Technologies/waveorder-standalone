@@ -1606,6 +1606,16 @@ function CompleteSetupModal({
 
   const phoneData = extractPhonePrefix(business.whatsappNumber || '')
 
+  // Determine current billing type based on business state
+  const getCurrentBillingType = (): 'monthly' | 'yearly' | 'free' | 'trial' => {
+    // If on active trial, it's trial
+    if (business.trialEndsAt && new Date(business.trialEndsAt) > new Date()) {
+      return 'trial'
+    }
+    // Otherwise use stored billingType or default to free
+    return (business as any).billingType || 'free'
+  }
+
   const [formData, setFormData] = useState({
     name: business.name || '',
     slug: business.slug || '',
@@ -1621,7 +1631,7 @@ function CompleteSetupModal({
     timezone: business.timezone || 'UTC',
     language: business.language || 'en',
     subscriptionPlan: business.subscriptionPlan || 'STARTER',
-    billingType: (business as any).billingType || 'free' as 'monthly' | 'yearly' | 'free' | 'trial',
+    billingType: getCurrentBillingType(),
     deliveryEnabled: business.deliveryEnabled ?? true,
     pickupEnabled: business.pickupEnabled ?? true,
     deliveryFee: business.deliveryFee?.toString() || '0',
@@ -1973,14 +1983,22 @@ function CompleteSetupModal({
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Subscription Plan</h3>
             
-            {/* Show current status if exists */}
+            {/* Show current status */}
             {(hasStripeSubscription || isOnTrial) && (
-              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
+              <div className={`mb-3 p-3 rounded-lg border ${isOnTrial ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                <p className={`text-sm ${isOnTrial ? 'text-amber-800' : 'text-blue-800'}`}>
                   <Info className="w-4 h-4 inline mr-1" />
-                  {hasStripeSubscription && 'This business has an existing Stripe subscription. '}
-                  {isOnTrial && `Currently on trial (ends ${new Date(business.trialEndsAt!).toLocaleDateString()}). `}
-                  Changes here will update the database only.
+                  {isOnTrial && (
+                    <>
+                      <strong>Currently on {business.subscriptionPlan} Trial</strong> — ends {new Date(business.trialEndsAt!).toLocaleDateString()}.
+                      {' '}Keep "Trial" selected to maintain current trial, or change to convert to paid/free.
+                    </>
+                  )}
+                  {hasStripeSubscription && !isOnTrial && (
+                    <>
+                      <strong>Active Stripe Subscription</strong> — changes here update database only, not Stripe.
+                    </>
+                  )}
                 </p>
               </div>
             )}
@@ -2058,10 +2076,14 @@ function CompleteSetupModal({
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                {formData.billingType === 'free' && 'No Stripe subscription - free access managed by admin.'}
-                {formData.billingType === 'trial' && 'Sets 14-day trial period. User can upgrade anytime.'}
-                {formData.billingType === 'monthly' && 'Standard monthly billing through Stripe.'}
-                {formData.billingType === 'yearly' && 'Annual billing with discount through Stripe.'}
+                {formData.billingType === 'free' && '✓ Free access managed by admin. No payment required.'}
+                {formData.billingType === 'trial' && (
+                  isOnTrial 
+                    ? '✓ Keep current trial. No changes to trial end date.'
+                    : '✓ Starts new 14-day trial. User can upgrade anytime.'
+                )}
+                {formData.billingType === 'monthly' && '✓ Standard monthly billing. Requires Stripe setup.'}
+                {formData.billingType === 'yearly' && '✓ Annual billing with discount. Requires Stripe setup.'}
               </p>
             </div>
           </div>
