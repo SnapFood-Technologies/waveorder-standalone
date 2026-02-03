@@ -75,6 +75,15 @@ export async function GET(request: NextRequest) {
               avatar: true
             }
           },
+          convertedTo: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              subscriptionPlan: true,
+              createdAt: true
+            }
+          },
           activities: {
             orderBy: { createdAt: 'desc' },
             take: 3

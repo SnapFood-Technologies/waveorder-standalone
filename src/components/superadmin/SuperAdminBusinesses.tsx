@@ -610,7 +610,11 @@ export function SuperAdminBusinesses() {
     <option value="all">All Countries</option>
     <option value="AL">Albania</option>
     <option value="BB">Barbados</option>
+    <option value="BH">Bahrain</option>
     <option value="GR">Greece</option>
+    <option value="IT">Italy</option>
+    <option value="ES">Spain</option>
+    <option value="GB">United Kingdom</option>
     <option value="US">United States</option>
   </select>
 

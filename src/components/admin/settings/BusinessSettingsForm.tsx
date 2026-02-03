@@ -1089,8 +1089,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   <option value="">Select country</option>
                   <option value="AL">Albania</option>
                   <option value="BB">Barbados</option>
+                  <option value="BH">Bahrain</option>
                   <option value="GR">Greece</option>
+                  <option value="IT">Italy</option>
                   <option value="ES">Spain</option>
+                  <option value="GB">United Kingdom</option>
                   <option value="US">USA</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">

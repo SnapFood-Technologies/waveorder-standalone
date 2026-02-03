@@ -121,9 +121,9 @@ export default function HealthStatusPage() {
   const overallStatus = downCount > 0 ? 'critical' : degradedCount > 0 ? 'warning' : 'healthy'
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Activity className="w-7 h-7 text-teal-600" />
@@ -142,7 +142,7 @@ export default function HealthStatusPage() {
       </div>
 
       {/* Overall Status Card */}
-      <div className={`rounded-xl p-6 mb-6 ${
+      <div className={`rounded-xl p-6 ${
         overallStatus === 'healthy' 
           ? 'bg-green-500 bg-gradient-to-r from-green-500 to-emerald-500' 
           : overallStatus === 'warning'
@@ -264,7 +264,7 @@ export default function HealthStatusPage() {
       </div>
 
       {/* External Status Pages */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
         <h4 className="text-sm font-medium text-blue-800 mb-3">External Status Pages</h4>
         <div className="flex flex-wrap gap-3">
           <a 
