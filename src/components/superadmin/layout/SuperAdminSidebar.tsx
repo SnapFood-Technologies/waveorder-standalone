@@ -123,6 +123,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Debug Tools', 
           href: '/superadmin/system/debug', 
           icon: Bug
+        },
+        { 
+          name: 'Health Status', 
+          href: '/superadmin/system/health', 
+          icon: Activity
         }
       ]
     },

@@ -19,13 +19,53 @@ export async function POST(
     const { businessId } = await params
     const data = await request.json()
 
-    // Get the existing business
+    // Get the existing business with owner
     const existingBusiness = await prisma.business.findUnique({
-      where: { id: businessId }
+      where: { id: businessId },
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          include: { user: true },
+          take: 1
+        }
+      }
     })
 
     if (!existingBusiness) {
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    }
+
+    const owner = existingBusiness.users[0]?.user
+
+    // Validate required fields
+    if (data.name !== undefined && !data.name?.trim()) {
+      return NextResponse.json({ message: 'Business name is required' }, { status: 400 })
+    }
+
+    if (data.whatsappNumber !== undefined && !data.whatsappNumber?.trim()) {
+      return NextResponse.json({ message: 'WhatsApp number is required' }, { status: 400 })
+    }
+
+    if (data.address !== undefined && !data.address?.trim()) {
+      return NextResponse.json({ message: 'Business address is required' }, { status: 400 })
+    }
+
+    // Validate slug format
+    if (data.slug) {
+      if (!/^[a-z0-9-]+$/.test(data.slug)) {
+        return NextResponse.json({ message: 'Store URL can only contain lowercase letters, numbers, and hyphens' }, { status: 400 })
+      }
+      if (data.slug.length < 3) {
+        return NextResponse.json({ message: 'Store URL must be at least 3 characters' }, { status: 400 })
+      }
+    }
+
+    // Validate WhatsApp number format (basic check)
+    if (data.whatsappNumber) {
+      const cleanNumber = data.whatsappNumber.replace(/[\s-]/g, '')
+      if (!/^\+?\d{8,15}$/.test(cleanNumber)) {
+        return NextResponse.json({ message: 'Please enter a valid WhatsApp number' }, { status: 400 })
+      }
     }
 
     // Check if slug is being changed and if new slug is available
@@ -62,10 +102,44 @@ export async function POST(
       updateData.storefrontLanguage = data.language
     }
 
+    // Address coordinates and country
+    if (data.country) updateData.country = data.country
+    if (data.storeLatitude) updateData.storeLatitude = data.storeLatitude
+    if (data.storeLongitude) updateData.storeLongitude = data.storeLongitude
+
     // Subscription
     if (data.subscriptionPlan) {
       updateData.subscriptionPlan = data.subscriptionPlan
       updateData.subscriptionStatus = 'ACTIVE'
+    }
+
+    // Billing type
+    if (data.billingType) {
+      updateData.billingType = data.billingType
+      
+      // Handle trial setting
+      if (data.billingType === 'trial') {
+        // Set 14-day trial
+        const trialEnd = new Date()
+        trialEnd.setDate(trialEnd.getDate() + 14)
+        updateData.trialEndsAt = trialEnd
+        
+        // Also update the owner's trial fields
+        if (owner) {
+          await prisma.user.update({
+            where: { id: owner.id },
+            data: {
+              trialUsed: true,
+              trialEndsAt: trialEnd,
+              graceEndsAt: null
+            }
+          })
+        }
+      } else if (data.billingType === 'free') {
+        // Clear trial dates for free plans
+        updateData.trialEndsAt = null
+        updateData.graceEndsAt = null
+      }
     }
 
     // Delivery settings
@@ -90,6 +164,10 @@ export async function POST(
     // Update owner password if provided
     let passwordUpdated = false
     if (data.ownerId && data.newPassword) {
+      // Validate password length
+      if (data.newPassword.length < 6) {
+        return NextResponse.json({ message: 'Password must be at least 6 characters' }, { status: 400 })
+      }
       // Verify the owner exists and check auth method
       const owner = await prisma.user.findUnique({
         where: { id: data.ownerId },
