@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   Building2,
@@ -1496,6 +1496,87 @@ function CompleteSetupSection({
   )
 }
 
+// Address Autocomplete Component for Complete Setup
+function SetupAddressAutocomplete({ 
+  value, 
+  onChange, 
+  onCoordinatesChange,
+  onCountryChange 
+}: { 
+  value: string
+  onChange: (value: string) => void
+  onCoordinatesChange: (lat: number, lng: number) => void
+  onCountryChange?: (country: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
+    if (existingScript) {
+      const checkGoogle = () => {
+        if ((window as any).google?.maps?.places) {
+          setIsLoaded(true)
+        } else {
+          setTimeout(checkGoogle, 100)
+        }
+      }
+      checkGoogle()
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = () => setIsLoaded(true)
+    document.head.appendChild(script)
+  }, [])
+
+  useEffect(() => {
+    if (!isLoaded || !inputRef.current) return
+
+    const autocomplete = new (window as any).google.maps.places.Autocomplete(inputRef.current, {
+      types: ['address']
+    })
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      
+      if (place.formatted_address && place.geometry?.location) {
+        const lat = place.geometry.location.lat()
+        const lng = place.geometry.location.lng()
+        
+        onChange(place.formatted_address)
+        onCoordinatesChange(lat, lng)
+        
+        if (onCountryChange && place.address_components) {
+          const countryComponent = place.address_components.find(
+            (comp: any) => comp.types.includes('country')
+          )
+          if (countryComponent?.short_name) {
+            onCountryChange(countryComponent.short_name)
+          }
+        }
+      }
+    })
+  }, [isLoaded, onChange, onCoordinatesChange, onCountryChange])
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      required
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
+      placeholder="Start typing address..."
+    />
+  )
+}
+
 // Complete Setup Modal Component
 function CompleteSetupModal({ 
   business, 
@@ -1507,17 +1588,40 @@ function CompleteSetupModal({
   onUpdate: () => void 
 }) {
   const [loading, setLoading] = useState(false)
+  // Extract phone prefix from existing whatsapp number if possible
+  const extractPhonePrefix = (number: string): { prefix: string, rest: string } => {
+    if (!number) return { prefix: '+1', rest: '' }
+    const prefixes = ['+1246', '+973', '+355', '+44', '+39', '+34', '+30', '+1']
+    for (const p of prefixes) {
+      if (number.startsWith(p)) {
+        return { prefix: p, rest: number.slice(p.length).trim() }
+      }
+    }
+    // If no known prefix, treat as OTHER
+    if (number.startsWith('+')) {
+      return { prefix: 'OTHER', rest: number }
+    }
+    return { prefix: '+1', rest: number }
+  }
+
+  const phoneData = extractPhonePrefix(business.whatsappNumber || '')
+
   const [formData, setFormData] = useState({
     name: business.name || '',
     slug: business.slug || '',
-    whatsappNumber: business.whatsappNumber || '',
+    phonePrefix: phoneData.prefix,
+    whatsappNumber: phoneData.rest,
     address: business.address || '',
+    country: '',
+    storeLatitude: 0,
+    storeLongitude: 0,
     email: business.email || '',
     phone: business.phone || '',
     currency: business.currency || 'USD',
     timezone: business.timezone || 'UTC',
     language: business.language || 'en',
     subscriptionPlan: business.subscriptionPlan || 'STARTER',
+    billingType: (business as any).billingType || 'free' as 'monthly' | 'yearly' | 'free' | 'trial',
     deliveryEnabled: business.deliveryEnabled ?? true,
     pickupEnabled: business.pickupEnabled ?? true,
     deliveryFee: business.deliveryFee?.toString() || '0',
@@ -1529,9 +1633,40 @@ function CompleteSetupModal({
   })
 
   const isOAuthUser = business.owner?.authMethod === 'google' || business.owner?.authMethod === 'oauth'
+  
+  // Check if business has existing Stripe subscription
+  const hasStripeSubscription = !!(business as any).stripeSubscriptionId
+  const isOnTrial = business.trialEndsAt && new Date(business.trialEndsAt) > new Date()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast.error('Business name is required')
+      return
+    }
+
+    if (!formData.whatsappNumber.trim()) {
+      toast.error('WhatsApp number is required')
+      return
+    }
+
+    if (!formData.address.trim()) {
+      toast.error('Business address is required')
+      return
+    }
+
+    // Validate slug format
+    if (formData.slug && !/^[a-z0-9-]+$/.test(formData.slug)) {
+      toast.error('Store URL can only contain lowercase letters, numbers, and hyphens')
+      return
+    }
+
+    if (formData.slug && formData.slug.length < 3) {
+      toast.error('Store URL must be at least 3 characters')
+      return
+    }
 
     // Validate password if provided
     if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
@@ -1547,15 +1682,28 @@ function CompleteSetupModal({
     setLoading(true)
 
     try {
+      // Combine phone prefix with number
+      const fullWhatsappNumber = formData.phonePrefix === 'OTHER' 
+        ? formData.whatsappNumber 
+        : `${formData.phonePrefix}${formData.whatsappNumber}`
+
       const res = await fetch(`/api/superadmin/businesses/${business.id}/complete-setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          whatsappNumber: fullWhatsappNumber,
           deliveryFee: parseFloat(formData.deliveryFee) || 0,
           minimumOrder: parseFloat(formData.minimumOrder) || 0,
           ownerId: business.owner?.id,
-          newPassword: formData.newPassword || undefined
+          newPassword: formData.newPassword || undefined,
+          // Subscription fields
+          subscriptionPlan: formData.subscriptionPlan,
+          billingType: formData.billingType,
+          // Address fields
+          country: formData.country || undefined,
+          storeLatitude: formData.storeLatitude || undefined,
+          storeLongitude: formData.storeLongitude || undefined
         })
       })
 
@@ -1688,45 +1836,84 @@ function CompleteSetupModal({
           {/* Contact Info */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              {/* WhatsApp with country selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number *</label>
-                <input
-                  type="text"
-                  value={formData.whatsappNumber}
-                  onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
-                  placeholder="+1234567890"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
-                  required
-                />
+                <div className="flex gap-2">
+                  <select
+                    value={formData.phonePrefix}
+                    onChange={(e) => setFormData({ ...formData, phonePrefix: e.target.value })}
+                    className="w-28 px-2 py-2 border border-gray-300 rounded-lg text-sm text-gray-900"
+                  >
+                    <option value="+1">🇺🇸 +1</option>
+                    <option value="+30">🇬🇷 +30</option>
+                    <option value="+39">🇮🇹 +39</option>
+                    <option value="+34">🇪🇸 +34</option>
+                    <option value="+355">🇦🇱 +355</option>
+                    <option value="+973">🇧🇭 +973</option>
+                    <option value="+1246">🇧🇧 +1246</option>
+                    <option value="+44">🇬🇧 +44</option>
+                    <option value="OTHER">🌍 Other</option>
+                  </select>
+                  <input
+                    type="tel"
+                    value={formData.whatsappNumber}
+                    onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                    placeholder={formData.phonePrefix === 'OTHER' ? '+55 11 987654321' : '123456789'}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
+                    required
+                  />
+                </div>
+                {formData.phonePrefix === 'OTHER' && (
+                  <p className="text-xs text-gray-500 mt-1">Enter full number with country code</p>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
-                />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                </div>
               </div>
+
+              {/* Address with autocomplete */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Business Address *</label>
+                <SetupAddressAutocomplete
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder:text-gray-500"
-                  required
+                  onChange={(address) => setFormData({ ...formData, address })}
+                  onCoordinatesChange={(lat, lng) => setFormData({ ...formData, storeLatitude: lat, storeLongitude: lng })}
+                  onCountryChange={(country) => setFormData({ ...formData, country })}
                 />
+                {(formData.storeLatitude !== 0 || formData.country) && (
+                  <div className="mt-2 text-xs text-gray-500 space-y-1">
+                    {formData.storeLatitude !== 0 && formData.storeLongitude !== 0 && (
+                      <p>Coordinates: {formData.storeLatitude.toFixed(6)}, {formData.storeLongitude.toFixed(6)}</p>
+                    )}
+                    {formData.country && (
+                      <p className="flex items-center gap-1">
+                        <span>Country:</span>
+                        <span className="font-medium">{formData.country}</span>
+                        <span className="text-gray-400">(Auto-detected from address)</span>
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1785,7 +1972,21 @@ function CompleteSetupModal({
           {/* Subscription */}
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Subscription Plan</h3>
-            <div className="grid grid-cols-3 gap-3">
+            
+            {/* Show current status if exists */}
+            {(hasStripeSubscription || isOnTrial) && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <Info className="w-4 h-4 inline mr-1" />
+                  {hasStripeSubscription && 'This business has an existing Stripe subscription. '}
+                  {isOnTrial && `Currently on trial (ends ${new Date(business.trialEndsAt!).toLocaleDateString()}). `}
+                  Changes here will update the database only.
+                </p>
+              </div>
+            )}
+            
+            {/* Plan Selection */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
               {['STARTER', 'PRO', 'BUSINESS'].map(plan => (
                 <button
                   key={plan}
@@ -1805,6 +2006,63 @@ function CompleteSetupModal({
                   </div>
                 </button>
               ))}
+            </div>
+
+            {/* Billing Type Selection */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">Billing Type</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, billingType: 'monthly' })}
+                  className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.billingType === 'monthly'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, billingType: 'yearly' })}
+                  className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.billingType === 'yearly'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Yearly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, billingType: 'free' })}
+                  className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.billingType === 'free'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Free (Admin)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, billingType: 'trial' })}
+                  className={`px-3 py-1.5 border-2 rounded-lg text-sm font-medium transition-all ${
+                    formData.billingType === 'trial'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }`}
+                >
+                  Trial (14 days)
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {formData.billingType === 'free' && 'No Stripe subscription - free access managed by admin.'}
+                {formData.billingType === 'trial' && 'Sets 14-day trial period. User can upgrade anytime.'}
+                {formData.billingType === 'monthly' && 'Standard monthly billing through Stripe.'}
+                {formData.billingType === 'yearly' && 'Annual billing with discount through Stripe.'}
+              </p>
             </div>
           </div>
 
