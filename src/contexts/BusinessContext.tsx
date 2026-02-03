@@ -73,7 +73,8 @@ export function BusinessProvider({ children, currentBusinessId }: BusinessProvid
             subscriptionPlan: data.business.subscriptionPlan,
             setupWizardCompleted: data.business.setupWizardCompleted,
             onboardingCompleted: data.business.onboardingCompleted,
-            role: 'OWNER' as const // SuperAdmin impersonating has OWNER access
+            role: 'OWNER' as const, // SuperAdmin impersonating has OWNER access
+            trialEndsAt: data.business.trialEndsAt || null
           }
           setBusinesses([business])
           setUserRole('OWNER')
