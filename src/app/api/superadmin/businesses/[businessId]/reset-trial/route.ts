@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { logSystemEvent } from '@/lib/systemLog'
 
 export async function POST(
   request: NextRequest,
@@ -56,10 +57,22 @@ export async function POST(
     }
 
     // Log the action
-    console.log(`[SuperAdmin] Trial reset for business: ${business.name} by ${session.user.email}`, {
+    await logSystemEvent({
+      logType: 'admin_action',
+      severity: 'info',
+      endpoint: `/api/superadmin/businesses/${businessId}/reset-trial`,
+      method: 'POST',
+      url: request.url,
       businessId,
-      ownerId: owner?.id,
-      ownerEmail: owner?.email
+      errorMessage: `Trial reset for business: ${business.name} by ${session.user.email}`,
+      metadata: {
+        action: 'reset_trial',
+        businessName: business.name,
+        businessSlug: business.slug,
+        resetBy: session.user.email,
+        ownerId: owner?.id,
+        ownerEmail: owner?.email
+      }
     })
 
     return NextResponse.json({ 

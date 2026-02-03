@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 const prisma = globalForPrisma.prisma || new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'trial_error' | 'subscription_error'
+export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'trial_error' | 'subscription_error' | 'admin_action'
 export type LogSeverity = 'error' | 'warning' | 'info'
 
 interface SystemLogData {
@@ -18,7 +18,7 @@ interface SystemLogData {
   endpoint: string
   method: string
   statusCode?: number
-  errorMessage?: string
+  errorMessage?: string  // Message for the log (also used for admin actions)
   errorStack?: string
   ipAddress?: string
   userAgent?: string
