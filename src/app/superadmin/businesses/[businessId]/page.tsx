@@ -1281,34 +1281,89 @@ export default function BusinessDetailsPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-2">
-              <button
-                onClick={() => window.open(`/${business.slug}`, '_blank')}
-                className="w-full flex items-center justify-between px-4 py-2 text-sm text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100"
-              >
-                <span className="flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Visit Store
-                </span>
-              </button>
-              <button
-                onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
-                disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
-                className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100"
-              >
-                <span className="flex items-center">
-                  <UserCheck className="w-4 h-4 mr-2" />
-                  Impersonate
-                </span>
-              </button>
-            </div>
-          </div>
+          <QuickActionsSection business={business} onTrialReset={fetchBusinessDetails} />
 
           {/* Account Managers */}
           <AccountManagersSection businessId={businessId} />
+
+          {/* Complete Setup Section - Show if setup incomplete */}
+          {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
+            <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// Quick Actions Section Component
+function QuickActionsSection({ 
+  business, 
+  onTrialReset 
+}: { 
+  business: BusinessDetails
+  onTrialReset: () => void 
+}) {
+  const [resettingTrial, setResettingTrial] = useState(false)
+
+  const handleResetTrial = async () => {
+    if (!confirm('Are you sure you want to reset the trial for this business? The owner will be able to start a new 14-day trial.')) {
+      return
+    }
+
+    setResettingTrial(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/reset-trial`, {
+        method: 'POST'
+      })
+      
+      if (res.ok) {
+        toast.success('Trial reset successfully')
+        onTrialReset()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to reset trial')
+      }
+    } catch (error) {
+      toast.error('Error resetting trial')
+    } finally {
+      setResettingTrial(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+      <div className="space-y-2">
+        <button
+          onClick={() => window.open(`/${business.slug}`, '_blank')}
+          className="w-full flex items-center justify-between px-4 py-2 text-sm text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100"
+        >
+          <span className="flex items-center">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Visit Store
+          </span>
+        </button>
+        <button
+          onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
+          disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
+          className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="flex items-center">
+            <UserCheck className="w-4 h-4 mr-2" />
+            Impersonate
+          </span>
+        </button>
+        <button
+          onClick={handleResetTrial}
+          disabled={resettingTrial}
+          className="w-full flex items-center justify-between px-4 py-2 text-sm text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+        >
+          <span className="flex items-center">
+            <Clock className="w-4 h-4 mr-2" />
+            {resettingTrial ? 'Resetting...' : 'Reset Trial'}
+          </span>
+        </button>
       </div>
     </div>
   )
@@ -1381,6 +1436,462 @@ function AccountManagersSection({ businessId }: { businessId: string }) {
         Manage team assignments
         <ArrowRight className="w-3 h-3 ml-1" />
       </Link>
+    </div>
+  )
+}
+
+// Complete Setup Section Component
+function CompleteSetupSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [showModal, setShowModal] = useState(false)
+
+  // Check what's missing
+  const missingFields = []
+  if (!business.whatsappNumber || business.whatsappNumber === 'Not provided') missingFields.push('WhatsApp Number')
+  if (!business.address || business.address === 'Not set') missingFields.push('Address')
+  if (!business.setupWizardCompleted) missingFields.push('Setup Wizard')
+  if (!business.onboardingCompleted) missingFields.push('Onboarding')
+
+  return (
+    <>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-amber-800 mb-2 flex items-center">
+          <AlertTriangle className="w-5 h-5 mr-2" />
+          Setup Incomplete
+        </h3>
+        <p className="text-sm text-amber-700 mb-3">
+          This business hasn't completed the setup process.
+        </p>
+        {missingFields.length > 0 && (
+          <ul className="text-sm text-amber-600 mb-4 space-y-1">
+            {missingFields.map(field => (
+              <li key={field}>• {field}</li>
+            ))}
+          </ul>
+        )}
+        <button
+          onClick={() => setShowModal(true)}
+          className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium"
+        >
+          Complete Setup
+        </button>
+      </div>
+
+      {showModal && (
+        <CompleteSetupModal
+          business={business}
+          onClose={() => setShowModal(false)}
+          onUpdate={() => {
+            onUpdate()
+            setShowModal(false)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+// Complete Setup Modal Component
+function CompleteSetupModal({ 
+  business, 
+  onClose, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onClose: () => void
+  onUpdate: () => void 
+}) {
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: business.name || '',
+    slug: business.slug || '',
+    whatsappNumber: business.whatsappNumber || '',
+    address: business.address || '',
+    email: business.email || '',
+    phone: business.phone || '',
+    currency: business.currency || 'USD',
+    timezone: business.timezone || 'UTC',
+    language: business.language || 'en',
+    subscriptionPlan: business.subscriptionPlan || 'STARTER',
+    deliveryEnabled: business.deliveryEnabled ?? true,
+    pickupEnabled: business.pickupEnabled ?? true,
+    deliveryFee: business.deliveryFee?.toString() || '0',
+    minimumOrder: business.minimumOrder?.toString() || '0',
+    markAsComplete: true,
+    // Owner password (only for email auth)
+    newPassword: '',
+    confirmPassword: ''
+  })
+
+  const isOAuthUser = business.owner?.authMethod === 'google' || business.owner?.authMethod === 'oauth'
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validate password if provided
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+
+    if (formData.newPassword && formData.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/complete-setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          deliveryFee: parseFloat(formData.deliveryFee) || 0,
+          minimumOrder: parseFloat(formData.minimumOrder) || 0,
+          ownerId: business.owner?.id,
+          newPassword: formData.newPassword || undefined
+        })
+      })
+
+      const result = await res.json()
+      if (res.ok) {
+        toast.success(result.passwordUpdated 
+          ? 'Setup completed and password updated!' 
+          : 'Setup completed successfully')
+        onUpdate()
+      } else {
+        toast.error(result.message || 'Failed to complete setup')
+      }
+    } catch (error) {
+      toast.error('Error completing setup')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Complete Business Setup</h2>
+            <p className="text-sm text-gray-500">{business.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Owner Information */}
+          {business.owner && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Owner Account</h3>
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                {/* Owner Info Display */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-purple-700 font-semibold">
+                      {business.owner.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{business.owner.name || 'No name'}</p>
+                    <p className="text-sm text-gray-500">{business.owner.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <AuthMethodIcon method={business.owner.authMethod} />
+                    <span className="text-xs text-gray-500 capitalize">
+                      {business.owner.authMethod === 'google' ? 'Google' : 
+                       business.owner.authMethod === 'magic-link' ? 'Magic Link' : 
+                       business.owner.authMethod === 'oauth' ? 'OAuth' : 'Email'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Password Change - Only for email auth users */}
+                {!isOAuthUser && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <p className="text-xs text-amber-600 mb-2 flex items-center gap-1">
+                      <Info className="w-3 h-3" />
+                      This user registered with email/password. You can set a new password below.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
+                        <input
+                          type="password"
+                          value={formData.newPassword}
+                          onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                          placeholder="Leave blank to keep current"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Confirm Password</label>
+                        <input
+                          type="password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                          placeholder="Confirm new password"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* OAuth user notice */}
+                {isOAuthUser && (
+                  <p className="text-xs text-gray-500 pt-2 border-t border-gray-200">
+                    This user signed up with {business.owner.authMethod === 'google' ? 'Google' : 'OAuth'}. No password management needed.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Basic Info */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Basic Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Business Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Store URL (slug)</label>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Information</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number *</label>
+                <input
+                  type="text"
+                  value={formData.whatsappNumber}
+                  onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                  placeholder="+1234567890"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Regional Settings */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Regional Settings</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                <select
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="ALL">ALL (Lek)</option>
+                  <option value="BHD">BHD (د.ب)</option>
+                  <option value="BBD">BBD ($)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                <select
+                  value={formData.timezone}
+                  onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="UTC">UTC</option>
+                  <option value="Europe/Tirane">Europe/Tirane</option>
+                  <option value="Europe/Athens">Europe/Athens</option>
+                  <option value="Europe/London">Europe/London</option>
+                  <option value="America/New_York">America/New York</option>
+                  <option value="America/Barbados">America/Barbados</option>
+                  <option value="Asia/Bahrain">Asia/Bahrain</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                <select
+                  value={formData.language}
+                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="en">English</option>
+                  <option value="al">Albanian</option>
+                  <option value="el">Greek</option>
+                  <option value="ar">Arabic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Subscription Plan</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {['STARTER', 'PRO', 'BUSINESS'].map(plan => (
+                <button
+                  key={plan}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, subscriptionPlan: plan })}
+                  className={`p-3 border-2 rounded-lg text-center transition-all ${
+                    formData.subscriptionPlan === plan
+                      ? plan === 'BUSINESS' ? 'border-indigo-500 bg-indigo-50'
+                        : plan === 'PRO' ? 'border-purple-500 bg-purple-50'
+                        : 'border-teal-500 bg-teal-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-gray-900">{plan}</div>
+                  <div className="text-xs text-gray-500">
+                    {plan === 'STARTER' ? '$19/mo' : plan === 'PRO' ? '$39/mo' : '$79/mo'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Delivery Settings */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Delivery Settings</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.deliveryEnabled}
+                    onChange={(e) => setFormData({ ...formData, deliveryEnabled: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Delivery</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.pickupEnabled}
+                    onChange={(e) => setFormData({ ...formData, pickupEnabled: e.target.checked })}
+                    className="rounded border-gray-300"
+                  />
+                  <span className="text-sm text-gray-700">Pickup</span>
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Delivery Fee</label>
+                  <input
+                    type="number"
+                    value={formData.deliveryFee}
+                    onChange={(e) => setFormData({ ...formData, deliveryFee: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Min Order</label>
+                  <input
+                    type="number"
+                    value={formData.minimumOrder}
+                    onChange={(e) => setFormData({ ...formData, minimumOrder: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mark as Complete */}
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+            <label className="flex items-start gap-3">
+              <input
+                type="checkbox"
+                checked={formData.markAsComplete}
+                onChange={(e) => setFormData({ ...formData, markAsComplete: e.target.checked })}
+                className="rounded border-gray-300 mt-1"
+              />
+              <div>
+                <span className="text-sm font-medium text-teal-800">Mark setup as complete</span>
+                <p className="text-xs text-teal-600">This will allow the business owner to access all features and impersonation will be enabled.</p>
+              </div>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : 'Complete Setup'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
