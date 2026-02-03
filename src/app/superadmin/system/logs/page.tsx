@@ -181,6 +181,7 @@ export default function SystemLogsPage() {
       system_error: 'System Error',
       trial_error: 'Trial Error',
       trial_start_error: 'Trial Start Error',
+      admin_action: 'Admin Action',
       subscription_error: 'Subscription Error',
       checkout_error: 'Checkout Error',
       client_error: 'Client Error'
@@ -318,6 +319,9 @@ export default function SystemLogsPage() {
                 <optgroup label="System">
                   <option value="system_error">System Error</option>
                   <option value="client_error">Client Error</option>
+                </optgroup>
+                <optgroup label="Admin">
+                  <option value="admin_action">Admin Action</option>
                 </optgroup>
               </select>
             </div>

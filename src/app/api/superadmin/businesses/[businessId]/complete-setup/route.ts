@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
+import { logSystemEvent } from '@/lib/systemLog'
 
 export async function POST(
   request: NextRequest,
@@ -113,10 +114,9 @@ export async function POST(
       updateData.subscriptionStatus = 'ACTIVE'
     }
 
-    // Billing type
+    // Billing type (not stored in DB, but used to control trial dates)
+    // billingType is computed from Stripe, not saved directly
     if (data.billingType) {
-      updateData.billingType = data.billingType
-      
       // Check if already on active trial
       const isCurrentlyOnTrial = existingBusiness.trialEndsAt && 
         new Date(existingBusiness.trialEndsAt) > new Date()
@@ -207,11 +207,24 @@ export async function POST(
     }
 
     // Log the action
-    console.log(`[SuperAdmin] Setup completed for business: ${updatedBusiness.name} by ${session.user.email}`, {
+    await logSystemEvent({
+      logType: 'admin_action',
+      severity: 'info',
+      endpoint: `/api/superadmin/businesses/${businessId}/complete-setup`,
+      method: 'POST',
+      url: request.url,
       businessId,
-      fieldsUpdated: Object.keys(updateData),
-      markedComplete: data.markAsComplete,
-      passwordUpdated
+      errorMessage: `Setup completed for business: ${updatedBusiness.name} by ${session.user.email}`,
+      metadata: {
+        action: 'complete_setup',
+        businessName: updatedBusiness.name,
+        businessSlug: updatedBusiness.slug,
+        completedBy: session.user.email,
+        fieldsUpdated: Object.keys(updateData),
+        markedComplete: data.markAsComplete,
+        passwordUpdated,
+        billingType: data.billingType
+      }
     })
 
     return NextResponse.json({ 
@@ -227,10 +240,19 @@ export async function POST(
       }
     })
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error completing setup:', error)
+    console.error('Error details:', {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      meta: error?.meta
+    })
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { 
+        message: 'Internal server error', 
+        error: process.env.NODE_ENV === 'development' ? error?.message : undefined 
+      },
       { status: 500 }
     )
   }
