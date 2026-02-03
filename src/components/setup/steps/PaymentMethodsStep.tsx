@@ -332,7 +332,7 @@ export default function PaymentMethodsStep({ data, onComplete, onBack }: Payment
           value={paymentInstructions}
           onChange={(e) => setPaymentInstructions(e.target.value)}
           placeholder={config.instructionsPlaceholder}
-          className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none text-base"
+          className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none text-base text-gray-900 placeholder:text-gray-500"
           rows={3}
         />
         <p className="text-xs sm:text-sm text-gray-500 mt-2">

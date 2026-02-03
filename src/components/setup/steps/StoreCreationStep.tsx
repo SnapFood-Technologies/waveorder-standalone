@@ -323,7 +323,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                   required
                   value={formData.businessName}
                   onChange={handleInputChange}
-                  className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                  className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                   placeholder="Enter your business name"
                 />
               </div>
@@ -339,7 +339,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                   name="countryCode"
                   value={formData.countryCode}
                   onChange={handleInputChange}
-                  className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base sm:min-w-[120px]"
+                  className="px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-base text-gray-900 sm:min-w-[120px]"
                 >
                   {getVisibleCountryCodes().map(country => (
                     <option key={country.code} value={country.code}>
@@ -356,7 +356,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                     required
                     value={formData.whatsappNumber}
                     onChange={handleInputChange}
-                    className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-l-none sm:border-l-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                    className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg sm:rounded-l-none sm:border-l-0 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                     placeholder={isOtherCountry ? "+55 11 987654321" : "123456789"}
                   />
                 </div>
@@ -385,7 +385,7 @@ export default function StoreCreationStep({ data, onComplete, onBack, setupToken
                   required
                   value={formData.storeSlug}
                   onChange={handleInputChange}
-                  className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                  className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-b-lg sm:rounded-r-lg sm:rounded-bl-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                   placeholder="your-business-name"
                 />
               </div>

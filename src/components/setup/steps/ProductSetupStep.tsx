@@ -328,7 +328,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                       value={newProduct.name}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
                       placeholder={config.itemPlaceholder}
-                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
 
@@ -348,7 +348,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                           value={newProduct.price}
                           onChange={(e) => setNewProduct(prev => ({ ...prev, price: e.target.value }))}
                           placeholder="0.00"
-                          className="pl-8 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                          className="pl-8 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                         />
                       </div>
                     </div>
@@ -367,7 +367,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                               setNewProduct(prev => ({ ...prev, category: e.target.value }))
                             }
                           }}
-                          className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                          className="flex-1 px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900"
                         >
                           <option value="">Select category</option>
                           {categories.map(cat => (
@@ -384,7 +384,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                             value={newCategoryName}
                             onChange={(e) => setNewCategoryName(e.target.value)}
                             placeholder={config.categoryPlaceholder}
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm text-gray-900 placeholder:text-gray-500"
                           />
                           <button
                             onClick={addCategory}
@@ -417,7 +417,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                       value={newProduct.description}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Optional description"
-                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                      className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
 
