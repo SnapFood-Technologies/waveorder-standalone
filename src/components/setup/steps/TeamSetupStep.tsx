@@ -152,7 +152,7 @@ export default function TeamSetupStep({ data, onComplete, onBack }: TeamSetupSte
                             value={member.email}
                             onChange={(e) => updateTeamMember(index, 'email', e.target.value)}
                             placeholder="colleague@example.com"
-                            className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                            className="pl-10 w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                           />
                         </div>
                       </div>
@@ -165,7 +165,7 @@ export default function TeamSetupStep({ data, onComplete, onBack }: TeamSetupSte
                         <select
                           value={member.role}
                           onChange={(e) => updateTeamMember(index, 'role', e.target.value as 'MANAGER' | 'STAFF')}
-                          className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                          className="w-full px-3 py-3 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900"
                         >
                           {roles.map(role => (
                             <option key={role.value} value={role.value}>

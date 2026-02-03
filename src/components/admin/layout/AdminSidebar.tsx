@@ -614,12 +614,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           <div className="p-4 border-t border-gray-200">
             <div className={`rounded-lg p-4 text-white ${
               trialInfo.isOnTrial
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                ? 'bg-amber-500 bg-gradient-to-r from-amber-500 to-orange-500'
                 : subscription.plan === 'BUSINESS' 
-                ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
+                ? 'bg-purple-600 bg-gradient-to-r from-purple-600 to-indigo-600'
                 : subscription.plan === 'PRO'
-                ? 'bg-gradient-to-r from-teal-500 to-emerald-500'
-                : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                ? 'bg-teal-500 bg-gradient-to-r from-teal-500 to-emerald-500'
+                : 'bg-gray-500 bg-gradient-to-r from-gray-500 to-gray-600'
             }`}>
               <h3 className="font-semibold text-sm mb-1">
                 {trialInfo.isOnTrial

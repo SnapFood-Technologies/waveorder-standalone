@@ -286,7 +286,7 @@ ${storeUrl}`
             <textarea
               value={settings.greetingMessage}
               onChange={(e) => updateSetting('greetingMessage', e.target.value)}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
               rows={4}
               placeholder="Hello! Welcome to your business..."
             />

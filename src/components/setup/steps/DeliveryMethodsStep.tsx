@@ -432,7 +432,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                             step="0.01"
                             value={methods.deliveryFee}
                             onChange={(e) => handleNumberChange('deliveryFee', e.target.value)}
-                            className="pl-8 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                            className="pl-8 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                             placeholder="0.00"
                           />
                         </div>
@@ -451,7 +451,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                             type="number"
                             value={methods.deliveryRadius}
                             onChange={(e) => handleIntegerChange('deliveryRadius', e.target.value)}
-                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                             placeholder="10"
                           />
                         </div>
@@ -470,7 +470,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                             type="text"
                             value={methods.estimatedDeliveryTime}
                             onChange={(e) => updateValue('estimatedDeliveryTime', e.target.value)}
-                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base"
+                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-base text-gray-900 placeholder:text-gray-500"
                             placeholder={getDeliveryTimePlaceholder()}
                           />
                         </div>
@@ -489,7 +489,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
                             type="text"
                             value={methods.estimatedPickupTime}
                             onChange={(e) => updateValue('estimatedPickupTime', e.target.value)}
-                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base"
+                            className="pl-9 w-full px-3 py-2 sm:py-3 lg:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-base text-gray-900 placeholder:text-gray-500"
                             placeholder={getPickupTimePlaceholder()}
                           />
                         </div>
