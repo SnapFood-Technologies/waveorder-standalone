@@ -1608,7 +1608,7 @@ function CompleteSetupModal({
                     <p className="text-sm text-gray-500">{business.owner.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <AuthMethodIcon method={business.owner.authMethod} />
+                    <AuthMethodIcon authMethod={business.owner.authMethod} />
                     <span className="text-xs text-gray-500 capitalize">
                       {business.owner.authMethod === 'google' ? 'Google' : 
                        business.owner.authMethod === 'magic-link' ? 'Magic Link' : 
