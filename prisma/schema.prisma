@@ -200,6 +200,7 @@ model Business {
   storeLongitude     Float?
   website            String?
   whatsappNumber     String
+  whatsappDirectNotifications Boolean @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
   businessType       BusinessType       @default(RESTAURANT)
   subscriptionPlan   SubscriptionPlan   @default(STARTER)
   subscriptionStatus SubscriptionStatus @default(ACTIVE)

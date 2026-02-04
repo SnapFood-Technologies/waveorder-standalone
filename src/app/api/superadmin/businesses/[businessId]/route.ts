@@ -248,6 +248,7 @@ export async function GET(
         deactivationReason: business.deactivationReason,
         currency: business.currency,
         whatsappNumber: business.whatsappNumber,
+        whatsappDirectNotifications: business.whatsappDirectNotifications,
         address: business.address,
         email: business.email,
         phone: business.phone,

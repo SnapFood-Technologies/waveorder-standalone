@@ -32,7 +32,8 @@ import {
   Truck,
   TrendingUp,
   Sparkles,
-  Link2
+  Link2,
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -55,6 +56,7 @@ interface BusinessDetails {
   graceEndsAt?: string | null
   currency: string
   whatsappNumber: string
+  whatsappDirectNotifications?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1286,6 +1288,9 @@ export default function BusinessDetailsPage() {
           {/* Account Managers */}
           <AccountManagersSection businessId={businessId} />
 
+          {/* WhatsApp Settings */}
+          <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -1370,6 +1375,92 @@ function QuickActionsSection({
 }
 
 // Account Managers Section Component
+// WhatsApp Settings Section Component
+function WhatsAppSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [directNotifications, setDirectNotifications] = useState(business.whatsappDirectNotifications || false)
+
+  const handleToggle = async () => {
+    const newValue = !directNotifications
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/whatsapp-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsappDirectNotifications: newValue })
+      })
+      
+      if (res.ok) {
+        setDirectNotifications(newValue)
+        toast.success(newValue ? 'Direct notifications enabled' : 'Direct notifications disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <MessageSquare className="w-5 h-5 mr-2 text-green-600" />
+        WhatsApp Settings
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Direct Order Notifications (Twilio)</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, orders are sent directly to the business via Twilio WhatsApp API. 
+            When disabled, customers use the traditional wa.me link.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            directNotifications ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              directNotifications ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {directNotifications && (
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-xs text-green-700">
+            <span className="font-medium">Active:</span> Orders will be sent automatically to {business.whatsappNumber} via Twilio.
+          </p>
+        </div>
+      )}
+      
+      {!directNotifications && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Traditional Flow:</span> Customers will be redirected to WhatsApp to send their order manually.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AccountManagersSection({ businessId }: { businessId: string }) {
   const [accountManagers, setAccountManagers] = useState<Array<{
     id: string

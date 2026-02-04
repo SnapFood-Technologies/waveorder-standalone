@@ -153,6 +153,7 @@ export async function GET(request: NextRequest) {
           subscriptionPlan: true,
           isActive: true,
           createdAt: true, // Needed for business growth calculation
+          trialEndsAt: true, // Needed for trial detection
           users: {
             where: {
               role: 'OWNER'
@@ -364,7 +365,15 @@ export async function GET(request: NextRequest) {
         const businessOrderRevenue = business.orders.reduce((sum, order) => sum + order.total, 0)
         const owner = business.users.find(u => u.role === 'OWNER')?.user
         const subscriptionPriceId = owner?.subscription?.priceId
-        const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
+        
+        // Check if business is on trial first
+        const isOnTrial = business.trialEndsAt && new Date(business.trialEndsAt) > new Date()
+        let billingType: string | null = null
+        if (isOnTrial) {
+          billingType = 'trial'
+        } else if (subscriptionPriceId) {
+          billingType = getBillingTypeFromPriceId(subscriptionPriceId)
+        }
         
         return {
           id: business.id,
@@ -391,8 +400,17 @@ export async function GET(request: NextRequest) {
     businesses.forEach(business => {
       const owner = business.users.find(u => u.role === 'OWNER')?.user
       const subscriptionPriceId = owner?.subscription?.priceId
-      const billingType = subscriptionPriceId ? getBillingTypeFromPriceId(subscriptionPriceId) : null
-      const billingTypeKey = billingType || 'unknown'
+      
+      // Check if business is on trial first
+      const isOnTrial = business.trialEndsAt && new Date(business.trialEndsAt) > new Date()
+      
+      let billingType: string | null = null
+      if (isOnTrial) {
+        billingType = 'trial'
+      } else if (subscriptionPriceId) {
+        billingType = getBillingTypeFromPriceId(subscriptionPriceId)
+      }
+      const billingTypeKey = billingType || 'free'
       
       const key = `${business.subscriptionPlan}_${billingTypeKey}`
       if (!planBillingGroups[key]) {
@@ -418,9 +436,9 @@ export async function GET(request: NextRequest) {
         if (a.plan !== b.plan) {
           return a.plan === 'STARTER' ? -1 : 1
         }
-        const billingOrder = { free: 0, monthly: 1, yearly: 2, unknown: 3 }
-        return (billingOrder[a.billingType as keyof typeof billingOrder] || 3) - 
-               (billingOrder[b.billingType as keyof typeof billingOrder] || 3)
+        const billingOrder = { free: 0, trial: 1, monthly: 2, yearly: 3, unknown: 4 }
+        return (billingOrder[a.billingType as keyof typeof billingOrder] || 4) - 
+               (billingOrder[b.billingType as keyof typeof billingOrder] || 4)
       })
 
     // Format cumulative growth data

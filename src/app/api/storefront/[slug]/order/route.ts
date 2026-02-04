@@ -5,6 +5,7 @@ import { sendOrderNotification } from '@/lib/orderNotificationService'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -1045,6 +1046,7 @@ export async function POST(
         businessType: true,
         address: true,
         whatsappNumber: true,
+        whatsappDirectNotifications: true,
         orderNumberFormat: true,
         website: true,
         deliveryEnabled: true,
@@ -2080,15 +2082,82 @@ try {
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      calculatedDeliveryFee: finalDeliveryFee,
-      deliveryZone,
-      deliveryDistance,
-      whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
-    })
+    // Check if direct WhatsApp notifications are enabled via Twilio
+    const useDirectNotification = business.whatsappDirectNotifications && isTwilioConfigured()
+    let twilioMessageSent = false
+    let twilioError: string | undefined
+
+    if (useDirectNotification) {
+      // Send order notification directly to business via Twilio
+      const twilioResult = await sendTwilioOrderNotification(
+        business.whatsappNumber,
+        {
+          orderNumber: order.orderNumber,
+          businessName: business.name,
+          businessSlug: business.slug,
+          customerName: customer.name,
+          customerPhone: customer.phone || orderData.customerPhone,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            variant: item.variant?.name,
+            modifiers: item.modifiers?.map((m: any) => ({ name: m.name, price: m.price }))
+          })),
+          subtotal: order.subtotal,
+          deliveryFee: finalDeliveryFee,
+          total: order.total,
+          deliveryType: order.type.toLowerCase() as 'delivery' | 'pickup' | 'dineIn',
+          deliveryAddress: order.deliveryAddress || undefined,
+          deliveryTime: orderData.deliveryTime || null,
+          specialInstructions: order.specialInstructions || undefined,
+          currencySymbol: getCurrencySymbol(business.currency)
+        }
+      )
+
+      twilioMessageSent = twilioResult.success
+      if (!twilioResult.success) {
+        twilioError = twilioResult.error
+        console.error('Twilio notification failed:', twilioResult.error)
+        // Log the failure but don't fail the order
+        Sentry.captureMessage('Twilio order notification failed', {
+          level: 'warning',
+          extra: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            businessId: business.id,
+            error: twilioResult.error
+          }
+        })
+      }
+    }
+
+    // Return response based on notification type
+    if (useDirectNotification && twilioMessageSent) {
+      // Direct notification sent successfully - no wa.me redirect needed
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        calculatedDeliveryFee: finalDeliveryFee,
+        deliveryZone,
+        deliveryDistance,
+        directNotification: true,
+        message: 'Order sent! The business has been notified.'
+      })
+    } else {
+      // Use traditional wa.me redirect (either by preference or as fallback)
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        calculatedDeliveryFee: finalDeliveryFee,
+        deliveryZone,
+        deliveryDistance,
+        directNotification: false,
+        whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
+      })
+    }
 
   } catch (error) {
     // Capture error in Sentry
