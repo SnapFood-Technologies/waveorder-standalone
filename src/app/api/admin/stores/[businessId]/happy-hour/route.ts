@@ -35,6 +35,7 @@ export async function GET(
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: {
+        currency: true,
         happyHourEnabled: true,
         happyHourActive: true,
         happyHourStartTime: true,

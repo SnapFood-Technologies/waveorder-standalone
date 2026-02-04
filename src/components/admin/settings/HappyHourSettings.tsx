@@ -29,10 +29,21 @@ interface HappyHourSettingsProps {
   businessId: string
 }
 
+// Currency symbol mapping
+const currencySymbols: Record<string, string> = {
+  'USD': '$',
+  'EUR': '€',
+  'GBP': '£',
+  'ALL': 'L',
+  'BHD': 'BD',
+  'BBD': 'Bds$',
+}
+
 export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
+  const [currency, setCurrency] = useState('USD')
   const [settings, setSettings] = useState<HappyHourData>({
     happyHourEnabled: false,
     happyHourActive: false,
@@ -42,13 +53,15 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
     happyHourProductIds: []
   })
   const [searchTerm, setSearchTerm] = useState('')
+  
+  const currencySymbol = currencySymbols[currency] || currency
 
   // Fetch happy hour settings and products
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
-      // Fetch business settings
+      // Fetch happy hour settings (includes currency)
       const settingsRes = await fetch(`/api/admin/stores/${businessId}/happy-hour`)
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json()
@@ -60,6 +73,10 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
           happyHourDiscountPercent: settingsData.happyHourDiscountPercent || 20,
           happyHourProductIds: settingsData.happyHourProductIds || []
         })
+        // Set currency from response
+        if (settingsData.currency) {
+          setCurrency(settingsData.currency)
+        }
       }
 
       // Fetch products
@@ -396,11 +413,11 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
                       <div className="text-sm text-right">
                         {isSelected && settings.happyHourDiscountPercent ? (
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-400 line-through">${product.price.toFixed(2)}</span>
-                            <span className="text-amber-600 font-medium">${discountedPrice.toFixed(2)}</span>
+                            <span className="text-gray-400 line-through">{currencySymbol}{product.price.toFixed(2)}</span>
+                            <span className="text-amber-600 font-medium">{currencySymbol}{discountedPrice.toFixed(2)}</span>
                           </div>
                         ) : (
-                          <span className="text-gray-600">${product.price.toFixed(2)}</span>
+                          <span className="text-gray-600">{currencySymbol}{product.price.toFixed(2)}</span>
                         )}
                       </div>
                     </label>
