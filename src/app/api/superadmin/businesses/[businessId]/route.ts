@@ -237,6 +237,7 @@ export async function GET(
         slug: business.slug,
         description: business.description,
         businessType: business.businessType,
+        industry: business.industry,
         subscriptionPlan: business.subscriptionPlan,
         billingType: billingType,
         subscriptionStatus: business.subscriptionStatus,

@@ -96,7 +96,7 @@ model User {
 
   // Lead assignments (for SuperAdmin team) - Legacy, use TeamMember instead
   assignedLeads Lead[] @relation("LeadAssignee")
-  
+
   // Team Member profile (optional - links user account to team member)
   // One-to-many to avoid unique constraint issues with null userId
   teamMembers TeamMember[]
@@ -186,36 +186,37 @@ model EmailVerification {
 }
 
 model Business {
-  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
-  name               String
-  slug               String             @unique
-  description        String?
-  logo               String?
-  coverImage         String?
-  phone              String?
-  email              String?
-  address            String?
-  country            String? // ISO country code (e.g., "AL", "GR", "US")
-  storeLatitude      Float?
-  storeLongitude     Float?
-  website            String?
-  whatsappNumber     String
-  whatsappDirectNotifications Boolean @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
-  businessType       BusinessType       @default(RESTAURANT)
-  subscriptionPlan   SubscriptionPlan   @default(STARTER)
-  subscriptionStatus SubscriptionStatus @default(ACTIVE)
+  id                          String             @id @default(auto()) @map("_id") @db.ObjectId
+  name                        String
+  slug                        String             @unique
+  description                 String?
+  logo                        String?
+  coverImage                  String?
+  phone                       String?
+  email                       String?
+  address                     String?
+  country                     String? // ISO country code (e.g., "AL", "GR", "US")
+  storeLatitude               Float?
+  storeLongitude              Float?
+  website                     String?
+  whatsappNumber              String
+  whatsappDirectNotifications Boolean            @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
+  businessType                BusinessType       @default(RESTAURANT)
+  industry                    String? // Optional industry categorization (e.g., "Food & Beverage", "Hardware & Construction")
+  subscriptionPlan            SubscriptionPlan   @default(STARTER)
+  subscriptionStatus          SubscriptionStatus @default(ACTIVE)
 
   // Trial tracking (business-level)
   trialEndsAt DateTime?
   graceEndsAt DateTime?
 
   // Happy Hour / Daily Discounts
-  happyHourEnabled       Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
-  happyHourActive        Boolean  @default(false) // Business toggle to activate happy hour
-  happyHourStartTime     String?  // Start time in HH:mm format (e.g., "20:00")
-  happyHourEndTime       String?  // End time in HH:mm format (e.g., "23:59")
+  happyHourEnabled         Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
+  happyHourActive          Boolean  @default(false) // Business toggle to activate happy hour
+  happyHourStartTime       String? // Start time in HH:mm format (e.g., "20:00")
+  happyHourEndTime         String? // End time in HH:mm format (e.g., "23:59")
   happyHourDiscountPercent Float? // Discount percentage (e.g., 20 for 20% off)
-  happyHourProductIds    String[] // Product IDs that get the discount
+  happyHourProductIds      String[] // Product IDs that get the discount
 
   createdByAdmin Boolean @default(false)
 
@@ -400,10 +401,10 @@ model Business {
 
   // Business Connections (marketplace/multi-business features)
   connectedBusinesses String[] @db.ObjectId
-  
+
   // Account Manager Assignment
-  accountManagerId String?      @db.ObjectId
-  accountManager   TeamMember?  @relation("AccountManagerBusinesses", fields: [accountManagerId], references: [id])
+  accountManagerId String?     @db.ObjectId
+  accountManager   TeamMember? @relation("AccountManagerBusinesses", fields: [accountManagerId], references: [id])
 
   users              BusinessUser[]
   categories         Category[]
@@ -1565,60 +1566,60 @@ model ExternalSyncLog {
 
 // Team Member management for SuperAdmin
 model TeamMember {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   // Profile Information
-  name        String
-  email       String     @unique
-  phone       String?
-  avatar      String?    // Profile picture URL
-  title       String?    // Job title (e.g., "Senior Account Manager")
-  
+  name   String
+  email  String  @unique
+  phone  String?
+  avatar String? // Profile picture URL
+  title  String? // Job title (e.g., "Senior Account Manager")
+
   // Role and Department
-  role        TeamRole
-  department  TeamDepartment?
-  
+  role       TeamRole
+  department TeamDepartment?
+
   // Optional User Connection (for system access)
-  userId      String?    @db.ObjectId
-  user        User?      @relation(fields: [userId], references: [id])
-  
+  userId String? @db.ObjectId
+  user   User?   @relation(fields: [userId], references: [id])
+
   // Team Member Location (where they are based)
-  country     String?    // Country (e.g., "United States", "Albania")
-  city        String?    // City (e.g., "New York", "Tirana")
-  timezone    String?    // Timezone (e.g., "America/New_York", "Europe/Tirane")
-  
+  country  String? // Country (e.g., "United States", "Albania")
+  city     String? // City (e.g., "New York", "Tirana")
+  timezone String? // Timezone (e.g., "America/New_York", "Europe/Tirane")
+
   // Territory & Region (sales coverage)
-  territory   String?    // Geographic territory (e.g., "North America", "Europe")
-  region      String?    // Specific region (e.g., "Northeast US", "UK")
-  countries   String[]   // Countries they handle
-  
+  territory String? // Geographic territory (e.g., "North America", "Europe")
+  region    String? // Specific region (e.g., "Northeast US", "UK")
+  countries String[] // Countries they handle
+
   // Targets & Goals
-  monthlyLeadQuota    Int?      // Target leads per month
-  monthlyRevenueTarget Float?   // Revenue target per month
-  quarterlyTarget     Float?    // Quarterly revenue target
-  
+  monthlyLeadQuota     Int? // Target leads per month
+  monthlyRevenueTarget Float? // Revenue target per month
+  quarterlyTarget      Float? // Quarterly revenue target
+
   // Performance Metrics (can be calculated or manually updated)
-  totalLeadsAssigned  Int       @default(0)
-  totalLeadsConverted Int       @default(0)
-  totalRevenue        Float     @default(0)
-  conversionRate      Float     @default(0)
-  
+  totalLeadsAssigned  Int   @default(0)
+  totalLeadsConverted Int   @default(0)
+  totalRevenue        Float @default(0)
+  conversionRate      Float @default(0)
+
   // Status
-  isActive    Boolean    @default(true)
-  startDate   DateTime?  // When they joined
-  
+  isActive  Boolean   @default(true)
+  startDate DateTime? // When they joined
+
   // Bio & Notes
-  bio         String?
-  skills      String[]
-  notes       String?
-  
+  bio    String?
+  skills String[]
+  notes  String?
+
   // Relations
-  assignedLeads      Lead[]    @relation("TeamMemberLeads")
+  assignedLeads      Lead[]     @relation("TeamMemberLeads")
   assignedBusinesses Business[] @relation("AccountManagerBusinesses")
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([role])
   @@index([department])
   @@index([isActive])
@@ -1631,22 +1632,22 @@ enum TeamRole {
   ACCOUNT_EXECUTIVE
   ACCOUNT_MANAGER
   SALES_MANAGER
-  
+
   // Marketing
   MARKETING_MANAGER
   CONTENT_SPECIALIST
   GROWTH_MANAGER
-  
+
   // Customer Success
   CUSTOMER_SUCCESS_MANAGER
   SUPPORT_SPECIALIST
   ONBOARDING_SPECIALIST
-  
+
   // Technology
   DEVELOPER
   TECHNICAL_SUPPORT
   PRODUCT_MANAGER
-  
+
   // Executive
   CEO
   CTO
@@ -1656,11 +1657,11 @@ enum TeamRole {
   VP_MARKETING
   VP_ENGINEERING
   VP_CUSTOMER_SUCCESS
-  
+
   // Operations
   OPERATIONS_MANAGER
   PROJECT_MANAGER
-  
+
   // Other
   INTERN
   CONTRACTOR
@@ -1682,64 +1683,64 @@ enum TeamDepartment {
 
 // Lead/Prospect management for SuperAdmin
 model Lead {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
   // Contact Information
-  name        String
-  email       String?
-  phone       String?
-  company     String?    // Company/Business name
-  country     String?    // Country code or name
-  
+  name    String
+  email   String?
+  phone   String?
+  company String? // Company/Business name
+  country String? // Country code or name
+
   // Lead Source & Tracking
-  source      LeadSource @default(WEBSITE)
-  sourceDetail String?   // Additional source info (e.g., "Contact Form", "Demo Request")
-  referredBy  String?    // Who referred them
-  
+  source       LeadSource @default(WEBSITE)
+  sourceDetail String? // Additional source info (e.g., "Contact Form", "Demo Request")
+  referredBy   String? // Who referred them
+
   // Status & Priority
-  status      LeadStatus @default(NEW)
-  priority    LeadPriority @default(MEDIUM)
-  score       Int        @default(0) // Lead score (0-100)
-  
+  status   LeadStatus   @default(NEW)
+  priority LeadPriority @default(MEDIUM)
+  score    Int          @default(0) // Lead score (0-100)
+
   // Assignment (supports both User and TeamMember)
   assignedToId String?   @db.ObjectId
   assignedTo   User?     @relation("LeadAssignee", fields: [assignedToId], references: [id])
   assignedAt   DateTime?
-  
+
   // Team Member Assignment (preferred over User assignment)
-  teamMemberId String?      @db.ObjectId
-  teamMember   TeamMember?  @relation("TeamMemberLeads", fields: [teamMemberId], references: [id])
-  
+  teamMemberId String?     @db.ObjectId
+  teamMember   TeamMember? @relation("TeamMemberLeads", fields: [teamMemberId], references: [id])
+
   // Business Interest
-  businessType   String?  // What type of business they want (restaurant, retail, etc.)
-  estimatedValue Float?   // Estimated potential value
-  expectedPlan   String?  // Expected subscription plan (STARTER, PRO, BUSINESS)
-  
+  businessType   String? // What type of business they want (restaurant, retail, etc.)
+  estimatedValue Float? // Estimated potential value
+  expectedPlan   String? // Expected subscription plan (STARTER, PRO, BUSINESS)
+
   // Communication
   lastContactedAt DateTime?
   nextFollowUpAt  DateTime?
-  contactCount    Int      @default(0)
-  
+  contactCount    Int       @default(0)
+
   // Conversion Tracking
   convertedAt     DateTime?
-  convertedToId   String?  @db.ObjectId // Business ID if converted
+  convertedToId   String?   @db.ObjectId // Business ID if converted
   conversionNotes String?
-  
+
   // Notes & Activities
-  notes       String?
-  tags        String[]
-  
+  notes String?
+  tags  String[]
+
   // Metadata
   ipAddress   String?
   userAgent   String?
-  landingPage String?    // Which page they came from
-  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  
+  landingPage String? // Which page they came from
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Activities/interactions log
-  activities  LeadActivity[]
-  
+  activities LeadActivity[]
+
   @@index([status])
   @@index([assignedToId])
   @@index([source])
@@ -1751,50 +1752,50 @@ model Lead {
 
 // Lead Activity/Interaction Log
 model LeadActivity {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  leadId      String   @db.ObjectId
-  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  leadId String @db.ObjectId
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   type        LeadActivityType
   title       String
   description String?
-  
+
   // Who performed the activity
   performedById String? @db.ObjectId
   performedBy   String? // Name of who did it (in case user is deleted)
-  
+
   // Additional data
-  metadata    Json?
-  
-  createdAt   DateTime @default(now())
-  
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
   @@index([leadId])
   @@index([leadId, createdAt])
 }
 
 enum LeadSource {
-  WEBSITE        // Website contact form
-  DEMO_REQUEST   // Demo request
-  REFERRAL       // Referred by existing customer
-  SOCIAL         // Social media (Instagram, Facebook, etc.)
-  EMAIL          // Email outreach
-  PHONE          // Phone inquiry
-  PARTNER        // Partner referral
-  EVENT          // Trade show/event
-  ADVERTISING    // Paid advertising
-  ORGANIC        // Organic search
-  OTHER          // Other sources
+  WEBSITE // Website contact form
+  DEMO_REQUEST // Demo request
+  REFERRAL // Referred by existing customer
+  SOCIAL // Social media (Instagram, Facebook, etc.)
+  EMAIL // Email outreach
+  PHONE // Phone inquiry
+  PARTNER // Partner referral
+  EVENT // Trade show/event
+  ADVERTISING // Paid advertising
+  ORGANIC // Organic search
+  OTHER // Other sources
 }
 
 enum LeadStatus {
-  NEW            // Just created, not yet contacted
-  CONTACTED      // Initial contact made
-  QUALIFIED      // Qualified as potential customer
+  NEW // Just created, not yet contacted
+  CONTACTED // Initial contact made
+  QUALIFIED // Qualified as potential customer
   DEMO_SCHEDULED // Demo scheduled
-  NEGOTIATING    // In negotiation/pricing discussion
-  WON            // Converted to customer
-  LOST           // Did not convert
-  NURTURING      // Long-term nurture (not ready now)
+  NEGOTIATING // In negotiation/pricing discussion
+  WON // Converted to customer
+  LOST // Did not convert
+  NURTURING // Long-term nurture (not ready now)
 }
 
 enum LeadPriority {
@@ -1805,16 +1806,16 @@ enum LeadPriority {
 }
 
 enum LeadActivityType {
-  NOTE           // General note
-  EMAIL_SENT     // Email sent to lead
+  NOTE // General note
+  EMAIL_SENT // Email sent to lead
   EMAIL_RECEIVED // Email received from lead
-  CALL           // Phone call
-  MEETING        // Meeting (virtual or in-person)
-  DEMO           // Demo given
-  FOLLOW_UP      // Follow-up scheduled
-  STATUS_CHANGE  // Status changed
-  ASSIGNED       // Lead assigned to someone
-  CREATED        // Lead created
+  CALL // Phone call
+  MEETING // Meeting (virtual or in-person)
+  DEMO // Demo given
+  FOLLOW_UP // Follow-up scheduled
+  STATUS_CHANGE // Status changed
+  ASSIGNED // Lead assigned to someone
+  CREATED // Lead created
 }
 
 // System logs for tracking errors, 404s, and system events

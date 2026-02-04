@@ -45,6 +45,7 @@ interface BusinessDetails {
   slug: string
   description?: string
   businessType: string
+  industry?: string
   subscriptionPlan: string
   billingType?: 'monthly' | 'yearly' | 'free' | null
   subscriptionStatus: string
@@ -369,6 +370,14 @@ export default function BusinessDetailsPage() {
                       {business.businessType.toLowerCase().replace('_', ' ')}
                     </p>
                   </div>
+                  {business.industry && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Industry</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {business.industry}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Store URL</p>
                     <a
