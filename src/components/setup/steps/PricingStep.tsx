@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SetupData } from '../Setup'
-import { Check, ArrowLeft, Sparkles, Zap, Building2 } from 'lucide-react'
+import { Check, ArrowLeft, Sparkles, Zap, Building2, CheckCircle } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 
 // Helper to log client-side errors
@@ -94,6 +94,26 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
   const [loading, setLoading] = useState(false)
   const [loadingAction, setLoadingAction] = useState<'subscribe' | 'trial' | null>(null)
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
+  const [trialAlreadyUsed, setTrialAlreadyUsed] = useState(false)
+  const [checkingTrialStatus, setCheckingTrialStatus] = useState(true)
+
+  // Check if user already has an active trial on mount
+  useEffect(() => {
+    const checkTrialStatus = async () => {
+      try {
+        const response = await fetch('/api/setup/check-trial-status')
+        if (response.ok) {
+          const data = await response.json()
+          setTrialAlreadyUsed(data.trialUsed || data.hasActiveTrial)
+        }
+      } catch (error) {
+        console.error('Error checking trial status:', error)
+      } finally {
+        setCheckingTrialStatus(false)
+      }
+    }
+    checkTrialStatus()
+  }, [])
 
   // Handle subscribing to a paid plan (redirects to Stripe checkout)
   const handleSubscribe = async (planId: PlanId) => {
@@ -294,28 +314,54 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
 
       {/* Free Trial Option */}
       <div className="max-w-2xl mx-auto mb-8">
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-200 p-6 text-center">
-          <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Sparkles className="w-4 h-4" />
-            14-Day Free Trial - No Credit Card Required
+        {trialAlreadyUsed ? (
+          /* Trial Already Active - Show proceed message */
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-200 p-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <CheckCircle className="w-4 h-4" />
+              Free Trial Already Active
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              You already have a free trial!
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Your Pro trial is active. Continue to the next step to complete your setup.
+            </p>
+            <button
+              onClick={() => onComplete({ subscriptionPlan: 'PRO' })}
+              disabled={loading}
+              className="px-8 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Proceed to Next Step →
+            </button>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">
-            Not ready to commit? Try Pro features free
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Get full access to all Pro features for 14 days. No credit card needed.
-            After the trial, you'll be downgraded to Starter limits unless you subscribe.
-          </p>
-          <button
-            onClick={handleStartTrial}
-            disabled={loading}
-            className="px-8 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading && loadingAction === 'trial' 
-              ? 'Starting Trial...' 
-              : 'Skip - Start 14-Day Free Trial'}
-          </button>
-        </div>
+        ) : (
+          /* Normal Trial Option */
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border-2 border-emerald-200 p-6 text-center">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Sparkles className="w-4 h-4" />
+              14-Day Free Trial - No Credit Card Required
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Not ready to commit? Try Pro features free
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Get full access to all Pro features for 14 days. No credit card needed.
+              After the trial, you'll be downgraded to Starter limits unless you subscribe.
+            </p>
+            <button
+              onClick={handleStartTrial}
+              disabled={loading || checkingTrialStatus}
+              className="px-8 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {checkingTrialStatus
+                ? 'Checking...'
+                : loading && loadingAction === 'trial' 
+                  ? 'Starting Trial...' 
+                  : 'Skip - Start 14-Day Free Trial'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Back button */}

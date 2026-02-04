@@ -95,6 +95,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // Log successful trial start
+    await logSystemEvent({
+      logType: 'trial_started',
+      severity: 'info',
+      endpoint: '/api/setup/start-trial',
+      method: 'POST',
+      statusCode: 200,
+      url: request.url,
+      metadata: {
+        userId,
+        userEmail,
+        plan: 'PRO',
+        trialEndsAt: trialEndsAt.toISOString(),
+        stripeSubscriptionId: subscription.id,
+        action: 'trial_start_success'
+      }
+    })
+
     return NextResponse.json({
       success: true,
       trial: {
