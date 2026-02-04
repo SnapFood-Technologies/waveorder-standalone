@@ -3294,15 +3294,24 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           orderNumber: result.orderNumber
         })
         
-        // Open WhatsApp after 5 second delay to give users time to read the success message
-        setTimeout(() => {
-          window.location.href = result.whatsappUrl
-        }, 5000)
-        
-        // Hide success message after 10 seconds
-        setTimeout(() => {
-          setOrderSuccessMessage(null)
-        }, 10000)
+        // Check if this is a direct notification (Twilio) or traditional wa.me flow
+        if (result.directNotification) {
+          // Direct notification - business was notified automatically via Twilio
+          // No redirect needed, just show success message longer
+          setTimeout(() => {
+            setOrderSuccessMessage(null)
+          }, 15000) // Show for 15 seconds since no redirect
+        } else {
+          // Traditional flow - redirect to WhatsApp after delay
+          setTimeout(() => {
+            window.location.href = result.whatsappUrl
+          }, 5000)
+          
+          // Hide success message after 10 seconds
+          setTimeout(() => {
+            setOrderSuccessMessage(null)
+          }, 10000)
+        }
       } else {
         // Display the error message from the API, or fallback to default message
         // Map API error messages to translations

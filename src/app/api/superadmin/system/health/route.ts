@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { checkTwilioHealth } from '@/lib/twilio'
 
 interface ServiceStatus {
   name: string
@@ -387,7 +388,8 @@ export async function GET() {
       clarity,
       sentry,
       nextAuth,
-      cron
+      cron,
+      twilioResult
     ] = await Promise.all([
       checkMongoDB(),
       checkStripe(),
@@ -401,8 +403,17 @@ export async function GET() {
       checkClarity(),
       checkSentry(),
       checkNextAuth(),
-      checkCron()
+      checkCron(),
+      checkTwilioHealth()
     ])
+    
+    // Convert Twilio result to ServiceStatus format
+    const twilio: ServiceStatus = {
+      name: 'Twilio WhatsApp',
+      status: twilioResult.status,
+      message: twilioResult.message,
+      latency: twilioResult.latency
+    }
 
     const categories: ServiceCategory[] = [
       {
@@ -422,6 +433,12 @@ export async function GET() {
         description: 'Transactional email delivery',
         icon: 'Mail',
         services: [resend]
+      },
+      {
+        name: 'Messaging',
+        description: 'WhatsApp and SMS notifications',
+        icon: 'MessageSquare',
+        services: [twilio]
       },
       {
         name: 'Authentication',

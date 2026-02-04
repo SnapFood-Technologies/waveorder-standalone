@@ -5,6 +5,7 @@ import { sendOrderNotification } from '@/lib/orderNotificationService'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -1045,6 +1046,7 @@ export async function POST(
         businessType: true,
         address: true,
         whatsappNumber: true,
+        whatsappDirectNotifications: true,
         orderNumberFormat: true,
         website: true,
         deliveryEnabled: true,
@@ -2052,6 +2054,11 @@ try {
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     
+    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+    
     logSystemEvent({
       logType: 'order_created',
       severity: 'info',
@@ -2063,7 +2070,7 @@ try {
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -2080,15 +2087,90 @@ try {
       }
     })
 
-    return NextResponse.json({
-      success: true,
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      calculatedDeliveryFee: finalDeliveryFee,
-      deliveryZone,
-      deliveryDistance,
-      whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
-    })
+    // Check if direct WhatsApp notifications are enabled via Twilio
+    const useDirectNotification = business.whatsappDirectNotifications && isTwilioConfigured()
+    let twilioMessageSent = false
+    let twilioError: string | undefined
+
+    if (useDirectNotification) {
+      // Fetch order items with product details for Twilio message
+      const orderItemsForTwilio = await prisma.orderItem.findMany({
+        where: { orderId: order.id },
+        include: {
+          product: { select: { name: true } },
+          variant: { select: { name: true } }
+        }
+      })
+
+      // Send order notification directly to business via Twilio
+      const twilioResult = await sendTwilioOrderNotification(
+        business.whatsappNumber,
+        {
+          orderNumber: order.orderNumber,
+          businessName: business.name,
+          businessSlug: business.slug,
+          customerName: customer.name,
+          customerPhone: customer.phone || orderData.customerPhone,
+          items: orderItemsForTwilio.map(item => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.price,
+            variant: item.variant?.name
+          })),
+          subtotal: order.subtotal,
+          deliveryFee: finalDeliveryFee,
+          total: order.total,
+          deliveryType: order.type.toLowerCase() as 'delivery' | 'pickup' | 'dineIn',
+          deliveryAddress: order.deliveryAddress || undefined,
+          deliveryTime: orderData.deliveryTime || null,
+          specialInstructions: order.notes || undefined,
+          currencySymbol: getCurrencySymbol(business.currency)
+        }
+      )
+
+      twilioMessageSent = twilioResult.success
+      if (!twilioResult.success) {
+        twilioError = twilioResult.error
+        console.error('Twilio notification failed:', twilioResult.error)
+        // Log the failure but don't fail the order
+        Sentry.captureMessage('Twilio order notification failed', {
+          level: 'warning',
+          extra: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            businessId: business.id,
+            error: twilioResult.error
+          }
+        })
+      }
+    }
+
+    // Return response based on notification type
+    if (useDirectNotification && twilioMessageSent) {
+      // Direct notification sent successfully - no wa.me redirect needed
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        calculatedDeliveryFee: finalDeliveryFee,
+        deliveryZone,
+        deliveryDistance,
+        directNotification: true,
+        message: 'Order sent! The business has been notified.'
+      })
+    } else {
+      // Use traditional wa.me redirect (either by preference or as fallback)
+      return NextResponse.json({
+        success: true,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        calculatedDeliveryFee: finalDeliveryFee,
+        deliveryZone,
+        deliveryDistance,
+        directNotification: false,
+        whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
+      })
+    }
 
   } catch (error) {
     // Capture error in Sentry
@@ -2105,7 +2187,6 @@ try {
           itemCount: orderData.items?.length,
           hasCustomerEmail: !!orderData.customerEmail,
         } : null,
-        url: request.url,
       },
     })
     
@@ -2114,6 +2195,11 @@ try {
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     const businessId = orderData?.businessId || undefined
+    
+    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
     
     logSystemEvent({
       logType: 'order_error',
@@ -2128,7 +2214,7 @@ try {
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         errorType: 'order_creation_error',
         orderData: orderData ? {
@@ -2394,6 +2480,8 @@ function getCurrencySymbol(currency: string) {
     case 'EUR': return '€'
     case 'ALL': return 'L'
     case 'GBP': return '£'
+    case 'BHD': return 'BD'
+    case 'BBD': return 'Bds$'
     default: return '$'
   }
 }

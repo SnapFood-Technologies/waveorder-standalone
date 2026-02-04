@@ -10,9 +10,10 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
   // Check file size (10MB max for business images)
   const maxSize = 10 * 1024 * 1024; // 10MB
   if (file.size > maxSize) {
+    const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
     return { 
       valid: false, 
-      error: `File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB` 
+      error: `Image is too large (${fileSizeMB}MB). Maximum size is 10MB.` 
     };
   }
 
@@ -27,9 +28,10 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
   ];
   
   if (!allowedTypes.includes(file.type)) {
+    const fileExt = file.name.split('.').pop()?.toUpperCase() || 'unknown';
     return { 
       valid: false, 
-      error: 'File must be an image (JPEG, PNG, WebP, GIF, or SVG)' 
+      error: `${fileExt} files are not supported. Please use JPEG, PNG, WebP, GIF, or SVG.` 
     };
   }
 
@@ -53,14 +55,14 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
     const metadata = await sharp(buffer).metadata();
     
     if (!metadata.width || !metadata.height) {
-      return { valid: false, error: 'Invalid image file' };
+      return { valid: false, error: 'Could not read image dimensions. The file may be corrupted.' };
     }
 
     // Check minimum dimensions
     if (metadata.width < 16 || metadata.height < 16) {
       return { 
         valid: false, 
-        error: 'Image must be at least 16x16 pixels' 
+        error: `Image is too small (${metadata.width}x${metadata.height}px). Minimum size is 16x16 pixels.` 
       };
     }
 
@@ -68,7 +70,7 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
     if (metadata.width > 8000 || metadata.height > 8000) {
       return { 
         valid: false, 
-        error: 'Image must be smaller than 8000x8000 pixels' 
+        error: `Image is too large (${metadata.width}x${metadata.height}px). Maximum size is 8000x8000 pixels.` 
       };
     }
 
@@ -76,7 +78,7 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
     if (metadata.format && !['jpeg', 'png', 'webp', 'gif'].includes(metadata.format)) {
       return { 
         valid: false, 
-        error: 'Unsupported image format detected' 
+        error: `Unsupported image format (${metadata.format}). Please use JPEG, PNG, WebP, or GIF.` 
       };
     }
 
@@ -84,7 +86,7 @@ export async function validateImageFile(file: File): Promise<FileValidationResul
   } catch (error) {
     return { 
       valid: false, 
-      error: 'Invalid or corrupted image file' 
+      error: 'Could not process this image. The file may be corrupted or in an unsupported format.' 
     };
   }
 }

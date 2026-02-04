@@ -1277,7 +1277,7 @@ export function CreateBusinessForm() {
 
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-800">
-                          <strong>Note:</strong> Businesses start with the Starter plan by default. Stripe integration for subscription management is available.
+                          <strong>Note:</strong> This business will be created with the <strong>{formData.subscriptionPlan}</strong> plan ({formData.billingType === 'free' ? 'Free - Admin assigned' : formData.billingType}). Stripe integration for subscription management is available.
                         </p>
                       </div>
                     </div>
@@ -1464,10 +1464,10 @@ export function CreateBusinessForm() {
                 <div className="bg-green-50 p-3 rounded-lg">
                   <h4 className="text-sm font-semibold text-green-800 mb-2 flex items-center">
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Payment Methods
+                    Subscription
                   </h4>
                   <p className="text-xs text-green-700">
-                    Businesses start with the Starter plan. Online payment integrations (Stripe, PayPal) are available for subscription management.
+                    This business will start with the <strong>{formData.subscriptionPlan}</strong> plan ({formData.billingType === 'free' ? 'Free - Admin assigned' : formData.billingType}).
                   </p>
                 </div>
               )}

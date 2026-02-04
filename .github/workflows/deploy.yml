@@ -122,6 +122,11 @@ jobs:
           # API Docs
           API_DOCS_PASSWORD: ${{ secrets.API_DOCS_PASSWORD }}
           
+          # 📱 Twilio WhatsApp
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_NUMBER: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
+          
           # 🏭 Build Environment
           NODE_ENV: production
         run: |
@@ -196,6 +201,11 @@ jobs:
 
           # API Docs
           API_DOCS_PASSWORD=${{ secrets.API_DOCS_PASSWORD }}
+
+          # 📱 Twilio WhatsApp
+          TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_NUMBER=${{ secrets.TWILIO_WHATSAPP_NUMBER }}
           EOF
           echo "✅ Production environment file created"
 

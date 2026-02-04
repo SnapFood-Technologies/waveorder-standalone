@@ -21,7 +21,8 @@ import {
   ExternalLink,
   HardDrive,
   Lock,
-  Globe
+  Globe,
+  MessageSquare
 } from 'lucide-react'
 
 interface ServiceStatus {
@@ -105,7 +106,8 @@ export default function HealthStatusPage() {
       Server,
       HardDrive,
       Lock,
-      Globe
+      Globe,
+      MessageSquare
     }
     const Icon = icons[iconName] || Activity
     return <Icon className="w-5 h-5" />
