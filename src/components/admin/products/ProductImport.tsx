@@ -55,6 +55,16 @@ interface ValidationResult {
 
 type Step = 'upload' | 'preview' | 'result'
 
+// Currency symbol mapping
+const currencySymbols: Record<string, string> = {
+  'USD': '$',
+  'EUR': '€',
+  'GBP': '£',
+  'ALL': 'L',
+  'BHD': 'BD',
+  'BBD': 'Bds$',
+}
+
 export default function ImportPage({ businessId }: ImportPageProps) {
   const { addParams } = useImpersonation(businessId)
   const router = useRouter()
@@ -70,21 +80,32 @@ export default function ImportPage({ businessId }: ImportPageProps) {
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [existingProductCount, setExistingProductCount] = useState(0)
+  const [currency, setCurrency] = useState('USD')
 
-  // Fetch existing product count on mount
+  // Fetch existing product count and currency on mount
   useEffect(() => {
-    const fetchProductCount = async () => {
+    const fetchBusinessData = async () => {
       try {
-        const response = await fetch(`/api/admin/stores/${businessId}/products?limit=1`)
-        if (response.ok) {
-          const data = await response.json()
+        // Fetch product count
+        const productsRes = await fetch(`/api/admin/stores/${businessId}/products?limit=1`)
+        if (productsRes.ok) {
+          const data = await productsRes.json()
           setExistingProductCount(data.pagination?.total || 0)
         }
+        
+        // Fetch business currency
+        const businessRes = await fetch(`/api/admin/stores/${businessId}`)
+        if (businessRes.ok) {
+          const businessData = await businessRes.json()
+          if (businessData.currency) {
+            setCurrency(businessData.currency)
+          }
+        }
       } catch (error) {
-        console.error('Error fetching product count:', error)
+        console.error('Error fetching business data:', error)
       }
     }
-    fetchProductCount()
+    fetchBusinessData()
   }, [businessId])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +222,8 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001,https:
   }
 
   const formatCurrency = (amount: number) => {
-    return `$${amount.toFixed(2)}`
+    const symbol = currencySymbols[currency] || currency
+    return `${symbol}${amount.toFixed(2)}`
   }
 
   return (
