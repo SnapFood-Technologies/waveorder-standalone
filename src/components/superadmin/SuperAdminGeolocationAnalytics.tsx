@@ -503,7 +503,7 @@ export function SuperAdminGeolocationAnalytics() {
             <h3 className="text-sm font-medium text-gray-700 mb-4">Top Browsers by Region</h3>
             {data.topBrowsersByRegion.length > 0 ? (
               <div className="space-y-4">
-                {data.topBrowsersByRegion.slice(0, 5).map((region, i) => (
+                {data.topBrowsersByRegion.slice(0, 10).map((region, i) => (
                   <div key={i}>
                     <p className="text-sm font-medium text-gray-800 mb-2">
                       {getCountryFlag(region.country)} {region.country}
