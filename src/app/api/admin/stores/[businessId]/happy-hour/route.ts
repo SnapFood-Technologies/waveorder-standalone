@@ -79,7 +79,7 @@ export async function PATCH(
         where: {
           userId: session.user.id,
           businessId: businessId,
-          role: { in: ['OWNER', 'ADMIN', 'MANAGER'] }
+          role: { in: ['OWNER', 'MANAGER'] }
         }
       })
       
