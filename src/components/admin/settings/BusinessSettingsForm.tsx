@@ -38,6 +38,7 @@ interface BusinessSettings {
   descriptionAl?: string
   descriptionEl?: string
   businessType: string
+  industry?: string
   address?: string
   country?: string  // ISO country code (e.g., "AL", "GR", "US")
   phone?: string
@@ -641,6 +642,24 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'OTHER', label: 'Other' }
   ]
 
+  const industries = [
+    'Food & Beverage',
+    'Hardware & Construction',
+    'Fashion & Apparel',
+    'Beauty & Cosmetics',
+    'Electronics & Technology',
+    'Health & Pharmacy',
+    'Home & Garden',
+    'Automotive',
+    'Pet Supplies',
+    'Sports & Outdoors',
+    'Books & Stationery',
+    'Toys & Games',
+    'Jewelry & Accessories',
+    'Art & Crafts',
+    'Music & Entertainment'
+  ]
+
   const currencies = [
     { value: 'USD', label: 'US Dollar ($)', symbol: '$' },
     { value: 'EUR', label: 'Euro (€)', symbol: '€' },
@@ -861,6 +880,44 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Industry <span className="text-gray-400 font-normal">(optional)</span>
+                </label>
+                <div className="space-y-2">
+                  <select
+                    value={industries.includes(settings.industry || '') ? settings.industry : (settings.industry ? 'custom' : '')}
+                    onChange={(e) => {
+                      if (e.target.value === 'custom') {
+                        // Keep current value if switching to custom, or clear it
+                        setSettings(prev => ({ ...prev, industry: prev.industry && !industries.includes(prev.industry) ? prev.industry : '' }))
+                      } else {
+                        setSettings(prev => ({ ...prev, industry: e.target.value }))
+                      }
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                  >
+                    <option value="">Select an industry...</option>
+                    {industries.map(ind => (
+                      <option key={ind} value={ind}>{ind}</option>
+                    ))}
+                    <option value="custom">Other (custom)</option>
+                  </select>
+                  {(settings.industry && !industries.includes(settings.industry)) && (
+                    <input
+                      type="text"
+                      value={settings.industry || ''}
+                      onChange={(e) => setSettings(prev => ({ ...prev, industry: e.target.value }))}
+                      placeholder="Enter your industry..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                    />
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Helps categorize your business for analytics
+                </p>
               </div>
 
               <div>

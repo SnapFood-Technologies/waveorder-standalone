@@ -44,6 +44,7 @@ interface Business {
   name: string;
   slug: string;
   businessType: string;
+  industry?: string | null;
   subscriptionPlan: string;
   billingType?: 'monthly' | 'yearly' | 'free' | null;
   subscriptionStatus: string;
@@ -1069,6 +1070,9 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
               <h2 className="text-xl font-semibold text-gray-900">{business.name}</h2>
               <p className="text-sm text-gray-600 capitalize">
                 {business.businessType.toLowerCase().replace('_', ' ')}
+                {business.industry && (
+                  <span className="text-gray-400"> • {business.industry}</span>
+                )}
               </p>
             </div>
           </div>

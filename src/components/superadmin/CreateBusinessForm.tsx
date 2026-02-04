@@ -45,6 +45,7 @@ interface FormData {
   businessName: string
   slug: string
   businessType: string
+  industry: string
   subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS'
   billingType: 'monthly' | 'yearly' | 'free'
   ownerName: string
@@ -80,6 +81,26 @@ const businessTypes = [
   { value: 'JEWELRY', label: 'Jewelry Store', icon: Gem },
   { value: 'FLORIST', label: 'Florist', icon: Flower2 },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
+]
+
+const industries = [
+  'Food & Beverage',
+  'Retail & Shopping',
+  'Health & Wellness',
+  'Beauty & Personal Care',
+  'Fashion & Apparel',
+  'Home & Garden',
+  'Electronics & Technology',
+  'Sports & Fitness',
+  'Arts & Crafts',
+  'Automotive',
+  'Hardware & Construction',
+  'Professional Services',
+  'Entertainment',
+  'Education',
+  'Pet Supplies',
+  'Gifts & Specialty',
+  'Other'
 ]
 
 const phonePrefixes = [
@@ -225,6 +246,7 @@ export function CreateBusinessForm() {
     businessName: '',
     slug: '',
     businessType: 'RESTAURANT',
+    industry: '',
     subscriptionPlan: 'STARTER',
     billingType: 'free',
     ownerName: '',
@@ -376,6 +398,7 @@ export function CreateBusinessForm() {
           businessName: formData.businessName,
           slug: formData.slug,
           businessType: formData.businessType,
+          industry: formData.industry || null,
           ownerName: formData.ownerName,
           ownerEmail: formData.ownerEmail,
           whatsappNumber: completeWhatsappNumber,
@@ -700,6 +723,28 @@ export function CreateBusinessForm() {
                             )
                           })}
                         </div>
+                      </div>
+
+                      {/* Industry Selection (Optional) */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Industry <span className="text-gray-400 font-normal">(Optional)</span>
+                        </label>
+                        <select
+                          value={formData.industry}
+                          onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        >
+                          <option value="">Select an industry...</option>
+                          {industries.map((industry) => (
+                            <option key={industry} value={industry}>
+                              {industry}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Helps categorize the business for better organization
+                        </p>
                       </div>
 
                       {/* Subscription Plan Selection */}

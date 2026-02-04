@@ -9,7 +9,7 @@ interface Product {
   id: string
   name: string
   price: number
-  status: string
+  isActive: boolean
   category?: {
     id: string
     name: string
@@ -136,13 +136,13 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
   }
 
   const selectAllProducts = () => {
-    const filteredProducts = products.filter(p => 
-      p.status === 'active' && 
+    const filtered = products.filter(p => 
+      p.isActive && 
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     setSettings(prev => ({
       ...prev,
-      happyHourProductIds: [...new Set([...prev.happyHourProductIds, ...filteredProducts.map(p => p.id)])]
+      happyHourProductIds: [...new Set([...prev.happyHourProductIds, ...filtered.map(p => p.id)])]
     }))
   }
 
@@ -151,7 +151,7 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
   }
 
   const filteredProducts = products.filter(p => 
-    p.status === 'active' && 
+    p.isActive && 
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
