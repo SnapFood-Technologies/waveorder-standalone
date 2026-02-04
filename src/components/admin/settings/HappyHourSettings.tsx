@@ -165,7 +165,7 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div>
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -178,7 +178,7 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
   // Feature not enabled by SuperAdmin
   if (!settings.happyHourEnabled) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Happy Hour / Daily Discounts</h1>
           <p className="text-gray-600 mt-1">
@@ -199,7 +199,7 @@ export function HappyHourSettings({ businessId }: HappyHourSettingsProps) {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Happy Hour / Daily Discounts</h1>
