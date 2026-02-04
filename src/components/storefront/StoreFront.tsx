@@ -35,8 +35,7 @@ import {
   SlidersHorizontal,
   ArrowUp,
   ArrowDown,
-  Zap,
-  Clock
+  Zap
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'

@@ -33,8 +33,7 @@ import {
   TrendingUp,
   Sparkles,
   Link2,
-  MessageSquare,
-  Clock
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
