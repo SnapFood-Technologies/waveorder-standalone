@@ -2054,6 +2054,11 @@ try {
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     
+    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+    
     logSystemEvent({
       logType: 'order_created',
       severity: 'info',
@@ -2065,7 +2070,7 @@ try {
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -2110,7 +2115,7 @@ try {
           deliveryType: order.type.toLowerCase() as 'delivery' | 'pickup' | 'dineIn',
           deliveryAddress: order.deliveryAddress || undefined,
           deliveryTime: orderData.deliveryTime || null,
-          specialInstructions: order.specialInstructions || undefined,
+          specialInstructions: order.notes || undefined,
           currencySymbol: getCurrencySymbol(business.currency)
         }
       )
@@ -2174,7 +2179,6 @@ try {
           itemCount: orderData.items?.length,
           hasCustomerEmail: !!orderData.customerEmail,
         } : null,
-        url: request.url,
       },
     })
     
@@ -2183,6 +2187,11 @@ try {
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     const businessId = orderData?.businessId || undefined
+    
+    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
     
     logSystemEvent({
       logType: 'order_error',
@@ -2197,7 +2206,7 @@ try {
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         errorType: 'order_creation_error',
         orderData: orderData ? {
@@ -2463,6 +2472,8 @@ function getCurrencySymbol(currency: string) {
     case 'EUR': return '€'
     case 'ALL': return 'L'
     case 'GBP': return '£'
+    case 'BHD': return 'BD'
+    case 'BBD': return 'Bds$'
     default: return '$'
   }
 }

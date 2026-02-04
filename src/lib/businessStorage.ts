@@ -170,7 +170,20 @@ export async function uploadBusinessImage(
 
   } catch (error) {
     console.error(`${folder} upload error:`, error);
-    return { success: false, error: `Failed to upload ${folder}.` };
+    // Provide more specific error messages based on common issues
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (errorMessage.includes('Input image exceeds pixel limit') || errorMessage.includes('dimensions')) {
+      return { success: false, error: 'Image is too large. Please use an image smaller than 8000x8000 pixels.' };
+    }
+    if (errorMessage.includes('unsupported') || errorMessage.includes('format')) {
+      return { success: false, error: 'Unsupported image format. Please use JPEG, PNG, WebP, or SVG.' };
+    }
+    if (errorMessage.includes('corrupt') || errorMessage.includes('invalid')) {
+      return { success: false, error: 'The image file appears to be corrupted. Please try a different file.' };
+    }
+    
+    return { success: false, error: `Failed to upload ${folder}. Please try a different image.` };
   }
 }
 

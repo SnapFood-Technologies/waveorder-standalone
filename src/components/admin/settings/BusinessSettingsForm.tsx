@@ -543,12 +543,14 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       body: formData
     })
 
+    const data = await response.json()
+    
     if (!response.ok) {
-      throw new Error('Upload failed')
+      // Throw the actual error message from the API
+      throw new Error(data.message || data.error || 'Upload failed')
     }
 
-    const { publicUrl } = await response.json()
-    return publicUrl
+    return data.publicUrl
   }
 
   const handleImageUpload = async (file: File, type: 'logo' | 'cover' | 'favicon' | 'ogImage') => {
@@ -577,9 +579,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
         ...prev, 
         [fieldMap[type]]: url 
       }))
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error)
-      setError('Failed to upload image')
+      // Show the actual error message from the API if available
+      const errorMessage = error?.message || error?.error || `Failed to upload ${type}`
+      setError(errorMessage)
     } finally {
       setUploading(false)
     }
@@ -1678,10 +1682,13 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
         <div className="space-y-6">
           {/* Logo Upload */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
               <ImageIcon className="w-5 h-5 text-teal-600 mr-2" />
               Logo
             </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Recommended: Square image (PNG or JPG). Max 10MB. Will be resized to 400x400px.
+            </p>
             
             {settings.logo ? (
               <div className="relative">
