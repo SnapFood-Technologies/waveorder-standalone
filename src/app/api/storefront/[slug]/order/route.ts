@@ -2093,6 +2093,15 @@ try {
     let twilioError: string | undefined
 
     if (useDirectNotification) {
+      // Fetch order items with product details for Twilio message
+      const orderItemsForTwilio = await prisma.orderItem.findMany({
+        where: { orderId: order.id },
+        include: {
+          product: { select: { name: true } },
+          variant: { select: { name: true } }
+        }
+      })
+
       // Send order notification directly to business via Twilio
       const twilioResult = await sendTwilioOrderNotification(
         business.whatsappNumber,
@@ -2102,12 +2111,11 @@ try {
           businessSlug: business.slug,
           customerName: customer.name,
           customerPhone: customer.phone || orderData.customerPhone,
-          items: items.map(item => ({
-            name: item.name,
+          items: orderItemsForTwilio.map(item => ({
+            name: item.product.name,
             quantity: item.quantity,
             price: item.price,
-            variant: item.variant?.name,
-            modifiers: item.modifiers?.map((m: any) => ({ name: m.name, price: m.price }))
+            variant: item.variant?.name
           })),
           subtotal: order.subtotal,
           deliveryFee: finalDeliveryFee,

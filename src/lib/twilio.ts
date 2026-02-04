@@ -17,7 +17,6 @@ interface OrderNotificationData {
     quantity: number
     price: number
     variant?: string
-    modifiers?: Array<{ name: string; price: number }>
   }>
   subtotal: number
   deliveryFee: number
@@ -123,11 +122,6 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
     message += `${item.quantity}x ${item.name}`
     if (item.variant) message += ` (${item.variant})`
     message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
-    if (item.modifiers && item.modifiers.length > 0) {
-      item.modifiers.forEach(mod => {
-        message += `  + ${mod.name} (+${currencySymbol}${mod.price.toFixed(2)})\n`
-      })
-    }
   })
   
   message += `\n---\n`
