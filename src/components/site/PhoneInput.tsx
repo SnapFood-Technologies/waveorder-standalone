@@ -126,6 +126,34 @@ const COUNTRY_CONFIGS = {
       return clean
     }
   },
+  BH: { // Bahrain - 8 digits after +973
+    prefix: '+973',
+    placeholder: '3312 3456',
+    pattern: /^(\+973|973)[0-9]{8}$/,
+    flag: '🇧🇭',
+    name: 'Bahrain',
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 8) {
+        return clean.replace(/(\d{4})(\d{4})/, '$1 $2')
+      }
+      return clean
+    }
+  },
+  GB: { // United Kingdom - 10-11 digits after +44
+    prefix: '+44',
+    placeholder: '7911 123456',
+    pattern: /^(\+44|44)0?[1-9]\d{9,10}$/,
+    flag: '🇬🇧',
+    name: 'United Kingdom',
+    format: (num: string) => {
+      const clean = num.replace(/\D/g, '')
+      if (clean.length >= 10) {
+        return clean.replace(/(\d{4})(\d{6})/, '$1 $2')
+      }
+      return clean
+    }
+  },
   DEFAULT: {
     prefix: '+1',
     placeholder: 'Enter phone number',
@@ -178,6 +206,16 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
       return 'BB'
     }
     
+    // Bahrain boundaries: approximately 25.5-26.4°N, 50.3-50.8°E
+    if (lat >= 25.5 && lat <= 26.4 && lng >= 50.3 && lng <= 50.8) {
+      return 'BH'
+    }
+    
+    // United Kingdom boundaries: approximately 49.9-60.9°N, -8.6 to 1.8°E
+    if (lat >= 49.9 && lat <= 60.9 && lng >= -8.6 && lng <= 1.8) {
+      return 'GB'
+    }
+    
     // United States boundaries: approximately 24-71°N, -180 to -66°W
     if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
       return 'US'
@@ -192,6 +230,8 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
   if (storeData?.whatsappNumber?.startsWith('+383')) return 'XK'
   if (storeData?.whatsappNumber?.startsWith('+389')) return 'MK'
   if (storeData?.whatsappNumber?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
+  if (storeData?.whatsappNumber?.startsWith('+973')) return 'BH' // Bahrain
+  if (storeData?.whatsappNumber?.startsWith('+44')) return 'GB' // UK
   if (storeData?.whatsappNumber?.startsWith('+1')) return 'US'
   
   // TERTIARY: Check business indicators
@@ -199,6 +239,8 @@ function detectCountryFromBusiness(storeData: any): keyof typeof COUNTRY_CONFIGS
   if (storeData?.currency === 'EUR' && storeData?.language === 'el') return 'GR'
   if (storeData?.currency === 'EUR' && storeData?.language === 'it') return 'IT'
   if (storeData?.currency === 'EUR' && storeData?.language === 'es') return 'ES'
+  if (storeData?.currency === 'BHD') return 'BH' // Bahrain
+  if (storeData?.currency === 'GBP') return 'GB' // UK
   
   // DEFAULT: Use US if all detection methods fail
   return 'US'
@@ -213,6 +255,8 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('+383')) return 'XK'
   if (phoneValue.startsWith('+389')) return 'MK'
   if (phoneValue.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
+  if (phoneValue.startsWith('+973')) return 'BH' // Bahrain
+  if (phoneValue.startsWith('+44')) return 'GB' // UK
   if (phoneValue.startsWith('+1')) return 'US'
   
   // If no + but starts with country code
@@ -223,6 +267,8 @@ function detectCountryFromPrefix(phoneValue: string): keyof typeof COUNTRY_CONFI
   if (phoneValue.startsWith('383')) return 'XK'
   if (phoneValue.startsWith('389')) return 'MK'
   if (phoneValue.startsWith('1246')) return 'BB' // Barbados - must be before generic 1
+  if (phoneValue.startsWith('973')) return 'BH' // Bahrain
+  if (phoneValue.startsWith('44')) return 'GB' // UK
   if (phoneValue.startsWith('1')) return 'US'
   
   return 'DEFAULT'
@@ -332,6 +378,10 @@ export function PhoneInput({
         return translations.invalidNorthMacedoniaPhone || 'Please enter a valid North Macedonia phone number'
       case 'BB':
         return translations.invalidBarbadosPhone || 'Please enter a valid Barbados phone number'
+      case 'BH':
+        return translations.invalidBahrainPhone || 'Please enter a valid Bahrain phone number'
+      case 'GB':
+        return translations.invalidUKPhone || 'Please enter a valid UK phone number'
       default:
         return translations.invalidPhone || 'Please enter a valid phone number'
     }
@@ -356,6 +406,10 @@ export function PhoneInput({
         return translations.phoneFormatNorthMacedonia || 'Format: +389 70 123 456'
       case 'BB':
         return translations.phoneFormatBarbados || 'Format: +1246 123 4567'
+      case 'BH':
+        return translations.phoneFormatBahrain || 'Format: +973 3312 3456'
+      case 'GB':
+        return translations.phoneFormatUK || 'Format: +44 7911 123456'
       case 'US':
         return translations.phoneFormatUS || 'Format: +1 (555) 123-4567'
       default:

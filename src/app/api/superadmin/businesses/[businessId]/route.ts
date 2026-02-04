@@ -249,6 +249,7 @@ export async function GET(
         currency: business.currency,
         whatsappNumber: business.whatsappNumber,
         whatsappDirectNotifications: business.whatsappDirectNotifications,
+        happyHourEnabled: business.happyHourEnabled,
         address: business.address,
         email: business.email,
         phone: business.phone,

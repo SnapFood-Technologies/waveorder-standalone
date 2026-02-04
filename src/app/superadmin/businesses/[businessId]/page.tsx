@@ -33,7 +33,8 @@ import {
   TrendingUp,
   Sparkles,
   Link2,
-  MessageSquare
+  MessageSquare,
+  Clock
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -57,6 +58,7 @@ interface BusinessDetails {
   currency: string
   whatsappNumber: string
   whatsappDirectNotifications?: boolean
+  happyHourEnabled?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1291,6 +1293,9 @@ export default function BusinessDetailsPage() {
           {/* WhatsApp Settings */}
           <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Happy Hour Settings */}
+          <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -1454,6 +1459,92 @@ function WhatsAppSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Traditional Flow:</span> Customers will be redirected to WhatsApp to send their order manually.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Happy Hour Settings Section Component (SuperAdmin toggle only)
+function HappyHourSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [happyHourEnabled, setHappyHourEnabled] = useState(business.happyHourEnabled || false)
+
+  const handleToggle = async () => {
+    const newValue = !happyHourEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/happy-hour-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ happyHourEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setHappyHourEnabled(newValue)
+        toast.success(newValue ? 'Happy Hour feature enabled' : 'Happy Hour feature disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Clock className="w-5 h-5 mr-2 text-amber-600" />
+        Happy Hour / Daily Discounts
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Happy Hour Feature</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, this business can configure time-based discounts on selected products.
+            The business will manage the actual settings from their admin panel.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
+            happyHourEnabled ? 'bg-amber-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              happyHourEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {happyHourEnabled && (
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-xs text-amber-700">
+            <span className="font-medium">Enabled:</span> Business can configure happy hour discounts in their Settings → Happy Hour.
+          </p>
+        </div>
+      )}
+      
+      {!happyHourEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Happy Hour feature is not available for this business.
           </p>
         </div>
       )}

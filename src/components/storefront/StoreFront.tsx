@@ -35,7 +35,8 @@ import {
   SlidersHorizontal,
   ArrowUp,
   ArrowDown,
-  Zap
+  Zap,
+  Clock
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -602,6 +603,39 @@ function StoreClosure({ storeData, primaryColor, translations }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Happy Hour Banner Component
+// @ts-ignore
+function HappyHourBanner({ storeData, currencySymbol, translations }) {
+  if (!storeData.happyHour?.isActive) return null
+  
+  const { startTime, endTime, discountPercent, productIds } = storeData.happyHour
+  const productCount = productIds?.length || 0
+  
+  return (
+    <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 sm:p-5 border border-amber-200 mb-4 md:mb-6">
+      <div className="flex items-center">
+        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mr-3 flex-shrink-0">
+          <Clock className="w-5 h-5 text-amber-600" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-amber-800">
+              {translations.happyHour || 'Happy Hour'}
+            </h3>
+            <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-bold animate-pulse">
+              {discountPercent}% OFF
+            </span>
+          </div>
+          <p className="text-amber-700 text-sm">
+            {translations.happyHourDescription?.replace('{count}', productCount.toString()) || 
+              `${productCount} items on special discount from ${startTime} to ${endTime}`}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1668,6 +1702,13 @@ interface StoreData {
   initialProducts?: any[]  // Initial products from server-side render
   schedulingEnabled?: boolean  // Enable/disable order scheduling
   showStockBadge?: boolean  // Show stock status badge on product cards
+  happyHour?: {
+    isActive: boolean
+    startTime: string
+    endTime: string
+    discountPercent: number
+    productIds: string[]
+  } | null
 }
 
 interface Category {
@@ -2566,6 +2607,15 @@ const trackProductEvent = useCallback((
     } else if (cleanPhone.startsWith('+389')) {
       // North Macedonia: +389 + 8 digits = 12 characters
       return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+973')) {
+      // Bahrain: +973 + 8 digits = 12 characters
+      return cleanPhone.length >= 12
+    } else if (cleanPhone.startsWith('+44')) {
+      // UK: +44 + 10-11 digits = 13-14 characters
+      return cleanPhone.length >= 13
+    } else if (cleanPhone.startsWith('+1246')) {
+      // Barbados: +1246 + 7 digits = 12 characters
+      return cleanPhone.length >= 12
     } else if (cleanPhone.startsWith('+1')) {
       // US: +1 + 10 digits = 12 characters
       return cleanPhone.length >= 12
@@ -3017,14 +3067,28 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
   
-    const basePrice = variant?.price || product.price
+    // Check if happy hour applies to this product
+    const isHappyHourProduct = storeData.happyHour?.isActive && storeData.happyHour?.productIds?.includes(product.id)
+    
+    const regularPrice = variant?.price || product.price
     // Get original price for discount display (variant originalPrice takes precedence)
     const baseOriginalPrice = variant?.originalPrice || product.originalPrice
+    
+    // Apply happy hour discount if applicable
+    const basePrice = isHappyHourProduct && storeData.happyHour?.discountPercent
+      ? regularPrice * (1 - storeData.happyHour.discountPercent / 100)
+      : regularPrice
+    
     const modifierPrice = modifiers.reduce((sum, mod) => sum + mod.price, 0)
     const totalPrice = basePrice + modifierPrice
   
     // Use mapped variant display name if provided, otherwise use variant.name
     const variantName = variant ? (variantDisplayName || variant.name) : ''
+  
+    // Determine original price for display (happy hour uses regular price as original)
+    const displayOriginalPrice = isHappyHourProduct 
+      ? regularPrice 
+      : (baseOriginalPrice && baseOriginalPrice > regularPrice ? baseOriginalPrice : undefined)
   
     const cartItem: CartItem = {
       id: cartItemId,
@@ -3032,7 +3096,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       variantId: variant?.id,
       name: `${product.name}${variant ? ` (${variantName})` : ''}`,
       price: basePrice,
-      originalPrice: baseOriginalPrice && baseOriginalPrice > basePrice ? baseOriginalPrice : undefined,
+      originalPrice: displayOriginalPrice,
       quantity: 1,
       modifiers,
       totalPrice,
@@ -4108,6 +4172,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   primaryColor={primaryColor} 
   translations={translations} 
 />
+          <HappyHourBanner
+  storeData={storeData}
+  currencySymbol={currencySymbol}
+  translations={translations}
+/>
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {(() => {
@@ -4211,6 +4280,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         businessSlug={storeData.slug}
                         isFiltering={isFiltering}
                         showStockBadge={storeData.showStockBadge}
+                        happyHour={storeData.happyHour}
                       />
                     ))}
                     {/* Subtle loading indicator for pagination - 3 bouncing dots */}
@@ -4384,6 +4454,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           storefrontLanguage={storeData.storefrontLanguage || storeData.language || 'en'}
           businessSlug={storeData.slug}
           onShareProduct={handleShareProduct}
+          happyHour={storeData.happyHour}
         />
       )}
 
@@ -5135,7 +5206,8 @@ function ProductCard({
   storefrontLanguage = 'en', // Add language prop
   businessSlug = '', // Add business slug prop
   isFiltering = false, // Gray out card while filtering
-  showStockBadge = false // Show stock status badge
+  showStockBadge = false, // Show stock status badge
+  happyHour = null // Happy hour data
 }: { 
   product: Product & { categoryName?: string }
   onOpenModal: (product: Product) => void
@@ -5149,6 +5221,7 @@ function ProductCard({
   businessSlug?: string // Add business slug prop
   isFiltering?: boolean // Gray out card while filtering
   showStockBadge?: boolean // Show stock status badge
+  happyHour?: { isActive: boolean; discountPercent: number; productIds: string[] } | null
 }) {
   const hasImage = product.images.length > 0
   
@@ -5288,14 +5361,49 @@ function ProductCard({
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2 flex-1 min-w-0">
-                <span className="font-bold text-lg" style={{ color: primaryColor }}>
-                  {currencySymbol}{product.price.toFixed(2)}
-                </span>
-                {product.originalPrice && product.originalPrice > product.price && (
-                  <span className="text-gray-500 line-through text-sm">
-                    {currencySymbol}{product.originalPrice.toFixed(2)}
-                  </span>
-                )}
+                {/* Check if happy hour discount applies to this product */}
+                {(() => {
+                  const isHappyHourProduct = happyHour?.isActive && happyHour?.productIds?.includes(product.id)
+                  const happyHourPrice = isHappyHourProduct && happyHour?.discountPercent
+                    ? product.price * (1 - happyHour.discountPercent / 100)
+                    : null
+                  
+                  if (isHappyHourProduct && happyHourPrice !== null) {
+                    // Happy hour active for this product
+                    return (
+                      <>
+                        <span className="font-bold text-lg text-amber-600">
+                          {currencySymbol}{happyHourPrice.toFixed(2)}
+                        </span>
+                        <span className="text-gray-500 line-through text-sm">
+                          {currencySymbol}{product.price.toFixed(2)}
+                        </span>
+                        <span className="bg-amber-100 text-amber-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
+                          -{happyHour.discountPercent}%
+                        </span>
+                      </>
+                    )
+                  } else if (product.originalPrice && product.originalPrice > product.price) {
+                    // Regular sale price
+                    return (
+                      <>
+                        <span className="font-bold text-lg" style={{ color: primaryColor }}>
+                          {currencySymbol}{product.price.toFixed(2)}
+                        </span>
+                        <span className="text-gray-500 line-through text-sm">
+                          {currencySymbol}{product.originalPrice.toFixed(2)}
+                        </span>
+                      </>
+                    )
+                  } else {
+                    // Normal price
+                    return (
+                      <span className="font-bold text-lg" style={{ color: primaryColor }}>
+                        {currencySymbol}{product.price.toFixed(2)}
+                      </span>
+                    )
+                  }
+                })()}
               </div>
               
               <button
@@ -5402,7 +5510,8 @@ function ProductModal({
   featuredBadgeColor = '#EF4444', // Only add this new prop
   storefrontLanguage = 'en', // Add language prop
   businessSlug = '', // Add business slug prop
-  onShareProduct // Add share callback
+  onShareProduct, // Add share callback
+  happyHour = null // Happy hour data
 }: {
   product: Product
   selectedVariant: ProductVariant | null
@@ -5420,6 +5529,7 @@ function ProductModal({
   storefrontLanguage?: string // Add language prop
   businessSlug?: string // Add business slug prop
   onShareProduct?: (productId: string) => void // Add share callback
+  happyHour?: { isActive: boolean; discountPercent: number; productIds: string[] } | null
 }) {
   const [quantity, setQuantity] = useState(1)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -5492,14 +5602,28 @@ function ProductModal({
   const currentQuantityInCart = existingCartItem?.quantity || 0
   const maxQuantityCanAdd = Math.max(0, availableStock - currentQuantityInCart)
 
-  const basePrice = selectedVariant?.price || product.price
+  // Check if happy hour applies to this product
+  const isHappyHourProduct = happyHour?.isActive && happyHour?.productIds?.includes(product.id)
+  
+  const regularPrice = selectedVariant?.price || product.price
   const baseOriginalPrice = selectedVariant?.originalPrice || product.originalPrice || null
+  
+  // Apply happy hour discount if applicable
+  const basePrice = isHappyHourProduct && happyHour?.discountPercent
+    ? regularPrice * (1 - happyHour.discountPercent / 100)
+    : regularPrice
+  
   const modifierPrice = selectedModifiers.reduce((sum, mod) => sum + mod.price, 0)
   const totalPrice = (basePrice + modifierPrice) * quantity
-  const totalOriginalPrice = baseOriginalPrice ? (baseOriginalPrice + modifierPrice) * quantity : null
-  const hasDiscount = baseOriginalPrice !== null && baseOriginalPrice > basePrice
+  
+  // For happy hour products, show regular price as the original
+  const effectiveOriginalPrice = isHappyHourProduct ? regularPrice : baseOriginalPrice
+  const totalOriginalPrice = effectiveOriginalPrice ? (effectiveOriginalPrice + modifierPrice) * quantity : null
+  const hasDiscount = (baseOriginalPrice !== null && baseOriginalPrice > regularPrice) || isHappyHourProduct
   const discountAmount = hasDiscount && totalOriginalPrice ? totalOriginalPrice - totalPrice : 0
-  const discountPercentage = hasDiscount && baseOriginalPrice ? Math.round(((baseOriginalPrice - basePrice) / baseOriginalPrice) * 100) : 0
+  const discountPercentage = isHappyHourProduct && happyHour?.discountPercent 
+    ? happyHour.discountPercent 
+    : (hasDiscount && baseOriginalPrice ? Math.round(((baseOriginalPrice - regularPrice) / baseOriginalPrice) * 100) : 0)
 
   // Update image URL when variant or image index changes
   useEffect(() => {
