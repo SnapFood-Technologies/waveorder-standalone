@@ -39,7 +39,8 @@ import {
   Layers,
   FolderTree,
   Menu,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Clock
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -85,6 +86,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [groupsEnabled, setGroupsEnabled] = useState(false)
   const [customMenuEnabled, setCustomMenuEnabled] = useState(false)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
+  const [happyHourEnabled, setHappyHourEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -117,6 +119,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setGroupsEnabled(data.business?.groupsFeatureEnabled || false)
           setCustomMenuEnabled(data.business?.customMenuEnabled || false)
           setCustomFilteringEnabled(data.business?.customFilteringEnabled || false)
+          setHappyHourEnabled(data.business?.happyHourEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -382,6 +385,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Custom Filtering', 
           href: `${baseUrl}/custom-filtering`, 
           icon: SlidersHorizontal, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(happyHourEnabled ? [{
+          name: 'Happy Hour', 
+          href: `${baseUrl}/settings/happy-hour`, 
+          icon: Clock, 
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

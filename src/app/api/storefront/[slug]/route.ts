@@ -794,6 +794,40 @@ export async function GET(
       groups: groups || [],
       brands: brands || [],
 
+      // Happy Hour / Daily Discounts
+      happyHour: (() => {
+        // Only return happy hour data if feature is enabled and active
+        if (!business.happyHourEnabled || !business.happyHourActive) {
+          return null
+        }
+        
+        // Check if happy hour is currently active based on time
+        const now = new Date()
+        const businessTime = new Date(now.toLocaleString("en-US", { timeZone: business.timezone || 'UTC' }))
+        const currentTime = `${businessTime.getHours().toString().padStart(2, '0')}:${businessTime.getMinutes().toString().padStart(2, '0')}`
+        
+        const startTime = business.happyHourStartTime || '00:00'
+        const endTime = business.happyHourEndTime || '23:59'
+        
+        // Handle overnight happy hours (e.g., 20:00 to 02:00)
+        let isCurrentlyActive = false
+        if (startTime <= endTime) {
+          // Normal case: same day (e.g., 20:00 to 23:59)
+          isCurrentlyActive = currentTime >= startTime && currentTime <= endTime
+        } else {
+          // Overnight case: spans midnight (e.g., 20:00 to 02:00)
+          isCurrentlyActive = currentTime >= startTime || currentTime <= endTime
+        }
+        
+        return {
+          isActive: isCurrentlyActive,
+          startTime: business.happyHourStartTime,
+          endTime: business.happyHourEndTime,
+          discountPercent: business.happyHourDiscountPercent,
+          productIds: business.happyHourProductIds || []
+        }
+      })(),
+
       // Initial products for server-side render (first 24)
       initialProducts: initialProducts || [],
 

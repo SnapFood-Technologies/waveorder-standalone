@@ -128,6 +128,7 @@ export async function GET(
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true,
+        happyHourEnabled: true,
         
         // Inventory display
         showStockBadge: true,

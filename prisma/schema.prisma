@@ -209,6 +209,14 @@ model Business {
   trialEndsAt DateTime?
   graceEndsAt DateTime?
 
+  // Happy Hour / Daily Discounts
+  happyHourEnabled       Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
+  happyHourActive        Boolean  @default(false) // Business toggle to activate happy hour
+  happyHourStartTime     String?  // Start time in HH:mm format (e.g., "20:00")
+  happyHourEndTime       String?  // End time in HH:mm format (e.g., "23:59")
+  happyHourDiscountPercent Float? // Discount percentage (e.g., 20 for 20% off)
+  happyHourProductIds    String[] // Product IDs that get the discount
+
   createdByAdmin Boolean @default(false)
 
   // Branding
