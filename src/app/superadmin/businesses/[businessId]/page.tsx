@@ -34,7 +34,8 @@ import {
   Sparkles,
   Link2,
   MessageSquare,
-  Crown
+  Crown,
+  Search
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -62,6 +63,7 @@ interface BusinessDetails {
   whatsappNumber: string
   whatsappDirectNotifications?: boolean
   happyHourEnabled?: boolean
+  showSearchAnalytics?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1336,6 +1338,9 @@ export default function BusinessDetailsPage() {
           {/* Happy Hour Settings */}
           <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Search Analytics Settings */}
+          <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -1596,6 +1601,163 @@ function HappyHourSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Happy Hour feature is not available for this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Search Analytics Settings Section Component (SuperAdmin toggle only)
+function SearchAnalyticsSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [searchAnalyticsEnabled, setSearchAnalyticsEnabled] = useState(business.showSearchAnalytics || false)
+  const [analyticsData, setAnalyticsData] = useState<{
+    totalSearches: number
+    uniqueTerms: number
+    zeroResultSearches: number
+    topSearches: Array<{ term: string; count: number; avgResults: number }>
+  } | null>(null)
+  const [loadingData, setLoadingData] = useState(false)
+
+  // Fetch analytics summary when enabled
+  useEffect(() => {
+    if (searchAnalyticsEnabled) {
+      fetchAnalyticsData()
+    }
+  }, [searchAnalyticsEnabled, business.id])
+
+  const fetchAnalyticsData = async () => {
+    setLoadingData(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/search-analytics`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData({
+          totalSearches: data.summary?.totalSearches || 0,
+          uniqueTerms: data.summary?.uniqueTerms || 0,
+          zeroResultSearches: data.summary?.zeroResultSearches || 0,
+          topSearches: data.topSearches || []
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics data:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const handleToggle = async () => {
+    const newValue = !searchAnalyticsEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/search-analytics`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showSearchAnalytics: newValue })
+      })
+      
+      if (res.ok) {
+        setSearchAnalyticsEnabled(newValue)
+        toast.success(newValue ? 'Search Analytics enabled' : 'Search Analytics disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Search className="w-5 h-5 mr-2 text-purple-600" />
+        Search Analytics
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Search Analytics for Business Admin</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, the business can view customer search queries and insights in their Analytics dashboard.
+            Search data is always collected, this setting controls visibility.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+            searchAnalyticsEnabled ? 'bg-purple-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              searchAnalyticsEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {searchAnalyticsEnabled && (
+        <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-xs text-purple-700 mb-3">
+            <span className="font-medium">Enabled:</span> Business can view search analytics in their Admin → Analytics section.
+          </p>
+          
+          {loadingData ? (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+              <span className="ml-2 text-xs text-purple-600">Loading data...</span>
+            </div>
+          ) : analyticsData ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white p-2 rounded border border-purple-200">
+                  <p className="text-xs text-gray-500">Total Searches (30d)</p>
+                  <p className="text-lg font-semibold text-purple-700">{analyticsData.totalSearches.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-purple-200">
+                  <p className="text-xs text-gray-500">Unique Terms</p>
+                  <p className="text-lg font-semibold text-purple-700">{analyticsData.uniqueTerms.toLocaleString()}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-purple-200">
+                  <p className="text-xs text-gray-500">Zero Results</p>
+                  <p className="text-lg font-semibold text-purple-700">{analyticsData.zeroResultSearches.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              {analyticsData.topSearches.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-purple-700 mb-1">Top Search Terms:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {analyticsData.topSearches.slice(0, 5).map((search, idx) => (
+                      <span key={idx} className="inline-flex items-center px-2 py-1 bg-white border border-purple-200 rounded text-xs">
+                        {search.term} <span className="ml-1 text-purple-500">({search.count})</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+      
+      {!searchAnalyticsEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Search analytics not visible to this business (data is still being collected).
           </p>
         </div>
       )}

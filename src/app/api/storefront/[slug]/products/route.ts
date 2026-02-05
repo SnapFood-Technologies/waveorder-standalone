@@ -6,7 +6,8 @@ import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 // Helper function to normalize diacritics for search
 // Converts diacritic characters to their base form AND vice versa
-// e.g., "Pjate" → ["Pjate", "Pjatë"], "Lugë" → ["Lugë", "Luge"]
+// Also handles Albanian word form variations (ë↔a endings for definite/plural)
+// e.g., "Pjate" → ["Pjate", "Pjatë", "Pjata"], "Lugë" → ["Lugë", "Luge", "Luga"]
 function getSearchVariants(searchTerm: string): string[] {
   // Map base characters to their diacritic versions (Albanian focused)
   const baseToDiacritic: Record<string, string> = {
@@ -38,6 +39,33 @@ function getSearchVariants(searchTerm: string): string[] {
     diacriticForm = diacriticForm.split(base).join(diacritic)
   }
   variants.add(diacriticForm)
+  
+  // Albanian word form variations: ë↔a endings (definite/plural forms)
+  // gotë → gota, pjatë → pjata, lugë → luga, etc.
+  const term = searchTerm.toLowerCase()
+  
+  // If word ends in 'ë', also search for ending in 'a'
+  if (term.endsWith('ë')) {
+    const aEnding = searchTerm.slice(0, -1) + 'a'
+    const AEnding = searchTerm.slice(0, -1) + 'A'
+    variants.add(aEnding)
+    // Also add base form of 'a' ending (in case original had 'Ë')
+    variants.add(aEnding.replace(/Ë/g, 'E').replace(/ë/g, 'e'))
+  }
+  
+  // If word ends in 'e', also search for ending in 'a' (e could be ë)
+  if (term.endsWith('e') && !term.endsWith('ë')) {
+    const aEnding = searchTerm.slice(0, -1) + 'a'
+    variants.add(aEnding)
+  }
+  
+  // If word ends in 'a', also search for ending in 'ë' and 'e'
+  if (term.endsWith('a')) {
+    const ëEnding = searchTerm.slice(0, -1) + 'ë'
+    const eEnding = searchTerm.slice(0, -1) + 'e'
+    variants.add(ëEnding)
+    variants.add(eEnding)
+  }
   
   return Array.from(variants)
 }
@@ -591,6 +619,33 @@ export async function GET(
       actualTotal = estimatedActualTotal
     }
     
+    // Log search queries for analytics (only on first page to avoid duplicates)
+    if (searchTerm.trim() && page === 1 && business?.id) {
+      try {
+        const ipAddress = extractIPAddress(request)
+        const userAgent = request.headers.get('user-agent') || undefined
+        const sessionId = request.headers.get('x-session-id') || undefined
+        
+        // Log search asynchronously (don't block response)
+        prisma.searchLog.create({
+          data: {
+            businessId: business.id,
+            searchTerm: searchTerm.trim().substring(0, 200), // Limit length
+            resultsCount: actualTotal,
+            sessionId: sessionId || null,
+            ipAddress: ipAddress ? ipAddress.substring(0, 45) : null, // Limit IP length
+            userAgent: userAgent ? userAgent.substring(0, 500) : null // Limit UA length
+          }
+        }).catch(err => {
+          // Silently fail - don't break product search for analytics
+          console.error('Failed to log search:', err)
+        })
+      } catch (logError) {
+        // Silently fail - don't break product search for analytics
+        console.error('Search log error:', logError)
+      }
+    }
+
     return NextResponse.json({
       products: transformedProducts,
       pagination: {

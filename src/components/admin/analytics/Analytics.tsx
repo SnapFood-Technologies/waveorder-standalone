@@ -22,13 +22,47 @@ import {
   AlertCircle,
   ArrowRight,
   MapPin,
-  Share2
+  Share2,
+  Search,
+  Lock,
+  Loader2
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
 interface AnalyticsProps {
   businessId: string
+}
+
+interface SearchAnalyticsData {
+  enabled: boolean
+  message?: string
+  data: {
+    summary: {
+      totalSearches: number
+      uniqueTerms: number
+      zeroResultSearches: number
+      zeroResultRate: number
+      averageResultsPerSearch: number
+    }
+    topSearches: Array<{
+      term: string
+      count: number
+      avgResults: number
+      zeroResultsCount: number
+      lastSearched: string
+    }>
+    trending: Array<{ term: string; count: number }>
+    zeroResultTerms: Array<{
+      term: string
+      count: number
+      zeroResultsCount: number
+      zeroResultRate: number
+    }>
+    volumeByDay: Array<{ date: string; count: number }>
+    period: string
+    dateRange: { start: string; end: string }
+  } | null
 }
 
 export default function Analytics({ businessId }: AnalyticsProps) {
@@ -42,10 +76,13 @@ export default function Analytics({ businessId }: AnalyticsProps) {
   })
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
   const [exporting, setExporting] = useState(false)
+  const [searchAnalytics, setSearchAnalytics] = useState<SearchAnalyticsData | null>(null)
+  const [searchAnalyticsLoading, setSearchAnalyticsLoading] = useState(false)
 
   useEffect(() => {
     fetchBusinessData()
     fetchAnalyticsData()
+    fetchSearchAnalytics()
   }, [businessId, dateRange])
 
   const fetchBusinessData = async () => {
@@ -80,6 +117,25 @@ export default function Analytics({ businessId }: AnalyticsProps) {
       console.error('Error fetching analytics:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSearchAnalytics = async () => {
+    try {
+      setSearchAnalyticsLoading(true)
+      const period = selectedPeriod === 'this_month' ? 'month' : 
+                     selectedPeriod === 'this_week' ? 'week' :
+                     selectedPeriod === 'today' ? 'today' : 'all'
+      
+      const response = await fetch(`/api/admin/stores/${businessId}/analytics/search?period=${period}`)
+      if (response.ok) {
+        const result = await response.json()
+        setSearchAnalytics(result)
+      }
+    } catch (error) {
+      console.error('Error fetching search analytics:', error)
+    } finally {
+      setSearchAnalyticsLoading(false)
     }
   }
 
@@ -162,6 +218,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
     { id: 'products', label: 'Products', icon: Package },
     { id: 'time', label: 'Time Analysis', icon: Clock },
     { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'search', label: 'Search', icon: Search },
   ]
 
   if (loading) {
@@ -819,6 +876,208 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Orders Yet</h3>
               <p className="text-gray-600">
                 Order status distribution will appear here once you start receiving orders.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Search Tab */}
+      {activeTab === 'search' && (
+        <div className="space-y-6">
+          {searchAnalyticsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+              <span className="ml-2 text-gray-600">Loading search analytics...</span>
+            </div>
+          ) : !searchAnalytics?.enabled ? (
+            <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
+              <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Search Analytics Not Enabled</h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                {searchAnalytics?.message || 'Search Analytics is not available for your account. Contact support to enable this feature.'}
+              </p>
+            </div>
+          ) : searchAnalytics?.data ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <Search className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{searchAnalytics.data.summary.totalSearches.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600">Total Searches</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{searchAnalytics.data.summary.uniqueTerms.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600">Unique Search Terms</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <AlertCircle className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{searchAnalytics.data.summary.zeroResultSearches.toLocaleString()}</p>
+                  <p className="text-sm text-gray-600">Zero-Result Searches</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <Package className="w-5 h-5 text-green-600" />
+                  </div>
+                  <p className="text-2xl font-bold text-gray-900">{searchAnalytics.data.summary.averageResultsPerSearch}</p>
+                  <p className="text-sm text-gray-600">Avg Results Per Search</p>
+                </div>
+              </div>
+
+              {/* Search Volume Chart */}
+              {searchAnalytics.data.volumeByDay.length > 0 && (
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Volume (Last 30 Days)</h3>
+                  <div className="h-48 flex items-end justify-between gap-1">
+                    {(() => {
+                      const maxCount = Math.max(...searchAnalytics.data!.volumeByDay.map(d => d.count), 1)
+                      return searchAnalytics.data!.volumeByDay.map((day, index) => (
+                        <div key={index} className="flex-1 flex flex-col items-center group">
+                          <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap z-10">
+                            {day.count} searches
+                          </div>
+                          <div
+                            className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors cursor-pointer"
+                            style={{ 
+                              height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 4 : 1)}%`,
+                              minHeight: day.count > 0 ? '4px' : '1px'
+                            }}
+                          />
+                          {index % 5 === 0 && (
+                            <div className="text-xs text-gray-500 mt-2 whitespace-nowrap">
+                              {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top Searches */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Top Search Terms</h3>
+                    <p className="text-sm text-gray-600 mt-1">Most searched terms by your customers</p>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    {searchAnalytics.data.topSearches.length > 0 ? (
+                      searchAnalytics.data.topSearches.slice(0, 15).map((search, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center text-xs font-medium">
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="font-medium text-gray-900">{search.term}</p>
+                              <p className="text-xs text-gray-500">Avg {search.avgResults} results</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900">{search.count}</p>
+                            <p className="text-xs text-gray-500">searches</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p>No search data yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Zero-Result Searches (Opportunities) */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="p-6 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      Zero-Result Searches
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">Products customers searched for but didn't find</p>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
+                    {searchAnalytics.data.zeroResultTerms.length > 0 ? (
+                      searchAnalytics.data.zeroResultTerms.slice(0, 15).map((search, index) => (
+                        <div key={index} className="flex items-center justify-between p-4 hover:bg-orange-50">
+                          <div>
+                            <p className="font-medium text-gray-900">{search.term}</p>
+                            <p className="text-xs text-orange-600">{search.zeroResultRate}% returned no results</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-orange-600">{search.zeroResultsCount}</p>
+                            <p className="text-xs text-gray-500">of {search.count} searches</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                        <p>Great! All searches returned results</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Trending Searches */}
+              {searchAnalytics.data.trending.length > 0 && (
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-purple-600" />
+                    Trending Now (Last 24 Hours)
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {searchAnalytics.data.trending.map((trend, index) => (
+                      <span 
+                        key={index} 
+                        className="inline-flex items-center px-3 py-2 bg-white border border-purple-200 rounded-lg text-sm font-medium text-gray-800"
+                      >
+                        {trend.term}
+                        <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs">
+                          {trend.count}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Insights */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">How to Use This Data</p>
+                    <ul className="list-disc list-inside text-blue-700 space-y-1">
+                      <li><strong>Zero-Result Searches</strong>: Consider adding products that customers are searching for</li>
+                      <li><strong>Top Searches</strong>: Feature these products prominently or create collections around them</li>
+                      <li><strong>Trending</strong>: Use for marketing and inventory decisions</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
+              <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Search Data Available</h3>
+              <p className="text-gray-600">
+                Search analytics will appear here once customers start searching on your storefront.
               </p>
             </div>
           )}

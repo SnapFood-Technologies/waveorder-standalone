@@ -396,6 +396,9 @@ model Business {
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
 
+  // Search Analytics (SuperAdmin enables, Business Admin views)
+  showSearchAnalytics Boolean @default(false) // When enabled, business admin can see search analytics
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -430,6 +433,9 @@ model Business {
 
   // Business Feedback
   feedbacks BusinessFeedback[]
+
+  // Search Analytics
+  searchLogs SearchLog[]
 
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
@@ -471,6 +477,27 @@ model OrderNotification {
 
   @@index([businessId])
   @@index([orderId])
+}
+
+// Search Analytics - Tracks storefront search queries
+model SearchLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  searchTerm   String // The search query
+  resultsCount Int // Number of products found
+
+  // Optional tracking data
+  sessionId String? // Visitor session ID for grouping searches
+  ipAddress String? // Anonymized IP for analytics
+  userAgent String? // Browser/device info
+
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([searchTerm])
 }
 
 model Anomaly {
