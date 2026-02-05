@@ -714,6 +714,7 @@ export async function GET(
       timeFormat: business.timeFormat || '24', // Default to 24-hour format
       deliveryFee: business.deliveryFee,
       minimumOrder: business.minimumOrder,
+      freeDeliveryThreshold: business.freeDeliveryThreshold,
       deliveryRadius: business.deliveryRadius,
       
       // Delivery options

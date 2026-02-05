@@ -883,13 +883,18 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
 
 
     const openDirections = () => {
-      // Use coordinates if available for more accurate directions
-      if (storeData.storeLatitude && storeData.storeLongitude) {
+      // Use business name + address for accurate Google Maps matching
+      // This helps Google identify the correct place instead of nearby businesses
+      if (storeData.name && storeData.address) {
+        const destination = encodeURIComponent(`${storeData.name}, ${storeData.address}`)
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank')
+      } else if (storeData.storeLatitude && storeData.storeLongitude) {
+        // Fallback to coordinates
         const lat = storeData.storeLatitude
         const lng = storeData.storeLongitude
         window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank')
       } else if (storeData.address) {
-        // Fallback to address if coordinates not available
+        // Final fallback to just address
         const encodedAddress = encodeURIComponent(storeData.address)
         window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank')
       }
@@ -1677,6 +1682,7 @@ interface StoreData {
   timeFormat?: string
   deliveryFee: number
   minimumOrder: number
+  freeDeliveryThreshold?: number | null
   deliveryRadius: number
   deliveryEnabled: boolean
   pickupEnabled: boolean
@@ -2568,7 +2574,14 @@ const trackProductEvent = useCallback((
   // Calculate cart totals with dynamic delivery fee
   const cartSubtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
   
-  const cartDeliveryFee = deliveryType === 'delivery' ? calculatedDeliveryFee : 0
+  // Check if free delivery threshold is met
+  const freeDeliveryThreshold = storeData.freeDeliveryThreshold
+  const qualifiesForFreeDelivery = freeDeliveryThreshold && cartSubtotal >= freeDeliveryThreshold
+  
+  // Apply free delivery if threshold is met
+  const cartDeliveryFee = deliveryType === 'delivery' 
+    ? (qualifiesForFreeDelivery ? 0 : calculatedDeliveryFee) 
+    : 0
   const cartTotal = cartSubtotal + cartDeliveryFee
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -6685,10 +6698,25 @@ function OrderPanel({
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
               {deliveryType === 'delivery' && !deliveryError && (
-                <div className="flex justify-between text-sm">
-                  <span>{translations.deliveryFee || 'Delivery Fee'}</span>
-                  <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
-                </div>
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span>{translations.deliveryFee || 'Delivery Fee'}</span>
+                    {storeData.freeDeliveryThreshold && cartSubtotal >= storeData.freeDeliveryThreshold ? (
+                      <span className="text-green-600 font-medium">
+                        <span className="line-through text-gray-400 mr-1">{currencySymbol}{storeData.deliveryFee.toFixed(2)}</span>
+                        {translations.free || 'Free'}!
+                      </span>
+                    ) : (
+                      <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
+                    )}
+                  </div>
+                  {/* Free delivery threshold message */}
+                  {storeData.freeDeliveryThreshold && cartSubtotal < storeData.freeDeliveryThreshold && (
+                    <p className="text-xs text-green-600 mt-1">
+                      🎉 Add {currencySymbol}{(storeData.freeDeliveryThreshold - cartSubtotal).toFixed(2)} more for free delivery!
+                    </p>
+                  )}
+                </>
               )}
               <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-200 pt-3">
                 <span>{translations.total || 'Total'}</span>

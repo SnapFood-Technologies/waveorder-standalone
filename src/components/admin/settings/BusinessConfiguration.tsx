@@ -31,6 +31,7 @@ interface DeliveryMethod {
   dineIn: boolean
   deliveryFee: number | string
   minimumOrder: number | string
+  freeDeliveryThreshold: number | string | null
   deliveryRadius: number | string
   estimatedDeliveryTime: string
   estimatedPickupTime: string
@@ -80,6 +81,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       dineIn: false,
       deliveryFee: 0,
       minimumOrder: 0,
+      freeDeliveryThreshold: null,
       deliveryRadius: 10,
       estimatedDeliveryTime: '30-45 minutes',
       estimatedPickupTime: '15-20 minutes',
@@ -159,6 +161,18 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     }
   }
 
+  const handleFreeDeliveryThresholdChange = (value: string) => {
+    if (value === '') {
+      // Empty means disabled (null)
+      updateDeliveryMethods({ freeDeliveryThreshold: null })
+    } else {
+      const numericValue = parseFloat(value)
+      if (!isNaN(numericValue)) {
+        updateDeliveryMethods({ freeDeliveryThreshold: numericValue })
+      }
+    }
+  }
+
   const handleDeliveryRadiusChange = (value: string) => {
     if (value === '') {
       // Allow empty string temporarily
@@ -181,6 +195,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           ...config.deliveryMethods,
           deliveryFee: config.deliveryMethods.deliveryFee === '' ? 0 : config.deliveryMethods.deliveryFee,
           minimumOrder: config.deliveryMethods.minimumOrder === '' ? 0 : config.deliveryMethods.minimumOrder,
+          freeDeliveryThreshold: config.deliveryMethods.freeDeliveryThreshold === '' ? null : config.deliveryMethods.freeDeliveryThreshold,
           deliveryRadius: config.deliveryMethods.deliveryRadius === '' ? 10 : config.deliveryMethods.deliveryRadius
         }
       }
@@ -495,6 +510,22 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     />
                     <p className="text-xs text-gray-500 mt-1">Minimum order value for delivery</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Free Delivery Above ({business.currency})
+                    </label>
+                    <input
+                      type="number"
+                      value={config.deliveryMethods.freeDeliveryThreshold || ''}
+                      onChange={(e) => handleFreeDeliveryThresholdChange(e.target.value)}
+                      min="0"
+                      step="0.01"
+                      placeholder="Leave empty to disable"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Orders above this amount get free delivery</p>
                   </div>
 
                   <div>

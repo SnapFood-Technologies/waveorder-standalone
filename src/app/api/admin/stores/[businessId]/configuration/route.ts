@@ -26,6 +26,7 @@ export async function GET(
         dineInEnabled: true,
         deliveryFee: true,
         minimumOrder: true,
+        freeDeliveryThreshold: true,
         deliveryRadius: true,
         estimatedDeliveryTime: true,
         estimatedPickupTime: true,
@@ -53,6 +54,7 @@ export async function GET(
         dineIn: business.dineInEnabled,
         deliveryFee: business.deliveryFee,
         minimumOrder: business.minimumOrder,
+        freeDeliveryThreshold: business.freeDeliveryThreshold,
         deliveryRadius: business.deliveryRadius,
         estimatedDeliveryTime: business.estimatedDeliveryTime || '30-45 minutes',
         estimatedPickupTime: business.estimatedPickupTime || '15-20 minutes',
@@ -104,6 +106,7 @@ export async function PUT(
       if (config.deliveryMethods.delivery) {
         updateData.deliveryFee = config.deliveryMethods.deliveryFee || 0
         updateData.minimumOrder = config.deliveryMethods.minimumOrder || 0
+        updateData.freeDeliveryThreshold = config.deliveryMethods.freeDeliveryThreshold || null
         updateData.deliveryRadius = config.deliveryMethods.deliveryRadius || 10
         updateData.estimatedDeliveryTime = config.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
         // Retail-specific custom texts

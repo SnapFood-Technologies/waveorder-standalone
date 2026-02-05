@@ -1168,13 +1168,18 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       <div>
         <label className="block text-xs text-gray-500 mb-1">Latitude</label>
         <input
-          type="number"
-          step="0.000001"
-          value={settings.storeLatitude || ''}
-          onChange={(e) => setSettings(prev => ({ 
-            ...prev, 
-            storeLatitude: e.target.value ? parseFloat(e.target.value) : undefined 
-          }))}
+          type="text"
+          inputMode="decimal"
+          value={settings.storeLatitude !== undefined ? String(settings.storeLatitude) : ''}
+          onChange={(e) => {
+            const value = e.target.value.replace(',', '.')
+            if (value === '' || value === '-' || /^-?\d*\.?\d*$/.test(value)) {
+              setSettings(prev => ({ 
+                ...prev, 
+                storeLatitude: value === '' || value === '-' ? undefined : parseFloat(value) || undefined
+              }))
+            }
+          }}
           placeholder="e.g., 26.172393"
           className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
         />
@@ -1182,13 +1187,18 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
       <div>
         <label className="block text-xs text-gray-500 mb-1">Longitude</label>
         <input
-          type="number"
-          step="0.000001"
-          value={settings.storeLongitude || ''}
-          onChange={(e) => setSettings(prev => ({ 
-            ...prev, 
-            storeLongitude: e.target.value ? parseFloat(e.target.value) : undefined 
-          }))}
+          type="text"
+          inputMode="decimal"
+          value={settings.storeLongitude !== undefined ? String(settings.storeLongitude) : ''}
+          onChange={(e) => {
+            const value = e.target.value.replace(',', '.')
+            if (value === '' || value === '-' || /^-?\d*\.?\d*$/.test(value)) {
+              setSettings(prev => ({ 
+                ...prev, 
+                storeLongitude: value === '' || value === '-' ? undefined : parseFloat(value) || undefined
+              }))
+            }
+          }}
           placeholder="e.g., 50.481577"
           className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
         />

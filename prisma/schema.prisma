@@ -261,6 +261,7 @@ model Business {
   uncategorizedNameOverrideAl String? // Override "Uncategorized" name in Albanian for storefront
   deliveryFee                 Float    @default(0)
   minimumOrder                Float    @default(0)
+  freeDeliveryThreshold       Float? // Orders above this amount get free delivery (null = disabled)
   deliveryRadius              Float    @default(10)
   shippingCountries           String[] @default([]) // Array of country codes (e.g., ["AL", "XK", "MK"])
 
