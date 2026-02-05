@@ -5,6 +5,7 @@ import { AdminSidebar } from '@/components/admin/layout/AdminSidebar'
 import { AdminHeader } from '@/components/admin/layout/AdminHeader'
 import { BusinessProvider, useBusiness } from '@/contexts/BusinessContext'
 import { ImpersonationBanner } from '@/components/superadmin/ImpersonationBanner'
+import { FeedbackFloatingForm } from '@/components/admin/feedback/FeedbackFloatingForm'
 import { Toaster } from 'react-hot-toast'
 
 function AdminLayoutContent({
@@ -63,6 +64,9 @@ function AdminLayoutContent({
             </div>
           </footer>
         </div>
+        
+        {/* Floating Feedback Form */}
+        <FeedbackFloatingForm businessId={businessId} />
       </div>
     </>
   )

@@ -26,7 +26,8 @@ import {
   Megaphone,
   LayoutDashboard,
   UserPlus,
-  UsersRound
+  UsersRound,
+  Star
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -43,6 +44,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
     if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
+    if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
     return items
   });
   
@@ -52,6 +54,17 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     { name: 'Users', href: '/superadmin/users', icon: Users },
     { name: 'Team', href: '/superadmin/team', icon: UsersRound },
     { name: 'Leads', href: '/superadmin/leads', icon: UserPlus },
+    { 
+      name: 'Marketing', 
+      icon: Megaphone,
+      children: [
+        { 
+          name: 'Feedback', 
+          href: '/superadmin/marketing/feedback', 
+          icon: Star
+        }
+      ]
+    },
     { 
       name: 'Analytics', 
       icon: TrendingUp,

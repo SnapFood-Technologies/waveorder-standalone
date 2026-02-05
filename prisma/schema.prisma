@@ -427,9 +427,17 @@ model Business {
   // System logs
   systemLogs SystemLog[]
 
-  onboardingCompleted  Boolean @default(false)
-  onboardingStep       Int     @default(0)
-  setupWizardCompleted Boolean @default(false)
+  // Business Feedback
+  feedbacks BusinessFeedback[]
+
+  onboardingCompleted   Boolean   @default(false)
+  onboardingStep        Int       @default(0)
+  setupWizardCompleted  Boolean   @default(false)
+  onboardingCompletedAt DateTime? // When onboarding was completed
+
+  // Feedback tracking
+  initialFeedbackCompletedAt DateTime? // When initial feedback was submitted (from any source)
+  feedbackFormDismissedAt    DateTime? // When feedback form was dismissed (show again after 14 days)
 
   isActive           Boolean             @default(true)
   deactivatedAt      DateTime?
@@ -1816,6 +1824,50 @@ enum LeadActivityType {
   STATUS_CHANGE // Status changed
   ASSIGNED // Lead assigned to someone
   CREATED // Lead created
+}
+
+// Business Feedback - tracks feedback from businesses
+model BusinessFeedback {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type   FeedbackType   @default(INITIAL) // Type of feedback (initial, periodic, nps, etc.)
+  source FeedbackSource // How feedback was collected
+
+  rating   Int // 1-5 star rating
+  feedback String? // Open text feedback
+
+  // Who submitted the feedback
+  submittedById    String? @db.ObjectId // User ID (null if submitted by superadmin on behalf)
+  submittedByEmail String? // Email of submitter (for reference)
+  submittedByName  String? // Name of submitter
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, type])
+  @@index([type])
+  @@index([source])
+  @@index([createdAt])
+}
+
+enum FeedbackType {
+  INITIAL // Initial feedback after onboarding
+  PERIODIC // Periodic check-in feedback
+  NPS // Net Promoter Score
+  FEATURE_REQUEST // Feature request feedback
+  SUPPORT // Support-related feedback
+  OTHER // Other feedback
+}
+
+enum FeedbackSource {
+  ADMIN_FORM // Business submitted via admin floating form
+  SUPERADMIN_MANUAL // SuperAdmin added manually
+  EMAIL // Collected via email
+  PHONE // Collected via phone call
+  OTHER // Other source
 }
 
 // System logs for tracking errors, 404s, and system events

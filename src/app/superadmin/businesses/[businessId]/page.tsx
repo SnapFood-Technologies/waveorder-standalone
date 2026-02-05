@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
+import { BusinessFeedbackSection } from '@/components/superadmin/BusinessFeedbackSection'
 import toast from 'react-hot-toast'
 
 interface BusinessDetails {
@@ -619,6 +620,12 @@ export default function BusinessDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Business Feedback Section */}
+          <BusinessFeedbackSection 
+            businessId={businessId} 
+            businessName={business.name} 
+          />
 
           {/* Business Details */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
