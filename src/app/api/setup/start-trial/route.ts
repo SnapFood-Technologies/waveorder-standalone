@@ -12,6 +12,11 @@ export async function POST(request: Request) {
   let userId: string | undefined
   let userEmail: string | undefined
   
+  // Construct actual URL from headers (for logging)
+  const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+  const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+  
   try {
     currentStep = 'session'
     const session = await getServerSession(authOptions)
@@ -102,7 +107,7 @@ export async function POST(request: Request) {
       endpoint: '/api/setup/start-trial',
       method: 'POST',
       statusCode: 200,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         userId,
         userEmail,
@@ -133,7 +138,7 @@ export async function POST(request: Request) {
       endpoint: '/api/setup/start-trial',
       method: 'POST',
       statusCode: 500,
-      url: request.url,
+      url: actualUrl,
       errorMessage: error.message || 'Unknown error',
       errorStack: error.stack?.split('\n').slice(0, 5).join('\n'),
       metadata: {

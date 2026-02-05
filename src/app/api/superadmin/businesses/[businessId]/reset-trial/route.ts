@@ -56,13 +56,18 @@ export async function POST(
       })
     }
 
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Log the action
     await logSystemEvent({
       logType: 'admin_action',
       severity: 'info',
       endpoint: `/api/superadmin/businesses/${businessId}/reset-trial`,
       method: 'POST',
-      url: request.url,
+      url: actualUrl,
       businessId,
       errorMessage: `Trial reset for business: ${business.name} by ${session.user.email}`,
       metadata: {

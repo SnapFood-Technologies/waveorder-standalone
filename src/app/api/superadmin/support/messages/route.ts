@@ -168,6 +168,11 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Enhanced error handling with Sentry
     Sentry.captureException(error, {
       tags: {
@@ -175,14 +180,14 @@ export async function GET(request: NextRequest) {
         method: 'GET',
       },
       extra: {
-        url: request.url,
+        url: actualUrl,
       },
     })
     
     return handleApiError(error, {
       endpoint: '/api/superadmin/support/messages',
       method: 'GET',
-      url: request.url,
+      url: actualUrl,
     })
   }
 }
@@ -396,6 +401,11 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Enhanced error handling with Sentry
     Sentry.captureException(error, {
       tags: {
@@ -403,14 +413,14 @@ export async function POST(request: NextRequest) {
         method: 'POST',
       },
       extra: {
-        url: request.url,
+        url: actualUrl,
       },
     })
     
     return handleApiError(error, {
       endpoint: '/api/superadmin/support/messages',
       method: 'POST',
-      url: request.url,
+      url: actualUrl,
     })
   }
 }

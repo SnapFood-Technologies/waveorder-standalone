@@ -671,6 +671,11 @@ export async function POST(
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
     logSystemEvent({
       logType: 'order_created',
       severity: 'info',
@@ -681,7 +686,7 @@ export async function POST(
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         orderId: order.id,
         orderNumber: order.orderNumber,
@@ -724,6 +729,11 @@ export async function POST(
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
     logSystemEvent({
       logType: 'order_error',
       severity: 'error',
@@ -736,7 +746,7 @@ export async function POST(
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: {
         errorType: 'admin_order_creation_error',
         createdByAdmin: true,

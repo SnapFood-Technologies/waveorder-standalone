@@ -143,6 +143,11 @@ export async function POST(
       })
     }
 
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Log the action
     await logSystemEvent({
       logType: 'admin_action',
@@ -150,7 +155,7 @@ export async function POST(
       endpoint: `/api/superadmin/businesses/${businessId}/feedback`,
       method: 'POST',
       statusCode: 200,
-      url: request.url,
+      url: actualUrl,
       businessId: businessId,
       metadata: {
         action: 'feedback_added',

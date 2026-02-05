@@ -133,6 +133,11 @@ export async function GET(
       const referrer = request.headers.get('referer') || undefined
       const ipAddress = extractIPAddress(request)
       
+      // Construct actual URL from headers
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+      
       logSystemEvent({
         logType: 'storefront_404',
         severity: 'error',
@@ -144,7 +149,7 @@ export async function GET(
         ipAddress,
         userAgent,
         referrer,
-        url: request.url,
+        url: actualUrl,
         metadata: { reason: 'business_not_found', route: 'products' }
       })
       
@@ -665,6 +670,11 @@ export async function GET(
     const referrer = request.headers.get('referer') || undefined
     const ipAddress = extractIPAddress(request)
     
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+    
     // Log product loading error
     logSystemEvent({
       logType: 'products_error',
@@ -679,7 +689,7 @@ export async function GET(
       ipAddress,
       userAgent,
       referrer,
-      url: request.url,
+      url: actualUrl,
       metadata: { 
         errorType: 'products_fetch_error',
         categoryIds: categoryIds.length > 0 ? categoryIds : undefined,

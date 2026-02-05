@@ -633,7 +633,7 @@ export async function GET(
           ipAddress,
           userAgent,
           referrer,
-          url: request.url
+          url: actualUrl
         })
         
         // Log successful storefront load

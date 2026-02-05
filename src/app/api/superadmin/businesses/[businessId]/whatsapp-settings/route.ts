@@ -50,13 +50,18 @@ export async function PATCH(
       }
     })
 
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Log the action
     await logSystemEvent({
       logType: 'admin_action',
       severity: 'info',
       endpoint: `/api/superadmin/businesses/${businessId}/whatsapp-settings`,
       method: 'PATCH',
-      url: request.url,
+      url: actualUrl,
       businessId,
       errorMessage: `WhatsApp direct notifications ${data.whatsappDirectNotifications ? 'enabled' : 'disabled'} for ${existingBusiness.name} by ${session.user.email}`,
       metadata: {

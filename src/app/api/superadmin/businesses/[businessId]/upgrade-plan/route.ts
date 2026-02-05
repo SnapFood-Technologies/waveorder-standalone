@@ -258,13 +258,18 @@ export async function POST(
       return { business: updatedBusiness, subscription }
     })
 
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
     // Log the action
     await logSystemEvent({
       logType: 'admin_action',
       severity: 'info',
       endpoint: `/api/superadmin/businesses/${businessId}/upgrade-plan`,
       method: 'POST',
-      url: request.url,
+      url: actualUrl,
       businessId,
       metadata: {
         action: 'plan_upgrade_with_trial',
