@@ -33,11 +33,13 @@ import {
   TrendingUp,
   Sparkles,
   Link2,
-  MessageSquare
+  MessageSquare,
+  Crown
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
 import { BusinessFeedbackSection } from '@/components/superadmin/BusinessFeedbackSection'
+import { UpgradePlanModal } from '@/components/superadmin/UpgradePlanModal'
 import toast from 'react-hot-toast'
 
 interface BusinessDetails {
@@ -148,6 +150,7 @@ export default function BusinessDetailsPage() {
   const [postals, setPostals] = useState<any[]>([])
   const [postalPricing, setPostalPricing] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'delivery' | 'postals' | 'pricing'>('delivery')
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [marketplaceInfo, setMarketplaceInfo] = useState<{
     isOriginator: boolean
     isSupplier: boolean
@@ -431,6 +434,28 @@ export default function BusinessDetailsPage() {
                 </span>
               )}
             </div>
+
+            {/* Upgrade Plan Button - only show if not on highest plan */}
+            {business.subscriptionPlan !== 'BUSINESS' && (
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg mb-4">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-purple-900 mb-1 flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-purple-600" />
+                    Upgrade Plan
+                  </h3>
+                  <p className="text-xs text-purple-700">
+                    Give this business a trial of PRO or BUSINESS plan with all premium features
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <Crown className="w-4 h-4" />
+                  Upgrade with Trial
+                </button>
+              </div>
+            )}
             
             {/* Test Mode Toggle */}
             <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
@@ -1317,6 +1342,17 @@ export default function BusinessDetailsPage() {
           )}
         </div>
       </div>
+
+      {/* Upgrade Plan Modal */}
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        businessId={businessId}
+        businessName={business.name}
+        currentPlan={business.subscriptionPlan}
+        ownerEmail={business.owner?.email}
+        onSuccess={fetchBusinessDetails}
+      />
     </div>
   )
 }

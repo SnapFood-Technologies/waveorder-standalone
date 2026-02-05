@@ -1973,3 +1973,131 @@ export async function sendSupportTicketCommentEmail({
     throw error
   }
 }
+
+// Send plan upgrade email with trial notification
+export async function sendPlanUpgradeEmail({
+  to,
+  name = 'there',
+  businessName,
+  newPlan,
+  trialDays,
+  trialEndsAt,
+  upgradedBy
+}: {
+  to: string
+  name: string
+  businessName: string
+  newPlan: 'PRO' | 'BUSINESS'
+  trialDays: number
+  trialEndsAt: Date
+  upgradedBy: string
+}) {
+  const planName = newPlan === 'BUSINESS' ? 'Business' : 'Pro'
+  const planColor = newPlan === 'BUSINESS' 
+    ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' 
+    : 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)'
+  const planIcon = newPlan === 'BUSINESS' ? '🏢' : '👑'
+
+  const features = newPlan === 'BUSINESS' 
+    ? [
+        'Unlimited products & categories',
+        'Unlimited stores',
+        'Full team access',
+        'Custom domain support',
+        'API access',
+        'Advanced analytics',
+        'Dedicated support'
+      ]
+    : [
+        'Unlimited products',
+        'Advanced analytics',
+        'Delivery scheduling',
+        'Product variants & modifiers',
+        'Priority support',
+        'Custom branding'
+      ]
+
+  try {
+    await resend.emails.send({
+      from: 'WaveOrder <hello@waveorder.app>',
+      to: [to],
+      subject: `${planIcon} Your ${businessName} has been upgraded to ${planName} Plan!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <!-- Header -->
+          <div style="background: ${planColor}; color: white; padding: 40px 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 16px;">${planIcon}</div>
+            <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Welcome to ${planName}!</h1>
+            <p style="margin: 12px 0 0 0; opacity: 0.9; font-size: 16px;">Your ${trialDays}-day free trial is now active</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="background: white; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none;">
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+              Hi ${name}! 👋
+            </p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+              Great news! <strong>${businessName}</strong> has been upgraded to the <strong>${planName} Plan</strong> with a complimentary <strong>${trialDays}-day free trial</strong>.
+            </p>
+            
+            <!-- Trial Info Box -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 24px;">🎉</div>
+                <div>
+                  <p style="margin: 0; font-weight: 600; color: #166534;">Free Trial Active</p>
+                  <p style="margin: 4px 0 0 0; color: #15803d; font-size: 14px;">
+                    Your trial ends on <strong>${trialEndsAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Features -->
+            <h3 style="color: #1f2937; font-size: 18px; margin: 0 0 16px 0;">What's included in ${planName}:</h3>
+            <div style="background: #faf5ff; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+              ${features.map(feature => `
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                  <div style="width: 20px; height: 20px; background: ${planColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                    <span style="color: white; font-size: 12px;">✓</span>
+                  </div>
+                  <span style="color: #374151; font-size: 14px;">${feature}</span>
+                </div>
+              `).join('')}
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://waveorder.app/admin" style="display: inline-block; background: ${planColor}; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                Go to Your Dashboard →
+              </a>
+            </div>
+            
+            <!-- What happens after trial -->
+            <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 20px; margin-top: 24px;">
+              <h4 style="color: #92400e; margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">What happens after the trial?</h4>
+              <p style="color: #a16207; font-size: 14px; margin: 0; line-height: 1.6;">
+                After your trial ends, you can choose to subscribe to continue enjoying ${planName} features, or your account will be transitioned to the Starter plan. Don't worry - your data will be safe during the grace period!
+              </p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f9fafb; padding: 24px 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; text-align: center;">
+            <p style="color: #6b7280; font-size: 14px; margin: 0 0 8px 0;">
+              Questions? Reply to this email or contact us at <a href="mailto:support@waveorder.app" style="color: #7c3aed;">support@waveorder.app</a>
+            </p>
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              WaveOrder - Powering your online business
+            </p>
+          </div>
+        </div>
+      `
+    })
+    console.log(`Plan upgrade email sent to ${to}`)
+  } catch (error) {
+    console.error('Failed to send plan upgrade email:', error)
+    throw error
+  }
+}
