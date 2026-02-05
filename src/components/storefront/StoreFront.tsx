@@ -678,6 +678,8 @@ function AddressAutocomplete({
           return ['es'] // Spain business - only Spain addresses
         case 'BB':
           return ['bb'] // Barbados business - only Barbados addresses
+        case 'BH':
+          return ['bh'] // Bahrain business - only Bahrain addresses
         default:
           return ['us'] // Default fallback
       }
@@ -745,7 +747,7 @@ function AddressAutocomplete({
   
 
 // Detect country from user's location and business data
-function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'BB' | 'DEFAULT' {
+function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 'ES' | 'XK' | 'MK' | 'BB' | 'BH' | 'DEFAULT' {
     // TODO: The testing override below was commented out because it caused a bug where
     // customers from Greece visiting non-Greek stores (e.g., Barbados) would see Greek addresses
     // instead of the store's country addresses. The detection should be based on
@@ -809,6 +811,11 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         return 'BB'
       }
       
+      // Bahrain boundaries: approximately 25.5-26.4°N, 50.3-50.9°E
+      if (lat >= 25.5 && lat <= 26.4 && lng >= 50.3 && lng <= 50.9) {
+        return 'BH'
+      }
+      
       // United States boundaries: approximately 24-71°N, -180 to -66°W
       if (lat >= 24 && lat <= 71 && lng >= -180 && lng <= -66) {
         return 'US'
@@ -823,6 +830,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.whatsappNumber?.startsWith('+383')) return 'XK'
     if (storeData.whatsappNumber?.startsWith('+389')) return 'MK'
     if (storeData.whatsappNumber?.startsWith('+1246')) return 'BB' // Barbados - must be before generic +1
+    if (storeData.whatsappNumber?.startsWith('+973')) return 'BH' // Bahrain
     if (storeData.whatsappNumber?.startsWith('+1')) return 'US'
     
     // TERTIARY: Check other user location indicators
@@ -846,6 +854,7 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
         if (timezone === 'Europe/Belgrade' || timezone === 'Europe/Pristina') return 'XK'
         if (timezone === 'Europe/Skopje') return 'MK'
         if (timezone === 'America/Barbados') return 'BB'
+        if (timezone === 'Asia/Bahrain') return 'BH'
       } catch (error) {
         // Timezone detection failed
       }
@@ -856,6 +865,8 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
     if (storeData.currency === 'EUR' && storeData.language === 'el') return 'GR'
     if (storeData.currency === 'EUR' && storeData.language === 'it') return 'IT'
     if (storeData.currency === 'EUR' && storeData.language === 'es') return 'ES'
+    if (storeData.currency === 'BHD') return 'BH' // Bahraini Dinar
+    if (storeData.currency === 'BBD') return 'BB' // Barbadian Dollar
     
     return 'US'
   }

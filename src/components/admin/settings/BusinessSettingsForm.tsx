@@ -1159,12 +1159,45 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
   <p className="text-xs text-gray-500 mt-1">
     Required for delivery zones and customer directions
   </p>
-  {/* Optional: Show coordinates for debugging */}
-  {settings.storeLatitude && settings.storeLongitude && (
-    <p className="text-xs text-gray-400 mt-1">
-      Coordinates: {settings.storeLatitude.toFixed(6)}, {settings.storeLongitude.toFixed(6)}
+  {/* Manual coordinates input */}
+  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+    <p className="text-xs font-medium text-gray-600 mb-2">
+      Coordinates {settings.storeLatitude && settings.storeLongitude ? '(auto-detected)' : '(manual entry)'}
     </p>
-  )}
+    <div className="grid grid-cols-2 gap-3">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+        <input
+          type="number"
+          step="0.000001"
+          value={settings.storeLatitude || ''}
+          onChange={(e) => setSettings(prev => ({ 
+            ...prev, 
+            storeLatitude: e.target.value ? parseFloat(e.target.value) : undefined 
+          }))}
+          placeholder="e.g., 26.172393"
+          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+        <input
+          type="number"
+          step="0.000001"
+          value={settings.storeLongitude || ''}
+          onChange={(e) => setSettings(prev => ({ 
+            ...prev, 
+            storeLongitude: e.target.value ? parseFloat(e.target.value) : undefined 
+          }))}
+          placeholder="e.g., 50.481577"
+          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+        />
+      </div>
+    </div>
+    <p className="text-xs text-gray-400 mt-2">
+      Tip: Get coordinates from Google Maps by right-clicking on your location
+    </p>
+  </div>
 </div>
 
               <div>
