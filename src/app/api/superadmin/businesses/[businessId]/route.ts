@@ -251,6 +251,7 @@ export async function GET(
         whatsappNumber: business.whatsappNumber,
         whatsappDirectNotifications: business.whatsappDirectNotifications,
         happyHourEnabled: business.happyHourEnabled,
+        showSearchAnalytics: business.showSearchAnalytics,
         address: business.address,
         email: business.email,
         phone: business.phone,

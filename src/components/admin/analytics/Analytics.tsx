@@ -939,29 +939,36 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               {searchAnalytics.data.volumeByDay.length > 0 && (
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Volume (Last 30 Days)</h3>
-                  <div className="h-48 flex items-end justify-between gap-1">
-                    {(() => {
-                      const maxCount = Math.max(...searchAnalytics.data!.volumeByDay.map(d => d.count), 1)
-                      return searchAnalytics.data!.volumeByDay.map((day, index) => (
-                        <div key={index} className="flex-1 flex flex-col items-center group">
-                          <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap z-10">
-                            {day.count} searches
-                          </div>
-                          <div
-                            className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors cursor-pointer"
-                            style={{ 
-                              height: `${Math.max((day.count / maxCount) * 100, day.count > 0 ? 4 : 1)}%`,
-                              minHeight: day.count > 0 ? '4px' : '1px'
-                            }}
-                          />
-                          {index % 5 === 0 && (
-                            <div className="text-xs text-gray-500 mt-2 whitespace-nowrap">
-                              {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <div className="h-64 flex items-end justify-between gap-2 min-w-max">
+                      {(() => {
+                        const maxCount = Math.max(...searchAnalytics.data!.volumeByDay.map(d => d.count), 1)
+                        const chartHeight = 256 // h-64 = 256px
+                        
+                        return searchAnalytics.data!.volumeByDay.map((day, index) => {
+                          const searchCount = day.count || 0
+                          // Calculate height in pixels (not percentage) for accurate rendering
+                          const heightPx = maxCount > 0 
+                            ? Math.max((searchCount / maxCount) * chartHeight, searchCount > 0 ? 4 : 2)
+                            : 2
+                          
+                          return (
+                            <div key={index} className="flex flex-col items-center group min-w-[40px]">
+                              <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap z-10">
+                                {searchCount} searches
+                              </div>
+                              <div
+                                className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors cursor-pointer"
+                                style={{ height: `${heightPx}px`, minHeight: searchCount > 0 ? '4px' : '2px' }}
+                              />
+                              <div className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-top-left whitespace-nowrap">
+                                {new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      ))
-                    })()}
+                          )
+                        })
+                      })()}
+                    </div>
                   </div>
                 </div>
               )}
