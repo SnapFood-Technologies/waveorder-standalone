@@ -1181,7 +1181,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             }
           }}
           placeholder="e.g., 26.172393"
-          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-500 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
         />
       </div>
       <div>
@@ -1200,7 +1200,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             }
           }}
           placeholder="e.g., 50.481577"
-          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+          className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-500 focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
         />
       </div>
     </div>

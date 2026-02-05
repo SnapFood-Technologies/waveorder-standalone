@@ -492,7 +492,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       onChange={(e) => handleDeliveryFeeChange(e.target.value)}
                       min="0"
                       step="0.01"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
 
@@ -507,7 +507,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       min="0"
                       step="0.01"
                       placeholder="0 for no minimum"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">Minimum order value for delivery</p>
                   </div>
@@ -523,7 +523,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       min="0"
                       step="0.01"
                       placeholder="Leave empty to disable"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">Orders above this amount get free delivery</p>
                   </div>
@@ -538,7 +538,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       onChange={(e) => handleDeliveryRadiusChange(e.target.value)}
                       min="1"
                       max="50"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
 
@@ -553,7 +553,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         estimatedDeliveryTime: e.target.value 
                       })}
                       placeholder="e.g., 30-45 minutes"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -577,7 +577,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         deliveryTimeText: e.target.value 
                       })}
                       placeholder="e.g., 3-4 Hours"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                   <div>
@@ -592,7 +592,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         freeDeliveryText: e.target.value 
                       })}
                       placeholder="e.g., Transport Falas"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -616,7 +616,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                         estimatedPickupTime: e.target.value 
                       })}
                       placeholder="e.g., 15-20 minutes"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                 </div>
@@ -716,7 +716,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                       whatsappNumber: e.target.value 
                     }))}
                     placeholder="+1234567890"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
                 <p className="text-xs text-gray-600 mt-1.5">
@@ -733,7 +733,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                   onChange={(e) => updateWhatsAppSettings({ 
                     orderNumberFormat: e.target.value 
                   })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900"
                 >
                   <option value="WO-{number}">WO-001, WO-002, ...</option>
                   <option value="ORD-{number}">ORD-001, ORD-002, ...</option>
@@ -754,7 +754,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                 })}
                 rows={3}
                 placeholder="Welcome! How can I help you today?"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
               />
             </div>
 
@@ -784,7 +784,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                   })}
                   rows={3}
                   placeholder="Thanks for your message! We'll get back to you soon."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
                 />
               </div>
             )}
