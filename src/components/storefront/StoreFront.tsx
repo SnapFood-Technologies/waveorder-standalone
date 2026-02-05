@@ -432,7 +432,8 @@ function OrderSuccessMessage({
   orderNumber, 
   primaryColor, 
   translations,
-  storeData 
+  storeData,
+  directNotification = false
 }: {
   isVisible: boolean
   onClose: () => void
@@ -440,9 +441,67 @@ function OrderSuccessMessage({
   primaryColor: string
   translations: any
   storeData: any
+  directNotification?: boolean
 }) {
   if (!isVisible) return null
 
+  // Different content for direct notification (Twilio) vs traditional wa.me flow
+  if (directNotification) {
+    return (
+      <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+        <div className="bg-white border border-green-200 rounded-xl shadow-xl p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-gray-900 text-base sm:text-lg mb-2">
+                {translations.orderSentDirect || 'Order Sent Successfully!'}
+              </h4>
+              <div className="space-y-2 sm:space-y-3">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  <span className="font-medium">{translations.orderNumber || 'Order Number'}:</span> {orderNumber}
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {translations.orderSentDirectMessage || `Your order has been sent directly to ${storeData?.name || 'the store'} via WhatsApp. They have received all your order details and will contact you shortly.`}
+                </p>
+                <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-sm text-green-800 font-medium mb-1">
+                    {translations.directNextSteps || 'What Happens Now?'}
+                  </p>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span>{translations.directStep1 || 'The store has received your order'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span>{translations.directStep2 || 'They will prepare your order'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span>{translations.directStep3 || "You'll be contacted for any updates"}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {translations.youCanCloseThisPage || 'You can safely close this page'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Traditional wa.me flow
   return (
     <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
       <div className="bg-white border border-green-200 rounded-xl shadow-xl p-4 sm:p-6">
@@ -1929,6 +1988,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [orderSuccessMessage, setOrderSuccessMessage] = useState<{
     visible: boolean
     orderNumber: string
+    directNotification?: boolean
   } | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<{
@@ -3378,7 +3438,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
-          orderNumber: result.orderNumber
+          orderNumber: result.orderNumber,
+          directNotification: result.directNotification || false
         })
         
         // Check if this is a direct notification (Twilio) or traditional wa.me flow
@@ -4558,6 +4619,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       primaryColor={primaryColor}
       translations={translations}
       storeData={storeData}
+      directNotification={orderSuccessMessage?.directNotification || false}
     />
 
 <ErrorMessage

@@ -196,6 +196,15 @@ onlyStockAvailable: string
      weWillPrepareOrder: string
      storeCurrentlyClosed: string
      wouldYouLikeToSchedule: string
+     
+     // Direct Notification (Twilio) Success Message
+     orderSentDirect: string
+     orderSentDirectMessage: string
+     directNextSteps: string
+     directStep1: string
+     directStep2: string
+     directStep3: string
+     youCanCloseThisPage: string
 
      cannotPlaceNowOrder: string
 schedulingBenefits: string
@@ -450,6 +459,15 @@ onlyStockAvailable: "Only {stock} available",
   weWillPrepareOrder: "The store will process your order and notify you of any status changes",
   storeCurrentlyClosed: "Store is currently closed",
   wouldYouLikeToSchedule: "Would you like to schedule your order for later instead?",
+  
+  // Direct Notification (Twilio) Success Message
+  orderSentDirect: "Order Sent Successfully!",
+  orderSentDirectMessage: "Your order has been sent directly to the store via WhatsApp. They have received all your order details and will contact you shortly.",
+  directNextSteps: "What Happens Now?",
+  directStep1: "The store has received your order",
+  directStep2: "They will prepare your order",
+  directStep3: "You'll be contacted for any updates",
+  youCanCloseThisPage: "You can safely close this page",
 
   cannotPlaceNowOrder: "We're currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we're open!",
 schedulingBenefits: "Why schedule your order?",
@@ -705,6 +723,15 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     weWillPrepareOrder: "Dyqani do ta përpunojë porosinë tuaj dhe do t'ju njoftojë për çdo ndryshim statusi",
     storeCurrentlyClosed: "Dyqani është aktualisht i mbyllur",
     wouldYouLikeToSchedule: "A dëshiron të planifikosh porosinë tënde për më vonë në vend të kësaj?",
+    
+    // Direct Notification (Twilio) Success Message
+    orderSentDirect: "Porosia u Dërgua me Sukses!",
+    orderSentDirectMessage: "Porosia juaj u dërgua drejtpërdrejt te dyqani përmes WhatsApp. Ata kanë marrë të gjitha detajet e porosisë suaj dhe do t'ju kontaktojnë së shpejti.",
+    directNextSteps: "Çfarë Ndodh Tani?",
+    directStep1: "Dyqani ka marrë porosinë tuaj",
+    directStep2: "Ata do të përgatisin porosinë tuaj",
+    directStep3: "Do të kontaktoheni për çdo përditësim",
+    youCanCloseThisPage: "Mund ta mbyllni këtë faqe me siguri",
 
     cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikosh porosinë tënde për kur të jemi të hapur!",
 schedulingBenefits: "Pse të planifikosh porosinë?",
@@ -949,15 +976,24 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   failedToSubmitOrder: "Error al enviar el pedido. Por favor, inténtalo de nuevo.",
 
   // Success Message & Scheduling
-  orderPrepared: "¡Pedido Preparado!",
+  orderPrepared: "¡Pedido Enviado!",
   orderNumber: "Número de Pedido",
-  orderOpenedWhatsApp: "Los detalles de tu pedido han sido preparados y WhatsApp debería estar abierto ahora. Por favor, envía el mensaje para completar tu pedido (si aún no lo has enviado).",
-  nextSteps: "Próximos Pasos",
-  sendWhatsAppMessage: "Envía el mensaje de WhatsApp (si aún no se ha enviado)",
-  awaitConfirmation: "Espera nuestra confirmación",
-  weWillPrepareOrder: "Prepararemos tu pedido una vez confirmado",
+  orderOpenedWhatsApp: "Tu pedido ha sido enviado con éxito. La tienda ha sido notificada, pero también puedes enviar un mensaje de WhatsApp si deseas comunicarte directamente con la tienda.",
+  nextSteps: "¿Qué Sigue?",
+  sendWhatsAppMessage: "Opcional: Envía un mensaje de WhatsApp para comunicarte con la tienda",
+  awaitConfirmation: "Recibirás actualizaciones del estado del pedido por email o WhatsApp",
+  weWillPrepareOrder: "La tienda procesará tu pedido y te notificará de cualquier cambio de estado",
   storeCurrentlyClosed: "La tienda está actualmente cerrada",
   wouldYouLikeToSchedule: "¿Te gustaría programar tu pedido para más tarde?",
+  
+  // Direct Notification (Twilio) Success Message
+  orderSentDirect: "¡Pedido Enviado con Éxito!",
+  orderSentDirectMessage: "Tu pedido ha sido enviado directamente a la tienda por WhatsApp. Han recibido todos los detalles de tu pedido y te contactarán pronto.",
+  directNextSteps: "¿Qué Sucede Ahora?",
+  directStep1: "La tienda ha recibido tu pedido",
+  directStep2: "Prepararán tu pedido",
+  directStep3: "Te contactarán para cualquier actualización",
+  youCanCloseThisPage: "Puedes cerrar esta página de forma segura",
 
   cannotPlaceNowOrder: "Actualmente estamos cerrados y no podemos aceptar pedidos para entrega/recogida inmediata. Sin embargo, ¡puedes programar tu pedido para cuando estemos abiertos!",
   schedulingBenefits: "¿Por qué programar tu pedido?",
@@ -1212,6 +1248,15 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   weWillPrepareOrder: "Το κατάστημα θα επεξεργαστεί την παραγγελία σας και θα σας ειδοποιήσει για οποιαδήποτε αλλαγή κατάστασης",
   storeCurrentlyClosed: "Το κατάστημα είναι προσωρινά κλειστό",
   wouldYouLikeToSchedule: "Θα θέλατε να προγραμματίσετε την παραγγελία σας για αργότερα;",
+  
+  // Direct Notification (Twilio) Success Message
+  orderSentDirect: "Η Παραγγελία Στάλθηκε με Επιτυχία!",
+  orderSentDirectMessage: "Η παραγγελία σας στάλθηκε απευθείας στο κατάστημα μέσω WhatsApp. Έχουν λάβει όλες τις λεπτομέρειες της παραγγελίας σας και θα επικοινωνήσουν μαζί σας σύντομα.",
+  directNextSteps: "Τι Γίνεται Τώρα;",
+  directStep1: "Το κατάστημα έλαβε την παραγγελία σας",
+  directStep2: "Θα ετοιμάσουν την παραγγελία σας",
+  directStep3: "Θα επικοινωνήσουν μαζί σας για ενημερώσεις",
+  youCanCloseThisPage: "Μπορείτε να κλείσετε αυτή τη σελίδα με ασφάλεια",
 
   cannotPlaceNowOrder: "Είμαστε προσωρινά κλειστά και δεν μπορούμε να δεχτούμε παραγγελίες για άμεση παράδοση/παραλαβή. Ωστόσο, μπορείτε να προγραμματίσετε την παραγγελία σας για όταν είμαστε ανοιχτά!",
   schedulingBenefits: "Γιατί να προγραμματίσετε την παραγγελία σας;",
