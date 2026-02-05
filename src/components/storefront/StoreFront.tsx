@@ -2574,11 +2574,11 @@ const trackProductEvent = useCallback((
   // Calculate cart totals with dynamic delivery fee
   const cartSubtotal = cart.reduce((sum, item) => sum + item.totalPrice, 0)
   
-  // Check if free delivery threshold is met
+  // Check if free delivery threshold is met (not for RETAIL - they use postal pricing)
   const freeDeliveryThreshold = storeData.freeDeliveryThreshold
-  const qualifiesForFreeDelivery = freeDeliveryThreshold && cartSubtotal >= freeDeliveryThreshold
+  const qualifiesForFreeDelivery = storeData.businessType !== 'RETAIL' && freeDeliveryThreshold && cartSubtotal >= freeDeliveryThreshold
   
-  // Apply free delivery if threshold is met
+  // Apply free delivery if threshold is met (not for RETAIL)
   const cartDeliveryFee = deliveryType === 'delivery' 
     ? (qualifiesForFreeDelivery ? 0 : calculatedDeliveryFee) 
     : 0
@@ -6701,7 +6701,8 @@ function OrderPanel({
                 <>
                   <div className="flex justify-between text-sm">
                     <span>{translations.deliveryFee || 'Delivery Fee'}</span>
-                    {storeData.freeDeliveryThreshold && cartSubtotal >= storeData.freeDeliveryThreshold ? (
+                    {/* Show free delivery for non-RETAIL businesses when threshold is met */}
+                    {storeData.businessType !== 'RETAIL' && storeData.freeDeliveryThreshold && storeData.deliveryFee > 0 && cartSubtotal >= storeData.freeDeliveryThreshold ? (
                       <span className="text-green-600 font-medium">
                         <span className="line-through text-gray-400 mr-1">{currencySymbol}{storeData.deliveryFee.toFixed(2)}</span>
                         {translations.free || 'Free'}!
@@ -6710,10 +6711,10 @@ function OrderPanel({
                       <span>{currencySymbol}{cartDeliveryFee.toFixed(2)}</span>
                     )}
                   </div>
-                  {/* Free delivery threshold message */}
-                  {storeData.freeDeliveryThreshold && cartSubtotal < storeData.freeDeliveryThreshold && (
+                  {/* Free delivery threshold message - only for non-RETAIL businesses with delivery fee > 0 */}
+                  {storeData.businessType !== 'RETAIL' && storeData.freeDeliveryThreshold && storeData.deliveryFee > 0 && cartSubtotal < storeData.freeDeliveryThreshold && (
                     <p className="text-xs text-green-600 mt-1">
-                      🎉 Add {currencySymbol}{(storeData.freeDeliveryThreshold - cartSubtotal).toFixed(2)} more for free delivery!
+                      🎉 {(translations.addMoreForFreeDelivery || 'Add {amount} more for free delivery!').replace('{amount}', `${currencySymbol}${(storeData.freeDeliveryThreshold - cartSubtotal).toFixed(2)}`)}
                     </p>
                   )}
                 </>

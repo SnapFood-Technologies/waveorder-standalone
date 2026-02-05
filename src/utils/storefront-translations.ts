@@ -158,6 +158,8 @@ onlyStockAvailable: string
     serviceFee: string
     popular: string
     freeDelivery: string
+    free: string
+    addMoreForFreeDelivery: string
     pickupAvailable: string
 
     maintenanceMessage: string
@@ -409,6 +411,8 @@ onlyStockAvailable: "Only {stock} available",
     comingSoon: "Coming soon!",
     checkBackLater: "We're working on adding products to this section. Please check back later.",
     freeDelivery: "Free Delivery",
+    free: "Free",
+    addMoreForFreeDelivery: "Add {amount} more for free delivery!",
     pickupAvailable: "Pickup available",
     // Closure Messages
     maintenanceMessage: "We are currently performing maintenance and will be back soon.",
@@ -668,6 +672,8 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     comingSoon: "Së shpejti!",
     checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Të lutem kontrollo më vonë.",
     freeDelivery: "Transport Falas",
+    free: "Falas",
+    addMoreForFreeDelivery: "Shto {amount} më shumë për transport falas!",
     pickupAvailable: "Merr tek Biznesi",
       // Closure Messages
       maintenanceMessage: "Aktualisht po kryejmë mirëmbajtje dhe do të jemi përsëri të hapur së shpejti.",
@@ -915,6 +921,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     comingSoon: "¡Próximamente!",
     checkBackLater: "Estamos trabajando en añadir productos a esta sección. Por favor, vuelve más tarde.",
     freeDelivery: "Entrega Gratis",
+    free: "Gratis",
+    addMoreForFreeDelivery: "¡Añade {amount} más para entrega gratis!",
     pickupAvailable: "Recogida disponible",
     // Closure Messages
     maintenanceMessage: "Actualmente estamos realizando mantenimiento y volveremos pronto.",
@@ -1171,6 +1179,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     comingSoon: "Σύντομα!",
     checkBackLater: "Εργαζόμαστε για να προσθέσουμε προϊόντα σε αυτή την ενότητα. Παρακαλώ ελέγξτε αργότερα.",
     freeDelivery: "Δωρεάν Παράδοση",
+    free: "Δωρεάν",
+    addMoreForFreeDelivery: "Προσθέστε {amount} ακόμα για δωρεάν παράδοση!",
     pickupAvailable: "Διαθέσιμη Παραλαβή",
     // Closure Messages
     maintenanceMessage: "Εκτελούμε προσωρινά συντήρηση και θα επιστρέψουμε σύντομα.",
