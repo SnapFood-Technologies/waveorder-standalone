@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
@@ -16,7 +17,6 @@ import {
   X,
   ChevronDown,
   ChevronRight,
-  Waves,
   Store,
   Boxes,
   BarChart3,
@@ -541,10 +541,17 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       `}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link href="/" className="flex items-center space-x-3" onClick={onClose}>
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
+            <Link href="/" className="flex items-center space-x-1" onClick={onClose}>
+              <Image
+                src="/images/waveorderlogo.png"
+                alt="WaveOrder Logo"
+                width={50}
+                height={50}
+                quality={100}
+                unoptimized
+                placeholder="empty"
+                className="w-[50px] h-[50px]"
+              />
               <span className="text-xl font-bold text-gray-900">WaveOrder</span>
             </Link>
             <button

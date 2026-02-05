@@ -1,6 +1,6 @@
 // src/components/site/Footer.tsx
 import Link from 'next/link'
-import { Waves } from 'lucide-react'
+import Image from 'next/image'
 
 export default function Footer() {
   return (
@@ -10,10 +10,17 @@ export default function Footer() {
           
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
+            <Link href="/" className="flex items-center space-x-1 mb-4">
+              <Image
+                src="/images/waveorderlogo.png"
+                alt="WaveOrder Logo"
+                width={50}
+                height={50}
+                quality={100}
+                unoptimized
+                placeholder="empty"
+                className="w-[50px] h-[50px]"
+              />
               <span className="text-xl font-bold">WaveOrder</span>
             </Link>
             <p className="text-gray-400 leading-relaxed max-w-xs">
