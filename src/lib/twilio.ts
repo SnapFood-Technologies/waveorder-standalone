@@ -1,9 +1,11 @@
 // lib/twilio.ts - Twilio WhatsApp service for direct order notifications
+// Supports both freeform messages (user-initiated) and templates (business-initiated)
 
 interface TwilioConfig {
   accountSid: string
   authToken: string
   whatsappNumber: string // Twilio WhatsApp sender number (e.g., +14155238886)
+  contentSid?: string // WhatsApp template Content SID (for business-initiated messages)
 }
 
 interface OrderNotificationData {
@@ -35,6 +37,7 @@ export function getTwilioConfig(): TwilioConfig | null {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER
+  const contentSid = process.env.TWILIO_CONTENT_SID // Optional: WhatsApp template SID
 
   if (!accountSid || !authToken || !whatsappNumber) {
     return null
@@ -43,7 +46,8 @@ export function getTwilioConfig(): TwilioConfig | null {
   return {
     accountSid,
     authToken,
-    whatsappNumber
+    whatsappNumber,
+    contentSid
   }
 }
 
@@ -142,7 +146,68 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
 }
 
 /**
- * Send WhatsApp message via Twilio
+ * Send WhatsApp message via Twilio using template (for business-initiated messages)
+ * WhatsApp requires pre-approved templates for business-initiated conversations
+ */
+export async function sendWhatsAppTemplateMessage(
+  toNumber: string,
+  contentSid: string,
+  contentVariables: Record<string, string>
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const config = getTwilioConfig()
+  
+  if (!config) {
+    return { 
+      success: false, 
+      error: 'Twilio not configured' 
+    }
+  }
+
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`
+    
+    const formData = new URLSearchParams()
+    formData.append('From', formatWhatsAppNumber(config.whatsappNumber))
+    formData.append('To', formatWhatsAppNumber(toNumber))
+    formData.append('ContentSid', contentSid)
+    formData.append('ContentVariables', JSON.stringify(contentVariables))
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    })
+
+    const result = await response.json()
+
+    if (response.ok) {
+      console.log('Twilio template message sent successfully:', result.sid)
+      return {
+        success: true,
+        messageId: result.sid
+      }
+    } else {
+      console.error('Twilio API error:', result)
+      return {
+        success: false,
+        error: result.message || 'Failed to send template message'
+      }
+    }
+  } catch (error) {
+    console.error('Twilio send error:', error)
+    return {
+      success: false,
+      error: (error as Error).message
+    }
+  }
+}
+
+/**
+ * Send WhatsApp message via Twilio (freeform - only works within 24hr conversation window)
+ * @deprecated Use sendWhatsAppTemplateMessage for business-initiated messages
  */
 export async function sendWhatsAppMessage(
   toNumber: string,
@@ -199,11 +264,65 @@ export async function sendWhatsAppMessage(
 
 /**
  * Send order notification to business via WhatsApp
+ * Uses template if TWILIO_CONTENT_SID is configured (required for business-initiated messages)
+ * Falls back to freeform message if no template (only works within 24hr conversation window)
  */
 export async function sendOrderNotification(
   businessWhatsAppNumber: string,
   orderData: OrderNotificationData
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const config = getTwilioConfig()
+  
+  if (!config) {
+    return { 
+      success: false, 
+      error: 'Twilio not configured' 
+    }
+  }
+
+  // If template is configured, use it (required for business-initiated WhatsApp messages)
+  if (config.contentSid) {
+    // Format items as a single string for the template
+    const itemsText = orderData.items.map(item => {
+      let line = `${item.quantity}x ${item.name}`
+      if (item.variant) line += ` (${item.variant})`
+      line += ` - ${orderData.currencySymbol}${item.price.toFixed(2)}`
+      return line
+    }).join(', ')
+
+    // Delivery type labels
+    const typeLabels: Record<string, string> = {
+      'delivery': '🚚 Delivery',
+      'pickup': '🏪 Pickup',
+      'dineIn': '🍽️ Dine In'
+    }
+
+    // Build content variables matching the template
+    // Template: {{1}}=orderNumber, {{2}}=storeName, {{3}}=type, {{4}}=customerName,
+    //           {{5}}=phone, {{6}}=address, {{7}}=items, {{8}}=subtotal,
+    //           {{9}}=delivery, {{10}}=total, {{11}}=notes
+    const contentVariables: Record<string, string> = {
+      '1': orderData.orderNumber,
+      '2': orderData.businessName,
+      '3': typeLabels[orderData.deliveryType] || orderData.deliveryType,
+      '4': orderData.customerName,
+      '5': orderData.customerPhone,
+      '6': orderData.deliveryAddress || 'N/A',
+      '7': itemsText,
+      '8': `${orderData.currencySymbol}${orderData.subtotal.toFixed(2)}`,
+      '9': orderData.deliveryFee > 0 
+        ? `${orderData.currencySymbol}${orderData.deliveryFee.toFixed(2)}` 
+        : 'Free',
+      '10': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
+      '11': orderData.specialInstructions || 'None'
+    }
+
+    console.log('Sending WhatsApp order notification via template:', config.contentSid)
+    return sendWhatsAppTemplateMessage(businessWhatsAppNumber, config.contentSid, contentVariables)
+  }
+
+  // Fallback to freeform message (only works if customer messaged first within 24hrs)
+  console.warn('TWILIO_CONTENT_SID not configured - using freeform message (may fail for business-initiated)')
   const message = formatOrderNotificationMessage(orderData)
   return sendWhatsAppMessage(businessWhatsAppNumber, message)
 }
