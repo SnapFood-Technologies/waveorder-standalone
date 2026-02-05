@@ -3,8 +3,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Menu, X, Waves, LayoutDashboard, ChevronDown } from 'lucide-react'
+import { Menu, X, LayoutDashboard, ChevronDown } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 export default function Header() {
@@ -39,9 +40,13 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
+            <Image
+              src="/images/waveorderlogo.png"
+              alt="WaveOrder Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-lg"
+            />
             <span className="text-xl font-bold text-gray-900">WaveOrder</span>
           </Link>
 

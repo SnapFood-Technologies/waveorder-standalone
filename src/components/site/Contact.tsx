@@ -296,7 +296,7 @@ export default function Contact() {
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 placeholder:text-gray-500 ${
                         errors.name ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
                       placeholder="Your full name"
@@ -316,7 +316,7 @@ export default function Contact() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 placeholder:text-gray-500 ${
                         errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
                       placeholder="your@email.com"
@@ -338,7 +338,7 @@ export default function Contact() {
                       name="company"
                       value={formData.company}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 placeholder:text-gray-500 ${
                         errors.company ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
                       placeholder="Your restaurant or business name"
@@ -357,7 +357,7 @@ export default function Contact() {
                       required
                       value={formData.subject}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 ${
                         errors.subject ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
                     >
@@ -385,7 +385,7 @@ export default function Contact() {
                     rows={6}
                     value={formData.message}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors resize-none ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors resize-none text-gray-900 placeholder:text-gray-500 ${
                       errors.message ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                     }`}
                     placeholder="Tell us how we can help you..."

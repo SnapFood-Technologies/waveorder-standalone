@@ -272,7 +272,7 @@ export default function RegisterComponent() {
                 value={formData.name}
                 onChange={handleInputChange}
                 autoComplete="name"
-                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                 placeholder="Enter your full name"
               />
             </div>
@@ -293,7 +293,7 @@ export default function RegisterComponent() {
                 value={formData.email}
                 onChange={handleInputChange}
                 autoComplete="email"
-                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                 placeholder="Enter your email"
               />
             </div>
@@ -314,7 +314,7 @@ export default function RegisterComponent() {
                 value={formData.password}
                 onChange={handleInputChange}
                 autoComplete="new-password"
-                className="pl-10 pr-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="pl-10 pr-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                 placeholder="Create a strong password"
               />
               <button
@@ -356,7 +356,7 @@ export default function RegisterComponent() {
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
                 autoComplete="new-password"
-                className="pl-10 pr-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="pl-10 pr-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
                 placeholder="Confirm your password"
               />
               <button
