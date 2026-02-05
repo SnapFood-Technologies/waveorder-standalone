@@ -352,7 +352,7 @@ function EnhancedMobilePreview({ data, primaryColor, content, currencySymbol }: 
               <input
                 type="text"
                 placeholder={content.search}
-                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs outline-none"
+                className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs outline-none text-gray-900 placeholder:text-gray-500"
                 style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
               />
             </div>

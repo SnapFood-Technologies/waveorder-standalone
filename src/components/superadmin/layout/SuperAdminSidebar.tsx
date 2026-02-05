@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
@@ -10,7 +11,6 @@ import {
   Settings,
   TrendingUp,
   X,
-  Waves,
   Activity,
   HeadphonesIcon,
   Ticket,
@@ -205,10 +205,17 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
+            <div className="flex items-center space-x-1">
+              <Image
+                src="/images/waveorderlogo.png"
+                alt="WaveOrder Logo"
+                width={50}
+                height={50}
+                quality={100}
+                unoptimized
+                placeholder="empty"
+                className="w-[50px] h-[50px]"
+              />
               <div>
                 <span className="text-xl font-bold text-gray-900">WaveOrder</span>
                 <p className="text-xs text-gray-500">SuperAdmin</p>

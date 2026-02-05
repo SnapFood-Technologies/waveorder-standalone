@@ -660,7 +660,7 @@ Sample Item 3,8.99,Category 1,Third sample description`
                     <input
                       type="text"
                       placeholder="Search dishes..."
-                      className="w-full pl-7 pr-2 py-2 border border-gray-200 rounded-lg text-xs outline-none"
+                      className="w-full pl-7 pr-2 py-2 border border-gray-200 rounded-lg text-xs outline-none text-gray-900 placeholder:text-gray-500"
                     />
                   </div>
                 </div>
