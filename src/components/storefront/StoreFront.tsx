@@ -6693,13 +6693,13 @@ function OrderPanel({
         {cart.length > 0 && (
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
             <div className="space-y-3">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm text-gray-900">
                 <span>{translations.subtotal || 'Subtotal'}</span>
                 <span>{currencySymbol}{cartSubtotal.toFixed(2)}</span>
               </div>
               {deliveryType === 'delivery' && !deliveryError && (
                 <>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-sm text-gray-900">
                     <span>{translations.deliveryFee || 'Delivery Fee'}</span>
                     {/* Show free delivery for non-RETAIL businesses when threshold is met */}
                     {storeData.businessType !== 'RETAIL' && storeData.freeDeliveryThreshold && storeData.deliveryFee > 0 && cartSubtotal >= storeData.freeDeliveryThreshold ? (
@@ -6719,7 +6719,7 @@ function OrderPanel({
                   )}
                 </>
               )}
-              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-200 pt-3">
+              <div className="flex justify-between font-semibold text-lg border-t-2 border-gray-200 pt-3 text-gray-900">
                 <span>{translations.total || 'Total'}</span>
                 <span style={{ color: primaryColor }}>{currencySymbol}{cartTotal.toFixed(2)}</span>
               </div>
