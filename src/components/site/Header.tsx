@@ -136,11 +136,12 @@ export default function Header() {
           </div>
 
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 text-gray-900"
             onClick={() => {
               setIsMenuOpen(!isMenuOpen)
               if (!isMenuOpen) setMobileIndustriesOpen(false) // Reset submenu when opening
             }}
+            aria-label="Toggle menu"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
