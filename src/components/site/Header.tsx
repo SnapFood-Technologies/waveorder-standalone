@@ -39,13 +39,17 @@ export default function Header() {
     <header className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center space-x-3">
+          <Link href="/" className="flex items-center space-x-1">
             <Image
               src="/images/waveorderlogo.png"
               alt="WaveOrder Logo"
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-lg"
+              width={50}
+              height={50}
+              quality={100}
+              priority
+              unoptimized
+              placeholder="empty"
+              className="w-[50px] h-[50px]"
             />
             <span className="text-xl font-bold text-gray-900">WaveOrder</span>
           </Link>
