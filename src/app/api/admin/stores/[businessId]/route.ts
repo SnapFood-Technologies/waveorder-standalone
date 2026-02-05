@@ -129,6 +129,7 @@ export async function GET(
         customMenuEnabled: true,
         customFilteringEnabled: true,
         happyHourEnabled: true,
+        showCostPrice: true, // For Cost & Margins feature
         
         // Inventory display
         showStockBadge: true,

@@ -64,6 +64,7 @@ interface BusinessDetails {
   whatsappDirectNotifications?: boolean
   happyHourEnabled?: boolean
   showSearchAnalytics?: boolean
+  showCostPrice?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1341,6 +1342,9 @@ export default function BusinessDetailsPage() {
           {/* Search Analytics Settings */}
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Cost & Margins Settings */}
+          <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -1758,6 +1762,165 @@ function SearchAnalyticsSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Search analytics not visible to this business (data is still being collected).
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Cost & Margins Settings Section Component (SuperAdmin toggle only)
+function CostPriceSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [costPriceEnabled, setCostPriceEnabled] = useState(business.showCostPrice || false)
+  const [summaryData, setSummaryData] = useState<{
+    totalProducts: number
+    productsWithCostPrice: number
+    productsWithSupplier: number
+    uniqueSuppliers: number
+    totalPayments: number
+    totalPaymentAmount: number
+  } | null>(null)
+  const [loadingData, setLoadingData] = useState(false)
+
+  // Fetch summary when enabled
+  useEffect(() => {
+    if (costPriceEnabled) {
+      fetchSummaryData()
+    }
+  }, [costPriceEnabled, business.id])
+
+  const fetchSummaryData = async () => {
+    setLoadingData(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/cost-price`)
+      if (res.ok) {
+        const data = await res.json()
+        setSummaryData({
+          totalProducts: data.summary?.totalProducts || 0,
+          productsWithCostPrice: data.summary?.productsWithCostPrice || 0,
+          productsWithSupplier: data.summary?.productsWithSupplier || 0,
+          uniqueSuppliers: data.summary?.uniqueSuppliers || 0,
+          totalPayments: data.summary?.totalPayments || 0,
+          totalPaymentAmount: data.summary?.totalPaymentAmount || 0
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch cost price data:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const handleToggle = async () => {
+    const newValue = !costPriceEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/cost-price`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showCostPrice: newValue })
+      })
+      
+      if (res.ok) {
+        setCostPriceEnabled(newValue)
+        toast.success(newValue ? 'Cost & Margins enabled' : 'Cost & Margins disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling cost price:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <DollarSign className="w-5 h-5 mr-2 text-emerald-600" />
+        Cost & Margins
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Cost & Margins for Business Admin</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, the business can track cost prices, margins, and supplier payments in their Admin panel.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+            costPriceEnabled ? 'bg-emerald-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              costPriceEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {costPriceEnabled && (
+        <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <p className="text-xs text-emerald-700 mb-3">
+            <span className="font-medium">Enabled:</span> Business can access Cost & Margins features in their Admin panel.
+          </p>
+          
+          {loadingData ? (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+              <span className="ml-2 text-xs text-emerald-600">Loading data...</span>
+            </div>
+          ) : summaryData ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white p-2 rounded border border-emerald-200">
+                  <p className="text-xs text-gray-500">Products w/ Cost</p>
+                  <p className="text-lg font-semibold text-emerald-700">
+                    {summaryData.productsWithCostPrice}/{summaryData.totalProducts}
+                  </p>
+                </div>
+                <div className="bg-white p-2 rounded border border-emerald-200">
+                  <p className="text-xs text-gray-500">Unique Suppliers</p>
+                  <p className="text-lg font-semibold text-emerald-700">{summaryData.uniqueSuppliers}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-emerald-200">
+                  <p className="text-xs text-gray-500">Payments Made</p>
+                  <p className="text-lg font-semibold text-emerald-700">{summaryData.totalPayments}</p>
+                </div>
+              </div>
+              
+              {summaryData.totalPaymentAmount > 0 && (
+                <div className="mt-2 bg-white p-2 rounded border border-emerald-200">
+                  <p className="text-xs text-gray-500">Total Paid to Suppliers</p>
+                  <p className="text-lg font-semibold text-emerald-700">
+                    {business.currency || 'EUR'} {summaryData.totalPaymentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+      
+      {!costPriceEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Cost & Margins features not visible to this business.
           </p>
         </div>
       )}

@@ -399,6 +399,9 @@ model Business {
   // Search Analytics (SuperAdmin enables, Business Admin views)
   showSearchAnalytics Boolean @default(false) // When enabled, business admin can see search analytics
 
+  // Cost & Margins (SuperAdmin enables, Business Admin views)
+  showCostPrice Boolean @default(false) // When enabled, business admin can see cost prices and margins
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -436,6 +439,9 @@ model Business {
 
   // Search Analytics
   searchLogs SearchLog[]
+
+  // Supplier Payments (for Cost & Margins feature)
+  supplierPayments SupplierPayment[]
 
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
@@ -498,6 +504,31 @@ model SearchLog {
   @@index([businessId])
   @@index([businessId, createdAt])
   @@index([searchTerm])
+}
+
+// Supplier Payment tracking for Cost & Margins feature
+model SupplierPayment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  supplierName String // Name of the supplier
+  amount       Float // Amount paid
+  currency     String @default("EUR") // Currency of payment
+
+  periodStart DateTime? // Start of the period this payment covers
+  periodEnd   DateTime? // End of the period this payment covers
+
+  paymentMethod String? // e.g., "bank_transfer", "cash", "card"
+  reference     String? // Payment reference/invoice number
+  notes         String? // Additional notes
+
+  paidAt    DateTime @default(now()) // When payment was made
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, supplierName])
+  @@index([businessId, paidAt])
 }
 
 model Anomaly {
@@ -601,6 +632,8 @@ model Product {
   images        String[]
   price         Float
   originalPrice Float?
+  costPrice     Float? // Cost price from supplier (for margin calculations)
+  supplierName  String? // Name of the supplier
   sku           String?
   stock         Int      @default(0)
   reservedStock Int      @default(0) // Stock reserved for pending orders
