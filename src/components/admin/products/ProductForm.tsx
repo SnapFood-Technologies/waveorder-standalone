@@ -1,7 +1,7 @@
 // src/components/admin/products/ProductForm.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Save, 
@@ -21,7 +21,9 @@ import {
   Info,
   Lightbulb,
   CheckCircle,
-  Tag
+  Tag,
+  Search,
+  ChevronDown
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -52,6 +54,10 @@ interface ProductModifier {
 interface Category {
   id: string
   name: string
+  parent?: {
+    id: string
+    name: string
+  } | null
 }
 
 interface Brand {
@@ -105,6 +111,116 @@ interface ProductForm {
   modifiers: ProductModifier[]
   metaTitle: string
   metaDescription: string
+}
+
+// Searchable Category Select Component
+function SearchableCategorySelect({
+  categories,
+  value,
+  onChange,
+  placeholder = 'Select category'
+}: {
+  categories: Category[]
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const selectRef = useRef<HTMLDivElement>(null)
+
+  // Get display name for a category (with parent if subcategory)
+  const getCategoryDisplayName = (category: Category) => {
+    if (category.parent) {
+      return `${category.parent.name} > ${category.name}`
+    }
+    return category.name
+  }
+
+  // Filter categories based on search term
+  const filteredCategories = categories.filter(category => {
+    const displayName = getCategoryDisplayName(category).toLowerCase()
+    return displayName.includes(searchTerm.toLowerCase())
+  })
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+        setSearchTerm('')
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const selectedCategory = value ? categories.find(c => c.id === value) : null
+
+  return (
+    <div className="relative" ref={selectRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-left flex items-center justify-between bg-white hover:border-gray-400 transition-colors"
+      >
+        <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
+          {selectedCategory ? getCategoryDisplayName(selectedCategory) : placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-72 overflow-hidden">
+          <div className="p-2 border-b border-gray-200">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 placeholder:text-gray-500"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto max-h-56">
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    onChange(category.id)
+                    setIsOpen(false)
+                    setSearchTerm('')
+                  }}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 transition-colors ${
+                    value === category.id ? 'bg-teal-50 text-teal-900 font-medium' : 'text-gray-900'
+                  }`}
+                >
+                  {getCategoryDisplayName(category)}
+                </button>
+              ))
+            ) : searchTerm ? (
+              <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                No categories found for "{searchTerm}"
+              </div>
+            ) : (
+              <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                No categories available
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ProductForm({ businessId, productId }: ProductFormProps) {
@@ -1052,19 +1168,12 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category *
                   </label>
-                  <select
-                    required
+                  <SearchableCategorySelect
+                    categories={categories}
                     value={form.categoryId}
-                    onChange={(e) => setForm(prev => ({ ...prev, categoryId: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                  >
-                    <option value="">Select category</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setForm(prev => ({ ...prev, categoryId: value }))}
+                    placeholder="Select category"
+                  />
                 </div>
 
                 {business.brandsFeatureEnabled && brands.length > 0 && (

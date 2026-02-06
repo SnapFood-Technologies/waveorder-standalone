@@ -98,7 +98,7 @@ export default function ImportPage({ businessId }: ImportPageProps) {
         const businessRes = await fetch(`/api/admin/stores/${businessId}`)
         if (businessRes.ok) {
           const businessData = await businessRes.json()
-          setCurrency(businessData.currency || 'USD')
+          setCurrency(businessData.business.currency || 'USD')
         } else {
           setCurrency('USD')
         }
