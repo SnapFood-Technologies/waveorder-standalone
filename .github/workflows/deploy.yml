@@ -66,6 +66,15 @@ jobs:
           npx prisma generate
           echo "✅ Prisma client generated successfully"
 
+      # 📦 ONE-TIME SCRIPTS (Remove/comment after first successful run)
+      - name: 📦 Populate Shehu Tools Categories
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Populating categories for Shehu Tools..."
+          npx tsx scripts/populate-categories-shehutools.ts
+          echo "✅ Categories populated successfully"
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
