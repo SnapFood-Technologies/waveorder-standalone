@@ -130,6 +130,7 @@ export async function GET(
         customFilteringEnabled: true,
         happyHourEnabled: true,
         showCostPrice: true, // For Cost & Margins feature
+        showProductionPlanning: true, // For Production Queue feature
         
         // Inventory display
         showStockBadge: true,

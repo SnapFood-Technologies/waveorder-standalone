@@ -35,7 +35,8 @@ import {
   Link2,
   MessageSquare,
   Crown,
-  Search
+  Search,
+  ChefHat
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -65,6 +66,7 @@ interface BusinessDetails {
   happyHourEnabled?: boolean
   showSearchAnalytics?: boolean
   showCostPrice?: boolean
+  showProductionPlanning?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1366,6 +1368,9 @@ export default function BusinessDetailsPage() {
           {/* Cost & Margins Settings */}
           <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Production Planning Settings */}
+          <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -2156,6 +2161,94 @@ function CostPriceSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Cost & Margins features not visible to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Production Planning Settings Section Component (SuperAdmin toggle only)
+function ProductionPlanningSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [productionPlanningEnabled, setProductionPlanningEnabled] = useState(business.showProductionPlanning || false)
+
+  const handleToggle = async () => {
+    const newValue = !productionPlanningEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/production-planning`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showProductionPlanning: newValue })
+      })
+      
+      if (res.ok) {
+        setProductionPlanningEnabled(newValue)
+        toast.success(newValue ? 'Production Planning enabled' : 'Production Planning disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling production planning:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <ChefHat className="w-5 h-5 mr-2 text-orange-600" />
+        Production Planning
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Production Queue for Business Admin</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, the business can see a production queue showing products to prepare from pending orders.
+            Ideal for bakeries, restaurants, and made-to-order businesses.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+            productionPlanningEnabled ? 'bg-orange-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              productionPlanningEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {productionPlanningEnabled && (
+        <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <p className="text-xs text-orange-700">
+            <span className="font-medium">Enabled:</span> Business can access the Production Queue under Orders → Production Queue.
+            This shows products grouped by quantity from pending orders, helping plan what to prepare.
+          </p>
+        </div>
+      )}
+      
+      {!productionPlanningEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Production Queue not visible to this business.
           </p>
         </div>
       )}
