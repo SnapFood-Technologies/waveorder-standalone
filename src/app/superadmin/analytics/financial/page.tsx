@@ -41,6 +41,7 @@ interface FinancialData {
     }
     trialConversionRate: number
     totalTrialsStarted: number
+    totalTrialsEnded: number
     totalTrialsConverted: number
     trialsExpiringList: Array<{
       id: string
@@ -379,8 +380,16 @@ export default function FinancialPage() {
                   <span className="text-2xl font-bold text-green-600">{data.trialAnalytics.trialConversionRate}%</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {data.trialAnalytics.totalTrialsConverted} of {data.trialAnalytics.totalTrialsStarted} trials converted
+                  {data.trialAnalytics.totalTrialsEnded > 0 
+                    ? `${data.trialAnalytics.totalTrialsConverted} of ${data.trialAnalytics.totalTrialsEnded} ended trials converted to paid`
+                    : 'No trials have ended yet'
+                  }
                 </p>
+                {data.trialAnalytics.activeTrials > 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    {data.trialAnalytics.activeTrials} active trial{data.trialAnalytics.activeTrials !== 1 ? 's' : ''} not included
+                  </p>
+                )}
               </div>
 
               {/* Active Trials */}
