@@ -253,6 +253,7 @@ export async function GET(
         happyHourEnabled: business.happyHourEnabled,
         showSearchAnalytics: business.showSearchAnalytics,
         showCostPrice: business.showCostPrice,
+        showProductionPlanning: business.showProductionPlanning,
         address: business.address,
         email: business.email,
         phone: business.phone,

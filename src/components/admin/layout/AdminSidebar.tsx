@@ -41,7 +41,8 @@ import {
   Menu,
   SlidersHorizontal,
   Clock,
-  DollarSign
+  DollarSign,
+  ChefHat
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -89,6 +90,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [customFilteringEnabled, setCustomFilteringEnabled] = useState(false)
   const [happyHourEnabled, setHappyHourEnabled] = useState(false)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
+  const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -123,6 +125,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setCustomFilteringEnabled(data.business?.customFilteringEnabled || false)
           setHappyHourEnabled(data.business?.happyHourEnabled || false)
           setShowCostPriceEnabled(data.business?.showCostPrice || false)
+          setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -183,12 +186,32 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: LayoutDashboard, 
       requiredPlan: 'STARTER'
     },
-    { 
+    // Orders - with optional Production Queue submenu
+    // @ts-ignore
+    ...(showProductionPlanningEnabled ? [{
+      name: 'Orders',
+      icon: ShoppingBag,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'All Orders',
+          href: `${baseUrl}/orders`,
+          icon: ShoppingBag,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Production Queue',
+          href: `${baseUrl}/orders/production`,
+          icon: ChefHat,
+          requiredPlan: 'STARTER' as Plan
+        }
+      ]
+    }] : [{
       name: 'Orders', 
       href: `${baseUrl}/orders`, 
       icon: ShoppingBag, 
-      requiredPlan: 'STARTER'
-    },
+      requiredPlan: 'STARTER' as Plan
+    }]),
     // Products menu - hidden for STAFF role (they can only view/manage orders)
     // @ts-ignore
     ...(canAccessProducts ? [{ 

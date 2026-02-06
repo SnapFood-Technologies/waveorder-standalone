@@ -402,6 +402,9 @@ model Business {
   // Cost & Margins (SuperAdmin enables, Business Admin views)
   showCostPrice Boolean @default(false) // When enabled, business admin can see cost prices and margins
 
+  // Production Planning / Prep List (SuperAdmin enables, Business Admin views)
+  showProductionPlanning Boolean @default(false) // When enabled, business admin can see production queue
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
