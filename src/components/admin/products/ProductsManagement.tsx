@@ -772,19 +772,19 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={pagination.page === 1}
-                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   
-                  <span className="px-3 py-1 text-sm">
+                  <span className="px-3 py-1 text-sm text-gray-900">
                     Page {pagination.page} of {pagination.pages}
                   </span>
                   
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.pages))}
                     disabled={pagination.page === pagination.pages}
-                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

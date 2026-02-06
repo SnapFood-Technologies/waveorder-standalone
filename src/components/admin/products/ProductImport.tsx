@@ -80,7 +80,8 @@ export default function ImportPage({ businessId }: ImportPageProps) {
   const [showReplaceConfirm, setShowReplaceConfirm] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [existingProductCount, setExistingProductCount] = useState(0)
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState('')
+  const [currencyLoaded, setCurrencyLoaded] = useState(false)
 
   // Fetch existing product count and currency on mount
   useEffect(() => {
@@ -97,12 +98,15 @@ export default function ImportPage({ businessId }: ImportPageProps) {
         const businessRes = await fetch(`/api/admin/stores/${businessId}`)
         if (businessRes.ok) {
           const businessData = await businessRes.json()
-          if (businessData.currency) {
-            setCurrency(businessData.currency)
-          }
+          setCurrency(businessData.currency || 'USD')
+        } else {
+          setCurrency('USD')
         }
       } catch (error) {
         console.error('Error fetching business data:', error)
+        setCurrency('USD')
+      } finally {
+        setCurrencyLoaded(true)
       }
     }
     fetchBusinessData()
@@ -222,8 +226,8 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001,https:
   }
 
   const formatCurrency = (amount: number) => {
-    const symbol = currencySymbols[currency] || currency
-    return `${symbol}${amount.toFixed(2)}`
+    const symbol = currencySymbols[currency] || currency || '$'
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   return (
@@ -323,10 +327,10 @@ Cappuccino,4.50,Beverages,Italian coffee with steamed milk,100,COFFEE-001,https:
                     <div className="flex gap-3 justify-center">
                       <button
                         onClick={handleValidate}
-                        disabled={validating}
+                        disabled={validating || !currencyLoaded}
                         className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                       >
-                        {validating ? 'Validating...' : 'Validate & Preview'}
+                        {validating ? 'Validating...' : !currencyLoaded ? 'Loading...' : 'Validate & Preview'}
                       </button>
                       <button
                         onClick={() => setFile(null)}
