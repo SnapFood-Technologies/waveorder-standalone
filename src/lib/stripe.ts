@@ -189,17 +189,47 @@ export async function createFreeSubscription(customerId: string) {
 export async function createSubscriptionByPlan(
   customerId: string,
   plan: PlanId,
-  billingType: 'monthly' | 'yearly' | 'free'
+  billingType: 'monthly' | 'yearly' | 'free' | 'trial',
+  trialDays: number = 14
 ) {
   const planData = PLANS[plan]
   let priceId: string
   
-  if (billingType === 'free') {
+  // For trial, use the monthly price but add trial_period_days
+  if (billingType === 'trial') {
+    priceId = planData.priceId // Use monthly price for trial
+  } else if (billingType === 'free') {
     priceId = planData.freePriceId
   } else if (billingType === 'yearly') {
     priceId = planData.annualPriceId
   } else {
     priceId = planData.priceId
+  }
+  
+  // Create subscription with or without trial
+  if (billingType === 'trial') {
+    return await stripe.subscriptions.create({
+      customer: customerId,
+      items: [
+        {
+          price: priceId,
+        },
+      ],
+      trial_period_days: trialDays,
+      payment_settings: {
+        save_default_payment_method: 'on_subscription'
+      },
+      trial_settings: {
+        end_behavior: {
+          missing_payment_method: 'pause'
+        }
+      },
+      metadata: {
+        plan,
+        billingType: 'trial',
+        source: 'waveorder_platform'
+      }
+    })
   }
   
   return await stripe.subscriptions.create({
