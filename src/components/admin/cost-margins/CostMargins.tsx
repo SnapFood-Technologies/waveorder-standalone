@@ -559,7 +559,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                       setProductSearch(e.target.value)
                       setProductPage(1)
                     }}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
               </div>
@@ -570,7 +570,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                   setProductFilter(e.target.value as any)
                   setProductPage(1)
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
               >
                 <option value="all">All Products</option>
                 <option value="with_cost">With Cost Price</option>
@@ -583,7 +583,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                   setCategoryFilter(e.target.value)
                   setProductPage(1)
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
               >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
@@ -598,7 +598,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     setSupplierFilter(e.target.value)
                     setProductPage(1)
                   }}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
                 >
                   <option value="">All Suppliers</option>
                   {suppliers.map(sup => (
@@ -671,7 +671,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                               min="0"
                               value={editValues.costPrice}
                               onChange={(e) => setEditValues(prev => ({ ...prev, costPrice: e.target.value }))}
-                              className="w-24 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-24 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="0.00"
                             />
                           ) : (
@@ -712,7 +712,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                               type="text"
                               value={editValues.supplierName}
                               onChange={(e) => setEditValues(prev => ({ ...prev, supplierName: e.target.value }))}
-                              className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                              className="w-32 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                               placeholder="Supplier name"
                               list="supplier-list"
                             />
@@ -809,7 +809,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
               <select
                 value={financialPeriod}
                 onChange={(e) => setFinancialPeriod(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
               >
                 <option value="today">Today</option>
                 <option value="this_week">This Week</option>
@@ -967,7 +967,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     type="text"
                     value={newPayment.supplierName}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, supplierName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="Enter supplier name"
                     list="payment-supplier-list"
                   />
@@ -985,7 +985,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     min="0"
                     value={newPayment.amount}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, amount: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="0.00"
                   />
                 </div>
@@ -994,7 +994,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                   <select
                     value={newPayment.paymentMethod}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
                   >
                     <option value="">Select method</option>
                     <option value="bank_transfer">Bank Transfer</option>
@@ -1010,7 +1010,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     type="date"
                     value={newPayment.paidAt}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, paidAt: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
                   />
                 </div>
                 <div>
@@ -1019,7 +1019,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     type="text"
                     value={newPayment.reference}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, reference: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="INV-001"
                   />
                 </div>
@@ -1029,7 +1029,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                     type="text"
                     value={newPayment.notes}
                     onChange={(e) => setNewPayment(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="Optional notes"
                   />
                 </div>
