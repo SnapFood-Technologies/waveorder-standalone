@@ -137,12 +137,12 @@ export default function InstagramSellersPage() {
               </div>
               
               {/* New follower order - top left of phone frame */}
-              <div className="absolute left-0 lg:left-[100px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10">
+              <div className="absolute left-0 lg:left-[100px] top-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-bounce z-10 text-gray-900">
                 <span className="text-pink-500">💕</span> New follower order!
               </div>
               
               {/* No DM chaos - bottom right of phone frame */}
-              <div className="absolute right-0 bottom-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10">
+              <div className="absolute right-0 bottom-0 bg-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 z-10 text-gray-900">
                 ✨ No more DM chaos
               </div>
             </div>

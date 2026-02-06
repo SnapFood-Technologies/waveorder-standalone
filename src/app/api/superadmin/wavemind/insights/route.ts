@@ -57,7 +57,10 @@ export async function GET() {
           where: {
             createdAt: {
               gte: new Date(now.getFullYear(), now.getMonth() - 1, 1)
-            }
+            },
+            // Only count completed orders that are paid
+            status: { in: ['DELIVERED', 'PICKED_UP'] },
+            paymentStatus: 'PAID'
           },
           select: {
             id: true,
@@ -104,9 +107,9 @@ export async function GET() {
         monthlyRevenue = PLAN_PRICES[plan]?.yearly || 0
       }
 
-      // Orders summary
-      const orderCount = business.orders.length
-      const totalRevenue = business.orders.reduce((sum, o) => sum + o.total, 0)
+      // Orders summary (only DELIVERED/PICKED_UP + PAID orders)
+      const completedOrderCount = business.orders.length
+      const completedOrderRevenue = business.orders.reduce((sum, o) => sum + o.total, 0)
 
       return {
         name: business.name,
@@ -115,8 +118,9 @@ export async function GET() {
         trialDaysRemaining,
         monthlyRevenue,
         businessType: business.businessType,
-        orderCount,
-        totalRevenue,
+        currency: business.currency || 'USD',
+        completedOrderCount,
+        completedOrderRevenue, // In business's local currency
         createdAt: business.createdAt
       }
     })
@@ -158,8 +162,19 @@ export async function GET() {
         BUSINESS: processedData.filter(b => b.plan === 'BUSINESS').length
       },
       recentActivity: {
-        totalOrders: processedData.reduce((sum, b) => sum + b.orderCount, 0),
-        totalOrderRevenue: processedData.reduce((sum, b) => sum + b.totalRevenue, 0)
+        // Completed orders across all businesses (last 30 days)
+        totalCompletedOrders: processedData.reduce((sum, b) => sum + b.completedOrderCount, 0),
+        // Note: Revenue cannot be summed as businesses use different currencies
+        businessesWithOrders: processedData.filter(b => b.completedOrderCount > 0).length,
+        // Individual business order activity (with their local currency)
+        byBusiness: processedData
+          .filter(b => b.completedOrderCount > 0)
+          .map(b => ({
+            name: b.name,
+            orders: b.completedOrderCount,
+            revenue: b.completedOrderRevenue,
+            currency: b.currency
+          }))
       }
     }
 
@@ -169,8 +184,33 @@ export async function GET() {
       messages: [
         {
           role: 'system',
-          content: `You are Wavemind, an AI financial analyst for WaveOrder, a SaaS platform for WhatsApp ordering.
-Your task is to analyze the business metrics and provide actionable insights.
+          content: `You are Wavemind, an AI financial analyst for WaveOrder.
+
+## What is WaveOrder?
+WaveOrder is a B2B SaaS platform that helps businesses sell products and services via WhatsApp. Our customers are:
+- Restaurants and bakeries (food ordering)
+- Retail stores (product ordering)
+- Instagram sellers (social commerce)
+- Service businesses
+
+WaveOrder provides: online storefronts, WhatsApp integration, order management, payment processing, and analytics.
+
+## Our Revenue Model
+WaveOrder earns subscription revenue from businesses:
+- FREE plan: $0/month
+- STARTER plan: $19/month or $16/month (yearly)
+- PRO plan: $39/month or $32/month (yearly)
+- BUSINESS plan: $79/month or $66/month (yearly)
+- Trials: 14-day free trial of paid plans
+
+## Important Data Notes
+- MRR/ARR = WaveOrder's subscription revenue (in USD)
+- "completedOrderRevenue" = Revenue earned BY our customers' businesses (NOT WaveOrder's revenue)
+- Each business may use different currencies (USD, ALL, EUR, etc.) - don't sum revenues across businesses
+- Completed orders = DELIVERED or PICKED_UP orders that are PAID
+
+## Your Task
+Analyze WaveOrder's SaaS metrics and provide actionable insights for the WaveOrder team.
 
 Rules:
 - Be concise and direct
@@ -179,9 +219,10 @@ Rules:
 - Use numbers to support your points
 - Format with markdown (bold for emphasis, bullet points for lists)
 - Keep total response under 400 words
-- Don't repeat the raw numbers, interpret them
+- Don't repeat raw numbers, interpret them
+- Don't confuse our customers' revenue with WaveOrder's revenue
 
-Structure your response with these sections:
+Structure your response:
 1. **Key Insight** (one sentence summary)
 2. **Opportunities** (2-3 bullet points)
 3. **Risks to Watch** (1-2 bullet points)
@@ -189,7 +230,7 @@ Structure your response with these sections:
         },
         {
           role: 'user',
-          content: `Analyze these SaaS metrics and provide insights:
+          content: `Analyze these WaveOrder SaaS metrics and provide insights:
 
 ${JSON.stringify(dataContext, null, 2)}
 
