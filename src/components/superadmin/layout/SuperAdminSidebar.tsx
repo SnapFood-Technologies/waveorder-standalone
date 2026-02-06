@@ -27,7 +27,8 @@ import {
   LayoutDashboard,
   UserPlus,
   UsersRound,
-  Star
+  Star,
+  Brain
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -45,6 +46,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
     if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
     if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
+    if (pathname?.startsWith('/superadmin/wavemind')) items.push('Wavemind Engine')
     return items
   });
   
@@ -141,6 +143,17 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Health Status', 
           href: '/superadmin/system/health', 
           icon: Activity
+        }
+      ]
+    },
+    { 
+      name: 'Wavemind Engine', 
+      icon: Brain,
+      children: [
+        { 
+          name: 'Financial', 
+          href: '/superadmin/wavemind/financial', 
+          icon: DollarSign
         }
       ]
     },
