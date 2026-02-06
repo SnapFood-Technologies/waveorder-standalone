@@ -7,6 +7,12 @@ interface SuperAdminHeaderProps {
   onMenuClick: () => void;
 }
 
+// Helper to strip HTML tags for notification preview
+function stripHtmlTags(html: string): string {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+}
+
 export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -191,10 +197,10 @@ export function SuperAdminHeader({ onMenuClick }: SuperAdminHeaderProps) {
                           }`} />
                           <div className="flex-1 min-w-0 space-y-1">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {notification.title}
+                              {stripHtmlTags(notification.title)}
                             </p>
                             <p className="text-sm text-gray-600 line-clamp-2">
-                              {notification.message}
+                              {stripHtmlTags(notification.message)}
                             </p>
                             <p className="text-xs text-gray-400">
                               {new Date(notification.createdAt).toLocaleDateString()}

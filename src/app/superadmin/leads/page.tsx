@@ -226,9 +226,11 @@ export default function LeadsPage() {
     return formatDate(date)
   }
 
-  // Check if follow-up is overdue
-  const isOverdue = (date: string | null) => {
+  // Check if follow-up is overdue (only for active leads, not WON/LOST)
+  const isOverdue = (date: string | null, status?: string) => {
     if (!date) return false
+    // Don't show as overdue if lead is already closed (WON or LOST)
+    if (status === 'WON' || status === 'LOST') return false
     return new Date(date) < new Date()
   }
 
@@ -481,8 +483,14 @@ export default function LeadsPage() {
                     </td>
                     <td className="px-4 py-4">
                       {lead.nextFollowUpAt ? (
-                        <span className={`text-sm flex items-center ${isOverdue(lead.nextFollowUpAt) ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
-                          {isOverdue(lead.nextFollowUpAt) && <AlertCircle className="w-3 h-3 mr-1" />}
+                        <span className={`text-sm flex items-center ${
+                          lead.status === 'WON' ? 'text-green-600' :
+                          lead.status === 'LOST' ? 'text-gray-400' :
+                          isOverdue(lead.nextFollowUpAt, lead.status) ? 'text-red-600 font-medium' : 'text-gray-600'
+                        }`}>
+                          {lead.status === 'WON' && <CheckCircle className="w-3 h-3 mr-1" />}
+                          {lead.status === 'LOST' && <XCircle className="w-3 h-3 mr-1" />}
+                          {isOverdue(lead.nextFollowUpAt, lead.status) && <AlertCircle className="w-3 h-3 mr-1" />}
                           {formatDate(lead.nextFollowUpAt)}
                         </span>
                       ) : (

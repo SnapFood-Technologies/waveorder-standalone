@@ -23,6 +23,12 @@ interface StoreLimits {
   isUnlimited: boolean
 }
 
+// Helper to strip HTML tags for notification preview
+function stripHtmlTags(html: string): string {
+  if (!html) return ''
+  return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+}
+
 // Helper to check trial status
 function getTrialInfo(trialEndsAt: string | null): { isOnTrial: boolean; daysLeft: number } {
   if (!trialEndsAt) return { isOnTrial: false, daysLeft: 0 }
@@ -411,10 +417,10 @@ export function AdminHeader({ onMenuClick, businessId }: AdminHeaderProps) {
                           }`} />
                           <div className="flex-1 min-w-0 space-y-1">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {notification.title}
+                              {stripHtmlTags(notification.title)}
                             </p>
                             <p className="text-sm text-gray-600 line-clamp-2">
-                              {notification.message}
+                              {stripHtmlTags(notification.message)}
                             </p>
                             <p className="text-xs text-gray-400">
                               {new Date(notification.createdAt).toLocaleDateString()}
