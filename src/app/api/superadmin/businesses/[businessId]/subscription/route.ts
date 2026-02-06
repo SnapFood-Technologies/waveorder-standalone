@@ -40,9 +40,9 @@ export async function PATCH(
       }, { status: 400 })
     }
 
-    if (!billingType || !['monthly', 'yearly', 'free'].includes(billingType)) {
+    if (!billingType || !['monthly', 'yearly', 'free', 'trial'].includes(billingType)) {
       return NextResponse.json({ 
-        message: 'Valid billing type (monthly, yearly, or free) is required' 
+        message: 'Valid billing type (monthly, yearly, free, or trial) is required' 
       }, { status: 400 })
     }
 
@@ -186,6 +186,16 @@ export async function PATCH(
       // TypeScript type guard - stripeSubscription is guaranteed to be non-null here
       const subscriptionData = stripeSubscription
 
+      // Calculate trial dates if billing type is trial
+      let trialEndsAt: Date | null = null
+      let graceEndsAt: Date | null = null
+      if (billingType === 'trial') {
+        trialEndsAt = new Date()
+        trialEndsAt.setDate(trialEndsAt.getDate() + 14) // 14-day trial
+        graceEndsAt = new Date(trialEndsAt)
+        graceEndsAt.setDate(graceEndsAt.getDate() + 7) // 7-day grace period after trial
+      }
+
       // Update database in transaction
       console.log('Updating database records...')
       const result = await prisma.$transaction(async (tx) => {
@@ -222,38 +232,59 @@ export async function PATCH(
           })
         }
 
-        // Update owner user plan
+        // Update owner user plan (including trial dates if applicable)
         const updatedUser = await tx.user.update({
           where: { id: owner.id },
           data: {
             plan: subscriptionPlan as any,
-            subscriptionId: subscription.id
+            subscriptionId: subscription.id,
+            ...(billingType === 'trial' ? {
+              trialUsed: true,
+              trialEndsAt,
+              graceEndsAt
+            } : {
+              // Clear trial dates for non-trial subscriptions
+              trialEndsAt: null,
+              graceEndsAt: null
+            })
           }
         })
 
-        // Update business subscription plan
+        // Update business subscription plan (including trial dates if applicable)
         const updatedBusiness = await tx.business.update({
           where: { id: businessId },
           data: {
             subscriptionPlan: subscriptionPlan as any,
-            subscriptionStatus: subscriptionData.status === 'active' ? 'ACTIVE' : 'INACTIVE'
+            subscriptionStatus: subscriptionData.status === 'active' || subscriptionData.status === 'trialing' ? 'ACTIVE' : 'INACTIVE',
+            ...(billingType === 'trial' ? {
+              trialEndsAt,
+              graceEndsAt
+            } : {
+              // Clear trial dates for non-trial subscriptions
+              trialEndsAt: null,
+              graceEndsAt: null
+            })
           }
         })
 
-        return { user: updatedUser, business: updatedBusiness, subscription }
+        return { user: updatedUser, business: updatedBusiness, subscription, trialEndsAt }
       })
 
       console.log('✅ Database updated successfully')
 
       return NextResponse.json({
         success: true,
-        message: `Business subscription updated to ${subscriptionPlan} (${billingType}) successfully`,
+        message: billingType === 'trial' 
+          ? `Business subscription updated to ${subscriptionPlan} (Trial - 14 days) successfully`
+          : `Business subscription updated to ${subscriptionPlan} (${billingType}) successfully`,
         business: {
           id: result.business.id,
           name: result.business.name,
           subscriptionPlan: result.business.subscriptionPlan,
-          subscriptionStatus: result.business.subscriptionStatus
-        }
+          subscriptionStatus: result.business.subscriptionStatus,
+          ...(result.trialEndsAt && { trialEndsAt: result.trialEndsAt })
+        },
+        stripeSubscriptionId: subscriptionData.id
       })
 
     } catch (stripeError: any) {

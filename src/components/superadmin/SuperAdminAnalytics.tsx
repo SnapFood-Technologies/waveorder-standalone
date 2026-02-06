@@ -290,7 +290,8 @@ export function SuperAdminAnalytics() {
               ? plan.billingType === 'free' ? 'Free' 
                 : plan.billingType === 'monthly' ? 'Monthly' 
                 : plan.billingType === 'yearly' ? 'Yearly' 
-                : 'Unknown'
+                : plan.billingType === 'trial' ? 'Trial'
+                : plan.billingType
               : null
             const displayKey = `${plan.plan}_${plan.billingType || 'unknown'}_${index}`
             

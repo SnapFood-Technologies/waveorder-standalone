@@ -374,6 +374,9 @@ export async function GET(request: NextRequest) {
         } else if (subscriptionPriceId) {
           billingType = getBillingTypeFromPriceId(subscriptionPriceId)
         }
+        // Ensure valid billing type (default to 'free' for admin-managed accounts)
+        const validBillingTypes = ['free', 'monthly', 'yearly', 'trial']
+        const finalBillingType = (billingType && validBillingTypes.includes(billingType)) ? billingType : 'free'
         
         return {
           id: business.id,
@@ -381,7 +384,7 @@ export async function GET(request: NextRequest) {
           orders: business._count.orders,
           revenue: businessOrderRevenue, // Business sales from delivered + paid orders
           plan: business.subscriptionPlan,
-          billingType: billingType
+          billingType: finalBillingType
         }
       })
       .filter(b => b.revenue > 0)
@@ -410,7 +413,9 @@ export async function GET(request: NextRequest) {
       } else if (subscriptionPriceId) {
         billingType = getBillingTypeFromPriceId(subscriptionPriceId)
       }
-      const billingTypeKey = billingType || 'free'
+      // Ensure we always have a valid billing type (default to 'free' for admin-managed accounts)
+      const validBillingTypes = ['free', 'monthly', 'yearly', 'trial']
+      const billingTypeKey = (billingType && validBillingTypes.includes(billingType)) ? billingType : 'free'
       
       const key = `${business.subscriptionPlan}_${billingTypeKey}`
       if (!planBillingGroups[key]) {

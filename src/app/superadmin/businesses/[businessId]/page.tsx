@@ -154,6 +154,7 @@ export default function BusinessDetailsPage() {
   const [postalPricing, setPostalPricing] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'delivery' | 'postals' | 'pricing'>('delivery')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showEditSubscriptionModal, setShowEditSubscriptionModal] = useState(false)
   const [marketplaceInfo, setMarketplaceInfo] = useState<{
     isOriginator: boolean
     isSupplier: boolean
@@ -459,6 +460,26 @@ export default function BusinessDetailsPage() {
                 </button>
               </div>
             )}
+
+            {/* Edit Subscription Button - always available */}
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 rounded-lg mb-4">
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-teal-900 mb-1 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-teal-600" />
+                  Edit Subscription
+                </h3>
+                <p className="text-xs text-teal-700">
+                  Change plan, billing type, or convert to trial
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEditSubscriptionModal(true)}
+                className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Edit
+              </button>
+            </div>
             
             {/* Test Mode Toggle */}
             <div className="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
@@ -1362,6 +1383,18 @@ export default function BusinessDetailsPage() {
         ownerEmail={business.owner?.email}
         onSuccess={fetchBusinessDetails}
       />
+
+      {/* Edit Subscription Modal */}
+      {showEditSubscriptionModal && (
+        <EditSubscriptionModal
+          business={business}
+          onClose={() => setShowEditSubscriptionModal(false)}
+          onSuccess={() => {
+            fetchBusinessDetails()
+            setShowEditSubscriptionModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -1434,6 +1467,208 @@ function QuickActionsSection({
             {resettingTrial ? 'Resetting...' : 'Reset Trial'}
           </span>
         </button>
+      </div>
+    </div>
+  )
+}
+
+// Edit Subscription Modal Component
+function EditSubscriptionModal({ 
+  business, 
+  onClose, 
+  onSuccess 
+}: { 
+  business: BusinessDetails
+  onClose: () => void
+  onSuccess: () => void 
+}) {
+  const [loading, setLoading] = useState(false)
+  
+  // Determine current billing type
+  const getCurrentBillingType = (): 'monthly' | 'yearly' | 'free' | 'trial' => {
+    if (business.trialEndsAt && new Date(business.trialEndsAt) > new Date()) {
+      return 'trial'
+    }
+    return (business as any).billingType || 'free'
+  }
+  
+  const [formData, setFormData] = useState({
+    subscriptionPlan: business.subscriptionPlan || 'STARTER',
+    billingType: getCurrentBillingType()
+  })
+
+  const isCurrentlyOnTrial = business.trialEndsAt && new Date(business.trialEndsAt) > new Date()
+  const hasStripeSubscription = !!(business as any).stripeSubscriptionId
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      // All billing types now go through the subscription endpoint (full Stripe sync)
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/subscription`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionPlan: formData.subscriptionPlan,
+          billingType: formData.billingType
+        })
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        toast.success(data.message || `Subscription updated to ${formData.subscriptionPlan} (${formData.billingType})`)
+        onSuccess()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update subscription')
+      }
+    } catch (error) {
+      toast.error('Error updating subscription')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg max-w-md w-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Edit Subscription</h2>
+            <p className="text-sm text-gray-500">{business.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Current Status */}
+          {(hasStripeSubscription || isCurrentlyOnTrial) && (
+            <div className={`p-3 rounded-lg border ${isCurrentlyOnTrial ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+              <p className={`text-sm ${isCurrentlyOnTrial ? 'text-amber-800' : 'text-blue-800'}`}>
+                <Info className="w-4 h-4 inline mr-1" />
+                {isCurrentlyOnTrial && (
+                  <>
+                    <strong>Currently on {business.subscriptionPlan} Trial</strong> — ends {new Date(business.trialEndsAt!).toLocaleDateString()}
+                  </>
+                )}
+                {hasStripeSubscription && !isCurrentlyOnTrial && (
+                  <>
+                    <strong>Active Stripe Subscription</strong> — changes here update database only
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Plan Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Subscription Plan</label>
+            <div className="grid grid-cols-3 gap-3">
+              {['STARTER', 'PRO', 'BUSINESS'].map(plan => (
+                <button
+                  key={plan}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, subscriptionPlan: plan })}
+                  className={`p-3 border-2 rounded-lg text-center transition-all ${
+                    formData.subscriptionPlan === plan
+                      ? plan === 'BUSINESS' ? 'border-indigo-500 bg-indigo-50'
+                        : plan === 'PRO' ? 'border-purple-500 bg-purple-50'
+                        : 'border-teal-500 bg-teal-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-semibold text-gray-900">{plan}</div>
+                  <div className="text-xs text-gray-500">
+                    {plan === 'STARTER' ? '$19/mo' : plan === 'PRO' ? '$39/mo' : '$79/mo'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Billing Type */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">Billing Type</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, billingType: 'free' })}
+                className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                  formData.billingType === 'free'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }`}
+              >
+                Free (Admin)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, billingType: 'trial' })}
+                className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                  formData.billingType === 'trial'
+                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }`}
+              >
+                Trial (14 days)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, billingType: 'monthly' })}
+                className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                  formData.billingType === 'monthly'
+                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, billingType: 'yearly' })}
+                className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
+                  formData.billingType === 'yearly'
+                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }`}
+              >
+                Yearly
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {formData.billingType === 'free' && '✓ Free access managed by admin. No payment required.'}
+              {formData.billingType === 'trial' && (
+                isCurrentlyOnTrial 
+                  ? '✓ Keep current trial. No changes to trial end date.'
+                  : '✓ Starts new 14-day trial. User can upgrade anytime.'
+              )}
+              {formData.billingType === 'monthly' && '✓ Standard monthly billing.'}
+              {formData.billingType === 'yearly' && '✓ Annual billing with discount.'}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+            >
+              {loading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
