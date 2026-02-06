@@ -127,6 +127,9 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_WHATSAPP_NUMBER: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
           TWILIO_CONTENT_SID: ${{ secrets.TWILIO_CONTENT_SID }}
+
+          # 🤖 AI / Wavemind Engine
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           
           # 🏭 Build Environment
           NODE_ENV: production
@@ -208,6 +211,9 @@ jobs:
           TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
           TWILIO_WHATSAPP_NUMBER=${{ secrets.TWILIO_WHATSAPP_NUMBER }}
           TWILIO_CONTENT_SID=${{ secrets.TWILIO_CONTENT_SID }}
+
+          # 🤖 AI / Wavemind Engine
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
           echo "✅ Production environment file created"
 

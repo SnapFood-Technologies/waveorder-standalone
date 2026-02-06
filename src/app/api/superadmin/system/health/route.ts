@@ -366,6 +366,60 @@ async function checkCron(): Promise<ServiceStatus> {
   }
 }
 
+// Check OpenAI API (Wavemind Engine)
+async function checkOpenAI(): Promise<ServiceStatus> {
+  if (!process.env.OPENAI_API_KEY) {
+    return {
+      name: 'OpenAI',
+      status: 'unconfigured',
+      message: 'OPENAI_API_KEY not configured'
+    }
+  }
+
+  const start = Date.now()
+  try {
+    const res = await fetch('https://api.openai.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      }
+    })
+    const latency = Date.now() - start
+    
+    if (res.ok) {
+      return {
+        name: 'OpenAI',
+        status: 'healthy',
+        message: 'Wavemind AI engine connected',
+        latency
+      }
+    } else if (res.status === 401) {
+      return {
+        name: 'OpenAI',
+        status: 'down',
+        message: 'Invalid API key'
+      }
+    } else if (res.status === 429) {
+      return {
+        name: 'OpenAI',
+        status: 'degraded',
+        message: 'Rate limited'
+      }
+    } else {
+      return {
+        name: 'OpenAI',
+        status: 'degraded',
+        message: `API returned status ${res.status}`
+      }
+    }
+  } catch (error) {
+    return {
+      name: 'OpenAI',
+      status: 'down',
+      message: `Connection failed: ${(error as Error).message}`
+    }
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -389,7 +443,8 @@ export async function GET() {
       sentry,
       nextAuth,
       cron,
-      twilioResult
+      twilioResult,
+      openai
     ] = await Promise.all([
       checkMongoDB(),
       checkStripe(),
@@ -404,7 +459,8 @@ export async function GET() {
       checkSentry(),
       checkNextAuth(),
       checkCron(),
-      checkTwilioHealth()
+      checkTwilioHealth(),
+      checkOpenAI()
     ])
     
     // Convert Twilio result to ServiceStatus format
@@ -469,6 +525,12 @@ export async function GET() {
         description: 'Scheduled tasks and automation',
         icon: 'Server',
         services: [cron]
+      },
+      {
+        name: 'AI Services',
+        description: 'Wavemind AI engine for insights',
+        icon: 'Brain',
+        services: [openai]
       }
     ]
 
