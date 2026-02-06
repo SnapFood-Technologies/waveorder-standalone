@@ -25,7 +25,8 @@ import {
   Store,
   UtensilsCrossed,
   Trash2,
-  Receipt
+  Receipt,
+  FastForward
 } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
@@ -249,6 +250,24 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       default:
         return ['PENDING']
     }
+  }
+
+  // Helper to get the final status based on order type
+  const getFinalStatus = (orderType?: string) => {
+    if (orderType === 'PICKUP' || orderType === 'DINE_IN') {
+      return 'PICKED_UP'
+    }
+    return 'DELIVERED'
+  }
+
+  // Check if the order can be marked as complete (skip to final status)
+  const canMarkAsComplete = (currentStatus: string, orderType?: string) => {
+    const finalStatuses = ['PICKED_UP', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+    if (finalStatuses.includes(currentStatus)) {
+      return false
+    }
+    // Can skip if not already at final status
+    return true
   }
 
   const updateOrderStatus = async (newStatus: string, rejectReason?: string) => {
@@ -1051,6 +1070,21 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       Update Status
     </button>
   </div>
+  
+  {/* Quick Complete - Skip to final status */}
+  {canMarkAsComplete(order.status, order.type) && (
+    <div className="mt-3 pt-3 border-t border-gray-100">
+      <button
+        onClick={() => updateOrderStatus(getFinalStatus(order.type))}
+        disabled={updating}
+        className="flex items-center text-sm text-gray-600 hover:text-teal-600 transition-colors"
+      >
+        <FastForward className="w-4 h-4 mr-1.5" />
+        Mark as {order.type === 'DELIVERY' ? 'Delivered' : 'Picked Up'}
+        <span className="ml-1 text-xs text-gray-400">(skip steps)</span>
+      </button>
+    </div>
+  )}
 </div>
 
     {/* Payment Status */}
