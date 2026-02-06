@@ -119,51 +119,36 @@ export async function GET(request: NextRequest) {
       within30Days: activeTrials.filter(b => b.trialDaysRemaining !== null && b.trialDaysRemaining <= 30)
     }
 
-    // Get historical trial data for conversion rate
-    const allBusinessesWithTrialHistory = await prisma.business.findMany({
-      where: {
-        testMode: { not: true }
-      },
-      include: {
-        users: {
-          where: { role: 'OWNER' },
-          include: {
-            user: {
-              select: {
-                trialUsed: true,
-                subscription: {
-                  select: {
-                    status: true,
-                    priceId: true
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
-
-    // Count businesses that used trial and converted to paid
-    let totalTrialsStarted = 0
-    let totalTrialsConverted = 0
+    // Calculate trial conversion rate based on ENDED trials only
+    // Active trials should NOT be counted - we only count trials that have expired
     
-    allBusinessesWithTrialHistory.forEach(business => {
-      const owner = business.users.find(u => u.role === 'OWNER')?.user
-      if (owner?.trialUsed) {
-        totalTrialsStarted++
-        // Check if they have a paid subscription
-        const billingType = owner.subscription?.priceId 
-          ? getBillingTypeFromPriceId(owner.subscription.priceId)
-          : null
-        if (billingType === 'monthly' || billingType === 'yearly') {
-          totalTrialsConverted++
-        }
-      }
+    // Trials that have ENDED (trialEndsAt is in the past)
+    const endedTrials = processedBusinesses.filter(b => {
+      // Business must have had a trial (trialEndsAt exists)
+      const business = businesses.find(biz => biz.id === b.id)
+      if (!business?.trialEndsAt) return false
+      
+      // Trial must have ENDED (not active anymore)
+      const trialEndDate = new Date(business.trialEndsAt)
+      return trialEndDate < now
     })
+    
+    // Of ended trials, how many converted to paid (monthly or yearly)?
+    const convertedTrials = endedTrials.filter(b => 
+      b.billingType === 'monthly' || b.billingType === 'yearly'
+    )
+    
+    const totalTrialsEnded = endedTrials.length
+    const totalTrialsConverted = convertedTrials.length
+    
+    // Also count total trials ever started (for context)
+    const totalTrialsStarted = processedBusinesses.filter(b => {
+      const business = businesses.find(biz => biz.id === b.id)
+      return business?.trialEndsAt !== null // Has/had a trial
+    }).length
 
-    const trialConversionRate = totalTrialsStarted > 0 
-      ? ((totalTrialsConverted / totalTrialsStarted) * 100).toFixed(1)
+    const trialConversionRate = totalTrialsEnded > 0 
+      ? ((totalTrialsConverted / totalTrialsEnded) * 100).toFixed(1)
       : '0.0'
 
     // === REVENUE METRICS ===
@@ -284,8 +269,9 @@ export async function GET(request: NextRequest) {
         activeTrials: activeTrials.length,
         trialsExpiringSoon,
         trialConversionRate: parseFloat(trialConversionRate),
-        totalTrialsStarted,
-        totalTrialsConverted,
+        totalTrialsStarted,    // Total businesses that have/had a trial
+        totalTrialsEnded,      // Trials that have expired (used for conversion calc)
+        totalTrialsConverted,  // Ended trials that became paid
         trialsExpiringList
       },
       
