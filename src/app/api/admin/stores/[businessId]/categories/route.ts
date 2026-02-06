@@ -63,19 +63,25 @@ export async function GET(
       ]
     })
 
-    // Get product counts for each category (with business filtering like groups/collections/brands)
+    // Get product counts for all categories in a single query (instead of N+1 queries)
+    const productCounts = await prisma.product.groupBy({
+      by: ['categoryId'],
+      where: {
+        OR: [
+          { businessId: businessId },
+          { businessId: { in: business?.connectedBusinesses || [] } }
+        ],
+        categoryId: { not: null }
+      },
+      _count: { id: true }
+    })
+    
+    // Convert to Map for O(1) lookup
     const categoryProductCounts = new Map<string, number>()
-    for (const category of categories) {
-      const productCount = await prisma.product.count({
-        where: {
-          OR: [
-            { businessId: businessId },
-            { businessId: { in: business?.connectedBusinesses || [] } }
-          ],
-          categoryId: category.id
-        }
-      })
-      categoryProductCounts.set(category.id, productCount)
+    for (const item of productCounts) {
+      if (item.categoryId) {
+        categoryProductCounts.set(item.categoryId, item._count.id)
+      }
     }
     
     // For each parent category, calculate total products (direct + children)

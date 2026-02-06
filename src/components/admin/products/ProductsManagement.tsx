@@ -125,9 +125,15 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
 
   const { isPro } = useSubscription()
 
+  // Fetch categories only once on mount (they rarely change)
   useEffect(() => {
     fetchBusinessData()
-    fetchData()
+    fetchCategories()
+  }, [businessId])
+
+  // Fetch products when filters change
+  useEffect(() => {
+    fetchProducts()
   }, [businessId, currentPage, debouncedSearchTerm, selectedCategory, filterStatus])
 
   // Debounce search
@@ -163,7 +169,21 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     }
   }
 
-  const fetchData = async () => {
+  // Fetch categories once (they rarely change)
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+      if (response.ok) {
+        const data = await response.json()
+        setCategories(data.categories || [])
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  // Fetch products (called on filter/page changes)
+  const fetchProducts = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -174,10 +194,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
         status: filterStatus
       })
 
-      const [productsRes, categoriesRes] = await Promise.all([
-        fetch(`/api/admin/stores/${businessId}/products?${params}`),
-        fetch(`/api/admin/stores/${businessId}/categories`)
-      ])
+      const productsRes = await fetch(`/api/admin/stores/${businessId}/products?${params}`)
 
       if (productsRes.ok) {
         const productsData = await productsRes.json()
@@ -187,13 +204,8 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
           setStats(productsData.stats)
         }
       }
-
-      if (categoriesRes.ok) {
-        const categoriesData = await categoriesRes.json()
-        setCategories(categoriesData.categories)
-      }
     } catch (error) {
-      console.error('Error fetching data:', error)
+      console.error('Error fetching products:', error)
     } finally {
       setLoading(false)
     }
