@@ -289,9 +289,14 @@ model Business {
   autoReply        Boolean @default(false)
   autoReplyMessage String?
 
-  customDomain     String?
-  domainStatus     DomainStatus @default(NONE)
-  subdomainEnabled Boolean      @default(false)
+  customDomain              String?
+  domainStatus              DomainStatus @default(NONE)
+  domainVerificationToken   String?       // TXT record verification token
+  domainVerificationExpiry  DateTime?     // When verification expires
+  domainProvisionedAt       DateTime?     // When domain was successfully provisioned
+  domainLastChecked         DateTime?     // Last DNS/SSL check timestamp
+  domainError               String?       // Last error message if failed
+  subdomainEnabled          Boolean       @default(false)
 
   businessGoals         BusinessGoal[]
   deliveryEnabled       Boolean        @default(true)
@@ -464,6 +469,9 @@ model Business {
   TeamInvitation     TeamInvitation[]
   TeamAuditLog       TeamAuditLog[]
   InventoryActivity  InventoryActivity[]
+
+  // Index for fast custom domain lookups in middleware
+  @@index([customDomain, domainStatus, isActive])
 }
 
 model OrderNotification {

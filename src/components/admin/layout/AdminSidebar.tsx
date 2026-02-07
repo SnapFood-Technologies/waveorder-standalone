@@ -359,13 +359,17 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: UserPlus, 
         requiredPlan: 'PRO' as Plan
       },
-      // Temporarily commented out - Domain Management not yet implemented
-      // { 
-      //   name: 'Domain Management', 
-      //   href: `${baseUrl}/domains`, 
-      //   icon: Globe, 
-      //   requiredPlan: 'PRO' as Plan
-      // },
+    ] : []),
+    
+    // BUSINESS plan features
+    // @ts-ignore
+    ...(subscription.plan === 'BUSINESS' ? [
+      { 
+        name: 'Custom Domain', 
+        href: `${baseUrl}/domains`, 
+        icon: Globe, 
+        requiredPlan: 'BUSINESS' as Plan
+      },
     ] : []),
     
     // Cost & Margins - only shown when enabled by SuperAdmin
