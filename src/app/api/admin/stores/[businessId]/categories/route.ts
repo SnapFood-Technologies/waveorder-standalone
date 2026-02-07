@@ -13,10 +13,10 @@ export async function GET(
     const { businessId } = await params
     const { searchParams } = new URL(request.url)
     
-    // Query parameters
+    // Query parameters for lightweight mode and pagination
     const lightweight = searchParams.get('lightweight') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = parseInt(searchParams.get('limit') || '500')
 
     const access = await checkBusinessAccess(businessId)
     
@@ -59,69 +59,71 @@ export async function GET(
       return NextResponse.json({ categories })
     }
 
-    // FULL MODE: For categories management screen - with pagination
-    const skip = (page - 1) * limit
-    
-    const [categories, total] = await Promise.all([
-      prisma.category.findMany({
-        where: businessFilter,
-        include: {
-          parent: {
-            select: {
-              id: true,
-              name: true,
-              nameAl: true,
-              nameEl: true
-            }
-          },
-          children: {
-            select: {
-              id: true,
-              name: true,
-              nameAl: true,
-              nameEl: true,
-              sortOrder: true
-            },
-            orderBy: { sortOrder: 'asc' }
-          },
-          _count: {
-            select: {
-              children: true
-            }
-          },
-          business: { select: { id: true, name: true } }
+    // FULL MODE: For categories management screen - with all data
+    const categories = await prisma.category.findMany({
+      where: businessFilter,
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            nameEl: true
+          }
         },
-        orderBy: [
-          { parentId: 'asc' },
-          { sortOrder: 'asc' }
-        ],
-        skip,
-        take: limit
-      }),
-      prisma.category.count({ where: businessFilter })
-    ])
+        children: {
+          select: {
+            id: true,
+            name: true,
+            nameAl: true,
+            nameEl: true,
+            sortOrder: true
+          },
+          orderBy: { sortOrder: 'asc' }
+        },
+        _count: {
+          select: {
+            children: true
+          }
+        },
+        business: { select: { id: true, name: true } }
+      },
+      orderBy: [
+        { parentId: 'asc' },
+        { sortOrder: 'asc' }
+      ]
+    })
 
     // Get product counts for all categories in a single query (instead of N+1 queries)
-    // Get product counts - use any to handle Prisma/MongoDB null filtering
-    const productCountWhere: any = {
-      OR: [
-        { businessId: businessId },
-        { businessId: { in: business?.connectedBusinesses || [] } }
-      ],
-      categoryId: { not: null }
-    }
+    // Use try-catch for groupBy as MongoDB can sometimes have issues with it
+    let categoryProductCounts = new Map<string, number>()
     
-    const productCounts = await prisma.product.groupBy({
-      by: ['categoryId'],
-      where: productCountWhere,
-      _count: { id: true }
-    })
-    
-    // Convert to Map for O(1) lookup
-    const categoryProductCounts = new Map<string, number>()
-    for (const item of productCounts) {
-      if (item.categoryId) {
-        categoryProductCounts.set(item.categoryId, item._count.id)
+    try {
+      const productCountWhere: any = {
+        ...businessFilter,
+        categoryId: { not: null }
+      }
+      
+      const productCounts = await prisma.product.groupBy({
+        by: ['categoryId'],
+        where: productCountWhere,
+        _count: { id: true }
+      })
+      
+      // Convert to Map for O(1) lookup
+      for (const item of productCounts) {
+        if (item.categoryId) {
+          categoryProductCounts.set(item.categoryId, item._count.id)
+        }
+      }
+    } catch (groupByError) {
+      // Fallback: If groupBy fails, get counts individually (slower but safer)
+      console.error('groupBy failed, using fallback:', groupByError)
+      for (const category of categories) {
+        const count = await prisma.product.count({
+          where: { ...businessFilter, categoryId: category.id }
+        })
+        categoryProductCounts.set(category.id, count)
       }
     }
     
@@ -159,23 +161,12 @@ export async function GET(
 
     // Get total unique products count (to avoid double counting from summing categories)
     const totalProducts = await prisma.product.count({
-      where: {
-        OR: [
-          { businessId: businessId },
-          { businessId: { in: business?.connectedBusinesses || [] } }
-        ]
-      }
+      where: businessFilter
     })
 
     return NextResponse.json({ 
       categories: categoriesWithTotalCounts,
-      totalProducts, // Add total products count to avoid frontend double-counting
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      totalProducts // Add total products count to avoid frontend double-counting
     })
 
   } catch (error) {

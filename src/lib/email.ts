@@ -201,13 +201,11 @@ const createEmailTemplate = (content: string, title: string) => `
   <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 40px 20px; text-align: center;">
-      <div style="display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.2); padding: 12px; border-radius: 12px; margin-bottom: 20px;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="white" style="display: block;">
-          <path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12zm4.64-1.96l3.54 3.54c.78.78 2.05.78 2.83 0l7.07-7.07c.78-.78.78-2.05 0-2.83-.78-.78-2.05-.78-2.83 0L12 9.93 8.75 6.68c-.78-.78-2.05-.78-2.83 0s-.78 2.05 0 2.83l.72.53z"/>
-        </svg>
+      <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+        <img src="https://waveorder.app/images/waveorder-logo.png" alt="WaveOrder" width="48" height="48" style="display: block; border-radius: 8px;" />
+        <span style="color: white; margin-left: 12px; font-size: 28px; font-weight: 700;">WaveOrder</span>
       </div>
-      <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">WaveOrder</h1>
-      <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0; font-size: 16px;">WhatsApp ordering made simple</p>
+      <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 16px;">WhatsApp ordering made simple</p>
     </div>
     
     <!-- Content -->

@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, Waves } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
 
 export default function RegisterComponent() {
   const router = useRouter()
@@ -200,10 +201,15 @@ export default function RegisterComponent() {
       <div className="max-w-lg w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <Image
+              src="/images/waveorderlogo.png"
+              alt="WaveOrder Logo"
+              width={45}
+              height={45}
+              quality={100}
+              unoptimized
+            />
             <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h2>
