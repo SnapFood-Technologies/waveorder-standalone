@@ -67,7 +67,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch(`/api/admin/stores/${businessId}/categories`)
+      const res = await fetch(`/api/admin/stores/${businessId}/categories?lightweight=true`)
       if (res.ok) {
         const data = await res.json()
         setCategories((data.categories || []).map((c: any) => ({ id: c.id, name: c.name })))

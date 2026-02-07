@@ -11,6 +11,12 @@ export async function GET(
 ) {
   try {
     const { businessId } = await params
+    const { searchParams } = new URL(request.url)
+    
+    // Query parameters
+    const lightweight = searchParams.get('lightweight') === 'true'
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
 
     const access = await checkBusinessAccess(businessId)
     
@@ -24,44 +30,76 @@ export async function GET(
       select: { connectedBusinesses: true }
     })
 
-    const categories = await prisma.category.findMany({
-      where: {
-        OR: [
-          { businessId: businessId },
-          { businessId: { in: business?.connectedBusinesses || [] } }
-        ]
-      },
-      include: {
-        parent: {
-          select: {
-            id: true,
-            name: true,
-            nameAl: true,
-            nameEl: true
-          }
-        },
-        children: {
-          select: {
-            id: true,
-            name: true,
-            nameAl: true,
-            nameEl: true,
-            sortOrder: true
-          },
-          orderBy: { sortOrder: 'asc' }
-        },
-        _count: {
-          select: {
-            children: true
-          }
-        },
-        business: { select: { id: true, name: true } }
-      },
-      orderBy: [
-        { parentId: 'asc' },
-        { sortOrder: 'asc' }
+    const businessFilter = {
+      OR: [
+        { businessId: businessId },
+        { businessId: { in: business?.connectedBusinesses || [] } }
       ]
-    })
+    }
+
+    // LIGHTWEIGHT MODE: For dropdowns (product form, filters) - fast query
+    if (lightweight) {
+      const categories = await prisma.category.findMany({
+        where: businessFilter,
+        select: {
+          id: true,
+          name: true,
+          nameAl: true,
+          nameEl: true,
+          parentId: true,
+          isActive: true,
+          sortOrder: true
+        },
+        orderBy: [
+          { parentId: 'asc' },
+          { sortOrder: 'asc' }
+        ]
+      })
+      
+      return NextResponse.json({ categories })
+    }
+
+    // FULL MODE: For categories management screen - with pagination
+    const skip = (page - 1) * limit
+    
+    const [categories, total] = await Promise.all([
+      prisma.category.findMany({
+        where: businessFilter,
+        include: {
+          parent: {
+            select: {
+              id: true,
+              name: true,
+              nameAl: true,
+              nameEl: true
+            }
+          },
+          children: {
+            select: {
+              id: true,
+              name: true,
+              nameAl: true,
+              nameEl: true,
+              sortOrder: true
+            },
+            orderBy: { sortOrder: 'asc' }
+          },
+          _count: {
+            select: {
+              children: true
+            }
+          },
+          business: { select: { id: true, name: true } }
+        },
+        orderBy: [
+          { parentId: 'asc' },
+          { sortOrder: 'asc' }
+        ],
+        skip,
+        take: limit
+      }),
+      prisma.category.count({ where: businessFilter })
+    ])
 
     // Get product counts for all categories in a single query (instead of N+1 queries)
     const productCounts = await prisma.product.groupBy({
@@ -128,7 +166,13 @@ export async function GET(
 
     return NextResponse.json({ 
       categories: categoriesWithTotalCounts,
-      totalProducts // Add total products count to avoid frontend double-counting
+      totalProducts, // Add total products count to avoid frontend double-counting
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
     })
 
   } catch (error) {
