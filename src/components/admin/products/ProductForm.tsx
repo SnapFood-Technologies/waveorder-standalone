@@ -54,6 +54,7 @@ interface ProductModifier {
 interface Category {
   id: string
   name: string
+  parentId?: string | null
   parent?: {
     id: string
     name: string
