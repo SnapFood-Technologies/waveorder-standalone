@@ -37,7 +37,7 @@ export async function GET(
       ]
     }
 
-    // LIGHTWEIGHT MODE: For dropdowns (product form, filters) - fast query with minimal data
+    // LIGHTWEIGHT MODE: For dropdowns (product form, filters) - fast query
     if (lightweight) {
       const categories = await prisma.category.findMany({
         where: businessFilter,
@@ -55,7 +55,7 @@ export async function GET(
           { sortOrder: 'asc' }
         ]
       })
-
+      
       return NextResponse.json({ categories })
     }
 

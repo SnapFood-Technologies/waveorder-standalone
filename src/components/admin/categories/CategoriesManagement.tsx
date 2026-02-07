@@ -75,7 +75,8 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+      // Use high limit to get all categories for hierarchy view
+      const response = await fetch(`/api/admin/stores/${businessId}/categories?limit=500`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories)
