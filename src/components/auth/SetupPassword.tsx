@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Waves, Loader2 } from 'lucide-react'
+import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 
 export default function SetupPasswordComponent() {
   const searchParams = useSearchParams()
@@ -137,10 +138,15 @@ export default function SetupPasswordComponent() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50 flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-8">
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
+            <div className="flex items-center justify-center space-x-2 mb-8">
+              <Image
+                src="/images/waveorderlogo.png"
+                alt="WaveOrder Logo"
+                width={45}
+                height={45}
+                quality={100}
+                unoptimized
+              />
               <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
             </div>
             <div className="bg-teal-100 p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
@@ -159,10 +165,15 @@ export default function SetupPasswordComponent() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50 flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-8">
-              <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
+            <div className="flex items-center justify-center space-x-2 mb-8">
+              <Image
+                src="/images/waveorderlogo.png"
+                alt="WaveOrder Logo"
+                width={45}
+                height={45}
+                quality={100}
+                unoptimized
+              />
               <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
             </div>
             
@@ -189,10 +200,15 @@ export default function SetupPasswordComponent() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-teal-50 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <Image
+              src="/images/waveorderlogo.png"
+              alt="WaveOrder Logo"
+              width={45}
+              height={45}
+              quality={100}
+              unoptimized
+            />
             <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Create Your Password</h2>

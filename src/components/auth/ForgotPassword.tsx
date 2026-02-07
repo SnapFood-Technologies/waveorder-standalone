@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Mail, AlertCircle, CheckCircle, Waves, ArrowLeft } from 'lucide-react'
+import { Mail, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react'
+import Image from 'next/image'
 
 export default function ForgotPasswordComponent() {
   const [email, setEmail] = useState('')
@@ -82,10 +83,15 @@ export default function ForgotPasswordComponent() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <Image
+              src="/images/waveorderlogo.png"
+              alt="WaveOrder Logo"
+              width={45}
+              height={45}
+              quality={100}
+              unoptimized
+            />
             <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
