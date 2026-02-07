@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle, XCircle, Loader2, Waves } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 
 interface VerifyEmailChangeProps {
   token: string
@@ -60,10 +61,15 @@ export default function VerifyEmailChange({ token }: VerifyEmailChangeProps) {
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-gray-200 p-8">
         <div className="text-center">
           {/* Header */}
-          <div className="flex items-center justify-center space-x-3 mb-8">
-            <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center">
-              <Waves className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <Image
+              src="/images/waveorderlogo.png"
+              alt="WaveOrder Logo"
+              width={45}
+              height={45}
+              quality={100}
+              unoptimized
+            />
             <span className="text-2xl font-bold text-gray-900">WaveOrder</span>
           </div>
 

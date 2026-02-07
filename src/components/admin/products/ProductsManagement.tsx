@@ -467,7 +467,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
               <option value="">All Categories</option>
               {categories.map(category => (
                 <option key={category.id} value={category.id}>
-                  {category.name} ({category._count.products})
+                  {category.name} ({category._count?.products || 0})
                 </option>
               ))}
             </select>

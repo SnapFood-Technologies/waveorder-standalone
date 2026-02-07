@@ -775,11 +775,11 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
     fetchBusinessLanguage()
   }, [businessId])
 
-  // Fetch all categories for parent selector
+  // Fetch all categories for parent selector (lightweight for dropdown)
   useEffect(() => {
     const fetchAllCategories = async () => {
       try {
-        const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+        const response = await fetch(`/api/admin/stores/${businessId}/categories?lightweight=true`)
         if (response.ok) {
           const data = await response.json()
           setAllCategories(data.categories || [])
