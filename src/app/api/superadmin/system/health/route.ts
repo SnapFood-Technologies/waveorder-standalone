@@ -569,6 +569,50 @@ async function checkPendingDomains(): Promise<ServiceStatus> {
   }
 }
 
+// Check API Access usage statistics
+async function checkApiAccess(): Promise<ServiceStatus> {
+  try {
+    // Get active API keys and total requests
+    const stats = await prisma.apiKey.aggregate({
+      where: { isActive: true },
+      _count: { id: true },
+      _sum: { requestCount: true }
+    })
+    
+    const activeKeys = stats._count.id || 0
+    const totalRequests = stats._sum.requestCount || 0
+    
+    // Get keys used in last 24 hours
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const recentlyUsedCount = await prisma.apiKey.count({
+      where: {
+        isActive: true,
+        lastUsedAt: { gte: oneDayAgo }
+      }
+    })
+    
+    if (activeKeys === 0) {
+      return {
+        name: 'API Access',
+        status: 'healthy',
+        message: 'No active API keys'
+      }
+    }
+    
+    return {
+      name: 'API Access',
+      status: 'healthy',
+      message: `${activeKeys} active keys, ${recentlyUsedCount} used today, ${totalRequests.toLocaleString()} total requests`
+    }
+  } catch (error) {
+    return {
+      name: 'API Access',
+      status: 'degraded',
+      message: 'Could not check API usage'
+    }
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -596,7 +640,8 @@ export async function GET() {
       openai,
       azureVPS,
       domainSSL,
-      pendingDomains
+      pendingDomains,
+      apiAccess
     ] = await Promise.all([
       checkMongoDB(),
       checkStripe(),
@@ -615,7 +660,8 @@ export async function GET() {
       checkOpenAI(),
       checkAzureVPS(),
       checkDomainSSLStatus(),
-      checkPendingDomains()
+      checkPendingDomains(),
+      checkApiAccess()
     ])
     
     // Convert Twilio result to ServiceStatus format
@@ -692,6 +738,12 @@ export async function GET() {
         description: 'Wavemind AI engine for insights',
         icon: 'Brain',
         services: [openai]
+      },
+      {
+        name: 'Developer API',
+        description: 'External REST API for integrations',
+        icon: 'Key',
+        services: [apiAccess]
       }
     ]
 

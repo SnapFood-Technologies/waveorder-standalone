@@ -28,7 +28,8 @@ import {
   UserPlus,
   UsersRound,
   Star,
-  Brain
+  Brain,
+  Key
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -148,6 +149,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Custom Domains', 
           href: '/superadmin/system/domains', 
           icon: Globe
+        },
+        { 
+          name: 'API Keys', 
+          href: '/superadmin/system/api-keys', 
+          icon: Key
         }
       ]
     },

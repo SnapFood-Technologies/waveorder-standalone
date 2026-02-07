@@ -42,7 +42,8 @@ import {
   SlidersHorizontal,
   Clock,
   DollarSign,
-  ChefHat
+  ChefHat,
+  Key
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -368,6 +369,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         name: 'Custom Domain', 
         href: `${baseUrl}/domains`, 
         icon: Globe, 
+        requiredPlan: 'BUSINESS' as Plan
+      },
+      { 
+        name: 'API Access', 
+        href: `${baseUrl}/api`, 
+        icon: Key, 
         requiredPlan: 'BUSINESS' as Plan
       },
     ] : []),

@@ -36,7 +36,8 @@ import {
   MessageSquare,
   Crown,
   Search,
-  ChefHat
+  ChefHat,
+  Key
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -110,6 +111,29 @@ interface BusinessDetails {
     productsWithVariantsSomeZeroStock?: number
     productsWithVariantsAllNonZeroStock?: number
     inactiveProducts?: number
+  }
+  apiKeys?: Array<{
+    id: string
+    name: string
+    keyPreview: string
+    scopes: string[]
+    lastUsedAt: string | null
+    requestCount: number
+    isActive: boolean
+    createdAt: string
+  }>
+  apiKeyStats?: {
+    totalKeys: number
+    activeKeys: number
+    totalRequests: number
+  }
+  domain?: {
+    customDomain: string | null
+    status: 'NONE' | 'PENDING' | 'ACTIVE' | 'FAILED'
+    verificationToken: string | null
+    provisionedAt: string | null
+    lastChecked: string | null
+    error: string | null
   }
   externalSystemName?: string | null
   externalSystemBaseUrl?: string | null
@@ -1371,6 +1395,16 @@ export default function BusinessDetailsPage() {
           {/* Production Planning Settings */}
           <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Custom Domain Section - Only show for BUSINESS plan */}
+          {business.subscriptionPlan === 'BUSINESS' && (
+            <CustomDomainSection business={business} />
+          )}
+
+          {/* API Keys Section - Only show for BUSINESS plan */}
+          {business.subscriptionPlan === 'BUSINESS' && (
+            <ApiKeysSection business={business} />
+          )}
+
           {/* Complete Setup Section - Show if setup incomplete */}
           {(!business.setupWizardCompleted || !business.onboardingCompleted) && (
             <CompleteSetupSection business={business} onUpdate={fetchBusinessDetails} />
@@ -2320,6 +2354,227 @@ function AccountManagersSection({ businessId }: { businessId: string }) {
         className="mt-3 text-xs text-teal-600 hover:underline inline-flex items-center"
       >
         Manage team assignments
+        <ArrowRight className="w-3 h-3 ml-1" />
+      </Link>
+    </div>
+  )
+}
+
+// Custom Domain Section Component (for BUSINESS plan)
+function CustomDomainSection({ 
+  business 
+}: { 
+  business: BusinessDetails
+}) {
+  const domain = business.domain
+  
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+      case 'PENDING':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
+      case 'FAILED':
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Failed</span>
+      default:
+        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not Configured</span>
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Globe className="w-5 h-5 mr-2 text-teal-600" />
+          Custom Domain
+        </h3>
+        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full font-medium">
+          Business Plan Feature
+        </span>
+      </div>
+
+      {!domain?.customDomain ? (
+        <div className="text-center py-6">
+          <Globe className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No custom domain configured</p>
+          <p className="text-xs text-gray-400 mt-1">Business is using waveorder.app subdomain</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Domain & Status */}
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <a 
+                href={`https://${domain.customDomain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-teal-600 hover:text-teal-700 flex items-center gap-1"
+              >
+                {domain.customDomain}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Fallback: {business.slug}.waveorder.app
+              </p>
+            </div>
+            {getStatusBadge(domain.status)}
+          </div>
+
+          {/* Details */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-gray-500 text-xs">Provisioned</p>
+              <p className="text-gray-900">{formatDate(domain.provisionedAt)}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-xs">Last Checked</p>
+              <p className="text-gray-900">{formatDate(domain.lastChecked)}</p>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {domain.error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-600 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                {domain.error}
+              </p>
+            </div>
+          )}
+
+          {/* Verification Token (for pending domains) */}
+          {domain.status === 'PENDING' && domain.verificationToken && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-700 mb-1">DNS TXT Verification Required:</p>
+              <code className="text-xs bg-yellow-100 px-2 py-1 rounded break-all">
+                _waveorder-verification.{domain.customDomain} → {domain.verificationToken}
+              </code>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Link to full domains management */}
+      <Link
+        href="/superadmin/system/domains"
+        className="mt-4 text-xs text-teal-600 hover:underline inline-flex items-center"
+      >
+        View all custom domains
+        <ArrowRight className="w-3 h-3 ml-1" />
+      </Link>
+    </div>
+  )
+}
+
+// API Keys Section Component (for BUSINESS plan)
+function ApiKeysSection({ 
+  business 
+}: { 
+  business: BusinessDetails
+}) {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const formatRelativeTime = (dateString: string | null) => {
+    if (!dateString) return 'Never'
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(diff / 3600000)
+    const days = Math.floor(diff / 86400000)
+    
+    if (minutes < 1) return 'Just now'
+    if (minutes < 60) return `${minutes}m ago`
+    if (hours < 24) return `${hours}h ago`
+    return `${days}d ago`
+  }
+
+  const apiKeys = business.apiKeys || []
+  const stats = business.apiKeyStats || { totalKeys: 0, activeKeys: 0, totalRequests: 0 }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+          <Key className="w-5 h-5 mr-2 text-teal-600" />
+          API Access
+        </h3>
+        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full font-medium">
+          Business Plan Feature
+        </span>
+      </div>
+
+      {/* Stats Summary */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-gray-900">{stats.activeKeys}</p>
+          <p className="text-xs text-gray-500">Active Keys</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-gray-900">{stats.totalKeys}</p>
+          <p className="text-xs text-gray-500">Total Keys</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <p className="text-2xl font-bold text-teal-600">{stats.totalRequests.toLocaleString()}</p>
+          <p className="text-xs text-gray-500">Total Requests</p>
+        </div>
+      </div>
+
+      {/* API Keys List */}
+      {apiKeys.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-4">
+          No API keys created yet
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {apiKeys.map(key => (
+            <div
+              key={key.id}
+              className={`p-3 rounded-lg border ${key.isActive ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60'}`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-900 text-sm">{key.name}</span>
+                  <code className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{key.keyPreview}</code>
+                  {!key.isActive && (
+                    <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Revoked</span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500">{key.requestCount.toLocaleString()} requests</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-gray-500">
+                <span>Created: {formatDate(key.createdAt)}</span>
+                <span>Last used: {formatRelativeTime(key.lastUsedAt)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Link to full API Keys management */}
+      <Link
+        href="/superadmin/system/api-keys"
+        className="mt-4 text-xs text-teal-600 hover:underline inline-flex items-center"
+      >
+        View all API keys
         <ArrowRight className="w-3 h-3 ml-1" />
       </Link>
     </div>
