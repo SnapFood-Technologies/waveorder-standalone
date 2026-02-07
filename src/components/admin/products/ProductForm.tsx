@@ -131,8 +131,11 @@ function SearchableCategorySelect({
 
   // Get display name for a category (with parent if subcategory)
   const getCategoryDisplayName = (category: Category) => {
-    if (category.parent) {
-      return `${category.parent.name} > ${category.name}`
+    if (category.parentId) {
+      const parent = categories.find(c => c.id === category.parentId)
+      if (parent) {
+        return `${parent.name} > ${category.name}`
+      }
     }
     return category.name
   }
@@ -316,7 +319,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+      const response = await fetch(`/api/admin/stores/${businessId}/categories?lightweight=true`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories)
