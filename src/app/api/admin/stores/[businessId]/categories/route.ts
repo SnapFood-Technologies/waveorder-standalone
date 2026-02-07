@@ -59,40 +59,68 @@ export async function GET(
       return NextResponse.json({ categories })
     }
 
-    // FULL MODE: For categories management screen - with all data
-    const categories = await prisma.category.findMany({
-      where: businessFilter,
-      include: {
-        parent: {
-          select: {
-            id: true,
-            name: true,
-            nameAl: true,
-            nameEl: true
-          }
-        },
-        children: {
-          select: {
-            id: true,
-            name: true,
-            nameAl: true,
-            nameEl: true,
-            sortOrder: true
+    // FULL MODE: For categories management screen - paginate by PARENT categories
+    // This ensures each parent comes with ALL its children (hierarchy intact)
+    const skip = (page - 1) * limit
+    
+    // First, get paginated PARENT categories only (no parentId)
+    const parentFilter = { ...businessFilter, parentId: null }
+    
+    const [parentCategories, totalParents] = await Promise.all([
+      prisma.category.findMany({
+        where: parentFilter,
+        include: {
+          children: {
+            include: {
+              _count: {
+                select: { children: true }
+              },
+              business: { select: { id: true, name: true } }
+            },
+            orderBy: { sortOrder: 'asc' }
           },
-          orderBy: { sortOrder: 'asc' }
+          _count: {
+            select: {
+              children: true
+            }
+          },
+          business: { select: { id: true, name: true } }
         },
-        _count: {
-          select: {
-            children: true
+        orderBy: { sortOrder: 'asc' },
+        skip,
+        take: limit
+      }),
+      prisma.category.count({ where: parentFilter })
+    ])
+    
+    // Flatten: parents + their children for the response
+    const categories: any[] = []
+    for (const parent of parentCategories) {
+      categories.push({
+        ...parent,
+        parent: null // Parent categories have no parent
+      })
+      // Add children with parent reference
+      for (const child of parent.children || []) {
+        categories.push({
+          ...child,
+          parentId: parent.id,
+          parent: {
+            id: parent.id,
+            name: parent.name,
+            nameAl: parent.nameAl,
+            nameEl: parent.nameEl
+          },
+          children: [], // Children don't have children (2-level hierarchy)
+          _count: {
+            products: 0, // Will be filled below
+            children: child._count?.children || 0
           }
-        },
-        business: { select: { id: true, name: true } }
-      },
-      orderBy: [
-        { parentId: 'asc' },
-        { sortOrder: 'asc' }
-      ]
-    })
+        })
+      }
+    }
+    
+    const total = totalParents // Pagination is by parent count
 
     // Get product counts for all categories in a single query (instead of N+1 queries)
     // Use try-catch for groupBy as MongoDB can sometimes have issues with it
@@ -166,7 +194,13 @@ export async function GET(
 
     return NextResponse.json({ 
       categories: categoriesWithTotalCounts,
-      totalProducts // Add total products count to avoid frontend double-counting
+      totalProducts, // Add total products count to avoid frontend double-counting
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
     })
 
   } catch (error) {

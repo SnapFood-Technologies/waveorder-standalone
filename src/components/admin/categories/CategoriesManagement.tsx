@@ -68,19 +68,23 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
   const [limitError, setLimitError] = useState<{ currentCount: number; limit: number; plan: string } | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; pages: number } | null>(null)
+  const ITEMS_PER_PAGE = 20
 
   useEffect(() => {
     fetchCategories()
-  }, [businessId])
+  }, [businessId, currentPage])
 
   const fetchCategories = async () => {
     try {
-      // Use high limit to get all categories for hierarchy view
-      const response = await fetch(`/api/admin/stores/${businessId}/categories?limit=500`)
+      setLoading(true)
+      const response = await fetch(`/api/admin/stores/${businessId}/categories?page=${currentPage}&limit=${ITEMS_PER_PAGE}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories)
-        setTotalProducts(data.totalProducts || 0) // Use API total to avoid double-counting
+        setTotalProducts(data.totalProducts || 0)
+        setPagination(data.pagination || null)
       }
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -531,6 +535,82 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
               })
             })()}
           </div>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.pages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4 rounded-lg">
+              <div className="flex flex-1 justify-between sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                  disabled={currentPage === pagination.pages}
+                  className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+                    <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, pagination.total)}</span> of{' '}
+                    <span className="font-medium">{pagination.total}</span> categories
+                  </p>
+                </div>
+                <div>
+                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronRight className="h-5 w-5 rotate-180" />
+                    </button>
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                      let pageNum
+                      if (pagination.pages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= pagination.pages - 2) {
+                        pageNum = pagination.pages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-teal-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600'
+                              : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(pagination.pages, p + 1))}
+                      disabled={currentPage === pagination.pages}
+                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

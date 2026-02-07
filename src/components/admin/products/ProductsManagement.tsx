@@ -172,7 +172,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
   // Fetch categories once (they rarely change)
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`/api/admin/stores/${businessId}/categories`)
+      const response = await fetch(`/api/admin/stores/${businessId}/categories?lightweight=true`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories || [])
@@ -467,7 +467,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
               <option value="">All Categories</option>
               {categories.map(category => (
                 <option key={category.id} value={category.id}>
-                  {category.name} ({category._count?.products || 0})
+                  {category.name}
                 </option>
               ))}
             </select>
