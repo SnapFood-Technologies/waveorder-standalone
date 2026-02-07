@@ -143,6 +143,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Health Status', 
           href: '/superadmin/system/health', 
           icon: Activity
+        },
+        { 
+          name: 'Custom Domains', 
+          href: '/superadmin/system/domains', 
+          icon: Globe
         }
       ]
     },

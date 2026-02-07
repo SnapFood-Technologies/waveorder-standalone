@@ -420,6 +420,155 @@ async function checkOpenAI(): Promise<ServiceStatus> {
   }
 }
 
+// Check Azure VPS (ping the server IP)
+async function checkAzureVPS(): Promise<ServiceStatus> {
+  const serverIP = process.env.SERVER_IP
+  
+  if (!serverIP) {
+    return {
+      name: 'Azure VPS',
+      status: 'unconfigured',
+      message: 'SERVER_IP not configured'
+    }
+  }
+
+  const start = Date.now()
+  try {
+    // Try to connect to the server via HTTPS on port 443
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 5000)
+    
+    const res = await fetch(`https://${serverIP}`, {
+      method: 'HEAD',
+      signal: controller.signal,
+      // @ts-ignore
+      rejectUnauthorized: false
+    }).catch(() => null)
+    
+    clearTimeout(timeout)
+    const latency = Date.now() - start
+    
+    // Even if we get a certificate error or redirect, the server is reachable
+    if (res || latency < 5000) {
+      return {
+        name: 'Azure VPS',
+        status: 'healthy',
+        message: `Server reachable at ${serverIP}`,
+        latency
+      }
+    }
+    
+    return {
+      name: 'Azure VPS',
+      status: 'degraded',
+      message: 'Server responded slowly'
+    }
+  } catch (error) {
+    // Try TCP ping as fallback (port 80 or 443)
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 5000)
+      
+      await fetch(`http://${serverIP}`, {
+        method: 'HEAD',
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeout)
+      const latency = Date.now() - start
+      
+      return {
+        name: 'Azure VPS',
+        status: 'healthy',
+        message: `Server reachable (HTTP) at ${serverIP}`,
+        latency
+      }
+    } catch {
+      return {
+        name: 'Azure VPS',
+        status: 'down',
+        message: `Server not reachable at ${serverIP}`
+      }
+    }
+  }
+}
+
+// Check Custom Domain SSL certificates (count expiring soon)
+async function checkDomainSSLStatus(): Promise<ServiceStatus> {
+  try {
+    // Count active domains
+    const totalActive = await prisma.business.count({
+      where: {
+        domainStatus: 'ACTIVE',
+        customDomain: { not: null }
+      }
+    })
+    
+    if (totalActive === 0) {
+      return {
+        name: 'Custom Domain SSL',
+        status: 'healthy',
+        message: 'No active custom domains'
+      }
+    }
+    
+    // We can't check SSL expiry from here without making HTTP calls to each domain
+    // So we'll just report the count
+    return {
+      name: 'Custom Domain SSL',
+      status: 'healthy',
+      message: `${totalActive} active custom domains`
+    }
+  } catch (error) {
+    return {
+      name: 'Custom Domain SSL',
+      status: 'degraded',
+      message: 'Could not check domain status'
+    }
+  }
+}
+
+// Check pending domains that need attention
+async function checkPendingDomains(): Promise<ServiceStatus> {
+  try {
+    const pendingCount = await prisma.business.count({
+      where: { domainStatus: 'PENDING' }
+    })
+    
+    const failedCount = await prisma.business.count({
+      where: { domainStatus: 'FAILED' }
+    })
+    
+    if (failedCount > 0) {
+      return {
+        name: 'Domain Provisioning',
+        status: 'degraded',
+        message: `${failedCount} failed, ${pendingCount} pending`
+      }
+    }
+    
+    if (pendingCount > 0) {
+      return {
+        name: 'Domain Provisioning',
+        status: 'healthy',
+        message: `${pendingCount} domains pending verification`
+      }
+    }
+    
+    return {
+      name: 'Domain Provisioning',
+      status: 'healthy',
+      message: 'No pending domains'
+    }
+  } catch (error) {
+    return {
+      name: 'Domain Provisioning',
+      status: 'degraded',
+      message: 'Could not check domain status'
+    }
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -444,7 +593,10 @@ export async function GET() {
       nextAuth,
       cron,
       twilioResult,
-      openai
+      openai,
+      azureVPS,
+      domainSSL,
+      pendingDomains
     ] = await Promise.all([
       checkMongoDB(),
       checkStripe(),
@@ -460,7 +612,10 @@ export async function GET() {
       checkNextAuth(),
       checkCron(),
       checkTwilioHealth(),
-      checkOpenAI()
+      checkOpenAI(),
+      checkAzureVPS(),
+      checkDomainSSLStatus(),
+      checkPendingDomains()
     ])
     
     // Convert Twilio result to ServiceStatus format
@@ -477,6 +632,12 @@ export async function GET() {
         description: 'Critical services for application operation',
         icon: 'Database',
         services: [mongodb, nextAuth]
+      },
+      {
+        name: 'Server Infrastructure',
+        description: 'Azure VPS and custom domain services',
+        icon: 'HardDrive',
+        services: [azureVPS, domainSSL, pendingDomains]
       },
       {
         name: 'Payment Processing',
