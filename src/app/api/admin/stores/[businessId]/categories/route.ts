@@ -102,15 +102,18 @@ export async function GET(
     ])
 
     // Get product counts for all categories in a single query (instead of N+1 queries)
+    // Get product counts - use any to handle Prisma/MongoDB null filtering
+    const productCountWhere: any = {
+      OR: [
+        { businessId: businessId },
+        { businessId: { in: business?.connectedBusinesses || [] } }
+      ],
+      categoryId: { not: null }
+    }
+    
     const productCounts = await prisma.product.groupBy({
       by: ['categoryId'],
-      where: {
-        OR: [
-          { businessId: businessId },
-          { businessId: { in: business?.connectedBusinesses || [] } }
-        ],
-        categoryId: { not: null }
-      },
+      where: productCountWhere,
       _count: { id: true }
     })
     
