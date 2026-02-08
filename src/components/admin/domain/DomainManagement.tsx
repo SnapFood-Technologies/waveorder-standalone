@@ -13,11 +13,6 @@ import {
   Trash2,
   RefreshCw,
   Info,
-  ChevronDown,
-  ChevronUp,
-  Shield,
-  Server,
-  FileText,
   ArrowRight,
   Loader2
 } from 'lucide-react'
@@ -68,7 +63,6 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   
-  const [showTroubleshooting, setShowTroubleshooting] = useState(false)
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
@@ -256,7 +250,7 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
   // Loading state
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
         </div>
@@ -294,9 +288,9 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
+      <div>
         <div className="flex items-center gap-3 mb-2">
           <div className="p-2 bg-teal-100 rounded-lg">
             <Globe className="w-6 h-6 text-teal-600" />
@@ -310,7 +304,7 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
 
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
           <p className="text-green-800">{successMessage}</p>
         </div>
@@ -318,7 +312,7 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-red-800">{error}</p>
@@ -332,8 +326,10 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="space-y-6">
+      {/* Main Content - 3/4 + 1/4 Layout */}
+      <div className="lg:grid lg:grid-cols-4 lg:gap-6">
+        {/* Left Column - Main Content (3/4) */}
+        <div className="lg:col-span-3 space-y-6">
         {/* Current Status Card */}
         {domain?.customDomain && (
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -557,7 +553,7 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
                 Enter your domain name below. You'll need access to your domain's DNS settings.
               </p>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-start">
                 <div className="flex-1">
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">https://</span>
@@ -590,78 +586,79 @@ export function DomainManagement({ businessId }: DomainManagementProps) {
           </div>
         )}
 
-        {/* Troubleshooting Section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <button
-            onClick={() => setShowTroubleshooting(!showTroubleshooting)}
-            className="w-full p-4 flex items-center justify-between text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Info className="w-5 h-5 text-gray-400" />
-              <span className="font-medium text-gray-900">Troubleshooting & FAQ</span>
-            </div>
-            {showTroubleshooting ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
-            )}
-          </button>
-          
-          {showTroubleshooting && (
-            <div className="px-4 pb-4 border-t border-gray-100 pt-4 space-y-4">
+          {/* Current Storefront URL */}
+          {storefrontUrl && (
+            <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">DNS records not being detected?</h4>
-                <p className="text-sm text-gray-600">
-                  DNS changes can take 5 minutes to 48 hours to propagate. Try again in a few hours.
-                  You can check propagation status at{' '}
+                <p className="text-sm text-gray-500">Your storefront is currently accessible at:</p>
+                <a 
+                  href={storefrontUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-teal-600 hover:underline font-medium"
+                >
+                  {storefrontUrl}
+                </a>
+              </div>
+              <ExternalLink className="w-5 h-5 text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - FAQ & Troubleshooting (1/4) */}
+        <div className="lg:col-span-1 mt-6 lg:mt-0">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm sticky top-6">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Info className="w-5 h-5 text-teal-600" />
+                <span className="font-semibold text-gray-900">FAQ & Help</span>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">DNS not detected?</h4>
+                <p className="text-xs text-gray-600">
+                  DNS changes take 5 min to 48 hours. Check at{' '}
                   <a href="https://dnschecker.org" target="_blank" rel="noopener noreferrer" className="text-teal-600 hover:underline">
                     dnschecker.org
                   </a>
                 </p>
               </div>
+              
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Using Cloudflare?</h4>
-                <p className="text-sm text-gray-600">
-                  Make sure the proxy (orange cloud) is turned OFF for your A record while setting up. 
-                  You can enable it after verification is complete.
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Using Cloudflare?</h4>
+                <p className="text-xs text-gray-600">
+                  Turn OFF proxy (orange cloud) for A record during setup. Enable after verification.
                 </p>
               </div>
+              
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Can I use a subdomain (shop.example.com)?</h4>
-                <p className="text-sm text-gray-600">
-                  Yes! Subdomains work the same way. Just enter the full subdomain in the domain field.
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Subdomains work?</h4>
+                <p className="text-xs text-gray-600">
+                  Yes! Use shop.example.com or any subdomain.
                 </p>
               </div>
+              
               <div>
-                <h4 className="font-medium text-gray-900 mb-1">Need help?</h4>
-                <p className="text-sm text-gray-600">
-                  Contact our support team at{' '}
+                <h4 className="font-medium text-gray-900 text-sm mb-1">WWW vs non-WWW?</h4>
+                <p className="text-xs text-gray-600">
+                  We recommend using the non-www version (example.com) and redirecting www to it.
+                </p>
+              </div>
+              
+              <div className="pt-3 border-t border-gray-100">
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Need help?</h4>
+                <p className="text-xs text-gray-600">
+                  Contact{' '}
                   <a href="mailto:support@waveorder.app" className="text-teal-600 hover:underline">
                     support@waveorder.app
                   </a>
                 </p>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Current Storefront URL */}
-        {storefrontUrl && (
-          <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Your storefront is currently accessible at:</p>
-              <a 
-                href={storefrontUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-teal-600 hover:underline font-medium"
-              >
-                {storefrontUrl}
-              </a>
-            </div>
-            <ExternalLink className="w-5 h-5 text-gray-400" />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Remove Confirmation Modal */}

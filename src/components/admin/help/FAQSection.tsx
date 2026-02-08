@@ -38,9 +38,9 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'whatsapp-setup',
       question: 'How do I set up WhatsApp for receiving orders?',
-      answer: '1. Go to Settings > Business and add your WhatsApp number\n2. Share your store link with customers\n3. When customers visit your link, they can start a WhatsApp conversation\n4. Orders will appear in your dashboard automatically\n5. You can respond to customers directly through WhatsApp',
+      answer: '1. Go to Settings > Business and add your WhatsApp number\n2. Share your store link with customers\n3. When customers visit your link, they can browse and place orders\n4. Order details will be sent to your WhatsApp automatically\n5. Orders will also appear in your dashboard for easy management',
       links: [
-        { text: 'WhatsApp Integration Guide', href: '/docs/whatsapp-setup' }
+        { text: 'Business Settings', href: '/admin/stores/[businessId]/settings/business' }
       ]
     },
     {
@@ -74,15 +74,15 @@ const faqData: Record<string, FAQ[]> = {
       question: 'What are the best practices for product images?',
       answer: 'Use high-quality, well-lit images that show your products clearly. Recommended size is 800x600 pixels. Images help customers make decisions and increase order value. You can upload multiple images per product.',
       links: [
-        { text: 'Image Guidelines', href: '/docs/product-images' }
+        { text: 'Add Product', href: '/admin/stores/[businessId]/products' }
       ]
     },
     {
       id: 'product-variants',
       question: 'Can I add different sizes or options to products?',
-      answer: 'Yes! You can create product variants for different sizes, flavors, or options. For example, a pizza with different sizes (Small, Medium, Large) or a coffee with different types (Americano, Latte, Cappuccino).',
+      answer: 'Yes! You can create product variants for different sizes, flavors, or options. For example, a pizza with different sizes (Small, Medium, Large) or a coffee with different types (Americano, Latte, Cappuccino). Add variants when creating or editing a product.',
       links: [
-        { text: 'Product Variants Guide', href: '/docs/product-variants' }
+        { text: 'Products', href: '/admin/stores/[businessId]/products' }
       ]
     }
   ],
@@ -98,9 +98,9 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'order-status',
       question: 'How do I update order status?',
-      answer: 'Click on any order to view details, then use the status buttons to update: Confirm → Preparing → Ready → Delivered. Status updates are automatically sent to customers via WhatsApp.',
+      answer: 'Click on any order to view details, then use the status buttons to update: Confirm → Preparing → Ready → Delivered. Customers can track their order status through your store.',
       links: [
-        { text: 'Order Status Guide', href: '/docs/order-management' }
+        { text: 'Orders Dashboard', href: '/admin/stores/[businessId]/orders' }
       ]
     },
     {
@@ -132,9 +132,9 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'customer-communication',
       question: 'How do I communicate with customers?',
-      answer: 'You can respond to customers directly through WhatsApp. All customer messages and your responses are tracked in the system. You can also send order updates and promotional messages.',
+      answer: 'You can respond to customers directly through WhatsApp. View customer details and order history in your Customers section to provide personalized service.',
       links: [
-        { text: 'Customer Communication', href: '/docs/customer-management' }
+        { text: 'Customers', href: '/admin/stores/[businessId]/customers' }
       ]
     },
     {
@@ -150,25 +150,25 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'whatsapp-business',
       question: 'Do I need WhatsApp Business API?',
-      answer: 'No! WaveOrder works with regular WhatsApp. You just need a WhatsApp number to receive orders. However, WhatsApp Business API provides additional features like automated responses and business profiles.',
+      answer: 'No! WaveOrder works with regular WhatsApp. You just need a WhatsApp number to receive orders. Customers will be able to message you directly through WhatsApp when they place orders.',
       links: [
-        { text: 'WhatsApp Business Setup', href: '/docs/whatsapp-business' }
+        { text: 'Business Settings', href: '/admin/stores/[businessId]/settings/business' }
       ]
     },
     {
-      id: 'automated-responses',
-      question: 'Can I set up automated responses?',
-      answer: 'Yes! You can set up auto-reply messages for when you\'re offline, order confirmations, and status updates. This helps provide better customer service even when you\'re not available.',
+      id: 'how-orders-work',
+      question: 'How do customers place orders via WhatsApp?',
+      answer: 'Customers browse your online store, add items to their cart, and checkout. The order details are then sent to your WhatsApp number automatically. You can confirm and manage orders from your dashboard.',
       links: [
-        { text: 'Auto-Reply Settings', href: '/admin/stores/[businessId]/settings/business' }
+        { text: 'Orders Dashboard', href: '/admin/stores/[businessId]/orders' }
       ]
     },
     {
-      id: 'whatsapp-templates',
-      question: 'Can I customize WhatsApp messages?',
-      answer: 'Yes! You can customize order confirmation messages, status updates, and promotional messages. This helps maintain your brand voice and provide a personalized experience.',
+      id: 'whatsapp-notifications',
+      question: 'Will I receive WhatsApp notifications for new orders?',
+      answer: 'Yes! When a customer places an order, you\'ll receive a WhatsApp message with the order details. You can also enable email notifications in your notification settings for backup alerts.',
       links: [
-        { text: 'Message Templates', href: '/admin/stores/[businessId]/settings/business' }
+        { text: 'Notification Settings', href: '/admin/stores/[businessId]/settings/notifications' }
       ]
     }
   ],
@@ -176,10 +176,10 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'subscription-plans',
       question: 'What subscription plans are available?',
-      answer: 'WaveOrder offers Starter and PRO plans. Starter plan ($6/month) includes up to 30 products and basic features. PRO plan ($12/month) includes unlimited products, advanced analytics, inventory management, team collaboration, and custom domains.',
+      answer: 'WaveOrder offers three plans:\n\n• Starter: Basic features with up to 30 products\n• PRO: Unlimited products, inventory management, team collaboration, and discounts\n• Business: Everything in PRO plus custom domains and API access for integrations',
       links: [
         { text: 'View Plans', href: '/pricing' },
-        { text: 'Upgrade Plan', href: '/admin/stores/[businessId]/settings/billing' }
+        { text: 'Manage Subscription', href: '/admin/stores/[businessId]/settings/billing' }
       ]
     },
     {
@@ -213,7 +213,7 @@ const faqData: Record<string, FAQ[]> = {
       question: 'What are the different team roles?',
       answer: 'Owner: Full access to all features and billing. Manager: Can manage products, orders, and invite staff. Staff: Can view and manage orders and products. Each role has specific permissions.',
       links: [
-        { text: 'Role Permissions', href: '/docs/team-roles' }
+        { text: 'Team Management', href: '/admin/stores/[businessId]/team' }
       ]
     },
     {
@@ -221,7 +221,7 @@ const faqData: Record<string, FAQ[]> = {
       question: 'How do team members collaborate?',
       answer: 'Team members can work together on orders, products, and customer management. All actions are tracked with timestamps and user information. You can see who made what changes.',
       links: [
-        { text: 'Team Collaboration', href: '/docs/team-collaboration' }
+        { text: 'Team Management', href: '/admin/stores/[businessId]/team' }
       ]
     }
   ],
@@ -245,9 +245,18 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'custom-domains',
       question: 'Can I use my own domain name?',
-      answer: 'Yes! PRO users can connect their own domain (like yourstore.com) instead of using the default waveorder.app subdomain. This gives your store a more professional appearance and better branding.',
+      answer: 'Yes! Business plan users can connect their own domain (like yourstore.com) instead of using the default waveorder.app subdomain. This gives your store a more professional appearance and better branding.',
       links: [
         { text: 'Domain Setup', href: '/admin/stores/[businessId]/domains' }
+      ]
+    },
+    {
+      id: 'api-access',
+      question: 'Can I integrate WaveOrder with other systems?',
+      answer: 'Yes! Business plan users get API access to integrate with POS systems, mobile apps, and other third-party services. Generate API keys from your dashboard and use our REST API.',
+      links: [
+        { text: 'API Access', href: '/admin/stores/[businessId]/api' },
+        { text: 'API Documentation', href: '/developers' }
       ]
     },
     {
@@ -271,9 +280,10 @@ const faqData: Record<string, FAQ[]> = {
     {
       id: 'whatsapp-not-working',
       question: 'WhatsApp integration is not working properly',
-      answer: 'Ensure your WhatsApp number is verified and active. Check that you\'re using the correct country code. Try logging out and back into WhatsApp. Contact support if the issue persists.',
+      answer: 'Ensure your WhatsApp number is correctly entered in Settings > Business with the proper country code. Make sure your store is active and not temporarily closed. Contact support if the issue persists.',
       links: [
-        { text: 'WhatsApp Troubleshooting', href: '/docs/whatsapp-troubleshooting' }
+        { text: 'Business Settings', href: '/admin/stores/[businessId]/settings/business' },
+        { text: 'Contact Support', href: '/admin/stores/[businessId]/support/tickets' }
       ]
     },
     {

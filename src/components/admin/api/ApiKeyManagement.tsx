@@ -207,7 +207,7 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
           <div className="h-32 bg-gray-200 rounded"></div>
@@ -217,9 +217,9 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
+      <div>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -244,7 +244,7 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
 
       {/* Error Alert */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
           <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-red-800 font-medium">Error</p>
@@ -255,7 +255,7 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
 
       {/* Newly Created Key Alert */}
       {newlyCreatedKey && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div className="flex items-start gap-3">
             <Shield className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -295,18 +295,12 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
         </div>
       )}
 
-      {/* Info Box */}
-      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-medium text-blue-800 mb-2">How to use the API</h3>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Base URL: <code className="bg-blue-100 px-1 rounded">/api/v1</code></li>
-          <li>• Add header: <code className="bg-blue-100 px-1 rounded">Authorization: Bearer YOUR_API_KEY</code></li>
-          <li>• Rate limit: 60 requests per minute</li>
-        </ul>
-      </div>
-
-      {/* API Keys List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Main Content - 3/4 + 1/4 Layout */}
+      <div className="lg:grid lg:grid-cols-4 lg:gap-6">
+        {/* Left Column - API Keys (3/4) */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* API Keys List */}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="font-semibold text-gray-900">API Keys ({apiKeys.filter(k => k.isActive).length}/5)</h2>
           <div className="flex items-center gap-2">
@@ -395,6 +389,59 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
             ))}
           </div>
         )}
+        </div>
+        </div>
+
+        {/* Right Column - Help & Info (1/4) */}
+        <div className="lg:col-span-1 mt-6 lg:mt-0">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm sticky top-6">
+            <div className="p-4 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-teal-600" />
+                <span className="font-semibold text-gray-900">Quick Reference</span>
+              </div>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Base URL</h4>
+                <code className="text-xs bg-gray-100 px-2 py-1 rounded block">/api/v1</code>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Authentication</h4>
+                <code className="text-xs bg-gray-100 px-2 py-1 rounded block break-all">Authorization: Bearer KEY</code>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Rate Limit</h4>
+                <p className="text-xs text-gray-600">60 requests/minute per key</p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Endpoints</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• GET /products</li>
+                  <li>• GET /orders</li>
+                  <li>• GET /categories</li>
+                  <li>• GET /me</li>
+                </ul>
+              </div>
+              
+              <div className="pt-3 border-t border-gray-100">
+                <a
+                  href="/developers"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-600 hover:text-teal-700 text-sm flex items-center gap-1"
+                >
+                  Full Documentation
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Create Key Modal */}
@@ -424,7 +471,7 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Permissions
                 </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
                   {availableScopes.map(scope => (
                     <label
                       key={scope.id}
