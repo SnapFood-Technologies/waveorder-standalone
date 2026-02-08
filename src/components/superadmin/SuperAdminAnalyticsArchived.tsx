@@ -185,13 +185,7 @@ export function SuperAdminAnalyticsArchived() {
                   <tr key={business.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">
-                      {business.email ? (
-                        <a href={`mailto:${business.email}`} className="text-blue-600 hover:underline">
-                          {business.email}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400 italic">No email</span>
-                      )}
+                      {business.email || <span className="text-gray-400 italic">No email</span>}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-wrap gap-2">
@@ -256,13 +250,7 @@ export function SuperAdminAnalyticsArchived() {
                   <tr key={business.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">
-                      {business.email ? (
-                        <a href={`mailto:${business.email}`} className="text-blue-600 hover:underline">
-                          {business.email}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400 italic">No email</span>
-                      )}
+                      {business.email || <span className="text-gray-400 italic">No email</span>}
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {business.deactivatedAt
