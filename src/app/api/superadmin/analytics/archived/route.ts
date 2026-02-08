@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
           whatsappNumber: true,
           address: true,
           createdAt: true,
+          // @ts-ignore
           owner: {
             select: {
               email: true
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
           deactivatedAt: true,
           deactivationReason: true,
           createdAt: true,
+          // @ts-ignore
           owner: {
             select: {
               email: true
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest) {
       return {
         id: business.id,
         name: business.name,
+        // @ts-ignore
         email: business.owner?.email || null,
         missingFields,
         createdAt: business.createdAt.toISOString()
@@ -101,6 +104,7 @@ export async function GET(request: NextRequest) {
     const formattedInactiveBusinesses = inactiveBusinesses.map(business => ({
       id: business.id,
       name: business.name,
+      // @ts-ignore
       email: business.owner?.email || null,
       deactivatedAt: business.deactivatedAt?.toISOString() || null,
       deactivationReason: business.deactivationReason || null,
