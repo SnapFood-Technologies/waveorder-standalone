@@ -2745,11 +2745,13 @@ const trackProductEvent = useCallback((
   }
   
   // Helper to check if address needs confirmation (has text but no coordinates - likely autofill)
-  const hasAddressWithoutCoordinates = deliveryType === 'delivery' && 
+  const hasAddressWithoutCoordinates = Boolean(
+    deliveryType === 'delivery' && 
     storeData.businessType !== 'RETAIL' && 
     customerInfo.address && 
     customerInfo.address.trim().length > 0 && 
     (!customerInfo.latitude || !customerInfo.longitude)
+  )
 
  // ADD FUNCTION TO CLEAR DELIVERY ERROR:
  const handleClearDeliveryError = () => {
