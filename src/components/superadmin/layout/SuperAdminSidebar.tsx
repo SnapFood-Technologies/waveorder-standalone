@@ -33,7 +33,8 @@ import {
   ClipboardList,
   ShoppingCart,
   CalendarCheck,
-  Scissors
+  Scissors,
+  Search
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -117,6 +118,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Bookings', 
           href: '/superadmin/operations/bookings', 
           icon: Scissors
+        },
+        { 
+          name: 'General', 
+          href: '/superadmin/operations/general', 
+          icon: Search
         }
       ]
     },

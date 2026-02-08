@@ -74,9 +74,14 @@ export async function GET(request: NextRequest) {
     // Exclude test businesses
     const excludeTest = { NOT: { testMode: true } }
 
-    // Get businesses matching filter (for joins)
+    // Get active, completed businesses matching filter (exclude deactivated/incomplete)
     const matchingBusinessIds = await prisma.business.findMany({
-      where: { ...excludeTest, ...businessFilter },
+      where: { 
+        ...excludeTest, 
+        ...businessFilter,
+        isActive: true,
+        setupWizardCompleted: true
+      },
       select: { id: true }
     })
     const businessIds = matchingBusinessIds.map(b => b.id)

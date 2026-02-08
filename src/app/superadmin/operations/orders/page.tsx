@@ -303,14 +303,14 @@ export default function OperationsOrdersPage() {
               </div>
             </div>
 
-            {/* Active Businesses */}
+            {/* Businesses with Orders */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Active Businesses</p>
+                  <p className="text-sm text-gray-600">With Orders</p>
                   <p className="text-2xl font-bold text-gray-900">{data.overview.activeBusinesses}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    of {data.overview.totalBusinesses} total
+                    of {data.overview.totalBusinesses} businesses
                   </p>
                 </div>
                 <Building2 className="w-8 h-8 text-blue-400" />
@@ -321,9 +321,9 @@ export default function OperationsOrdersPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Avg per Business</p>
+                  <p className="text-sm text-gray-600">Avg Orders</p>
                   <p className="text-2xl font-bold text-gray-900">{data.overview.avgOrdersPerBusiness}</p>
-                  <p className="text-xs text-gray-500 mt-1">orders / active business</p>
+                  <p className="text-xs text-gray-500 mt-1">per business with orders</p>
                 </div>
                 <BarChart3 className="w-8 h-8 text-purple-400" />
               </div>
@@ -335,43 +335,34 @@ export default function OperationsOrdersPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
                 <Calendar className="w-5 h-5 text-indigo-600" />
-                Orders Trend ({getPeriodLabel()})
+                Orders by Day ({getPeriodLabel()})
               </h3>
-              <div className="flex items-end justify-between gap-1" style={{ height: 160 }}>
+              <div className="flex items-end justify-between gap-2" style={{ height: 140 }}>
                 {(() => {
-                  const chartHeight = 120
-                  const maxCount = Math.max(...data.ordersByDay.map(d => d.count))
-                  // Show last 30 days max to keep chart readable
-                  const displayDays = data.ordersByDay.slice(-30)
+                  const chartHeight = 100
+                  // Show last 7 days for clean display (matches logs chart pattern)
+                  const displayDays = data.ordersByDay.slice(-7)
+                  const maxCount = Math.max(...displayDays.map(d => d.count))
 
                   return displayDays.map((item) => {
                     const heightPx = maxCount > 0
                       ? Math.max((item.count / maxCount) * chartHeight, item.count > 0 ? 4 : 2)
                       : 2
                     const date = new Date(item.date)
-                    // Only show label for every Nth day to avoid crowding
-                    const showLabel = displayDays.length <= 7 || displayDays.indexOf(item) % Math.ceil(displayDays.length / 7) === 0
 
                     return (
-                      <div key={item.date} className="flex flex-col items-center flex-1 min-w-0">
-                        {item.count > 0 && (
-                          <span className="text-xs text-gray-600 mb-1">{item.count}</span>
-                        )}
+                      <div key={item.date} className="flex flex-col items-center flex-1">
+                        <span className="text-xs text-gray-600 mb-1">{item.count.toLocaleString()}</span>
                         <div
-                          className="w-full bg-teal-500 rounded-t-sm min-w-[4px]"
+                          className="w-full bg-teal-500 rounded-t-sm"
                           style={{ height: heightPx }}
-                          title={`${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${item.count} orders`}
                         />
-                        {showLabel && (
-                          <>
-                            <span className="text-xs text-gray-500 mt-1 truncate w-full text-center">
-                              {date.toLocaleDateString('en-US', { weekday: 'short' })}
-                            </span>
-                            <span className="text-xs text-gray-400 truncate w-full text-center">
-                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                          </>
-                        )}
+                        <span className="text-xs text-gray-500 mt-2">
+                          {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
                       </div>
                     )
                   })

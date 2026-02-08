@@ -152,7 +152,7 @@ export function SuperAdminAnalytics() {
         </select>
       </div>
 
-      {/* Overview Stats */}
+      {/* Overview Stats - Row 1: Business & User metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
@@ -204,7 +204,10 @@ export function SuperAdminAnalytics() {
             <Users className="w-10 h-10 text-purple-500" />
           </div>
         </div>
+      </div>
 
+      {/* Overview Stats - Row 2: Platform metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -234,30 +237,6 @@ export function SuperAdminAnalytics() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                {formatNumber(data.overview.totalOrders)}
-              </p>
-            </div>
-            <ShoppingCart className="w-10 h-10 text-green-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
-                { data.overview.totalRevenue ? formatCurrency(data.overview.totalRevenue) : 0}
-              </p>
-            </div>
-            <DollarSign className="w-10 h-10 text-yellow-500" />
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-sm font-medium text-gray-600">Page Views</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {data.overview.pageViews.toLocaleString()}
@@ -280,6 +259,25 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
       </div>
+
+      {/* Operations Analytics CTA */}
+      <Link
+        href="/superadmin/operations/orders"
+        className="block bg-gradient-to-r from-teal-500 to-emerald-500 rounded-lg p-6 hover:from-teal-600 hover:to-emerald-600 transition-all"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+              <ShoppingCart className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white">Operations Analytics</h3>
+              <p className="text-sm text-teal-100">View orders, reservations, bookings, and search analytics across all businesses</p>
+            </div>
+          </div>
+          <ArrowRight className="w-6 h-6 text-white" />
+        </div>
+      </Link>
 
       {/* Revenue by Plan */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -389,20 +387,6 @@ export function SuperAdminAnalytics() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">Test Mode Businesses</p>
                   <p className="text-xs text-gray-600 mt-1">Businesses marked as test mode. Excluded from all other analytics metrics.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <ShoppingCart className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Total Orders</p>
-                  <p className="text-xs text-gray-600 mt-1">All orders placed across all businesses (excluding test mode)</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <DollarSign className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Total Revenue</p>
-                  <p className="text-xs text-gray-600 mt-1">From completed paid orders (CONFIRMED, PREPARING, READY, OUT_FOR_DELIVERY, DELIVERED with PAID status)</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
@@ -527,10 +511,10 @@ export function SuperAdminAnalytics() {
               </div>
               <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                 <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-indigo-600" />
-                  <p className="text-sm font-medium text-gray-900">Revenue Calculations</p>
+                  <ShoppingCart className="w-4 h-4 text-indigo-600" />
+                  <p className="text-sm font-medium text-gray-900">Operations Analytics</p>
                 </div>
-                <p className="text-xs text-gray-700">Revenue calculations use orders from the selected date range only</p>
+                <p className="text-xs text-gray-700">Order counts, trends, and detailed analytics are available in the Operations Analytics section</p>
               </div>
             </div>
           </div>
