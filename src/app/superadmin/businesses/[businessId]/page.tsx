@@ -1447,12 +1447,9 @@ function QuickActionsSection({
   onTrialReset: () => void 
 }) {
   const [resettingTrial, setResettingTrial] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const handleResetTrial = async () => {
-    if (!confirm('Are you sure you want to reset the trial for this business? The owner will be able to start a new 14-day trial.')) {
-      return
-    }
-
     setResettingTrial(true)
     try {
       const res = await fetch(`/api/superadmin/businesses/${business.id}/reset-trial`, {
@@ -1470,44 +1467,93 @@ function QuickActionsSection({
       toast.error('Error resetting trial')
     } finally {
       setResettingTrial(false)
+      setShowResetConfirm(false)
     }
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-      <div className="space-y-2">
-        <button
-          onClick={() => window.open(`/${business.slug}`, '_blank')}
-          className="w-full flex items-center justify-between px-4 py-2 text-sm text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100"
-        >
-          <span className="flex items-center">
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Visit Store
-          </span>
-        </button>
-        <button
-          onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
-          disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
-          className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="flex items-center">
-            <UserCheck className="w-4 h-4 mr-2" />
-            Impersonate
-          </span>
-        </button>
-        <button
-          onClick={handleResetTrial}
-          disabled={resettingTrial}
-          className="w-full flex items-center justify-between px-4 py-2 text-sm text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50"
-        >
-          <span className="flex items-center">
-            <Clock className="w-4 h-4 mr-2" />
-            {resettingTrial ? 'Resetting...' : 'Reset Trial'}
-          </span>
-        </button>
+    <>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="space-y-2">
+          <button
+            onClick={() => window.open(`/${business.slug}`, '_blank')}
+            className="w-full flex items-center justify-between px-4 py-2 text-sm text-teal-700 bg-teal-50 rounded-lg hover:bg-teal-100"
+          >
+            <span className="flex items-center">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Visit Store
+            </span>
+          </button>
+          <button
+            onClick={() => window.open(`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`, '_blank')}
+            disabled={!business.setupWizardCompleted || !business.onboardingCompleted}
+            className="w-full flex items-center justify-between px-4 py-2 text-sm rounded-lg text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="flex items-center">
+              <UserCheck className="w-4 h-4 mr-2" />
+              Impersonate
+            </span>
+          </button>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            disabled={resettingTrial}
+            className="w-full flex items-center justify-between px-4 py-2 text-sm text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 disabled:opacity-50"
+          >
+            <span className="flex items-center">
+              <Clock className="w-4 h-4 mr-2" />
+              {resettingTrial ? 'Resetting...' : 'Reset Trial'}
+            </span>
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Reset Trial Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Reset Trial</h3>
+                <p className="text-sm text-gray-500">{business.name}</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to reset the trial for this business? The owner will be able to start a new 14-day trial.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                disabled={resettingTrial}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetTrial}
+                className="px-4 py-2 text-white bg-amber-600 rounded-lg hover:bg-amber-700 flex items-center"
+                disabled={resettingTrial}
+              >
+                {resettingTrial ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Reset Trial
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

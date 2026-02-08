@@ -139,6 +139,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
   const [addingPayment, setAddingPayment] = useState(false)
   const [editingPayment, setEditingPayment] = useState<string | null>(null)
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null)
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null)
 
   // Overview data
   const [overviewData, setOverviewData] = useState<any>(null)
@@ -349,12 +350,12 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
   }
 
   // Delete payment
-  const handleDeletePayment = async (paymentId: string) => {
-    if (!confirm('Are you sure you want to delete this payment record?')) return
+  const handleDeletePayment = async () => {
+    if (!paymentToDelete) return
     
-    setDeletingPayment(paymentId)
+    setDeletingPayment(paymentToDelete)
     try {
-      const res = await fetch(`/api/admin/stores/${businessId}/cost-margins/supplier-payments/${paymentId}`, {
+      const res = await fetch(`/api/admin/stores/${businessId}/cost-margins/supplier-payments/${paymentToDelete}`, {
         method: 'DELETE'
       })
       
@@ -370,6 +371,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
       toast.error('Failed to delete payment')
     } finally {
       setDeletingPayment(null)
+      setPaymentToDelete(null)
     }
   }
 
@@ -1126,7 +1128,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                         </td>
                         <td className="py-3 px-6 text-center">
                           <button
-                            onClick={() => handleDeletePayment(payment.id)}
+                            onClick={() => setPaymentToDelete(payment.id)}
                             disabled={deletingPayment === payment.id}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                             title="Delete payment"
@@ -1144,6 +1146,52 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Payment Confirmation Modal */}
+      {paymentToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Payment</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this payment record? This will affect your financial summary.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPaymentToDelete(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                disabled={!!deletingPayment}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeletePayment}
+                className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 flex items-center"
+                disabled={!!deletingPayment}
+              >
+                {deletingPayment ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Payment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
