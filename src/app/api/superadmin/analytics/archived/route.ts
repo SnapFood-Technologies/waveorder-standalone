@@ -26,7 +26,12 @@ export async function GET(request: NextRequest) {
           name: true,
           whatsappNumber: true,
           address: true,
-          createdAt: true
+          createdAt: true,
+          owner: {
+            select: {
+              email: true
+            }
+          }
         },
         orderBy: {
           createdAt: 'desc'
@@ -44,7 +49,12 @@ export async function GET(request: NextRequest) {
           name: true,
           deactivatedAt: true,
           deactivationReason: true,
-          createdAt: true
+          createdAt: true,
+          owner: {
+            select: {
+              email: true
+            }
+          }
         },
         orderBy: {
           deactivatedAt: 'desc'
@@ -81,6 +91,7 @@ export async function GET(request: NextRequest) {
       return {
         id: business.id,
         name: business.name,
+        email: business.owner?.email || null,
         missingFields,
         createdAt: business.createdAt.toISOString()
       }
@@ -90,6 +101,7 @@ export async function GET(request: NextRequest) {
     const formattedInactiveBusinesses = inactiveBusinesses.map(business => ({
       id: business.id,
       name: business.name,
+      email: business.owner?.email || null,
       deactivatedAt: business.deactivatedAt?.toISOString() || null,
       deactivationReason: business.deactivationReason || null,
       createdAt: business.createdAt.toISOString()

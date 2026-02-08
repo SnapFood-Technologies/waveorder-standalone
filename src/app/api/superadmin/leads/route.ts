@@ -18,9 +18,45 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get('source') || 'all'
     const priority = searchParams.get('priority') || 'all'
     const assignedTo = searchParams.get('assignedTo') || 'all'
+    const sortBy = searchParams.get('sortBy') || 'date_desc'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
+
+    // Build order by clause based on sortBy parameter
+    const priorityOrder = { LOW: 1, MEDIUM: 2, HIGH: 3, URGENT: 4 }
+    let orderBy: any = { createdAt: 'desc' } // Default
+    
+    switch (sortBy) {
+      case 'date_asc':
+        orderBy = { createdAt: 'asc' }
+        break
+      case 'date_desc':
+        orderBy = { createdAt: 'desc' }
+        break
+      case 'priority_desc':
+        // For priority sorting, we'll use a custom approach with raw query or sort in memory
+        // Prisma doesn't support custom enum ordering, so we'll sort in memory after fetching
+        orderBy = { priority: 'desc' } // Fallback, will be adjusted in memory
+        break
+      case 'priority_asc':
+        orderBy = { priority: 'asc' }
+        break
+      case 'name_asc':
+        orderBy = { name: 'asc' }
+        break
+      case 'name_desc':
+        orderBy = { name: 'desc' }
+        break
+      case 'value_desc':
+        orderBy = { estimatedValue: 'desc' }
+        break
+      case 'value_asc':
+        orderBy = { estimatedValue: 'asc' }
+        break
+      default:
+        orderBy = { createdAt: 'desc' }
+    }
 
     // Build where conditions
     const whereConditions: any = {}
@@ -83,15 +119,22 @@ export async function GET(request: NextRequest) {
             select: { activities: true }
           }
         },
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'desc' }
-        ],
+        orderBy,
         skip: offset,
         take: limit
       }),
       prisma.lead.count({ where: whereConditions })
     ])
+
+    // Handle priority sorting in memory for correct ordering
+    if (sortBy === 'priority_desc' || sortBy === 'priority_asc') {
+      const priorityOrderMap: Record<string, number> = { LOW: 1, MEDIUM: 2, HIGH: 3, URGENT: 4 }
+      leads.sort((a, b) => {
+        const aValue = priorityOrderMap[a.priority] || 0
+        const bValue = priorityOrderMap[b.priority] || 0
+        return sortBy === 'priority_desc' ? bValue - aValue : aValue - bValue
+      })
+    }
 
     // Fetch converted businesses for leads that have convertedToId
     const convertedBusinessIds = leads

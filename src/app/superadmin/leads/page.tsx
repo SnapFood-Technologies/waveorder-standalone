@@ -131,6 +131,7 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState('all')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [assignedFilter, setAssignedFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('date_desc') // Default: latest first
   
   // Pagination
   const [page, setPage] = useState(1)
@@ -154,7 +155,8 @@ export default function LeadsPage() {
         status: statusFilter,
         source: sourceFilter,
         priority: priorityFilter,
-        assignedTo: assignedFilter
+        assignedTo: assignedFilter,
+        sortBy
       })
 
       const res = await fetch(`/api/superadmin/leads?${params}`)
@@ -195,7 +197,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     fetchLeads()
-  }, [page, search, statusFilter, sourceFilter, priorityFilter, assignedFilter])
+  }, [page, search, statusFilter, sourceFilter, priorityFilter, assignedFilter, sortBy])
 
   useEffect(() => {
     fetchStats()
@@ -379,6 +381,22 @@ export default function LeadsPage() {
                 {member.name || member.email} ({member._count.assignedLeads})
               </option>
             ))}
+          </select>
+
+          {/* Sort By */}
+          <select
+            value={sortBy}
+            onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+          >
+            <option value="date_desc">Newest First</option>
+            <option value="date_asc">Oldest First</option>
+            <option value="priority_desc">Priority (High to Low)</option>
+            <option value="priority_asc">Priority (Low to High)</option>
+            <option value="name_asc">Name (A-Z)</option>
+            <option value="name_desc">Name (Z-A)</option>
+            <option value="value_desc">Value (High to Low)</option>
+            <option value="value_asc">Value (Low to High)</option>
           </select>
 
           {/* Refresh */}

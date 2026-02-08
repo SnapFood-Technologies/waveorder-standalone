@@ -18,12 +18,14 @@ interface ArchivedData {
   incompleteBusinesses: {
     id: string
     name: string
+    email: string | null
     missingFields: string[]
     createdAt: string
   }[]
   inactiveBusinesses: {
     id: string
     name: string
+    email: string | null
     deactivatedAt: string | null
     deactivationReason: string | null
     createdAt: string
@@ -173,6 +175,7 @@ export function SuperAdminAnalyticsArchived() {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Business</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Missing Fields</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Created</th>
                 </tr>
@@ -181,6 +184,15 @@ export function SuperAdminAnalyticsArchived() {
                 {data.incompleteBusinesses.map((business) => (
                   <tr key={business.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {business.email ? (
+                        <a href={`mailto:${business.email}`} className="text-blue-600 hover:underline">
+                          {business.email}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic">No email</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-wrap gap-2">
                         {business.missingFields.map((field, idx) => (
@@ -233,6 +245,7 @@ export function SuperAdminAnalyticsArchived() {
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Business</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Email</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Deactivated</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Reason</th>
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
@@ -242,6 +255,15 @@ export function SuperAdminAnalyticsArchived() {
                 {data.inactiveBusinesses.map((business) => (
                   <tr key={business.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4 text-sm font-medium text-gray-900">{business.name}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">
+                      {business.email ? (
+                        <a href={`mailto:${business.email}`} className="text-blue-600 hover:underline">
+                          {business.email}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400 italic">No email</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-sm text-gray-600">
                       {business.deactivatedAt
                         ? new Date(business.deactivatedAt).toLocaleDateString('en-US', {
