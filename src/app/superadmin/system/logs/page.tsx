@@ -20,7 +20,11 @@ import {
   Eye,
   TrendingUp,
   BarChart3,
-  PieChart
+  PieChart,
+  UserPlus,
+  CheckCircle,
+  XCircle,
+  ArrowRight
 } from 'lucide-react'
 
 interface SystemLog {
@@ -71,6 +75,18 @@ interface LogsResponse {
     storefrontStats: { success: number; errors: number; notFound: number; total: number }
     topSlugsByLogs: Array<{ slug: string; count: number }>
     logsByDay: Array<{ date: string; count: number }>
+    onboardingStats: {
+      totalStarts: number
+      totalCompleted: number
+      totalErrors: number
+      completionRate: string
+      funnel: Array<{
+        step: number
+        stepName: string
+        completions: number
+        errors: number
+      }>
+    }
   }
 }
 
@@ -180,11 +196,15 @@ export default function SystemLogsPage() {
       order_error: 'Order Error',
       system_error: 'System Error',
       trial_error: 'Trial Error',
+      trial_started: 'Trial Started',
       trial_start_error: 'Trial Start Error',
       admin_action: 'Admin Action',
       subscription_error: 'Subscription Error',
       checkout_error: 'Checkout Error',
-      client_error: 'Client Error'
+      client_error: 'Client Error',
+      onboarding_step_completed: 'Onboarding Step Completed',
+      onboarding_step_error: 'Onboarding Step Error',
+      onboarding_completed: 'Onboarding Completed'
     }
     return labels[logType] || logType
   }
@@ -310,7 +330,11 @@ export default function SystemLogsPage() {
                   <option value="order_created">Order Created</option>
                   <option value="order_error">Order Error</option>
                 </optgroup>
-                <optgroup label="Onboarding">
+                <optgroup label="Onboarding &amp; Trial">
+                  <option value="onboarding_step_completed">Onboarding Step Completed</option>
+                  <option value="onboarding_step_error">Onboarding Step Error</option>
+                  <option value="onboarding_completed">Onboarding Completed</option>
+                  <option value="trial_started">Trial Started</option>
                   <option value="trial_error">Trial Error</option>
                   <option value="trial_start_error">Trial Start Error</option>
                   <option value="subscription_error">Subscription Error</option>
@@ -676,6 +700,103 @@ export default function SystemLogsPage() {
               )}
             </div>
           </div>
+
+          {/* Onboarding Funnel Summary */}
+          {analytics.onboardingStats && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <UserPlus className="w-5 h-5 text-teal-600" />
+                    Onboarding Funnel
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">Track where users drop off during setup</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{analytics.onboardingStats.totalStarts}</p>
+                    <p className="text-xs text-gray-500">Started</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-teal-600">{analytics.onboardingStats.totalCompleted}</p>
+                    <p className="text-xs text-gray-500">Completed</p>
+                  </div>
+                  <div className="text-center ml-2">
+                    <p className="text-2xl font-bold text-red-500">{analytics.onboardingStats.totalErrors}</p>
+                    <p className="text-xs text-gray-500">Errors</p>
+                  </div>
+                  <div className="text-center ml-2 px-3 py-1 bg-teal-50 rounded-lg">
+                    <p className="text-lg font-bold text-teal-700">{analytics.onboardingStats.completionRate}%</p>
+                    <p className="text-xs text-teal-600">Completion</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Funnel Steps */}
+              {analytics.onboardingStats.funnel.length > 0 ? (
+                <div className="space-y-2">
+                  {analytics.onboardingStats.funnel.map((step, index) => {
+                    const maxCompletions = Math.max(...analytics.onboardingStats.funnel.map(s => s.completions), 1)
+                    const barWidth = (step.completions / maxCompletions) * 100
+                    // Calculate drop-off from previous step
+                    const prevCompletions = index > 0 ? analytics.onboardingStats.funnel[index - 1].completions : step.completions
+                    const dropOff = prevCompletions > 0 && step.completions < prevCompletions
+                      ? prevCompletions - step.completions
+                      : 0
+
+                    return (
+                      <div key={step.step} className="flex items-center gap-3">
+                        {/* Step number */}
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-semibold text-gray-600">{step.step}</span>
+                        </div>
+
+                        {/* Step name */}
+                        <div className="w-36 flex-shrink-0">
+                          <span className="text-sm text-gray-700">{step.stepName}</span>
+                        </div>
+
+                        {/* Bar */}
+                        <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                          <div
+                            className="h-full bg-teal-500 rounded-md transition-all duration-300"
+                            style={{ width: `${barWidth}%` }}
+                          />
+                          {step.completions > 0 && (
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                              {step.completions}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Error count */}
+                        {step.errors > 0 && (
+                          <div className="flex items-center gap-1 flex-shrink-0" title={`${step.errors} error(s) at this step`}>
+                            <XCircle className="w-3.5 h-3.5 text-red-500" />
+                            <span className="text-xs text-red-600 font-medium">{step.errors}</span>
+                          </div>
+                        )}
+
+                        {/* Drop-off indicator */}
+                        {dropOff > 0 && (
+                          <div className="flex-shrink-0 text-xs text-orange-600 font-medium" title={`${dropOff} users dropped off before this step`}>
+                            -{dropOff}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <UserPlus className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No onboarding events recorded yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Events will appear here as users go through the setup wizard</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Log Type Distribution & Top Stores */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -144,6 +144,80 @@ export async function GET(request: NextRequest) {
       })
       .slice(0, 10)
 
+    // Get onboarding funnel stats
+    const onboardingLogTypes = [
+      'onboarding_step_completed',
+      'onboarding_step_error',
+      'onboarding_completed'
+    ]
+    
+    const onboardingLogs = await prisma.systemLog.findMany({
+      where: {
+        logType: { in: onboardingLogTypes }
+      },
+      select: {
+        logType: true,
+        metadata: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Build onboarding funnel: count unique users who completed each step
+    const stepNames: Record<number, string> = {
+      1: 'Business Type',
+      2: 'Goals',
+      3: 'Pricing',
+      4: 'Store Creation',
+      5: 'Team Setup',
+      7: 'Product Setup',
+      8: 'Delivery Methods',
+      9: 'Payment Methods',
+      10: 'WhatsApp Message',
+      11: 'Store Ready'
+    }
+
+    // Count completions per step and track unique users per step
+    const stepCompletions: Record<number, number> = {}
+    const stepErrors: Record<number, number> = {}
+    let totalOnboardingCompleted = 0
+    let totalOnboardingErrors = 0
+
+    for (const log of onboardingLogs) {
+      const meta = log.metadata as any
+      const step = meta?.step as number
+      
+      if (log.logType === 'onboarding_completed') {
+        totalOnboardingCompleted++
+      } else if (log.logType === 'onboarding_step_completed' && step) {
+        stepCompletions[step] = (stepCompletions[step] || 0) + 1
+      } else if (log.logType === 'onboarding_step_error' && step) {
+        stepErrors[step] = (stepErrors[step] || 0) + 1
+        totalOnboardingErrors++
+      }
+    }
+
+    // Build funnel array sorted by step number
+    const onboardingFunnel = Object.keys(stepNames)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map(step => ({
+        step,
+        stepName: stepNames[step],
+        completions: stepCompletions[step] || 0,
+        errors: stepErrors[step] || 0
+      }))
+
+    const onboardingStats = {
+      totalStarts: stepCompletions[1] || 0,
+      totalCompleted: totalOnboardingCompleted,
+      totalErrors: totalOnboardingErrors,
+      completionRate: (stepCompletions[1] || 0) > 0
+        ? ((totalOnboardingCompleted / (stepCompletions[1] || 1)) * 100).toFixed(1)
+        : '0.0',
+      funnel: onboardingFunnel
+    }
+
     // Get logs by day (last 7 days) - using Prisma groupBy workaround
     // Since MongoDB doesn't support DATE() function, we'll fetch recent logs and aggregate in JS
     const recentLogs = await prisma.systemLog.findMany({
@@ -202,7 +276,8 @@ export async function GET(request: NextRequest) {
           slug: item.slug,
           count: item._count.id
         })),
-        logsByDay: logsByDay
+        logsByDay: logsByDay,
+        onboardingStats
       }
     })
   } catch (error) {

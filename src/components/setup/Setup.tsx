@@ -227,6 +227,53 @@ export default function SetupComponent() {
     }
   }
 
+  // Step name mapping for logging
+  const stepNames: Record<number, string> = {
+    1: 'Business Type',
+    2: 'Goals',
+    3: 'Pricing',
+    4: 'Store Creation',
+    5: 'Team Setup',
+    7: 'Product Setup',
+    8: 'Delivery Methods',
+    9: 'Payment Methods',
+    10: 'WhatsApp Message',
+    11: 'Store Ready',
+    12: 'Dashboard Welcome'
+  }
+
+  // Log onboarding step events to system logs for funnel tracking
+  const logOnboardingEvent = async (
+    logType: string,
+    severity: 'info' | 'error',
+    step: number,
+    metadata?: Record<string, any>
+  ) => {
+    try {
+      await fetch('/api/log/client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          logType,
+          severity,
+          endpoint: '/setup',
+          url: window.location.href,
+          errorMessage: severity === 'error'
+            ? `Onboarding step ${step} (${stepNames[step] || 'Unknown'}) failed`
+            : `Onboarding step ${step} (${stepNames[step] || 'Unknown'}) completed`,
+          metadata: {
+            step,
+            stepName: stepNames[step] || 'Unknown',
+            ...metadata
+          }
+        })
+      })
+    } catch (e) {
+      // Silently fail -- logging should never block onboarding
+      console.error('Failed to log onboarding event:', e)
+    }
+  }
+
   const handleStepComplete = async (stepData: Partial<SetupData>) => {
     const updatedData = { ...setupData, ...stepData }
     setSetupData(updatedData)
@@ -242,8 +289,26 @@ export default function SetupComponent() {
           setupToken: token
         })
       })
+
+      // Log step completion event (non-blocking)
+      const isLastStep = currentStep === 11
+      logOnboardingEvent(
+        isLastStep ? 'onboarding_completed' : 'onboarding_step_completed',
+        'info',
+        currentStep,
+        {
+          businessType: updatedData.businessType || undefined,
+          subscriptionPlan: updatedData.subscriptionPlan || undefined,
+          totalSteps: TOTAL_STEPS
+        }
+      )
     } catch (error) {
       console.error('Failed to save progress:', error)
+
+      // Log step failure event (non-blocking)
+      logOnboardingEvent('onboarding_step_error', 'error', currentStep, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
     }
 
     // Move to next step (skip domain step)

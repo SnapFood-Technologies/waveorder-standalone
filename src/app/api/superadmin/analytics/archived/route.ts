@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     const excludeTestCondition = { NOT: { testMode: true } }
 
     // Fetch incomplete and inactive businesses (excluding test businesses)
+    // Use BusinessUser relation with OWNER role to get the owner's email
     const [allBusinesses, inactiveBusinesses] = await Promise.all([
       // Fetch all businesses for incomplete check (excluding test)
       prisma.business.findMany({
@@ -27,11 +28,14 @@ export async function GET(request: NextRequest) {
           whatsappNumber: true,
           address: true,
           createdAt: true,
-          // @ts-ignore
-          owner: {
+          users: {
+            where: { role: 'OWNER' },
             select: {
-              email: true
-            }
+              user: {
+                select: { email: true }
+              }
+            },
+            take: 1
           }
         },
         orderBy: {
@@ -51,11 +55,14 @@ export async function GET(request: NextRequest) {
           deactivatedAt: true,
           deactivationReason: true,
           createdAt: true,
-          // @ts-ignore
-          owner: {
+          users: {
+            where: { role: 'OWNER' },
             select: {
-              email: true
-            }
+              user: {
+                select: { email: true }
+              }
+            },
+            take: 1
           }
         },
         orderBy: {
@@ -89,27 +96,33 @@ export async function GET(request: NextRequest) {
       if (!address || address === 'Not set' || address === '') {
         missingFields.push('Address')
       }
+
+      // Extract owner email from BusinessUser -> User relation
+      const ownerEmail = business.users[0]?.user?.email || null
       
       return {
         id: business.id,
         name: business.name,
-        // @ts-ignore
-        email: business.owner?.email || null,
+        email: ownerEmail,
         missingFields,
         createdAt: business.createdAt.toISOString()
       }
     })
 
     // Format inactive businesses
-    const formattedInactiveBusinesses = inactiveBusinesses.map(business => ({
-      id: business.id,
-      name: business.name,
-      // @ts-ignore
-      email: business.owner?.email || null,
-      deactivatedAt: business.deactivatedAt?.toISOString() || null,
-      deactivationReason: business.deactivationReason || null,
-      createdAt: business.createdAt.toISOString()
-    }))
+    const formattedInactiveBusinesses = inactiveBusinesses.map(business => {
+      // Extract owner email from BusinessUser -> User relation
+      const ownerEmail = business.users[0]?.user?.email || null
+
+      return {
+        id: business.id,
+        name: business.name,
+        email: ownerEmail,
+        deactivatedAt: business.deactivatedAt?.toISOString() || null,
+        deactivationReason: business.deactivationReason || null,
+        createdAt: business.createdAt.toISOString()
+      }
+    })
 
     return NextResponse.json({
       incompleteBusinesses: formattedIncompleteBusinesses,
