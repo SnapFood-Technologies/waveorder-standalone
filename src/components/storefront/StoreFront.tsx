@@ -6821,8 +6821,8 @@ function OrderPanel({
         {!meetsMinimumOrder && deliveryType === 'delivery' && !deliveryError && !storeData.isTemporarilyClosed && (
           <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl mb-6">
             <p className="text-yellow-800 text-sm">
-              {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery'}. 
-              Add {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} more to proceed.
+              {translations.minimumOrder || 'Minimum order'} {currencySymbol}{storeData.minimumOrder.toFixed(2)} {translations.forDelivery || 'for delivery. Add'} 
+              {currencySymbol}{(storeData.minimumOrder - cartSubtotal).toFixed(2)} {translations.moreToProceed || 'more to proceed.'}
             </p>
           </div>
         )}

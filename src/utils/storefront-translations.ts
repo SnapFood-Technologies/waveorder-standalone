@@ -65,6 +65,7 @@ inCartLabel: string
     placingOrder: string
     clickingButton: string
     yourOrder: string
+    moreToProceed: string
 
     sorryOnlyStockAvailable: string
 
@@ -367,6 +368,7 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     placingOrder: "Placing Order...",
     clickingButton: "Clicking this button will open WhatsApp with your order details",
     yourOrder: "Your Order",
+    moreToProceed: "more to proceed.",
 
     sorryOnlyStockAvailable: "Sorry, only {count} {itemWord} available in stock",
 
@@ -639,7 +641,7 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     placingOrder: "Duke vendosur porosinë...",
     clickingButton: "Klikimi i këtij butoni do të hapë WhatsApp me detajet e porosisë tënde",
     yourOrder: "Porosia Jote",
-
+    moreToProceed: "më shumë për të bërë porosinë.",
     sorryOnlyStockAvailable: "Na vjen keq, vetëm {count} {itemWord} të disponueshme në stok",
 
     
@@ -909,7 +911,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     placingOrder: "Realizando Pedido...",
     clickingButton: "Al hacer clic en este botón se abrirá WhatsApp con los detalles de tu pedido",
     yourOrder: "Tu Pedido",
-
+    moreToProceed: "más para realizar tu pedido.",
     sorryOnlyStockAvailable: "Lo sentimos, solo {count} {itemWord} disponibles en stock",
 
     
@@ -1141,6 +1143,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     placingOrder: "Δημιουργία Παραγγελίας...",
     clickingButton: "Κάνοντας κλικ σε αυτό το κουμπί θα ανοίξει το WhatsApp με τις λεπτομέρειες της παραγγελίας σας",
     yourOrder: "Η Παραγγελία σας",
+    moreToProceed: "περισσότερα για να ολοκληρώσετε την παραγγελία σας.",
 
     sorryOnlyStockAvailable: "Λυπάμαι, μόνο {count} {itemWord} διαθέσιμα σε απόθεμα",
 
