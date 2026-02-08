@@ -29,7 +29,11 @@ import {
   UsersRound,
   Star,
   Brain,
-  Key
+  Key,
+  ClipboardList,
+  ShoppingCart,
+  CalendarCheck,
+  Scissors
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -44,6 +48,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     const items: string[] = []
     if (pathname?.startsWith('/superadmin/system')) items.push('System')
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
+    if (pathname?.startsWith('/superadmin/operations')) items.push('Operations Analytics')
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
     if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
     if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
@@ -91,6 +96,27 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Marketing', 
           href: '/superadmin/analytics/marketing', 
           icon: Megaphone
+        }
+      ]
+    },
+    { 
+      name: 'Operations Analytics', 
+      icon: ClipboardList,
+      children: [
+        { 
+          name: 'Orders', 
+          href: '/superadmin/operations/orders', 
+          icon: ShoppingCart
+        },
+        { 
+          name: 'Reservations', 
+          href: '/superadmin/operations/reservations', 
+          icon: CalendarCheck
+        },
+        { 
+          name: 'Bookings', 
+          href: '/superadmin/operations/bookings', 
+          icon: Scissors
         }
       ]
     },
