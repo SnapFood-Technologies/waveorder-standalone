@@ -61,6 +61,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/developers" className="text-gray-400 hover:text-white transition-colors">
+                  API Documentation
+                </Link>
+              </li>
+              <li>
                 <Link href="/auth/register" className="text-gray-400 hover:text-white transition-colors">
                   Get Started
                 </Link>
