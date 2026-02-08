@@ -2726,6 +2726,11 @@ const trackProductEvent = useCallback((
       if (!customerInfo.address) return false
       if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
       if (!meetsMinimumOrder && !deliveryError) return false
+      
+      // For non-RETAIL businesses, require coordinates (detect autofill without proper selection)
+      if (storeData.businessType !== 'RETAIL' && customerInfo.address && (!customerInfo.latitude || !customerInfo.longitude)) {
+        return false
+      }
     }
     
     // Time selection validation for scheduled orders
@@ -2738,6 +2743,13 @@ const trackProductEvent = useCallback((
     
     return true
   }
+  
+  // Helper to check if address needs confirmation (has text but no coordinates - likely autofill)
+  const hasAddressWithoutCoordinates = deliveryType === 'delivery' && 
+    storeData.businessType !== 'RETAIL' && 
+    customerInfo.address && 
+    customerInfo.address.trim().length > 0 && 
+    (!customerInfo.latitude || !customerInfo.longitude)
 
  // ADD FUNCTION TO CLEAR DELIVERY ERROR:
  const handleClearDeliveryError = () => {
@@ -4441,6 +4453,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           onClearDeliveryError={handleClearDeliveryError}
           canSubmitOrder={canSubmitOrder}
           forceScheduleMode={forceScheduleMode}
+          hasAddressWithoutCoordinates={hasAddressWithoutCoordinates}
         />
         </div>
       </div>
@@ -4513,6 +4526,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               onClearDeliveryError={handleClearDeliveryError}
               canSubmitOrder={canSubmitOrder}
               forceScheduleMode={forceScheduleMode}
+              hasAddressWithoutCoordinates={hasAddressWithoutCoordinates}
             />
             </div>
           </div>
@@ -6284,7 +6298,8 @@ function OrderPanel({
   countries = [],
   cities = [],
   loadingCountries = false,
-  loadingCities = false
+  loadingCities = false,
+  hasAddressWithoutCoordinates = false
 }: {
   storeData: any
   cart: CartItem[]
@@ -6323,6 +6338,7 @@ function OrderPanel({
   cities?: Array<{ id: string; name: string }>
   loadingCountries?: boolean
   loadingCities?: boolean
+  hasAddressWithoutCoordinates?: boolean
 }) {
   
   // Helper function to clear address and delivery error
@@ -6615,6 +6631,16 @@ function OrderPanel({
                       onLocationChange={onLocationChange}
                       storeData={storeData}
                     />
+                    
+                    {/* Autofill detection warning - show when address has text but no coordinates */}
+                    {hasAddressWithoutCoordinates && !deliveryError && (
+                      <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-orange-700">
+                          {translations.addressAutofillWarning || 'Please type your address and select from the suggestions to confirm your delivery location'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* SHOW DELIVERY ERROR MESSAGE HERE */}
@@ -6671,7 +6697,7 @@ function OrderPanel({
         {/* Cart Items */}
         {cart.length > 0 && (
           <div className="border-t-2 border-gray-200 pt-6 mb-6">
-            <h3 className="font-semibold mb-4">
+            <h3 className="font-semibold text-gray-900 mb-4">
               {storeData.businessType === 'RETAIL' 
                 ? (translations.productsInCart || 'Products in Cart')
                 : (translations.cartItems || 'Cart Items')
@@ -6712,14 +6738,14 @@ function OrderPanel({
                 return (
                   <div key={item.id} className="flex items-center justify-between bg-gray-50 p-4 rounded-xl">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm">{item.name}</h4>
+                      <h4 className="font-medium text-sm text-gray-900">{item.name}</h4>
                       {item.modifiers.length > 0 && (
                         <p className="text-xs text-gray-600 mt-1">
                           + {item.modifiers.map((m: any) => m.name).join(', ')}
                         </p>
                       )}
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm font-semibold">{currencySymbol}{currentTotalPrice.toFixed(2)}</p>
+                        <p className="text-sm font-semibold text-gray-900">{currencySymbol}{currentTotalPrice.toFixed(2)}</p>
                         {hasDiscount && originalTotalPrice && (
                           <p className="text-xs text-gray-500 line-through">
                             {currencySymbol}{originalTotalPrice.toFixed(2)}
@@ -6733,15 +6759,15 @@ function OrderPanel({
                         disabled={storeData.isTemporarilyClosed}
                         className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Minus className="w-4 h-4" />
+                        <Minus className="w-4 h-4 text-gray-700" />
                       </button>
-                      <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                      <span className="text-sm font-medium text-gray-900 w-8 text-center">{item.quantity}</span>
                       <button
                         onClick={() => updateCartItemQuantity(item.id, 1)}
                         disabled={storeData.isTemporarilyClosed}
                         className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4 text-gray-700" />
                       </button>
                     </div>
                   </div>
@@ -6825,6 +6851,16 @@ function OrderPanel({
           </div>
         )}
 
+        {/* Inline warning for address without coordinates - shown near submit button */}
+        {hasAddressWithoutCoordinates && !deliveryError && (
+          <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0" />
+            <p className="text-sm text-orange-700">
+              {translations.confirmAddressAbove || 'Please confirm your delivery address above'}
+            </p>
+          </div>
+        )}
+
         {/* Order Button */}
         <button
   onClick={submitOrder}
@@ -6862,6 +6898,11 @@ function OrderPanel({
       return translations.addDeliveryAddress || 'Add delivery address'
     }
     
+    // Check for address without coordinates (autofill detection)
+    if (hasAddressWithoutCoordinates) {
+      return translations.confirmDeliveryAddress || 'Confirm your delivery address'
+    }
+    
     if (!meetsMinimumOrder && deliveryType === 'delivery') {
       return `${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)}`
     }
@@ -6881,6 +6922,8 @@ function OrderPanel({
     ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
     : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
     ? (translations.selectDifferentArea || 'Please select an address within our delivery area')
+    : hasAddressWithoutCoordinates
+    ? (translations.selectAddressFromSuggestions || 'Please type and select your address from the suggestions')
     : customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')
     ? (translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
     : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
