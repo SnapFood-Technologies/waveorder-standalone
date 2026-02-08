@@ -15,7 +15,12 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  Info
+  Info,
+  Globe,
+  Shield,
+  Copy,
+  Check,
+  ExternalLink
 } from 'lucide-react'
 
 interface Business {
@@ -30,7 +35,7 @@ interface Brand {
   businessId: string
 }
 
-type DebugTool = 'business' | 'brand' | 'category' | 'product' | 'stock' | 'sync' | 'connections'
+type DebugTool = 'business' | 'brand' | 'category' | 'product' | 'stock' | 'sync' | 'connections' | 'domain'
 
 export default function DebugToolsPage() {
   // State - NO businesses loaded on mount
@@ -45,6 +50,7 @@ export default function DebugToolsPage() {
   const [selectedBusinessName, setSelectedBusinessName] = useState('')
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [productIdInput, setProductIdInput] = useState('')
+  const [domainInput, setDomainInput] = useState('')
   const [debugLoading, setDebugLoading] = useState(false)
   const [debugResult, setDebugResult] = useState<any>(null)
   const [debugError, setDebugError] = useState<string | null>(null)
@@ -177,6 +183,14 @@ export default function DebugToolsPage() {
           }
           url = `/api/superadmin/debug/connections/${selectedBusinessId}`
           break
+        case 'domain':
+          if (!domainInput) {
+            setDebugError('Please enter a domain')
+            setDebugLoading(false)
+            return
+          }
+          url = `/api/superadmin/domains/${encodeURIComponent(domainInput)}/check`
+          break
       }
 
       const response = await fetch(url)
@@ -207,6 +221,9 @@ export default function DebugToolsPage() {
     // Reset selection for fresh start
     if (tool === 'product') {
       setProductIdInput('')
+    }
+    if (tool === 'domain') {
+      setDomainInput('')
     }
   }
 
@@ -281,6 +298,14 @@ export default function DebugToolsPage() {
       icon: Link2,
       color: 'bg-teal-500',
       priority: 'Low'
+    },
+    {
+      id: 'domain' as DebugTool,
+      name: 'Domain Debug',
+      description: 'Check DNS records, SSL certificate, and connectivity for custom domains',
+      icon: Globe,
+      color: 'bg-indigo-500',
+      priority: 'Medium'
     }
   ]
 
@@ -482,6 +507,23 @@ export default function DebugToolsPage() {
                   </div>
                 )}
 
+                {/* Domain Input - only for domain debug */}
+                {activeModal === 'domain' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Domain Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., shop.example.com"
+                      value={domainInput}
+                      onChange={(e) => setDomainInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter the custom domain to check (without https://)</p>
+                  </div>
+                )}
+
                 {/* Analyze Button */}
                 <button
                   onClick={() => runDebug(activeModal)}
@@ -550,6 +592,8 @@ function DebugResults({ tool, data }: { tool: DebugTool; data: any }) {
       return <SyncDebugResults data={data} />
     case 'connections':
       return <ConnectionsDebugResults data={data} />
+    case 'domain':
+      return <DomainDebugResults data={data} />
     default:
       return <pre className="bg-gray-100 p-4 rounded-lg text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>
   }
@@ -1099,6 +1143,247 @@ function ConnectionsDebugResults({ data }: { data: any }) {
       {data.connectedBusinesses?.length === 0 && (
         <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
           This business has no product sharing connections with other businesses
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Domain Debug Results
+function DomainDebugResults({ data }: { data: any }) {
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
+  }
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const HealthIcon = ({ status }: { status: string }) => {
+    switch (status) {
+      case 'healthy':
+        return <CheckCircle className="w-5 h-5 text-green-500" />
+      case 'warning':
+        return <AlertTriangle className="w-5 h-5 text-amber-500" />
+      default:
+        return <XCircle className="w-5 h-5 text-red-500" />
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Business Info */}
+      {data.business && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-semibold text-gray-900 mb-2">Associated Business</h3>
+          <div className="text-sm">
+            <p><span className="text-gray-500">Name:</span> <span className="font-medium">{data.business.name}</span></p>
+            <p><span className="text-gray-500">Slug:</span> <span className="font-mono text-xs">{data.business.slug}</span></p>
+          </div>
+        </div>
+      )}
+
+      {/* Health Overview */}
+      {data.health && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className={`p-4 rounded-lg border ${
+            data.health.dns === 'healthy' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-2 mb-1">
+              <HealthIcon status={data.health.dns} />
+              <span className="font-medium">DNS</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {data.health.dns === 'healthy' ? 'Properly configured' : 'Configuration issues'}
+            </p>
+          </div>
+
+          <div className={`p-4 rounded-lg border ${
+            data.health.ssl === 'healthy' ? 'bg-green-50 border-green-200' : 
+            data.health.ssl === 'warning' ? 'bg-amber-50 border-amber-200' : 
+            'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-2 mb-1">
+              <HealthIcon status={data.health.ssl} />
+              <span className="font-medium">SSL</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {data.health.ssl === 'healthy' ? 'Certificate valid' : 
+               data.health.ssl === 'warning' ? 'Expiring soon' : 
+               'Certificate issues'}
+            </p>
+          </div>
+
+          <div className={`p-4 rounded-lg border ${
+            data.health.connectivity === 'healthy' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-2 mb-1">
+              <HealthIcon status={data.health.connectivity} />
+              <span className="font-medium">Connectivity</span>
+            </div>
+            <p className="text-sm text-gray-600">
+              {data.health.connectivity === 'healthy' 
+                ? `${data.connectivity?.latency || 0}ms latency` 
+                : 'Not reachable'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* DNS Details */}
+      {data.dns && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-3">DNS Configuration</h4>
+          
+          {/* A Records */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">A Record</span>
+              {data.dns.aRecords?.pointsToServer ? (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Correctly configured
+                </span>
+              ) : (
+                <span className="text-xs text-red-600 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" /> Not pointing to server
+                </span>
+              )}
+            </div>
+            <div className="bg-white rounded p-3 text-sm font-mono border border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Expected:</span>
+                <div className="flex items-center gap-2">
+                  <span>{data.dns.aRecords?.expectedIP || 'Not configured'}</span>
+                  {data.dns.aRecords?.expectedIP && (
+                    <button
+                      onClick={() => copyToClipboard(data.dns.aRecords.expectedIP, 'ip')}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      {copiedField === 'ip' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-gray-500">Found:</span>
+                <span className={data.dns.aRecords?.found ? '' : 'text-red-500'}>
+                  {data.dns.aRecords?.found ? data.dns.aRecords.records?.join(', ') : data.dns.aRecords?.error || 'None'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* TXT Verification */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">TXT Verification</span>
+              {data.dns.verification?.valid ? (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> Verified
+                </span>
+              ) : data.dns.verification?.isExpired ? (
+                <span className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" /> Token expired
+                </span>
+              ) : (
+                <span className="text-xs text-red-600 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" /> Not verified
+                </span>
+              )}
+            </div>
+            <div className="bg-white rounded p-3 text-sm font-mono border border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Record:</span>
+                <span className="text-xs">_waveorder-verification.{data.domain}</span>
+              </div>
+              {data.dns.verification?.expectedToken && (
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-gray-500">Token:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate max-w-[150px] text-xs" title={data.dns.verification.expectedToken}>
+                      {data.dns.verification.expectedToken}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(data.dns.verification.expectedToken, 'token')}
+                      className="p-1 hover:bg-gray-100 rounded flex-shrink-0"
+                    >
+                      {copiedField === 'token' ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3 text-gray-400" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SSL Details */}
+      {data.ssl && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-semibold text-gray-900 mb-2">SSL Certificate</h4>
+          {data.ssl.valid ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-green-600">
+                <Shield className="w-5 h-5" />
+                <span className="font-medium">Certificate Valid</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-500">Issuer:</span>
+                  <span className="ml-2">{data.ssl.issuer}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Valid Until:</span>
+                  <span className="ml-2">{formatDate(data.ssl.validTo)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500">Days Remaining:</span>
+                  <span className={`ml-2 font-medium ${
+                    (data.ssl.daysRemaining || 0) <= 14 ? 'text-amber-600' : 'text-green-600'
+                  }`}>
+                    {data.ssl.daysRemaining} days
+                    {data.ssl.expiringWarning && (
+                      <AlertTriangle className="w-4 h-4 inline ml-1 text-amber-500" />
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 text-red-600">
+              <XCircle className="w-5 h-5" />
+              <div>
+                <p className="font-medium">Certificate Invalid or Missing</p>
+                <p className="text-sm text-gray-500">{data.ssl.error || 'No SSL certificate found'}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* External Link */}
+      {data.domain && (
+        <div className="flex justify-center pt-2">
+          <a
+            href={`https://${data.domain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Visit {data.domain}
+          </a>
         </div>
       )}
     </div>

@@ -87,6 +87,32 @@ export async function GET(
       })
       .reduce((sum: number, order: any) => sum + order.total, 0)
 
+    // Fetch API keys for this business
+    const apiKeys = await prisma.apiKey.findMany({
+      where: { businessId },
+      select: {
+        id: true,
+        name: true,
+        keyPreview: true,
+        scopes: true,
+        lastUsedAt: true,
+        requestCount: true,
+        isActive: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Get domain info (already in business object, just extract for clarity)
+    const domainInfo = {
+      customDomain: business.customDomain,
+      domainStatus: business.domainStatus,
+      domainVerificationToken: business.domainVerificationToken,
+      domainProvisionedAt: business.domainProvisionedAt,
+      domainLastChecked: business.domainLastChecked,
+      domainError: business.domainError
+    }
+
     // Count products by various filter criteria
     const [
       productsWithoutPhotosCount,
@@ -303,6 +329,29 @@ export async function GET(
           productsWithVariantsSomeZeroStock: productsWithVariantsSomeZeroStockCount,
           productsWithVariantsAllNonZeroStock: productsWithVariantsAllNonZeroStockCount,
           inactiveProducts: inactiveProductsCount
+        },
+        apiKeys: apiKeys.map(key => ({
+          id: key.id,
+          name: key.name,
+          keyPreview: key.keyPreview,
+          scopes: key.scopes,
+          lastUsedAt: key.lastUsedAt?.toISOString() || null,
+          requestCount: key.requestCount,
+          isActive: key.isActive,
+          createdAt: key.createdAt.toISOString()
+        })),
+        apiKeyStats: {
+          totalKeys: apiKeys.length,
+          activeKeys: apiKeys.filter(k => k.isActive).length,
+          totalRequests: apiKeys.reduce((sum, k) => sum + k.requestCount, 0)
+        },
+        domain: {
+          customDomain: domainInfo.customDomain,
+          status: domainInfo.domainStatus,
+          verificationToken: domainInfo.domainVerificationToken,
+          provisionedAt: domainInfo.domainProvisionedAt?.toISOString() || null,
+          lastChecked: domainInfo.domainLastChecked?.toISOString() || null,
+          error: domainInfo.domainError
         }
       }
     })

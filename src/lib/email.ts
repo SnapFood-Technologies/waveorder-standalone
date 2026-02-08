@@ -2067,7 +2067,7 @@ export async function sendPlanUpgradeEmail({
             
             <!-- CTA Button -->
             <div style="text-align: center; margin: 32px 0;">
-              <a href="https://waveorder.app/admin" style="display: inline-block; background: ${planColor}; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+              <a href="${process.env.NEXTAUTH_URL}/auth/login" style="display: inline-block; background: ${planColor}; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
                 Go to Your Dashboard →
               </a>
             </div>

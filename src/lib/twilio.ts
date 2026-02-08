@@ -140,7 +140,7 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
   }
   
   message += `\n---\n`
-  message += `_Manage orders at waveorder.app/admin_`
+  message += `_Manage orders at waveorder.app/auth/login_`
   
   return message
 }

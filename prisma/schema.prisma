@@ -289,9 +289,14 @@ model Business {
   autoReply        Boolean @default(false)
   autoReplyMessage String?
 
-  customDomain     String?
-  domainStatus     DomainStatus @default(NONE)
-  subdomainEnabled Boolean      @default(false)
+  customDomain             String?
+  domainStatus             DomainStatus @default(NONE)
+  domainVerificationToken  String? // TXT record verification token
+  domainVerificationExpiry DateTime? // When verification expires
+  domainProvisionedAt      DateTime? // When domain was successfully provisioned
+  domainLastChecked        DateTime? // Last DNS/SSL check timestamp
+  domainError              String? // Last error message if failed
+  subdomainEnabled         Boolean      @default(false)
 
   businessGoals         BusinessGoal[]
   deliveryEnabled       Boolean        @default(true)
@@ -446,6 +451,9 @@ model Business {
   // Supplier Payments (for Cost & Margins feature)
   supplierPayments SupplierPayment[]
 
+  // API Keys (for Business Plan API Access)
+  apiKeys ApiKey[]
+
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
   setupWizardCompleted  Boolean   @default(false)
@@ -464,6 +472,9 @@ model Business {
   TeamInvitation     TeamInvitation[]
   TeamAuditLog       TeamAuditLog[]
   InventoryActivity  InventoryActivity[]
+
+  // Index for fast custom domain lookups in middleware
+  @@index([customDomain, domainStatus, isActive])
 }
 
 model OrderNotification {
@@ -1976,4 +1987,33 @@ model SystemLog {
   @@index([createdAt])
   @@index([logType, createdAt])
   @@index([businessId, createdAt])
+}
+
+// API Keys for Business Plan API Access
+model ApiKey {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name       String // User-friendly name: "Mobile App", "POS Integration", etc.
+  keyHash    String // SHA-256 hash of the API key (never store plain key)
+  keyPreview String // Last 4 characters for display: "...abc1"
+
+  // Scopes/permissions for granular access control
+  scopes String[] @default(["products:read", "orders:read", "categories:read"])
+
+  // Usage tracking
+  lastUsedAt   DateTime?
+  requestCount Int       @default(0) // Total requests made with this key
+
+  // Key lifecycle
+  expiresAt DateTime? // Optional expiry date
+  isActive  Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([keyHash])
+  @@index([isActive])
 }
