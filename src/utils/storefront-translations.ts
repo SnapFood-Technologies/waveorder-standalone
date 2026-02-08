@@ -173,6 +173,12 @@ onlyStockAvailable: string
     fillRequiredInfo: string
     addDeliveryAddress: string
 
+    // Address Autofill Detection
+    addressAutofillWarning: string
+    confirmAddressAbove: string
+    confirmDeliveryAddress: string
+    selectAddressFromSuggestions: string
+
      // Delivery Zone Errors
     outsideDeliveryArea: string
     outsideDeliveryAreaDesc: string
@@ -483,6 +489,12 @@ addItemsToCart: "Add items to cart",
 fillRequiredInfo: "Fill required information", 
 addDeliveryAddress: "Add delivery address",
 
+// Address Autofill Detection
+addressAutofillWarning: "Please type your address and select from the suggestions to confirm your delivery location",
+confirmAddressAbove: "Please confirm your delivery address above",
+confirmDeliveryAddress: "Confirm your delivery address",
+selectAddressFromSuggestions: "Please type and select your address from the suggestions",
+
 // NEW STOCK-RELATED TRANSLATIONS
 inCart: "in cart",
 available: "available",
@@ -745,6 +757,13 @@ selectTimeForSchedule: "Të lutem zgjidh një kohë për porosinë tënde",
 addItemsToCart: "Shto artikuj në shportë",
 fillRequiredInfo: "Plotëso informacionin e kërkuar",
 addDeliveryAddress: "Shto adresën e dërgesës",
+
+  // Address Autofill Detection
+  addressAutofillWarning: "Ju lutem shkruani adresën tuaj dhe zgjidhni nga sugjerimet për të konfirmuar vendndodhjen e dërgesës",
+  confirmAddressAbove: "Ju lutem konfirmoni adresën e dërgesës më sipër",
+  confirmDeliveryAddress: "Konfirmoni adresën e dërgesës",
+  selectAddressFromSuggestions: "Ju lutem shkruani dhe zgjidhni adresën tuaj nga sugjerimet",
+
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "në shportë",
   available: "të disponueshme",
@@ -1007,6 +1026,13 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   addItemsToCart: "Añadir artículos al carrito",
   fillRequiredInfo: "Completar información requerida",
   addDeliveryAddress: "Añadir dirección de entrega",
+
+  // Address Autofill Detection
+  addressAutofillWarning: "Por favor, escribe tu dirección y selecciónala de las sugerencias para confirmar tu ubicación de entrega",
+  confirmAddressAbove: "Por favor, confirma tu dirección de entrega arriba",
+  confirmDeliveryAddress: "Confirma tu dirección de entrega",
+  selectAddressFromSuggestions: "Por favor, escribe y selecciona tu dirección de las sugerencias",
+
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "en carrito",
   available: "disponibles",
@@ -1270,6 +1296,13 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   addItemsToCart: "Προσθέστε προϊόντα στο καλάθι",
   fillRequiredInfo: "Συμπληρώστε τις απαιτούμενες πληροφορίες",
   addDeliveryAddress: "Προσθέστε διεύθυνση παράδοσης",
+
+  // Address Autofill Detection
+  addressAutofillWarning: "Παρακαλώ πληκτρολογήστε τη διεύθυνσή σας και επιλέξτε από τις προτάσεις για να επιβεβαιώσετε την τοποθεσία παράδοσης",
+  confirmAddressAbove: "Παρακαλώ επιβεβαιώστε τη διεύθυνση παράδοσης παραπάνω",
+  confirmDeliveryAddress: "Επιβεβαιώστε τη διεύθυνση παράδοσης",
+  selectAddressFromSuggestions: "Παρακαλώ πληκτρολογήστε και επιλέξτε τη διεύθυνσή σας από τις προτάσεις",
+
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "στο καλάθι",
   available: "διαθέσιμα",
