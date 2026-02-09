@@ -218,7 +218,7 @@ export default function TeamPage() {
                 placeholder="Search team members..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -226,7 +226,7 @@ export default function TeamPage() {
           <select
             value={roleFilter}
             onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Roles</option>
             {Object.entries(roleConfig).map(([key, { label }]) => (
@@ -237,7 +237,7 @@ export default function TeamPage() {
           <select
             value={departmentFilter}
             onChange={(e) => { setDepartmentFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Departments</option>
             {departmentOptions.map((dept) => (
@@ -248,7 +248,7 @@ export default function TeamPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
@@ -478,7 +478,7 @@ function CreateTeamMemberModal({
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -488,7 +488,7 @@ function CreateTeamMemberModal({
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -500,7 +500,7 @@ function CreateTeamMemberModal({
                 type="text"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -510,7 +510,7 @@ function CreateTeamMemberModal({
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Senior Account Manager"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -522,7 +522,7 @@ function CreateTeamMemberModal({
                 required
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               >
                 <optgroup label="Sales & Revenue">
                   <option value="SALES_REPRESENTATIVE">Sales Representative</option>
@@ -571,7 +571,7 @@ function CreateTeamMemberModal({
               <select
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               >
                 {departmentOptions.map((dept) => (
                   <option key={dept} value={dept}>{dept.replace('_', ' ')}</option>
@@ -588,7 +588,7 @@ function CreateTeamMemberModal({
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 placeholder="e.g., United States"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -598,7 +598,7 @@ function CreateTeamMemberModal({
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 placeholder="e.g., New York"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -606,7 +606,7 @@ function CreateTeamMemberModal({
               <select
                 value={formData.timezone}
                 onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               >
                 <option value="">Select timezone</option>
                 <optgroup label="Americas">
@@ -645,7 +645,7 @@ function CreateTeamMemberModal({
                 value={formData.territory}
                 onChange={(e) => setFormData({ ...formData, territory: e.target.value })}
                 placeholder="e.g., North America"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -655,7 +655,7 @@ function CreateTeamMemberModal({
                 value={formData.region}
                 onChange={(e) => setFormData({ ...formData, region: e.target.value })}
                 placeholder="e.g., Northeast US"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -668,7 +668,7 @@ function CreateTeamMemberModal({
                 value={formData.monthlyLeadQuota}
                 onChange={(e) => setFormData({ ...formData, monthlyLeadQuota: e.target.value })}
                 placeholder="Target leads per month"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -678,7 +678,7 @@ function CreateTeamMemberModal({
                 value={formData.monthlyRevenueTarget}
                 onChange={(e) => setFormData({ ...formData, monthlyRevenueTarget: e.target.value })}
                 placeholder="Revenue target"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -689,7 +689,7 @@ function CreateTeamMemberModal({
               <select
                 value={formData.userId}
                 onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               >
                 <option value="">No user account</option>
                 {availableUsers.map((user) => (
@@ -706,7 +706,7 @@ function CreateTeamMemberModal({
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -718,7 +718,7 @@ function CreateTeamMemberModal({
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               rows={2}
               placeholder="Brief bio or notes..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
             />
           </div>
 
@@ -1163,7 +1163,7 @@ function BusinessAssignmentTab({
                 setShowDropdown(true)
               }}
               onFocus={() => setShowDropdown(true)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
             />
             {showDropdown && searchQuery.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto scrollbar-hide">

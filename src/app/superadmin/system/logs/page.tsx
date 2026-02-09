@@ -317,7 +317,7 @@ export default function SystemLogsPage() {
               <select
                 value={filters.logType}
                 onChange={(e) => setFilters({ ...filters, logType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               >
                 <option value="">All Types</option>
                 <optgroup label="Storefront">
@@ -354,7 +354,7 @@ export default function SystemLogsPage() {
               <select
                 value={filters.severity}
                 onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               >
                 <option value="">All Severities</option>
                 <option value="error">Error</option>
@@ -369,7 +369,7 @@ export default function SystemLogsPage() {
                 value={filters.slug}
                 onChange={(e) => setFilters({ ...filters, slug: e.target.value })}
                 placeholder="e.g., bybest-shop"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -379,7 +379,7 @@ export default function SystemLogsPage() {
                 value={filters.statusCode}
                 onChange={(e) => setFilters({ ...filters, statusCode: e.target.value })}
                 placeholder="e.g., 404"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -388,7 +388,7 @@ export default function SystemLogsPage() {
                 type="date"
                 value={filters.startDate}
                 onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -397,7 +397,7 @@ export default function SystemLogsPage() {
                 type="date"
                 value={filters.endDate}
                 onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white"
               />
             </div>
           </div>
