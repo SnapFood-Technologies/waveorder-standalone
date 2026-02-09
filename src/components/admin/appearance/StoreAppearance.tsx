@@ -322,7 +322,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   type="text"
                   value={settings.primaryColor}
                   onChange={(e) => handleCustomColorChange('primaryColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white"
                   placeholder="#0D9488"
                 />
               </div>
@@ -361,7 +361,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   type="text"
                   value={settings.whatsappButtonColor}
                   onChange={(e) => handleCustomColorChange('whatsappButtonColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white"
                   placeholder="#25D366"
                 />
               </div>
@@ -396,7 +396,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   type="text"
                   value={settings.cartBadgeColor}
                   onChange={(e) => handleCustomColorChange('cartBadgeColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white"
                   placeholder="#EF4444"
                 />
               </div>
@@ -431,7 +431,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   type="text"
                   value={settings.featuredBadgeColor}
                   onChange={(e) => handleCustomColorChange('featuredBadgeColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white"
                   placeholder="#EF4444"
                 />
               </div>
@@ -454,7 +454,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   type="text"
                   value={settings.secondaryColor}
                   onChange={(e) => handleCustomColorChange('secondaryColor', e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono text-gray-900 bg-white"
                   placeholder="#1F2937"
                 />
               </div>
@@ -473,7 +473,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
               <select
                 value={settings.fontFamily}
                 onChange={(e) => setSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 {fontOptions.map(font => (
                   <option key={font.value} value={font.value}>
@@ -502,8 +502,8 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     onChange={(e) => setSettings(prev => ({ ...prev, mobileCartStyle: e.target.value as 'bar' | 'badge' }))}
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
                   />
-                  <span className="ml-3 flex items-center">
-                    <ShoppingCart className="w-4 h-4 mr-2" />
+                  <span className="ml-3 flex items-center text-gray-900">
+                    <ShoppingCart className="w-4 h-4 mr-2 text-gray-700" />
                     Bottom Bar (Recommended)
                     <span className="text-gray-500 text-xs ml-2">- Full-width cart button at bottom</span>
                   </span>
@@ -516,7 +516,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     onChange={(e) => setSettings(prev => ({ ...prev, mobileCartStyle: e.target.value as 'bar' | 'badge' }))}
                     className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
                   />
-                  <span className="ml-3 flex items-center">
+                  <span className="ml-3 flex items-center text-gray-900">
                     <div 
                       className="w-4 h-4 rounded-full flex items-center justify-center mr-2"
                       style={{ backgroundColor: settings.cartBadgeColor }}
@@ -591,7 +591,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                 <select
                   value={settings.coverBackgroundSize || 'cover'}
                   onChange={(e) => setSettings(prev => ({ ...prev, coverBackgroundSize: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                 >
                   <option value="cover">cover (default - fills area, may crop)</option>
                   <option value="contain">contain (shows full image, may have empty space)</option>
@@ -611,7 +611,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                 <select
                   value={settings.coverBackgroundPosition || 'center'}
                   onChange={(e) => setSettings(prev => ({ ...prev, coverBackgroundPosition: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                 >
                   <option value="center">center (default)</option>
                   <option value="top">top</option>
@@ -638,7 +638,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     type="text"
                     value={settings.coverHeightDesktop || settings.coverHeight || '220px'}
                     onChange={(e) => setSettings(prev => ({ ...prev, coverHeightDesktop: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                     placeholder="220px"
                   />
                 </div>
@@ -650,7 +650,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     type="text"
                     value={settings.coverHeightMobile || settings.coverHeight || '160px'}
                     onChange={(e) => setSettings(prev => ({ ...prev, coverHeightMobile: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                     placeholder="160px"
                   />
                 </div>
@@ -693,7 +693,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     type="text"
                     value={settings.logoPadding || '0px'}
                     onChange={(e) => setSettings(prev => ({ ...prev, logoPadding: e.target.value }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                     placeholder="0px"
                   />
                 </div>
@@ -710,7 +710,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                 <select
                   value={settings.logoObjectFit || 'cover'}
                   onChange={(e) => setSettings(prev => ({ ...prev, logoObjectFit: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
                 >
                   <option value="cover">cover (default - fills circle, may crop)</option>
                   <option value="contain">contain (shows full logo, may have empty space)</option>

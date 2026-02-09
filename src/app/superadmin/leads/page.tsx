@@ -327,7 +327,7 @@ export default function LeadsPage() {
                 placeholder="Search leads..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -336,7 +336,7 @@ export default function LeadsPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Status</option>
             {Object.entries(statusConfig).map(([key, { label }]) => (
@@ -348,7 +348,7 @@ export default function LeadsPage() {
           <select
             value={sourceFilter}
             onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Sources</option>
             {Object.entries(sourceConfig).map(([key, { label }]) => (
@@ -360,7 +360,7 @@ export default function LeadsPage() {
           <select
             value={priorityFilter}
             onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Priorities</option>
             {Object.entries(priorityConfig).map(([key, { label }]) => (
@@ -372,7 +372,7 @@ export default function LeadsPage() {
           <select
             value={assignedFilter}
             onChange={(e) => { setAssignedFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="all">All Assignees</option>
             <option value="unassigned">Unassigned</option>
@@ -387,7 +387,7 @@ export default function LeadsPage() {
           <select
             value={sortBy}
             onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
           >
             <option value="date_desc">Newest First</option>
             <option value="date_asc">Oldest First</option>
@@ -659,7 +659,7 @@ function CreateLeadModal({
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -668,7 +668,7 @@ function CreateLeadModal({
                 type="text"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -680,7 +680,7 @@ function CreateLeadModal({
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -689,7 +689,7 @@ function CreateLeadModal({
                 type="text"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -702,7 +702,7 @@ function CreateLeadModal({
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 placeholder="e.g., Bahrain, USA"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
             <div>
@@ -710,7 +710,7 @@ function CreateLeadModal({
               <select
                 value={formData.businessType}
                 onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 <option value="">Select type</option>
                 <option value="RESTAURANT">Restaurant</option>
@@ -730,7 +730,7 @@ function CreateLeadModal({
               <select
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 {Object.entries(sourceConfig).map(([key, { label }]) => (
                   <option key={key} value={key}>{label}</option>
@@ -742,7 +742,7 @@ function CreateLeadModal({
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 {Object.entries(statusConfig).map(([key, { label }]) => (
                   <option key={key} value={key}>{label}</option>
@@ -754,7 +754,7 @@ function CreateLeadModal({
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 {Object.entries(priorityConfig).map(([key, { label }]) => (
                   <option key={key} value={key}>{label}</option>
@@ -769,7 +769,7 @@ function CreateLeadModal({
               <select
                 value={formData.expectedPlan}
                 onChange={(e) => setFormData({ ...formData, expectedPlan: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 <option value="">Select plan</option>
                 <option value="STARTER">Starter ($19/mo)</option>
@@ -784,7 +784,7 @@ function CreateLeadModal({
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
                 placeholder="Annual value"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -795,7 +795,7 @@ function CreateLeadModal({
               <select
                 value={formData.teamMemberId}
                 onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               >
                 <option value="">Unassigned</option>
                 {salesTeam.length > 0 ? (
@@ -819,7 +819,7 @@ function CreateLeadModal({
                 type="date"
                 value={formData.nextFollowUpAt}
                 onChange={(e) => setFormData({ ...formData, nextFollowUpAt: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               />
             </div>
           </div>
@@ -830,7 +830,7 @@ function CreateLeadModal({
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900 bg-white"
               placeholder="Add any notes about this lead..."
             />
           </div>
@@ -1118,7 +1118,7 @@ function LeadDetailModal({
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       />
                     </div>
                     <div>
@@ -1127,7 +1127,7 @@ function LeadDetailModal({
                         type="text"
                         value={formData.company}
                         onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       />
                     </div>
                   </div>
@@ -1139,7 +1139,7 @@ function LeadDetailModal({
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       />
                     </div>
                     <div>
@@ -1148,7 +1148,7 @@ function LeadDetailModal({
                         type="text"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       />
                     </div>
                   </div>
@@ -1166,7 +1166,7 @@ function LeadDetailModal({
                             checkEmailMatch()
                           }
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       >
                         {Object.entries(statusConfig).map(([key, { label }]) => (
                           <option key={key} value={key}>{label}</option>
@@ -1178,7 +1178,7 @@ function LeadDetailModal({
                       <select
                         value={formData.priority}
                         onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       >
                         {Object.entries(priorityConfig).map(([key, { label }]) => (
                           <option key={key} value={key}>{label}</option>
@@ -1190,7 +1190,7 @@ function LeadDetailModal({
                       <select
                         value={formData.teamMemberId}
                         onChange={(e) => setFormData({ ...formData, teamMemberId: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       >
                         <option value="">Unassigned</option>
                         {salesTeam.length > 0 ? (
@@ -1243,7 +1243,7 @@ function LeadDetailModal({
                               setBusinessSearch(e.target.value)
                               searchBusinesses(e.target.value)
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                           />
                           {searchingBusiness && (
                             <p className="text-sm text-gray-500 mt-1">Searching...</p>
@@ -1282,7 +1282,7 @@ function LeadDetailModal({
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     />
                   </div>
 
@@ -1434,7 +1434,7 @@ function LeadDetailModal({
                       <select
                         value={activityData.type}
                         onChange={(e) => setActivityData({ ...activityData, type: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       >
                         {Object.entries(activityTypeConfig).filter(([key]) => !['STATUS_CHANGE', 'ASSIGNED', 'CREATED'].includes(key)).map(([key, { label }]) => (
                           <option key={key} value={key}>{label}</option>
@@ -1448,7 +1448,7 @@ function LeadDetailModal({
                         value={activityData.title}
                         onChange={(e) => setActivityData({ ...activityData, title: e.target.value })}
                         placeholder="Brief summary..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                       />
                     </div>
                   </div>
@@ -1459,7 +1459,7 @@ function LeadDetailModal({
                       onChange={(e) => setActivityData({ ...activityData, description: e.target.value })}
                       rows={2}
                       placeholder="Add details..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
                     />
                   </div>
                   <div className="flex gap-2">
