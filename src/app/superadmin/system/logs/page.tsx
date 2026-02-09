@@ -703,8 +703,8 @@ export default function SystemLogsPage() {
 
           {/* Onboarding Funnel Summary */}
           {analytics.onboardingStats && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 overflow-hidden">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-teal-600" />
@@ -712,23 +712,22 @@ export default function SystemLogsPage() {
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">Track where users drop off during setup</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="grid grid-cols-4 gap-3 sm:flex sm:items-center sm:gap-4">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{analytics.onboardingStats.totalStarts}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">{analytics.onboardingStats.totalStarts}</p>
                     <p className="text-xs text-gray-500">Started</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400" />
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-teal-600">{analytics.onboardingStats.totalCompleted}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-teal-600">{analytics.onboardingStats.totalCompleted}</p>
                     <p className="text-xs text-gray-500">Completed</p>
                   </div>
-                  <div className="text-center ml-2">
-                    <p className="text-2xl font-bold text-red-500">{analytics.onboardingStats.totalErrors}</p>
+                  <div className="text-center">
+                    <p className="text-lg sm:text-2xl font-bold text-red-500">{analytics.onboardingStats.totalErrors}</p>
                     <p className="text-xs text-gray-500">Errors</p>
                   </div>
-                  <div className="text-center ml-2 px-3 py-1 bg-teal-50 rounded-lg">
-                    <p className="text-lg font-bold text-teal-700">{analytics.onboardingStats.completionRate}%</p>
-                    <p className="text-xs text-teal-600">Completion</p>
+                  <div className="text-center px-2 sm:px-3 py-1 bg-teal-50 rounded-lg">
+                    <p className="text-base sm:text-lg font-bold text-teal-700">{analytics.onboardingStats.completionRate}%</p>
+                    <p className="text-xs text-teal-600">Rate</p>
                   </div>
                 </div>
               </div>
@@ -746,19 +745,19 @@ export default function SystemLogsPage() {
                       : 0
 
                     return (
-                      <div key={step.step} className="flex items-center gap-3">
+                      <div key={step.step} className="flex items-center gap-2 sm:gap-3">
                         {/* Step number */}
-                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-semibold text-gray-600">{step.step}</span>
                         </div>
 
                         {/* Step name */}
-                        <div className="w-36 flex-shrink-0">
-                          <span className="text-sm text-gray-700">{step.stepName}</span>
+                        <div className="w-20 sm:w-36 flex-shrink-0">
+                          <span className="text-xs sm:text-sm text-gray-700 truncate block">{step.stepName}</span>
                         </div>
 
                         {/* Bar */}
-                        <div className="flex-1 h-7 bg-gray-100 rounded-md overflow-hidden relative">
+                        <div className="flex-1 min-w-0 h-6 sm:h-7 bg-gray-100 rounded-md overflow-hidden relative">
                           <div
                             className="h-full bg-teal-500 rounded-md transition-all duration-300"
                             style={{ width: `${barWidth}%` }}

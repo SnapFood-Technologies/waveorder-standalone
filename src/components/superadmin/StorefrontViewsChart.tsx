@@ -349,10 +349,10 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
 
       {/* Chart */}
       {processedData.length > 0 ? (
-        <div className="h-64">
+        <div className="h-64 overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
             {chartType === 'line' ? (
-              <LineChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <LineChart data={processedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="date" 
@@ -360,7 +360,7 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
                   stroke="#6b7280"
                   fontSize={12}
                 />
-                <YAxis stroke="#6b7280" fontSize={12} />
+                <YAxis stroke="#6b7280" fontSize={12} width={40} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
@@ -372,7 +372,7 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
                 />
               </LineChart>
             ) : (
-              <BarChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={processedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="date" 
@@ -380,7 +380,7 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
                   stroke="#6b7280"
                   fontSize={12}
                 />
-                <YAxis stroke="#6b7280" fontSize={12} />
+                <YAxis stroke="#6b7280" fontSize={12} width={40} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="views" fill="#059669" radius={[4, 4, 0, 0]} />
               </BarChart>

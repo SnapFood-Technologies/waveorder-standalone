@@ -331,7 +331,7 @@ export function SuperAdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
@@ -413,21 +413,21 @@ export function SuperAdminDashboard() {
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="text-sm font-medium text-gray-600">Page Views</p>
-      <p className="text-2xl font-bold text-gray-900">{stats.totalPageViews}</p>
-    </div>
-    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-      <Eye className="w-6 h-6 text-yellow-600" />
-    </div>
-  </div>
-  <div className="mt-4 flex items-center">
-    <span className="text-gray-500 text-sm">
-      Across all storefronts
-    </span>
-  </div>
-</div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Page Views</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalPageViews}</p>
+            </div>
+            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <Eye className="w-6 h-6 text-yellow-600" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center">
+            <span className="text-gray-500 text-sm">
+              Across all storefronts
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Recent Business Registrations */}
@@ -439,7 +439,7 @@ export function SuperAdminDashboard() {
               <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">Shows 10 most recent registrations, independent of date filter</p>
               <div className="group relative flex-shrink-0">
                 <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                <div className="absolute bottom-full right-0 sm:left-1/2 sm:transform sm:-translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal sm:whitespace-nowrap z-10 max-w-[200px] sm:max-w-none">
                   Shows 10 most recent registrations, independent of date filter
                 </div>
               </div>
