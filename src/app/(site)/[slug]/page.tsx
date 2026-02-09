@@ -354,6 +354,14 @@ export default async function StorePage({ params, searchParams }: PageProps) {
         }}
       />
       
+      {/* Google Font - Load the selected font family for the storefront */}
+      {storeData.fontFamily && storeData.fontFamily !== 'Arial' && (
+        <link
+          rel="stylesheet"
+          href={`https://fonts.googleapis.com/css2?family=${storeData.fontFamily.replace(/ /g, '+')}:wght@300;400;500;600;700&display=swap`}
+        />
+      )}
+
       {/* Language Alternates */}
       <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang={isAlbanian ? "sq" : "en"} />
       <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang="x-default" />
