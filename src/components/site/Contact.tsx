@@ -10,6 +10,7 @@ interface FormErrors {
   name?: string
   email?: string
   company?: string
+  useCase?: string
   subject?: string
   message?: string
 }
@@ -19,6 +20,7 @@ export default function Contact() {
     name: '',
     email: '',
     company: '',
+    useCase: '',
     subject: 'general',
     message: ''
   })
@@ -160,6 +162,7 @@ export default function Contact() {
       name: '',
       email: '',
       company: '',
+      useCase: '',
       subject: 'general',
       message: ''
     })
@@ -341,37 +344,62 @@ export default function Contact() {
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 placeholder:text-gray-500 ${
                         errors.company ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
-                      placeholder="Your restaurant or business name"
+                      placeholder="Your business name"
                     />
                     {errors.company && (
                       <p className="mt-1 text-sm text-red-600">{errors.company}</p>
                     )}
                   </div>
                   <div>
-                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-                      Subject *
+                    <label htmlFor="useCase" className="block text-sm font-medium text-gray-700 mb-2">
+                      Use Case
                     </label>
                     <select
-                      id="subject"
-                      name="subject"
-                      required
-                      value={formData.subject}
+                      id="useCase"
+                      name="useCase"
+                      value={formData.useCase}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 ${
-                        errors.subject ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 bg-white ${
+                        errors.useCase ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
                       }`}
                     >
-                      <option value="general">General Question</option>
-                      <option value="demo">Schedule Demo</option>
-                      <option value="setup">Setup Help</option>
-                      <option value="billing">Billing Question</option>
-                      <option value="technical">Technical Support</option>
-                      <option value="feature">Feature Request</option>
+                      <option value="">Select your use case</option>
+                      <option value="restaurant">Restaurant / Cafe</option>
+                      <option value="retail">Retail / E-commerce</option>
+                      <option value="instagram">Instagram Seller</option>
+                      <option value="salon">Salon / Beauty Studio</option>
+                      <option value="other">Other</option>
                     </select>
-                    {errors.subject && (
-                      <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                    {errors.useCase && (
+                      <p className="mt-1 text-sm text-red-600">{errors.useCase}</p>
                     )}
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                    Subject *
+                  </label>
+                  <select
+                    id="subject"
+                    name="subject"
+                    required
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 transition-colors text-gray-900 bg-white ${
+                      errors.subject ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-teal-500'
+                    }`}
+                  >
+                    <option value="general">General Question</option>
+                    <option value="demo">Schedule Demo</option>
+                    <option value="setup">Setup Help</option>
+                    <option value="billing">Billing Question</option>
+                    <option value="technical">Technical Support</option>
+                    <option value="feature">Feature Request</option>
+                  </select>
+                  {errors.subject && (
+                    <p className="mt-1 text-sm text-red-600">{errors.subject}</p>
+                  )}
                 </div>
 
                 <div>

@@ -22,6 +22,11 @@ const contactSchema = z.object({
     .optional()
     .or(z.literal('')),
   
+  useCase: z.string()
+    .max(50, 'Use case must be less than 50 characters')
+    .optional()
+    .or(z.literal('')),
+  
     // @ts-ignore
   subject: z.enum(['general', 'demo', 'setup', 'billing', 'technical', 'feature'], {
     errorMap: () => ({ message: 'Please select a valid subject' })
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { name, email, company, subject, message } = validationResult.data
+    const { name, email, company, useCase, subject, message } = validationResult.data
 
     // Spam check with Akismet
     let isSpam = false
@@ -176,6 +181,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         company: company || null,
+        useCase: useCase || null,
         // @ts-ignore
         subject: subjectEnum,
         message,

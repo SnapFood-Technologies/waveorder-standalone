@@ -19,12 +19,20 @@ export default function FAQ({ showContactSection = true }: FAQProps) {
 
   const faqs = [
     {
+      question: "What industries does WaveOrder support?",
+      answer: "WaveOrder is built for restaurants, cafes, retail stores, grocery shops, jewelry stores, florists, salons & beauty studios, and Instagram sellers. Each business type gets a tailored storefront experience with features designed for their specific needs."
+    },
+    {
       question: "Do I need WhatsApp Business API?",
       answer: "No! WaveOrder works with your regular WhatsApp or WhatsApp Business app. Orders come directly to your existing number without any API setup, verification, or per-message fees."
     },
     {
       question: "How do customers place orders?",
-      answer: "Customers browse your online catalog, select items, and click 'Order via WhatsApp'. This opens WhatsApp with a pre-formatted order message ready to send to you. Simple and familiar for everyone."
+      answer: "Customers browse your mobile-optimized storefront, add items to their cart, and place an order via WhatsApp or directly through your store. You receive the order instantly and can manage it from your admin dashboard."
+    },
+    {
+      question: "What are the plans and pricing?",
+      answer: "We offer three plans: Starter ($19/mo or $16/mo yearly) with up to 50 products and 1 store, Pro ($39/mo or $32/mo yearly) with unlimited products, up to 5 stores, and full analytics, and Business ($79/mo or $66/mo yearly) with unlimited stores, team access, custom domains, and API access. All plans include a free trial."
     },
     {
       question: "Can I use this with my Instagram bio link?",
@@ -32,15 +40,23 @@ export default function FAQ({ showContactSection = true }: FAQProps) {
     },
     {
       question: "What payment methods are supported?",
-      answer: "You can accept cash on delivery, bank transfers, or integrate with payment gateways like Stripe and PayPal. You handle payments directly with your customers — we don't take any cut."
-    },
-    {
-      question: "How quickly can I get started?",
-      answer: "Most businesses have their catalog live within 5 minutes. Just sign up, add your products (manually or via CSV import), connect your WhatsApp number, and share your link. No technical knowledge required."
+      answer: "You can accept cash on delivery, bank transfers, or integrate with payment gateways like Stripe. You handle payments directly with your customers — we don't take any commission or cut from your sales."
     },
     {
       question: "Can I manage multiple stores?",
-      answer: "Yes! Pro and Business plans support multiple catalogs. Create separate catalogs for different locations, brands, or product lines — each with its own link and settings."
+      answer: "Yes! Pro plan supports up to 5 stores and Business plan offers unlimited stores. Create separate catalogs for different locations, brands, or product lines — each with its own link, branding, and settings."
+    },
+    {
+      question: "What features are included?",
+      answer: "All plans include WhatsApp ordering, mobile-optimized storefronts, custom branding, CSV product import, multi-language support, and analytics. Higher plans add delivery scheduling, inventory management, team collaboration, custom domains, and REST API access."
+    },
+    {
+      question: "How quickly can I get started?",
+      answer: "Most businesses have their storefront live within 5 minutes. Just sign up, add your products (manually or via CSV import), connect your WhatsApp number, customize your branding, and share your link. No technical knowledge required."
+    },
+    {
+      question: "Do you support multiple languages?",
+      answer: "Yes! WaveOrder supports multiple languages for your storefront including English, Albanian, Greek, Spanish, Italian, French, German, Portuguese, and more. Your customers can browse your store in their preferred language."
     }
   ]
 
@@ -78,7 +94,7 @@ export default function FAQ({ showContactSection = true }: FAQProps) {
                 </button>
                 
                 <div className={`overflow-hidden transition-all duration-200 ${
-                  isOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                  isOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
                 }`}>
                   <div className="px-6 pb-5">
                     <p className="text-gray-600 leading-relaxed">{faq.answer}</p>

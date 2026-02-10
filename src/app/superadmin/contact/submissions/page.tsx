@@ -40,6 +40,7 @@ interface Submission {
   name: string
   email: string
   company: string | null
+  useCase: string | null
   subject: string
   message: string
   isSpam: boolean
@@ -86,6 +87,15 @@ const subjectLabels: Record<string, string> = {
   BILLING: 'Billing',
   TECHNICAL: 'Technical',
   FEATURE: 'Feature Request'
+}
+
+// Use case labels for display
+const useCaseLabels: Record<string, string> = {
+  restaurant: 'Restaurant / Cafe',
+  retail: 'Retail / E-commerce',
+  instagram: 'Instagram Seller',
+  salon: 'Salon / Beauty Studio',
+  other: 'Other'
 }
 
 const statusColors: Record<string, string> = {
@@ -720,6 +730,10 @@ export default function WebSubmissionsPage() {
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase">Company</p>
                     <p className="text-sm text-gray-900 mt-1">{selectedSubmission.company || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase">Use Case</p>
+                    <p className="text-sm text-gray-900 mt-1">{useCaseLabels[selectedSubmission.useCase || ''] || '-'}</p>
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase">Subject</p>

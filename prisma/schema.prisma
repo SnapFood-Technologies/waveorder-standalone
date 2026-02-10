@@ -834,6 +834,7 @@ model ContactMessage {
   name    String
   email   String
   company String?
+  useCase String?
   subject ContactSubject @default(GENERAL)
   message String
 
