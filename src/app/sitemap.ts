@@ -132,7 +132,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           not: undefined
         },
         subscriptionPlan: {
-          in: ['STARTER', 'PRO'] as SubscriptionPlan[]
+          in: ['STARTER', 'PRO', 'BUSINESS'] as SubscriptionPlan[]
         }
       },
       select: {
@@ -166,7 +166,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Higher priority for premium businesses
       let priority = 0.6
       
-      if (business.subscriptionPlan === 'PRO') {
+      if (business.subscriptionPlan === 'BUSINESS') {
+        priority = 0.9 // Business plan gets highest priority
+      } else if (business.subscriptionPlan === 'PRO') {
         priority = 0.8 // Pro businesses get higher priority
       }
 

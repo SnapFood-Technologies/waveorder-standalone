@@ -844,6 +844,12 @@ model ContactMessage {
   userAgent String?
   referer   String?
 
+  // Geolocation from IP
+  country     String?
+  city        String?
+  region      String?
+  countryCode String?
+
   status ContactStatus @default(PENDING)
 
   adminNotes  String?
@@ -858,6 +864,8 @@ model ContactMessage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([status])
+  @@index([createdAt])
   @@map("contact_messages")
 }
 

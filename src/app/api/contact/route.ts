@@ -145,6 +145,30 @@ export async function POST(request: NextRequest) {
       // @ts-ignore
     const subjectEnum = subject.toUpperCase() as keyof typeof prisma.contactSubject
 
+    // Detect country/city from IP (non-blocking, best-effort)
+    let geoData: { country?: string; city?: string; region?: string; countryCode?: string } = {}
+    try {
+      if (ip && ip !== 'unknown') {
+        const geoResponse = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city`, {
+          signal: AbortSignal.timeout(3000) // 3 second timeout
+        })
+        if (geoResponse.ok) {
+          const geoJson = await geoResponse.json()
+          if (geoJson.status === 'success') {
+            geoData = {
+              country: geoJson.country || undefined,
+              city: geoJson.city || undefined,
+              region: geoJson.regionName || undefined,
+              countryCode: geoJson.countryCode || undefined
+            }
+          }
+        }
+      }
+    } catch (geoError) {
+      // Silently ignore geolocation errors -- not critical
+      console.error('IP geolocation failed:', geoError)
+    }
+
     // Save to database
       // @ts-ignore
     const contactMessage = await prisma.contactMessage.create({
@@ -160,6 +184,10 @@ export async function POST(request: NextRequest) {
         ipAddress: ip,
         userAgent,
         referer,
+        country: geoData.country || null,
+        city: geoData.city || null,
+        region: geoData.region || null,
+        countryCode: geoData.countryCode || null,
         status: isSpam ? 'SPAM' : 'PENDING'
       }
     })
