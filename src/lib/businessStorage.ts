@@ -108,7 +108,10 @@ export async function uploadBusinessImage(
         break;
 
       case 'products':
+        // .rotate() with no arguments reads EXIF orientation and corrects it.
+        // This ensures phone photos are stored with the correct orientation.
         processedBuffer = await sharp(buffer)
+          .rotate()
           .resize({
             width: 1000,
             height: 1000,
