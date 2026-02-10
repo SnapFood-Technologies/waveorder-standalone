@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
+import { getLocationFromIP } from '@/lib/geolocation'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -29,7 +30,12 @@ export async function GET(
     const { id } = await params
 
     const submission = await prisma.contactMessage.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        replies: {
+          orderBy: { sentAt: 'desc' }
+        }
+      }
     })
 
     if (!submission) {
@@ -129,13 +135,24 @@ export async function PUT(
             replyTo: 'support@waveorder.app'
           })
 
-          // Update submission status
+          const sentByName = session.user.name || session.user.email || 'Super Admin'
+
+          // Store the reply in the database for history tracking
+          await prisma.contactReply.create({
+            data: {
+              contactMessageId: id,
+              subject: replySubject,
+              message: replyMessage,
+              sentBy: sentByName
+            }
+          })
+
+          // Track reply metadata without changing status (admin controls status manually)
           await prisma.contactMessage.update({
             where: { id },
             data: {
-              status: 'RESOLVED',
               respondedAt: new Date(),
-              respondedBy: session.user.name || session.user.email,
+              respondedBy: sentByName,
               emailSent: true,
               emailSentAt: new Date()
             }
@@ -204,16 +221,44 @@ export async function PUT(
           }
         })
 
-        // Update contact submission status
+        // Track conversion in admin notes without changing status (admin controls status manually)
         await prisma.contactMessage.update({
           where: { id },
           data: {
-            status: 'RESOLVED',
             adminNotes: `Converted to lead (ID: ${lead.id})${submission.adminNotes ? '\n\n' + submission.adminNotes : ''}`
           }
         })
 
         return NextResponse.json({ success: true, leadId: lead.id })
+      }
+
+      // ---- Detect Location from IP ----
+      case 'detect_location': {
+        if (!submission.ipAddress) {
+          return NextResponse.json({ error: 'No IP address available' }, { status: 400 })
+        }
+
+        if (submission.country) {
+          return NextResponse.json({ error: 'Location already detected', submission }, { status: 400 })
+        }
+
+        // Use the shared geolocation utility to detect location
+        const locationData = await getLocationFromIP(submission.ipAddress)
+
+        if (!locationData || !locationData.country) {
+          return NextResponse.json({ error: 'Could not detect location from IP' }, { status: 422 })
+        }
+
+        const updated = await prisma.contactMessage.update({
+          where: { id },
+          data: {
+            country: locationData.country,
+            city: locationData.city || null,
+            region: locationData.region || null
+          }
+        })
+
+        return NextResponse.json({ success: true, submission: updated })
       }
 
       default:

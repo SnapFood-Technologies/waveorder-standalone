@@ -167,8 +167,15 @@ export async function PUT(
 
     allowedFields.forEach(field => {
       if (data[field] !== undefined) {
-        if (field === 'nextFollowUpAt' && data[field]) {
-          updateData[field] = new Date(data[field])
+        if (field === 'nextFollowUpAt') {
+          // Handle DateTime fields: convert non-empty strings to Date, empty/null to null
+          updateData[field] = data[field] ? new Date(data[field]) : null
+        } else if (field === 'estimatedValue') {
+          // Handle numeric fields: convert to number or null
+          updateData[field] = data[field] !== null && data[field] !== '' ? Number(data[field]) : null
+        } else if (['phone', 'company', 'country', 'sourceDetail', 'referredBy', 'expectedPlan'].includes(field)) {
+          // Handle optional string fields: convert empty strings to null
+          updateData[field] = data[field] || null
         } else {
           updateData[field] = data[field]
         }
@@ -199,10 +206,10 @@ export async function PUT(
 
     return NextResponse.json({ success: true, lead: updatedLead })
 
-  } catch (error) {
-    console.error('Error updating lead:', error)
+  } catch (error: any) {
+    console.error('Error updating lead:', error?.message || error)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', detail: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }

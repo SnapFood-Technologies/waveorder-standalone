@@ -27,7 +27,9 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
-  Shield
+  Shield,
+  History,
+  ExternalLink
 } from 'lucide-react'
 import toast, { Toaster } from 'react-hot-toast'
 import Link from 'next/link'
@@ -35,6 +37,14 @@ import Link from 'next/link'
 // ===========================================
 // Types
 // ===========================================
+interface ContactReplyItem {
+  id: string
+  subject: string
+  message: string
+  sentBy: string
+  sentAt: string
+}
+
 interface Submission {
   id: string
   name: string
@@ -58,6 +68,7 @@ interface Submission {
   respondedBy: string | null
   emailSent: boolean
   emailSentAt: string | null
+  replies?: ContactReplyItem[]
   createdAt: string
   updatedAt: string
 }
@@ -132,6 +143,16 @@ function formatRelativeTime(dateString: string) {
   return formatDate(dateString)
 }
 
+/**
+ * Check if a submission has been converted to a lead by examining adminNotes.
+ * Returns the lead ID if found, null otherwise.
+ */
+function getConvertedLeadId(submission: Submission): string | null {
+  if (!submission.adminNotes) return null
+  const match = submission.adminNotes.match(/Converted to lead \(ID: ([a-f0-9]+)\)/)
+  return match ? match[1] : null
+}
+
 // ===========================================
 // Page Component
 // ===========================================
@@ -155,6 +176,9 @@ export default function WebSubmissionsPage() {
   const [showReplyModal, setShowReplyModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [showConvertModal, setShowConvertModal] = useState(false)
+  const [showRepliesModal, setShowRepliesModal] = useState(false)
+  const [repliesForSubmission, setRepliesForSubmission] = useState<ContactReplyItem[]>([])
+  const [loadingReplies, setLoadingReplies] = useState(false)
 
   // Reply form
   const [replySubject, setReplySubject] = useState('')
@@ -172,6 +196,9 @@ export default function WebSubmissionsPage() {
 
   // Status change
   const [changingStatus, setChangingStatus] = useState(false)
+
+  // Location detection
+  const [detectingLocation, setDetectingLocation] = useState<string | null>(null)
 
   // ===========================================
   // Fetch Data
@@ -317,6 +344,37 @@ export default function WebSubmissionsPage() {
     }
   }
 
+  const handleDetectLocation = async (submission: Submission) => {
+    if (!submission.ipAddress || submission.country) return
+
+    try {
+      setDetectingLocation(submission.id)
+      const response = await fetch(`/api/superadmin/contact/submissions/${submission.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'detect_location' })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to detect location')
+      }
+
+      const data = await response.json()
+      toast.success(`Location detected: ${data.submission.city ? data.submission.city + ', ' : ''}${data.submission.country}`)
+      fetchSubmissions()
+
+      // Update selected submission if modal is open
+      if (selectedSubmission?.id === submission.id) {
+        setSelectedSubmission(data.submission)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to detect location')
+    } finally {
+      setDetectingLocation(null)
+    }
+  }
+
   const openDetailModal = (submission: Submission) => {
     setSelectedSubmission(submission)
     setShowDetailModal(true)
@@ -338,6 +396,29 @@ export default function WebSubmissionsPage() {
       teamMemberId: ''
     })
     setShowConvertModal(true)
+  }
+
+  /**
+   * Fetch reply history for a submission and open the replies modal.
+   * Calls the GET endpoint which includes replies via Prisma include.
+   */
+  const openRepliesModal = async (submission: Submission) => {
+    setSelectedSubmission(submission)
+    setShowRepliesModal(true)
+    setLoadingReplies(true)
+
+    try {
+      const response = await fetch(`/api/superadmin/contact/submissions/${submission.id}`)
+      if (!response.ok) throw new Error('Failed to fetch replies')
+
+      const data = await response.json()
+      setRepliesForSubmission(data.replies || [])
+    } catch (err) {
+      toast.error('Failed to load replies')
+      setRepliesForSubmission([])
+    } finally {
+      setLoadingReplies(false)
+    }
   }
 
   // ===========================================
@@ -512,8 +593,18 @@ export default function WebSubmissionsPage() {
                               {sub.city ? `${sub.city}, ` : ''}{sub.country}
                             </span>
                           </div>
+                        ) : sub.ipAddress ? (
+                          <button
+                            onClick={() => handleDetectLocation(sub)}
+                            disabled={detectingLocation === sub.id}
+                            className="text-xs text-teal-600 hover:text-teal-700 hover:underline disabled:opacity-50 inline-flex items-center gap-1"
+                            title={`Detect location from IP: ${sub.ipAddress}`}
+                          >
+                            <MapPin className="w-3 h-3" />
+                            {detectingLocation === sub.id ? 'Detecting...' : 'Detect'}
+                          </button>
                         ) : (
-                          <span className="text-xs text-gray-400 italic">Unknown</span>
+                          <span className="text-xs text-gray-400 italic">No IP</span>
                         )}
                       </td>
                       <td className="py-3 px-4">
@@ -552,13 +643,32 @@ export default function WebSubmissionsPage() {
                           >
                             <Send className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => openConvertModal(sub)}
-                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Convert to Lead"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                          </button>
+                          {sub.emailSent && (
+                            <button
+                              onClick={() => openRepliesModal(sub)}
+                              className="p-1.5 text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors relative"
+                              title="View Replies"
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                          )}
+                          {getConvertedLeadId(sub) ? (
+                            <Link
+                              href="/superadmin/leads"
+                              className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Lead"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                            </Link>
+                          ) : (
+                            <button
+                              onClick={() => openConvertModal(sub)}
+                              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Convert to Lead"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setShowDeleteConfirm(sub.id)}
                             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -763,11 +873,22 @@ export default function WebSubmissionsPage() {
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase">Location</p>
-                    <p className="text-sm text-gray-900 mt-1">
-                      {selectedSubmission.country
-                        ? `${selectedSubmission.city ? selectedSubmission.city + ', ' : ''}${selectedSubmission.region ? selectedSubmission.region + ', ' : ''}${selectedSubmission.country}`
-                        : '-'}
-                    </p>
+                    {selectedSubmission.country ? (
+                      <p className="text-sm text-gray-900 mt-1">
+                        {selectedSubmission.city ? selectedSubmission.city + ', ' : ''}{selectedSubmission.region ? selectedSubmission.region + ', ' : ''}{selectedSubmission.country}
+                      </p>
+                    ) : selectedSubmission.ipAddress ? (
+                      <button
+                        onClick={() => handleDetectLocation(selectedSubmission)}
+                        disabled={detectingLocation === selectedSubmission.id}
+                        className="mt-1 text-sm text-teal-600 hover:text-teal-700 hover:underline disabled:opacity-50 inline-flex items-center gap-1"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        {detectingLocation === selectedSubmission.id ? 'Detecting...' : 'Detect from IP'}
+                      </button>
+                    ) : (
+                      <p className="text-sm text-gray-900 mt-1">-</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase">IP Address</p>
@@ -823,12 +944,30 @@ export default function WebSubmissionsPage() {
                 >
                   <Send className="w-4 h-4" /> Reply
                 </button>
-                <button
-                  onClick={() => { setShowDetailModal(false); openConvertModal(selectedSubmission) }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2"
-                >
-                  <UserPlus className="w-4 h-4" /> Convert to Lead
-                </button>
+                {selectedSubmission.emailSent && (
+                  <button
+                    onClick={() => { setShowDetailModal(false); openRepliesModal(selectedSubmission) }}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm inline-flex items-center gap-2"
+                  >
+                    <History className="w-4 h-4" /> View Replies
+                  </button>
+                )}
+                {getConvertedLeadId(selectedSubmission) ? (
+                  <Link
+                    href="/superadmin/leads"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2"
+                    onClick={() => setShowDetailModal(false)}
+                  >
+                    <ExternalLink className="w-4 h-4" /> View Lead
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => { setShowDetailModal(false); openConvertModal(selectedSubmission) }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2"
+                  >
+                    <UserPlus className="w-4 h-4" /> Convert to Lead
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDeleteConfirm(selectedSubmission.id)}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm inline-flex items-center gap-2"
@@ -971,20 +1110,123 @@ export default function WebSubmissionsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              {getConvertedLeadId(selectedSubmission) ? (
+                <div className="mt-6">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+                    <p className="text-sm text-green-800">This submission has already been converted to a lead.</p>
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowConvertModal(false)}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      Close
+                    </button>
+                    <Link
+                      href="/superadmin/leads"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2"
+                      onClick={() => setShowConvertModal(false)}
+                    >
+                      <ExternalLink className="w-4 h-4" /> View Leads
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setShowConvertModal(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConvertToLead}
+                    disabled={converting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    {converting ? 'Converting...' : 'Convert to Lead'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Replies History Modal */}
+      {showRepliesModal && selectedSubmission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Reply History</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    Replies sent to <strong>{selectedSubmission.name}</strong> ({selectedSubmission.email})
+                  </p>
+                </div>
+                <button onClick={() => setShowRepliesModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Original message context */}
+              <div className="p-3 bg-gray-50 rounded-lg mb-6">
+                <p className="text-xs font-medium text-gray-500 uppercase mb-1">Original Message ({formatDate(selectedSubmission.createdAt)})</p>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">{selectedSubmission.message}</p>
+              </div>
+
+              {/* Replies list */}
+              {loadingReplies ? (
+                <div className="space-y-4">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-20 bg-gray-100 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : repliesForSubmission.length > 0 ? (
+                <div className="space-y-4">
+                  {repliesForSubmission.map((reply) => (
+                    <div key={reply.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-2.5 flex items-center justify-between border-b border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <Send className="w-3.5 h-3.5 text-teal-600" />
+                          <span className="text-sm font-medium text-gray-900">{reply.subject}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(reply.sentAt)} by {reply.sentBy}
+                        </span>
+                      </div>
+                      <div className="px-4 py-3 text-sm text-gray-700 whitespace-pre-wrap">
+                        {reply.message}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Mail className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No stored replies found</p>
+                  <p className="text-xs text-gray-400 mt-1">Replies sent before reply tracking was enabled are not stored</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex justify-between mt-6 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => setShowConvertModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                  onClick={() => { setShowRepliesModal(false); openReplyModal(selectedSubmission) }}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm inline-flex items-center gap-2"
                 >
-                  Cancel
+                  <Send className="w-4 h-4" /> Send New Reply
                 </button>
                 <button
-                  onClick={handleConvertToLead}
-                  disabled={converting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm inline-flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowRepliesModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  {converting ? 'Converting...' : 'Convert to Lead'}
+                  Close
                 </button>
               </div>
             </div>
