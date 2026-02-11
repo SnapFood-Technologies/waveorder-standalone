@@ -1020,10 +1020,14 @@ export default function IntegrationsPage() {
               </div>
 
               <div className="mt-4 space-y-2 text-xs text-gray-500">
-                <p className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  Use this key in the <code className="bg-gray-100 px-1 rounded">Authorization: Bearer</code> header or <code className="bg-gray-100 px-1 rounded">X-API-Key</code> header.
-                </p>
+                <div className="flex items-start gap-1.5">
+                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p>Use this key in one of the following headers:</p>
+                    <p className="mt-1"><code className="bg-gray-100 px-1.5 py-0.5 rounded">Authorization: Bearer wo_int_xxx</code></p>
+                    <p className="mt-1"><code className="bg-gray-100 px-1.5 py-0.5 rounded">X-API-Key: wo_int_xxx</code></p>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
