@@ -65,16 +65,6 @@ jobs:
           echo "Generating Prisma client..."
           npx prisma generate
           echo "✅ Prisma client generated successfully"
-
-      # 📦 ONE-TIME: Populate Naia Studio postal pricing (remove after first successful deploy)
-      - name: 📦 Populate Naia Studio Postal Pricing
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "Populating Naia Studio postal pricing..."
-          npx tsx scripts/populate-postal-pricing-naia-studio.ts
-          echo "✅ Naia Studio postal pricing populated"
-
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
