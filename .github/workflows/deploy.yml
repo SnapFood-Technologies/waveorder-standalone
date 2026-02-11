@@ -65,6 +65,7 @@ jobs:
           echo "Generating Prisma client..."
           npx prisma generate
           echo "✅ Prisma client generated successfully"
+
       # 📦 ONE-TIME: Populate Naia Studio postal pricing (remove after first successful deploy)
       - name: 📦 Populate Naia Studio Postal Pricing
         env:

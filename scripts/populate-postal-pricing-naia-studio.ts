@@ -173,9 +173,19 @@ const ISLAND_CITIES = [
  * Minimum order: €10.00
  */
 const PRICING_CONFIG = {
-  standard: {
+  athensAttica: {
     price: 3.50,
     priceWithoutTax: 2.82, // 24% VAT in Greece → 3.50 / 1.24 = 2.82
+    minOrderValue: 10.00,
+  },
+  mainlandGreece: {
+    price: 4.00,
+    priceWithoutTax: 3.23, // 24% VAT → 4.00 / 1.24 = 3.23
+    minOrderValue: 10.00,
+  },
+  islands: {
+    price: 5.00,
+    priceWithoutTax: 4.03, // 24% VAT → 5.00 / 1.24 = 4.03
     minOrderValue: 10.00,
   }
 }
@@ -185,8 +195,8 @@ const PRICING_CONFIG = {
  */
 const DELIVERY_TIMES = {
   athensAttica: {
-    en: '1-2 business days',
-    el: '1-2 εργάσιμες ημέρες',
+    en: '1 business day',
+    el: '1 εργάσιμη ημέρα',
   },
   mainlandGreece: {
     en: '2-4 business days',
@@ -398,8 +408,8 @@ async function main() {
     console.log(`Business ID: ${BUSINESS_ID}`)
     console.log(`Postal Service ID: ${POSTAL_SERVICE_ID}`)
     console.log(`Currency: EUR`)
-    console.log(`Pricing: €${PRICING_CONFIG.standard.price.toFixed(2)} flat rate`)
-    console.log(`Min Order: €${PRICING_CONFIG.standard.minOrderValue.toFixed(2)}\n`)
+    console.log(`Pricing: Athens €${PRICING_CONFIG.athensAttica.price.toFixed(2)} | Mainland €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)} | Islands €${PRICING_CONFIG.islands.price.toFixed(2)}`)
+    console.log(`Min Order: €${PRICING_CONFIG.athensAttica.minOrderValue.toFixed(2)}\n`)
 
     // Verify postal service exists and belongs to this business
     const postalService = await prisma.postal.findUnique({
@@ -419,12 +429,12 @@ async function main() {
     const allErrors: Array<{ city: string; error: string }> = []
 
     // Athens & Attica
-    console.log(`📦 Processing Athens & Attica (${ATHENS_ATTICA_CITIES.length} cities)...`)
+    console.log(`📦 Processing Athens & Attica (${ATHENS_ATTICA_CITIES.length} cities) - €${PRICING_CONFIG.athensAttica.price.toFixed(2)}...`)
     const batch1 = await processPricingBatch(
       ATHENS_ATTICA_CITIES,
-      PRICING_CONFIG.standard.price,
-      PRICING_CONFIG.standard.priceWithoutTax,
-      PRICING_CONFIG.standard.minOrderValue,
+      PRICING_CONFIG.athensAttica.price,
+      PRICING_CONFIG.athensAttica.priceWithoutTax,
+      PRICING_CONFIG.athensAttica.minOrderValue,
       DELIVERY_TIMES.athensAttica.en,
       DELIVERY_TIMES.athensAttica.el,
     )
@@ -435,12 +445,12 @@ async function main() {
     allErrors.push(...batch1.errors)
 
     // Mainland Greece
-    console.log(`📦 Processing Mainland Greece (${MAINLAND_GREECE_CITIES.length} cities)...`)
+    console.log(`📦 Processing Mainland Greece (${MAINLAND_GREECE_CITIES.length} cities) - €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)}...`)
     const batch2 = await processPricingBatch(
       MAINLAND_GREECE_CITIES,
-      PRICING_CONFIG.standard.price,
-      PRICING_CONFIG.standard.priceWithoutTax,
-      PRICING_CONFIG.standard.minOrderValue,
+      PRICING_CONFIG.mainlandGreece.price,
+      PRICING_CONFIG.mainlandGreece.priceWithoutTax,
+      PRICING_CONFIG.mainlandGreece.minOrderValue,
       DELIVERY_TIMES.mainlandGreece.en,
       DELIVERY_TIMES.mainlandGreece.el,
     )
@@ -451,12 +461,12 @@ async function main() {
     allErrors.push(...batch2.errors)
 
     // Greek Islands
-    console.log(`📦 Processing Greek Islands (${ISLAND_CITIES.length} cities)...`)
+    console.log(`📦 Processing Greek Islands (${ISLAND_CITIES.length} cities) - €${PRICING_CONFIG.islands.price.toFixed(2)}...`)
     const batch3 = await processPricingBatch(
       ISLAND_CITIES,
-      PRICING_CONFIG.standard.price,
-      PRICING_CONFIG.standard.priceWithoutTax,
-      PRICING_CONFIG.standard.minOrderValue,
+      PRICING_CONFIG.islands.price,
+      PRICING_CONFIG.islands.priceWithoutTax,
+      PRICING_CONFIG.islands.minOrderValue,
       DELIVERY_TIMES.islands.en,
       DELIVERY_TIMES.islands.el,
     )
@@ -492,13 +502,16 @@ async function main() {
     console.log(`   - Greek Islands: ${ISLAND_CITIES.length} cities\n`)
 
     console.log(`📋 Pricing Configuration:`)
-    console.log(`   Standard Delivery:`)
-    console.log(`     - Price: €${PRICING_CONFIG.standard.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.standard.priceWithoutTax.toFixed(2)})`)
-    console.log(`     - Min Order: €${PRICING_CONFIG.standard.minOrderValue.toFixed(2)}`)
-    console.log(`   Delivery Times:`)
-    console.log(`     - Athens & Attica: ${DELIVERY_TIMES.athensAttica.en} / ${DELIVERY_TIMES.athensAttica.el}`)
-    console.log(`     - Mainland Greece: ${DELIVERY_TIMES.mainlandGreece.en} / ${DELIVERY_TIMES.mainlandGreece.el}`)
-    console.log(`     - Greek Islands: ${DELIVERY_TIMES.islands.en} / ${DELIVERY_TIMES.islands.el}\n`)
+    console.log(`   Athens & Attica:`)
+    console.log(`     - Price: €${PRICING_CONFIG.athensAttica.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.athensAttica.priceWithoutTax.toFixed(2)})`)
+    console.log(`     - Delivery: ${DELIVERY_TIMES.athensAttica.en} / ${DELIVERY_TIMES.athensAttica.el}`)
+    console.log(`   Mainland Greece:`)
+    console.log(`     - Price: €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.mainlandGreece.priceWithoutTax.toFixed(2)})`)
+    console.log(`     - Delivery: ${DELIVERY_TIMES.mainlandGreece.en} / ${DELIVERY_TIMES.mainlandGreece.el}`)
+    console.log(`   Greek Islands:`)
+    console.log(`     - Price: €${PRICING_CONFIG.islands.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.islands.priceWithoutTax.toFixed(2)})`)
+    console.log(`     - Delivery: ${DELIVERY_TIMES.islands.en} / ${DELIVERY_TIMES.islands.el}`)
+    console.log(`   Min Order: €${PRICING_CONFIG.athensAttica.minOrderValue.toFixed(2)} (all regions)\n`)
 
     console.log(`💡 Reminder: Set "Free Delivery Threshold" to €25.00 in Admin > Configurations > Delivery Methods\n`)
 
