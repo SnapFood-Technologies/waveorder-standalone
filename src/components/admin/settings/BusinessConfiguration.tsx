@@ -66,6 +66,7 @@ interface BusinessConfig {
 interface Business {
   currency: string
   businessType?: string
+  language?: string
 }
 
 interface SuccessMessage {
@@ -100,7 +101,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     whatsappNumber: ''
   })
   
-  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT', language: 'en' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('delivery')
@@ -126,7 +127,8 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
         const data = await businessResponse.json()
         setBusiness({ 
           currency: data.business.currency,
-          businessType: data.business.businessType || 'RESTAURANT'
+          businessType: data.business.businessType || 'RESTAURANT',
+          language: data.business.language || 'en'
         })
       }
     } catch (error) {
@@ -796,11 +798,11 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
         )}
 
         {activeSection === 'postals' && business.businessType === 'RETAIL' && (
-          <PostalsManagement businessId={businessId} />
+          <PostalsManagement businessId={businessId} language={business.language || 'en'} />
         )}
 
         {activeSection === 'pricing' && business.businessType === 'RETAIL' && (
-          <PostalPricingManagement businessId={businessId} />
+          <PostalPricingManagement businessId={businessId} language={business.language || 'en'} />
         )}
 
         {activeSection === 'hours' && (

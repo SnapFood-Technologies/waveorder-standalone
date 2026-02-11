@@ -31,9 +31,13 @@ interface PostalPricing {
 
 interface PostalPricingManagementProps {
   businessId: string
+  language?: string // Business language: 'en', 'sq', 'el', etc.
 }
 
-export function PostalPricingManagement({ businessId }: PostalPricingManagementProps) {
+export function PostalPricingManagement({ businessId, language = 'en' }: PostalPricingManagementProps) {
+  // Show secondary language fields based on business language
+  const showAlbanian = language === 'sq'
+  const showGreek = language === 'el'
   const [pricing, setPricing] = useState<PostalPricing[]>([])
   const [postals, setPostals] = useState<Postal[]>([])
   const [loading, setLoading] = useState(true)
@@ -253,6 +257,8 @@ export function PostalPricingManagement({ businessId }: PostalPricingManagementP
             setEditingPricing(null)
           }}
           saving={saving}
+          showAlbanian={showAlbanian}
+          showGreek={showGreek}
         />
       )}
 
@@ -402,9 +408,11 @@ interface PricingFormProps {
   onSave: (pricing: PostalPricing) => void
   onCancel: () => void
   saving: boolean
+  showAlbanian?: boolean
+  showGreek?: boolean
 }
 
-function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingFormProps) {
+function PricingForm({ pricing, postals, onSave, onCancel, saving, showAlbanian = false, showGreek = false }: PricingFormProps) {
   const [formData, setFormData] = useState<PostalPricing>(pricing)
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -525,30 +533,34 @@ function PricingForm({ pricing, postals, onSave, onCancel, saving }: PricingForm
             className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Delivery Time (Albanian)
-          </label>
-          <input
-            type="text"
-            value={formData.deliveryTimeAl || ''}
-            onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
-            placeholder="e.g., 3-5 ditë"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Delivery Time (Greek)
-          </label>
-          <input
-            type="text"
-            value={formData.deliveryTimeEl || ''}
-            onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
-            placeholder="e.g., 3-5 ημέρες"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          />
-        </div>
+        {showAlbanian && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Delivery Time (Albanian)
+            </label>
+            <input
+              type="text"
+              value={formData.deliveryTimeAl || ''}
+              onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
+              placeholder="e.g., 3-5 ditë"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+        )}
+        {showGreek && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Delivery Time (Greek)
+            </label>
+            <input
+              type="text"
+              value={formData.deliveryTimeEl || ''}
+              onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
+              placeholder="e.g., 3-5 ημέρες"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+        )}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Notes

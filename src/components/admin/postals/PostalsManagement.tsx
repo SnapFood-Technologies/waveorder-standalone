@@ -25,9 +25,14 @@ interface Postal {
 
 interface PostalsManagementProps {
   businessId: string
+  language?: string // Business language: 'en', 'sq', 'el', etc.
 }
 
-export function PostalsManagement({ businessId }: PostalsManagementProps) {
+export function PostalsManagement({ businessId, language = 'en' }: PostalsManagementProps) {
+  // Determine which secondary language fields to show based on store language
+  // English is always shown. The secondary language depends on business language.
+  const showAlbanian = language === 'sq'
+  const showGreek = language === 'el'
   const [postals, setPostals] = useState<Postal[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -204,6 +209,8 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
             setEditingPostal(null)
           }}
           saving={saving}
+          showAlbanian={showAlbanian}
+          showGreek={showGreek}
         />
       )}
 
@@ -234,8 +241,11 @@ export function PostalsManagement({ businessId }: PostalsManagementProps) {
                       )}
                       <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-gray-900 truncate">{postal.name}</h3>
-                        {postal.nameAl && (
+                        {showAlbanian && postal.nameAl && (
                           <p className="text-sm text-gray-600 truncate">{postal.nameAl}</p>
+                        )}
+                        {showGreek && postal.nameEl && (
+                          <p className="text-sm text-gray-600 truncate">{postal.nameEl}</p>
                         )}
                       </div>
                     </div>
@@ -376,9 +386,11 @@ interface PostalFormProps {
   onSave: (postal: Postal) => void
   onCancel: () => void
   saving: boolean
+  showAlbanian?: boolean
+  showGreek?: boolean
 }
 
-function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
+function PostalForm({ postal, onSave, onCancel, saving, showAlbanian = false, showGreek = false }: PostalFormProps) {
   const [formData, setFormData] = useState<Postal>(postal)
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -401,28 +413,32 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name (Albanian)
-          </label>
-          <input
-            type="text"
-            value={formData.nameAl || ''}
-            onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name (Greek)
-          </label>
-          <input
-            type="text"
-            value={formData.nameEl || ''}
-            onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
+        {showAlbanian && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name (Albanian)
+            </label>
+            <input
+              type="text"
+              value={formData.nameAl || ''}
+              onChange={(e) => setFormData({ ...formData, nameAl: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
+        {showGreek && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name (Greek)
+            </label>
+            <input
+              type="text"
+              value={formData.nameEl || ''}
+              onChange={(e) => setFormData({ ...formData, nameEl: e.target.value })}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Type *
@@ -460,28 +476,32 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description (Albanian)
-          </label>
-          <textarea
-            value={formData.descriptionAl || ''}
-            onChange={(e) => setFormData({ ...formData, descriptionAl: e.target.value })}
-            rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description (Greek)
-          </label>
-          <textarea
-            value={formData.descriptionEl || ''}
-            onChange={(e) => setFormData({ ...formData, descriptionEl: e.target.value })}
-            rows={2}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
+        {showAlbanian && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description (Albanian)
+            </label>
+            <textarea
+              value={formData.descriptionAl || ''}
+              onChange={(e) => setFormData({ ...formData, descriptionAl: e.target.value })}
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
+        {showGreek && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description (Greek)
+            </label>
+            <textarea
+              value={formData.descriptionEl || ''}
+              onChange={(e) => setFormData({ ...formData, descriptionEl: e.target.value })}
+              rows={2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Delivery Time (English)
@@ -494,30 +514,34 @@ function PostalForm({ postal, onSave, onCancel, saving }: PostalFormProps) {
             className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Delivery Time (Albanian)
-          </label>
-          <input
-            type="text"
-            value={formData.deliveryTimeAl || ''}
-            onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
-            placeholder="e.g., 3-5 ditë"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Delivery Time (Greek)
-          </label>
-          <input
-            type="text"
-            value={formData.deliveryTimeEl || ''}
-            onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
-            placeholder="e.g., 3-5 ημέρες"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
-          />
-        </div>
+        {showAlbanian && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Delivery Time (Albanian)
+            </label>
+            <input
+              type="text"
+              value={formData.deliveryTimeAl || ''}
+              onChange={(e) => setFormData({ ...formData, deliveryTimeAl: e.target.value })}
+              placeholder="e.g., 3-5 ditë"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
+        {showGreek && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Delivery Time (Greek)
+            </label>
+            <input
+              type="text"
+              value={formData.deliveryTimeEl || ''}
+              onChange={(e) => setFormData({ ...formData, deliveryTimeEl: e.target.value })}
+              placeholder="e.g., 3-5 ημέρες"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+            />
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <input
