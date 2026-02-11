@@ -33,6 +33,7 @@ interface ConnectedBusiness {
   id: string
   name: string
   slug: string
+  logo: string | null
   businessType: string
   isActive: boolean
   externalId: string
@@ -876,8 +877,12 @@ export default function IntegrationsPage() {
                     {detailData.integration.connectedBusinesses.map((biz: ConnectedBusiness) => (
                       <div key={biz.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <Building2 className="w-4 h-4 text-blue-600" />
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {biz.logo ? (
+                              <img src={biz.logo} alt={`${biz.name} logo`} className="w-full h-full object-contain rounded-lg" />
+                            ) : (
+                              <Building2 className="w-4 h-4 text-gray-600" />
+                            )}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900">{biz.name}</p>
