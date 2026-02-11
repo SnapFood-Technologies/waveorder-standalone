@@ -562,15 +562,30 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
               </div>
             )}
 
-            {/* Retail-specific custom texts - Always show for RETAIL when delivery is enabled */}
+            {/* Retail-specific settings - Always show for RETAIL when delivery is enabled */}
             {config.deliveryMethods.delivery && business.businessType === 'RETAIL' && (
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">Custom Display Texts (Retail Only)</h4>
+                <h4 className="font-medium text-gray-900 mb-3">Retail Delivery Settings</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Free Delivery Above ({business.currency})
+                    </label>
+                    <input
+                      type="number"
+                      value={config.deliveryMethods.freeDeliveryThreshold || ''}
+                      onChange={(e) => handleFreeDeliveryThresholdChange(e.target.value)}
+                      min="0"
+                      step="0.01"
+                      placeholder="Leave empty to disable"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Orders above this amount get free delivery (overrides postal pricing fee)</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Custom Delivery Time Text
-                      <span className="text-xs text-gray-500 ml-1">(overrides "Estimated Delivery Time" in storefront)</span>
+                      <span className="text-xs text-gray-500 ml-1">(overrides default in storefront)</span>
                     </label>
                     <input
                       type="text"

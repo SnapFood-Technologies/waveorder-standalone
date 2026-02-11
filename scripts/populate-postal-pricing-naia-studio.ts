@@ -21,9 +21,8 @@ const prisma = new PrismaClient()
  * 4. Update BUSINESS_ID and POSTAL_SERVICE_ID below
  */
 
-// TODO: Update with actual IDs before running
-const BUSINESS_ID = '' // Naia Studio business ID
-const POSTAL_SERVICE_ID = '' // "Standard Delivery" postal service ID
+const BUSINESS_ID = '697b831ab3893369d3a6c9c2' // Naia Studio business ID
+const POSTAL_SERVICE_ID = '698ccfba30496f9ac138f889' // "Standard Delivery" postal service ID
 
 /**
  * Greek cities/regions organized by area

@@ -1053,6 +1053,7 @@ export async function POST(
         pickupEnabled: true,
         dineInEnabled: true,
         deliveryFee: true,
+        freeDeliveryThreshold: true,
         deliveryRadius: true,
         storeLatitude: true,
         storeLongitude: true,
@@ -1352,7 +1353,14 @@ export async function POST(
       finalPostalPricingId = postalPricing.id
       deliveryZone = postalPricingDetails.name
 
-      // Validate that frontend fee matches postal pricing
+      // Check if free delivery threshold applies (overrides postal pricing fee)
+      const freeDeliveryThreshold = business.freeDeliveryThreshold
+      if (freeDeliveryThreshold && subtotal >= freeDeliveryThreshold) {
+        // Customer qualifies for free delivery - override postal pricing fee
+        finalDeliveryFee = 0
+      }
+
+      // Validate that frontend fee matches calculated fee
       if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
         return NextResponse.json({ 
           error: 'Delivery fee mismatch with selected postal service',
@@ -1367,6 +1375,12 @@ export async function POST(
         finalDeliveryFee = deliveryResult.fee
         deliveryZone = deliveryResult.zone
         deliveryDistance = deliveryResult.distance
+
+        // Check if free delivery threshold applies (overrides zone-based fee)
+        const nonRetailFreeThreshold = business.freeDeliveryThreshold
+        if (nonRetailFreeThreshold && subtotal >= nonRetailFreeThreshold) {
+          finalDeliveryFee = 0
+        }
         
         // Validate the calculated fee matches what client sent (within small tolerance)
         if (Math.abs(finalDeliveryFee - deliveryFee) > 0.01) {
