@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
 import { sendVerificationEmail, sendUserCreatedNotification } from '@/lib/email'
+import { logSystemEvent } from '@/lib/systemLog'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -73,6 +74,28 @@ export async function POST(request: NextRequest) {
     } catch (notificationError) {
       console.error('Failed to send admin notification:', notificationError)
     }
+
+    // Log registration event -- build actual URL to avoid logging localhost
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
+    logSystemEvent({
+      logType: 'user_registered',
+      severity: 'info',
+      endpoint: '/api/auth/register',
+      method: 'POST',
+      statusCode: 201,
+      url: actualUrl,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+      errorMessage: `New user registered: ${name || email}`,
+      metadata: {
+        userId: user.id,
+        email: email.toLowerCase(),
+        provider: 'credentials'
+      }
+    })
 
     return NextResponse.json(
       { 

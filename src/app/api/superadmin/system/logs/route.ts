@@ -97,6 +97,14 @@ export async function GET(request: NextRequest) {
       orderBy: { _count: { id: 'desc' } }
     })
 
+    // Get user & subscription stats
+    const [userRegisteredCount, userLoginCount, subscriptionChangedCount, integrationApiCallCount] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'user_registered' } }),
+      prisma.systemLog.count({ where: { logType: 'user_login' } }),
+      prisma.systemLog.count({ where: { logType: 'subscription_changed' } }),
+      prisma.systemLog.count({ where: { logType: 'integration_api_call' } })
+    ])
+
     // Get order-related stats
     const [orderCreatedCount, orderErrorCount] = await Promise.all([
       prisma.systemLog.count({ where: { logType: 'order_created' } }),
@@ -271,6 +279,19 @@ export async function GET(request: NextRequest) {
           errors: storefrontErrorCount,
           notFound: storefront404s,
           total: storefrontSuccessCount + storefrontErrorCount + storefront404s
+        },
+        userStats: {
+          registered: userRegisteredCount,
+          logins: userLoginCount,
+          total: userRegisteredCount + userLoginCount
+        },
+        subscriptionStats: {
+          changed: subscriptionChangedCount,
+          total: subscriptionChangedCount
+        },
+        integrationStats: {
+          apiCalls: integrationApiCallCount,
+          total: integrationApiCallCount
         },
         topSlugsByLogs: topSlugsByLogs.map(item => ({
           slug: item.slug,

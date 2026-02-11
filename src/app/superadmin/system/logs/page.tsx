@@ -24,7 +24,10 @@ import {
   UserPlus,
   CheckCircle,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  LogIn,
+  CreditCard,
+  Puzzle
 } from 'lucide-react'
 
 interface SystemLog {
@@ -73,6 +76,9 @@ interface LogsResponse {
     logTypeDistribution: Array<{ logType: string; count: number }>
     orderStats: { created: number; errors: number; total: number }
     storefrontStats: { success: number; errors: number; notFound: number; total: number }
+    userStats: { registered: number; logins: number; total: number }
+    subscriptionStats: { changed: number; total: number }
+    integrationStats: { apiCalls: number; total: number }
     topSlugsByLogs: Array<{ slug: string; count: number }>
     logsByDay: Array<{ date: string; count: number }>
     onboardingStats: {
@@ -204,7 +210,11 @@ export default function SystemLogsPage() {
       client_error: 'Client Error',
       onboarding_step_completed: 'Onboarding Step Completed',
       onboarding_step_error: 'Onboarding Step Error',
-      onboarding_completed: 'Onboarding Completed'
+      onboarding_completed: 'Onboarding Completed',
+      integration_api_call: 'Integration API Call',
+      user_registered: 'User Registered',
+      user_login: 'User Login',
+      subscription_changed: 'Subscription Changed'
     }
     return labels[logType] || logType
   }
@@ -330,6 +340,10 @@ export default function SystemLogsPage() {
                   <option value="order_created">Order Created</option>
                   <option value="order_error">Order Error</option>
                 </optgroup>
+                <optgroup label="Users &amp; Auth">
+                  <option value="user_registered">User Registered</option>
+                  <option value="user_login">User Login</option>
+                </optgroup>
                 <optgroup label="Onboarding &amp; Trial">
                   <option value="onboarding_step_completed">Onboarding Step Completed</option>
                   <option value="onboarding_step_error">Onboarding Step Error</option>
@@ -337,8 +351,14 @@ export default function SystemLogsPage() {
                   <option value="trial_started">Trial Started</option>
                   <option value="trial_error">Trial Error</option>
                   <option value="trial_start_error">Trial Start Error</option>
+                </optgroup>
+                <optgroup label="Subscriptions">
+                  <option value="subscription_changed">Subscription Changed</option>
                   <option value="subscription_error">Subscription Error</option>
                   <option value="checkout_error">Checkout Error</option>
+                </optgroup>
+                <optgroup label="Integrations">
+                  <option value="integration_api_call">Integration API Call</option>
                 </optgroup>
                 <optgroup label="System">
                   <option value="system_error">System Error</option>
@@ -698,6 +718,72 @@ export default function SystemLogsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Users, Subscriptions & Integrations */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* User Activity */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-green-600" />
+                  User Activity
+                </h3>
+                <span className="text-2xl font-bold text-gray-900">{analytics.userStats.total.toLocaleString()}</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-gray-600">Registrations</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{analytics.userStats.registered.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-gray-600">Logins</span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">{analytics.userStats.logins.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Subscription Changes */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-purple-600" />
+                  Subscriptions
+                </h3>
+                <span className="text-2xl font-bold text-gray-900">{analytics.subscriptionStats.total.toLocaleString()}</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Plan Changes</span>
+                  <span className="text-sm font-medium text-gray-900">{analytics.subscriptionStats.changed.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-gray-400">Upgrades, downgrades, and cancellations</p>
+              </div>
+            </div>
+
+            {/* Integration API Calls */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Puzzle className="w-5 h-5 text-orange-600" />
+                  Integrations
+                </h3>
+                <span className="text-2xl font-bold text-gray-900">{analytics.integrationStats.total.toLocaleString()}</span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">API Calls</span>
+                  <span className="text-sm font-medium text-gray-900">{analytics.integrationStats.apiCalls.toLocaleString()}</span>
+                </div>
+                <p className="text-xs text-gray-400">External integration API activity</p>
+              </div>
             </div>
           </div>
 

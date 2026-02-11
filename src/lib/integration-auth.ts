@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent } from '@/lib/systemLog'
 import crypto from 'crypto'
 
 // ===========================================
@@ -216,6 +217,22 @@ export async function logIntegrationCall(params: {
         duration: params.duration || undefined,
         error: params.error || undefined,
       },
+    })
+    // Also log to system logs for SuperAdmin visibility
+    logSystemEvent({
+      logType: 'integration_api_call',
+      severity: params.statusCode >= 400 ? 'error' : 'info',
+      endpoint: params.endpoint,
+      method: params.method,
+      statusCode: params.statusCode,
+      url: params.endpoint,
+      ipAddress: params.ipAddress || undefined,
+      errorMessage: params.error || `Integration API call: ${params.method} ${params.endpoint}`,
+      metadata: {
+        integrationId: params.integrationId,
+        businessId: params.businessId || undefined,
+        duration: params.duration || undefined
+      }
     })
   } catch (err) {
     console.error('Failed to log integration call:', err)

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId } from '@/lib/stripe'
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
+import { logSystemEvent } from '@/lib/systemLog'
 import { prisma } from '@/lib/prisma'
 import Stripe from 'stripe'
 
@@ -205,6 +206,27 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       }
     }
 
+    // Log subscription created
+    const changeType = wasOnTrial ? 'trial_converted' : 'created'
+    logSystemEvent({
+      logType: 'subscription_changed',
+      severity: 'info',
+      endpoint: '/api/webhooks/stripe',
+      method: 'POST',
+      statusCode: 200,
+      url: '/api/webhooks/stripe',
+      errorMessage: `Subscription ${changeType}: ${plan} for ${user.email}`,
+      metadata: {
+        userId: user.id,
+        email: user.email,
+        oldPlan,
+        newPlan: plan,
+        changeType,
+        stripeSubscriptionId: sub.id,
+        wasOnTrial
+      }
+    })
+
   } catch (error) {
     console.error('❌ Error handling subscription created:', error)
     throw error
@@ -270,13 +292,13 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
 
     // 📧 SEND EMAIL IF PLAN CHANGED
     if (user && oldPlan !== plan) {
+      const planData = PLANS[plan]
+      const isAnnual = priceId === planData.annualPriceId
+      const oldPlanLevel = PLAN_HIERARCHY[oldPlan as PlanId] || 1
+      const newPlanLevel = PLAN_HIERARCHY[plan] || 1
+      const changeType = newPlanLevel > oldPlanLevel ? 'upgraded' : 'downgraded'
+
       try {
-        const planData = PLANS[plan]
-        const isAnnual = priceId === planData.annualPriceId
-        const oldPlanLevel = PLAN_HIERARCHY[oldPlan as PlanId] || 1
-        const newPlanLevel = PLAN_HIERARCHY[plan] || 1
-        const changeType = newPlanLevel > oldPlanLevel ? 'upgraded' : 'downgraded'
-        
         await sendSubscriptionChangeEmail({
           to: user.email,
           name: user.name || 'there',
@@ -292,6 +314,26 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       } catch (emailError) {
         console.error('❌ Failed to send subscription update email:', emailError)
       }
+
+      // Log subscription change event
+      logSystemEvent({
+        logType: 'subscription_changed',
+        severity: 'info',
+        endpoint: '/api/webhooks/stripe',
+        method: 'POST',
+        statusCode: 200,
+        url: '/api/webhooks/stripe',
+        errorMessage: `Subscription ${changeType}: ${oldPlan} → ${plan} for ${user.email}`,
+        metadata: {
+          userId: user.id,
+          email: user.email,
+          oldPlan,
+          newPlan: plan,
+          changeType,
+          stripeSubscriptionId: sub.id,
+          billingInterval: isAnnual ? 'annual' : 'monthly'
+        }
+      })
     }
 
   } catch (error) {
@@ -364,6 +406,27 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
       } catch (emailError) {
         console.error('❌ Failed to send cancellation email:', emailError)
       }
+    }
+
+    // Log subscription cancellation
+    if (user) {
+      logSystemEvent({
+        logType: 'subscription_changed',
+        severity: 'warning',
+        endpoint: '/api/webhooks/stripe',
+        method: 'POST',
+        statusCode: 200,
+        url: '/api/webhooks/stripe',
+        errorMessage: `Subscription cancelled: ${oldPlan} → STARTER for ${user.email}`,
+        metadata: {
+          userId: user.id,
+          email: user.email,
+          oldPlan,
+          newPlan: 'STARTER',
+          changeType: 'cancelled',
+          stripeSubscriptionId: sub.id
+        }
+      })
     }
 
   } catch (error) {

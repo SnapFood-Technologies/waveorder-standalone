@@ -194,6 +194,27 @@ export const authOptions: NextAuthOptions = {
               console.error('Failed to send user registration notification:', notificationError)
             }
 
+            // Log new Google registration
+            try {
+              const { logSystemEvent } = await import('@/lib/systemLog')
+              logSystemEvent({
+                logType: 'user_registered',
+                severity: 'info',
+                endpoint: '/api/auth/callback/google',
+                method: 'POST',
+                statusCode: 200,
+                url: '/api/auth/callback/google',
+                errorMessage: `New user registered via Google: ${user.name || user.email}`,
+                metadata: {
+                  userId: newUser.id,
+                  email: user.email!.toLowerCase(),
+                  provider: 'google'
+                }
+              })
+            } catch (logError) {
+              console.error('Failed to log registration:', logError)
+            }
+
             existingUser = newUser
           }
           
@@ -203,6 +224,28 @@ export const authOptions: NextAuthOptions = {
           console.error('Error handling Google sign-in:', error)
           return false
         }
+      }
+
+      // Log every successful sign-in
+      try {
+        const { logSystemEvent } = await import('@/lib/systemLog')
+        const provider = account?.provider || 'unknown'
+        logSystemEvent({
+          logType: 'user_login',
+          severity: 'info',
+          endpoint: `/api/auth/callback/${provider}`,
+          method: 'POST',
+          statusCode: 200,
+          url: `/api/auth/callback/${provider}`,
+          errorMessage: `User logged in: ${user.email}`,
+          metadata: {
+            userId: user.id,
+            email: user.email || undefined,
+            provider
+          }
+        })
+      } catch (logError) {
+        console.error('Failed to log user login:', logError)
       }
 
       return true
