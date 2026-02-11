@@ -36,7 +36,8 @@ import {
   Scissors,
   Search,
   Mail,
-  Inbox
+  Inbox,
+  Puzzle
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -57,6 +58,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
     if (pathname?.startsWith('/superadmin/wavemind')) items.push('Wavemind Engine')
     if (pathname?.startsWith('/superadmin/contact')) items.push('Contact')
+    if (pathname?.startsWith('/superadmin/integrations')) items.push('Integrations')
     return items
   });
   
@@ -211,6 +213,22 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Web Submissions', 
           href: '/superadmin/contact/submissions', 
           icon: Inbox
+        }
+      ]
+    },
+    { 
+      name: 'Integrations', 
+      icon: Puzzle,
+      children: [
+        { 
+          name: 'All Integrations', 
+          href: '/superadmin/integrations', 
+          icon: Puzzle
+        },
+        { 
+          name: 'API Logs', 
+          href: '/superadmin/integrations/logs', 
+          icon: Activity
         }
       ]
     },

@@ -325,6 +325,9 @@ model Business {
   externalSystemEndpoints Json? // Endpoint paths (e.g., { products: "/products", categories: "/categories" })
   externalBrandIds        Json? // External brand ID(s) - can be string or array of strings
 
+  // Platform Integration IDs (e.g., { "chowtap": "user123", "venueboost": "id456" })
+  externalIds Json?
+
   // SEO Configuration (English/Default)
   seoTitle       String?
   seoDescription String?
@@ -875,8 +878,8 @@ model ContactMessage {
 
 // Stores each reply sent from SuperAdmin to a contact form submission
 model ContactReply {
-  id               String @id @default(auto()) @map("_id") @db.ObjectId
-  contactMessageId String @db.ObjectId
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  contactMessageId String   @db.ObjectId
   subject          String
   message          String
   sentBy           String // Name or email of admin who sent it
@@ -2043,4 +2046,53 @@ model ApiKey {
   @@index([businessId])
   @@index([keyHash])
   @@index([isActive])
+}
+
+// ===========================================
+// Platform Integrations (ChowTap, VenueBoost, etc.)
+// ===========================================
+
+// Represents a platform-level integration partner
+model Integration {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  name          String // Human-readable name: "ChowTap", "VenueBoost"
+  slug          String  @unique // URL-safe identifier: "chowtap", "venueboost"
+  description   String?
+  apiKey        String? // Hashed API key for this integration to authenticate API calls
+  apiKeyPreview String? // Last 4 chars for display: "...abc1"
+  isActive      Boolean @default(true)
+  logoUrl       String?
+  webhookUrl    String? // Optional: URL to notify integration of events
+  config        Json? // Flexible config (rate limits, allowed scopes, etc.)
+
+  logs IntegrationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("integrations")
+}
+
+// Log of every API call made by/to an integration
+model IntegrationLog {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  integrationId String  @db.ObjectId
+  businessId    String? @db.ObjectId // Which business was involved (if any)
+  endpoint      String // e.g., "/api/integrations/chowtap/connect"
+  method        String // GET, POST, PUT, DELETE
+  statusCode    Int // HTTP response code
+  requestBody   Json? // Sanitized request payload
+  responseBody  Json? // Sanitized response payload
+  ipAddress     String?
+  duration      Int? // Response time in milliseconds
+  error         String?
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([integrationId])
+  @@index([businessId])
+  @@index([integrationId, createdAt])
+  @@map("integration_logs")
 }
