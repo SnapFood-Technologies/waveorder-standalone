@@ -4,6 +4,56 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
+// Albanian to English product term translations
+// Maps common Albanian jewelry/product terms to their English equivalents
+const ALBANIAN_TO_ENGLISH_PRODUCT_TERMS: Record<string, string[]> = {
+  // Jewelry terms
+  'varese': ['necklace'],
+  'varëse': ['necklace'],
+  'varse': ['necklace'],
+  'var': ['necklace'],
+  'unaza': ['ring'],
+  'unaz': ['ring'],
+  'veth': ['earring', 'earrings'],
+  'vath': ['earring', 'earrings'],
+  'vathe': ['earring', 'earrings'],
+  'vethe': ['earring', 'earrings'],
+  'earrinn': ['earring', 'earrings'],
+  'dextera': ['bracelet', 'right'],
+  'bracel': ['bracelet'],
+  'braclet': ['bracelet'],
+  'swan': ['swan'],
+  'matrix': ['matrix'],
+  'crystal': ['crystal'],
+  'pearl': ['pearl'],
+  'rho': ['rho'],
+  'promise': ['promise'],
+  'necklace': ['necklace'],
+  'neck': ['necklace'],
+  'nack': ['necklace'],
+  'nackles': ['necklace'],
+}
+
+// Helper function to get English translations for Albanian search terms
+function getEnglishTranslations(searchTerm: string): string[] {
+  const term = searchTerm.toLowerCase().trim()
+  const translations = new Set<string>()
+  
+  // Check exact match
+  if (ALBANIAN_TO_ENGLISH_PRODUCT_TERMS[term]) {
+    ALBANIAN_TO_ENGLISH_PRODUCT_TERMS[term].forEach(t => translations.add(t))
+  }
+  
+  // Check if search term contains any Albanian term (for multi-word searches)
+  for (const [albanianTerm, englishTerms] of Object.entries(ALBANIAN_TO_ENGLISH_PRODUCT_TERMS)) {
+    if (term.includes(albanianTerm) || albanianTerm.includes(term)) {
+      englishTerms.forEach(t => translations.add(t))
+    }
+  }
+  
+  return Array.from(translations)
+}
+
 // Helper function to normalize diacritics for search
 // Converts diacritic characters to their base form AND vice versa
 // Also handles Albanian word form variations (ë↔a endings for definite/plural)
@@ -386,16 +436,25 @@ export async function GET(
 
     // Search filter (name or description) with diacritic-insensitive matching
     // e.g., "Pjate" matches "Pjatë", "Luge" matches "Lugë"
+    // Also includes Albanian-to-English translation mapping (e.g., "varese" → "necklace")
     if (searchTerm.trim()) {
       const searchVariants = getSearchVariants(searchTerm.trim())
+      const englishTranslations = getEnglishTranslations(searchTerm.trim())
       
-      // Build OR conditions for all search variants
+      // Combine all search terms: variants + English translations
+      const allSearchTerms = new Set([...searchVariants, ...englishTranslations])
+      
+      // Build OR conditions for all search terms
       const searchConditions: any[] = []
-      for (const variant of searchVariants) {
-        searchConditions.push({ name: { contains: variant, mode: 'insensitive' } })
-        searchConditions.push({ description: { contains: variant, mode: 'insensitive' } })
-        searchConditions.push({ descriptionAl: { contains: variant, mode: 'insensitive' } })
-        searchConditions.push({ descriptionEl: { contains: variant, mode: 'insensitive' } })
+      for (const term of allSearchTerms) {
+        // Search in all name fields (English, Albanian, Greek)
+        searchConditions.push({ name: { contains: term, mode: 'insensitive' } })
+        searchConditions.push({ nameAl: { contains: term, mode: 'insensitive' } })
+        searchConditions.push({ nameEl: { contains: term, mode: 'insensitive' } })
+        // Search in all description fields
+        searchConditions.push({ description: { contains: term, mode: 'insensitive' } })
+        searchConditions.push({ descriptionAl: { contains: term, mode: 'insensitive' } })
+        searchConditions.push({ descriptionEl: { contains: term, mode: 'insensitive' } })
       }
       
       if (stockConditions.length > 0) {

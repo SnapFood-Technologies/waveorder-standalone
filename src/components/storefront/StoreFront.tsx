@@ -3663,7 +3663,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                       <Clock className="w-4 h-4 flex-shrink-0" style={{ color: storeData.primaryColor }} />
                       <span className="text-md">
                         {selectedPostalPricing 
-                          ? (selectedPostalPricing.delivery_time_al || selectedPostalPricing.delivery_time || storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min')
+                          ? (((storeData.storefrontLanguage || storeData.language) === 'sq' ? selectedPostalPricing.delivery_time_al : (storeData.storefrontLanguage || storeData.language) === 'el' ? selectedPostalPricing.delivery_time_el : null) || selectedPostalPricing.delivery_time || storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min')
                           : (storeData.deliveryTimeText || storeData.estimatedDeliveryTime || '30-45 min')}
                       </span>
                     </div>
@@ -6604,11 +6604,14 @@ function OrderPanel({
                                   )}
                                   <div>
                                     <div className="font-medium text-gray-900">{option.postal_name}</div>
-                                    {(option.delivery_time_al || option.delivery_time) && (
-                                      <div className="text-sm text-gray-600">
-                                        {option.delivery_time_al || option.delivery_time}
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const sfLang = storeData.storefrontLanguage || storeData.language || 'en'
+                                      const localizedTime = sfLang === 'sq' ? option.delivery_time_al : sfLang === 'el' ? option.delivery_time_el : null
+                                      const displayTime = localizedTime || option.delivery_time
+                                      return displayTime ? (
+                                        <div className="text-sm text-gray-600">{displayTime}</div>
+                                      ) : null
+                                    })()}
                                   </div>
                                 </div>
                                 <div className="text-right">
