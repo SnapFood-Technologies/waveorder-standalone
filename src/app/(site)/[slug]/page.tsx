@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
+import SalonStoreFront from '@/components/storefront/SalonStoreFront'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -369,7 +370,11 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       {/* Canonical URL */}
       <link rel="canonical" href={storeData.canonicalUrl || `https://waveorder.app/${slug}`} />
     
-      <StoreFront storeData={storeData} />
+      {storeData.businessType === 'SALON' ? (
+        <SalonStoreFront storeData={storeData} />
+      ) : (
+        <StoreFront storeData={storeData} />
+      )}
     </>
   )
 }
