@@ -61,6 +61,7 @@ interface FormData {
   timezone: string
   deliveryEnabled: boolean
   pickupEnabled: boolean
+  dineInEnabled: boolean
   deliveryFee: string
   deliveryRadius: string
   estimatedDeliveryTime: string
@@ -77,6 +78,7 @@ const businessTypes = [
   { value: 'CAFE', label: 'Cafe', icon: Coffee },
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
+  { value: 'SALON', label: 'Salon & Beauty', icon: Scissors },
   { value: 'HEALTH_BEAUTY', label: 'Health & Beauty', icon: Scissors },
   { value: 'JEWELRY', label: 'Jewelry Store', icon: Gem },
   { value: 'FLORIST', label: 'Florist', icon: Flower2 },
@@ -260,6 +262,7 @@ export function CreateBusinessForm() {
     timezone: 'America/New_York',
     deliveryEnabled: true,
     pickupEnabled: false,
+    dineInEnabled: false,
     deliveryFee: '0',
     deliveryRadius: '10',
     estimatedDeliveryTime: '30-45 minutes',
@@ -270,6 +273,26 @@ export function CreateBusinessForm() {
     sendEmail: true,
     createdByAdmin: true
   })
+
+  // Update defaults when business type changes
+  useEffect(() => {
+    if (formData.businessType === 'SALON') {
+      setFormData(prev => ({
+        ...prev,
+        deliveryEnabled: false,
+        pickupEnabled: false,
+        dineInEnabled: true
+      }))
+    } else if (formData.businessType !== 'SALON' && formData.dineInEnabled) {
+      // Reset dineInEnabled when switching away from SALON
+      setFormData(prev => ({
+        ...prev,
+        dineInEnabled: false,
+        deliveryEnabled: prev.deliveryEnabled || true,
+        pickupEnabled: prev.pickupEnabled || false
+      }))
+    }
+  }, [formData.businessType])
   const [isOtherCountry, setIsOtherCountry] = useState(false)
 
   const totalSteps = 6
@@ -413,6 +436,7 @@ export function CreateBusinessForm() {
           billingType: formData.billingType,
           deliveryEnabled: formData.deliveryEnabled,
           pickupEnabled: formData.pickupEnabled,
+          dineInEnabled: formData.dineInEnabled,
           deliveryFee: parseFloat(formData.deliveryFee),
           deliveryRadius: parseFloat(formData.deliveryRadius),
           estimatedDeliveryTime: formData.estimatedDeliveryTime,
@@ -772,7 +796,7 @@ export function CreateBusinessForm() {
                               </div>
                               <div className="text-xs text-gray-600">$19/mo or $16/mo yearly</div>
                               <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
-                                <li>• 50 products</li>
+                                <li>• {formData.businessType === 'SALON' ? '50 services' : '50 products'}</li>
                                 <li>• 1 store</li>
                               </ul>
                             </button>
@@ -794,7 +818,7 @@ export function CreateBusinessForm() {
                               </div>
                               <div className="text-xs text-gray-600">$39/mo or $32/mo yearly</div>
                               <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
-                                <li>• Unlimited products</li>
+                                <li>• {formData.businessType === 'SALON' ? 'Unlimited services' : 'Unlimited products'}</li>
                                 <li>• 5 stores</li>
                               </ul>
                             </button>
@@ -1187,36 +1211,61 @@ export function CreateBusinessForm() {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">Delivery Settings</h2>
-                    <p className="text-gray-600 text-sm mb-4">Optional - Configure delivery options</p>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      {formData.businessType === 'SALON' ? 'Appointment Settings' : 'Delivery Settings'}
+                    </h2>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {formData.businessType === 'SALON' 
+                        ? 'Optional - Configure appointment options' 
+                        : 'Optional - Configure delivery options'}
+                    </p>
                     
                     <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">Delivery</span>
-                            <input
-                              type="checkbox"
-                              checked={formData.deliveryEnabled}
-                              onChange={(e) => setFormData({ ...formData, deliveryEnabled: e.target.checked })}
-                              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                            />
-                          </div>
-                          <p className="text-sm text-gray-600">Orders delivered to customer</p>
-                        </div>
+                      <div className={`grid gap-4 ${formData.businessType === 'SALON' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {formData.businessType !== 'SALON' && (
+                          <>
+                            <div className="border border-gray-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium">Delivery</span>
+                                <input
+                                  type="checkbox"
+                                  checked={formData.deliveryEnabled}
+                                  onChange={(e) => setFormData({ ...formData, deliveryEnabled: e.target.checked })}
+                                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                />
+                              </div>
+                              <p className="text-sm text-gray-600">Orders delivered to customer</p>
+                            </div>
 
-                        <div className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium">Pickup</span>
-                            <input
-                              type="checkbox"
-                              checked={formData.pickupEnabled}
-                              onChange={(e) => setFormData({ ...formData, pickupEnabled: e.target.checked })}
-                              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                            />
+                            <div className="border border-gray-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium">Pickup</span>
+                                <input
+                                  type="checkbox"
+                                  checked={formData.pickupEnabled}
+                                  onChange={(e) => setFormData({ ...formData, pickupEnabled: e.target.checked })}
+                                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                                />
+                              </div>
+                              <p className="text-sm text-gray-600">Customers collect from store</p>
+                            </div>
+                          </>
+                        )}
+
+                        {formData.businessType === 'SALON' && (
+                          <div className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">In-Salon Appointments</span>
+                              <input
+                                type="checkbox"
+                                checked={formData.dineInEnabled}
+                                onChange={(e) => setFormData({ ...formData, dineInEnabled: e.target.checked })}
+                                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                              />
+                            </div>
+                            <p className="text-sm text-gray-600">Customers book appointments at your salon</p>
                           </div>
-                          <p className="text-sm text-gray-600">Customers collect from store</p>
-                        </div>
+                        )}
                       </div>
 
                       {formData.deliveryEnabled && (
