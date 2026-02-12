@@ -505,6 +505,26 @@ const messageTerms = {
       pickup_type: 'Store Visit',
       dineIn_type: 'Consultation'
     },
+    SALON: {
+      order: 'Booking Request',
+      subtotal: 'Subtotal',
+      delivery: 'Appointment',
+      total: 'Total',
+      customer: 'Client',
+      phone: 'Phone',
+      deliveryAddress: 'Address',
+      pickupLocation: 'Salon Location',
+      deliveryTime: 'Appointment Date & Time',
+      pickupTime: 'Appointment Time',
+      arrivalTime: 'Appointment Time',
+      payment: 'Payment',
+      notes: 'Notes',
+      asap: 'ASAP',
+      orderType: 'Booking Type',
+      delivery_type: 'Appointment',
+      pickup_type: 'Walk-in',
+      dineIn_type: 'In-Salon'
+    },
     OTHER: {
       order: 'Order',
       subtotal: 'Subtotal',
@@ -666,6 +686,26 @@ const messageTerms = {
       delivery_type: 'Dorëzim',
       pickup_type: 'Vizitë në Dyqan',
       dineIn_type: 'Konsultim'
+    },
+    SALON: {
+      order: 'Kërkesë për Rezervim',
+      subtotal: 'Nëntotali',
+      delivery: 'Takim',
+      total: 'Totali',
+      customer: 'Klienti',
+      phone: 'Telefoni',
+      deliveryAddress: 'Adresa',
+      pickupLocation: 'Vendndodhja e Salonit',
+      deliveryTime: 'Data dhe Koha e Takimit',
+      pickupTime: 'Koha e Takimit',
+      arrivalTime: 'Koha e Takimit',
+      payment: 'Pagesa',
+      notes: 'Shënime',
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Rezervimit',
+      delivery_type: 'Takim',
+      pickup_type: 'Pa Rezervim',
+      dineIn_type: 'Në Salon'
     },
     OTHER: {
       order: 'Porosia',
@@ -829,6 +869,26 @@ const messageTerms = {
       pickup_type: 'Visita a la Tienda',
       dineIn_type: 'Consulta'
     },
+    SALON: {
+      order: 'Solicitud de Reserva',
+      subtotal: 'Subtotal',
+      delivery: 'Cita',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección',
+      pickupLocation: 'Ubicación del Salón',
+      deliveryTime: 'Fecha y Hora de la Cita',
+      pickupTime: 'Hora de la Cita',
+      arrivalTime: 'Hora de la Cita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Reserva',
+      delivery_type: 'Cita',
+      pickup_type: 'Sin Cita',
+      dineIn_type: 'En el Salón'
+    },
     OTHER: {
       order: 'Pedido',
       subtotal: 'Subtotal',
@@ -990,6 +1050,26 @@ const messageTerms = {
       delivery_type: 'Παράδοση',
       pickup_type: 'Επίσκεψη Καταστήματος',
       dineIn_type: 'Συμβουλευτική'
+    },
+    SALON: {
+      order: 'Αίτημα Κράτησης',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Ραντεβού',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση',
+      pickupLocation: 'Τοποθεσία Σαλονιού',
+      deliveryTime: 'Ημερομηνία και Ώρα Ραντεβού',
+      pickupTime: 'Ώρα Ραντεβού',
+      arrivalTime: 'Ώρα Ραντεβού',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Κράτησης',
+      delivery_type: 'Ραντεβού',
+      pickup_type: 'Χωρίς Κράτηση',
+      dineIn_type: 'Στο Σαλόνι'
     },
     OTHER: {
       order: 'Παραγγελία',
@@ -2303,10 +2383,20 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
   message += `${terms.orderType}: *${deliveryTypeLabel}*\n\n`
   
-  // Items
+  // Items (Services for salons)
+  const itemsLabel = businessType === 'SALON' ? 'Services' : 'Items'
   items.forEach((item: any) => {
     message += `${item.quantity}x ${item.name}`
     if (item.variant) message += ` (${item.variant})`
+    // For salons, show duration if available
+    if (businessType === 'SALON' && item.duration) {
+      const hours = Math.floor(item.duration / 60)
+      const minutes = item.duration % 60
+      const durationText = hours > 0 
+        ? `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim()
+        : `${minutes}min`
+      message += ` — ${durationText}`
+    }
     message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
     if (item.modifiers?.length) {
       item.modifiers.forEach((mod: any) => {
@@ -2314,6 +2404,21 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
       })
     }
   })
+  
+  // For salons, show total duration
+  if (businessType === 'SALON') {
+    const totalDuration = items.reduce((sum: number, item: any) => {
+      return sum + ((item.duration || 0) * item.quantity)
+    }, 0)
+    if (totalDuration > 0) {
+      const hours = Math.floor(totalDuration / 60)
+      const minutes = totalDuration % 60
+      const durationText = hours > 0 
+        ? `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim()
+        : `${minutes}min`
+      message += `\nEst. Duration: ${durationText}\n`
+    }
+  }
   
   message += `\n---\n`
   message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`

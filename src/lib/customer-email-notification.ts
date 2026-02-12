@@ -268,117 +268,143 @@ function getStatusMessage(status: string, orderType: string, language: string = 
 }
 
 /**
- * Get email labels in the specified language
+ * Get email labels in the specified language, customized for business type
  */
-function getEmailLabels(language: string = 'en'): Record<string, string> {
+function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
+  const isSalon = businessType === 'SALON'
+  
   const labels: Record<string, Record<string, string>> = {
     en: {
-      orderUpdate: 'Order',
-      orderPlaced: 'Order Placed',
-      orderReceived: 'Order Received',
-      thankYouForOrder: 'Thank you for your order!',
-      orderPlacedMessage: 'We\'ve received your order and it\'s being reviewed by our team.',
+      orderUpdate: isSalon ? 'Booking' : 'Order',
+      orderPlaced: isSalon ? 'Booking Request Placed' : 'Order Placed',
+      orderReceived: isSalon ? 'Booking Request Received' : 'Order Received',
+      thankYouForOrder: isSalon ? 'Thank you for your booking request!' : 'Thank you for your order!',
+      orderPlacedMessage: isSalon 
+        ? 'We\'ve received your booking request and it\'s being reviewed by our team.'
+        : 'We\'ve received your order and it\'s being reviewed by our team.',
       nextSteps: 'What\'s Next?',
-      orderConfirmedEmail: 'Once your order is confirmed, you\'ll receive another email with the confirmation details and estimated preparation/delivery time.',
-      orderNumberLabel: 'Order Number',
-      weWillNotifyYou: 'We\'ll notify you via email when your order status updates. You can track your order using the order number above.',
-      orderItems: 'Order Items',
-      orderSummary: 'Order Summary',
+      orderConfirmedEmail: isSalon
+        ? 'Once your appointment is confirmed, you\'ll receive another email with the confirmation details and appointment time.'
+        : 'Once your order is confirmed, you\'ll receive another email with the confirmation details and estimated preparation/delivery time.',
+      orderNumberLabel: isSalon ? 'Booking Number' : 'Order Number',
+      weWillNotifyYou: isSalon
+        ? 'We\'ll notify you via email when your appointment status updates. You can track your booking using the booking number above.'
+        : 'We\'ll notify you via email when your order status updates. You can track your order using the order number above.',
+      orderItems: isSalon ? 'Services' : 'Order Items',
+      orderSummary: isSalon ? 'Booking Summary' : 'Order Summary',
       total: 'Total',
-      deliveryAddress: 'Delivery Address',
-      pickupLocation: 'Pickup Location',
-      expectedDelivery: 'Expected Delivery',
-      pickupTime: 'Pickup Time',
-      arrivalTime: 'Arrival Time',
-      questionsAboutOrder: 'Questions about your order?',
+      deliveryAddress: isSalon ? 'Address' : 'Delivery Address',
+      pickupLocation: isSalon ? 'Salon Location' : 'Pickup Location',
+      expectedDelivery: isSalon ? 'Appointment Date & Time' : 'Expected Delivery',
+      pickupTime: isSalon ? 'Appointment Time' : 'Pickup Time',
+      arrivalTime: isSalon ? 'Appointment Time' : 'Arrival Time',
+      questionsAboutOrder: isSalon ? 'Questions about your booking?' : 'Questions about your order?',
       contactUs: 'Contact us at:',
       automatedNotification: 'This is an automated notification from',
       doNotReply: 'Please do not reply to this email.',
-      delivery: 'Delivery',
-      pickup: 'Pickup',
-      dineIn: 'Dine-in',
-      order: 'Order'
+      delivery: isSalon ? 'Appointment' : 'Delivery',
+      pickup: isSalon ? 'Walk-in' : 'Pickup',
+      dineIn: isSalon ? 'In-Salon' : 'Dine-in',
+      order: isSalon ? 'Booking' : 'Order'
     },
     es: {
-      orderUpdate: 'Pedido',
-      orderPlaced: 'Pedido Realizado',
-      orderReceived: 'Pedido Recibido',
-      thankYouForOrder: '¡Gracias por tu pedido!',
-      orderPlacedMessage: 'Hemos recibido tu pedido y nuestro equipo lo está revisando.',
+      orderUpdate: isSalon ? 'Reserva' : 'Pedido',
+      orderPlaced: isSalon ? 'Solicitud de Reserva Realizada' : 'Pedido Realizado',
+      orderReceived: isSalon ? 'Solicitud de Reserva Recibida' : 'Pedido Recibido',
+      thankYouForOrder: isSalon ? '¡Gracias por tu solicitud de reserva!' : '¡Gracias por tu pedido!',
+      orderPlacedMessage: isSalon
+        ? 'Hemos recibido tu solicitud de reserva y nuestro equipo la está revisando.'
+        : 'Hemos recibido tu pedido y nuestro equipo lo está revisando.',
       nextSteps: '¿Qué sigue?',
-      orderConfirmedEmail: 'Una vez que tu pedido sea confirmado, recibirás otro correo electrónico con los detalles de confirmación y el tiempo estimado de preparación/entrega.',
-      orderNumberLabel: 'Número de Pedido',
-      weWillNotifyYou: 'Te notificaremos por correo electrónico cuando se actualice el estado de tu pedido. Puedes rastrear tu pedido usando el número de pedido anterior.',
-      orderItems: 'Artículos del Pedido',
-      orderSummary: 'Resumen del Pedido',
+      orderConfirmedEmail: isSalon
+        ? 'Una vez que tu cita sea confirmada, recibirás otro correo electrónico con los detalles de confirmación y la hora de la cita.'
+        : 'Una vez que tu pedido sea confirmado, recibirás otro correo electrónico con los detalles de confirmación y el tiempo estimado de preparación/entrega.',
+      orderNumberLabel: isSalon ? 'Número de Reserva' : 'Número de Pedido',
+      weWillNotifyYou: isSalon
+        ? 'Te notificaremos por correo electrónico cuando se actualice el estado de tu cita. Puedes rastrear tu reserva usando el número de reserva anterior.'
+        : 'Te notificaremos por correo electrónico cuando se actualice el estado de tu pedido. Puedes rastrear tu pedido usando el número de pedido anterior.',
+      orderItems: isSalon ? 'Servicios' : 'Artículos del Pedido',
+      orderSummary: isSalon ? 'Resumen de la Reserva' : 'Resumen del Pedido',
       total: 'Total',
-      deliveryAddress: 'Dirección de Entrega',
-      pickupLocation: 'Ubicación de Recogida',
-      expectedDelivery: 'Entrega Esperada',
-      pickupTime: 'Hora de Recogida',
-      arrivalTime: 'Hora de Llegada',
-      questionsAboutOrder: '¿Preguntas sobre tu pedido?',
+      deliveryAddress: isSalon ? 'Dirección' : 'Dirección de Entrega',
+      pickupLocation: isSalon ? 'Ubicación del Salón' : 'Ubicación de Recogida',
+      expectedDelivery: isSalon ? 'Fecha y Hora de la Cita' : 'Entrega Esperada',
+      pickupTime: isSalon ? 'Hora de la Cita' : 'Hora de Recogida',
+      arrivalTime: isSalon ? 'Hora de la Cita' : 'Hora de Llegada',
+      questionsAboutOrder: isSalon ? '¿Preguntas sobre tu reserva?' : '¿Preguntas sobre tu pedido?',
       contactUs: 'Contáctanos en:',
       automatedNotification: 'Esta es una notificación automática de',
       doNotReply: 'Por favor no respondas a este correo electrónico.',
-      delivery: 'Entrega',
-      pickup: 'Recogida',
-      dineIn: 'Comer aquí',
-      order: 'Pedido'
+      delivery: isSalon ? 'Cita' : 'Entrega',
+      pickup: isSalon ? 'Sin Cita' : 'Recogida',
+      dineIn: isSalon ? 'En el Salón' : 'Comer aquí',
+      order: isSalon ? 'Reserva' : 'Pedido'
     },
     sq: {
-      orderUpdate: 'Porosi',
-      orderPlaced: 'Porosi e Vendosur',
-      orderReceived: 'Porosi e Marrë',
-      thankYouForOrder: 'Faleminderit për porosinë tuaj!',
-      orderPlacedMessage: 'Kemi marrë porosinë tuaj dhe ekipi ynë po e shqyrton.',
+      orderUpdate: isSalon ? 'Rezervim' : 'Porosi',
+      orderPlaced: isSalon ? 'Kërkesë për Rezervim e Vendosur' : 'Porosi e Vendosur',
+      orderReceived: isSalon ? 'Kërkesë për Rezervim e Marrë' : 'Porosi e Marrë',
+      thankYouForOrder: isSalon ? 'Faleminderit për kërkesën tuaj për rezervim!' : 'Faleminderit për porosinë tuaj!',
+      orderPlacedMessage: isSalon
+        ? 'Kemi marrë kërkesën tuaj për rezervim dhe ekipi ynë po e shqyrton.'
+        : 'Kemi marrë porosinë tuaj dhe ekipi ynë po e shqyrton.',
       nextSteps: 'Ç\'ndodh Tjetër?',
-      orderConfirmedEmail: 'Pasi porosia juaj të konfirmohet, do të merrni një email tjetër me detajet e konfirmimit dhe kohën e vlerësuar të përgatitjes/dorëzimit.',
-      orderNumberLabel: 'Numri i Porosisë',
-      weWillNotifyYou: 'Do t\'ju njoftojmë me email kur statusi i porosisë suaj të përditësohet. Mund ta ndiqni porosinë tuaj duke përdorur numrin e porosisë më sipër.',
-      orderItems: 'Artikujt e Porosisë',
-      orderSummary: 'Përmbledhje e Porosisë',
+      orderConfirmedEmail: isSalon
+        ? 'Pasi takimi juaj të konfirmohet, do të merrni një email tjetër me detajet e konfirmimit dhe kohën e takimit.'
+        : 'Pasi porosia juaj të konfirmohet, do të merrni një email tjetër me detajet e konfirmimit dhe kohën e vlerësuar të përgatitjes/dorëzimit.',
+      orderNumberLabel: isSalon ? 'Numri i Rezervimit' : 'Numri i Porosisë',
+      weWillNotifyYou: isSalon
+        ? 'Do t\'ju njoftojmë me email kur statusi i takimit tuaj të përditësohet. Mund ta ndiqni rezervimin tuaj duke përdorur numrin e rezervimit më sipër.'
+        : 'Do t\'ju njoftojmë me email kur statusi i porosisë suaj të përditësohet. Mund ta ndiqni porosinë tuaj duke përdorur numrin e porosisë më sipër.',
+      orderItems: isSalon ? 'Shërbimet' : 'Artikujt e Porosisë',
+      orderSummary: isSalon ? 'Përmbledhje e Rezervimit' : 'Përmbledhje e Porosisë',
       total: 'Total',
-      deliveryAddress: 'Adresa e Dorëzimit',
-      pickupLocation: 'Vendndodhja e Marrjes',
-      expectedDelivery: 'Dorëzimi i Pritur',
-      pickupTime: 'Koha e Marrjes',
-      arrivalTime: 'Koha e Mbërritjes',
-      questionsAboutOrder: 'Pyetje rreth porosisë suaj?',
+      deliveryAddress: isSalon ? 'Adresa' : 'Adresa e Dorëzimit',
+      pickupLocation: isSalon ? 'Vendndodhja e Salonit' : 'Vendndodhja e Marrjes',
+      expectedDelivery: isSalon ? 'Data dhe Koha e Takimit' : 'Dorëzimi i Pritur',
+      pickupTime: isSalon ? 'Koha e Takimit' : 'Koha e Marrjes',
+      arrivalTime: isSalon ? 'Koha e Takimit' : 'Koha e Mbërritjes',
+      questionsAboutOrder: isSalon ? 'Pyetje rreth rezervimit tuaj?' : 'Pyetje rreth porosisë suaj?',
       contactUs: 'Na kontaktoni në:',
       automatedNotification: 'Kjo është një njoftim automatizuar nga',
       doNotReply: 'Ju lutemi mos u përgjigjni këtij email-i.',
-      delivery: 'Dorëzim',
-      pickup: 'Marrje',
-      dineIn: 'Në vend',
-      order: 'Porosi'
+      delivery: isSalon ? 'Takim' : 'Dorëzim',
+      pickup: isSalon ? 'Pa Rezervim' : 'Marrje',
+      dineIn: isSalon ? 'Në Salon' : 'Në vend',
+      order: isSalon ? 'Rezervim' : 'Porosi'
     },
     el: {
-      orderUpdate: 'Παραγγελία',
-      orderPlaced: 'Παραγγελία Υποβλήθηκε',
-      orderReceived: 'Παραγγελία Ελήφθη',
-      thankYouForOrder: 'Ευχαριστούμε για την παραγγελία σας!',
-      orderPlacedMessage: 'Λάβαμε την παραγγελία σας και η ομάδα μας την εξετάζει.',
+      orderUpdate: isSalon ? 'Κράτηση' : 'Παραγγελία',
+      orderPlaced: isSalon ? 'Αίτημα Κράτησης Υποβλήθηκε' : 'Παραγγελία Υποβλήθηκε',
+      orderReceived: isSalon ? 'Αίτημα Κράτησης Ελήφθη' : 'Παραγγελία Ελήφθη',
+      thankYouForOrder: isSalon ? 'Ευχαριστούμε για το αίτημα κράτησης σας!' : 'Ευχαριστούμε για την παραγγελία σας!',
+      orderPlacedMessage: isSalon
+        ? 'Λάβαμε το αίτημα κράτησης σας και η ομάδα μας το εξετάζει.'
+        : 'Λάβαμε την παραγγελία σας και η ομάδα μας την εξετάζει.',
       nextSteps: 'Τι Ακολουθεί;',
-      orderConfirmedEmail: 'Μόλις επιβεβαιωθεί η παραγγελία σας, θα λάβετε ένα ακόμη email με τα στοιχεία επιβεβαίωσης και τον εκτιμώμενο χρόνο προετοιμασίας/παράδοσης.',
-      orderNumberLabel: 'Αριθμός Παραγγελίας',
-      weWillNotifyYou: 'Θα σας ειδοποιήσουμε μέσω email όταν ενημερωθεί η κατάσταση της παραγγελίας σας. Μπορείτε να παρακολουθήσετε την παραγγελία σας χρησιμοποιώντας τον αριθμό παραγγελίας παραπάνω.',
-      orderItems: 'Προϊόντα Παραγγελίας',
-      orderSummary: 'Σύνοψη Παραγγελίας',
+      orderConfirmedEmail: isSalon
+        ? 'Μόλις επιβεβαιωθεί το ραντεβού σας, θα λάβετε ένα ακόμη email με τα στοιχεία επιβεβαίωσης και την ώρα του ραντεβού.'
+        : 'Μόλις επιβεβαιωθεί η παραγγελία σας, θα λάβετε ένα ακόμη email με τα στοιχεία επιβεβαίωσης και τον εκτιμώμενο χρόνο προετοιμασίας/παράδοσης.',
+      orderNumberLabel: isSalon ? 'Αριθμός Κράτησης' : 'Αριθμός Παραγγελίας',
+      weWillNotifyYou: isSalon
+        ? 'Θα σας ειδοποιήσουμε μέσω email όταν ενημερωθεί η κατάσταση του ραντεβού σας. Μπορείτε να παρακολουθήσετε την κράτηση σας χρησιμοποιώντας τον αριθμό κράτησης παραπάνω.'
+        : 'Θα σας ειδοποιήσουμε μέσω email όταν ενημερωθεί η κατάσταση της παραγγελίας σας. Μπορείτε να παρακολουθήσετε την παραγγελία σας χρησιμοποιώντας τον αριθμό παραγγελίας παραπάνω.',
+      orderItems: isSalon ? 'Υπηρεσίες' : 'Προϊόντα Παραγγελίας',
+      orderSummary: isSalon ? 'Σύνοψη Κράτησης' : 'Σύνοψη Παραγγελίας',
       total: 'Σύνολο',
-      deliveryAddress: 'Διεύθυνση Παράδοσης',
-      pickupLocation: 'Τοποθεσία Παραλαβής',
-      expectedDelivery: 'Αναμενόμενη Παράδοση',
-      pickupTime: 'Ώρα Παραλαβής',
-      arrivalTime: 'Ώρα Άφιξης',
-      questionsAboutOrder: 'Ερωτήσεις σχετικά με την παραγγελία σας;',
+      deliveryAddress: isSalon ? 'Διεύθυνση' : 'Διεύθυνση Παράδοσης',
+      pickupLocation: isSalon ? 'Τοποθεσία Σαλονιού' : 'Τοποθεσία Παραλαβής',
+      expectedDelivery: isSalon ? 'Ημερομηνία και Ώρα Ραντεβού' : 'Αναμενόμενη Παράδοση',
+      pickupTime: isSalon ? 'Ώρα Ραντεβού' : 'Ώρα Παραλαβής',
+      arrivalTime: isSalon ? 'Ώρα Ραντεβού' : 'Ώρα Άφιξης',
+      questionsAboutOrder: isSalon ? 'Ερωτήσεις σχετικά με την κράτηση σας;' : 'Ερωτήσεις σχετικά με την παραγγελία σας;',
       contactUs: 'Επικοινωνήστε μαζί μας:',
       automatedNotification: 'Αυτή είναι μια αυτοματοποιημένη ειδοποίηση από',
       doNotReply: 'Παρακαλώ μην απαντήσετε σε αυτό το email.',
-      delivery: 'Παράδοση',
-      pickup: 'Παραλαβή',
-      dineIn: 'Επιτόπια Κατανάλωση',
-      order: 'Παραγγελία'
+      delivery: isSalon ? 'Ραντεβού' : 'Παράδοση',
+      pickup: isSalon ? 'Χωρίς Κράτηση' : 'Παραλαβή',
+      dineIn: isSalon ? 'Στο Σαλόνι' : 'Επιτόπια Κατανάλωση',
+      order: isSalon ? 'Κράτηση' : 'Παραγγελία'
     }
   }
 
@@ -401,7 +427,7 @@ function createCustomerOrderStatusEmail({
   formatCurrency: (amount: number) => string
   language?: string
 }): string {
-  const labels = getEmailLabels(language)
+  const labels = getEmailLabels(language, orderData.businessType)
   const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
   
   const orderTypeLabel = orderData.type === 'DELIVERY' ? labels.delivery :
@@ -593,7 +619,7 @@ function createCustomerOrderPlacedEmail({
   formatCurrency: (amount: number) => string
   language?: string
 }): string {
-  const labels = getEmailLabels(language)
+  const labels = getEmailLabels(language, orderData.businessType)
   const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
   
   const orderTypeLabel = orderData.type === 'DELIVERY' ? labels.delivery :
