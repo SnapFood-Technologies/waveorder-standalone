@@ -474,7 +474,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
         { 
-          name: 'Order Notifications', 
+          name: isSalon ? 'Appointment Notifications' : 'Order Notifications', 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 
           requiredPlan: 'STARTER'
