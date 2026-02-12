@@ -82,10 +82,23 @@ const businessTypeIcons = {
   CAFE: Coffee,
   RETAIL: ShoppingBag,
   GROCERY: Apple,
+  SALON: Scissors,
   HEALTH_BEAUTY: Scissors,
   JEWELRY: Gem,
   FLORIST: Flower2,
   OTHER: MoreHorizontal
+};
+
+const businessTypeLabels: Record<string, string> = {
+  RESTAURANT: 'Restaurant',
+  CAFE: 'Cafe',
+  RETAIL: 'Retail',
+  GROCERY: 'Grocery',
+  SALON: 'Salon',
+  HEALTH_BEAUTY: 'Health & Beauty',
+  JEWELRY: 'Jewelry',
+  FLORIST: 'Florist',
+  OTHER: 'Other'
 };
 
 export function SuperAdminDashboard() {
@@ -525,8 +538,8 @@ export function SuperAdminDashboard() {
                       <p className="text-sm text-gray-600">{business.whatsappNumber || 'Not provided'}</p>
                     </td>
                     <td className="py-3 px-3">
-                      <p className="text-sm text-gray-600 capitalize">
-                        {business.businessType.toLowerCase().replace('_', ' ')}
+                      <p className="text-sm text-gray-600">
+                        {businessTypeLabels[business.businessType] || business.businessType.toLowerCase().replace('_', ' ')}
                       </p>
                     </td>
                     <td className="py-3 px-3 text-center">
