@@ -68,6 +68,8 @@ interface BusinessDetails {
   showSearchAnalytics?: boolean
   showCostPrice?: boolean
   showProductionPlanning?: boolean
+  enableManualTeamCreation?: boolean
+  enableDeliveryManagement?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1395,6 +1397,12 @@ export default function BusinessDetailsPage() {
           {/* Production Planning Settings */}
           <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Manual Team Creation Settings */}
+          <ManualTeamCreationSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
+          {/* Delivery Management Settings */}
+          <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -2329,6 +2337,287 @@ function ProductionPlanningSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Production Queue not visible to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Manual Team Creation Settings Section Component (SuperAdmin toggle only)
+function ManualTeamCreationSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [manualTeamEnabled, setManualTeamEnabled] = useState(business.enableManualTeamCreation || false)
+  const [summaryData, setSummaryData] = useState<{
+    totalTeamMembers: number
+  } | null>(null)
+  const [loadingData, setLoadingData] = useState(false)
+
+  // Fetch summary when enabled
+  useEffect(() => {
+    if (manualTeamEnabled) {
+      fetchSummaryData()
+    }
+  }, [manualTeamEnabled, business.id])
+
+  const fetchSummaryData = async () => {
+    setLoadingData(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`)
+      if (res.ok) {
+        const data = await res.json()
+        setSummaryData({
+          totalTeamMembers: data.summary?.team?.totalTeamMembers || 0
+        })
+      }
+    } catch (error) {
+      console.error('Failed to fetch feature flags data:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const handleToggle = async () => {
+    const newValue = !manualTeamEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enableManualTeamCreation: newValue })
+      })
+      
+      if (res.ok) {
+        setManualTeamEnabled(newValue)
+        toast.success(newValue ? 'Manual Team Creation enabled' : 'Manual Team Creation disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling manual team creation:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Users className="w-5 h-5 mr-2 text-blue-600" />
+        Manual Team Creation
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Manual Team Member Creation</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admins can create team members manually with generated credentials, without sending email invitations.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            manualTeamEnabled ? 'bg-blue-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              manualTeamEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {manualTeamEnabled && (
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-700 mb-3">
+            <span className="font-medium">Enabled:</span> Business can create team members manually and receive credentials to share.
+          </p>
+          
+          {loadingData ? (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <span className="ml-2 text-xs text-blue-600">Loading data...</span>
+            </div>
+          ) : summaryData ? (
+            <div className="bg-white p-2 rounded border border-blue-200">
+              <p className="text-xs text-gray-500">Total Team Members</p>
+              <p className="text-lg font-semibold text-blue-700">{summaryData.totalTeamMembers}</p>
+            </div>
+          ) : null}
+        </div>
+      )}
+      
+      {!manualTeamEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Manual team creation not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Delivery Management Settings Section Component (SuperAdmin toggle only)
+function DeliveryManagementSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [deliveryManagementEnabled, setDeliveryManagementEnabled] = useState(business.enableDeliveryManagement || false)
+  const [summaryData, setSummaryData] = useState<{
+    totalEarnings: number
+    totalEarningsCount: number
+    pendingEarnings: number
+    pendingEarningsCount: number
+    totalPayments: number
+    totalPaymentsCount: number
+    deliveryPersonsCount: number
+  } | null>(null)
+  const [loadingData, setLoadingData] = useState(false)
+
+  // Fetch summary when enabled
+  useEffect(() => {
+    if (deliveryManagementEnabled) {
+      fetchSummaryData()
+    }
+  }, [deliveryManagementEnabled, business.id])
+
+  const fetchSummaryData = async () => {
+    setLoadingData(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`)
+      if (res.ok) {
+        const data = await res.json()
+        setSummaryData(data.summary?.delivery || null)
+      }
+    } catch (error) {
+      console.error('Failed to fetch feature flags data:', error)
+    } finally {
+      setLoadingData(false)
+    }
+  }
+
+  const handleToggle = async () => {
+    const newValue = !deliveryManagementEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enableDeliveryManagement: newValue })
+      })
+      
+      if (res.ok) {
+        setDeliveryManagementEnabled(newValue)
+        toast.success(newValue ? 'Delivery Management enabled' : 'Delivery Management disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling delivery management:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Truck className="w-5 h-5 mr-2 text-green-600" />
+        Delivery Management
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Delivery Tracking & Payments</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admins can assign delivery persons to orders, track earnings from delivery fees, and manage payments to delivery staff.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+            deliveryManagementEnabled ? 'bg-green-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              deliveryManagementEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {deliveryManagementEnabled && (
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-xs text-green-700 mb-3">
+            <span className="font-medium">Enabled:</span> Business can track delivery assignments, earnings, and payments.
+          </p>
+          
+          {loadingData ? (
+            <div className="flex items-center justify-center py-2">
+              <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+              <span className="ml-2 text-xs text-green-600">Loading data...</span>
+            </div>
+          ) : summaryData ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white p-2 rounded border border-green-200">
+                  <p className="text-xs text-gray-500">Delivery Persons</p>
+                  <p className="text-lg font-semibold text-green-700">{summaryData.deliveryPersonsCount}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-green-200">
+                  <p className="text-xs text-gray-500">Total Earnings</p>
+                  <p className="text-lg font-semibold text-green-700">
+                    {business.currency || 'EUR'} {summaryData.totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="bg-white p-2 rounded border border-green-200">
+                  <p className="text-xs text-gray-500">Pending</p>
+                  <p className="text-lg font-semibold text-green-700">
+                    {business.currency || 'EUR'} {summaryData.pendingEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+              
+              {summaryData.totalPayments > 0 && (
+                <div className="mt-2 bg-white p-2 rounded border border-green-200">
+                  <p className="text-xs text-gray-500">Total Paid to Delivery Persons</p>
+                  <p className="text-lg font-semibold text-green-700">
+                    {business.currency || 'EUR'} {summaryData.totalPayments.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
+      
+      {!deliveryManagementEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Delivery management features not available to this business.
           </p>
         </div>
       )}
