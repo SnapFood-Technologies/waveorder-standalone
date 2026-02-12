@@ -1,18 +1,18 @@
-// app/admin/stores/[businessId]/product-categories/page.tsx
+// app/admin/stores/[businessId]/service-categories/page.tsx
 import CategoriesManagement from '@/components/admin/categories/CategoriesManagement'
 import { BusinessTypeGuard } from '@/components/admin/BusinessTypeGuard'
 
-interface CategoriesPageProps {
+interface ServiceCategoriesPageProps {
   params: Promise<{ businessId: string }>
 }
 
-export default async function ProductCategoriesPage({ params }: CategoriesPageProps) {
+export default async function ServiceCategoriesPage({ params }: ServiceCategoriesPageProps) {
   const { businessId } = await params
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['RESTAURANT', 'RETAIL', 'INSTAGRAM_SELLER', 'OTHER']}
-      redirectTo={`/admin/stores/${businessId}/service-categories`}
+      allowedTypes={['SALON']}
+      redirectTo={`/admin/stores/${businessId}/product-categories`}
     >
       <CategoriesManagement businessId={businessId} />
     </BusinessTypeGuard>

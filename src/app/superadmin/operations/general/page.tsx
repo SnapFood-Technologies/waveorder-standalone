@@ -69,6 +69,7 @@ const businessTypeLabels: Record<string, string> = {
   JEWELRY: 'Jewelry',
   FLORIST: 'Florist',
   GROCERY: 'Grocery',
+  SALON: 'Salon',
   BAKERY: 'Bakery',
   OTHER: 'Other'
 }

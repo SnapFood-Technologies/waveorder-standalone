@@ -32,62 +32,89 @@ interface PricingStepProps {
 
 type PlanId = 'STARTER' | 'PRO' | 'BUSINESS'
 
-const plans = [
-  {
-    id: 'STARTER' as PlanId,
-    name: 'Starter',
-    monthlyPrice: 19,
-    yearlyPrice: 16,
-    description: 'Perfect for getting started',
-    features: [
-      'Up to 50 products',
-      '1 store/catalog',
-      'Basic analytics',
-      'WhatsApp ordering',
-      'CSV import',
-      'Email support',
-    ],
-    buttonText: 'Subscribe to Starter',
-    popular: false,
-    icon: Sparkles
-  },
-  {
-    id: 'PRO' as PlanId,
-    name: 'Pro',
-    monthlyPrice: 39,
-    yearlyPrice: 32,
-    description: 'For growing businesses',
-    features: [
-      'Unlimited products',
-      'Up to 5 stores/catalogs',
-      'Full analytics & insights',
-      'Delivery scheduling',
-      'Customer insights',
-      'Priority support',
-    ],
-    buttonText: 'Subscribe to Pro',
-    popular: true,
-    icon: Zap
-  },
-  {
-    id: 'BUSINESS' as PlanId,
-    name: 'Business',
-    monthlyPrice: 79,
-    yearlyPrice: 66,
-    description: 'For teams & enterprises',
-    features: [
-      'Everything in Pro',
-      'Unlimited stores/catalogs',
-      'Team access (5 users)',
-      'Custom domain',
-      'API access',
-      'Dedicated support',
-    ],
-    buttonText: 'Subscribe to Business',
-    popular: false,
-    icon: Building2
-  }
-]
+const getPlans = (businessType?: string) => {
+  const isSalon = businessType === 'SALON'
+  
+  return [
+    {
+      id: 'STARTER' as PlanId,
+      name: 'Starter',
+      monthlyPrice: 19,
+      yearlyPrice: 16,
+      description: 'Perfect for getting started',
+      features: isSalon ? [
+        'Up to 50 services',
+        '1 store/catalog',
+        'Basic analytics',
+        'WhatsApp booking',
+        'Appointment management',
+        'Email support',
+      ] : [
+        'Up to 50 products',
+        '1 store/catalog',
+        'Basic analytics',
+        'WhatsApp ordering',
+        'CSV import',
+        'Email support',
+      ],
+      buttonText: 'Subscribe to Starter',
+      popular: false,
+      icon: Sparkles
+    },
+    {
+      id: 'PRO' as PlanId,
+      name: 'Pro',
+      monthlyPrice: 39,
+      yearlyPrice: 32,
+      description: 'For growing businesses',
+      features: isSalon ? [
+        'Unlimited services',
+        'Up to 5 stores/catalogs',
+        'Full analytics & insights',
+        'Appointment calendar view',
+        'Staff assignment',
+        'Customer insights',
+        'Priority support',
+      ] : [
+        'Unlimited products',
+        'Up to 5 stores/catalogs',
+        'Full analytics & insights',
+        'Delivery scheduling',
+        'Customer insights',
+        'Priority support',
+      ],
+      buttonText: 'Subscribe to Pro',
+      popular: true,
+      icon: Zap
+    },
+    {
+      id: 'BUSINESS' as PlanId,
+      name: 'Business',
+      monthlyPrice: 79,
+      yearlyPrice: 66,
+      description: 'For teams & enterprises',
+      features: isSalon ? [
+        'Everything in Pro',
+        'Unlimited stores/catalogs',
+        'Team access (5 users)',
+        'Staff availability management',
+        'Custom domain',
+        'API access',
+        'Dedicated support',
+      ] : [
+        'Everything in Pro',
+        'Unlimited stores/catalogs',
+        'Team access (5 users)',
+        'Custom domain',
+        'API access',
+        'Dedicated support',
+      ],
+      buttonText: 'Subscribe to Business',
+      popular: false,
+      icon: Building2
+    }
+  ]
+}
 
 export default function PricingStep({ data, onComplete, onBack }: PricingStepProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null)
@@ -96,6 +123,8 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
   const [trialAlreadyUsed, setTrialAlreadyUsed] = useState(false)
   const [checkingTrialStatus, setCheckingTrialStatus] = useState(true)
+  
+  const plans = getPlans(data.businessType)
 
   // Check if user already has an active trial on mount
   useEffect(() => {

@@ -163,6 +163,9 @@ const businessTypeIcons: Record<string, any> = {
   CAFE: '☕',
   RETAIL: '🛍️',
   GROCERY: '🛒',
+  SALON: '✂️',
+  JEWELRY: '💎',
+  FLORIST: '🌸',
   BEAUTY: '💄',
   FITNESS: '💪',
   OTHER: '🏢'
@@ -663,18 +666,20 @@ export default function BusinessDetailsPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Business Statistics</h2>
               <Link
-                href={`/superadmin/businesses/${businessId}/orders`}
+                href={`/superadmin/businesses/${businessId}/${business.businessType === 'SALON' ? 'appointments' : 'orders'}`}
                 className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
               >
                 <ShoppingBag className="w-4 h-4 mr-1" />
-                Order Stats
+                {business.businessType === 'SALON' ? 'Appointment Stats' : 'Order Stats'}
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-                <p className="text-xs text-gray-500">Total Orders</p>
+                <p className="text-xs text-gray-500">
+                  {business.businessType === 'SALON' ? 'Total Appointments' : 'Total Orders'}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Users className="w-6 h-6 text-gray-400 mx-auto mb-2" />
@@ -684,7 +689,9 @@ export default function BusinessDetailsPage() {
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <ShoppingBag className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
-                <p className="text-xs text-gray-500">Products</p>
+                <p className="text-xs text-gray-500">
+                  {business.businessType === 'SALON' ? 'Services' : 'Products'}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <TrendingUp className="w-6 h-6 text-gray-400 mx-auto mb-2" />
@@ -796,12 +803,12 @@ export default function BusinessDetailsPage() {
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-amber-900">
-                          {business.stats.productsWithoutPhotos} Product{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
+                          {business.stats.productsWithoutPhotos} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
                         </p>
                         <p className="text-xs text-amber-700 mt-1">
                           {business.stats.productsWithoutPhotos === 0 
-                            ? 'All products have photos' 
-                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} products are missing images`}
+                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have photos` 
+                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} are missing images`}
                         </p>
                       </div>
                     </div>
@@ -815,12 +822,12 @@ export default function BusinessDetailsPage() {
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-red-900">
-                          {business.stats.productsWithZeroPrice} Product{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
+                          {business.stats.productsWithZeroPrice} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
                         </p>
                         <p className="text-xs text-red-700 mt-1">
                           {business.stats.productsWithZeroPrice === 0 
-                            ? 'All products have valid prices' 
-                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} products have price ≤ 0`}
+                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have valid prices` 
+                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} have price ≤ 0`}
                         </p>
                       </div>
                     </div>

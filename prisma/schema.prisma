@@ -271,6 +271,9 @@ model Business {
 
   // Business hours
   businessHours Json?
+  
+  // Staff availability (salon-specific)
+  staffAvailability Json? // { [staffId]: { workingHours: {...}, timeOff: [...] } }
 
   // Scheduling configuration
   schedulingEnabled     Boolean @default(true) // Enable/disable scheduling (false = instant orders only)

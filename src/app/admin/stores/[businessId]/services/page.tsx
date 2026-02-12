@@ -1,5 +1,6 @@
 // app/admin/stores/[businessId]/services/page.tsx
 import ServicesManagement from '@/components/admin/services/ServicesManagement'
+import { BusinessTypeGuard } from '@/components/admin/BusinessTypeGuard'
 
 interface ServicesPageProps {
   params: Promise<{ businessId: string }>
@@ -7,5 +8,13 @@ interface ServicesPageProps {
 
 export default async function ServicesPage({ params }: ServicesPageProps) {
   const { businessId } = await params
-  return <ServicesManagement businessId={businessId} />
+  return (
+    <BusinessTypeGuard 
+      businessId={businessId} 
+      allowedTypes={['SALON']}
+      redirectTo={`/admin/stores/${businessId}/products`}
+    >
+      <ServicesManagement businessId={businessId} />
+    </BusinessTypeGuard>
+  )
 }

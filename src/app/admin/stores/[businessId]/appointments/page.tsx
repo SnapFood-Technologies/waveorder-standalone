@@ -1,5 +1,6 @@
 // app/admin/stores/[businessId]/appointments/page.tsx
 import AppointmentsList from '@/components/admin/appointments/AppointmentsList'
+import { BusinessTypeGuard } from '@/components/admin/BusinessTypeGuard'
 
 interface AppointmentsPageProps {
   params: Promise<{ businessId: string }>
@@ -7,5 +8,13 @@ interface AppointmentsPageProps {
 
 export default async function AppointmentsPage({ params }: AppointmentsPageProps) {
   const { businessId } = await params
-  return <AppointmentsList businessId={businessId} />
+  return (
+    <BusinessTypeGuard 
+      businessId={businessId} 
+      allowedTypes={['SALON']}
+      redirectTo={`/admin/stores/${businessId}/orders`}
+    >
+      <AppointmentsList businessId={businessId} />
+    </BusinessTypeGuard>
+  )
 }

@@ -3,6 +3,7 @@
 
 import { use } from 'react'
 import OrdersList from '@/components/admin/orders/OrdersList'
+import { BusinessTypeGuard } from '@/components/admin/BusinessTypeGuard'
 
 interface OrdersPageProps {
   params: Promise<{ businessId: string }>
@@ -11,5 +12,13 @@ interface OrdersPageProps {
 export default function OrdersPage({ params }: OrdersPageProps) {
   const { businessId } = use(params)
 
-  return <OrdersList businessId={businessId} />
+  return (
+    <BusinessTypeGuard 
+      businessId={businessId} 
+      allowedTypes={['RESTAURANT', 'RETAIL', 'INSTAGRAM_SELLER', 'OTHER']}
+      redirectTo={`/admin/stores/${businessId}/appointments`}
+    >
+      <OrdersList businessId={businessId} />
+    </BusinessTypeGuard>
+  )
 }
