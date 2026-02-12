@@ -41,7 +41,7 @@ import {
   Menu,
   SlidersHorizontal,
   Clock,
-  DollarSign,
+  Coins,
   ChefHat,
   Key,
   Truck
@@ -401,7 +401,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         {
           name: 'Earnings',
           href: `${baseUrl}/delivery/earnings`,
-          icon: DollarSign,
+          icon: Coins,
           requiredPlan: 'STARTER' as Plan
         },
         {

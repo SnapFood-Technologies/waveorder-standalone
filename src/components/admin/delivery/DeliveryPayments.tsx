@@ -10,7 +10,6 @@ import {
   Search,
   Filter,
   Calendar,
-  DollarSign,
   AlertCircle,
   RefreshCw,
   X,

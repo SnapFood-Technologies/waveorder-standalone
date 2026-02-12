@@ -114,9 +114,14 @@ export function CreateMemberModal({ businessId, onSuccess, onClose, enableDelive
       setCreatedCredentials(credentials)
       setSuccess(true)
 
-      setTimeout(() => {
-        onSuccess()
-      }, credentials.length > 0 ? 10000 : 2000) // Give more time if credentials shown
+      // Don't auto-close when credentials are shown - let user manually close
+      // Auto-close only if no credentials (shouldn't happen, but just in case)
+      if (credentials.length === 0) {
+        setTimeout(() => {
+          onSuccess()
+          onClose()
+        }, 2000)
+      }
 
     } catch (error) {
       console.error('Error creating members:', error)
@@ -207,7 +212,10 @@ export function CreateMemberModal({ businessId, onSuccess, onClose, enableDelive
 
           <div className="flex justify-end">
             <button
-              onClick={onSuccess}
+              onClick={() => {
+                onSuccess()
+                onClose()
+              }}
               className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               Close
