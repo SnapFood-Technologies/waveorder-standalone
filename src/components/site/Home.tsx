@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Check, Clock, DollarSign, Bell, ShoppingCart, BarChart3, FolderOpen, CalendarClock, Users, FileSpreadsheet, Camera, Utensils, Store, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Clock, DollarSign, Bell, ShoppingCart, BarChart3, FolderOpen, CalendarClock, Users, FileSpreadsheet, Camera, Utensils, Store, Sparkles, Scissors } from 'lucide-react'
 import Pricing from './Pricing'
 import FAQ from './FAQ'
 import Testimonials from './Testimonials'
@@ -196,11 +196,11 @@ export default function Home() {
               Built for Every Business
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Whether you sell on Instagram, run a restaurant, or offer services — WaveOrder adapts to how you work.
+              Whether you sell on Instagram, run a restaurant, operate a salon, or offer services — WaveOrder adapts to how you work.
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Link href="/instagram-sellers" className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group">
               <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-pink-500 bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600">
                 <Camera className="w-8 h-8 text-white" />
@@ -223,6 +223,14 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Retail & E-commerce</h3>
               <p className="text-sm text-gray-500">Full product catalogs with categories, variants, and scheduling for pickup or delivery.</p>
+            </Link>
+            
+            <Link href="/salons" className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-pink-500">
+                <Scissors className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Salons & Beauty</h3>
+              <p className="text-sm text-gray-500">Service booking and appointment management. Let clients book services and send requests via WhatsApp.</p>
             </Link>
           </div>
         </div>

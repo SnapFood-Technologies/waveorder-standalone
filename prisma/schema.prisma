@@ -311,6 +311,12 @@ model Business {
   deliveryTimeText String? // Custom delivery time text for RETAIL (overrides estimatedDeliveryTime)
   freeDeliveryText String? // Custom free delivery text for RETAIL (overrides default "Free Delivery")
 
+  // Salon-specific settings
+  appointmentBufferMinutes  Int?     @default(15)  // Buffer between appointments
+  allowOnlineBooking        Boolean  @default(true)
+  showServiceDuration       Boolean  @default(true)
+  showStaffSelection        Boolean  @default(false)
+
   // Store Closure Fields
   isTemporarilyClosed Boolean   @default(false)
   closureReason       String?
@@ -428,6 +434,7 @@ model Business {
   categories         Category[]
   products           Product[]
   orders             Order[]
+  appointments       Appointment[]
   customers          Customer[]
   analytics          Analytics[]
   visitorSessions    VisitorSession[]
@@ -689,6 +696,12 @@ model Product {
   metaTitle       String?
   metaDescription String?
   metadata        Json? // For storing external system data (e.g., external product IDs)
+
+  // Salon/service fields
+  isService            Boolean  @default(false)
+  serviceDuration      Int?     // Duration in minutes (e.g., 45)
+  requiresAppointment  Boolean  @default(false)
+  staffIds             String[] @db.ObjectId  // Which staff can perform this service
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1016,6 +1029,7 @@ model Order {
 
   items         OrderItem[]
   notifications OrderNotification[]
+  appointments  Appointment[]
 
   customerLatitude  Float?
   customerLongitude Float?
@@ -1064,6 +1078,32 @@ model OrderItem {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Appointment {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId       String   @db.ObjectId
+  businessId    String   @db.ObjectId
+  customerId    String?  @db.ObjectId
+  staffId       String?  @db.ObjectId  // Assigned staff member
+
+  appointmentDate DateTime
+  startTime       String   // "14:00"
+  endTime         String   // "14:45" (calculated from duration)
+  duration        Int      // Total minutes
+
+  status   AppointmentStatus @default(REQUESTED)
+  notes    String?
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, appointmentDate])
+  @@index([staffId, appointmentDate])
+  @@map("appointments")
 }
 
 model TeamInvitation {
@@ -1270,6 +1310,7 @@ enum BusinessType {
   JEWELRY
   FLORIST
   GROCERY
+  SALON
   OTHER
 }
 
@@ -1318,6 +1359,15 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+enum AppointmentStatus {
+  REQUESTED    // Client submitted via WhatsApp
+  CONFIRMED    // Salon confirmed time
+  IN_PROGRESS  // Currently being served
+  COMPLETED    // Service done
+  CANCELLED    // Cancelled
+  NO_SHOW      // Client didn't show up
 }
 
 enum CustomerTier {
