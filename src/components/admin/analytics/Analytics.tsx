@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { useSubscription } from '@/hooks/useSubscription'
 
 interface AnalyticsProps {
   businessId: string
@@ -66,6 +67,7 @@ interface SearchAnalyticsData {
 }
 
 export default function Analytics({ businessId }: AnalyticsProps) {
+  const { isPro } = useSubscription()
   const [data, setData] = useState<any>(null)
   const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '' })
   const [loading, setLoading] = useState(true)
@@ -1091,8 +1093,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         </div>
       )}
 
-      {/* PRO Plan Quick Actions */}
-      {business.subscriptionPlan === 'PRO' && (
+      {/* PRO & BUSINESS Plan Quick Actions */}
+      {isPro && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Insights</h3>
           <p className="text-sm text-gray-600 mb-4">Deep dive into your analytics with these PRO features</p>
