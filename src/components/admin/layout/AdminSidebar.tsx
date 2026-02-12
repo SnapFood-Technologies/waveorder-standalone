@@ -43,7 +43,8 @@ import {
   Clock,
   DollarSign,
   ChefHat,
-  Key
+  Key,
+  Truck
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -92,6 +93,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [happyHourEnabled, setHappyHourEnabled] = useState(false)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
+  const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -127,6 +129,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setHappyHourEnabled(data.business?.happyHourEnabled || false)
           setShowCostPriceEnabled(data.business?.showCostPrice || false)
           setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
+          setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -386,6 +389,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       href: `${baseUrl}/cost-margins`,
       icon: DollarSign,
       requiredPlan: 'STARTER' as Plan
+    }] : []),
+    
+    // Delivery Management - only shown when enabled by SuperAdmin
+    // @ts-ignore
+    ...(enableDeliveryManagement ? [{
+      name: 'Delivery',
+      icon: Truck,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'Earnings',
+          href: `${baseUrl}/delivery/earnings`,
+          icon: DollarSign,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Payments',
+          href: `${baseUrl}/delivery/payments`,
+          icon: CreditCard,
+          requiredPlan: 'STARTER' as Plan
+        }
+      ]
     }] : []),
     
     { 

@@ -131,6 +131,8 @@ export async function GET(
         happyHourEnabled: true,
         showCostPrice: true, // For Cost & Margins feature
         showProductionPlanning: true, // For Production Queue feature
+        enableManualTeamCreation: true, // For Manual Team Creation feature
+        enableDeliveryManagement: true, // For Delivery Management feature
         
         // Inventory display
         showStockBadge: true,

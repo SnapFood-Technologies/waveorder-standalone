@@ -101,6 +101,13 @@ model User {
   // One-to-many to avoid unique constraint issues with null userId
   teamMembers TeamMember[]
 
+  // Delivery orders assigned to this user
+  deliveryOrders Order[] @relation("DeliveryOrders")
+
+  // Delivery earnings and payments
+  deliveryEarnings DeliveryEarning[]
+  deliveryPayments DeliveryPayment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -413,6 +420,10 @@ model Business {
   // Production Planning / Prep List (SuperAdmin enables, Business Admin views)
   showProductionPlanning Boolean @default(false) // When enabled, business admin can see production queue
 
+  // Manual Team Creation & Delivery Management (SuperAdmin enables)
+  enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
+  enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -453,6 +464,10 @@ model Business {
 
   // Supplier Payments (for Cost & Margins feature)
   supplierPayments SupplierPayment[]
+
+  // Delivery Earnings & Payments
+  deliveryEarnings DeliveryEarning[]
+  deliveryPayments DeliveryPayment[]
 
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
@@ -546,6 +561,72 @@ model SupplierPayment {
   @@index([businessId])
   @@index([businessId, supplierName])
   @@index([businessId, paidAt])
+}
+
+model DeliveryEarning {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  deliveryPersonId String @db.ObjectId
+  deliveryPerson   User   @relation(fields: [deliveryPersonId], references: [id], onDelete: Cascade)
+
+  amount   Float // Delivery fee earned
+  currency String @default("EUR")
+
+  // Status tracking
+  status DeliveryEarningStatus @default(PENDING) // PENDING, PAID, CANCELLED
+
+  // When the order was delivered
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId]) // One earning per order
+  @@index([businessId])
+  @@index([businessId, deliveryPersonId])
+  @@index([businessId, status])
+  @@index([deliveryPersonId])
+}
+
+enum DeliveryEarningStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model DeliveryPayment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  deliveryPersonId String @db.ObjectId
+  deliveryPerson   User   @relation(fields: [deliveryPersonId], references: [id], onDelete: Cascade)
+
+  amount   Float // Amount paid to delivery person
+  currency String @default("EUR") // Currency of payment
+
+  periodStart DateTime? // Start of the period this payment covers
+  periodEnd   DateTime? // End of the period this payment covers
+
+  paymentMethod String? // e.g., "bank_transfer", "cash", "card"
+  reference     String? // Payment reference/invoice number
+  notes         String? // Additional notes
+
+  // Link to earnings that were paid
+  earningsIds String[] // Array of DeliveryEarning IDs that were paid
+
+  paidAt    DateTime @default(now()) // When payment was made
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, deliveryPersonId])
+  @@index([businessId, paidAt])
+  @@index([deliveryPersonId])
 }
 
 model Anomaly {
@@ -1014,8 +1095,9 @@ model Order {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  items         OrderItem[]
-  notifications OrderNotification[]
+  items           OrderItem[]
+  notifications   OrderNotification[]
+  deliveryEarning DeliveryEarning?
 
   customerLatitude  Float?
   customerLongitude Float?
@@ -1036,6 +1118,10 @@ model Order {
 
   createdByAdmin Boolean @default(false)
   createdBy      String? @db.ObjectId
+
+  // Delivery assignment
+  deliveryPersonId String? @db.ObjectId
+  deliveryPerson   User?   @relation("DeliveryOrders", fields: [deliveryPersonId], references: [id])
 
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
@@ -1261,6 +1347,7 @@ enum BusinessRole {
   OWNER
   MANAGER
   STAFF
+  DELIVERY
 }
 
 enum BusinessType {

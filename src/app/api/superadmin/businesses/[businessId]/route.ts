@@ -280,6 +280,8 @@ export async function GET(
         showSearchAnalytics: business.showSearchAnalytics,
         showCostPrice: business.showCostPrice,
         showProductionPlanning: business.showProductionPlanning,
+        enableManualTeamCreation: business.enableManualTeamCreation,
+        enableDeliveryManagement: business.enableDeliveryManagement,
         address: business.address,
         email: business.email,
         phone: business.phone,
