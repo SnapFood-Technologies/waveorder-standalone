@@ -387,7 +387,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     ...(showCostPriceEnabled ? [{
       name: 'Cost & Margins',
       href: `${baseUrl}/cost-margins`,
-      icon: DollarSign,
+      icon: Percent,
       requiredPlan: 'STARTER' as Plan
     }] : []),
     
