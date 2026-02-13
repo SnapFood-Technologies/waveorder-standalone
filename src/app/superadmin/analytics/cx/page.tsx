@@ -194,7 +194,7 @@ export default function CXAnalyticsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <Heart className="w-7 h-7 text-pink-600" />
@@ -202,11 +202,11 @@ export default function CXAnalyticsPage() {
           </h1>
           <p className="text-gray-600 mt-1">Customer experience, satisfaction, and retention metrics</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 w-full sm:w-auto"
           >
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -216,7 +216,7 @@ export default function CXAnalyticsPage() {
           <button
             onClick={fetchData}
             disabled={loading}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-gray-700 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -678,6 +678,22 @@ export default function CXAnalyticsPage() {
           </div>
         </div>
       )}
+
+      {/* Informative Note */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <div className="flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-sm font-semibold text-blue-900 mb-1">About Test Data</h4>
+            <p className="text-sm text-blue-800">
+              Please note that some businesses are test accounts and may be deactivated for testing purposes. 
+              This data may include test businesses that were intentionally deactivated and should not be considered 
+              as actual customer churn. Test businesses are excluded from analytics calculations where applicable, 
+              but deactivation reasons may still appear in this list.
+            </p>
+          </div>
+        </div>
+      </div>
 
     </div>
   )
