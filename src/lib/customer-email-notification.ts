@@ -72,7 +72,10 @@ export async function sendCustomerOrderPlacedEmail(
 
     // Determine language to use
     const useBusinessLanguage = orderData.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (orderData.language || 'en') : 'en'
+    const businessLang = orderData.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
 
     // Create email content
     const emailContent = createCustomerOrderPlacedEmail({
@@ -135,7 +138,10 @@ export async function sendCustomerOrderStatusEmail(
 
     // Determine language to use
     const useBusinessLanguage = orderData.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (orderData.language || 'en') : 'en'
+    const businessLang = orderData.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
 
     // Get status message in the appropriate language
     const statusMessage = getStatusMessage(orderData.status, orderData.type, language, orderData.businessType)
@@ -378,11 +384,14 @@ function getEmailLabels(language: string = 'en'): Record<string, string> {
       delivery: 'Παράδοση',
       pickup: 'Παραλαβή',
       dineIn: 'Επιτόπια Κατανάλωση',
-      order: 'Παραγγελία'
+      order: 'Παραγγελία',
+      deliveryMethod: 'Μέθοδος Παράδοσης'
     }
   }
 
-  return labels[language] || labels.en
+  // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  return labels[normalizedLang] || labels.en
 }
 
 /**

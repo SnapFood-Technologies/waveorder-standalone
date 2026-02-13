@@ -1091,12 +1091,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     )
   }
 
-  // Get admin UI labels based on business language (after we know business exists)
-  const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
-  const businessLang = business.language || 'en'
-  const normalizedAdminLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
-  const adminLanguage = useBusinessLanguage ? normalizedAdminLang : 'en'
-  const adminUILabels = getAdminUILabels(adminLanguage)
+  // Admin UI labels are always in English (not localized)
+  const adminUILabels = getAdminUILabels('en')
 
   return (
     <div className="max-w-8xl mx-auto space-y-6">
@@ -1133,7 +1129,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Order #{order.orderNumber}</h1>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border w-fit mt-2 sm:mt-0 ${getStatusColor(order.status)}`}>
-                {getStatusLabel(order.status, adminLanguage, business?.businessType)}
+                {getStatusLabel(order.status, 'en', business?.businessType)}
               </span>
             </div>
             <p className="text-gray-600 text-sm">Order details and management</p>
@@ -1191,7 +1187,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     >
       {getValidStatusOptions(order.status, order.type).map(status => (
         <option key={status} value={status}>
-          {getStatusLabel(status, business?.language || 'en', business?.businessType)}
+          {getStatusLabel(status, 'en', business?.businessType)}
         </option>
       ))}
     </select>
