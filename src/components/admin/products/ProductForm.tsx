@@ -1012,16 +1012,16 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                     {form.images.map((image, index) => (
-                      <div key={index} className="relative h-48 flex flex-col">
+                      <div key={index} className="space-y-2">
                         <button
                           type="button"
                           onClick={() => setViewingImage(image)}
-                          className="mb-2 px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1.5 w-full justify-center"
+                          className="w-full px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1.5 justify-center"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           View better quality
                         </button>
-                        <div className="relative flex-1">
+                        <div className="relative h-48">
                           <img
                             src={image}
                             alt={`Product image ${index + 1}`}
