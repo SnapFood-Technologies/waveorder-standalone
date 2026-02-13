@@ -320,6 +320,8 @@ export async function GET(
         select: {
           id: true,
           name: true,
+          nameAl: true,
+          nameEl: true,
           description: true,
           descriptionAl: true,
           descriptionEl: true,
@@ -420,8 +422,11 @@ export async function GET(
           return {
             id: product.id,
             name: product.name,
+            nameAl: product.nameAl,
+            nameEl: product.nameEl,
             description: productDescription,
             descriptionAl: product.descriptionAl,
+            descriptionEl: product.descriptionEl,
             images: product.images,
             price: productPricing.effectivePrice,
             originalPrice: productPricing.effectiveOriginalPrice,

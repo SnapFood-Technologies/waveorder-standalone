@@ -275,6 +275,7 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'al' | 'el'>('en')
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   const [limitError, setLimitError] = useState<{ currentCount: number; limit: number; plan: string } | null>(null)
 
@@ -1011,24 +1012,34 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                     {form.images.map((image, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={image}
-                          alt={`Product image ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                        />
+                      <div key={index} className="space-y-2">
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+                          onClick={() => setViewingImage(image)}
+                          className="w-full px-3 py-1.5 text-xs font-medium text-teal-600 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-1.5 justify-center"
                         >
-                          <X className="w-3 h-3" />
+                          <Eye className="w-3.5 h-3.5" />
+                          View better quality
                         </button>
+                        <div className="relative h-48">
+                          <img
+                            src={image}
+                            alt={`Product image ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     
                     {form.images.length < 5 && (
-                      <label className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-teal-500 transition-colors">
+                      <label className="w-full h-full border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-teal-500 transition-colors">
                         {uploadingImage ? (
                           <div className="text-center">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600 mx-auto mb-2"></div>
@@ -1735,6 +1746,30 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           </div>
         </div>
       </div>
+
+      {/* Image View Modal */}
+      {viewingImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setViewingImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-full w-full h-full flex items-center justify-center">
+            <button
+              onClick={() => setViewingImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 text-gray-700" />
+            </button>
+            <img
+              src={viewingImage}
+              alt="Product image full quality"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

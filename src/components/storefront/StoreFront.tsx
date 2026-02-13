@@ -1824,6 +1824,8 @@ interface Category {
 interface Product {
   id: string
   name: string
+  nameAl?: string
+  nameEl?: string
   description?: string
   descriptionAl?: string
   descriptionEl?: string
@@ -3064,7 +3066,11 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
        // @ts-ignore
       products = products.filter(product => {
         // Search in product name, description, and category name
-        const nameMatch = product.name.toLowerCase().includes(searchTermLower)
+        // For Greek storefronts, also search in nameEl
+        const productNameToSearch = (storeData.storefrontLanguage === 'el' || storeData.language === 'el') && product.nameEl && product.nameEl.trim()
+          ? product.nameEl
+          : product.name
+        const nameMatch = productNameToSearch.toLowerCase().includes(searchTermLower)
         const descriptionMatch = product.description?.toLowerCase().includes(searchTermLower) || false
         const categoryMatch = product.categoryName.toLowerCase().includes(searchTermLower)
         
@@ -3209,11 +3215,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       ? regularPrice 
       : (baseOriginalPrice && baseOriginalPrice > regularPrice ? baseOriginalPrice : undefined)
   
+    // Get product display name for cart (Greek storefronts use nameEl if available)
+    const productDisplayName = (storeData.storefrontLanguage === 'el' || storeData.language === 'el') && product.nameEl && product.nameEl.trim()
+      ? product.nameEl
+      : product.name
+    
     const cartItem: CartItem = {
       id: cartItemId,
       productId: product.id,
       variantId: variant?.id,
-      name: `${product.name}${variant ? ` (${variantName})` : ''}`,
+      name: `${productDisplayName}${variant ? ` (${variantName})` : ''}`,
       price: basePrice,
       originalPrice: displayOriginalPrice,
       quantity: 1,
@@ -5401,6 +5412,12 @@ function ProductCard({
         ? product.descriptionEl
         : product.description)
   
+  // Product name: For Greek storefronts, use nameEl if available and not empty, otherwise use English
+  // For other storefronts, always use English
+  const displayName = (storefrontLanguage === 'el' || storefrontLanguage === 'gr') && product.nameEl && product.nameEl.trim()
+    ? product.nameEl
+    : product.name
+  
   // Calculate total quantity in cart for this product (all variants)
   const totalInCart = cart
     .filter(item => item.productId === product.id)
@@ -5469,7 +5486,7 @@ function ProductCard({
             <div className="mb-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-semibold text-base text-gray-900 leading-tight">
-                  {product.name}
+                  {displayName}
                 </h3>
                 {product.featured && (
                   <span 
@@ -5586,7 +5603,7 @@ function ProductCard({
           <div className="w-20 h-20 ml-4 flex-shrink-0">
             <img 
               src={product.images[0]} 
-              alt={product.name}
+              alt={displayName}
               loading="lazy"
               decoding="async"
               className={`w-full h-full object-cover rounded-lg ${disabled || isOutOfStock || isFiltering ? 'filter grayscale' : ''}`}
@@ -5712,6 +5729,12 @@ function ProductModal({
         ? product.descriptionEl
         : product.description)
 
+  // Product name: For Greek storefronts, use nameEl if available and not empty, otherwise use English
+  // For other storefronts, always use English
+  const displayName = (storefrontLanguage === 'el' || storefrontLanguage === 'gr') && product.nameEl && product.nameEl.trim()
+    ? product.nameEl
+    : product.name
+
   // Map variant names to Albanian
   const getVariantDisplayName = (variantName: string): string => {
     if (!useAlbanian) return variantName
@@ -5836,7 +5859,7 @@ function ProductModal({
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
+            <h2 className="text-xl font-bold text-gray-900">{displayName}</h2>
             <div className="flex items-center gap-2">
               {/* Share Button */}
               <button 
@@ -5898,7 +5921,7 @@ function ProductModal({
                   <div className="relative overflow-hidden rounded-2xl bg-gray-50">
                     <img 
                       src={currentImageUrl} 
-                      alt={`${product.name}${selectedVariant ? ` - ${getVariantDisplayName(selectedVariant.name)}` : ''}`}
+                      alt={`${displayName}${selectedVariant ? ` - ${getVariantDisplayName(selectedVariant.name)}` : ''}`}
                       className="w-full h-full object-contain transition-opacity duration-300"
                       style={{ minHeight: '300px' }}
                       key={`${product.id}-${selectedVariant?.id || 'default'}-${currentImageIndex}`} // Force re-render when variant or image changes
@@ -6542,6 +6565,12 @@ function OrderPanel({
                                 'sq': 'Maqedonia e Veriut',
                                 'en': 'North Macedonia',
                                 'es': 'Macedonia del Norte'
+                              },
+                              'GR': {
+                                'el': 'Ελλάδα',
+                                'en': 'Greece',
+                                'sq': 'Greqia',
+                                'es': 'Grecia'
                               }
                             }
                             return countryNames[code]?.[language] || country.name
