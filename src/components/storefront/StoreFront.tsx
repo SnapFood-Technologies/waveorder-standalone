@@ -6496,6 +6496,12 @@ function OrderPanel({
                                 'sq': 'Maqedonia e Veriut',
                                 'en': 'North Macedonia',
                                 'es': 'Macedonia del Norte'
+                              },
+                              'GR': {
+                                'el': 'Ελλάδα',
+                                'en': 'Greece',
+                                'sq': 'Greqia',
+                                'es': 'Grecia'
                               }
                             }
                             return countryNames[code]?.[language] || country.name
