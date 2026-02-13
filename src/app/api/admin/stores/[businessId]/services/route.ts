@@ -208,6 +208,17 @@ export async function POST(
     }
 
     const serviceData = await request.json()
+    
+    // Check if staff assignment is attempted on STARTER plan
+    if (serviceData.staffIds && Array.isArray(serviceData.staffIds) && serviceData.staffIds.length > 0) {
+      if (userPlan === 'STARTER') {
+        return NextResponse.json({ 
+          message: 'Staff assignment is only available on Pro or Business plans. Please upgrade to assign team members to services.',
+          code: 'STAFF_ASSIGNMENT_NOT_AVAILABLE',
+          plan: userPlan
+        }, { status: 403 })
+      }
+    }
 
     const service = await prisma.product.create({
       data: {

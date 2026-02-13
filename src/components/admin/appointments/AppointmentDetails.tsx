@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
+import { useSubscription } from '@/hooks/useSubscription'
 
 interface AppointmentDetailsProps {
   businessId: string
@@ -93,6 +94,10 @@ interface TeamMember {
 
 export default function AppointmentDetails({ businessId, appointmentId }: AppointmentDetailsProps) {
   const { addParams } = useImpersonation(businessId)
+  const { effectivePlan } = useSubscription()
+  
+  // Staff assignment is only available for PRO+ plans
+  const canAssignStaff = effectivePlan === 'PRO' || effectivePlan === 'BUSINESS'
   
   const [appointment, setAppointment] = useState<Appointment | null>(null)
   const [business, setBusiness] = useState<Business | null>(null)
@@ -720,6 +725,29 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
                     Staff member will be notified of this assignment
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+          {teamMembers.length > 0 && !canAssignStaff && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800">
+                      Staff Assignment Available on Pro Plan
+                    </p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Upgrade to Pro or Business plan to assign team members to appointments.
+                    </p>
+                    <Link
+                      href={`/admin/stores/${businessId}/settings/billing`}
+                      className="text-xs text-amber-800 underline hover:no-underline mt-2 inline-block"
+                    >
+                      View Plans →
+                    </Link>
+                  </div>
+                </div>
               </div>
             </div>
           )}

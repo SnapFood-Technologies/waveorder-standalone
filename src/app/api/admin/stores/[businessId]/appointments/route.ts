@@ -167,7 +167,24 @@ export async function POST(
       return NextResponse.json({ message: 'This endpoint is only for salon businesses' }, { status: 403 })
     }
 
+    // Get business owner's plan to check staff assignment restrictions
+    const businessOwner = await prisma.businessUser.findFirst({
+      where: { businessId, role: 'OWNER' },
+      include: { user: { select: { plan: true } } }
+    })
+    
+    const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
+
     const body = await request.json()
+    
+    // Check if staff assignment is attempted on STARTER plan
+    if (body.staffId && userPlan === 'STARTER') {
+      return NextResponse.json({ 
+        message: 'Staff assignment is only available on Pro or Business plans. Please upgrade to assign team members to appointments.',
+        code: 'STAFF_ASSIGNMENT_NOT_AVAILABLE',
+        plan: userPlan
+      }, { status: 403 })
+    }
     
     // Create appointment requires an order first
     // For now, we'll assume the order is created separately
