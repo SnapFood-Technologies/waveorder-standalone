@@ -320,6 +320,8 @@ export async function GET(
         select: {
           id: true,
           name: true,
+          nameAl: true,
+          nameEl: true,
           description: true,
           descriptionAl: true,
           descriptionEl: true,
