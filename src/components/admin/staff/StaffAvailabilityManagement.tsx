@@ -154,19 +154,24 @@ export default function StaffAvailabilityManagement({ businessId }: StaffAvailab
     
     initializeStaffAvailability(selectedStaffId)
     
-    setAvailability(prev => ({
-      ...prev,
-      [selectedStaffId]: {
-        ...prev[selectedStaffId],
-        workingHours: {
-          ...prev[selectedStaffId].workingHours,
-          [day]: {
-            ...prev[selectedStaffId].workingHours[day as keyof typeof prev[selectedStaffId].workingHours],
-            [field]: value
+    setAvailability(prev => {
+      const currentStaff = prev[selectedStaffId]
+      const currentDayHours = currentStaff?.workingHours?.[day as keyof typeof currentStaff.workingHours] || { open: '09:00', close: '17:00', closed: false }
+      
+      return {
+        ...prev,
+        [selectedStaffId]: {
+          ...currentStaff,
+          workingHours: {
+            ...currentStaff?.workingHours,
+            [day]: {
+              ...currentDayHours,
+              [field]: value
+            }
           }
         }
       }
-    }))
+    })
   }
 
   const copyHoursToAllDays = () => {

@@ -34,7 +34,11 @@ export async function GET(
               }
             },
             items: {
-              include: {
+              select: {
+                id: true,
+                quantity: true,
+                price: true,
+                modifiers: true,
                 product: {
                   select: {
                     id: true,
@@ -43,13 +47,6 @@ export async function GET(
                     images: true,
                     price: true,
                     serviceDuration: true
-                  }
-                },
-                modifiers: {
-                  select: {
-                    id: true,
-                    name: true,
-                    price: true
                   }
                 }
               }

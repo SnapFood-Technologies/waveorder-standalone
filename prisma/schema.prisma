@@ -278,7 +278,7 @@ model Business {
 
   // Business hours
   businessHours Json?
-  
+
   // Staff availability (salon-specific)
   staffAvailability Json? // { [staffId]: { workingHours: {...}, timeOff: [...] } }
 
@@ -322,10 +322,10 @@ model Business {
   freeDeliveryText String? // Custom free delivery text for RETAIL (overrides default "Free Delivery")
 
   // Salon-specific settings
-  appointmentBufferMinutes  Int?     @default(15)  // Buffer between appointments
-  allowOnlineBooking        Boolean  @default(true)
-  showServiceDuration       Boolean  @default(true)
-  showStaffSelection        Boolean  @default(false)
+  appointmentBufferMinutes Int?    @default(15) // Buffer between appointments
+  allowOnlineBooking       Boolean @default(true)
+  showServiceDuration      Boolean @default(true)
+  showStaffSelection       Boolean @default(false)
 
   // Store Closure Fields
   isTemporarilyClosed Boolean   @default(false)
@@ -782,10 +782,10 @@ model Product {
   metadata        Json? // For storing external system data (e.g., external product IDs)
 
   // Salon/service fields
-  isService            Boolean  @default(false)
-  serviceDuration      Int?     // Duration in minutes (e.g., 45)
-  requiresAppointment  Boolean  @default(false)
-  staffIds             String[] @db.ObjectId  // Which staff can perform this service
+  isService           Boolean  @default(false)
+  serviceDuration     Int? // Duration in minutes (e.g., 45)
+  requiresAppointment Boolean  @default(false)
+  staffIds            String[] @db.ObjectId // Which staff can perform this service
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1170,19 +1170,19 @@ model OrderItem {
 }
 
 model Appointment {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  orderId       String   @db.ObjectId
-  businessId    String   @db.ObjectId
-  customerId    String?  @db.ObjectId
-  staffId       String?  @db.ObjectId  // Assigned staff member
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  orderId    String  @db.ObjectId
+  businessId String  @db.ObjectId
+  customerId String? @db.ObjectId
+  staffId    String? @db.ObjectId // Assigned staff member
 
   appointmentDate DateTime
-  startTime       String   // "14:00"
-  endTime         String   // "14:45" (calculated from duration)
-  duration        Int      // Total minutes
+  startTime       String // "14:00"
+  endTime         String // "14:45" (calculated from duration)
+  duration        Int // Total minutes
 
-  status   AppointmentStatus @default(REQUESTED)
-  notes    String?
+  status AppointmentStatus @default(REQUESTED)
+  notes  String?
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -1452,12 +1452,12 @@ enum PaymentStatus {
 }
 
 enum AppointmentStatus {
-  REQUESTED    // Client submitted via WhatsApp
-  CONFIRMED    // Salon confirmed time
-  IN_PROGRESS  // Currently being served
-  COMPLETED    // Service done
-  CANCELLED    // Cancelled
-  NO_SHOW      // Client didn't show up
+  REQUESTED // Client submitted via WhatsApp
+  CONFIRMED // Salon confirmed time
+  IN_PROGRESS // Currently being served
+  COMPLETED // Service done
+  CANCELLED // Cancelled
+  NO_SHOW // Client didn't show up
 }
 
 enum CustomerTier {

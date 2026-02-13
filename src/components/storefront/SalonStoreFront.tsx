@@ -381,7 +381,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         ) : services.length === 0 ? (
           <div className="text-center py-12">
             <Scissors className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">{translations.noItemsFound || 'No services found'}</p>
+            <p className="text-gray-600">{translations.noProductsFound || 'No services found'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -445,7 +445,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           <div className="max-w-md mx-auto flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {bookingItems.length} {translations.service || 'service'}{bookingItems.length > 1 ? 's' : ''}
+                {bookingItems.length} {bookingItems.length > 1 ? 'services' : 'service'}
               </p>
               <p className="text-xs text-gray-600">
                 {formatDuration(calculateTotalDuration())} • {currencySymbol}{calculateTotal().toFixed(2)}
@@ -587,11 +587,15 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {translations.phone || 'Phone'} *
                   </label>
-                  <PhoneInput
-                    value={customerInfo.phone}
-                    onChange={(phone) => setCustomerInfo({ ...customerInfo, phone })}
-                    className="w-full"
-                  />
+                  <div className="w-full">
+                    <PhoneInput
+                      value={customerInfo.phone}
+                      onChange={(phone) => setCustomerInfo({ ...customerInfo, phone })}
+                      storeData={storeData}
+                      primaryColor={storeData.primaryColor}
+                      translations={translations}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

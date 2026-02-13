@@ -41,7 +41,9 @@ inCartLabel: string
     // Form Fields
     name: string
     whatsappNumber: string
+    phone: string
     email: string
+    notes: string
     addressLine1: string
     addressLine2: string
     deliveryTime: string
@@ -269,6 +271,15 @@ close: string
     // Product Loading
     tryAgain: string
     loadMore: string
+    
+    // Salon/Appointment specific
+    bookAppointment: string
+    selectedServices: string
+    appointmentDate: string
+    appointmentTime: string
+    submitting: string
+    bookViaWhatsapp: string
+    specialRequests: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -307,7 +318,9 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     // Form Fields
     name: "Name",
     whatsappNumber: "WhatsApp Number",
+    phone: "Phone",
     email: "Email",
+    notes: "Notes",
     addressLine1: "Address Line 1",
     addressLine2: "Address Line 2",
     deliveryTime: "Delivery Time",
@@ -541,7 +554,16 @@ canBeAdded: "more can be added to cart",
     
     // Product Loading
     tryAgain: "Try Again",
-    loadMore: "Load More"
+    loadMore: "Load More",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Book Appointment",
+    selectedServices: "Selected Services",
+    appointmentDate: "Appointment Date",
+    appointmentTime: "Appointment Time",
+    submitting: "Submitting...",
+    bookViaWhatsapp: "Book via WhatsApp",
+    specialRequests: "Any special requests..."
 
   }
   
@@ -617,7 +639,9 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     // Form Fields
     name: "Emri",
     whatsappNumber: "Numri i WhatsApp",
+    phone: "Telefoni",
     email: "Email",
+    notes: "Shënime",
     addressLine1: "Adresa Linja 1",
     addressLine2: "Adresa Linja 2",
     deliveryTime: "Koha e Dërgesës",
@@ -810,7 +834,16 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Provo Përsëri",
-    loadMore: "Shfaq Më Shumë"
+    loadMore: "Shfaq Më Shumë",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Rezervo Takim",
+    selectedServices: "Shërbimet e Zgjedhura",
+    appointmentDate: "Data e Takimit",
+    appointmentTime: "Ora e Takimit",
+    submitting: "Duke dërguar...",
+    bookViaWhatsapp: "Rezervo përmes WhatsApp",
+    specialRequests: "Kërkesa të veçanta..."
 
   }
 
@@ -850,7 +883,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Form Fields
     name: "Nombre",
     whatsappNumber: "Número de WhatsApp",
+    phone: "Teléfono",
     email: "Email",
+    notes: "Notas",
     addressLine1: "Dirección Línea 1",
     addressLine2: "Dirección Línea 2",
     deliveryTime: "Hora de Entrega",
@@ -1079,7 +1114,16 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Intentar de Nuevo",
-    loadMore: "Cargar Más"
+    loadMore: "Cargar Más",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Reservar Cita",
+    selectedServices: "Servicios Seleccionados",
+    appointmentDate: "Fecha de la Cita",
+    appointmentTime: "Hora de la Cita",
+    submitting: "Enviando...",
+    bookViaWhatsapp: "Reservar por WhatsApp",
+    specialRequests: "Solicitudes especiales..."
 
   }
 
@@ -1119,7 +1163,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Form Fields
     name: "Όνομα",
     whatsappNumber: "Αριθμός WhatsApp",
+    phone: "Τηλέφωνο",
     email: "Email",
+    notes: "Σημειώσεις",
     addressLine1: "Διεύθυνση Γραμμή 1",
     addressLine2: "Διεύθυνση Γραμμή 2",
     deliveryTime: "Ώρα Παράδοσης",
@@ -1350,7 +1396,16 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Δοκίμασε Ξανά",
-    loadMore: "Φόρτωσε Περισσότερα"
+    loadMore: "Φόρτωσε Περισσότερα",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Κράτηση Ραντεβού",
+    selectedServices: "Επιλεγμένες Υπηρεσίες",
+    appointmentDate: "Ημερομηνία Ραντεβού",
+    appointmentTime: "Ώρα Ραντεβού",
+    submitting: "Υποβολή...",
+    bookViaWhatsapp: "Κράτηση μέσω WhatsApp",
+    specialRequests: "Ειδικές αιτήσεις..."
 
   }
 
