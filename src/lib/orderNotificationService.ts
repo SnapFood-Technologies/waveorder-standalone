@@ -41,6 +41,7 @@ interface OrderData {
   countryCode?: string | null
   city?: string | null
   postalCode?: string | null
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null // Invoice/Receipt selection (for Greek storefronts)
 }
 
 interface BusinessData {
@@ -469,6 +470,14 @@ function createOrderNotificationEmail({
       <div style="margin-bottom: 30px; padding: 15px; background-color: #fef3cd; border-radius: 8px; border: 1px solid #f59e0b;">
         <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">${labels.specialInstructions}</h3>
         <p style="color: #92400e; margin: 0; font-size: 14px; white-space: pre-wrap;">${orderData.notes}</p>
+      </div>
+      ` : ''}
+      
+      ${orderData.invoiceType && language === 'el' ? `
+      <!-- Invoice/Receipt Selection -->
+      <div style="margin-bottom: 30px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
+        <h3 style="color: #0c4a6e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📄 ${orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}</h3>
+        <p style="color: #0c4a6e; margin: 0; font-size: 14px;">${orderData.invoiceType === 'INVOICE' ? 'Ο πελάτης έχει επιλέξει να λάβει τιμολόγιο για αυτή την παραγγελία.' : 'Ο πελάτης έχει επιλέξει να λάβει απόδειξη για αυτή την παραγγελία.'}</p>
       </div>
       ` : ''}
       

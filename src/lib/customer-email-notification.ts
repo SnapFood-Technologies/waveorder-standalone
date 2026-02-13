@@ -39,6 +39,7 @@ interface CustomerOrderData {
   countryCode?: string | null
   city?: string | null
   postalCode?: string | null
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null // Invoice/Receipt selection (for Greek storefronts)
 }
 
 interface CustomerData {
@@ -577,6 +578,14 @@ function createCustomerOrderStatusEmail({
       </div>
       ` : ''}
 
+      ${orderData.invoiceType && language === 'el' ? `
+      <!-- Invoice/Receipt Selection -->
+      <div style="margin-bottom: 30px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
+        <h3 style="color: #0c4a6e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📄 ${orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}</h3>
+        <p style="color: #0c4a6e; margin: 0; font-size: 14px;">${orderData.invoiceType === 'INVOICE' ? 'Έχετε επιλέξει να λάβετε τιμολόγιο για αυτή την παραγγελία.' : 'Έχετε επιλέξει να λάβετε απόδειξη για αυτή την παραγγελία.'}</p>
+      </div>
+      ` : ''}
+
       <!-- Contact Info -->
       ${orderData.businessPhone ? `
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -752,6 +761,14 @@ function createCustomerOrderPlacedEmail({
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">🏪 ${labels.pickupLocation}</h3>
         <p style="color: #065f46; margin: 0; font-size: 14px;">${orderData.businessAddress || orderData.businessName}</p>
+      </div>
+      ` : ''}
+
+      ${orderData.invoiceType && language === 'el' ? `
+      <!-- Invoice/Receipt Selection -->
+      <div style="margin-bottom: 30px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
+        <h3 style="color: #0c4a6e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📄 ${orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}</h3>
+        <p style="color: #0c4a6e; margin: 0; font-size: 14px;">${orderData.invoiceType === 'INVOICE' ? 'Έχετε επιλέξει να λάβετε τιμολόγιο για αυτή την παραγγελία.' : 'Έχετε επιλέξει να λάβετε απόδειξη για αυτή την παραγγελία.'}</p>
       </div>
       ` : ''}
 

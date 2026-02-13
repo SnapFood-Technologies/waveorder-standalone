@@ -60,6 +60,8 @@ interface StoreData {
   isOpen: boolean
   nextOpenTime?: string
   whatsappButtonColor?: string
+  invoiceReceiptSelectionEnabled?: boolean
+  invoiceMinimumOrderValue?: number | null
 }
 
 interface Service {
@@ -99,7 +101,11 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     name: '',
     phone: '',
     email: '',
-    notes: ''
+    notes: '',
+    invoiceType: '' as 'INVOICE' | 'RECEIPT' | '',
+    invoiceAfm: '',
+    invoiceCompanyName: '',
+    invoiceTaxOffice: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -254,6 +260,10 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         deliveryType: 'dineIn', // Salon appointments are in-salon
         deliveryTime: appointmentDateTime.toISOString(),
         specialInstructions: customerInfo.notes,
+        invoiceType: customerInfo.invoiceType || null, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceAfm: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceAfm || null) : null,
+        invoiceCompanyName: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceCompanyName || null) : null,
+        invoiceTaxOffice: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceTaxOffice || null) : null,
         paymentMethod: 'Cash', // Default, can be updated
         total: calculateTotal(),
         subtotal: calculateTotal(),
@@ -282,7 +292,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       setShowBookingModal(false)
       setAppointmentDate(null)
       setAppointmentTime('')
-      setCustomerInfo({ name: '', phone: '', email: '', notes: '' })
+      setCustomerInfo({ name: '', phone: '', email: '', notes: '', invoiceType: '' as '', invoiceAfm: '', invoiceCompanyName: '', invoiceTaxOffice: '' })
     } catch (error) {
       console.error('Error submitting booking:', error)
       alert('Failed to submit booking. Please try again.')
@@ -620,6 +630,115 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                     placeholder={translations.specialRequests || 'Any special requests...'}
                   />
                 </div>
+
+                {/* Invoice/Receipt Selection - Only for Greek storefronts with feature enabled */}
+                {(storeData.storefrontLanguage === 'el' || storeData.language === 'el') && storeData.invoiceReceiptSelectionEnabled && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Τιμολόγιο ή Απόδειξη? *
+                      </label>
+                      <select
+                        value={customerInfo.invoiceType || ''}
+                        onChange={(e) => {
+                          const newType = e.target.value as 'INVOICE' | 'RECEIPT' | ''
+                          setCustomerInfo({ 
+                            ...customerInfo, 
+                            invoiceType: newType,
+                            ...(newType !== 'INVOICE' && {
+                              invoiceAfm: '',
+                              invoiceCompanyName: '',
+                              invoiceTaxOffice: ''
+                            })
+                          })
+                        }}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="">Επιλέξτε...</option>
+                        <option value="INVOICE">Τιμολόγιο</option>
+                        <option value="RECEIPT">Απόδειξη</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Επιλέξτε αν χρειάζεστε τιμολόγιο ή απόδειξη για την παραγγελία σας
+                      </p>
+
+                      {/* Check minimum order value for invoice */}
+                      {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && calculateTotal() < storeData.invoiceMinimumOrderValue && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-700">
+                            Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {currencySymbol}{storeData.invoiceMinimumOrderValue.toFixed(2)}. Τρέχουσα παραγγελία: {currencySymbol}{calculateTotal().toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Message when invoice is selected */}
+                      {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-700">
+                            <strong>Σημείωση:</strong> Θα επικοινωνήσουμε μαζί σας για να ζητήσουμε τυχόν επιπλέον στοιχεία που χρειάζονται για το Τιμολόγιο σας.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
+                    {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                      <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-900">Στοιχεία Τιμολογίου</h4>
+                        
+                        {/* Tax ID (AFM) - Required */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            ΑΦΜ (Φορολογικός Αριθμός) *
+                          </label>
+                          <input
+                            type="text"
+                            value={customerInfo.invoiceAfm || ''}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 9)
+                              setCustomerInfo({ ...customerInfo, invoiceAfm: value })
+                            }}
+                            required={customerInfo.invoiceType === 'INVOICE'}
+                            placeholder="123456789"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {customerInfo.invoiceAfm?.length === 9 ? '✓ 9 ψηφία' : `9 ψηφία (${customerInfo.invoiceAfm?.length || 0}/9)`}
+                          </p>
+                        </div>
+
+                        {/* Company Name - Optional */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Επωνυμία Εταιρείας (Προαιρετικό)
+                          </label>
+                          <input
+                            type="text"
+                            value={customerInfo.invoiceCompanyName || ''}
+                            onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceCompanyName: e.target.value })}
+                            placeholder="Όνομα εταιρείας"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          />
+                        </div>
+
+                        {/* Tax Office (ΔΟΥ) - Optional */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            ΔΟΥ (Διαχείριση Οφειλών) (Προαιρετικό)
+                          </label>
+                          <input
+                            type="text"
+                            value={customerInfo.invoiceTaxOffice || ''}
+                            onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceTaxOffice: e.target.value })}
+                            placeholder="ΔΟΥ"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Submit Button */}

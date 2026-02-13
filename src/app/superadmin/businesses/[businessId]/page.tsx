@@ -37,7 +37,8 @@ import {
   Crown,
   Search,
   ChefHat,
-  Key
+  Key,
+  FileText
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -70,6 +71,7 @@ interface BusinessDetails {
   showProductionPlanning?: boolean
   enableManualTeamCreation?: boolean
   enableDeliveryManagement?: boolean
+  invoiceReceiptSelectionEnabled?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1410,6 +1412,9 @@ export default function BusinessDetailsPage() {
           {/* Delivery Management Settings */}
           <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Invoice/Receipt Selection Settings */}
+          <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -2625,6 +2630,102 @@ function DeliveryManagementSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Delivery management features not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Invoice/Receipt Selection Settings Section Component (SuperAdmin toggle only)
+function InvoiceReceiptSelectionSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [invoiceReceiptEnabled, setInvoiceReceiptEnabled] = useState(business.invoiceReceiptSelectionEnabled || false)
+  const isGreekStorefront = (business.storefrontLanguage || business.language) === 'el'
+
+  const handleToggle = async () => {
+    const newValue = !invoiceReceiptEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceReceiptSelectionEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setInvoiceReceiptEnabled(newValue)
+        toast.success(newValue ? 'Invoice/Receipt Selection enabled' : 'Invoice/Receipt Selection disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling invoice/receipt selection:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <FileText className="w-5 h-5 mr-2 text-blue-600" />
+        Invoice/Receipt Selection
+      </h3>
+      
+      {!isGreekStorefront && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800">
+            <AlertTriangle className="w-4 h-4 inline mr-1" />
+            <span className="font-medium">Note:</span> This feature is only available for businesses with Greek storefront language (el). Current language: {business.storefrontLanguage || business.language || 'en'}
+          </p>
+        </div>
+      )}
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Invoice/Receipt Selection</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, Greek storefronts will show an option for customers to select between "Τιμολόγιο" (Invoice) or "Απόδειξη" (Receipt) during checkout. This selection will be included in WhatsApp messages and email notifications.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving || !isGreekStorefront}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            invoiceReceiptEnabled && isGreekStorefront ? 'bg-blue-600' : 'bg-gray-200'
+          } ${saving || !isGreekStorefront ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              invoiceReceiptEnabled && isGreekStorefront ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {invoiceReceiptEnabled && isGreekStorefront && (
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-700">
+            <span className="font-medium">Enabled:</span> Customers will see "Τιμολόγιο" (Invoice) and "Απόδειξη" (Receipt) options during checkout. The selection will be included in order notifications.
+          </p>
+        </div>
+      )}
+      
+      {!invoiceReceiptEnabled && isGreekStorefront && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Invoice/receipt selection feature not available to customers.
           </p>
         </div>
       )}

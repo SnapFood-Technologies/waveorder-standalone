@@ -68,7 +68,9 @@ export async function GET(
         storeLongitude: true,
         uncategorizedNameOverride: true,
         uncategorizedNameOverrideAl: true,
-        shippingCountries: true
+        shippingCountries: true,
+        invoiceReceiptSelectionEnabled: true,
+        invoiceMinimumOrderValue: true
       }
     })
 
@@ -216,6 +218,7 @@ export async function PUT(
         uncategorizedNameOverride: data.uncategorizedNameOverride?.trim() || null,
         uncategorizedNameOverrideAl: data.uncategorizedNameOverrideAl?.trim() || null,
         shippingCountries: Array.isArray(data.shippingCountries) ? data.shippingCountries : [],
+        invoiceMinimumOrderValue: data.invoiceMinimumOrderValue !== undefined ? (data.invoiceMinimumOrderValue ? parseFloat(data.invoiceMinimumOrderValue) : null) : undefined,
         updatedAt: new Date()
       },
       select: {

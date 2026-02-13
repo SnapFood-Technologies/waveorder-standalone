@@ -114,6 +114,10 @@ interface Order {
     name: string
     email: string
   } | null
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null  // Invoice/Receipt selection (for Greek storefronts)
+  invoiceAfm?: string | null  // Tax ID (AFM) - 9 digits
+  invoiceCompanyName?: string | null  // Company name
+  invoiceTaxOffice?: string | null  // Tax office (ΔΟΥ)
   createdAt: string
   updatedAt: string
 }
@@ -124,6 +128,7 @@ interface Business {
   whatsappNumber: string
   businessType: string
   language: string
+  storefrontLanguage?: string
   translateContentToBusinessLanguage?: boolean
   timeFormat?: string
   // Notification settings
@@ -259,6 +264,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         setSelectedPaymentStatus(data.order.paymentStatus)
         setOrderNotes(data.order.notes || '')
         setDeliveryTime(data.order.deliveryTime ? new Date(data.order.deliveryTime).toISOString().slice(0, 16) : '')
+        setInvoiceAfm(data.order.invoiceAfm || '')
+        setInvoiceCompanyName(data.order.invoiceCompanyName || '')
+        setInvoiceTaxOffice(data.order.invoiceTaxOffice || '')
       } else if (response.status === 404) {
         setError('Order not found')
       } else {
@@ -723,6 +731,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     }
     
     message += `💰 ${whatsappLabels.total}: ${formatCurrency(order.total)}\n`
+    
+    // Add invoice/receipt selection if present (for Greek storefronts)
+    if (order.invoiceType && language === 'el') {
+      const invoiceLabel = order.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'
+      message += `\n${invoiceLabel}: Ναι\n`
+    }
     
     if (order.deliveryTime) {
       const deliveryDate = new Date(order.deliveryTime)
@@ -1670,6 +1684,169 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
                   {order.notes}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Invoice/Receipt Selection - Only show for Greek storefronts */}
+          {order.invoiceType && (business?.language === 'el' || business?.storefrontLanguage === 'el') && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Τιμολόγιο / Απόδειξη
+                </h3>
+                {order.invoiceType === 'INVOICE' && !editingInvoice && (
+                  <button
+                    onClick={() => setEditingInvoice(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Edit
+                  </button>
+                )}
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center mb-3">
+                  <div className={`px-3 py-1 rounded-lg font-medium text-sm ${
+                    order.invoiceType === 'INVOICE' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-green-600 text-white'
+                  }`}>
+                    {order.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}
+                  </div>
+                  <p className="ml-3 text-sm text-gray-700">
+                    Ο πελάτης έχει επιλέξει να λάβει {order.invoiceType === 'INVOICE' ? 'τιμολόγιο' : 'απόδειξη'} για αυτή την παραγγελία.
+                  </p>
+                </div>
+
+                {/* Invoice Details - Show when INVOICE is selected */}
+                {order.invoiceType === 'INVOICE' && (
+                  <>
+                    {!editingInvoice ? (
+                      <div className="mt-4 space-y-2">
+                        {order.invoiceAfm && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">ΑΦΜ:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceAfm}</span>
+                          </div>
+                        )}
+                        {order.invoiceCompanyName && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">Επωνυμία:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceCompanyName}</span>
+                          </div>
+                        )}
+                        {order.invoiceTaxOffice && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">ΔΟΥ:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceTaxOffice}</span>
+                          </div>
+                        )}
+                        {!order.invoiceAfm && !order.invoiceCompanyName && !order.invoiceTaxOffice && (
+                          <p className="text-xs text-gray-500 italic">No invoice details provided yet</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            ΑΦΜ (Φορολογικός Αριθμός) *
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceAfm}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 9)
+                              setInvoiceAfm(value)
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="123456789"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {invoiceAfm.length === 9 ? '✓ 9 digits' : `${invoiceAfm.length}/9 digits`}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Επωνυμία Εταιρείας (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceCompanyName}
+                            onChange={(e) => setInvoiceCompanyName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="Company name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            ΔΟΥ (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceTaxOffice}
+                            onChange={(e) => setInvoiceTaxOffice(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="Tax office"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 pt-2">
+                          <button
+                            onClick={async () => {
+                              if (!invoiceAfm || invoiceAfm.length !== 9) {
+                                toast.error('Please enter a valid AFM (9 digits)')
+                                return
+                              }
+                              setUpdating(true)
+                              try {
+                                const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    invoiceAfm: invoiceAfm || null,
+                                    invoiceCompanyName: invoiceCompanyName || null,
+                                    invoiceTaxOffice: invoiceTaxOffice || null
+                                  })
+                                })
+                                if (response.ok) {
+                                  toast.success('Invoice details updated')
+                                  setEditingInvoice(false)
+                                  fetchOrder()
+                                } else {
+                                  const data = await response.json()
+                                  toast.error(data.message || 'Failed to update invoice details')
+                                }
+                              } catch (error) {
+                                console.error('Error updating invoice details:', error)
+                                toast.error('Failed to update invoice details')
+                              } finally {
+                                setUpdating(false)
+                              }
+                            }}
+                            disabled={updating}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50"
+                          >
+                            {updating ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingInvoice(false)
+                              setInvoiceAfm(order.invoiceAfm || '')
+                              setInvoiceCompanyName(order.invoiceCompanyName || '')
+                              setInvoiceTaxOffice(order.invoiceTaxOffice || '')
+                            }}
+                            disabled={updating}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}

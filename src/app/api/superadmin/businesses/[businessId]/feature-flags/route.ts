@@ -36,7 +36,10 @@ export async function GET(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
-        currency: true
+        invoiceReceiptSelectionEnabled: true,
+        currency: true,
+        storefrontLanguage: true,
+        language: true
       }
     })
 
@@ -154,7 +157,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -173,6 +176,9 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       updateData.enableDeliveryManagement = enableDeliveryManagement === true
     }
+    if (invoiceReceiptSelectionEnabled !== undefined) {
+      updateData.invoiceReceiptSelectionEnabled = invoiceReceiptSelectionEnabled === true
+    }
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -182,7 +188,8 @@ export async function PATCH(
         id: true,
         name: true,
         enableManualTeamCreation: true,
-        enableDeliveryManagement: true
+        enableDeliveryManagement: true,
+        invoiceReceiptSelectionEnabled: true
       }
     })
 
@@ -193,13 +200,17 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       messages.push(`Delivery Management ${updatedBusiness.enableDeliveryManagement ? 'enabled' : 'disabled'}`)
     }
+    if (invoiceReceiptSelectionEnabled !== undefined) {
+      messages.push(`Invoice/Receipt Selection ${updatedBusiness.invoiceReceiptSelectionEnabled ? 'enabled' : 'disabled'}`)
+    }
 
     return NextResponse.json({
       success: true,
       message: messages.join(' and ') + ` for ${updatedBusiness.name}`,
       settings: {
         enableManualTeamCreation: updatedBusiness.enableManualTeamCreation,
-        enableDeliveryManagement: updatedBusiness.enableDeliveryManagement
+        enableDeliveryManagement: updatedBusiness.enableDeliveryManagement,
+        invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled
       }
     })
   } catch (error) {

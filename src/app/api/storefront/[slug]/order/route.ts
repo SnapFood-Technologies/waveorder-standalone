@@ -1179,6 +1179,10 @@ export async function POST(
       deliveryTime,
       paymentMethod,
       specialInstructions,
+      invoiceType, // 'INVOICE' | 'RECEIPT' | null (for Greek storefronts)
+      invoiceAfm, // Tax ID (AFM) - 9 digits (required for invoices)
+      invoiceCompanyName, // Company name (optional for invoices)
+      invoiceTaxOffice, // Tax office (ΔΟΥ) (optional for invoices)
       latitude,
       longitude,
       postalPricingId, // For RETAIL businesses
@@ -1788,6 +1792,10 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
         deliveryTime: deliveryTime ? new Date(deliveryTime) : null,
         notes: specialInstructions,
+        invoiceType: invoiceType || null, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceAfm: invoiceType === 'INVOICE' ? (invoiceAfm || null) : null, // Tax ID (AFM) - 9 digits
+        invoiceCompanyName: invoiceType === 'INVOICE' ? (invoiceCompanyName || null) : null, // Company name
+        invoiceTaxOffice: invoiceType === 'INVOICE' ? (invoiceTaxOffice || null) : null, // Tax office (ΔΟΥ)
         paymentMethod,
         paymentStatus: 'PENDING',
         // Store coordinates for delivery orders
@@ -1966,7 +1974,8 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           postalPricingDetails: postalPricingDetails,
           countryCode: finalCountryCode || undefined,
           city: finalCity || undefined,
-          postalCode: finalPostalCode || undefined
+          postalCode: finalPostalCode || undefined,
+          invoiceType: (order as any).invoiceType || undefined // Invoice/Receipt selection (for Greek storefronts)
         }
       ).catch((error) => {
         // Log error but don't fail the request
@@ -2085,7 +2094,8 @@ try {
         postalPricingDetails: postalPricingDetails,
         countryCode: countryCode || null,
         city: city || null,
-        postalCode: postalCode || null
+        postalCode: postalCode || null,
+        invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
       },
       {
         name: business.name,
@@ -2218,6 +2228,8 @@ try {
           deliveryAddress: order.deliveryAddress || undefined,
           deliveryTime: orderData.deliveryTime || null,
           specialInstructions: order.notes || undefined,
+          invoiceType: (order as any).invoiceType || undefined, // Invoice/Receipt selection (for Greek storefronts)
+          language: business.language || undefined,
           currencySymbol: getCurrencySymbol(business.currency)
         }
       )
@@ -2555,6 +2567,12 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   
   if (orderData.specialInstructions) {
     message += `${terms.notes}: ${orderData.specialInstructions}\n`
+  }
+  
+  // Add invoice/receipt selection if present (for Greek storefronts)
+  if (orderData.invoiceType && language === 'el') {
+    const invoiceLabel = orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'
+    message += `\n${invoiceLabel}: Ναι\n`
   }
   
   message += `\n---\n`

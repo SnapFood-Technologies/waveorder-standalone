@@ -1777,6 +1777,7 @@ interface StoreData {
   initialProducts?: any[]  // Initial products from server-side render
   schedulingEnabled?: boolean  // Enable/disable order scheduling
   showStockBadge?: boolean  // Show stock status badge on product cards
+  invoiceReceiptSelectionEnabled?: boolean  // Invoice/Receipt selection feature (for Greek storefronts)
   happyHour?: {
     isActive: boolean
     startTime: string
@@ -1877,6 +1878,10 @@ interface CustomerInfo {
   address2: string
   deliveryTime: string
   specialInstructions: string
+  invoiceType?: 'INVOICE' | 'RECEIPT' | ''  // Invoice/Receipt selection (for Greek storefronts)
+  invoiceAfm?: string  // Tax ID (AFM) - 9 digits (required for invoices)
+  invoiceCompanyName?: string  // Company name (optional for invoices)
+  invoiceTaxOffice?: string  // Tax office (ΔΟΥ) (optional for invoices)
   latitude?: number
   longitude?: number
   postalPricingId?: string  // Selected postal pricing ID (for RETAIL)
@@ -2133,6 +2138,10 @@ const trackProductEvent = useCallback((
     address2: '',
     deliveryTime: 'asap',
     specialInstructions: '',
+    invoiceType: '',
+    invoiceAfm: '',
+    invoiceCompanyName: '',
+    invoiceTaxOffice: '',
     postalPricingId: undefined,
     cityName: undefined,
     countryCode: undefined,
@@ -2729,6 +2738,18 @@ const trackProductEvent = useCallback((
       
       // For non-RETAIL businesses, require coordinates (detect autofill without proper selection)
       if (storeData.businessType !== 'RETAIL' && customerInfo.address && (!customerInfo.latitude || !customerInfo.longitude)) {
+        return false
+      }
+    }
+    
+    // Invoice validation
+    if (customerInfo.invoiceType === 'INVOICE') {
+      // Check minimum order value for invoice
+      if (storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue) {
+        return false
+      }
+      // Validate AFM (must be 9 digits)
+      if (!customerInfo.invoiceAfm || customerInfo.invoiceAfm.length !== 9) {
         return false
       }
     }
@@ -3342,6 +3363,21 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       showError(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
       return
     }
+
+    // Validate invoice fields if invoice is selected
+    if (customerInfo.invoiceType === 'INVOICE') {
+      // Check minimum order value for invoice
+      if (storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue) {
+        showError(`Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον ${formatCurrency(storeData.invoiceMinimumOrderValue)}`, 'warning')
+        return
+      }
+      
+      // Validate AFM (must be 9 digits)
+      if (!customerInfo.invoiceAfm || customerInfo.invoiceAfm.length !== 9) {
+        showError('Παρακαλώ εισάγετε έγκυρο ΑΦΜ (9 ψηφία)', 'error')
+        return
+      }
+    }
   
     setIsOrderLoading(true)
   
@@ -3372,6 +3408,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         deliveryTime: customerInfo.deliveryTime === 'asap' ? null : customerInfo.deliveryTime,
         paymentMethod: storeData.paymentMethods[0] || 'CASH',
         specialInstructions: customerInfo.specialInstructions,
+        invoiceType: customerInfo.invoiceType || null, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceAfm: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceAfm || null) : null,
+        invoiceCompanyName: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceCompanyName || null) : null,
+        invoiceTaxOffice: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceTaxOffice || null) : null,
         latitude: customerInfo.latitude,
         longitude: customerInfo.longitude,
         postalPricingId: customerInfo.postalPricingId, // For RETAIL businesses
@@ -3433,6 +3473,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           address2: '',
           deliveryTime: 'asap',
           specialInstructions: '',
+          invoiceType: '',
+          invoiceAfm: '',
+          invoiceCompanyName: '',
+          invoiceTaxOffice: '',
           latitude: undefined,
           longitude: undefined,
           postalPricingId: undefined,
@@ -6854,6 +6898,129 @@ function OrderPanel({
                       placeholder={translations.anySpecialRequests || 'Any special requests...'}
           />
         </div>
+
+        {/* Invoice/Receipt Selection - Only for Greek storefronts with feature enabled */}
+        {(storeData.storefrontLanguage === 'el' || storeData.language === 'el') && storeData.invoiceReceiptSelectionEnabled && (
+          <>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Τιμολόγιο ή Απόδειξη? *
+              </label>
+              <select
+                value={customerInfo.invoiceType || ''}
+                onChange={(e) => {
+                  const newType = e.target.value as 'INVOICE' | 'RECEIPT' | ''
+                  setCustomerInfo({ 
+                    ...customerInfo, 
+                    invoiceType: newType,
+                    // Clear invoice fields if switching to receipt
+                    ...(newType !== 'INVOICE' && {
+                      invoiceAfm: '',
+                      invoiceCompanyName: '',
+                      invoiceTaxOffice: ''
+                    })
+                  })
+                }}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
+                style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                onFocus={(e) => e.target.style.borderColor = primaryColor}
+                onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              >
+                <option value="">Επιλέξτε...</option>
+                <option value="INVOICE">Τιμολόγιο</option>
+                <option value="RECEIPT">Απόδειξη</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Επιλέξτε αν χρειάζεστε τιμολόγιο ή απόδειξη για την παραγγελία σας
+              </p>
+              
+              {/* Check minimum order value for invoice */}
+              {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-700">
+                    Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {formatCurrency(storeData.invoiceMinimumOrderValue)}. Τρέχουσα παραγγελία: {formatCurrency(cartTotal)}
+                  </p>
+                </div>
+              )}
+              
+              {/* Message when invoice is selected */}
+              {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || cartTotal >= storeData.invoiceMinimumOrderValue) && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-700">
+                    <strong>Σημείωση:</strong> Θα επικοινωνήσουμε μαζί σας για να ζητήσουμε τυχόν επιπλέον στοιχεία που χρειάζονται για το Τιμολόγιο σας.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
+            {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || cartTotal >= storeData.invoiceMinimumOrderValue) && (
+              <div className="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Στοιχεία Τιμολογίου</h4>
+                
+                {/* Tax ID (AFM) - Required */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ΑΦΜ (Φορολογικός Αριθμός) *
+                  </label>
+                  <input
+                    type="text"
+                    value={customerInfo.invoiceAfm || ''}
+                    onChange={(e) => {
+                      // Only allow digits, max 9 digits
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 9)
+                      setCustomerInfo({ ...customerInfo, invoiceAfm: value })
+                    }}
+                    required={customerInfo.invoiceType === 'INVOICE'}
+                    placeholder="123456789"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
+                    style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {customerInfo.invoiceAfm?.length === 9 ? '✓ 9 ψηφία' : `9 ψηφία (${customerInfo.invoiceAfm?.length || 0}/9)`}
+                  </p>
+                </div>
+
+                {/* Company Name - Optional */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Επωνυμία Εταιρείας (Προαιρετικό)
+                  </label>
+                  <input
+                    type="text"
+                    value={customerInfo.invoiceCompanyName || ''}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceCompanyName: e.target.value })}
+                    placeholder="Όνομα εταιρείας"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
+                    style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  />
+                </div>
+
+                {/* Tax Office (ΔΟΥ) - Optional */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ΔΟΥ (Διαχείριση Οφειλών) (Προαιρετικό)
+                  </label>
+                  <input
+                    type="text"
+                    value={customerInfo.invoiceTaxOffice || ''}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceTaxOffice: e.target.value })}
+                    placeholder="ΔΟΥ"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
+                    style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
+                    onFocus={(e) => e.target.style.borderColor = primaryColor}
+                    onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Payment Info */}
         {storeData.paymentInstructions && (

@@ -432,6 +432,10 @@ model Business {
   // Manual Team Creation & Delivery Management (SuperAdmin enables)
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
+  
+  // Invoice/Receipt Selection (SuperAdmin enables for Greek storefronts)
+  invoiceReceiptSelectionEnabled Boolean @default(false) // When enabled, Greek storefronts show invoice/receipt selection option during checkout
+  invoiceMinimumOrderValue Float? // Minimum order value required for invoice selection (null = no minimum)
 
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
@@ -1128,6 +1132,12 @@ model Order {
   deliveryAddress String?
   deliveryTime    DateTime?
   notes           String?
+  
+  // Invoice/Receipt selection (for Greek storefronts)
+  invoiceType String? // 'INVOICE' | 'RECEIPT' | null (only for Greek stores with feature enabled)
+  invoiceAfm String? // Tax ID (AFM) - 9 digits (required for invoices)
+  invoiceCompanyName String? // Company name (optional for invoices)
+  invoiceTaxOffice String? // Tax office (ΔΟΥ) (optional for invoices)
 
   // Postal service (for RETAIL businesses)
   postalPricingId String?        @db.ObjectId
