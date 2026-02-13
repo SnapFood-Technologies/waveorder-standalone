@@ -97,6 +97,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -135,6 +136,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
           setBusinessType(data.business?.businessType || null)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+          setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -457,6 +459,34 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'STARTER' as Plan
     }] : []),
     
+    // Packaging Tracking - only shown when enabled by SuperAdmin
+    // @ts-ignore
+    ...(packagingTrackingEnabled ? [{
+      name: 'Packaging',
+      icon: Package,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'Types',
+          href: `${baseUrl}/packaging/types`,
+          icon: Boxes,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Purchases',
+          href: `${baseUrl}/packaging/purchases`,
+          icon: ShoppingBag,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Dashboard',
+          href: `${baseUrl}/packaging/dashboard`,
+          icon: LayoutDashboard,
+          requiredPlan: 'STARTER' as Plan
+        },
+      ]
+    }] : []),
+
     // Delivery Management - only shown when enabled by SuperAdmin
     // @ts-ignore
     ...(enableDeliveryManagement ? [{

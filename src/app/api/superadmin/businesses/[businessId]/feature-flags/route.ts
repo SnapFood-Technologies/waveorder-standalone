@@ -37,6 +37,7 @@ export async function GET(
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
         invoiceReceiptSelectionEnabled: true,
+        packagingTrackingEnabled: true,
         currency: true,
         storefrontLanguage: true,
         language: true
@@ -157,7 +158,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -179,6 +180,9 @@ export async function PATCH(
     if (invoiceReceiptSelectionEnabled !== undefined) {
       updateData.invoiceReceiptSelectionEnabled = invoiceReceiptSelectionEnabled === true
     }
+    if (packagingTrackingEnabled !== undefined) {
+      updateData.packagingTrackingEnabled = packagingTrackingEnabled === true
+    }
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -189,7 +193,8 @@ export async function PATCH(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
-        invoiceReceiptSelectionEnabled: true
+        invoiceReceiptSelectionEnabled: true,
+        packagingTrackingEnabled: true
       }
     })
 
@@ -203,6 +208,9 @@ export async function PATCH(
     if (invoiceReceiptSelectionEnabled !== undefined) {
       messages.push(`Invoice/Receipt Selection ${updatedBusiness.invoiceReceiptSelectionEnabled ? 'enabled' : 'disabled'}`)
     }
+    if (packagingTrackingEnabled !== undefined) {
+      messages.push(`Packaging Tracking ${updatedBusiness.packagingTrackingEnabled ? 'enabled' : 'disabled'}`)
+    }
 
     return NextResponse.json({
       success: true,
@@ -210,7 +218,8 @@ export async function PATCH(
       settings: {
         enableManualTeamCreation: updatedBusiness.enableManualTeamCreation,
         enableDeliveryManagement: updatedBusiness.enableDeliveryManagement,
-        invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled
+        invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled,
+        packagingTrackingEnabled: updatedBusiness.packagingTrackingEnabled
       }
     })
   } catch (error) {

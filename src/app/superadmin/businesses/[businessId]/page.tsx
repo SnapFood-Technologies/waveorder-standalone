@@ -72,6 +72,7 @@ interface BusinessDetails {
   enableManualTeamCreation?: boolean
   enableDeliveryManagement?: boolean
   invoiceReceiptSelectionEnabled?: boolean
+  packagingTrackingEnabled?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1415,6 +1416,9 @@ export default function BusinessDetailsPage() {
           {/* Invoice/Receipt Selection Settings */}
           <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Packaging Tracking Settings */}
+          <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -2726,6 +2730,91 @@ function InvoiceReceiptSelectionSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Invoice/receipt selection feature not available to customers.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Packaging Tracking Settings Section Component
+function PackagingTrackingSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(business.packagingTrackingEnabled || false)
+
+  const handleToggle = async () => {
+    const newValue = !packagingTrackingEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packagingTrackingEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setPackagingTrackingEnabled(newValue)
+        toast.success(newValue ? 'Packaging Tracking enabled' : 'Packaging Tracking disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling packaging tracking:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Package className="w-5 h-5 mr-2 text-purple-600" />
+        Packaging Tracking
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Packaging Tracking</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admin can track packaging materials, record purchases from suppliers, and assign packaging to orders. Useful for jewelry, retail, and other businesses that need to track packaging expenses.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+            packagingTrackingEnabled ? 'bg-purple-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              packagingTrackingEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {packagingTrackingEnabled && (
+        <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-xs text-purple-700">
+            <span className="font-medium">Enabled:</span> Business admin can now manage packaging types, record purchases, assign packaging to orders, and view packaging usage reports.
+          </p>
+        </div>
+      )}
+      {!packagingTrackingEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Packaging tracking feature not available to business admin.
           </p>
         </div>
       )}

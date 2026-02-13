@@ -172,6 +172,26 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [deliveryPersons, setDeliveryPersons] = useState<Array<{ id: string; name: string; email: string }>>([])
   const [assigningDelivery, setAssigningDelivery] = useState(false)
   const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<string>('')
+  
+  // Packaging tracking
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
+  const [packagingTypes, setPackagingTypes] = useState<Array<{ id: string; name: string; unit: string }>>([])
+  const [orderPackaging, setOrderPackaging] = useState<Array<{
+    id: string
+    packagingTypeId: string
+    quantity: number
+    itemsPerPackage: number | null
+    cost: number | null
+    notes: string | null
+    packagingType: { id: string; name: string; unit: string }
+  }>>([])
+  const [showAddPackaging, setShowAddPackaging] = useState(false)
+  const [newPackagingTypeId, setNewPackagingTypeId] = useState('')
+  const [newPackagingQuantity, setNewPackagingQuantity] = useState('1')
+  const [newPackagingItemsPerPackage, setNewPackagingItemsPerPackage] = useState('')
+  const [newPackagingCost, setNewPackagingCost] = useState('')
+  const [newPackagingNotes, setNewPackagingNotes] = useState('')
+  const [addingPackaging, setAddingPackaging] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -180,6 +200,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       fetchDeliveryPersons()
     }
   }, [businessId, orderId])
+
+  useEffect(() => {
+    if (packagingTrackingEnabled) {
+      fetchPackagingTypes()
+      fetchOrderPackaging()
+    }
+  }, [packagingTrackingEnabled, orderId])
 
   useEffect(() => {
     if (order?.type === 'DELIVERY' && enableDeliveryManagement) {
@@ -1445,6 +1472,139 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Packaging Tracking */}
+          {packagingTrackingEnabled && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-purple-600" />
+                  Packaging
+                </h3>
+                {!showAddPackaging && (
+                  <button
+                    onClick={() => setShowAddPackaging(true)}
+                    className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Add Packaging
+                  </button>
+                )}
+              </div>
+
+              {showAddPackaging && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Packaging Type *</label>
+                    <select
+                      value={newPackagingTypeId}
+                      onChange={(e) => setNewPackagingTypeId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select packaging type</option>
+                      {packagingTypes.filter(t => t.id).map((type) => (
+                        <option key={type.id} value={type.id}>{type.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newPackagingQuantity}
+                        onChange={(e) => setNewPackagingQuantity(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Items per Package</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newPackagingItemsPerPackage}
+                        onChange={(e) => setNewPackagingItemsPerPackage(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost ({business?.currency || 'USD'})</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPackagingCost}
+                      onChange={(e) => setNewPackagingCost(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea
+                      value={newPackagingNotes}
+                      onChange={(e) => setNewPackagingNotes(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      rows={2}
+                      placeholder="Optional notes"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleAddPackaging}
+                      disabled={addingPackaging || !newPackagingTypeId || !newPackagingQuantity}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {addingPackaging ? 'Adding...' : 'Add'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddPackaging(false)
+                        setNewPackagingTypeId('')
+                        setNewPackagingQuantity('1')
+                        setNewPackagingItemsPerPackage('')
+                        setNewPackagingCost('')
+                        setNewPackagingNotes('')
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {orderPackaging.length > 0 ? (
+                <div className="space-y-2">
+                  {orderPackaging.map((pkg) => (
+                    <div key={pkg.id} className="bg-gray-50 p-3 rounded-lg flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{pkg.packagingType.name}</p>
+                        <p className="text-sm text-gray-600">
+                          Quantity: {pkg.quantity} {pkg.packagingType.unit}
+                          {pkg.itemsPerPackage && ` • ${pkg.itemsPerPackage} items per package`}
+                          {pkg.cost && ` • Cost: ${business?.currency || 'USD'} ${pkg.cost.toFixed(2)}`}
+                        </p>
+                        {pkg.notes && (
+                          <p className="text-xs text-gray-500 mt-1">{pkg.notes}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemovePackaging(pkg.id)}
+                        className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No packaging assigned to this order</p>
+              )}
             </div>
           )}
 

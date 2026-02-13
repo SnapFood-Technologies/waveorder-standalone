@@ -248,11 +248,14 @@ model Business {
   logoPadding   String? // e.g., '0px', '4px', '6px', '8px'
   logoObjectFit String? // 'cover' or 'contain', default 'cover'
 
-  deliveryZones    DeliveryZone[]
-  postals          Postal[]
-  postalPricing    PostalPricing[]
-  externalSyncs    ExternalSync[]
-  externalSyncLogs ExternalSyncLog[]
+  deliveryZones      DeliveryZone[]
+  postals            Postal[]
+  postalPricing      PostalPricing[]
+  externalSyncs      ExternalSync[]
+  externalSyncLogs   ExternalSyncLog[]
+  packagingTypes     PackagingType[]
+  packagingPurchases PackagingPurchase[]
+  orderPackagings    OrderPackaging[]
 
   // Settings
   currency                           String  @default("USD")
@@ -432,10 +435,13 @@ model Business {
   // Manual Team Creation & Delivery Management (SuperAdmin enables)
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
-  
+
   // Invoice/Receipt Selection (SuperAdmin enables for Greek storefronts)
   invoiceReceiptSelectionEnabled Boolean @default(false) // When enabled, Greek storefronts show invoice/receipt selection option during checkout
-  invoiceMinimumOrderValue Float? // Minimum order value required for invoice selection (null = no minimum)
+  invoiceMinimumOrderValue       Float? // Minimum order value required for invoice selection (null = no minimum)
+
+  // Packaging Tracking (SuperAdmin enables)
+  packagingTrackingEnabled Boolean @default(false) // When enabled, business admin can track packaging materials, purchases, and usage
 
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
@@ -1132,16 +1138,19 @@ model Order {
   deliveryAddress String?
   deliveryTime    DateTime?
   notes           String?
-  
+
   // Invoice/Receipt selection (for Greek storefronts)
-  invoiceType String? // 'INVOICE' | 'RECEIPT' | null (only for Greek stores with feature enabled)
-  invoiceAfm String? // Tax ID (AFM) - 9 digits (required for invoices)
+  invoiceType        String? // 'INVOICE' | 'RECEIPT' | null (only for Greek stores with feature enabled)
+  invoiceAfm         String? // Tax ID (AFM) - 9 digits (required for invoices)
   invoiceCompanyName String? // Company name (optional for invoices)
-  invoiceTaxOffice String? // Tax office (ΔΟΥ) (optional for invoices)
+  invoiceTaxOffice   String? // Tax office (ΔΟΥ) (optional for invoices)
 
   // Postal service (for RETAIL businesses)
   postalPricingId String?        @db.ObjectId
   postalPricing   PostalPricing? @relation(fields: [postalPricingId], references: [id])
+
+  // Packaging tracking (when feature enabled)
+  orderPackagings OrderPackaging[]
 
   createdByAdmin Boolean @default(false)
   createdBy      String? @db.ObjectId
@@ -2245,4 +2254,75 @@ model IntegrationLog {
   @@index([businessId])
   @@index([integrationId, createdAt])
   @@map("integration_logs")
+}
+
+// ===========================================
+// Packaging Tracking (SuperAdmin enables)
+// ===========================================
+
+// Packaging types (e.g., "Small Gift Box", "Jewelry Pouch", "Bubble Wrap")
+model PackagingType {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String  @db.ObjectId
+  name        String // e.g., "Small Gift Box", "Jewelry Pouch", "Bubble Wrap"
+  description String? // Optional description
+  unit        String  @default("piece") // "piece", "roll", "meter", etc.
+  isActive    Boolean @default(true)
+
+  business        Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  purchases       PackagingPurchase[]
+  orderPackagings OrderPackaging[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, isActive])
+}
+
+// Packaging purchases (track when packaging is bought)
+model PackagingPurchase {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId      String   @db.ObjectId
+  packagingTypeId String   @db.ObjectId
+  supplier        String // Supplier/vendor name
+  supplierContact String? // Optional contact info
+  quantity        Float // Quantity purchased
+  unitCost        Float // Cost per unit
+  totalCost       Float // quantity * unitCost
+  purchaseDate    DateTime
+  notes           String? // Optional notes
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  packagingType PackagingType @relation(fields: [packagingTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, purchaseDate])
+  @@index([packagingTypeId])
+}
+
+// Packaging used per order (manual cost entry per order)
+model OrderPackaging {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId      String  @db.ObjectId
+  orderId         String  @db.ObjectId
+  packagingTypeId String  @db.ObjectId
+  quantity        Int     @default(1) // Number of packages of this type used
+  itemsPerPackage Int? // How many order items fit in each package (optional)
+  cost            Float? // Manual cost entry per order (optional)
+  notes           String? // Optional notes
+
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  packagingType PackagingType @relation(fields: [packagingTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([orderId])
+  @@index([packagingTypeId])
 }
