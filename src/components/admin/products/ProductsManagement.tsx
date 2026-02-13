@@ -683,9 +683,24 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {product.description || 'No description'}
-                    </p>
+                    {product.description ? (
+                      <div 
+                        className="text-sm text-gray-600 mb-3 line-clamp-2"
+                        dangerouslySetInnerHTML={{ 
+                          __html: product.description
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&nbsp;/g, ' ')
+                        }} 
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        No description
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">

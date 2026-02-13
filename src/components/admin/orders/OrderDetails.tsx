@@ -1530,9 +1530,18 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     </h4>
                     
                     {item.product.description && (
-                      <p className="text-sm text-gray-600 mt-1 truncate">
-                        {item.product.description}
-                      </p>
+                      <div 
+                        className="text-sm text-gray-600 mt-1 line-clamp-2"
+                        dangerouslySetInnerHTML={{ 
+                          __html: item.product.description
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&nbsp;/g, ' ')
+                        }} 
+                      />
                     )}
                     
                     {item.modifiers.length > 0 && (
