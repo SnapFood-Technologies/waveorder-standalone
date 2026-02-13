@@ -34,6 +34,21 @@ const ALBANIAN_TO_ENGLISH_PRODUCT_TERMS: Record<string, string[]> = {
   'nackles': ['necklace'],
 }
 
+// English to Greek product term translations
+// Maps common English jewelry/product terms to their Greek equivalents
+const ENGLISH_TO_GREEK_PRODUCT_TERMS: Record<string, string[]> = {
+  'necklace': ['μενταγιόν', 'κολιέ'],
+  'neck': ['μενταγιόν', 'κολιέ'],
+  'pendant': ['μενταγιόν'],
+  'chain': ['αλυσίδα'],
+  'crystal': ['κρύσταλλο', 'κρύσταλλα'],
+  'pearl': ['μαργαριτάρι', 'πέρλα'],
+  'heart': ['καρδιά'],
+  'ring': ['δαχτυλίδι'],
+  'earring': ['σκουλαρίκι', 'σκουλαρίκια'],
+  'bracelet': ['βραχιόλι'],
+}
+
 // Helper function to get English translations for Albanian search terms
 function getEnglishTranslations(searchTerm: string): string[] {
   const term = searchTerm.toLowerCase().trim()
@@ -48,6 +63,26 @@ function getEnglishTranslations(searchTerm: string): string[] {
   for (const [albanianTerm, englishTerms] of Object.entries(ALBANIAN_TO_ENGLISH_PRODUCT_TERMS)) {
     if (term.includes(albanianTerm) || albanianTerm.includes(term)) {
       englishTerms.forEach(t => translations.add(t))
+    }
+  }
+  
+  return Array.from(translations)
+}
+
+// Helper function to get Greek translations for English search terms
+function getGreekTranslations(searchTerm: string): string[] {
+  const term = searchTerm.toLowerCase().trim()
+  const translations = new Set<string>()
+  
+  // Check exact match
+  if (ENGLISH_TO_GREEK_PRODUCT_TERMS[term]) {
+    ENGLISH_TO_GREEK_PRODUCT_TERMS[term].forEach(t => translations.add(t))
+  }
+  
+  // Check if search term contains any English term (for multi-word searches)
+  for (const [englishTerm, greekTerms] of Object.entries(ENGLISH_TO_GREEK_PRODUCT_TERMS)) {
+    if (term.includes(englishTerm) || englishTerm.includes(term)) {
+      greekTerms.forEach(t => translations.add(t))
     }
   }
   
@@ -437,12 +472,14 @@ export async function GET(
     // Search filter (name or description) with diacritic-insensitive matching
     // e.g., "Pjate" matches "Pjatë", "Luge" matches "Lugë"
     // Also includes Albanian-to-English translation mapping (e.g., "varese" → "necklace")
+    // And English-to-Greek translation mapping (e.g., "necklace" → "μενταγιόν")
     if (searchTerm.trim()) {
       const searchVariants = getSearchVariants(searchTerm.trim())
       const englishTranslations = getEnglishTranslations(searchTerm.trim())
+      const greekTranslations = getGreekTranslations(searchTerm.trim())
       
-      // Combine all search terms: variants + English translations
-      const allSearchTerms = new Set([...searchVariants, ...englishTranslations])
+      // Combine all search terms: variants + English translations + Greek translations
+      const allSearchTerms = new Set([...searchVariants, ...englishTranslations, ...greekTranslations])
       
       // Build OR conditions for all search terms
       const searchConditions: any[] = []
