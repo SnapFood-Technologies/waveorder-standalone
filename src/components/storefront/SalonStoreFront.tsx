@@ -636,7 +636,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Τιμολόγιο ή Απόδειξη? *
+                        {translations.invoiceOrReceiptQuestion || 'Invoice or Receipt? *'}
                       </label>
                       <select
                         value={customerInfo.invoiceType || ''}
@@ -655,19 +655,22 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                         required
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                       >
-                        <option value="">Επιλέξτε...</option>
-                        <option value="INVOICE">Τιμολόγιο</option>
-                        <option value="RECEIPT">Απόδειξη</option>
+                        <option value="">{translations.selectInvoiceOrReceipt?.split(' ')[0] || 'Select...'}</option>
+                        <option value="INVOICE">{translations.invoice || 'Invoice'}</option>
+                        <option value="RECEIPT">{translations.receipt || 'Receipt'}</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        Επιλέξτε αν χρειάζεστε τιμολόγιο ή απόδειξη για την παραγγελία σας
+                        {translations.selectInvoiceOrReceipt || 'Select if you need an invoice or receipt for your order'}
                       </p>
 
                       {/* Check minimum order value for invoice */}
                       {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && calculateTotal() < storeData.invoiceMinimumOrderValue && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-red-700">
-                            Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {currencySymbol}{storeData.invoiceMinimumOrderValue.toFixed(2)}. Τρέχουσα παραγγελία: {currencySymbol}{calculateTotal().toFixed(2)}
+                            {translations.invoiceMinimumOrderErrorWithCurrent
+                              ?.replace('{amount}', `${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}`)
+                              ?.replace('{current}', `${currencySymbol}${calculateTotal().toFixed(2)}`)
+                              || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}. Current order: ${currencySymbol}${calculateTotal().toFixed(2)}`}
                           </p>
                         </div>
                       )}
@@ -676,7 +679,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                       {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-700">
-                            <strong>Σημείωση:</strong> Θα επικοινωνήσουμε μαζί σας για να ζητήσουμε τυχόν επιπλέον στοιχεία που χρειάζονται για το Τιμολόγιο σας.
+                            <strong>{translations.invoiceNote?.split(':')[0] || 'Note'}:</strong> {translations.invoiceNote?.split(':')[1]?.trim() || 'We will contact you to ask for any details if you need to include in your Invoice.'}
                           </p>
                         </div>
                       )}
@@ -685,12 +688,12 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                     {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
                     {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
                       <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 className="text-sm font-semibold text-gray-900">Στοιχεία Τιμολογίου</h4>
+                        <h4 className="text-sm font-semibold text-gray-900">{translations.invoiceDetails || 'Invoice Details'}</h4>
                         
                         {/* Tax ID (AFM) - Required */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            ΑΦΜ (Φορολογικός Αριθμός) *
+                            {translations.taxIdRequired || 'Tax ID (AFM) *'}
                           </label>
                           <input
                             type="text"
@@ -703,21 +706,23 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                             placeholder="123456789"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            {customerInfo.invoiceAfm?.length === 9 ? '✓ 9 ψηφία' : `9 ψηφία (${customerInfo.invoiceAfm?.length || 0}/9)`}
-                          </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {customerInfo.invoiceAfm?.length === 9 
+                                  ? `✓ ${translations.taxIdDigits || '9 digits'}` 
+                                  : (translations.taxIdDigitsCount || '9 digits ({count}/9)').replace('{count}', String(customerInfo.invoiceAfm?.length || 0))}
+                              </p>
                         </div>
 
                         {/* Company Name - Optional */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Επωνυμία Εταιρείας (Προαιρετικό)
+                            {translations.companyName || 'Company Name'}
                           </label>
                           <input
                             type="text"
                             value={customerInfo.invoiceCompanyName || ''}
                             onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceCompanyName: e.target.value })}
-                            placeholder="Όνομα εταιρείας"
+                            placeholder={translations.companyName || 'Company Name'}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>
@@ -725,13 +730,13 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                         {/* Tax Office (ΔΟΥ) - Optional */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            ΔΟΥ (Διαχείριση Οφειλών) (Προαιρετικό)
+                            {translations.taxOffice || 'Tax Office (ΔΟΥ)'}
                           </label>
                           <input
                             type="text"
                             value={customerInfo.invoiceTaxOffice || ''}
                             onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceTaxOffice: e.target.value })}
-                            placeholder="ΔΟΥ"
+                            placeholder={translations.taxOffice || 'Tax Office'}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                           />
                         </div>

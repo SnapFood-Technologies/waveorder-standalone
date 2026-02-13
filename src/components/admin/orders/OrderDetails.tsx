@@ -164,6 +164,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
+  
+  // Invoice/Receipt editing states
+  const [editingInvoice, setEditingInvoice] = useState(false)
+  const [invoiceAfm, setInvoiceAfm] = useState<string>('')
+  const [invoiceCompanyName, setInvoiceCompanyName] = useState<string>('')
+  const [invoiceTaxOffice, setInvoiceTaxOffice] = useState<string>('')
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -221,9 +227,96 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       if (response.ok) {
         const data = await response.json()
         setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+        setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
       }
     } catch (error) {
       console.error('Error fetching business settings:', error)
+    }
+  }
+
+  const fetchPackagingTypes = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/packaging/types`)
+      if (response.ok) {
+        const data = await response.json()
+        setPackagingTypes(data.packagingTypes || [])
+      }
+    } catch (error) {
+      console.error('Error fetching packaging types:', error)
+    }
+  }
+
+  const fetchOrderPackaging = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging`)
+      if (response.ok) {
+        const data = await response.json()
+        setOrderPackaging(data.orderPackaging || [])
+      }
+    } catch (error) {
+      console.error('Error fetching order packaging:', error)
+    }
+  }
+
+  const handleAddPackaging = async () => {
+    if (!newPackagingTypeId || !newPackagingQuantity) {
+      toast.error('Please select packaging type and enter quantity')
+      return
+    }
+
+    setAddingPackaging(true)
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packagingTypeId: newPackagingTypeId,
+          quantity: parseInt(newPackagingQuantity),
+          itemsPerPackage: newPackagingItemsPerPackage ? parseInt(newPackagingItemsPerPackage) : null,
+          cost: newPackagingCost ? parseFloat(newPackagingCost) : null,
+          notes: newPackagingNotes.trim() || null
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to add packaging')
+      }
+
+      toast.success('Packaging added to order')
+      setShowAddPackaging(false)
+      setNewPackagingTypeId('')
+      setNewPackagingQuantity('1')
+      setNewPackagingItemsPerPackage('')
+      setNewPackagingCost('')
+      setNewPackagingNotes('')
+      fetchOrderPackaging()
+    } catch (error) {
+      console.error('Error adding packaging:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to add packaging')
+    } finally {
+      setAddingPackaging(false)
+    }
+  }
+
+  const handleRemovePackaging = async (packagingId: string) => {
+    if (!confirm('Remove this packaging from the order?')) return
+
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging/${packagingId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to remove packaging')
+      }
+
+      toast.success('Packaging removed')
+      fetchOrderPackaging()
+    } catch (error) {
+      console.error('Error removing packaging:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to remove packaging')
     }
   }
 
@@ -1480,13 +1573,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <Package className="w-5 h-5 mr-2 text-purple-600" />
+                  <Package className="w-5 h-5 mr-2 text-teal-600" />
                   Packaging
                 </h3>
                 {!showAddPackaging && (
                   <button
                     onClick={() => setShowAddPackaging(true)}
-                    className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
                     Add Packaging
                   </button>
@@ -1500,7 +1593,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <select
                       value={newPackagingTypeId}
                       onChange={(e) => setNewPackagingTypeId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                     >
                       <option value="">Select packaging type</option>
                       {packagingTypes.filter(t => t.id).map((type) => (
@@ -1516,7 +1609,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingQuantity}
                         onChange={(e) => setNewPackagingQuantity(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
                     <div>
@@ -1526,7 +1619,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingItemsPerPackage}
                         onChange={(e) => setNewPackagingItemsPerPackage(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                         placeholder="Optional"
                       />
                     </div>
@@ -1539,7 +1632,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       min="0"
                       value={newPackagingCost}
                       onChange={(e) => setNewPackagingCost(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                       placeholder="Optional"
                     />
                   </div>
@@ -1548,7 +1641,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <textarea
                       value={newPackagingNotes}
                       onChange={(e) => setNewPackagingNotes(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
                       rows={2}
                       placeholder="Optional notes"
                     />
@@ -1557,7 +1650,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <button
                       onClick={handleAddPackaging}
                       disabled={addingPackaging || !newPackagingTypeId || !newPackagingQuantity}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {addingPackaging ? 'Adding...' : 'Add'}
                     </button>

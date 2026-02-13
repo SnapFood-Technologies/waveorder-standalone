@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { ShoppingBag, Plus, Edit, Trash2, X, Save, Calendar } from 'lucide-react'
+import { ShoppingBag, Plus, Edit, Trash2, X, Save, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface PackagingPurchase {
@@ -29,12 +29,17 @@ interface PackagingType {
   unit: string
 }
 
+interface Business {
+  currency: string
+}
+
 export default function PackagingPurchasesPage() {
   const params = useParams()
   const businessId = params.businessId as string
 
   const [purchases, setPurchases] = useState<PackagingPurchase[]>([])
   const [packagingTypes, setPackagingTypes] = useState<PackagingType[]>([])
+  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -49,9 +54,22 @@ export default function PackagingPurchasesPage() {
   })
 
   useEffect(() => {
+    fetchBusiness()
     fetchPurchases()
     fetchPackagingTypes()
   }, [businessId])
+
+  const fetchBusiness = async () => {
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setBusiness({ currency: data.business?.currency || 'USD' })
+      }
+    } catch (error) {
+      console.error('Error fetching business:', error)
+    }
+  }
 
   const fetchPurchases = async () => {
     try {
@@ -168,29 +186,43 @@ export default function PackagingPurchasesPage() {
     }
   }
 
+  const formatCurrency = (amount: number) => {
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
+    }
+    const symbol = currencySymbols[business.currency] || business.currency
+    return `${symbol}${amount.toFixed(2)}`
+  }
+
   const calculateTotal = () => {
     if (formData.quantity && formData.unitCost) {
-      return (parseFloat(formData.quantity) * parseFloat(formData.unitCost)).toFixed(2)
+      return parseFloat(formData.quantity) * parseFloat(formData.unitCost)
     }
-    return '0.00'
+    return 0
   }
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">Loading...</div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <ShoppingBag className="w-6 h-6 mr-2 text-purple-600" />
-            Packaging Purchases
-          </h1>
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-teal-600" />
+            <h1 className="text-xl font-semibold text-gray-900">Packaging Purchases</h1>
+          </div>
           <p className="text-gray-600 mt-1">Record packaging material purchases from suppliers</p>
         </div>
         {!showForm && (
@@ -208,7 +240,7 @@ export default function PackagingPurchasesPage() {
                 notes: ''
               })
             }}
-            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Record Purchase
@@ -302,7 +334,7 @@ export default function PackagingPurchasesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Total Cost</label>
                 <input
                   type="text"
-                  value={calculateTotal()}
+                  value={formatCurrency(calculateTotal())}
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                 />
@@ -321,7 +353,7 @@ export default function PackagingPurchasesPage() {
             <div className="flex items-center space-x-2">
               <button
                 type="submit"
-                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {editingId ? 'Update' : 'Record Purchase'}
@@ -389,15 +421,15 @@ export default function PackagingPurchasesPage() {
                       {purchase.quantity} {purchase.packagingType.unit}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      ${purchase.unitCost.toFixed(2)}
+                      {formatCurrency(purchase.unitCost)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${purchase.totalCost.toFixed(2)}
+                      {formatCurrency(purchase.totalCost)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                       <button
                         onClick={() => handleEdit(purchase)}
-                        className="text-purple-600 hover:text-purple-700 mr-3"
+                        className="text-teal-600 hover:text-teal-700 mr-3 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
                       </button>

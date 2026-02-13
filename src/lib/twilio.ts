@@ -152,6 +152,7 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
   message += `_Manage orders at waveorder.app/auth/login_`
   
   return message
+}
 
 /**
  * Send WhatsApp message via Twilio using template (for business-initiated messages)

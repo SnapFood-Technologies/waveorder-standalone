@@ -1778,6 +1778,7 @@ interface StoreData {
   schedulingEnabled?: boolean  // Enable/disable order scheduling
   showStockBadge?: boolean  // Show stock status badge on product cards
   invoiceReceiptSelectionEnabled?: boolean  // Invoice/Receipt selection feature (for Greek storefronts)
+  invoiceMinimumOrderValue?: number | null  // Minimum order value required for invoice selection
   happyHour?: {
     isActive: boolean
     startTime: string
@@ -3368,13 +3369,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     if (customerInfo.invoiceType === 'INVOICE') {
       // Check minimum order value for invoice
       if (storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue) {
-        showError(`Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον ${formatCurrency(storeData.invoiceMinimumOrderValue)}`, 'warning')
+        const minAmount = `${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}`
+        showError(translations.invoiceMinimumOrderError?.replace('{amount}', minAmount) || `To select Invoice, your order must be at least ${minAmount}`, 'warning')
         return
       }
       
       // Validate AFM (must be 9 digits)
       if (!customerInfo.invoiceAfm || customerInfo.invoiceAfm.length !== 9) {
-        showError('Παρακαλώ εισάγετε έγκυρο ΑΦΜ (9 ψηφία)', 'error')
+        showError(translations.enterValidTaxId || 'Please enter a valid Tax ID (9 digits)', 'error')
         return
       }
     }
@@ -6904,7 +6906,7 @@ function OrderPanel({
           <>
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Τιμολόγιο ή Απόδειξη? *
+                {translations.invoiceOrReceiptQuestion || 'Invoice or Receipt? *'}
               </label>
               <select
                 value={customerInfo.invoiceType || ''}
@@ -6927,19 +6929,22 @@ function OrderPanel({
                 onFocus={(e) => e.target.style.borderColor = primaryColor}
                 onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
               >
-                <option value="">Επιλέξτε...</option>
-                <option value="INVOICE">Τιμολόγιο</option>
-                <option value="RECEIPT">Απόδειξη</option>
+                <option value="">{translations.selectInvoiceOrReceipt?.split(' ')[0] || 'Select...'}</option>
+                <option value="INVOICE">{translations.invoice || 'Invoice'}</option>
+                <option value="RECEIPT">{translations.receipt || 'Receipt'}</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Επιλέξτε αν χρειάζεστε τιμολόγιο ή απόδειξη για την παραγγελία σας
+                {translations.selectInvoiceOrReceipt || 'Select if you need an invoice or receipt for your order'}
               </p>
               
               {/* Check minimum order value for invoice */}
               {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue && (
                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-700">
-                    Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {formatCurrency(storeData.invoiceMinimumOrderValue)}. Τρέχουσα παραγγελία: {formatCurrency(cartTotal)}
+                    {translations.invoiceMinimumOrderErrorWithCurrent
+                      ?.replace('{amount}', `${currencySymbol}${storeData.invoiceMinimumOrderValue?.toFixed(2)}`)
+                      ?.replace('{current}', `${currencySymbol}${cartTotal.toFixed(2)}`)
+                      || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue?.toFixed(2)}. Current order: ${currencySymbol}${cartTotal.toFixed(2)}`}
                   </p>
                 </div>
               )}
@@ -6948,7 +6953,7 @@ function OrderPanel({
               {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || cartTotal >= storeData.invoiceMinimumOrderValue) && (
                 <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-700">
-                    <strong>Σημείωση:</strong> Θα επικοινωνήσουμε μαζί σας για να ζητήσουμε τυχόν επιπλέον στοιχεία που χρειάζονται για το Τιμολόγιο σας.
+                    <strong>{translations.invoiceNote?.split(':')[0] || 'Note'}:</strong> {translations.invoiceNote?.split(':')[1]?.trim() || 'We will contact you to ask for any details if you need to include in your Invoice.'}
                   </p>
                 </div>
               )}
@@ -6957,12 +6962,12 @@ function OrderPanel({
             {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
             {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || cartTotal >= storeData.invoiceMinimumOrderValue) && (
               <div className="mb-6 space-y-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Στοιχεία Τιμολογίου</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">{translations.invoiceDetails || 'Invoice Details'}</h4>
                 
                 {/* Tax ID (AFM) - Required */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ΑΦΜ (Φορολογικός Αριθμός) *
+                    {translations.taxIdRequired || 'Tax ID (AFM) *'}
                   </label>
                   <input
                     type="text"
@@ -6980,20 +6985,22 @@ function OrderPanel({
                     onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {customerInfo.invoiceAfm?.length === 9 ? '✓ 9 ψηφία' : `9 ψηφία (${customerInfo.invoiceAfm?.length || 0}/9)`}
+                    {customerInfo.invoiceAfm?.length === 9 
+                      ? `✓ ${translations.taxIdDigits || '9 digits'}` 
+                      : (translations.taxIdDigitsCount || '9 digits ({count}/9)').replace('{count}', String(customerInfo.invoiceAfm?.length || 0))}
                   </p>
                 </div>
 
                 {/* Company Name - Optional */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Επωνυμία Εταιρείας (Προαιρετικό)
+                    {translations.companyName || 'Company Name'}
                   </label>
                   <input
                     type="text"
                     value={customerInfo.invoiceCompanyName || ''}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceCompanyName: e.target.value })}
-                    placeholder="Όνομα εταιρείας"
+                    placeholder={translations.companyName || 'Company Name'}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
                     style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                     onFocus={(e) => e.target.style.borderColor = primaryColor}
@@ -7004,13 +7011,13 @@ function OrderPanel({
                 {/* Tax Office (ΔΟΥ) - Optional */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ΔΟΥ (Διαχείριση Οφειλών) (Προαιρετικό)
+                    {translations.taxOffice || 'Tax Office (ΔΟΥ)'}
                   </label>
                   <input
                     type="text"
                     value={customerInfo.invoiceTaxOffice || ''}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, invoiceTaxOffice: e.target.value })}
-                    placeholder="ΔΟΥ"
+                    placeholder={translations.taxOffice || 'Tax Office'}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-2 transition-colors text-gray-900 bg-white"
                     style={{ '--focus-border-color': primaryColor } as React.CSSProperties}
                     onFocus={(e) => e.target.style.borderColor = primaryColor}

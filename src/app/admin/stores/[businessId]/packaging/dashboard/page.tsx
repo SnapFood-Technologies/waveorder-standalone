@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { LayoutDashboard, Package, ShoppingBag, DollarSign, TrendingUp, Calendar } from 'lucide-react'
+import { LayoutDashboard, Package, ShoppingBag, DollarSign, TrendingUp, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface DashboardStats {
@@ -82,42 +82,47 @@ export default function PackagingDashboardPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount)
+    const currencySymbols: Record<string, string> = {
+      USD: '$',
+      EUR: '€',
+      GBP: '£',
+      ALL: 'L',
+      BHD: 'BD',
+      BBD: 'Bds$',
+    }
+    const symbol = currencySymbols[currency] || currency
+    return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">Loading dashboard...</div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <LayoutDashboard className="w-6 h-6 mr-2 text-purple-600" />
-            Packaging Dashboard
-          </h1>
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="w-5 h-5 text-teal-600" />
+            <h1 className="text-xl font-semibold text-gray-900">Packaging Dashboard</h1>
+          </div>
           <p className="text-gray-600 mt-1">Overview of your packaging tracking</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="7d">Last 7 days</option>
-            <option value="30d">Last 30 days</option>
-            <option value="90d">Last 90 days</option>
-            <option value="all">All time</option>
-          </select>
-        </div>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value)}
+          className="w-full sm:w-auto px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+        >
+          <option value="7d">Last 7 days</option>
+          <option value="30d">Last 30 days</option>
+          <option value="90d">Last 90 days</option>
+          <option value="all">All time</option>
+        </select>
       </div>
 
       {stats && (
@@ -130,7 +135,7 @@ export default function PackagingDashboardPage() {
                   <p className="text-sm text-gray-600">Packaging Types</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalPackagingTypes}</p>
                 </div>
-                <Package className="w-8 h-8 text-purple-600" />
+                <Package className="w-8 h-8 text-teal-600" />
               </div>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">

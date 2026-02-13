@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { Package, Plus, Edit, Trash2, X, Save } from 'lucide-react'
+import { Package, Plus, Edit, Trash2, X, Save, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface PackagingType {
@@ -115,20 +115,21 @@ export default function PackagingTypesPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">Loading...</div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <Package className="w-6 h-6 mr-2 text-purple-600" />
-            Packaging Types
-          </h1>
+          <div className="flex items-center gap-2">
+            <Package className="w-5 h-5 text-teal-600" />
+            <h1 className="text-xl font-semibold text-gray-900">Packaging Types</h1>
+          </div>
           <p className="text-gray-600 mt-1">Manage your packaging material types</p>
         </div>
         {!showForm && (
@@ -138,7 +139,7 @@ export default function PackagingTypesPage() {
               setEditingId(null)
               setFormData({ name: '', description: '', unit: 'piece', isActive: true })
             }}
-            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Type
@@ -200,7 +201,7 @@ export default function PackagingTypesPage() {
             <div className="flex items-center space-x-2">
               <button
                 type="submit"
-                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {editingId ? 'Update' : 'Create'}
@@ -252,7 +253,7 @@ export default function PackagingTypesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button
                       onClick={() => handleEdit(type)}
-                      className="text-purple-600 hover:text-purple-700 mr-3"
+                      className="text-teal-600 hover:text-teal-700 mr-3 transition-colors"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
