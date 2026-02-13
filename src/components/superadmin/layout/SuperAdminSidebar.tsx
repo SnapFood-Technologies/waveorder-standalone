@@ -37,7 +37,8 @@ import {
   Search,
   Mail,
   Inbox,
-  Puzzle
+  Puzzle,
+  Heart
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -102,6 +103,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Marketing', 
           href: '/superadmin/analytics/marketing', 
           icon: Megaphone
+        },
+        { 
+          name: 'CX Analytics', 
+          href: '/superadmin/analytics/cx', 
+          icon: Heart
         }
       ]
     },

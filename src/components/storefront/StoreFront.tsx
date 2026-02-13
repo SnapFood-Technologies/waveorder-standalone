@@ -6261,7 +6261,7 @@ function SearchableCitySelect({
               onClick={(e) => e.stopPropagation()}
             />
           </div>
-          <div className="overflow-y-uto max-h-48">
+          <div className="overflow-y-auto max-h-48">
             {filteredCities.length > 0 ? (
               filteredCities.map((city) => (
                 <button
