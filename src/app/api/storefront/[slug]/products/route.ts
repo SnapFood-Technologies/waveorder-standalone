@@ -646,6 +646,8 @@ export async function GET(
         return {
           id: product.id,
           name: productName,
+          nameAl: product.nameAl,
+          nameEl: product.nameEl,
           description: productDescription,
           descriptionAl: product.descriptionAl,
           descriptionEl: product.descriptionEl,
