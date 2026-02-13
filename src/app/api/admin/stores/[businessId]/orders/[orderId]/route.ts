@@ -135,8 +135,16 @@ export async function GET(
         customerLongitude: true,
         whatsappMessageId: true,
         postalPricingId: true,
+        deliveryPersonId: true,
         createdAt: true,
         updatedAt: true,
+        deliveryPerson: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
         customer: {
           select: {
             id: true,
@@ -458,6 +466,16 @@ export async function PUT(
       updateData.deliveryTime = body.deliveryTime ? new Date(body.deliveryTime) : null
     }
 
+    // Check if order has delivery person before update
+    const orderBeforeUpdate = await prisma.order.findFirst({
+      where: { id: orderId },
+      select: {
+        deliveryPersonId: true,
+        deliveryFee: true,
+        type: true
+      }
+    })
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: updateData,
@@ -533,6 +551,51 @@ export async function PUT(
         }
       }
     }) as any
+
+    // Handle delivery earning when order is delivered (only if feature enabled)
+    if (body.status === 'DELIVERED' && updatedOrder.type === 'DELIVERY' && orderBeforeUpdate?.deliveryPersonId) {
+      // Check if delivery management is enabled
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { enableDeliveryManagement: true }
+      })
+
+      if (business?.enableDeliveryManagement) {
+        try {
+        // Check if earning already exists
+        const existingEarning = await prisma.deliveryEarning.findUnique({
+          where: { orderId }
+        })
+
+        if (existingEarning) {
+          // Update existing earning
+          await prisma.deliveryEarning.update({
+            where: { id: existingEarning.id },
+            data: {
+              deliveredAt: new Date(),
+              status: 'PENDING' // Keep as PENDING until payment is made
+            }
+          })
+        } else {
+          // Create new earning
+          await prisma.deliveryEarning.create({
+            data: {
+              businessId,
+              orderId,
+              deliveryPersonId: orderBeforeUpdate.deliveryPersonId,
+              amount: orderBeforeUpdate.deliveryFee || 0,
+              currency: updatedOrder.business.currency || 'EUR',
+              status: 'PENDING',
+              deliveredAt: new Date()
+            }
+          })
+        }
+        } catch (error) {
+          console.error('Error creating/updating delivery earning:', error)
+          // Don't fail the order update if earning creation fails
+        }
+      }
+    }
 
     // Send customer email notification if status changed and settings allow it
     if (body.status && body.status !== existingOrder.status && updatedOrder.customer.email) {

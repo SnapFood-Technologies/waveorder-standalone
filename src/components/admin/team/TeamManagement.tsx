@@ -38,6 +38,7 @@ import {
   getRoleDescription 
 } from '@/lib/permissions'
 import { InviteMemberModal } from './InviteMemberModal'
+import { CreateMemberModal } from './CreateMemberModal'
 import { TeamMemberCard } from './TeamMemberCard'
 
 interface TeamMember {
@@ -45,7 +46,7 @@ interface TeamMember {
   userId: string
   name: string
   email: string
-  role: 'OWNER' | 'MANAGER' | 'STAFF'
+  role: 'OWNER' | 'MANAGER' | 'STAFF' | 'DELIVERY'
   joinedAt: string
   lastActive: string
 }
@@ -53,7 +54,7 @@ interface TeamMember {
 interface TeamInvitation {
   id: string
   email: string
-  role: 'MANAGER' | 'STAFF'
+  role: 'MANAGER' | 'STAFF' | 'DELIVERY'
   status: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
   expiresAt: string
   sentAt: string
@@ -86,12 +87,16 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [memberModalTab, setMemberModalTab] = useState<'invite' | 'create'>('invite')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('ALL')
   const [showRolePermissions, setShowRolePermissions] = useState(false)
   const [activeTab, setActiveTab] = useState<'members' | 'invitations' | 'activity'>('members')
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [auditLoading, setAuditLoading] = useState(false)
+  const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
+  const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   
   // Confirmation modals
   const [cancelInviteModal, setCancelInviteModal] = useState<string | null>(null)
@@ -99,6 +104,28 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
   const canInvite = canInviteMembers(userRole)
   const canRemove = canRemoveMembers(userRole)
   const canUpdateRoles = canUpdateMemberRoles(userRole)
+
+  // Fetch business settings to check feature flags
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
+          setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error)
+        // If API fails, default to false (feature disabled)
+        setEnableManualTeamCreation(false)
+        setEnableDeliveryManagement(false)
+      }
+    }
+    if (businessId) {
+      fetchBusinessSettings()
+    }
+  }, [businessId])
 
   useEffect(() => {
     fetchTeamData()
@@ -398,13 +425,30 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
         </div>
         
         {canInvite && (
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Invite Member
-          </button>
+          <div className="mt-4 sm:mt-0 flex gap-2">
+            <button
+              onClick={() => {
+                setMemberModalTab('invite')
+                setShowInviteModal(true)
+              }}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Invite via Email
+            </button>
+            {enableManualTeamCreation && (
+              <button
+                onClick={() => {
+                  setMemberModalTab('create')
+                  setShowCreateModal(true)
+                }}
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Create Manually
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -433,7 +477,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
         {showRolePermissions && (
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(['OWNER', 'MANAGER', 'STAFF'] as const).map(role => (
+              {(['OWNER', 'MANAGER', 'STAFF', 'DELIVERY'] as const).map(role => (
                 <div key={role} className="bg-white rounded-lg p-4 border border-gray-200">
                   <div className="flex items-center justify-between mb-3">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getRoleBadgeColor(role)}`}>
@@ -520,6 +564,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
             <option value="OWNER">Owner</option>
             <option value="MANAGER">Manager</option>
             <option value="STAFF">Staff</option>
+            {enableDeliveryManagement && <option value="DELIVERY">Delivery</option>}
           </select>
         </div>
       </div>
@@ -708,6 +753,16 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
           businessId={businessId}
           onSuccess={handleInviteSuccess}
           onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {/* Create Member Modal */}
+      {showCreateModal && (
+        <CreateMemberModal
+          businessId={businessId}
+          onSuccess={handleInviteSuccess}
+          onClose={() => setShowCreateModal(false)}
+          enableDeliveryManagement={enableDeliveryManagement}
         />
       )}
 

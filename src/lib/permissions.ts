@@ -16,8 +16,8 @@ export const PERMISSIONS = {
   MANAGE_INVENTORY: ['OWNER', 'MANAGER'],
   
   // Orders
-  VIEW_ORDERS: ['OWNER', 'MANAGER', 'STAFF'],
-  MANAGE_ORDERS: ['OWNER', 'MANAGER', 'STAFF'],
+  VIEW_ORDERS: ['OWNER', 'MANAGER', 'STAFF', 'DELIVERY'],
+  MANAGE_ORDERS: ['OWNER', 'MANAGER', 'STAFF', 'DELIVERY'], // DELIVERY can update order status for assigned deliveries
   
   // Customers
   VIEW_CUSTOMERS: ['OWNER', 'MANAGER', 'STAFF'],
@@ -82,9 +82,10 @@ export function canManageMarketing(role: BusinessRole | null): boolean {
 // Role hierarchy helpers
 export function isHigherRole(role1: BusinessRole, role2: BusinessRole): boolean {
   const hierarchy: Record<BusinessRole, number> = {
-    'OWNER': 3,
-    'MANAGER': 2,
-    'STAFF': 1
+    'OWNER': 4,
+    'MANAGER': 3,
+    'STAFF': 2,
+    'DELIVERY': 1
   }
   
   return hierarchy[role1] > hierarchy[role2]
@@ -92,9 +93,10 @@ export function isHigherRole(role1: BusinessRole, role2: BusinessRole): boolean 
 
 export function isSameOrHigherRole(role1: BusinessRole, role2: BusinessRole): boolean {
   const hierarchy: Record<BusinessRole, number> = {
-    'OWNER': 3,
-    'MANAGER': 2,
-    'STAFF': 1
+    'OWNER': 4,
+    'MANAGER': 3,
+    'STAFF': 2,
+    'DELIVERY': 1
   }
   
   return hierarchy[role1] >= hierarchy[role2]
@@ -108,6 +110,8 @@ export function getRoleDisplayName(role: BusinessRole): string {
       return 'Manager'
     case 'STAFF':
       return 'Staff'
+    case 'DELIVERY':
+      return 'Delivery'
     default:
       return role
   }
@@ -121,6 +125,8 @@ export function getRoleDescription(role: BusinessRole): string {
       return 'Can manage products, orders, and invite staff members'
     case 'STAFF':
       return 'Can view and manage orders only'
+    case 'DELIVERY':
+      return 'Can view assigned delivery orders and update delivery status'
     default:
       return 'Limited access'
   }
@@ -134,6 +140,8 @@ export function getRoleBadgeColor(role: BusinessRole): string {
       return 'bg-purple-100 text-purple-800'
     case 'STAFF':
       return 'bg-gray-100 text-gray-800'
+    case 'DELIVERY':
+      return 'bg-green-100 text-green-800'
     default:
       return 'bg-gray-100 text-gray-800'
   }

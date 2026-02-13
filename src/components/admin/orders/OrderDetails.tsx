@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
+import toast from 'react-hot-toast'
 
 interface OrderDetailsProps {
   businessId: string
@@ -107,6 +108,12 @@ interface Order {
     deliveryTimeEl: string | null
     price: number
   } | null
+  deliveryPersonId: string | null
+  deliveryPerson: {
+    id: string
+    name: string
+    email: string
+  } | null
   createdAt: string
   updatedAt: string
 }
@@ -156,10 +163,87 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteSuccess, setDeleteSuccess] = useState(false)
+  const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [deliveryPersons, setDeliveryPersons] = useState<Array<{ id: string; name: string; email: string }>>([])
+  const [assigningDelivery, setAssigningDelivery] = useState(false)
+  const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<string>('')
 
   useEffect(() => {
     fetchOrder()
+    fetchBusinessSettings()
+    if (order?.type === 'DELIVERY') {
+      fetchDeliveryPersons()
+    }
   }, [businessId, orderId])
+
+  useEffect(() => {
+    if (order?.type === 'DELIVERY' && enableDeliveryManagement) {
+      fetchDeliveryPersons()
+      setSelectedDeliveryPersonId(order.deliveryPersonId || '')
+    }
+  }, [order?.type, order?.deliveryPersonId, enableDeliveryManagement])
+
+  const fetchBusinessSettings = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+      }
+    } catch (error) {
+      console.error('Error fetching business settings:', error)
+    }
+  }
+
+  const fetchDeliveryPersons = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/team/members`)
+      if (response.ok) {
+        const data = await response.json()
+        const deliveryPersonsList = data.members
+          .filter((m: any) => m.role === 'DELIVERY')
+          .map((m: any) => ({
+            id: m.userId,
+            name: m.name,
+            email: m.email
+          }))
+        setDeliveryPersons(deliveryPersonsList)
+      }
+    } catch (error) {
+      console.error('Error fetching delivery persons:', error)
+    }
+  }
+
+  const handleAssignDeliveryPerson = async () => {
+    if (!order) return
+    
+    setAssigningDelivery(true)
+    try {
+      const response = await fetch(
+        `/api/admin/stores/${businessId}/orders/${orderId}/assign-delivery`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            deliveryPersonId: selectedDeliveryPersonId || null
+          })
+        }
+      )
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to assign delivery person')
+      }
+
+      toast.success(selectedDeliveryPersonId ? 'Delivery person assigned' : 'Delivery person unassigned')
+      fetchOrder()
+    } catch (error) {
+      console.error('Error assigning delivery person:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to assign delivery person')
+    } finally {
+      setAssigningDelivery(false)
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -1261,6 +1345,94 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               </div>
             </div>
           </div>
+
+          {/* Delivery Person Assignment */}
+          {order.type === 'DELIVERY' && enableDeliveryManagement && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Truck className="w-5 h-5 mr-2 text-teal-600" />
+                Delivery Assignment
+              </h3>
+              
+              <div className="space-y-3">
+                {order.deliveryPerson ? (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-gray-900">{order.deliveryPerson.name}</p>
+                        <p className="text-sm text-gray-500">{order.deliveryPerson.email}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          setSelectedDeliveryPersonId('')
+                          setAssigningDelivery(true)
+                          try {
+                            const response = await fetch(
+                              `/api/admin/stores/${businessId}/orders/${orderId}/assign-delivery`,
+                              {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  deliveryPersonId: null
+                                })
+                              }
+                            )
+
+                            if (!response.ok) {
+                              const data = await response.json()
+                              throw new Error(data.message || 'Failed to unassign delivery person')
+                            }
+
+                            toast.success('Delivery person unassigned')
+                            fetchOrder()
+                          } catch (error) {
+                            console.error('Error unassigning delivery person:', error)
+                            toast.error(error instanceof Error ? error.message : 'Failed to unassign delivery person')
+                          } finally {
+                            setAssigningDelivery(false)
+                          }
+                        }}
+                        disabled={assigningDelivery}
+                        className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        Unassign
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <select
+                      value={selectedDeliveryPersonId}
+                      onChange={(e) => setSelectedDeliveryPersonId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      disabled={assigningDelivery}
+                    >
+                      <option value="">Select delivery person</option>
+                      {deliveryPersons.map((person) => (
+                        <option key={person.id} value={person.id}>
+                          {person.name} ({person.email})
+                        </option>
+                      ))}
+                    </select>
+                    {deliveryPersons.length === 0 && (
+                      <p className="text-sm text-gray-500">
+                        No delivery persons available. Create a team member with DELIVERY role.
+                      </p>
+                    )}
+                    {selectedDeliveryPersonId && (
+                      <button
+                        onClick={handleAssignDeliveryPerson}
+                        disabled={assigningDelivery}
+                        className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {assigningDelivery ? 'Assigning...' : 'Assign Delivery Person'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Delivery Information */}
           {order.type === 'DELIVERY' && order.deliveryAddress && (
