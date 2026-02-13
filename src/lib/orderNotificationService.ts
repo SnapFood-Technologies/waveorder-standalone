@@ -95,8 +95,8 @@ export async function sendOrderNotification(
       return `${symbol}${amount.toFixed(2)}`
     }
 
-    // Determine language to use
-    const language = businessData.language || 'en'
+    // Business notification emails are always in English (sent to business owners)
+    const language = 'en'
     const labels = getEmailLabels(language)
 
     // Create email content

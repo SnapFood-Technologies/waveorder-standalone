@@ -28,6 +28,12 @@ interface OrderNotificationData {
   deliveryTime?: string | null
   specialInstructions?: string
   currencySymbol: string
+  postalPricingDetails?: {
+    name: string
+    nameEn: string
+    deliveryTime?: string | null
+    price: number
+  } | null
 }
 
 /**
@@ -114,6 +120,14 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
     message += `*Address:* ${data.deliveryAddress}\n`
   }
   
+  // Add delivery method for RETAIL businesses
+  if (data.deliveryType === 'delivery' && data.postalPricingDetails) {
+    message += `*Delivery Method:* ${data.postalPricingDetails.nameEn || data.postalPricingDetails.name}\n`
+    if (data.postalPricingDetails.deliveryTime) {
+      message += `*Expected Delivery:* ${data.postalPricingDetails.deliveryTime}\n`
+    }
+  }
+  
   if (data.deliveryTime) {
     message += `*Scheduled:* ${data.deliveryTime}\n`
   }
@@ -140,7 +154,7 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
   }
   
   message += `\n---\n`
-  message += `_Manage orders at waveorder.app/auth/login_`
+  message += `_Manage orders at https://waveorder.app/auth/login_`
   
   return message
 }
@@ -301,13 +315,25 @@ export async function sendOrderNotification(
     // Template: {{1}}=orderNumber, {{2}}=storeName, {{3}}=type, {{4}}=customerName,
     //           {{5}}=phone, {{6}}=address, {{7}}=items, {{8}}=subtotal,
     //           {{9}}=delivery, {{10}}=total, {{11}}=notes
+    // Note: Delivery method is included in the freeform message but may not be in template
+    let addressLine = orderData.deliveryAddress || 'N/A'
+    if (orderData.deliveryType === 'delivery' && orderData.postalPricingDetails) {
+      const deliveryMethod = orderData.postalPricingDetails.nameEn || orderData.postalPricingDetails.name
+      const deliveryTime = orderData.postalPricingDetails.deliveryTime
+      if (deliveryTime) {
+        addressLine = `${addressLine}\nDelivery Method: ${deliveryMethod} (${deliveryTime})`
+      } else {
+        addressLine = `${addressLine}\nDelivery Method: ${deliveryMethod}`
+      }
+    }
+    
     const contentVariables: Record<string, string> = {
       '1': orderData.orderNumber,
       '2': orderData.businessName,
       '3': typeLabels[orderData.deliveryType] || orderData.deliveryType,
       '4': orderData.customerName,
       '5': orderData.customerPhone,
-      '6': orderData.deliveryAddress || 'N/A',
+      '6': addressLine,
       '7': itemsText,
       '8': `${orderData.currencySymbol}${orderData.subtotal.toFixed(2)}`,
       '9': orderData.deliveryFee > 0 

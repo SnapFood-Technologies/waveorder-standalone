@@ -2116,6 +2116,46 @@ try {
         }
       })
 
+      // Fetch postal pricing details for WhatsApp notification (if RETAIL business)
+      let postalPricingDetailsForWhatsApp: any = null
+      // @ts-ignore - postalPricingId field will be available after Prisma generate
+      const orderPostalPricingId = (order as any).postalPricingId
+      if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+        try {
+          // @ts-ignore - PostalPricing model will be available after Prisma generate
+          const postalPricing = await (prisma as any).postalPricing.findUnique({
+            where: { id: orderPostalPricingId },
+            include: {
+              postal: {
+                select: {
+                  name: true,
+                  nameEn: true,
+                  nameAl: true,
+                  nameEl: true,
+                  deliveryTime: true,
+                  deliveryTimeAl: true,
+                  deliveryTimeEl: true
+                }
+              }
+            }
+          })
+
+          if (postalPricing) {
+            // Use English name for business notifications
+            postalPricingDetailsForWhatsApp = {
+              name: postalPricing.postal?.name || 'Postal Service',
+              nameEn: postalPricing.postal?.name || 'Postal Service',
+              nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+              nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
+              deliveryTime: postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null,
+              price: postalPricing.price
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching postal pricing details for WhatsApp:', error)
+        }
+      }
+
       // Send order notification directly to business via Twilio
       const twilioResult = await sendTwilioOrderNotification(
         business.whatsappNumber,
@@ -2138,7 +2178,8 @@ try {
           deliveryAddress: order.deliveryAddress || undefined,
           deliveryTime: orderData.deliveryTime || null,
           specialInstructions: order.notes || undefined,
-          currencySymbol: getCurrencySymbol(business.currency)
+          currencySymbol: getCurrencySymbol(business.currency),
+          postalPricingDetails: postalPricingDetailsForWhatsApp
         }
       )
 
