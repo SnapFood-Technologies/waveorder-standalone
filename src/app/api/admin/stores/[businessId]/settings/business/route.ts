@@ -174,6 +174,7 @@ export async function PUT(
         descriptionAl: data.descriptionAl?.trim() || null,
         descriptionEl: data.descriptionEl?.trim() || null,
         businessType: data.businessType,
+        industry: data.industry?.trim() || null,
         address: data.address?.trim() || null,
         country: data.country?.trim() || null,
         phone: data.phone?.trim() || null,

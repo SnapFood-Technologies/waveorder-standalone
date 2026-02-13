@@ -698,10 +698,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                           business.currency === 'ALL' ? 'L' : 
                           business.currency === 'GBP' ? '£' : '$'
 
-    // Determine language to use
+    // Determine language to use - use business.language (for customer communications like WhatsApp)
     const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (business.language || 'en') : 'en'
-    const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : 'en-US'
+    const businessLang = business.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
+    const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
 
     // Get WhatsApp message translations
     const whatsappLabels = getWhatsAppLabels(language)
@@ -851,6 +854,20 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         arrivalTime: 'Koha e mbërritjes',
         at: 'në',
         thankYou: 'Faleminderit që na zgjodhët'
+      },
+      el: {
+        hello: 'Γεια σας',
+        orderStatusUpdate: 'Η παραγγελία σας',
+        hasBeenUpdatedTo: 'έχει ενημερωθεί σε',
+        deliveryAddress: 'Διεύθυνση Παράδοσης',
+        pickupAt: 'Παραλαβή στο',
+        dineInAt: 'Στο εστιατόριο',
+        total: 'Σύνολο',
+        deliveryTime: 'Ώρα παράδοσης',
+        pickupTime: 'Ώρα παραλαβής',
+        arrivalTime: 'Ώρα άφιξης',
+        at: 'στις',
+        thankYou: 'Ευχαριστούμε που επιλέξατε'
       }
     }
     return labels[language] || labels.en
@@ -898,6 +915,19 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         PICKED_UP_DELIVERY: '✨ Porosia juaj është e plotë. Faleminderit!',
         OUT_FOR_DELIVERY: '🚗 Porosia juaj është në rrugë për tek ju!',
         DELIVERED: '✨ Porosia juaj është dorëzuar. Shijoni!'
+      },
+      el: {
+        CONFIRMED: '✅ Η παραγγελία σας έχει επιβεβαιωθεί και την προετοιμάζουμε για εσάς!',
+        PREPARING: '👨‍🍳 Η παραγγελία σας προετοιμάζεται με προσοχή!',
+        PREPARING_RETAIL: '📦 Η παραγγελία σας προετοιμάζεται για αποστολή!',
+        READY_PICKUP: '🎉 Η παραγγελία σας είναι έτοιμη για παραλαβή!',
+        READY_DINE_IN: '🎉 Το τραπέζι σας είναι έτοιμο!',
+        READY_DELIVERY: '🎉 Η παραγγελία σας είναι έτοιμη!',
+        PICKED_UP_PICKUP: '✨ Η παραγγελία σας έχει παραληφθεί. Ευχαριστούμε!',
+        PICKED_UP_DINE_IN: '✨ Καλή όρεξη! Ευχαριστούμε!',
+        PICKED_UP_DELIVERY: '✨ Η παραγγελία σας ολοκληρώθηκε. Ευχαριστούμε!',
+        OUT_FOR_DELIVERY: '🚗 Η παραγγελία σας είναι καθ\' οδόν προς εσάς!',
+        DELIVERED: '✨ Η παραγγελία σας έχει παραδοθεί. Καλή απόλαυση!'
       }
     }
     const messages = baseMessages[language] || baseMessages.en
@@ -942,6 +972,17 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         DELIVERED: 'Dorëzuar',
         CANCELLED: 'Anuluar',
         REFUNDED: 'Rimbursuar'
+      },
+      el: {
+        PENDING: 'Σε Εκκρεμότητα',
+        CONFIRMED: 'Επιβεβαιωμένη',
+        PREPARING: businessType === 'RETAIL' ? 'Προετοιμασία Αποστολής' : 'Σε Προετοιμασία',
+        READY: 'Έτοιμη',
+        PICKED_UP: 'Παραλήφθηκε',
+        OUT_FOR_DELIVERY: 'Σε Διανομή',
+        DELIVERED: 'Παραδόθηκε',
+        CANCELLED: 'Ακυρώθηκε',
+        REFUNDED: 'Επιστράφηκε'
       }
     }
     const labels = statusLabels[language] || statusLabels.en
@@ -983,6 +1024,17 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         sendWhatsAppMessage: 'Dërgoni Mesazh WhatsApp',
         resetToDefault: 'Rivendosni në Parazgjedhje',
         messagePreview: 'Parapamje e mesazhit më sipër'
+      },
+      el: {
+        sendWhatsAppUpdate: 'Αποστολή Ενημέρωσης WhatsApp',
+        notifyCustomer: 'Ειδοποίηση πελάτη για την κατάσταση της παραγγελίας',
+        sendWhatsAppUpdateTo: 'Αποστολή Ενημέρωσης WhatsApp σε',
+        customizeMessage: 'Προσαρμογή του μηνύματος πριν την αποστολή στον πελάτη σας:',
+        whatsAppMessage: 'Μήνυμα WhatsApp',
+        cancel: 'Ακύρωση',
+        sendWhatsAppMessage: 'Αποστολή Μηνύματος WhatsApp',
+        resetToDefault: 'Επαναφορά στην Προεπιλογή',
+        messagePreview: 'Προεπισκόπηση μηνύματος παραπάνω'
       }
     }
     return labels[language] || labels.en
@@ -1041,7 +1093,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   // Get admin UI labels based on business language (after we know business exists)
   const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
-  const adminLanguage = useBusinessLanguage ? (business.language || 'en') : 'en'
+  const businessLang = business.language || 'en'
+  const normalizedAdminLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+  const adminLanguage = useBusinessLanguage ? normalizedAdminLang : 'en'
   const adminUILabels = getAdminUILabels(adminLanguage)
 
   return (

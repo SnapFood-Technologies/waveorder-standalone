@@ -188,6 +188,7 @@ export async function GET(
             whatsappNumber: true,
             businessType: true,
             language: true,
+            storefrontLanguage: true,
             translateContentToBusinessLanguage: true,
             timeFormat: true,
             // Notification settings for WhatsApp modal control
