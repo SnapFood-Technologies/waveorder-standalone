@@ -77,6 +77,9 @@ export default function Header() {
                     <Link href="/instagram-sellers" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
                       Instagram Sellers
                     </Link>
+                    <Link href="/salons" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+                      Salons & Beauty
+                    </Link>
                   </div>
                 </div>
               )}
@@ -179,6 +182,9 @@ export default function Header() {
                     </Link>
                     <Link href="/instagram-sellers" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
                       Instagram Sellers
+                    </Link>
+                    <Link href="/salons" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Salons & Beauty
                     </Link>
                   </div>
                 )}

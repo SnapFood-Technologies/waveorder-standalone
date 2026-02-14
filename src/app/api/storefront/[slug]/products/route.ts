@@ -266,7 +266,26 @@ export async function GET(
           isActive: true,
           price: { gt: 0 }
         },
-        include: {
+        select: {
+          id: true,
+          name: true,
+          nameAl: true,
+          nameEl: true,
+          description: true,
+          descriptionAl: true,
+          descriptionEl: true,
+          price: true,
+          originalPrice: true,
+          images: true,
+          categoryId: true,
+          stock: true,
+          trackInventory: true,
+          modifiers: true,
+          variants: true,
+          saleStartDate: true,
+          saleEndDate: true,
+          isService: true,
+          serviceDuration: true,
           category: {
             select: { id: true, name: true, nameAl: true, nameEl: true }
           },
@@ -335,8 +354,8 @@ export async function GET(
         trackInventory: singleProduct.trackInventory,
         modifiers: parsedModifiers,
         variants: parsedVariants,
-        sortOrder: singleProduct.sortOrder,
-        businessId: singleProduct.businessId,
+        isService: singleProduct.isService || false,
+        serviceDuration: singleProduct.serviceDuration || null,
         brandId: singleProduct.brandId,
         brand: singleProduct.brand ? {
           id: singleProduct.brand.id,
@@ -562,6 +581,8 @@ export async function GET(
           collectionIds: true,
           groupIds: true,
           brandId: true,
+          isService: true,
+          serviceDuration: true,
           variants: {
             orderBy: { price: 'asc' },
             select: {
@@ -665,6 +686,8 @@ export async function GET(
           collectionIds: product.collectionIds || [],
           groupIds: product.groupIds || [],
           brandId: product.brandId,
+          isService: product.isService || false,
+          serviceDuration: product.serviceDuration || null,
           variants: product.variants.map((variant: any) => {
             const variantPricing = calculateEffectivePrice(
               variant.price,

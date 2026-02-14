@@ -564,7 +564,6 @@ export async function POST(request: NextRequest) {
             estimatedPickupTime: data.estimatedPickupTime || '15-20 minutes'
           }
         case 'RETAIL':
-        case 'JEWELRY':
           return {
             estimatedDeliveryTime: data.estimatedDeliveryTime || '2-5 business days',
             estimatedPickupTime: data.estimatedPickupTime || '1-2 hours'
@@ -574,10 +573,10 @@ export async function POST(request: NextRequest) {
             estimatedDeliveryTime: data.estimatedDeliveryTime || '2-4 hours',
             estimatedPickupTime: data.estimatedPickupTime || '30 minutes'
           }
-        case 'FLORIST':
+        case 'SALON':
           return {
-            estimatedDeliveryTime: data.estimatedDeliveryTime || '2-4 hours',
-            estimatedPickupTime: data.estimatedPickupTime || '2-4 hours'
+            estimatedDeliveryTime: data.estimatedDeliveryTime || 'N/A',
+            estimatedPickupTime: data.estimatedPickupTime || 'N/A'
           }
         default:
           return {
@@ -613,8 +612,9 @@ export async function POST(request: NextRequest) {
         isActive: true,
         createdByAdmin: true,
         
-        deliveryEnabled: data.deliveryEnabled ?? true,
+        deliveryEnabled: data.deliveryEnabled ?? (data.businessType === 'SALON' ? false : true),
         pickupEnabled: data.pickupEnabled ?? false,
+        dineInEnabled: data.dineInEnabled ?? (data.businessType === 'SALON' ? true : false),
         deliveryFee: data.deliveryFee ?? 0,
         deliveryRadius: data.deliveryRadius ?? 10,
         estimatedDeliveryTime: defaults.estimatedDeliveryTime,

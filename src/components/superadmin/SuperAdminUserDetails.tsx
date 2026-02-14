@@ -416,9 +416,9 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                           <span>•</span>
                           <span>Role: {business.role}</span>
                           <span>•</span>
-                          <span>{business.ordersCount} orders</span>
+                          <span>{business.ordersCount} {business.businessType === 'SALON' ? 'appointments' : 'orders'}</span>
                           <span>•</span>
-                          <span>{business.productsCount} products</span>
+                          <span>{business.productsCount} {business.businessType === 'SALON' ? 'services' : 'products'}</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-400">
                           Created {formatShortDate(business.createdAt)}

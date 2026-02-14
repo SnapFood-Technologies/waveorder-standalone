@@ -9,8 +9,8 @@ interface TeamManagementPageProps {
 export default async function TeamManagementPage({ params }: TeamManagementPageProps) {
   const { businessId } = await params
 
-  // Pro Guard
-  return <SubscriptionGuard requiredPlan="PRO">
+  // BUSINESS plan required for team management
+  return <SubscriptionGuard requiredPlan="BUSINESS">
     <TeamManagement businessId={businessId} />
   </SubscriptionGuard>
 }

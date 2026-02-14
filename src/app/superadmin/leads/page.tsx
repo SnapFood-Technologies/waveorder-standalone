@@ -716,9 +716,8 @@ function CreateLeadModal({
                 <option value="RESTAURANT">Restaurant</option>
                 <option value="CAFE">Cafe</option>
                 <option value="RETAIL">Retail</option>
-                <option value="JEWELRY">Jewelry</option>
-                <option value="FLORIST">Florist</option>
                 <option value="GROCERY">Grocery</option>
+                <option value="SALON">Salon & Beauty</option>
                 <option value="OTHER">Other</option>
               </select>
             </div>

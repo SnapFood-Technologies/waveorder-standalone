@@ -148,8 +148,6 @@ const businessTypeTranslations = {
     CAFE: "Cafe", 
     RETAIL: "Retail Store",
     GROCERY: "Grocery Store",
-    JEWELRY: "Jewelry Store",
-    FLORIST: "Florist",
     OTHER: "Business"
   },
   sq: {
@@ -157,8 +155,6 @@ const businessTypeTranslations = {
     CAFE: "Kafene",
     RETAIL: "Dyqan",
     GROCERY: "Ushqimore",
-    JEWELRY: "Stolitë",
-    FLORIST: "Lulishte",
     OTHER: "Biznes"
   }
 }

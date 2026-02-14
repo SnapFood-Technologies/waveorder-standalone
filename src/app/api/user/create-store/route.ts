@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
             estimatedPickupTime: data.estimatedPickupTime || '15-20 minutes'
           }
         case 'RETAIL':
-        case 'JEWELRY':
           return {
             estimatedDeliveryTime: data.estimatedDeliveryTime || '2-5 business days',
             estimatedPickupTime: data.estimatedPickupTime || '1-2 hours'
@@ -77,11 +76,6 @@ export async function POST(request: NextRequest) {
           return {
             estimatedDeliveryTime: data.estimatedDeliveryTime || '2-4 hours',
             estimatedPickupTime: data.estimatedPickupTime || '30 minutes'
-          }
-        case 'FLORIST':
-          return {
-            estimatedDeliveryTime: data.estimatedDeliveryTime || '2-4 hours',
-            estimatedPickupTime: data.estimatedPickupTime || '2-4 hours'
           }
         default:
           return {
