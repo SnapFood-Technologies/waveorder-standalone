@@ -61,13 +61,6 @@ const businessTypeConfig = {
     deliveryOptions: ['appointment', 'pickup', 'home-service'],
     deliveryLabels: { delivery: 'Home Service', pickup: 'Pickup', dineIn: 'In-Store Appointment' }
   },
-  HEALTH_BEAUTY: {
-    itemName: 'Service/Product',
-    categoryPlaceholder: 'e.g., Haircuts, Massages, Products',
-    itemPlaceholder: 'e.g., Men\'s Haircut',
-    deliveryOptions: ['appointment', 'pickup', 'home-service'],
-    deliveryLabels: { delivery: 'Home Service', pickup: 'Pickup', dineIn: 'In-Store Appointment' }
-  },
   OTHER: {
     itemName: 'Product/Service',
     categoryPlaceholder: 'e.g., Category 1, Category 2',

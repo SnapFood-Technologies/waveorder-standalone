@@ -77,8 +77,6 @@ enum BusinessType {
   RESTAURANT
   CAFE
   RETAIL
-  JEWELRY
-  FLORIST
   GROCERY
   SALON      // NEW
   OTHER
@@ -330,10 +328,7 @@ const businessTypes = [
   { value: 'CAFE', label: 'Cafe', icon: Coffee },
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
-  { value: 'HEALTH_BEAUTY', label: 'Health & Beauty', icon: Scissors },
   { value: 'SALON', label: 'Salon & Beauty', icon: Sparkles }, // NEW - using Sparkles icon
-  { value: 'JEWELRY', label: 'Jewelry Store', icon: Gem },
-  { value: 'FLORIST', label: 'Florist', icon: Flower2 },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 ```

@@ -83,7 +83,6 @@ const businessTypeIcons = {
   RETAIL: ShoppingBag,
   GROCERY: Apple,
   SALON: Scissors,
-  HEALTH_BEAUTY: Scissors,
   OTHER: MoreHorizontal
 };
 
@@ -93,7 +92,6 @@ const businessTypeLabels: Record<string, string> = {
   RETAIL: 'Retail',
   GROCERY: 'Grocery',
   SALON: 'Salon',
-  HEALTH_BEAUTY: 'Health & Beauty',
   OTHER: 'Other'
 };
 

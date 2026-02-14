@@ -36,12 +36,6 @@ const businessTypeConfig = {
     cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Please check expiry dates upon delivery"'
   },
-  HEALTH_BEAUTY: {
-    title: 'How will customers pay?',
-    subtitle: 'Choose payment methods for your services',
-    cashOnDeliveryLabel: 'Cash',
-    instructionsPlaceholder: 'e.g., "Payment due at time of service"'
-  },
   OTHER: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your business',
