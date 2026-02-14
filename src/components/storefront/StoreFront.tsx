@@ -2009,9 +2009,6 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   } | null>(null)
 
   const [showSchedulingModal, setShowSchedulingModal] = useState(false)
-  const [showLegalPagesModal, setShowLegalPagesModal] = useState(false)
-  const [legalPagesCtaEnabled, setLegalPagesCtaEnabled] = useState(false)
-  const [legalPagesCtaText, setLegalPagesCtaText] = useState('Privacy & Policies')
 
   
   // Fixed delivery type initialization

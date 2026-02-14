@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // Predefined page slugs
-export const PREDEFINED_PAGES = [
+const PREDEFINED_PAGES = [
   { slug: 'privacy-policy', title: 'Privacy Policy', pageType: 'PRIVACY_POLICY' },
   { slug: 'terms-of-use', title: 'Terms of Use', pageType: 'TERMS' },
   { slug: 'payment-methods', title: 'Payment Methods', pageType: 'PAYMENT' },
@@ -122,7 +122,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { slug, title, content, isEnabled, showInFooter, sortOrder, pageType } = body
+    const { slug, title, content, isEnabled, showInFooter, sortOrder, pageType, noIndex } = body
 
     // Validate slug
     if (!slug || !title) {

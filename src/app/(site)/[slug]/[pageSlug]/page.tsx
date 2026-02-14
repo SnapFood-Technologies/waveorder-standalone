@@ -136,11 +136,10 @@ export default async function LegalPage({ params }: PageProps) {
         </div>
       </footer>
 
-      <style jsx global>{`
-        .prose h1,
-        .prose h2,
-        .prose h3,
-        .prose h4 {
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .prose h1, .prose h2, .prose h3, .prose h4 {
           color: ${business.primaryColor || '#10b981'};
           font-weight: 600;
           margin-top: 1.5em;
@@ -154,8 +153,7 @@ export default async function LegalPage({ params }: PageProps) {
           line-height: 1.7;
           color: #374151;
         }
-        .prose ul,
-        .prose ol {
+        .prose ul, .prose ol {
           margin-bottom: 1em;
           padding-left: 1.5em;
         }
@@ -203,8 +201,7 @@ export default async function LegalPage({ params }: PageProps) {
           border-collapse: collapse;
           margin: 1.5em 0;
         }
-        .prose th,
-        .prose td {
+        .prose th, .prose td {
           border: 1px solid #e5e7eb;
           padding: 0.5rem;
           text-align: left;
@@ -213,7 +210,9 @@ export default async function LegalPage({ params }: PageProps) {
           background-color: #f9fafb;
           font-weight: 600;
         }
-      `}</style>
+      `,
+        }}
+      />
     </div>
   )
 }

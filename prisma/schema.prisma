@@ -425,9 +425,9 @@ model Business {
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
 
   // Legal Pages / Store Policies (SuperAdmin enables)
-  legalPagesEnabled     Boolean @default(false) // When enabled, business admin can create and manage legal pages
-  legalPagesCtaEnabled  Boolean @default(false) // Admin: Show informative CTA above search bar
-  legalPagesCtaText     String? // Custom CTA text (e.g., "Privacy & Policies")
+  legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
+  legalPagesCtaEnabled Boolean @default(false) // Admin: Show informative CTA above search bar
+  legalPagesCtaText    String? // Custom CTA text (e.g., "Privacy & Policies")
 
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
@@ -2195,17 +2195,17 @@ model IntegrationLog {
 // ===========================================
 
 model StorePage {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   businessId String   @db.ObjectId
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  slug        String // e.g., "privacy-policy", "terms-of-use", "custom-page"
-  title       String // Display title
-  content     String @db.String // HTML content
-  isEnabled   Boolean @default(true)
+  slug         String // e.g., "privacy-policy", "terms-of-use", "custom-page"
+  title        String // Display title
+  content      String  @db.String // HTML content
+  isEnabled    Boolean @default(true)
   showInFooter Boolean @default(true)
-  sortOrder   Int     @default(0)
-  noIndex     Boolean @default(false) // SEO: Prevent search engine indexing
+  sortOrder    Int     @default(0)
+  noIndex      Boolean @default(false) // SEO: Prevent search engine indexing
 
   // Predefined page type (optional - for predefined pages)
   pageType String? // "PRIVACY_POLICY", "TERMS", "PAYMENT", "CANCELLATION", "CUSTOM"
