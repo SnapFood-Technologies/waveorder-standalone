@@ -454,6 +454,7 @@ model Business {
   collections        Collection[]
   groups             Group[]
   storePages         StorePage[]
+  storePageViews     StorePageView[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -2206,6 +2207,7 @@ model StorePage {
   showInFooter Boolean @default(true)
   sortOrder    Int     @default(0)
   noIndex      Boolean @default(false) // SEO: Prevent search engine indexing
+  views        Int     @default(0) // Track page views
 
   // Predefined page type (optional - for predefined pages)
   pageType String? // "PRIVACY_POLICY", "TERMS", "PAYMENT", "CANCELLATION", "CUSTOM"
@@ -2213,8 +2215,45 @@ model StorePage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  pageViews StorePageView[]
+
   @@unique([businessId, slug])
   @@index([businessId, isEnabled])
   @@index([businessId, showInFooter])
   @@index([businessId, sortOrder])
+}
+
+// Track individual legal page views with geolocation (similar to VisitorSession)
+model StorePageView {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String    @db.ObjectId
+  pageId     String    @db.ObjectId
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  page       StorePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Geographic data
+  country   String? // Country name (e.g., "Greece", "Albania")
+  city      String? // City name (e.g., "Athens", "Tirana")
+  region    String? // State/Province/Region
+  latitude  Float?
+  longitude Float?
+
+  // Device information
+  deviceType String? // "mobile", "desktop", "tablet"
+  browser    String? // "Chrome", "Safari", etc.
+  os         String? // "iOS", "Android", "Windows"
+
+  // Technical metadata
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
+  viewedAt DateTime @default(now())
+
+  @@index([businessId, pageId])
+  @@index([businessId, country])
+  @@index([businessId, city])
+  @@index([pageId, viewedAt])
+  @@index([businessId, viewedAt])
 }

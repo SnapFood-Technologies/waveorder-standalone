@@ -1,13 +1,15 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
+import { trackPageView } from '@/lib/trackPageView'
 
 interface PageProps {
   params: Promise<{ slug: string; pageSlug: string }>
 }
 
-async function getPageData(slug: string, pageSlug: string) {
+async function getPageData(slug: string, pageSlug: string, headersList?: Headers) {
   try {
     const business = await prisma.business.findUnique({
       where: { slug },
@@ -35,6 +37,7 @@ async function getPageData(slug: string, pageSlug: string) {
         isEnabled: true,
       },
       select: {
+        id: true,
         slug: true,
         title: true,
         content: true,
@@ -43,8 +46,41 @@ async function getPageData(slug: string, pageSlug: string) {
       },
     })
 
-    if (!page) {
+    if (!page || !page.id) {
       return null
+    }
+
+    // Track page view with geolocation (fire and forget - don't await to avoid blocking page render)
+    if (headersList) {
+      // Extract IP from headers (same logic as extractIPAddress but inline for server component)
+      const cfIP = headersList.get('cf-connecting-ip')
+      const xRealIP = headersList.get('x-real-ip')
+      const xForwardedFor = headersList.get('x-forwarded-for')
+      let ipAddress: string | undefined
+      
+      if (cfIP) {
+        ipAddress = cfIP.trim()
+      } else if (xRealIP) {
+        ipAddress = xRealIP.trim()
+      } else if (xForwardedFor) {
+        const ips = xForwardedFor.split(',').map(ip => ip.trim()).filter(ip => ip)
+        ipAddress = ips.length > 0 ? ips[0] : undefined
+      }
+      
+      const userAgent = headersList.get('user-agent') || undefined
+      const referrer = headersList.get('referer') || undefined
+
+      trackPageView({
+        businessId: business.id,
+        pageId: page.id,
+        ipAddress,
+        userAgent,
+        referrer,
+      }).catch(err => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error tracking page view:', err)
+        }
+      })
     }
 
     // Get all enabled pages for footer
@@ -103,7 +139,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LegalPage({ params }: PageProps) {
   const { slug, pageSlug } = await params
-  const data = await getPageData(slug, pageSlug)
+  const headersList = await headers()
+  const data = await getPageData(slug, pageSlug, headersList)
 
   if (!data) {
     notFound()

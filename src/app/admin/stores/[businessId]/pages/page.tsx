@@ -62,6 +62,17 @@ export default function PagesPage() {
     ctaText: 'Privacy & Policies',
   })
   const [savingSettings, setSavingSettings] = useState(false)
+  const [stats, setStats] = useState<{
+    totalViews: number
+    totalEnabledViews: number
+    totalPages: number
+    enabledPages: number
+    mostViewed: { slug: string; title: string; views: number } | null
+    pages: Array<{ slug: string; title: string; views: number; isEnabled: boolean }>
+    topCountries?: Array<{ country: string; views: number }>
+    topCities?: Array<{ city: string; country: string; views: number }>
+  } | null>(null)
+  const [loadingStats, setLoadingStats] = useState(false)
 
   const [formData, setFormData] = useState({
     slug: '',
@@ -77,6 +88,7 @@ export default function PagesPage() {
   useEffect(() => {
     fetchPages()
     fetchSettings()
+    fetchStats()
   }, [businessId])
 
   const fetchPages = async () => {
@@ -110,6 +122,21 @@ export default function PagesPage() {
       }
     } catch (error) {
       console.error('Error fetching settings:', error)
+    }
+  }
+
+  const fetchStats = async () => {
+    setLoadingStats(true)
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/pages/stats`)
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error)
+    } finally {
+      setLoadingStats(false)
     }
   }
 
@@ -200,6 +227,7 @@ export default function PagesPage() {
 
       toast.success(editingPage?.id ? 'Page updated successfully' : 'Page created successfully')
       await fetchPages()
+      await fetchStats()
       handleCloseForm()
     } catch (err: any) {
       setError(err.message)
@@ -226,6 +254,7 @@ export default function PagesPage() {
 
       toast.success('Page deleted successfully')
       await fetchPages()
+      await fetchStats()
       setPageToDelete(null)
     } catch (err: any) {
       toast.error(err.message)
@@ -253,6 +282,7 @@ export default function PagesPage() {
       }
 
       await fetchPages()
+      await fetchStats()
       toast.success(`Page ${!page.isEnabled ? 'enabled' : 'disabled'}`)
     } catch (err: any) {
       toast.error(err.message)
@@ -608,6 +638,140 @@ export default function PagesPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Stats Section */}
+      {stats && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Page Views Statistics</h2>
+          {loadingStats ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Total Views</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalViews.toLocaleString()}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Enabled Pages Views</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalEnabledViews.toLocaleString()}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Total Pages</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.totalPages}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Enabled Pages</div>
+                <div className="text-2xl font-bold text-gray-900">{stats.enabledPages}</div>
+              </div>
+            </div>
+          )}
+          {stats.mostViewed && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="text-sm text-gray-600 mb-1">Most Viewed Page</div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium text-gray-900">{stats.mostViewed.title}</div>
+                  <div className="text-xs text-gray-500">/{stats.mostViewed.slug}</div>
+                </div>
+                <div className="text-lg font-semibold text-teal-600">{stats.mostViewed.views.toLocaleString()} views</div>
+              </div>
+            </div>
+          )}
+          {stats.topCountries && stats.topCountries.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-3">Top Countries</div>
+              <div className="space-y-2">
+                {stats.topCountries.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm font-medium text-gray-900">{item.country}</div>
+                    <div className="text-sm font-semibold text-gray-900">{item.views.toLocaleString()} views</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.topCities && stats.topCities.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-3">Top Cities</div>
+              <div className="space-y-2">
+                {stats.topCities.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{item.city}</div>
+                      <div className="text-xs text-gray-500">{item.country}</div>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">{item.views.toLocaleString()} views</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.pages && stats.pages.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-3">Views by Page</div>
+              <div className="space-y-2">
+                {stats.pages.slice(0, 5).map((page) => (
+                  <div key={page.slug} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">{page.title}</div>
+                      <div className="text-xs text-gray-500">/{page.slug}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {page.isEnabled ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          Enabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                          Disabled
+                        </span>
+                      )}
+                      <div className="text-sm font-semibold text-gray-900">{page.views.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.topCountries && stats.topCountries.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-3">Top Countries</div>
+              <div className="space-y-2">
+                {stats.topCountries.map((item, idx) => (
+                  <div key={item.country} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-gray-500">#{idx + 1}</span>
+                      <span className="text-sm font-medium text-gray-900">{item.country}</span>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">{item.views.toLocaleString()} views</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {stats.topCities && stats.topCities.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm font-medium text-gray-700 mb-3">Top Cities</div>
+              <div className="space-y-2">
+                {stats.topCities.map((item, idx) => (
+                  <div key={`${item.city}-${item.country}`} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-gray-500">#{idx + 1}</span>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{item.city}</span>
+                        <span className="text-xs text-gray-500 ml-1">({item.country})</span>
+                      </div>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">{item.views.toLocaleString()} views</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
