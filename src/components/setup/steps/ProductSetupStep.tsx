@@ -54,19 +54,12 @@ const businessTypeConfig = {
     deliveryOptions: ['delivery', 'pickup', 'curbside'],
     deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Curbside' }
   },
-  JEWELRY: {
-    itemName: 'Product',
-    categoryPlaceholder: 'e.g., Rings, Necklaces, Watches',
-    itemPlaceholder: 'e.g., Gold Wedding Ring',
-    deliveryOptions: ['shipping', 'pickup', 'appointment'],
-    deliveryLabels: { delivery: 'Shipping', pickup: 'Pickup', dineIn: 'Appointment Viewing' }
-  },
-  FLORIST: {
-    itemName: 'Product',
-    categoryPlaceholder: 'e.g., Bouquets, Plants, Arrangements',
-    itemPlaceholder: 'e.g., Red Rose Bouquet',
-    deliveryOptions: ['delivery', 'pickup', 'local-delivery'],
-    deliveryLabels: { delivery: 'Delivery', pickup: 'Pickup', dineIn: 'Local Delivery' }
+  SALON: {
+    itemName: 'Service',
+    categoryPlaceholder: 'e.g., Haircuts, Nails, Massages',
+    itemPlaceholder: 'e.g., Men\'s Haircut',
+    deliveryOptions: ['appointment', 'pickup', 'home-service'],
+    deliveryLabels: { delivery: 'Home Service', pickup: 'Pickup', dineIn: 'In-Store Appointment' }
   },
   HEALTH_BEAUTY: {
     itemName: 'Service/Product',

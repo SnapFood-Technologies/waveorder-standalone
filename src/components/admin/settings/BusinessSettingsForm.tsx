@@ -642,8 +642,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'CAFE', label: 'Cafe' },
     { value: 'RETAIL', label: 'Retail Store' },
     { value: 'GROCERY', label: 'Grocery Store' },
-    { value: 'JEWELRY', label: 'Jewelry Store' },
-    { value: 'FLORIST', label: 'Florist' },
+    { value: 'SALON', label: 'Salon & Beauty' },
     { value: 'OTHER', label: 'Other' }
   ]
 

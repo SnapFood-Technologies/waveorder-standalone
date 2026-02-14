@@ -703,10 +703,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'RESTAURANT':
           case 'CAFE':
           case 'GROCERY':
-          case 'FLORIST':
             return <Truck className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <Package className="w-5 h-5" />
           default:
             return <Truck className="w-5 h-5" />
@@ -717,12 +715,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'CAFE':
             return <ShoppingBag className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <Store className="w-5 h-5" />
           case 'GROCERY':
             return <ShoppingBag className="w-5 h-5" />
-          case 'FLORIST':
-            return <Store className="w-5 h-5" />
           default:
             return <Store className="w-5 h-5" />
         }
@@ -732,12 +727,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'CAFE':
             return <UtensilsCrossed className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <User className="w-5 h-5" />
           case 'GROCERY':
             return <ShoppingBag className="w-5 h-5" />
-          case 'FLORIST':
-            return <User className="w-5 h-5" />
           default:
             return <User className="w-5 h-5" />
         }

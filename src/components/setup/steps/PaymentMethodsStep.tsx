@@ -36,18 +36,6 @@ const businessTypeConfig = {
     cashOnDeliveryLabel: 'Cash',
     instructionsPlaceholder: 'e.g., "Please check expiry dates upon delivery"'
   },
-  JEWELRY: {
-    title: 'How will customers pay?',
-    subtitle: 'Choose payment methods for your jewelry business',
-    cashOnDeliveryLabel: 'Cash',
-    instructionsPlaceholder: 'e.g., "All purchases come with certificate of authenticity"'
-  },
-  FLORIST: {
-    title: 'How will customers pay?',
-    subtitle: 'Choose payment methods for your flower business',
-    cashOnDeliveryLabel: 'Cash',
-    instructionsPlaceholder: 'e.g., "Orders must be placed 24 hours in advance"'
-  },
   HEALTH_BEAUTY: {
     title: 'How will customers pay?',
     subtitle: 'Choose payment methods for your services',

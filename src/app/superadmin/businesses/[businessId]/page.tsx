@@ -169,8 +169,6 @@ const businessTypeIcons: Record<string, any> = {
   RETAIL: '🛍️',
   GROCERY: '🛒',
   SALON: '✂️',
-  JEWELRY: '💎',
-  FLORIST: '🌸',
   BEAUTY: '💄',
   FITNESS: '💪',
   OTHER: '🏢'
