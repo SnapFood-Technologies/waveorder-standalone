@@ -39,7 +39,7 @@ export async function GET(
       return NextResponse.json({ error: 'Feature not enabled' }, { status: 403 })
     }
 
-    // Get all pages with view counts
+    // Get all pages
     const pages = await prisma.storePage.findMany({
       where: { businessId },
       select: {
@@ -63,11 +63,32 @@ export async function GET(
       },
     })
 
-    // Calculate totals
-    const totalViews = pages.reduce((sum, page) => sum + page.views, 0)
+    // Calculate totals from StorePageView records (more accurate)
+    const totalViews = pageViews.length
     const enabledPages = pages.filter(p => p.isEnabled)
-    const totalEnabledViews = enabledPages.reduce((sum, page) => sum + page.views, 0)
-    const mostViewed = pages.length > 0 ? pages[0] : null
+    const enabledPageIds = new Set(enabledPages.map(p => p.id))
+    const totalEnabledViews = pageViews.filter(pv => enabledPageIds.has(pv.pageId)).length
+    
+    // Count views per page from StorePageView records
+    const viewsByPageId = new Map<string, number>()
+    pageViews.forEach(pv => {
+      viewsByPageId.set(pv.pageId, (viewsByPageId.get(pv.pageId) || 0) + 1)
+    })
+    
+    // Find most viewed page
+    let mostViewed: { slug: string; title: string; views: number } | null = null
+    let maxViews = 0
+    for (const page of pages) {
+      const viewCount = viewsByPageId.get(page.id) || 0
+      if (viewCount > maxViews) {
+        maxViews = viewCount
+        mostViewed = {
+          slug: page.slug,
+          title: page.title,
+          views: viewCount,
+        }
+      }
+    }
 
     // Aggregate by country
     const countryMap = new Map<string, number>()
@@ -108,7 +129,7 @@ export async function GET(
       pages: pages.map(p => ({
         slug: p.slug,
         title: p.title,
-        views: p.views,
+        views: viewsByPageId.get(p.id) || 0,
         isEnabled: p.isEnabled,
       })),
       topCountries,
