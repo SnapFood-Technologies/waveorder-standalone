@@ -282,6 +282,7 @@ export async function GET(
         showProductionPlanning: business.showProductionPlanning,
         enableManualTeamCreation: business.enableManualTeamCreation,
         enableDeliveryManagement: business.enableDeliveryManagement,
+        legalPagesEnabled: business.legalPagesEnabled,
         address: business.address,
         email: business.email,
         phone: business.phone,

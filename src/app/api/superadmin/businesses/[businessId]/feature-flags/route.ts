@@ -36,6 +36,7 @@ export async function GET(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
+        legalPagesEnabled: true,
         currency: true
       }
     })
@@ -114,7 +115,8 @@ export async function GET(
       },
       settings: {
         enableManualTeamCreation: business.enableManualTeamCreation,
-        enableDeliveryManagement: business.enableDeliveryManagement
+        enableDeliveryManagement: business.enableDeliveryManagement,
+        legalPagesEnabled: business.legalPagesEnabled
       },
       summary: {
         delivery: deliverySummary,
@@ -154,7 +156,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, legalPagesEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -173,6 +175,9 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       updateData.enableDeliveryManagement = enableDeliveryManagement === true
     }
+    if (legalPagesEnabled !== undefined) {
+      updateData.legalPagesEnabled = legalPagesEnabled === true
+    }
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -182,7 +187,8 @@ export async function PATCH(
         id: true,
         name: true,
         enableManualTeamCreation: true,
-        enableDeliveryManagement: true
+        enableDeliveryManagement: true,
+        legalPagesEnabled: true
       }
     })
 
@@ -193,13 +199,17 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       messages.push(`Delivery Management ${updatedBusiness.enableDeliveryManagement ? 'enabled' : 'disabled'}`)
     }
+    if (legalPagesEnabled !== undefined) {
+      messages.push(`Legal Pages ${updatedBusiness.legalPagesEnabled ? 'enabled' : 'disabled'}`)
+    }
 
     return NextResponse.json({
       success: true,
       message: messages.join(' and ') + ` for ${updatedBusiness.name}`,
       settings: {
         enableManualTeamCreation: updatedBusiness.enableManualTeamCreation,
-        enableDeliveryManagement: updatedBusiness.enableDeliveryManagement
+        enableDeliveryManagement: updatedBusiness.enableDeliveryManagement,
+        legalPagesEnabled: updatedBusiness.legalPagesEnabled
       }
     })
   } catch (error) {

@@ -133,6 +133,7 @@ export async function GET(
         showProductionPlanning: true, // For Production Queue feature
         enableManualTeamCreation: true, // For Manual Team Creation feature
         enableDeliveryManagement: true, // For Delivery Management feature
+        legalPagesEnabled: true, // For Legal Pages feature
         
         // Inventory display
         showStockBadge: true,

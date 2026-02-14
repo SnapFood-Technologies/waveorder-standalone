@@ -44,7 +44,8 @@ import {
   Coins,
   ChefHat,
   Key,
-  Truck
+  Truck,
+  Shield
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -94,6 +95,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -130,6 +132,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setShowCostPriceEnabled(data.business?.showCostPrice || false)
           setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+          setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -463,6 +466,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Happy Hour', 
           href: `${baseUrl}/settings/happy-hour`, 
           icon: Clock, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(legalPagesEnabled ? [{
+          name: 'Legal Pages', 
+          href: `${baseUrl}/pages`, 
+          icon: Shield, 
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

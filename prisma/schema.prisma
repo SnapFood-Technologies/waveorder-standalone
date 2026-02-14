@@ -424,6 +424,11 @@ model Business {
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
 
+  // Legal Pages / Store Policies (SuperAdmin enables)
+  legalPagesEnabled     Boolean @default(false) // When enabled, business admin can create and manage legal pages
+  legalPagesCtaEnabled  Boolean @default(false) // Admin: Show informative CTA above search bar
+  legalPagesCtaText     String? // Custom CTA text (e.g., "Privacy & Policies")
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -448,6 +453,7 @@ model Business {
   brands             Brand[]
   collections        Collection[]
   groups             Group[]
+  storePages         StorePage[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -2182,4 +2188,33 @@ model IntegrationLog {
   @@index([businessId])
   @@index([integrationId, createdAt])
   @@map("integration_logs")
+}
+
+// ===========================================
+// Legal Pages / Store Policies
+// ===========================================
+
+model StorePage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  slug        String // e.g., "privacy-policy", "terms-of-use", "custom-page"
+  title       String // Display title
+  content     String @db.String // HTML content
+  isEnabled   Boolean @default(true)
+  showInFooter Boolean @default(true)
+  sortOrder   Int     @default(0)
+  noIndex     Boolean @default(false) // SEO: Prevent search engine indexing
+
+  // Predefined page type (optional - for predefined pages)
+  pageType String? // "PRIVACY_POLICY", "TERMS", "PAYMENT", "CANCELLATION", "CUSTOM"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, slug])
+  @@index([businessId, isEnabled])
+  @@index([businessId, showInFooter])
+  @@index([businessId, sortOrder])
 }

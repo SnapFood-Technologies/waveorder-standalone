@@ -37,7 +37,8 @@ import {
   Crown,
   Search,
   ChefHat,
-  Key
+  Key,
+  Shield
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -70,6 +71,7 @@ interface BusinessDetails {
   showProductionPlanning?: boolean
   enableManualTeamCreation?: boolean
   enableDeliveryManagement?: boolean
+  legalPagesEnabled?: boolean
   address?: string
   email?: string
   phone?: string
@@ -1403,6 +1405,9 @@ export default function BusinessDetailsPage() {
           {/* Delivery Management Settings */}
           <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Legal Pages Settings */}
+          <LegalPagesSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -2618,6 +2623,95 @@ function DeliveryManagementSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Delivery management features not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Legal Pages Settings Section Component (SuperAdmin toggle only)
+function LegalPagesSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [legalPagesEnabled, setLegalPagesEnabled] = useState(business.legalPagesEnabled || false)
+
+  const handleToggle = async () => {
+    const newValue = !legalPagesEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ legalPagesEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setLegalPagesEnabled(newValue)
+        toast.success(newValue ? 'Legal Pages enabled' : 'Legal Pages disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling legal pages:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Shield className="w-5 h-5 mr-2 text-purple-600" />
+        Legal Pages
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Legal Pages Feature</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admins can create and manage legal pages (Privacy Policy, Terms of Use, Payment Methods, Cancellation/Return Policy) that appear in the storefront footer and can be accessed via a header icon.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+            legalPagesEnabled ? 'bg-purple-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              legalPagesEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {legalPagesEnabled && (
+        <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-xs text-purple-700 mb-2">
+            <span className="font-medium">Enabled:</span> Business admins can now manage legal pages from the admin panel.
+          </p>
+          <p className="text-xs text-purple-600">
+            Pages will appear in the storefront footer and can be accessed via a shield icon in the header.
+          </p>
+        </div>
+      )}
+      
+      {!legalPagesEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Legal pages feature not available to this business.
           </p>
         </div>
       )}
