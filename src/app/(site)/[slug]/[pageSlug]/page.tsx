@@ -17,6 +17,7 @@ async function getPageData(slug: string, pageSlug: string) {
         primaryColor: true,
         secondaryColor: true,
         fontFamily: true,
+        slug: true,
       },
     })
 
@@ -43,14 +44,32 @@ async function getPageData(slug: string, pageSlug: string) {
       return null
     }
 
+    // Get all enabled pages for footer
+    const allPages = await prisma.storePage.findMany({
+      where: {
+        businessId: business.id,
+        isEnabled: true,
+        showInFooter: true,
+      },
+      select: {
+        slug: true,
+        title: true,
+        sortOrder: true,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    })
+
     return {
       business: {
+        id: business.id,
         name: business.name,
+        slug: business.slug,
         primaryColor: business.primaryColor,
         secondaryColor: business.secondaryColor,
         fontFamily: business.fontFamily,
       },
       page,
+      footerPages: allPages,
     }
   } catch (error) {
     console.error('Error fetching page data:', error)
@@ -86,88 +105,157 @@ export default async function LegalPage({ params }: PageProps) {
     notFound()
   }
 
-  const { business, page } = data
+  const { business, page, footerPages } = data
+  const primaryColor = business.primaryColor || '#10b981'
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header 
-        className="bg-white shadow-sm border-b"
-        style={{ 
-          borderColor: `${business.primaryColor || '#10b981'}20`,
-          backgroundColor: business.secondaryColor || '#ffffff'
+    <div className="min-h-screen bg-white" style={{ fontFamily: business.fontFamily || 'inherit' }}>
+      {/* Back Button - Clean Design */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <a
+            href={`/${slug}`}
+            className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors group"
+          >
+            <svg 
+              className="w-4 h-4 mr-2 transition-transform group-hover:-translate-x-1" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="group-hover:opacity-80">Back to {business.name}</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <section 
+        className="pt-12 pb-16"
+        style={{
+          background: `linear-gradient(to bottom right, ${primaryColor}08, ${primaryColor}03, white)`
         }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <a
-              href={`/${slug}`}
-              className="text-lg font-semibold hover:opacity-80 transition-opacity"
-              style={{ color: business.primaryColor || '#10b981' }}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 
+              className="text-4xl md:text-5xl font-bold mb-4 leading-tight"
+              style={{ color: primaryColor }}
             >
-              ← Back to {business.name}
-            </a>
+              {page.title}
+            </h1>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              {business.name}
+            </p>
           </div>
         </div>
-      </header>
+      </section>
 
-      {/* Page Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 md:p-12">
-          <h1 
-            className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8"
-            style={{ color: business.primaryColor || '#10b981' }}
-          >
-            {page.title}
-          </h1>
-          
+      {/* Content */}
+      <section className="py-12 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div 
-            className="prose prose-sm sm:prose-base max-w-none"
+            className="prose prose-lg max-w-none"
             style={{ fontFamily: business.fontFamily || 'inherit' }}
             dangerouslySetInnerHTML={{ __html: page.content }}
           />
         </div>
-      </main>
+      </section>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t bg-white py-6">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-600 text-sm">
-          <p>© {new Date().getFullYear()} {business.name}. All rights reserved.</p>
+      {/* Footer - Matching Storefront */}
+      <footer className="bg-white mt-12 border-t border-gray-100">
+        <div className="max-w-[75rem] mx-auto px-5 py-6">
+          {/* Legal Pages Links */}
+          {footerPages && footerPages.length > 0 && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                {footerPages.map((footerPage) => (
+                  <a
+                    key={footerPage.slug}
+                    href={`/${business.slug}/${footerPage.slug}`}
+                    className="text-sm hover:underline transition-colors"
+                    style={{ color: footerPage.slug === pageSlug ? primaryColor : '#6b7280' }}
+                  >
+                    {footerPage.title}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              Powered by{' '}
+              <a 
+                href="https://waveorder.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-medium hover:underline transition-colors"
+                style={{ color: primaryColor }}
+              >
+                WaveOrder
+              </a>
+            </p>
+          </div>
         </div>
       </footer>
 
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        .prose h1, .prose h2, .prose h3, .prose h4 {
-          color: ${business.primaryColor || '#10b981'};
-          font-weight: 600;
-          margin-top: 1.5em;
-          margin-bottom: 0.75em;
+        .prose {
+          color: #374151;
+          line-height: 1.75;
         }
-        .prose h1 { font-size: 2em; }
-        .prose h2 { font-size: 1.5em; }
-        .prose h3 { font-size: 1.25em; }
-        .prose p {
+        .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+          color: ${primaryColor};
+          font-weight: 700;
+          margin-top: 2em;
           margin-bottom: 1em;
-          line-height: 1.7;
+          line-height: 1.2;
+        }
+        .prose h1 { 
+          font-size: 2.5em; 
+          margin-top: 0;
+        }
+        .prose h2 { 
+          font-size: 2em; 
+          border-bottom: 2px solid ${primaryColor}20;
+          padding-bottom: 0.5em;
+        }
+        .prose h3 { 
+          font-size: 1.5em; 
+        }
+        .prose h4 { 
+          font-size: 1.25em; 
+        }
+        .prose p {
+          margin-bottom: 1.25em;
+          line-height: 1.75;
           color: #374151;
         }
         .prose ul, .prose ol {
-          margin-bottom: 1em;
-          padding-left: 1.5em;
+          margin-bottom: 1.25em;
+          padding-left: 1.75em;
         }
         .prose li {
-          margin-bottom: 0.5em;
+          margin-bottom: 0.75em;
           color: #374151;
+          line-height: 1.75;
+        }
+        .prose li::marker {
+          color: ${primaryColor};
         }
         .prose a {
-          color: ${business.primaryColor || '#10b981'};
+          color: ${primaryColor};
           text-decoration: underline;
-          transition: opacity 0.2s;
+          text-decoration-color: ${primaryColor}40;
+          transition: all 0.2s;
         }
         .prose a:hover {
-          opacity: 0.8;
+          color: ${primaryColor};
+          text-decoration-color: ${primaryColor};
         }
         .prose strong {
           font-weight: 600;
@@ -181,20 +269,32 @@ export default async function LegalPage({ params }: PageProps) {
           padding: 0.125rem 0.375rem;
           border-radius: 0.25rem;
           font-size: 0.875em;
+          color: #111827;
         }
         .prose pre {
           background-color: #1f2937;
           color: #f9fafb;
-          padding: 1rem;
+          padding: 1.25rem;
           border-radius: 0.5rem;
           overflow-x: auto;
+          margin: 1.5em 0;
+        }
+        .prose pre code {
+          background-color: transparent;
+          color: #f9fafb;
+          padding: 0;
         }
         .prose blockquote {
-          border-left: 4px solid ${business.primaryColor || '#10b981'};
-          padding-left: 1rem;
+          border-left: 4px solid ${primaryColor};
+          padding-left: 1.25rem;
           margin-left: 0;
+          margin-right: 0;
           font-style: italic;
           color: #6b7280;
+          background-color: ${primaryColor}05;
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+          border-radius: 0 0.5rem 0.5rem 0;
         }
         .prose table {
           width: 100%;
@@ -203,12 +303,21 @@ export default async function LegalPage({ params }: PageProps) {
         }
         .prose th, .prose td {
           border: 1px solid #e5e7eb;
-          padding: 0.5rem;
+          padding: 0.75rem;
           text-align: left;
         }
         .prose th {
-          background-color: #f9fafb;
+          background-color: ${primaryColor}10;
           font-weight: 600;
+          color: ${primaryColor};
+        }
+        .prose hr {
+          border-color: ${primaryColor}20;
+          margin: 2em 0;
+        }
+        .prose img {
+          border-radius: 0.5rem;
+          margin: 1.5em 0;
         }
       `,
         }}
