@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { prisma } from '@/lib/prisma'
+import { getStorefrontTranslations } from '@/utils/storefront-translations'
 
 interface PageProps {
   params: Promise<{ slug: string; pageSlug: string }>
@@ -14,6 +15,8 @@ async function getPageData(slug: string, pageSlug: string) {
         id: true,
         name: true,
         legalPagesEnabled: true,
+        storefrontLanguage: true,
+        language: true,
         primaryColor: true,
         secondaryColor: true,
         fontFamily: true,
@@ -67,6 +70,7 @@ async function getPageData(slug: string, pageSlug: string) {
         primaryColor: business.primaryColor,
         secondaryColor: business.secondaryColor,
         fontFamily: business.fontFamily,
+        storefrontLanguage: business.storefrontLanguage || business.language || 'en',
       },
       page,
       footerPages: allPages,
@@ -107,6 +111,7 @@ export default async function LegalPage({ params }: PageProps) {
 
   const { business, page, footerPages } = data
   const primaryColor = business.primaryColor || '#10b981'
+  const translations = getStorefrontTranslations(business.storefrontLanguage)
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: business.fontFamily || 'inherit' }}>
@@ -125,7 +130,7 @@ export default async function LegalPage({ params }: PageProps) {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="group-hover:opacity-80">Back to {business.name}</span>
+            <span className="group-hover:opacity-80">{translations.backTo} {business.name}</span>
           </a>
         </div>
       </div>
@@ -186,7 +191,7 @@ export default async function LegalPage({ params }: PageProps) {
           
           <div className="text-center">
             <p className="text-sm text-gray-500">
-              Powered by{' '}
+              {translations.poweredBy}{' '}
               <a 
                 href="https://waveorder.app" 
                 target="_blank" 

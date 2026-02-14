@@ -2584,10 +2584,12 @@ const trackProductEvent = useCallback((
       fetch(`/api/storefront/${storeData.slug}/pages`)
         .then(res => res.json())
         .then(data => {
+          const storefrontLang = storeData.storefrontLanguage || storeData.language || 'en'
+          const t = getStorefrontTranslations(storefrontLang)
           setLegalPagesData({
             pages: data.pages || [],
             ctaEnabled: data.ctaEnabled || false,
-            ctaText: data.ctaText || 'Privacy & Policies',
+            ctaText: data.ctaText || t.legalPoliciesCta,
           })
         })
         .catch(err => {
@@ -4665,6 +4667,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           onClose={() => setShowLegalPagesModal(false)}
           businessSlug={storeData.slug}
           primaryColor={primaryColor}
+          translations={translations}
         />
       )}
 

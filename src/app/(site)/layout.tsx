@@ -36,6 +36,7 @@ export default function SiteLayout({
     '/cookies',
     '/api',
     '/admin',
+    '/team',
     // Industry landing pages
     '/instagram-sellers',
     '/restaurants',

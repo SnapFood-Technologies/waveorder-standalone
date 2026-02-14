@@ -120,6 +120,13 @@ onlyStockAvailable: string
     // Footer
     poweredBy: string
     
+    // Legal Pages
+    backTo: string
+    legalPolicies: string
+    legalPoliciesCta: string
+    legalPoliciesSubtitle: string
+    noPagesAvailable: string
+    
     // Empty States
     noProductsFound: string
     noProductsFoundDescription: string
@@ -418,6 +425,13 @@ onlyStockAvailable: "Only {stock} available",
     // Footer
     poweredBy: "Powered by",
     
+    // Legal Pages
+    backTo: "Back to",
+    legalPolicies: "Legal & Policies",
+    legalPoliciesCta: "Terms & Policies",
+    legalPoliciesSubtitle: "View our terms, policies, and legal information",
+    noPagesAvailable: "No pages available",
+    
     // Empty States
     noProductsFound: "No products found",
     noProductsFoundDescription: "We couldn't find any products matching your search. Try adjusting your search terms.",
@@ -694,6 +708,13 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     // Footer
     poweredBy: "Mundësuar nga",
     
+    // Legal Pages
+    backTo: "Kthehu te",
+    legalPolicies: "Ligjore & Politika",
+    legalPoliciesCta: "Terma & Politika",
+    legalPoliciesSubtitle: "Shikoni termat, politikën dhe informacionin ligjor",
+    noPagesAvailable: "Nuk ka faqe të disponueshme",
+    
     // Empty States
     noProductsFound: "Nuk u gjetën produkte",
     noProductsFoundDescription: "Nuk mund të gjenim produkte që përputhen me kërkimin tënde. Provo të ndryshosh termat e kërkimit.",
@@ -958,6 +979,13 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Footer
     poweredBy: "Desarrollado por",
+    
+    // Legal Pages
+    backTo: "Volver a",
+    legalPolicies: "Legal y Políticas",
+    legalPoliciesCta: "Términos y Políticas",
+    legalPoliciesSubtitle: "Ver nuestros términos, políticas e información legal",
+    noPagesAvailable: "No hay páginas disponibles",
     
     // Empty States
     noProductsFound: "No se encontraron productos",
@@ -1233,6 +1261,13 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Footer
     poweredBy: "Με την υποστήριξη",
+    
+    // Legal Pages
+    backTo: "Πίσω στο",
+    legalPolicies: "Νομικά & Πολιτικές",
+    legalPoliciesCta: "Όροι & Πολιτικές",
+    legalPoliciesSubtitle: "Δείτε τους όρους, τις πολιτικές και τις νομικές πληροφορίες μας",
+    noPagesAvailable: "Δεν υπάρχουν διαθέσιμες σελίδες",
     
     // Empty States
     noProductsFound: "Δεν βρέθηκαν προϊόντα",

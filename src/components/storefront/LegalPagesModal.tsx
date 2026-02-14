@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, Shield, FileText, CreditCard, RotateCcw, Truck, Receipt } from 'lucide-react'
 import Link from 'next/link'
+import { StorefrontTranslations } from '@/utils/storefront-translations'
 
 interface Page {
   slug: string
@@ -16,6 +17,7 @@ interface LegalPagesModalProps {
   onClose: () => void
   businessSlug: string
   primaryColor: string
+  translations: StorefrontTranslations
 }
 
 const pageIcons: Record<string, any> = {
@@ -32,6 +34,7 @@ export default function LegalPagesModal({
   onClose,
   businessSlug,
   primaryColor,
+  translations,
 }: LegalPagesModalProps) {
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,9 +74,14 @@ export default function LegalPagesModal({
               >
                 <Shield className="w-6 h-6" style={{ color: primaryColor }} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Legal & Policies
-              </h2>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {translations.legalPolicies}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {translations.legalPoliciesSubtitle}
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -91,7 +99,7 @@ export default function LegalPagesModal({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: primaryColor }}></div>
             </div>
           ) : pages.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No pages available</p>
+            <p className="text-gray-500 text-center py-8">{translations.noPagesAvailable}</p>
           ) : (
             <div className="space-y-2">
               {pages.map((page) => {
