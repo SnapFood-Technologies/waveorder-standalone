@@ -108,6 +108,9 @@ model User {
   deliveryEarnings DeliveryEarning[]
   deliveryPayments DeliveryPayment[]
 
+  // Events created by this user
+  createdEvents Event[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -2264,4 +2267,109 @@ model StorePageView {
   @@index([businessId, city])
   @@index([pageId, viewedAt])
   @@index([businessId, viewedAt])
+}
+
+// ===========================================
+// SuperAdmin Events Module
+// ===========================================
+
+enum EventType {
+  PROMOTION
+  ANNOUNCEMENT
+  MAINTENANCE
+  FEATURE_UPDATE
+  SYSTEM_ALERT
+  MARKETING_CAMPAIGN
+  TRADE_SHOW
+  CONFERENCE
+  EMBASSY_EVENT
+  NETWORKING
+  WORKSHOP
+  WEBINAR
+  OTHER
+}
+
+enum EventStatus {
+  PLANNING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum EventPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EventLocationType {
+  PHYSICAL
+  ONLINE
+  HYBRID
+}
+
+model Event {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String        @db.String // Rich text/HTML content
+  eventType   EventType
+  status      EventStatus   @default(PLANNING)
+  priority    EventPriority @default(MEDIUM)
+
+  // Date & Time
+  startDate DateTime?
+  endDate   DateTime?
+  timezone  String? // e.g., "Europe/Athens"
+
+  // Location Information
+  locationType EventLocationType @default(PHYSICAL)
+  venueName    String? // e.g., "Greek Embassy in London"
+  address      String? // Full address
+  city         String?
+  country      String? // Country code or name
+  coordinates  String? // Lat/Lng if needed
+
+  // Online Event Details
+  onlineUrl       String? // Zoom/Teams/YouTube link
+  registrationUrl String? // Event registration page
+
+  // Visual
+  bannerImage String? // URL to banner image
+  icon        String? // Icon name/emoji
+  photos      String[] // Array of photo URLs (post-event)
+
+  // Event Details
+  organizer          String? // Who's organizing (WaveOrder team member name)
+  attendees          String[] // List of WaveOrder team members attending
+  expectedAttendance Int? // Expected number of attendees
+  actualAttendance   Int? // Actual attendance (filled post-event)
+
+  // Post-Event Information
+  notes            String? @db.String // Post-event notes, learnings
+  leadsGenerated   Int? // Number of leads generated
+  followUpRequired Boolean @default(false)
+  followUpNotes    String? @db.String
+
+  // Targeting (for internal events)
+  targetPlans     String[] // Which subscription plans see this (empty = all)
+  targetCountries String[] // Which countries (empty = all)
+
+  // Metadata
+  createdBy     String   @db.ObjectId
+  createdByUser User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Display settings
+  showOnDashboard  Boolean @default(true) // Show in SuperAdmin dashboard
+  showToBusinesses Boolean @default(false) // Show to business admins (future)
+
+  @@index([status])
+  @@index([eventType])
+  @@index([startDate, endDate])
+  @@index([country])
+  @@index([createdAt])
 }
