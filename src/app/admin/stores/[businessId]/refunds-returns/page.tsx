@@ -291,12 +291,19 @@ export default function RefundsReturnsPage() {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         order.status === 'REFUNDED'
                           ? 'bg-gray-100 text-gray-800'
+                          : order.status === 'RETURNED'
+                          ? 'bg-orange-100 text-orange-800'
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {order.status === 'REFUNDED' ? (
                           <>
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Refunded
+                          </>
+                        ) : order.status === 'RETURNED' ? (
+                          <>
+                            <RotateCcw className="w-3 h-3 mr-1" />
+                            Returned
                           </>
                         ) : (
                           order.status.replace('_', ' ')

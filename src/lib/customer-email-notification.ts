@@ -812,6 +812,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Out for Delivery',
       DELIVERED: 'Delivered',
       CANCELLED: 'Cancelled',
+      RETURNED: 'Returned',
       REFUNDED: 'Refunded'
     },
     es: {
@@ -823,6 +824,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'En Camino',
       DELIVERED: 'Entregado',
       CANCELLED: 'Cancelado',
+      RETURNED: 'Devuelto',
       REFUNDED: 'Reembolsado'
     },
     sq: {
@@ -834,6 +836,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Në Rrugë',
       DELIVERED: 'Dorëzuar',
       CANCELLED: 'Anuluar',
+      RETURNED: 'Kthyer',
       REFUNDED: 'Rimbursuar'
     },
     el: {
@@ -845,6 +848,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Στο Δρόμο',
       DELIVERED: 'Παραδομένη',
       CANCELLED: 'Ακυρωμένη',
+      RETURNED: 'Επιστράφηκε',
       REFUNDED: 'Επιστροφή Χρημάτων'
     }
   }

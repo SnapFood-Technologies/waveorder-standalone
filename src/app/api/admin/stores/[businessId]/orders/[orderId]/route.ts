@@ -369,10 +369,11 @@ export async function PUT(
         PENDING: ['CONFIRMED', 'CANCELLED'],
         CONFIRMED: ['PREPARING', 'CANCELLED'],
         PREPARING: ['READY', 'CANCELLED'],
-        CANCELLED: ['REFUNDED'],
-        REFUNDED: [],
-        PICKED_UP: ['REFUNDED'], // PICKED_UP is final, can only refund
-        DELIVERED: ['REFUNDED'] // DELIVERED is final, can only refund
+        CANCELLED: ['REFUNDED'], // Cancelled before delivery, can refund directly
+        RETURNED: ['REFUNDED'], // Product returned, now refund money
+        REFUNDED: [], // Final status
+        PICKED_UP: ['RETURNED', 'REFUNDED'], // Can return product or refund directly
+        DELIVERED: ['RETURNED', 'REFUNDED'] // Can return product or refund directly
       }
 
       // Order-type-specific transitions for READY

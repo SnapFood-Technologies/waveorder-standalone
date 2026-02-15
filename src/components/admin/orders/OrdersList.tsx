@@ -13,7 +13,7 @@ interface OrdersListProps {
 interface Order {
   id: string
   orderNumber: string
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'REFUNDED'
   type: 'DELIVERY' | 'PICKUP' | 'DINE_IN'
   total: number
   subtotal: number
@@ -360,6 +360,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
                   <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
                   <option value="DELIVERED">Delivered</option>
                   <option value="CANCELLED">Cancelled</option>
+                  <option value="RETURNED">Returned</option>
                   <option value="REFUNDED">Refunded</option>
                 </select>
               </div>

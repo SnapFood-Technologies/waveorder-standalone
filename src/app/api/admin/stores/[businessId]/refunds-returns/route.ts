@@ -33,11 +33,12 @@ export async function GET(
       )
     }
 
-    // Fetch orders with REFUNDED status or orders that have returnFee/refundAmount set
+    // Fetch orders with RETURNED or REFUNDED status, or orders that have returnFee/refundAmount set
     const orders = await prisma.order.findMany({
       where: {
         businessId: businessId,
         OR: [
+          { status: 'RETURNED' },
           { status: 'REFUNDED' },
           { returnFee: { not: null } },
           { refundAmount: { not: null } }

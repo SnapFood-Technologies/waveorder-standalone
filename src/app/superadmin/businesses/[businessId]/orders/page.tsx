@@ -107,6 +107,7 @@ const STATUS_COLORS: Record<string, string> = {
   OUT_FOR_DELIVERY: '#06b6d4',
   DELIVERED: '#10b981',
   CANCELLED: '#ef4444',
+  RETURNED: '#f97316',
   REFUNDED: '#6b7280'
 }
 

@@ -80,7 +80,7 @@ interface OrderItem {
 interface Order {
   id: string
   orderNumber: string
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'REFUNDED'
   type: 'DELIVERY' | 'PICKUP' | 'DINE_IN'
   total: number
   subtotal: number
@@ -322,15 +322,17 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           return ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
         }
       case 'PICKED_UP':
-        return ['PICKED_UP', 'REFUNDED'] // PICKED_UP is final, can only refund
+        return ['PICKED_UP', 'RETURNED', 'REFUNDED'] // Can return product, or refund directly
       case 'OUT_FOR_DELIVERY':
         return ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
       case 'DELIVERED':
-        return ['DELIVERED', 'REFUNDED']
+        return ['DELIVERED', 'RETURNED', 'REFUNDED'] // Can return product, or refund directly
+      case 'RETURNED':
+        return ['RETURNED', 'REFUNDED'] // Product returned, now can refund money
       case 'CANCELLED':
-        return ['CANCELLED', 'REFUNDED']
+        return ['CANCELLED', 'REFUNDED'] // Cancelled before delivery, can refund directly (no return needed)
       case 'REFUNDED':
-        return ['REFUNDED']
+        return ['REFUNDED'] // Final status
       default:
         return ['PENDING']
     }
@@ -346,7 +348,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   // Check if the order can be marked as complete (skip to final status)
   const canMarkAsComplete = (currentStatus: string, orderType?: string) => {
-    const finalStatuses = ['PICKED_UP', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+    const finalStatuses = ['PICKED_UP', 'DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED']
     if (finalStatuses.includes(currentStatus)) {
       return false
     }
@@ -949,6 +951,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'Out for Delivery',
         DELIVERED: 'Delivered',
         CANCELLED: 'Cancelled',
+        RETURNED: 'Returned',
         REFUNDED: 'Refunded'
       },
       es: {
@@ -960,6 +963,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'En Camino',
         DELIVERED: 'Entregado',
         CANCELLED: 'Cancelado',
+        RETURNED: 'Devuelto',
         REFUNDED: 'Reembolsado'
       },
       sq: {
@@ -971,6 +975,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'Në Rrugë',
         DELIVERED: 'Dorëzuar',
         CANCELLED: 'Anuluar',
+        RETURNED: 'Kthyer',
         REFUNDED: 'Rimbursuar'
       },
       el: {
@@ -982,7 +987,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'Σε Διανομή',
         DELIVERED: 'Παραδόθηκε',
         CANCELLED: 'Ακυρώθηκε',
-        REFUNDED: 'Επιστράφηκε'
+        RETURNED: 'Επιστράφηκε',
+        REFUNDED: 'Επιστροφή Χρημάτων'
       }
     }
     const labels = statusLabels[language] || statusLabels.en
