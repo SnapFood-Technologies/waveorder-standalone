@@ -429,6 +429,9 @@ model Business {
   legalPagesCtaEnabled Boolean @default(false) // Admin: Show informative CTA above search bar
   legalPagesCtaText    String? // Custom CTA text (e.g., "Privacy & Policies")
 
+  // Returns & Refunds (RETAIL businesses only)
+  returnFeePercentage Float? // Return fee percentage (e.g., 10 for 10%). Only for RETAIL businesses
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -1114,6 +1117,10 @@ model Order {
   tax         Float @default(0)
   discount    Float @default(0)
   total       Float
+
+  // Return/Refund tracking (for RETAIL businesses)
+  returnFee    Float? // Return fee amount (e.g., 10% of order)
+  refundAmount Float? // Final refund amount (total - returnFee)
 
   deliveryAddress String?
   deliveryTime    DateTime?

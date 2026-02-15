@@ -1,6 +1,6 @@
 // src/components/admin/orders/OrdersList.tsx
 import React, { useState, useEffect } from 'react'
-import { Search, Plus, ShoppingBag, Phone, Clock, MapPin, ChevronLeft, ChevronRight, Eye, Filter, X, Star, User } from 'lucide-react'
+import { Search, Plus, ShoppingBag, Phone, Clock, MapPin, ChevronLeft, ChevronRight, Eye, Filter, X, Star, User, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useImpersonation } from '@/lib/impersonation'
@@ -280,7 +280,16 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
             }
           </p>
         </div>
-        <div className="w-full sm:w-auto">
+        <div className="flex gap-2 w-full sm:w-auto">
+          {businessType === 'RETAIL' && (
+            <Link
+              href={addParams(`/admin/stores/${businessId}/refunds-returns`)}
+              className="flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Refunds & Returns
+            </Link>
+          )}
           <Link
             href={addParams(`/admin/stores/${businessId}/orders/create`)}
             className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
