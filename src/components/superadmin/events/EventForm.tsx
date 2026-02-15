@@ -714,22 +714,29 @@ export function EventForm({ eventId, initialData, onSuccess, onCancel }: EventFo
             </label>
             <div className="flex gap-3">
               {subscriptionPlans.map(plan => (
-                <label
+                <button
                   key={plan.value}
-                  className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer ${
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleTogglePlan(plan.value)
+                  }}
+                  className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${
                     formData.targetPlans.includes(plan.value)
-                      ? 'border-teal-500 bg-teal-50'
-                      : 'border-gray-300'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={formData.targetPlans.includes(plan.value)}
-                    onChange={() => handleTogglePlan(plan.value)}
+                    onChange={() => {}}
+                    readOnly
                     className="sr-only"
                   />
                   <span>{plan.label}</span>
-                </label>
+                </button>
               ))}
             </div>
           </div>
