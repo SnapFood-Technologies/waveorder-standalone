@@ -426,6 +426,7 @@ model Business {
   // Manual Team Creation & Delivery Management (SuperAdmin enables)
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
+  enableAffiliateSystem    Boolean @default(false) // When enabled, business admin can manage affiliates, track commissions, and payments
 
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
@@ -481,6 +482,11 @@ model Business {
   // Delivery Earnings & Payments
   deliveryEarnings DeliveryEarning[]
   deliveryPayments DeliveryPayment[]
+
+  // Affiliate System
+  affiliates        Affiliate[]
+  affiliateEarnings AffiliateEarning[]
+  affiliatePayments AffiliatePayment[]
 
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
@@ -1108,9 +1114,10 @@ model Order {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  items           OrderItem[]
-  notifications   OrderNotification[]
-  deliveryEarning DeliveryEarning?
+  items            OrderItem[]
+  notifications    OrderNotification[]
+  deliveryEarning  DeliveryEarning?
+  affiliateEarning AffiliateEarning?
 
   customerLatitude  Float?
   customerLongitude Float?
@@ -1140,6 +1147,16 @@ model Order {
   deliveryPersonId String? @db.ObjectId
   deliveryPerson   User?   @relation("DeliveryOrders", fields: [deliveryPersonId], references: [id])
 
+  // UTM Tracking & Affiliate Attribution
+  sessionId   String? // Link to VisitorSession/ProductEvent for conversion tracking
+  utmSource   String? // utm_source from URL
+  utmMedium   String? // utm_medium from URL
+  utmCampaign String? // utm_campaign from URL (used for affiliate tracking)
+  utmTerm     String? // utm_term from URL
+  utmContent  String? // utm_content from URL
+  affiliateId String?    @db.ObjectId // Link to affiliate (if order came from affiliate link)
+  affiliate   Affiliate? @relation(fields: [affiliateId], references: [id])
+
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
 
@@ -1147,6 +1164,10 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([affiliateId])
+  @@index([utmSource, utmCampaign])
+  @@index([sessionId])
 }
 
 model OrderItem {
@@ -2372,4 +2393,116 @@ model Event {
   @@index([startDate, endDate])
   @@index([country])
   @@index([createdAt])
+}
+
+// Affiliate System Models
+
+enum AffiliateCommissionType {
+  PERCENTAGE // Commission as % of order total
+  FIXED // Fixed amount per order
+}
+
+enum AffiliateEarningStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Affiliate {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Affiliate Info (no login required)
+  name  String // Affiliate name (e.g., "Instagram Influencer @username")
+  email String? // Optional email for notifications
+  phone String? // Optional phone
+  notes String? // Internal notes about affiliate
+
+  // Commission Settings
+  commissionType  AffiliateCommissionType @default(PERCENTAGE) // PERCENTAGE or FIXED
+  commissionValue Float // Percentage (e.g., 10.0 for 10%) OR fixed amount (e.g., 5.00)
+
+  // Tracking Code (unique identifier for UTM)
+  trackingCode String // e.g., "AFF001", "INSTA_JOHN"
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Relations
+  earnings AffiliateEarning[]
+  payments AffiliatePayment[]
+  orders   Order[] // Orders attributed to this affiliate
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, trackingCode]) // Unique tracking code per business
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@index([trackingCode])
+}
+
+model AffiliateEarning {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  affiliateId String    @db.ObjectId
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  // Commission Details
+  orderTotal      Float // Order total at time of commission calculation
+  commissionType  AffiliateCommissionType
+  commissionValue Float // % or fixed amount
+  amount          Float // Calculated commission amount
+  currency        String                  @default("EUR")
+
+  // Status tracking
+  status AffiliateEarningStatus @default(PENDING) // PENDING, PAID, CANCELLED
+
+  // When the order was completed
+  orderCompletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId]) // One commission per order
+  @@index([businessId])
+  @@index([businessId, affiliateId])
+  @@index([businessId, status])
+  @@index([affiliateId])
+}
+
+model AffiliatePayment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  affiliateId String    @db.ObjectId
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  amount   Float // Amount paid to affiliate
+  currency String @default("EUR")
+
+  periodStart DateTime? // Start of the period this payment covers
+  periodEnd   DateTime? // End of the period this payment covers
+
+  paymentMethod String? // e.g., "bank_transfer", "paypal", "cash"
+  reference     String? // Payment reference/invoice number
+  notes         String? // Additional notes
+
+  // Link to earnings that were paid
+  earningsIds String[] // Array of AffiliateEarning IDs that were paid
+
+  paidAt    DateTime @default(now()) // When payment was made
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, affiliateId])
+  @@index([businessId, paidAt])
+  @@index([affiliateId])
 }

@@ -555,6 +555,88 @@ export async function PUT(
     }) as any
 
     // Handle delivery earning when order is delivered (only if feature enabled)
+    // Create affiliate commission when order is completed (DELIVERED/PICKED_UP + PAID)
+    if (updatedOrder.affiliateId && 
+        updatedOrder.paymentStatus === 'PAID' && 
+        (updatedOrder.status === 'DELIVERED' || updatedOrder.status === 'PICKED_UP')) {
+      
+      // Check if affiliate system is enabled and commission doesn't already exist
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { enableAffiliateSystem: true, currency: true }
+      })
+
+      if (business?.enableAffiliateSystem) {
+        try {
+          // Check if commission already exists
+          const existingCommission = await prisma.affiliateEarning.findUnique({
+            where: { orderId: updatedOrder.id }
+          })
+
+          if (!existingCommission) {
+            // Get affiliate details
+            const affiliate = await prisma.affiliate.findUnique({
+              where: { id: updatedOrder.affiliateId },
+              select: {
+                id: true,
+                commissionType: true,
+                commissionValue: true
+              }
+            })
+
+            if (affiliate) {
+              // Calculate commission
+              let commissionAmount = 0
+              if (affiliate.commissionType === 'PERCENTAGE') {
+                commissionAmount = updatedOrder.total * (affiliate.commissionValue / 100)
+              } else {
+                // FIXED
+                commissionAmount = affiliate.commissionValue
+              }
+
+              // Create affiliate earning
+              await prisma.affiliateEarning.create({
+                data: {
+                  businessId,
+                  orderId: updatedOrder.id,
+                  affiliateId: affiliate.id,
+                  orderTotal: updatedOrder.total,
+                  commissionType: affiliate.commissionType,
+                  commissionValue: affiliate.commissionValue,
+                  amount: commissionAmount,
+                  currency: business.currency || 'EUR',
+                  status: 'PENDING',
+                  orderCompletedAt: new Date()
+                }
+              })
+            }
+          }
+        } catch (error) {
+          // Silently fail - commission creation shouldn't break order update
+          console.error('Error creating affiliate commission:', error)
+        }
+      }
+    }
+
+    // Cancel affiliate commission if order is cancelled or refunded
+    if ((updatedOrder.status === 'CANCELLED' || updatedOrder.status === 'REFUNDED') && 
+        (existingOrder.status !== 'CANCELLED' && existingOrder.status !== 'REFUNDED')) {
+      try {
+        await prisma.affiliateEarning.updateMany({
+          where: {
+            orderId: updatedOrder.id,
+            status: 'PENDING'
+          },
+          data: {
+            status: 'CANCELLED'
+          }
+        })
+      } catch (error) {
+        // Silently fail
+        console.error('Error cancelling affiliate commission:', error)
+      }
+    }
+
     if (body.status === 'DELIVERED' && updatedOrder.type === 'DELIVERY' && orderBeforeUpdate?.deliveryPersonId) {
       // Check if delivery management is enabled
       const business = await prisma.business.findUnique({

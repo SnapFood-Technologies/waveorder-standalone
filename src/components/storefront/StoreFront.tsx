@@ -1923,6 +1923,45 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // URL params for product sharing
   const searchParams = useSearchParams()
+  
+  // Capture UTM parameters from URL for affiliate tracking
+  const [utmParams, setUtmParams] = useState<{
+    utm_source?: string
+    utm_medium?: string
+    utm_campaign?: string
+    utm_term?: string
+    utm_content?: string
+  }>({})
+  
+  // Capture UTM params on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const utm: typeof utmParams = {}
+      if (params.get('utm_source')) utm.utm_source = params.get('utm_source')!
+      if (params.get('utm_medium')) utm.utm_medium = params.get('utm_medium')!
+      if (params.get('utm_campaign')) utm.utm_campaign = params.get('utm_campaign')!
+      if (params.get('utm_term')) utm.utm_term = params.get('utm_term')!
+      if (params.get('utm_content')) utm.utm_content = params.get('utm_content')!
+      
+      // Store in localStorage for persistence across page navigation
+      if (Object.keys(utm).length > 0) {
+        localStorage.setItem(`utm_params_${storeData.slug}`, JSON.stringify(utm))
+        setUtmParams(utm)
+      } else {
+        // Try to load from localStorage if no URL params
+        const stored = localStorage.getItem(`utm_params_${storeData.slug}`)
+        if (stored) {
+          try {
+            setUtmParams(JSON.parse(stored))
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+  }, [storeData.slug])
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -3403,6 +3442,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         deliveryAddress = `${customerInfo.address}${customerInfo.address2 ? `, ${customerInfo.address2}` : ''}`.trim()
       }
 
+      // Get sessionId for tracking
+      const sessionId = getSessionId()
+      
       const orderData = {
         customerName: customerInfo.name,
         customerPhone: customerInfo.phone,
@@ -3419,6 +3461,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         countryCode: customerInfo.countryCode,
         city: customerInfo.city,
         postalCode: customerInfo.postalCode,
+        // UTM Tracking & Session
+        sessionId: sessionId || null,
+        utmSource: utmParams.utm_source || null,
+        utmMedium: utmParams.utm_medium || null,
+        utmCampaign: utmParams.utm_campaign || null,
+        utmTerm: utmParams.utm_term || null,
+        utmContent: utmParams.utm_content || null,
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,

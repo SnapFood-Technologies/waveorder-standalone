@@ -95,6 +95,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
@@ -132,6 +133,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setShowCostPriceEnabled(data.business?.showCostPrice || false)
           setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+          setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
@@ -410,6 +412,40 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         {
           name: 'Payments',
           href: `${baseUrl}/delivery/payments`,
+          icon: CreditCard,
+          requiredPlan: 'STARTER' as Plan
+        }
+      ]
+    }] : []),
+    
+    // Affiliate System - only shown when enabled by SuperAdmin
+    // @ts-ignore
+    ...(enableAffiliateSystem ? [{
+      name: 'Affiliates',
+      icon: TrendingUp,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'Overview',
+          href: `${baseUrl}/affiliates`,
+          icon: BarChart3,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Affiliates',
+          href: `${baseUrl}/affiliates/list`,
+          icon: Users,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Earnings',
+          href: `${baseUrl}/affiliates/earnings`,
+          icon: Coins,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Payments',
+          href: `${baseUrl}/affiliates/payments`,
           icon: CreditCard,
           requiredPlan: 'STARTER' as Plan
         }

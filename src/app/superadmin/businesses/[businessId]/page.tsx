@@ -71,6 +71,7 @@ interface BusinessDetails {
   showProductionPlanning?: boolean
   enableManualTeamCreation?: boolean
   enableDeliveryManagement?: boolean
+  enableAffiliateSystem?: boolean
   legalPagesEnabled?: boolean
   address?: string
   email?: string
@@ -1408,6 +1409,9 @@ export default function BusinessDetailsPage() {
           {/* Legal Pages Settings */}
           <LegalPagesSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Affiliate System Settings */}
+          <AffiliateSystemSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -2712,6 +2716,95 @@ function LegalPagesSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Legal pages feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Affiliate System Settings Section Component (SuperAdmin toggle only)
+function AffiliateSystemSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [affiliateSystemEnabled, setAffiliateSystemEnabled] = useState(business.enableAffiliateSystem || false)
+
+  const handleToggle = async () => {
+    const newValue = !affiliateSystemEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enableAffiliateSystem: newValue })
+      })
+      
+      if (res.ok) {
+        setAffiliateSystemEnabled(newValue)
+        toast.success(newValue ? 'Affiliate System enabled' : 'Affiliate System disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling affiliate system:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <TrendingUp className="w-5 h-5 mr-2 text-teal-600" />
+        Affiliate System
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Affiliate System</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admins can create affiliates, generate tracking links, track commissions, and manage affiliate payments. Orders from affiliate links are automatically attributed and commissions are calculated when orders are completed.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            affiliateSystemEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              affiliateSystemEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {affiliateSystemEnabled && (
+        <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700 mb-2">
+            <span className="font-medium">Enabled:</span> Business admins can now manage affiliates, track commissions, and process payments from the admin panel.
+          </p>
+          <p className="text-xs text-teal-600">
+            Affiliates receive unique tracking links with UTM parameters. Commissions are automatically calculated when orders are completed (PAID + DELIVERED/PICKED_UP).
+          </p>
+        </div>
+      )}
+      
+      {!affiliateSystemEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
           </p>
         </div>
       )}

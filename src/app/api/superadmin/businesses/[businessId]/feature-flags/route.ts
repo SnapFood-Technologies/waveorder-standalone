@@ -36,6 +36,7 @@ export async function GET(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
+        enableAffiliateSystem: true,
         legalPagesEnabled: true,
         currency: true
       }
@@ -116,6 +117,7 @@ export async function GET(
       settings: {
         enableManualTeamCreation: business.enableManualTeamCreation,
         enableDeliveryManagement: business.enableDeliveryManagement,
+        enableAffiliateSystem: business.enableAffiliateSystem,
         legalPagesEnabled: business.legalPagesEnabled
       },
       summary: {
@@ -156,7 +158,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, legalPagesEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, enableAffiliateSystem, legalPagesEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -175,6 +177,9 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       updateData.enableDeliveryManagement = enableDeliveryManagement === true
     }
+    if (enableAffiliateSystem !== undefined) {
+      updateData.enableAffiliateSystem = enableAffiliateSystem === true
+    }
     if (legalPagesEnabled !== undefined) {
       updateData.legalPagesEnabled = legalPagesEnabled === true
     }
@@ -188,6 +193,7 @@ export async function PATCH(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
+        enableAffiliateSystem: true,
         legalPagesEnabled: true
       }
     })
@@ -209,6 +215,7 @@ export async function PATCH(
       settings: {
         enableManualTeamCreation: updatedBusiness.enableManualTeamCreation,
         enableDeliveryManagement: updatedBusiness.enableDeliveryManagement,
+        enableAffiliateSystem: updatedBusiness.enableAffiliateSystem,
         legalPagesEnabled: updatedBusiness.legalPagesEnabled
       }
     })

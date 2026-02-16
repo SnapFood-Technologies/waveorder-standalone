@@ -1061,6 +1061,7 @@ export async function POST(
         closureReason: true,
         closureMessage: true,
         translateContentToBusinessLanguage: true,
+        enableAffiliateSystem: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -1105,6 +1106,13 @@ export async function POST(
       countryCode, // For RETAIL businesses
       city, // For RETAIL businesses
       postalCode, // For RETAIL businesses
+      // UTM Tracking & Session
+      sessionId,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
       items,
       subtotal,
       deliveryFee,
@@ -1691,6 +1699,27 @@ export async function POST(
 const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
 const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
 
+    // Check if order came from affiliate link (utm_campaign matches affiliate trackingCode)
+    let affiliateId: string | null = null
+    if (utmCampaign && business.enableAffiliateSystem) {
+      try {
+        const affiliate = await prisma.affiliate.findFirst({
+          where: {
+            businessId: business.id,
+            trackingCode: utmCampaign,
+            isActive: true
+          },
+          select: { id: true }
+        })
+        if (affiliate) {
+          affiliateId = affiliate.id
+        }
+      } catch (error) {
+        // Silently fail - affiliate lookup shouldn't break order creation
+        console.error('Error looking up affiliate:', error)
+      }
+    }
+
     // Create order with enhanced data
     const order = await prisma.order.create({
       data: {
@@ -1716,6 +1745,14 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         // Store postal pricing for RETAIL businesses
         // @ts-ignore - postalPricingId field will be available after Prisma generate
         postalPricingId: finalPostalPricingId,
+        // UTM Tracking & Affiliate Attribution
+        sessionId: sessionId || null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        utmTerm: utmTerm || null,
+        utmContent: utmContent || null,
+        affiliateId: affiliateId || null,
       } as any
     })
 
