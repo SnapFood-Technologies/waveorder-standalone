@@ -38,7 +38,9 @@ import {
   Eye,
   EyeOff,
   Key,
-  Link as LinkIcon
+  Link as LinkIcon,
+  HelpCircle,
+  ArrowRight
 } from 'lucide-react'
 
 interface FormData {
@@ -235,6 +237,8 @@ export function CreateBusinessForm() {
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null)
+  const [showSalonModal, setShowSalonModal] = useState(false)
+  const [salonModalBillingCycle, setSalonModalBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   
   // Slug management
   const [manualSlug, setManualSlug] = useState(false)
@@ -884,6 +888,36 @@ export function CreateBusinessForm() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Terminology Glossary */}
+                        {formData.businessType !== 'SALON' && (
+                          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <HelpCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                                  Creating a Service-Based Business?
+                                </h4>
+                                <p className="text-xs text-gray-700 mb-2">
+                                  If this business offers <strong>services</strong> (like salons, spas, beauty studios) instead of physical products, the same pricing plans apply. Simply think of:
+                                </p>
+                                <ul className="text-xs text-gray-700 space-y-1 mb-2">
+                                  <li>• <strong>"Services"</strong> instead of "Products"</li>
+                                  <li>• <strong>"WhatsApp Booking"</strong> instead of "WhatsApp Ordering"</li>
+                                  <li>• <strong>"Appointments"</strong> instead of "Orders"</li>
+                                </ul>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowSalonModal(true)}
+                                  className="text-xs text-teal-600 hover:text-teal-700 font-semibold inline-flex items-center mt-1"
+                                >
+                                  Learn more about salon pricing features
+                                  <ArrowRight className="w-3 h-3 ml-1" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1626,7 +1660,230 @@ export function CreateBusinessForm() {
           </div>
         </div>
       </div>
+
+      {/* Salon Pricing Modal */}
+      {showSalonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setShowSalonModal(false)}
+          ></div>
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-emerald-50">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">Pricing for Salons & Beauty Businesses</h3>
+                <p className="text-gray-600 mt-1">Specialized features designed specifically for salons, spas, and beauty studios</p>
+              </div>
+              <button
+                onClick={() => setShowSalonModal(false)}
+                className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Billing Toggle */}
+              <div className="flex justify-center mb-8">
+                <div className="inline-flex bg-gray-200 rounded-lg p-1">
+                  <button
+                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      salonModalBillingCycle === 'monthly'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    onClick={() => setSalonModalBillingCycle('monthly')}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      salonModalBillingCycle === 'yearly'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    onClick={() => setSalonModalBillingCycle('yearly')}
+                  >
+                    Yearly (Save 17%)
+                  </button>
+                </div>
+              </div>
+
+              {/* Salon Plans */}
+              <div className="grid md:grid-cols-3 gap-6">
+                {/* Starter Plan */}
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-6">
+                  <div className="text-center mb-6">
+                    <h4 className="text-2xl font-bold text-gray-900 mb-2">Starter</h4>
+                    <p className="text-gray-600 mb-4">Perfect for getting started</p>
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold text-gray-900">
+                        ${salonModalBillingCycle === 'monthly' ? 19 : 16}
+                      </span>
+                      <span className="text-gray-600 ml-2">
+                        {`/mo${salonModalBillingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Up to 50 services</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">1 store/catalog</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Appointment management</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">WhatsApp booking</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Basic analytics</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Email support</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Pro Plan */}
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-teal-200 ring-4 ring-teal-100 p-6 relative">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-teal-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                      Most Popular
+                    </span>
+                  </div>
+                  
+                  <div className="text-center mb-6">
+                    <h4 className="text-2xl font-bold text-gray-900 mb-2">Pro</h4>
+                    <p className="text-gray-600 mb-4">For growing businesses</p>
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold text-gray-900">
+                        ${salonModalBillingCycle === 'monthly' ? 39 : 32}
+                      </span>
+                      <span className="text-gray-600 ml-2">
+                        {`/mo${salonModalBillingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Unlimited services</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Up to 5 stores/catalogs</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Appointment calendar view</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Staff assignment</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Advanced analytics & insights</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Discount codes</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Customer insights</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Priority support</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Business Plan */}
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 p-6">
+                  <div className="text-center mb-6">
+                    <h4 className="text-2xl font-bold text-gray-900 mb-2">Business</h4>
+                    <p className="text-gray-600 mb-4">For teams & enterprises</p>
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold text-gray-900">
+                        ${salonModalBillingCycle === 'monthly' ? 79 : 66}
+                      </span>
+                      <span className="text-gray-600 ml-2">
+                        {`/mo${salonModalBillingCycle === 'yearly' ? ' (billed yearly)' : ''}`}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Everything in Pro</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Unlimited stores/catalogs</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Team access (5 users)</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Staff availability management</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Custom domain</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">API access</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700 text-sm">Dedicated support</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Feature Highlights */}
+              <div className="mt-8 grid md:grid-cols-3 gap-6">
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Service Management</h5>
+                  <p className="text-gray-600 text-sm">List your services with duration, pricing, and add-ons. Organize by categories like Hair, Nails, Spa, and more.</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Appointment Booking</h5>
+                  <p className="text-gray-600 text-sm">Clients can book appointments directly through your storefront. Manage appointments, track status, and view calendar (Pro+).</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h5 className="font-semibold text-gray-900 mb-2">Staff Management</h5>
+                  <p className="text-gray-600 text-sm">Assign staff to services and appointments. Manage working hours and availability (Business plan).</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
-)
+  )
 }
