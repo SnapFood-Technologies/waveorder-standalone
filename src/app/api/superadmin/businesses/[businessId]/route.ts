@@ -284,6 +284,8 @@ export async function GET(
         enableDeliveryManagement: business.enableDeliveryManagement,
         invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: business.packagingTrackingEnabled,
+        enableAffiliateSystem: business.enableAffiliateSystem,
+        legalPagesEnabled: business.legalPagesEnabled,
         address: business.address,
         email: business.email,
         phone: business.phone,

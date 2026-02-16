@@ -67,6 +67,7 @@ export async function GET(
       OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: '#06b6d4' },
       DELIVERED: { label: 'Delivered', color: '#10b981' },
       CANCELLED: { label: 'Cancelled', color: '#ef4444' },
+      RETURNED: { label: 'Returned', color: '#f97316' },
       REFUNDED: { label: 'Refunded', color: '#6b7280' }
     }
 
@@ -90,10 +91,10 @@ export async function GET(
     // - DELIVERY orders: DELIVERED + PAID (final status)
     // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
     // - DINE_IN orders: PICKED_UP + PAID (final status - only when actually picked up)
-    // Note: Excludes CANCELLED and REFUNDED orders
+    // Note: Excludes CANCELLED, RETURNED, and REFUNDED orders
     const revenueOrders = allOrders.filter(order => {
       if (order.paymentStatus !== 'PAID') return false
-      if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+      if (order.status === 'CANCELLED' || order.status === 'RETURNED' || order.status === 'REFUNDED') return false
       
       // Order-type specific revenue calculation
       if (order.type === 'DELIVERY') {
@@ -164,7 +165,7 @@ export async function GET(
         ],
         NOT: {
           status: {
-            in: ['CANCELLED', 'REFUNDED']
+            in: ['CANCELLED', 'RETURNED', 'REFUNDED']
           }
         }
       },

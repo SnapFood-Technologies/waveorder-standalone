@@ -47,7 +47,8 @@ import {
   Truck,
   Scissors,
   Calendar,
-  CalendarClock
+  CalendarClock,
+  Shield
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -98,6 +99,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
+  const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
+  const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -137,6 +140,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setBusinessType(data.business?.businessType || null)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
           setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
+          setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
+          setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -509,6 +514,40 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       ]
     }] : []),
     
+    // Affiliate System - only shown when enabled by SuperAdmin
+    // @ts-ignore
+    ...(enableAffiliateSystem ? [{
+      name: 'Affiliates',
+      icon: TrendingUp,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'Overview',
+          href: `${baseUrl}/affiliates`,
+          icon: BarChart3,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Affiliates',
+          href: `${baseUrl}/affiliates/list`,
+          icon: Users,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Earnings',
+          href: `${baseUrl}/affiliates/earnings`,
+          icon: Coins,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Payments',
+          href: `${baseUrl}/affiliates/payments`,
+          icon: CreditCard,
+          requiredPlan: 'STARTER' as Plan
+        }
+      ]
+    }] : []),
+    
     { 
       name: 'Settings', 
       icon: Settings, 
@@ -559,6 +598,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Happy Hour', 
           href: `${baseUrl}/settings/happy-hour`, 
           icon: Clock, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(legalPagesEnabled ? [{
+          name: 'Legal Pages', 
+          href: `${baseUrl}/pages`, 
+          icon: Shield, 
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

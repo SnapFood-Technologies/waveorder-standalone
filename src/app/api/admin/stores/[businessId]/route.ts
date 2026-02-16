@@ -134,6 +134,8 @@ export async function GET(
         enableManualTeamCreation: true, // For Manual Team Creation feature
         enableDeliveryManagement: true, // For Delivery Management feature
         packagingTrackingEnabled: true, // For Packaging Tracking feature
+        enableAffiliateSystem: true, // For Affiliate System feature
+        legalPagesEnabled: true, // For Legal Pages feature
         
         // Inventory display
         showStockBadge: true,

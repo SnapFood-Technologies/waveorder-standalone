@@ -36,6 +36,7 @@ export default function SiteLayout({
     '/cookies',
     '/api',
     '/admin',
+    '/team',
     // Industry landing pages
     '/instagram-sellers',
     '/restaurants',
@@ -45,9 +46,12 @@ export default function SiteLayout({
     '/developers'
   ]
   
+  // Check if it's a business slug (e.g., /naia-studio) or a business legal page (e.g., /naia-studio/privacy-policy)
+  // pathname.split('/') for '/naia-studio' = ['', 'naia-studio'] (length 2)
+  // pathname.split('/') for '/naia-studio/privacy-policy' = ['', 'naia-studio', 'privacy-policy'] (length 3)
   const isBusinessSlug = !appRoutes.some(route => 
     pathname === route || pathname.startsWith(route + '/')
-  ) && pathname.split('/').length === 2
+  ) && (pathname.split('/').length === 2 || pathname.split('/').length === 3)
   
   return (
     <div className={inter.className}>

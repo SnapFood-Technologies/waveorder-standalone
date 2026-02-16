@@ -73,7 +73,10 @@ export async function sendCustomerOrderPlacedEmail(
 
     // Determine language to use
     const useBusinessLanguage = orderData.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (orderData.language || 'en') : 'en'
+    const businessLang = orderData.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
 
     // Create email content
     const emailContent = createCustomerOrderPlacedEmail({
@@ -136,7 +139,10 @@ export async function sendCustomerOrderStatusEmail(
 
     // Determine language to use
     const useBusinessLanguage = orderData.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (orderData.language || 'en') : 'en'
+    const businessLang = orderData.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
 
     // Get status message in the appropriate language
     const statusMessage = getStatusMessage(orderData.status, orderData.type, language, orderData.businessType)
@@ -405,11 +411,14 @@ function getEmailLabels(language: string = 'en', businessType?: string): Record<
       delivery: isSalon ? 'Ραντεβού' : 'Παράδοση',
       pickup: isSalon ? 'Χωρίς Κράτηση' : 'Παραλαβή',
       dineIn: isSalon ? 'Στο Σαλόνι' : 'Επιτόπια Κατανάλωση',
-      order: isSalon ? 'Κράτηση' : 'Παραγγελία'
+      order: isSalon ? 'Κράτηση' : 'Παραγγελία',
+      deliveryMethod: 'Μέθοδος Παράδοσης'
     }
   }
 
-  return labels[language] || labels.en
+  // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  return labels[normalizedLang] || labels.en
 }
 
 /**
@@ -846,6 +855,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Out for Delivery',
       DELIVERED: 'Delivered',
       CANCELLED: 'Cancelled',
+      RETURNED: 'Returned',
       REFUNDED: 'Refunded'
     },
     es: {
@@ -857,6 +867,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'En Camino',
       DELIVERED: 'Entregado',
       CANCELLED: 'Cancelado',
+      RETURNED: 'Devuelto',
       REFUNDED: 'Reembolsado'
     },
     sq: {
@@ -868,6 +879,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Në Rrugë',
       DELIVERED: 'Dorëzuar',
       CANCELLED: 'Anuluar',
+      RETURNED: 'Kthyer',
       REFUNDED: 'Rimbursuar'
     },
     el: {
@@ -879,6 +891,7 @@ function formatStatusLabel(status: string, language: string = 'en', businessType
       OUT_FOR_DELIVERY: 'Στο Δρόμο',
       DELIVERED: 'Παραδομένη',
       CANCELLED: 'Ακυρωμένη',
+      RETURNED: 'Επιστράφηκε',
       REFUNDED: 'Επιστροφή Χρημάτων'
     }
   }

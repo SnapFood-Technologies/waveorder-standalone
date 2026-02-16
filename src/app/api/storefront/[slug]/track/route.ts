@@ -64,6 +64,11 @@ interface TrackEventRequest {
   eventType: EventType
   sessionId?: string
   source?: EventSource
+  utmSource?: string | null
+  utmMedium?: string | null
+  utmCampaign?: string | null
+  utmTerm?: string | null
+  utmContent?: string | null
 }
 
 export async function POST(
@@ -84,7 +89,7 @@ export async function POST(
       )
     }
 
-    const { productId, eventType, sessionId, source } = body
+    const { productId, eventType, sessionId, source, utmSource, utmMedium, utmCampaign, utmTerm, utmContent } = body
 
     // Validate required fields
     if (!productId || !eventType) {
@@ -163,7 +168,12 @@ export async function POST(
         productId: product.id,
         eventType,
         sessionId: sessionId || null,
-        source: source || null
+        source: source || null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        utmTerm: utmTerm || null,
+        utmContent: utmContent || null
       }
     })
 
@@ -277,7 +287,12 @@ export async function PUT(
         productId: event.productId,
         eventType: event.eventType,
         sessionId: event.sessionId || null,
-        source: event.source || null
+        source: event.source || null,
+        utmSource: event.utmSource || null,
+        utmMedium: event.utmMedium || null,
+        utmCampaign: event.utmCampaign || null,
+        utmTerm: event.utmTerm || null,
+        utmContent: event.utmContent || null
       }))
 
     if (eventsToCreate.length > 0) {

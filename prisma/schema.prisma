@@ -108,6 +108,9 @@ model User {
   deliveryEarnings DeliveryEarning[]
   deliveryPayments DeliveryPayment[]
 
+  // Events created by this user
+  createdEvents Event[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -435,6 +438,15 @@ model Business {
   // Manual Team Creation & Delivery Management (SuperAdmin enables)
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
+  enableAffiliateSystem    Boolean @default(false) // When enabled, business admin can manage affiliates, track commissions, and payments
+
+  // Legal Pages / Store Policies (SuperAdmin enables)
+  legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
+  legalPagesCtaEnabled Boolean @default(false) // Admin: Show informative CTA above search bar
+  legalPagesCtaText    String? // Custom CTA text (e.g., "Privacy & Policies")
+
+  // Returns & Refunds (RETAIL businesses only)
+  returnFeePercentage Float? // Return fee percentage (e.g., 10 for 10%). Only for RETAIL businesses
 
   // Invoice/Receipt Selection (SuperAdmin enables for Greek storefronts)
   invoiceReceiptSelectionEnabled Boolean @default(false) // When enabled, Greek storefronts show invoice/receipt selection option during checkout
@@ -468,6 +480,8 @@ model Business {
   brands             Brand[]
   collections        Collection[]
   groups             Group[]
+  storePages         StorePage[]
+  storePageViews     StorePageView[]
 
   // Support relations
   supportTickets  SupportTicket[]
@@ -488,6 +502,11 @@ model Business {
   // Delivery Earnings & Payments
   deliveryEarnings DeliveryEarning[]
   deliveryPayments DeliveryPayment[]
+
+  // Affiliate System
+  affiliates        Affiliate[]
+  affiliateEarnings AffiliateEarning[]
+  affiliatePayments AffiliatePayment[]
 
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
@@ -1121,10 +1140,11 @@ model Order {
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  items           OrderItem[]
+  items            OrderItem[]
   notifications   OrderNotification[]
   appointments    Appointment[]
   deliveryEarning DeliveryEarning?
+  affiliateEarning AffiliateEarning?
 
   customerLatitude  Float?
   customerLongitude Float?
@@ -1134,6 +1154,10 @@ model Order {
   tax         Float @default(0)
   discount    Float @default(0)
   total       Float
+
+  // Return/Refund tracking (for RETAIL businesses)
+  returnFee    Float? // Return fee amount (e.g., 10% of order)
+  refundAmount Float? // Final refund amount (total - returnFee)
 
   deliveryAddress String?
   deliveryTime    DateTime?
@@ -1159,6 +1183,16 @@ model Order {
   deliveryPersonId String? @db.ObjectId
   deliveryPerson   User?   @relation("DeliveryOrders", fields: [deliveryPersonId], references: [id])
 
+  // UTM Tracking & Affiliate Attribution
+  sessionId   String? // Link to VisitorSession/ProductEvent for conversion tracking
+  utmSource   String? // utm_source from URL
+  utmMedium   String? // utm_medium from URL
+  utmCampaign String? // utm_campaign from URL (used for affiliate tracking)
+  utmTerm     String? // utm_term from URL
+  utmContent  String? // utm_content from URL
+  affiliateId String?    @db.ObjectId // Link to affiliate (if order came from affiliate link)
+  affiliate   Affiliate? @relation(fields: [affiliateId], references: [id])
+
   paymentStatus PaymentStatus @default(PENDING)
   paymentMethod String?
 
@@ -1166,6 +1200,10 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([affiliateId])
+  @@index([utmSource, utmCampaign])
+  @@index([sessionId])
 }
 
 model OrderItem {
@@ -1375,6 +1413,13 @@ model ProductEvent {
   // Context
   source String? // "product_card", "product_modal", "search", "featured"
 
+  // UTM Parameters (from URL when event occurred)
+  utmSource   String? // utm_source from URL
+  utmMedium   String? // utm_medium from URL
+  utmCampaign String? // utm_campaign from URL
+  utmTerm     String? // utm_term from URL
+  utmContent  String? // utm_content from URL
+
   // Timestamps
   createdAt DateTime @default(now())
 
@@ -1387,6 +1432,8 @@ model ProductEvent {
   @@index([businessId, createdAt])
   @@index([productId, eventType])
   @@index([businessId, productId, eventType, createdAt])
+  @@index([businessId, utmCampaign])
+  @@index([businessId, utmSource, utmMedium])
 }
 
 enum UserRole {
@@ -1452,6 +1499,7 @@ enum OrderStatus {
   OUT_FOR_DELIVERY
   DELIVERED
   CANCELLED
+  RETURNED
   REFUNDED
 }
 
@@ -2323,4 +2371,288 @@ model OrderPackaging {
   @@index([businessId])
   @@index([orderId])
   @@index([packagingTypeId])
+}
+
+// ===========================================
+// Legal Pages / Store Policies
+// ===========================================
+
+model StorePage {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  slug         String // e.g., "privacy-policy", "terms-of-use", "custom-page"
+  title        String // Display title
+  content      String  @db.String // HTML content
+  isEnabled    Boolean @default(true)
+  showInFooter Boolean @default(true)
+  sortOrder    Int     @default(0)
+  noIndex      Boolean @default(false) // SEO: Prevent search engine indexing
+  views        Int     @default(0) // Track page views
+
+  // Predefined page type (optional - for predefined pages)
+  pageType String? // "PRIVACY_POLICY", "TERMS", "PAYMENT", "CANCELLATION", "CUSTOM"
+
+  // Relations
+  pageViews StorePageView[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, slug])
+  @@index([businessId, isEnabled])
+  @@index([businessId, showInFooter])
+  @@index([businessId, sortOrder])
+}
+
+// Track individual legal page views with geolocation (similar to VisitorSession)
+model StorePageView {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String    @db.ObjectId
+  pageId     String    @db.ObjectId
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  page       StorePage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  // Geographic data
+  country   String? // Country name (e.g., "Greece", "Albania")
+  city      String? // City name (e.g., "Athens", "Tirana")
+  region    String? // State/Province/Region
+  latitude  Float?
+  longitude Float?
+
+  // Device information
+  deviceType String? // "mobile", "desktop", "tablet"
+  browser    String? // "Chrome", "Safari", etc.
+  os         String? // "iOS", "Android", "Windows"
+
+  // Technical metadata
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
+  viewedAt DateTime @default(now())
+
+  @@index([businessId, pageId])
+  @@index([businessId, country])
+  @@index([businessId, city])
+  @@index([pageId, viewedAt])
+  @@index([businessId, viewedAt])
+}
+
+// ===========================================
+// SuperAdmin Events Module
+// ===========================================
+
+enum EventType {
+  PROMOTION
+  ANNOUNCEMENT
+  MAINTENANCE
+  FEATURE_UPDATE
+  SYSTEM_ALERT
+  MARKETING_CAMPAIGN
+  TRADE_SHOW
+  CONFERENCE
+  EMBASSY_EVENT
+  NETWORKING
+  WORKSHOP
+  WEBINAR
+  OTHER
+}
+
+enum EventStatus {
+  PLANNING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum EventPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EventLocationType {
+  PHYSICAL
+  ONLINE
+  HYBRID
+}
+
+model Event {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String        @db.String // Rich text/HTML content
+  eventType   EventType
+  status      EventStatus   @default(PLANNING)
+  priority    EventPriority @default(MEDIUM)
+
+  // Date & Time
+  startDate DateTime?
+  endDate   DateTime?
+  timezone  String? // e.g., "Europe/Athens"
+
+  // Location Information
+  locationType EventLocationType @default(PHYSICAL)
+  venueName    String? // e.g., "Greek Embassy in London"
+  address      String? // Full address
+  city         String?
+  country      String? // Country code or name
+  coordinates  String? // Lat/Lng if needed
+
+  // Online Event Details
+  onlineUrl       String? // Zoom/Teams/YouTube link
+  registrationUrl String? // Event registration page
+
+  // Visual
+  bannerImage String? // URL to banner image
+  icon        String? // Icon name/emoji
+  photos      String[] // Array of photo URLs (post-event)
+
+  // Event Details
+  organizer          String? // Who's organizing (WaveOrder team member name)
+  attendees          String[] // List of WaveOrder team members attending
+  expectedAttendance Int? // Expected number of attendees
+  actualAttendance   Int? // Actual attendance (filled post-event)
+
+  // Post-Event Information
+  notes            String? @db.String // Post-event notes, learnings
+  leadsGenerated   Int? // Number of leads generated
+  followUpRequired Boolean @default(false)
+  followUpNotes    String? @db.String
+
+  // Targeting (for internal events)
+  targetPlans     String[] // Which subscription plans see this (empty = all)
+  targetCountries String[] // Which countries (empty = all)
+
+  // Metadata
+  createdBy     String   @db.ObjectId
+  createdByUser User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Display settings
+  showOnDashboard  Boolean @default(true) // Show in SuperAdmin dashboard
+  showToBusinesses Boolean @default(false) // Show to business admins (future)
+
+  @@index([status])
+  @@index([eventType])
+  @@index([startDate, endDate])
+  @@index([country])
+  @@index([createdAt])
+}
+
+// Affiliate System Models
+
+enum AffiliateCommissionType {
+  PERCENTAGE // Commission as % of order total
+  FIXED // Fixed amount per order
+}
+
+enum AffiliateEarningStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model Affiliate {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Affiliate Info (no login required)
+  name  String // Affiliate name (e.g., "Instagram Influencer @username")
+  email String? // Optional email for notifications
+  phone String? // Optional phone
+  notes String? // Internal notes about affiliate
+
+  // Commission Settings
+  commissionType  AffiliateCommissionType @default(PERCENTAGE) // PERCENTAGE or FIXED
+  commissionValue Float // Percentage (e.g., 10.0 for 10%) OR fixed amount (e.g., 5.00)
+
+  // Tracking Code (unique identifier for UTM)
+  trackingCode String // e.g., "AFF001", "INSTA_JOHN"
+
+  // Status
+  isActive Boolean @default(true)
+
+  // Relations
+  earnings AffiliateEarning[]
+  payments AffiliatePayment[]
+  orders   Order[] // Orders attributed to this affiliate
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, trackingCode]) // Unique tracking code per business
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@index([trackingCode])
+}
+
+model AffiliateEarning {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  orderId String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  affiliateId String    @db.ObjectId
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  // Commission Details
+  orderTotal      Float // Order total at time of commission calculation
+  commissionType  AffiliateCommissionType
+  commissionValue Float // % or fixed amount
+  amount          Float // Calculated commission amount
+  currency        String                  @default("EUR")
+
+  // Status tracking
+  status AffiliateEarningStatus @default(PENDING) // PENDING, PAID, CANCELLED
+
+  // When the order was completed
+  orderCompletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orderId]) // One commission per order
+  @@index([businessId])
+  @@index([businessId, affiliateId])
+  @@index([businessId, status])
+  @@index([affiliateId])
+}
+
+model AffiliatePayment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  affiliateId String    @db.ObjectId
+  affiliate   Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  amount   Float // Amount paid to affiliate
+  currency String @default("EUR")
+
+  periodStart DateTime? // Start of the period this payment covers
+  periodEnd   DateTime? // End of the period this payment covers
+
+  paymentMethod String? // e.g., "bank_transfer", "paypal", "cash"
+  reference     String? // Payment reference/invoice number
+  notes         String? // Additional notes
+
+  // Link to earnings that were paid
+  earningsIds String[] // Array of AffiliateEarning IDs that were paid
+
+  paidAt    DateTime @default(now()) // When payment was made
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, affiliateId])
+  @@index([businessId, paidAt])
+  @@index([affiliateId])
 }

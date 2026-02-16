@@ -35,6 +35,7 @@ interface StoreData {
   name: string
   slug: string
   logo: string | null
+  coverImage: string | null
   subscriptionPlan: 'STARTER' | 'PRO' | 'BUSINESS'
   subscriptionStatus: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'EXPIRED'
   trialEndsAt: string | null
@@ -376,7 +377,9 @@ export default function AllStoresPage() {
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
                       {store.logo ? (
-                        <img src={store.logo} alt={store.name} className="w-full h-full object-cover" />
+                        <img src={store.logo} alt={store.name} className="w-full h-full object-contain" />
+                      ) : store.coverImage ? (
+                        <img src={store.coverImage} alt={store.name} className="w-full h-full object-cover" />
                       ) : (
                         <Store className="w-6 h-6 text-gray-400" />
                       )}

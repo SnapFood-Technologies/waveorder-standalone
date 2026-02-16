@@ -101,6 +101,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   OUT_FOR_DELIVERY: { label: 'Out for Delivery', color: 'bg-orange-500' },
   DELIVERED: { label: 'Delivered', color: 'bg-green-500' },
   CANCELLED: { label: 'Cancelled', color: 'bg-red-500' },
+  RETURNED: { label: 'Returned', color: 'bg-orange-500' },
   REFUNDED: { label: 'Refunded', color: 'bg-gray-500' }
 }
 

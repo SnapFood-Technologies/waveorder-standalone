@@ -80,7 +80,7 @@ interface OrderItem {
 interface Order {
   id: string
   orderNumber: string
-  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED'
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'REFUNDED'
   type: 'DELIVERY' | 'PICKUP' | 'DINE_IN'
   total: number
   subtotal: number
@@ -450,15 +450,17 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           return ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
         }
       case 'PICKED_UP':
-        return ['PICKED_UP', 'REFUNDED'] // PICKED_UP is final, can only refund
+        return ['PICKED_UP', 'RETURNED', 'REFUNDED'] // Can return product, or refund directly
       case 'OUT_FOR_DELIVERY':
         return ['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED']
       case 'DELIVERED':
-        return ['DELIVERED', 'REFUNDED']
+        return ['DELIVERED', 'RETURNED', 'REFUNDED'] // Can return product, or refund directly
+      case 'RETURNED':
+        return ['RETURNED', 'REFUNDED'] // Product returned, now can refund money
       case 'CANCELLED':
-        return ['CANCELLED', 'REFUNDED']
+        return ['CANCELLED', 'REFUNDED'] // Cancelled before delivery, can refund directly (no return needed)
       case 'REFUNDED':
-        return ['REFUNDED']
+        return ['REFUNDED'] // Final status
       default:
         return ['PENDING']
     }
@@ -474,7 +476,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   // Check if the order can be marked as complete (skip to final status)
   const canMarkAsComplete = (currentStatus: string, orderType?: string) => {
-    const finalStatuses = ['PICKED_UP', 'DELIVERED', 'CANCELLED', 'REFUNDED']
+    const finalStatuses = ['PICKED_UP', 'DELIVERED', 'CANCELLED', 'RETURNED', 'REFUNDED']
     if (finalStatuses.includes(currentStatus)) {
       return false
     }
@@ -818,10 +820,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                           business.currency === 'ALL' ? 'L' : 
                           business.currency === 'GBP' ? '£' : '$'
 
-    // Determine language to use
+    // Determine language to use - use business.language (for customer communications like WhatsApp)
     const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
-    const language = useBusinessLanguage ? (business.language || 'en') : 'en'
-    const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : 'en-US'
+    const businessLang = business.language || 'en'
+    // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+    const normalizedLang = businessLang === 'gr' ? 'el' : businessLang === 'al' ? 'sq' : businessLang
+    const language = useBusinessLanguage ? normalizedLang : 'en'
+    const locale = language === 'es' ? 'es-ES' : language === 'sq' ? 'sq-AL' : language === 'el' ? 'el-GR' : 'en-US'
 
     // Get WhatsApp message translations
     const whatsappLabels = getWhatsAppLabels(language)
@@ -977,6 +982,20 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         arrivalTime: 'Koha e mbërritjes',
         at: 'në',
         thankYou: 'Faleminderit që na zgjodhët'
+      },
+      el: {
+        hello: 'Γεια σας',
+        orderStatusUpdate: 'Η παραγγελία σας',
+        hasBeenUpdatedTo: 'έχει ενημερωθεί σε',
+        deliveryAddress: 'Διεύθυνση Παράδοσης',
+        pickupAt: 'Παραλαβή στο',
+        dineInAt: 'Στο εστιατόριο',
+        total: 'Σύνολο',
+        deliveryTime: 'Ώρα παράδοσης',
+        pickupTime: 'Ώρα παραλαβής',
+        arrivalTime: 'Ώρα άφιξης',
+        at: 'στις',
+        thankYou: 'Ευχαριστούμε που επιλέξατε'
       }
     }
     return labels[language] || labels.en
@@ -1024,6 +1043,19 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         PICKED_UP_DELIVERY: '✨ Porosia juaj është e plotë. Faleminderit!',
         OUT_FOR_DELIVERY: '🚗 Porosia juaj është në rrugë për tek ju!',
         DELIVERED: '✨ Porosia juaj është dorëzuar. Shijoni!'
+      },
+      el: {
+        CONFIRMED: '✅ Η παραγγελία σας έχει επιβεβαιωθεί και την προετοιμάζουμε για εσάς!',
+        PREPARING: '👨‍🍳 Η παραγγελία σας προετοιμάζεται με προσοχή!',
+        PREPARING_RETAIL: '📦 Η παραγγελία σας προετοιμάζεται για αποστολή!',
+        READY_PICKUP: '🎉 Η παραγγελία σας είναι έτοιμη για παραλαβή!',
+        READY_DINE_IN: '🎉 Το τραπέζι σας είναι έτοιμο!',
+        READY_DELIVERY: '🎉 Η παραγγελία σας είναι έτοιμη!',
+        PICKED_UP_PICKUP: '✨ Η παραγγελία σας έχει παραληφθεί. Ευχαριστούμε!',
+        PICKED_UP_DINE_IN: '✨ Καλή όρεξη! Ευχαριστούμε!',
+        PICKED_UP_DELIVERY: '✨ Η παραγγελία σας ολοκληρώθηκε. Ευχαριστούμε!',
+        OUT_FOR_DELIVERY: '🚗 Η παραγγελία σας είναι καθ\' οδόν προς εσάς!',
+        DELIVERED: '✨ Η παραγγελία σας έχει παραδοθεί. Καλή απόλαυση!'
       }
     }
     const messages = baseMessages[language] || baseMessages.en
@@ -1045,6 +1077,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'Out for Delivery',
         DELIVERED: 'Delivered',
         CANCELLED: 'Cancelled',
+        RETURNED: 'Returned',
         REFUNDED: 'Refunded'
       },
       es: {
@@ -1056,6 +1089,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'En Camino',
         DELIVERED: 'Entregado',
         CANCELLED: 'Cancelado',
+        RETURNED: 'Devuelto',
         REFUNDED: 'Reembolsado'
       },
       sq: {
@@ -1067,7 +1101,20 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         OUT_FOR_DELIVERY: 'Në Rrugë',
         DELIVERED: 'Dorëzuar',
         CANCELLED: 'Anuluar',
+        RETURNED: 'Kthyer',
         REFUNDED: 'Rimbursuar'
+      },
+      el: {
+        PENDING: 'Σε Εκκρεμότητα',
+        CONFIRMED: 'Επιβεβαιωμένη',
+        PREPARING: businessType === 'RETAIL' ? 'Προετοιμασία Αποστολής' : 'Σε Προετοιμασία',
+        READY: 'Έτοιμη',
+        PICKED_UP: 'Παραλήφθηκε',
+        OUT_FOR_DELIVERY: 'Σε Διανομή',
+        DELIVERED: 'Παραδόθηκε',
+        CANCELLED: 'Ακυρώθηκε',
+        RETURNED: 'Επιστράφηκε',
+        REFUNDED: 'Επιστροφή Χρημάτων'
       }
     }
     const labels = statusLabels[language] || statusLabels.en
@@ -1109,6 +1156,17 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         sendWhatsAppMessage: 'Dërgoni Mesazh WhatsApp',
         resetToDefault: 'Rivendosni në Parazgjedhje',
         messagePreview: 'Parapamje e mesazhit më sipër'
+      },
+      el: {
+        sendWhatsAppUpdate: 'Αποστολή Ενημέρωσης WhatsApp',
+        notifyCustomer: 'Ειδοποίηση πελάτη για την κατάσταση της παραγγελίας',
+        sendWhatsAppUpdateTo: 'Αποστολή Ενημέρωσης WhatsApp σε',
+        customizeMessage: 'Προσαρμογή του μηνύματος πριν την αποστολή στον πελάτη σας:',
+        whatsAppMessage: 'Μήνυμα WhatsApp',
+        cancel: 'Ακύρωση',
+        sendWhatsAppMessage: 'Αποστολή Μηνύματος WhatsApp',
+        resetToDefault: 'Επαναφορά στην Προεπιλογή',
+        messagePreview: 'Προεπισκόπηση μηνύματος παραπάνω'
       }
     }
     return labels[language] || labels.en
@@ -1165,10 +1223,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     )
   }
 
-  // Get admin UI labels based on business language (after we know business exists)
-  const useBusinessLanguage = business.translateContentToBusinessLanguage !== false
-  const adminLanguage = useBusinessLanguage ? (business.language || 'en') : 'en'
-  const adminUILabels = getAdminUILabels(adminLanguage)
+  // Admin UI labels are always in English (not localized)
+  const adminUILabels = getAdminUILabels('en')
 
   return (
     <div className="max-w-8xl mx-auto space-y-6">
@@ -1205,7 +1261,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Order #{order.orderNumber}</h1>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border w-fit mt-2 sm:mt-0 ${getStatusColor(order.status)}`}>
-                {getStatusLabel(order.status, adminLanguage, business?.businessType)}
+                {getStatusLabel(order.status, 'en', business?.businessType)}
               </span>
             </div>
             <p className="text-gray-600 text-sm">Order details and management</p>
@@ -1263,7 +1319,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     >
       {getValidStatusOptions(order.status, order.type).map(status => (
         <option key={status} value={status}>
-          {getStatusLabel(status, business?.language || 'en', business?.businessType)}
+          {getStatusLabel(status, 'en', business?.businessType)}
         </option>
       ))}
     </select>
@@ -1789,9 +1845,18 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     </h4>
                     
                     {item.product.description && (
-                      <p className="text-sm text-gray-600 mt-1 truncate">
-                        {item.product.description}
-                      </p>
+                      <div 
+                        className="text-sm text-gray-600 mt-1 line-clamp-2"
+                        dangerouslySetInnerHTML={{ 
+                          __html: item.product.description
+                            .replace(/&amp;/g, '&')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&nbsp;/g, ' ')
+                        }} 
+                      />
                     )}
                     
                     {item.modifiers.length > 0 && (

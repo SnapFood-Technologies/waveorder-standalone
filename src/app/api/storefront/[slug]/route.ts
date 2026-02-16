@@ -838,6 +838,9 @@ export async function GET(
         }
       })(),
 
+      // Legal Pages
+      legalPagesEnabled: business.legalPagesEnabled || false,
+
       // Initial products for server-side render (first 24)
       initialProducts: initialProducts || [],
 

@@ -30,6 +30,7 @@ import {
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface AnalyticsProps {
   businessId: string
@@ -68,6 +69,7 @@ interface SearchAnalyticsData {
 
 export default function Analytics({ businessId }: AnalyticsProps) {
   const { isPro } = useSubscription()
+  const { addParams } = useImpersonation(businessId)
   const [data, setData] = useState<any>(null)
   const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '' })
   const [loading, setLoading] = useState(true)
@@ -1099,8 +1101,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Insights</h3>
           <p className="text-sm text-gray-600 mb-4">Deep dive into your analytics with these PRO features</p>
           
-          {/* Product Analytics - Full width row */}
-          <div className="mb-4">
+          {/* Product Analytics & Campaign Analytics - 2 column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <Link
               href={`/admin/stores/${businessId}/analytics/products`}
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
@@ -1111,6 +1113,19 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               <div>
                 <h4 className="font-medium text-gray-900">Product Analytics</h4>
                 <p className="text-sm text-gray-600">View product views, add-to-cart rates, and conversion metrics</p>
+              </div>
+            </Link>
+
+            <Link
+              href={addParams(`/admin/stores/${businessId}/analytics/campaigns`)}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-orange-300 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-orange-200 transition-colors">
+                <TrendingUp className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Campaign Analytics</h4>
+                <p className="text-sm text-gray-600">Track UTM campaign performance: views, conversions, and revenue by campaign</p>
               </div>
             </Link>
           </div>

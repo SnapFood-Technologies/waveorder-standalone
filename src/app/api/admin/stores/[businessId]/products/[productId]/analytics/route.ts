@@ -69,7 +69,7 @@ export async function GET(
         break
     }
 
-    // Fetch product events
+    // Fetch product events with sessionId for linking to orders
     const productEvents = await prisma.productEvent.findMany({
       where: {
         businessId,
@@ -82,32 +82,13 @@ export async function GET(
       select: {
         eventType: true,
         source: true,
+        sessionId: true, // Include sessionId for linking to orders
         createdAt: true
       },
       orderBy: {
         createdAt: 'asc'
       }
     })
-
-    // Aggregate events
-    let totalViews = 0
-    let totalAddToCarts = 0
-    const sourceBreakdown: Record<string, { views: number; addToCarts: number }> = {}
-    
-    for (const event of productEvents) {
-      const source = event.source || 'unknown'
-      if (!sourceBreakdown[source]) {
-        sourceBreakdown[source] = { views: 0, addToCarts: 0 }
-      }
-      
-      if (event.eventType === 'view') {
-        totalViews++
-        sourceBreakdown[source].views++
-      } else if (event.eventType === 'add_to_cart') {
-        totalAddToCarts++
-        sourceBreakdown[source].addToCarts++
-      }
-    }
 
     // Fetch ALL order items for this product (Orders Placed)
     const allOrderItems = await prisma.orderItem.findMany({
@@ -128,7 +109,8 @@ export async function GET(
           select: {
             createdAt: true,
             status: true,
-            paymentStatus: true
+            paymentStatus: true,
+            sessionId: true // Include sessionId for linking to events
           }
         }
       }
@@ -146,17 +128,61 @@ export async function GET(
     const totalQuantityCompleted = completedOrderItems.reduce((sum, item) => sum + item.quantity, 0)
     const totalRevenue = completedOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
-    // Calculate conversion rates (based on ordersPlaced - customer action)
+    // Aggregate events and track which events led to orders (after fetching orders)
+    let totalViews = 0
+    let totalAddToCarts = 0
+    let viewsThatLedToOrders = 0
+    let addToCartsThatLedToOrders = 0
+    const sourceBreakdown: Record<string, { views: number; addToCarts: number; viewsConverted: number; cartsConverted: number }> = {}
+    
+    // Create a set of sessionIds that have orders for this product
+    const sessionsWithOrders = new Set<string>()
+    for (const item of allOrderItems) {
+      if (item.order.sessionId) {
+        sessionsWithOrders.add(item.order.sessionId)
+      }
+    }
+    
+    // Process events and link them to orders via sessionId
+    for (const event of productEvents) {
+      const source = event.source || 'unknown'
+      if (!sourceBreakdown[source]) {
+        sourceBreakdown[source] = { views: 0, addToCarts: 0, viewsConverted: 0, cartsConverted: 0 }
+      }
+      
+      const eventLedToOrder = event.sessionId ? sessionsWithOrders.has(event.sessionId) : false
+      
+      if (event.eventType === 'view') {
+        totalViews++
+        sourceBreakdown[source].views++
+        if (eventLedToOrder) {
+          viewsThatLedToOrders++
+          sourceBreakdown[source].viewsConverted++
+        }
+      } else if (event.eventType === 'add_to_cart') {
+        totalAddToCarts++
+        sourceBreakdown[source].addToCarts++
+        if (eventLedToOrder) {
+          addToCartsThatLedToOrders++
+          sourceBreakdown[source].cartsConverted++
+        }
+      }
+    }
+
+    // Calculate conversion rates
+    // viewToCartRate: % of views that resulted in add_to_cart
     const viewToCartRate = totalViews > 0 
       ? Math.round((totalAddToCarts / totalViews) * 1000) / 10 
       : 0
     
+    // cartToOrderRate: % of add_to_cart events that led to actual orders (direct link via sessionId)
     const cartToOrderRate = totalAddToCarts > 0 
-      ? Math.round((totalOrdersPlaced / totalAddToCarts) * 1000) / 10 
+      ? Math.round((addToCartsThatLedToOrders / totalAddToCarts) * 1000) / 10 
       : 0
     
+    // conversionRate: % of views that led to actual orders (direct link via sessionId)
     const conversionRate = totalViews > 0 
-      ? Math.round((totalOrdersPlaced / totalViews) * 1000) / 10 
+      ? Math.round((viewsThatLedToOrders / totalViews) * 1000) / 10 
       : 0
 
     // Build daily trends for chart (using all orders for trends)
@@ -186,8 +212,19 @@ export async function GET(
         sourceBreakdown: Object.entries(sourceBreakdown).map(([source, data]) => ({
           source,
           views: data.views,
-          addToCarts: data.addToCarts
+          addToCarts: data.addToCarts,
+          viewsConverted: data.viewsConverted,
+          cartsConverted: data.cartsConverted,
+          viewConversionRate: data.views > 0 ? Math.round((data.viewsConverted / data.views) * 1000) / 10 : 0,
+          cartConversionRate: data.addToCarts > 0 ? Math.round((data.cartsConverted / data.addToCarts) * 1000) / 10 : 0
         })),
+        // Additional metrics showing direct event-to-order linking
+        eventToOrderLinking: {
+          viewsThatLedToOrders,
+          addToCartsThatLedToOrders,
+          totalViews,
+          totalAddToCarts
+        },
         dailyTrends,
         period,
         dateRange: {

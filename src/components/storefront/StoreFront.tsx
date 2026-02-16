@@ -35,12 +35,14 @@ import {
   SlidersHorizontal,
   ArrowUp,
   ArrowDown,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import { PhoneInput } from '../site/PhoneInput'
+import LegalPagesModal from './LegalPagesModal'
 
 // Google Places API hook
 const useGooglePlaces = () => {
@@ -1786,6 +1788,7 @@ interface StoreData {
     discountPercent: number
     productIds: string[]
   } | null
+  legalPagesEnabled?: boolean
 }
 
 interface Category {
@@ -1926,6 +1929,45 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // URL params for product sharing
   const searchParams = useSearchParams()
+  
+  // Capture UTM parameters from URL for affiliate tracking
+  const [utmParams, setUtmParams] = useState<{
+    utm_source?: string
+    utm_medium?: string
+    utm_campaign?: string
+    utm_term?: string
+    utm_content?: string
+  }>({})
+  
+  // Capture UTM params on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const utm: typeof utmParams = {}
+      if (params.get('utm_source')) utm.utm_source = params.get('utm_source')!
+      if (params.get('utm_medium')) utm.utm_medium = params.get('utm_medium')!
+      if (params.get('utm_campaign')) utm.utm_campaign = params.get('utm_campaign')!
+      if (params.get('utm_term')) utm.utm_term = params.get('utm_term')!
+      if (params.get('utm_content')) utm.utm_content = params.get('utm_content')!
+      
+      // Store in localStorage for persistence across page navigation
+      if (Object.keys(utm).length > 0) {
+        localStorage.setItem(`utm_params_${storeData.slug}`, JSON.stringify(utm))
+        setUtmParams(utm)
+      } else {
+        // Try to load from localStorage if no URL params
+        const stored = localStorage.getItem(`utm_params_${storeData.slug}`)
+        if (stored) {
+          try {
+            setUtmParams(JSON.parse(stored))
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+  }, [storeData.slug])
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -1987,6 +2029,12 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const [showProductModal, setShowProductModal] = useState(false)
   const [showBusinessInfoModal, setShowBusinessInfoModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showLegalPagesModal, setShowLegalPagesModal] = useState(false)
+  const [legalPagesData, setLegalPagesData] = useState<{
+    pages: Array<{ slug: string; title: string; showInFooter: boolean; sortOrder: number }>
+    ctaEnabled: boolean
+    ctaText: string
+  } | null>(null)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [selectedModifiers, setSelectedModifiers] = useState<ProductModifier[]>([])
@@ -2105,12 +2153,30 @@ const trackProductEvent = useCallback((
   
   const sessionId = getSessionId()
   
+  // Get UTM params from localStorage (captured on page load)
+  const storedUtm = typeof window !== 'undefined' 
+    ? localStorage.getItem(`utm_params_${storeData.slug}`)
+    : null
+  let utmParams: any = {}
+  if (storedUtm) {
+    try {
+      utmParams = JSON.parse(storedUtm)
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+  
   // Use sendBeacon for reliable delivery (doesn't block page navigation)
   const data = JSON.stringify({
     productId,
     eventType,
     sessionId,
-    source
+    source,
+    utmSource: utmParams.utm_source || null,
+    utmMedium: utmParams.utm_medium || null,
+    utmCampaign: utmParams.utm_campaign || null,
+    utmTerm: utmParams.utm_term || null,
+    utmContent: utmParams.utm_content || null
   })
   
   const url = `/api/storefront/${storeData.slug}/track`
@@ -2578,6 +2644,26 @@ const trackProductEvent = useCallback((
       behavior: 'smooth'
     })
   }
+
+  // Fetch legal pages data on mount
+  useEffect(() => {
+    if (storeData.legalPagesEnabled) {
+      fetch(`/api/storefront/${storeData.slug}/pages`)
+        .then(res => res.json())
+        .then(data => {
+          const storefrontLang = storeData.storefrontLanguage || storeData.language || 'en'
+          const t = getStorefrontTranslations(storefrontLang)
+          setLegalPagesData({
+            pages: data.pages || [],
+            ctaEnabled: data.ctaEnabled || false,
+            ctaText: data.ctaText || t.legalPoliciesCta,
+          })
+        })
+        .catch(err => {
+          console.error('Error fetching legal pages:', err)
+        })
+    }
+  }, [storeData.slug, storeData.legalPagesEnabled])
 
   // Fetch countries on mount (for RETAIL businesses)
   useEffect(() => {
@@ -3412,6 +3498,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         deliveryAddress = `${customerInfo.address}${customerInfo.address2 ? `, ${customerInfo.address2}` : ''}`.trim()
       }
 
+      // Get sessionId for tracking
+      const sessionId = getSessionId()
+      
       const orderData = {
         customerName: customerInfo.name,
         customerPhone: customerInfo.phone,
@@ -3432,6 +3521,13 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         countryCode: customerInfo.countryCode,
         city: customerInfo.city,
         postalCode: customerInfo.postalCode,
+        // UTM Tracking & Session
+        sessionId: sessionId || null,
+        utmSource: utmParams.utm_source || null,
+        utmMedium: utmParams.utm_medium || null,
+        utmCampaign: utmParams.utm_campaign || null,
+        utmTerm: utmParams.utm_term || null,
+        utmContent: utmParams.utm_content || null,
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
@@ -3629,6 +3725,14 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
   >
     <Search className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
   </button>
+  {storeData.legalPagesEnabled && legalPagesData && legalPagesData.pages.length > 0 && (
+    <button 
+      onClick={() => setShowLegalPagesModal(true)}
+      className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
+    >
+      <Shield className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+    </button>
+  )}
   <button 
     onClick={() => setShowBusinessInfoModal(true)}
     className="w-8 h-8 sm:w-10 sm:h-10 bg-black bg-opacity-20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-opacity-30 transition-all"
@@ -3790,6 +3894,40 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
             disabled={false} // Disable when store closed
           />
           </div>
+
+          {/* Legal Pages CTA (above search) */}
+          {storeData.legalPagesEnabled && legalPagesData && legalPagesData.ctaEnabled && legalPagesData.pages.length > 0 && (
+            <div className="mb-4">
+              <button
+                onClick={() => setShowLegalPagesModal(true)}
+                className="w-full p-3 rounded-xl border-2 transition-colors text-left flex items-center justify-between group"
+                style={{
+                  borderColor: `${primaryColor}40`,
+                  backgroundColor: `${primaryColor}05`,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${primaryColor}15` }}
+                  >
+                    <Shield className="w-4 h-4" style={{ color: primaryColor }} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                    {legalPagesData.ctaText}
+                  </span>
+                </div>
+                <svg
+                  className="w-5 h-5 text-gray-400 group-hover:text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
 
           {/* Search Section */}
           <div className="bg-white rounded-2xl p-0 mb-4 md:mb-6">
@@ -4635,9 +4773,43 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         translations={translations}
       />
 
+      {/* Legal Pages Modal */}
+      {storeData.legalPagesEnabled && (
+        <LegalPagesModal
+          isOpen={showLegalPagesModal}
+          onClose={() => setShowLegalPagesModal(false)}
+          businessSlug={storeData.slug}
+          primaryColor={primaryColor}
+          translations={translations}
+        />
+      )}
+
       {/* Powered by WaveOrder Footer */}
       <footer className="bg-white mt-8">
         <div className="max-w-[75rem] mx-auto px-5 py-6">
+          {/* Legal Pages Links */}
+          {storeData.legalPagesEnabled && legalPagesData && legalPagesData.pages.filter(p => p.showInFooter).length > 0 && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                {legalPagesData.pages
+                  .filter(p => p.showInFooter)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((page) => (
+                    <a
+                      key={page.slug}
+                      href={`/${storeData.slug}/${page.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm hover:underline"
+                      style={{ color: primaryColor }}
+                    >
+                      {page.title}
+                    </a>
+                  ))}
+              </div>
+            </div>
+          )}
+          
           <div className="text-center">
             <p className="text-sm text-gray-500">
               {translations.poweredBy || 'Powered by'}{' '}

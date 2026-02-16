@@ -901,6 +901,7 @@ export async function POST(
         closureReason: true,
         closureMessage: true,
         translateContentToBusinessLanguage: true,
+        enableAffiliateSystem: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -949,6 +950,13 @@ export async function POST(
       countryCode, // For RETAIL businesses
       city, // For RETAIL businesses
       postalCode, // For RETAIL businesses
+      // UTM Tracking & Session
+      sessionId,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
       items,
       subtotal,
       deliveryFee,
@@ -1535,6 +1543,27 @@ export async function POST(
 const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
 const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}${random}`)
 
+    // Check if order came from affiliate link (utm_campaign matches affiliate trackingCode)
+    let affiliateId: string | null = null
+    if (utmCampaign && business.enableAffiliateSystem) {
+      try {
+        const affiliate = await prisma.affiliate.findFirst({
+          where: {
+            businessId: business.id,
+            trackingCode: utmCampaign,
+            isActive: true
+          },
+          select: { id: true }
+        })
+        if (affiliate) {
+          affiliateId = affiliate.id
+        }
+      } catch (error) {
+        // Silently fail - affiliate lookup shouldn't break order creation
+        console.error('Error looking up affiliate:', error)
+      }
+    }
+
     // Create order with enhanced data
     const order = await prisma.order.create({
       data: {
@@ -1564,6 +1593,14 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         // Store postal pricing for RETAIL businesses
         // @ts-ignore - postalPricingId field will be available after Prisma generate
         postalPricingId: finalPostalPricingId,
+        // UTM Tracking & Affiliate Attribution
+        sessionId: sessionId || null,
+        utmSource: utmSource || null,
+        utmMedium: utmMedium || null,
+        utmCampaign: utmCampaign || null,
+        utmTerm: utmTerm || null,
+        utmContent: utmContent || null,
+        affiliateId: affiliateId || null,
       } as any
     })
 
@@ -1966,6 +2003,46 @@ try {
         }
       })
 
+      // Fetch postal pricing details for WhatsApp notification (if RETAIL business)
+      let postalPricingDetailsForWhatsApp: any = null
+      // @ts-ignore - postalPricingId field will be available after Prisma generate
+      const orderPostalPricingId = (order as any).postalPricingId
+      if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+        try {
+          // @ts-ignore - PostalPricing model will be available after Prisma generate
+          const postalPricing = await (prisma as any).postalPricing.findUnique({
+            where: { id: orderPostalPricingId },
+            include: {
+              postal: {
+                select: {
+                  name: true,
+                  nameEn: true,
+                  nameAl: true,
+                  nameEl: true,
+                  deliveryTime: true,
+                  deliveryTimeAl: true,
+                  deliveryTimeEl: true
+                }
+              }
+            }
+          })
+
+          if (postalPricing) {
+            // Use English name for business notifications
+            postalPricingDetailsForWhatsApp = {
+              name: postalPricing.postal?.name || 'Postal Service',
+              nameEn: postalPricing.postal?.name || 'Postal Service',
+              nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+              nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
+              deliveryTime: postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null,
+              price: postalPricing.price
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching postal pricing details for WhatsApp:', error)
+        }
+      }
+
       // Send order notification directly to business via Twilio
       const twilioResult = await sendTwilioOrderNotification(
         business.whatsappNumber,
@@ -1990,7 +2067,8 @@ try {
           specialInstructions: order.notes || undefined,
           invoiceType: (order as any).invoiceType || undefined, // Invoice/Receipt selection (for Greek storefronts)
           language: business.language || undefined,
-          currencySymbol: getCurrencySymbol(business.currency)
+          currencySymbol: getCurrencySymbol(business.currency),
+          postalPricingDetails: postalPricingDetailsForWhatsApp
         }
       )
 
