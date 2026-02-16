@@ -584,27 +584,42 @@ export default function AdminAppointmentForm({
   const totalDuration = calculateTotalDuration()
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="mb-6">
-        <button
-          onClick={onCancel}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">Create New Appointment</h1>
-        <p className="text-gray-600 mt-1">Create a new appointment for a customer</p>
-      </div>
-
+    <div className="max-w-8xl mx-auto">
+      {/* Success Message */}
       {successMessage && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-          <CheckCircle className="w-5 h-5 text-green-600" />
-          <span className="text-green-800">{successMessage}</span>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+            <div className="text-sm text-green-700">{successMessage}</div>
+          </div>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Form - 2/3 width */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                {onCancel && (
+                  <button
+                    onClick={onCancel}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ArrowLeft className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">Create New Appointment</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Create a new appointment for a customer
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
               {/* Customer Selection */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
@@ -647,83 +662,108 @@ export default function AdminAppointmentForm({
                     </label>
                   </div>
 
-            {formData.customerType === 'existing' ? (
-              <div>
-                <CustomerSearch
-                  businessId={businessId}
-                  onCustomerSelect={(customer) => {
-                    setSelectedCustomer(customer)
-                    setFormData(prev => ({ ...prev, customerId: customer?.id }))
-                  }}
-                  selectedCustomer={selectedCustomer}
-                />
-                {errors.customer && (
-                  <p className="text-red-600 text-sm mt-1">{errors.customer}</p>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.newCustomer?.name || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      newCustomer: { 
-                        ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
-                        name: e.target.value 
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-                  />
-                  {errors.newCustomerName && (
-                    <p className="text-red-600 text-sm mt-1">{errors.newCustomerName}</p>
+                  {formData.customerType === 'existing' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Customer
+                      </label>
+                      <CustomerSearch
+                        businessId={businessId}
+                        onCustomerSelect={(customer) => {
+                          setSelectedCustomer(customer)
+                          setFormData(prev => ({ ...prev, customerId: customer?.id }))
+                        }}
+                        selectedCustomer={selectedCustomer}
+                      />
+                      {errors.customer && (
+                        <p className="text-red-600 text-sm mt-1">{errors.customer}</p>
+                      )}
+                      
+                      {selectedCustomer && (
+                        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <User className="w-5 h-5 text-green-600" />
+                            <div>
+                              <h3 className="font-medium">{selectedCustomer.name}</h3>
+                              <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
+                              <p className="text-xs text-gray-500">
+                                {selectedCustomer.tier} Customer • {selectedCustomer.totalOrders} Previous Appointments
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Customer Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.newCustomer?.name || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            newCustomer: { 
+                              ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
+                              name: e.target.value 
+                            }
+                          }))}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
+                            errors.newCustomerName ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          placeholder="Enter customer name"
+                        />
+                        {errors.newCustomerName && (
+                          <p className="text-red-600 text-sm mt-1">{errors.newCustomerName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number *
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.newCustomer?.phone || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            newCustomer: { 
+                              ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
+                              phone: e.target.value 
+                            }
+                          }))}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500 ${
+                            errors.newCustomerPhone ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                          placeholder="Enter phone number"
+                        />
+                        {errors.newCustomerPhone && (
+                          <p className="text-red-600 text-sm mt-1">{errors.newCustomerPhone}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email (Optional)
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.newCustomer?.email || ''}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            newCustomer: { 
+                              ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
+                              email: e.target.value 
+                            }
+                          }))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+                          placeholder="customer@example.com"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.newCustomer?.phone || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      newCustomer: { 
-                        ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
-                        phone: e.target.value 
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-                  />
-                  {errors.newCustomerPhone && (
-                    <p className="text-red-600 text-sm mt-1">{errors.newCustomerPhone}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.newCustomer?.email || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      newCustomer: { 
-                        ...(prev.newCustomer || { name: '', phone: '', email: '', tier: 'REGULAR' }), 
-                        email: e.target.value 
-                      }
-                    }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-                  />
-                </div>
               </div>
-            )}
-          </div>
-        </div>
 
               {/* Services Selection */}
               <div>
