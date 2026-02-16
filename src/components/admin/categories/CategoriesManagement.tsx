@@ -823,6 +823,7 @@ interface CategoryFormProps {
 function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: CategoryFormProps) {
   const [allCategories, setAllCategories] = useState<Category[]>([])
   const [businessLanguage, setBusinessLanguage] = useState<string>('en')
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   const [form, setForm] = useState({
     name: category?.name || '',
     nameAl: category?.nameAl || '',
@@ -839,21 +840,22 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'al' | 'el'>('en')
 
-  // Fetch business language
+  // Fetch business language and type
   useEffect(() => {
-    const fetchBusinessLanguage = async () => {
+    const fetchBusinessData = async () => {
       try {
         const response = await fetch(`/api/admin/stores/${businessId}`)
         if (response.ok) {
           const data = await response.json()
           const lang = data.business.storefrontLanguage || data.business.language || 'en'
           setBusinessLanguage(lang)
+          setBusinessType(data.business.businessType || 'RESTAURANT')
         }
       } catch (error) {
-        console.error('Error fetching business language:', error)
+        console.error('Error fetching business data:', error)
       }
     }
-    fetchBusinessLanguage()
+    fetchBusinessData()
   }, [businessId])
 
   // Fetch all categories for parent selector (lightweight for dropdown)
@@ -987,7 +989,7 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto pr-2">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[80vh] overflow-y-auto scrollbar-hide">
           {/* Language Toggle - Show for Albanian or Greek businesses */}
           {(businessLanguage === 'sq' || businessLanguage === 'el') && (
             <div className="flex gap-2 mb-4 p-1 bg-gray-100 rounded-lg">
@@ -1045,7 +1047,13 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
                 [activeLanguage === 'en' ? 'name' : activeLanguage === 'el' ? 'nameEl' : 'nameAl']: e.target.value 
               }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder={activeLanguage === 'en' ? "e.g., Main Courses" : activeLanguage === 'el' ? "π.χ., Κυρίως Πιάτα" : "e.g., Kryesor"}
+              placeholder={
+                activeLanguage === 'en' 
+                  ? (businessType === 'SALON' ? "e.g., Hair Services" : "e.g., Main Courses")
+                  : activeLanguage === 'el' 
+                    ? (businessType === 'SALON' ? "π.χ., Υπηρεσίες Μαλλιών" : "π.χ., Κυρίως Πιάτα")
+                    : (businessType === 'SALON' ? "e.g., Shërbime Flokësh" : "e.g., Kryesor")
+              }
             />
           </div>
 
@@ -1062,7 +1070,11 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
               }))}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              placeholder="Optional description"
+              placeholder={
+                businessType === 'SALON' 
+                  ? (activeLanguage === 'en' ? "Optional description of this service category" : activeLanguage === 'el' ? "Προαιρετική περιγραφή αυτής της κατηγορίας υπηρεσιών" : "Përshkrim opsional i kësaj kategorie shërbimi")
+                  : (activeLanguage === 'en' ? "Optional description" : activeLanguage === 'el' ? "Προαιρετική περιγραφή" : "Përshkrim opsional")
+              }
             />
           </div>
 

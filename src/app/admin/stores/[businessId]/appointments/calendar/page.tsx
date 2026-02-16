@@ -17,9 +17,7 @@ export default async function AppointmentsCalendarPage({ params }: AppointmentsC
       redirectTo={`/admin/stores/${businessId}/orders`}
     >
       <SubscriptionGuard requiredPlan="PRO">
-        <div className="p-6">
-          <AppointmentsCalendar businessId={businessId} />
-        </div>
+        <AppointmentsCalendar businessId={businessId} />
       </SubscriptionGuard>
     </BusinessTypeGuard>
   )

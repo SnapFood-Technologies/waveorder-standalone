@@ -137,7 +137,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
       hasTooltip: true,
-      tooltip: 'Total revenue from completed appointments with paid status in the selected period. Only appointments with COMPLETED status and PAID payment status are included.'
+      tooltip: 'Total revenue from completed appointments with paid status in the selected period. Only appointments with COMPLETED status and PAID payment status are included. This represents actual money received and includes the final order total after discounts, taxes, and other adjustments.'
     },
     {
       name: 'Growth',

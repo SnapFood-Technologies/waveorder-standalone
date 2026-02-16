@@ -25,7 +25,9 @@ import {
   Users,
   Package,
   Star,
-  CheckCircle
+  CheckCircle,
+  Calendar,
+  Scissors
 } from 'lucide-react'
 import { StoreComparison } from '@/components/admin/stores/StoreComparison'
 import { QuickCreateStoreModal } from '@/components/admin/stores/QuickCreateStoreModal'
@@ -67,6 +69,7 @@ export default function AllStoresPage() {
   const [defaultStoreId, setDefaultStoreId] = useState<string | null>(null)
   const [settingDefault, setSettingDefault] = useState<string | null>(null)
   const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [currentBusinessType, setCurrentBusinessType] = useState<string>('RESTAURANT')
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -81,10 +84,11 @@ export default function AllStoresPage() {
 
   const fetchData = async () => {
     try {
-      const [storesRes, limitsRes, defaultRes] = await Promise.all([
+      const [storesRes, limitsRes, defaultRes, currentBusinessRes] = await Promise.all([
         fetch('/api/user/businesses'),
         fetch('/api/user/store-limits'),
-        fetch('/api/user/default-store')
+        fetch('/api/user/default-store'),
+        fetch(`/api/admin/stores/${currentBusinessId}`)
       ])
 
       if (limitsRes.ok) {
@@ -100,6 +104,11 @@ export default function AllStoresPage() {
       if (defaultRes.ok) {
         const defaultData = await defaultRes.json()
         setDefaultStoreId(defaultData.defaultBusinessId)
+      }
+
+      if (currentBusinessRes.ok) {
+        const currentBusinessData = await currentBusinessRes.json()
+        setCurrentBusinessType(currentBusinessData.business?.businessType || 'RESTAURANT')
       }
     } catch (err) {
       setError('An error occurred while loading data')
@@ -283,7 +292,7 @@ export default function AllStoresPage() {
             <p className="text-sm text-gray-500 mt-0.5">Manage all your stores from one place</p>
           </div>
           <div className="p-4 sm:p-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className={`grid grid-cols-2 ${currentBusinessType === 'SALON' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
               <Link
                 href={`/admin/stores/${currentBusinessId}/unified/dashboard`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50/50 transition-all group"
@@ -304,25 +313,39 @@ export default function AllStoresPage() {
                 <span className="text-sm font-medium text-gray-900 text-center">Analytics</span>
               </Link>
               
-              <Link
-                href={`/admin/stores/${currentBusinessId}/unified/orders`}
-                className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
-              >
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <ShoppingBag className="w-5 h-5 text-blue-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900 text-center">All Orders</span>
-              </Link>
-              
-              <Link
-                href={`/admin/stores/${currentBusinessId}/unified/inventory`}
-                className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all group"
-              >
-                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Boxes className="w-5 h-5 text-amber-600" />
-                </div>
-                <span className="text-sm font-medium text-gray-900 text-center">Inventory</span>
-              </Link>
+              {currentBusinessType === 'SALON' ? (
+                <Link
+                  href={`/admin/stores/${currentBusinessId}/appointments`}
+                  className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                >
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <Calendar className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 text-center">All Appointments</span>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href={`/admin/stores/${currentBusinessId}/unified/orders`}
+                    className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                  >
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                      <ShoppingBag className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 text-center">All Orders</span>
+                  </Link>
+                  
+                  <Link
+                    href={`/admin/stores/${currentBusinessId}/unified/inventory`}
+                    className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-amber-300 hover:bg-amber-50/50 transition-all group"
+                  >
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                      <Boxes className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 text-center">Inventory</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

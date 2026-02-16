@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
             name: true,
             slug: true,
             logo: true,
-            currency: true
+            currency: true,
+            businessType: true
           }
         }
       }
@@ -44,8 +45,9 @@ export async function GET(request: NextRequest) {
     const storeStats = await Promise.all(
       businessUsers.map(async (bu) => {
         const businessId = bu.business.id
+        const isSalon = bu.business.businessType === 'SALON'
 
-        // Get orders in period
+        // Get orders/appointments in period
         const orders = await prisma.order.findMany({
           where: {
             businessId,
@@ -53,19 +55,79 @@ export async function GET(request: NextRequest) {
           },
           select: {
             total: true,
-            status: true
+            status: true,
+            paymentStatus: true,
+            type: true
           }
         })
 
-        const totalOrders = orders.length
-        const totalRevenue = orders
-          .filter(o => ['DELIVERED', 'READY', 'CONFIRMED'].includes(o.status))
-          .reduce((sum, o) => sum + o.total, 0)
+        // For salons, count appointments instead of orders
+        let totalOrders = orders.length
+        let totalAppointments = 0
+        if (isSalon) {
+          totalAppointments = await prisma.appointment.count({
+            where: {
+              businessId,
+              appointmentDate: { gte: startDate }
+            }
+          })
+          totalOrders = totalAppointments
+        }
 
-        // Get product count
-        const productCount = await prisma.product.count({
-          where: { businessId, isActive: true }
+        // Calculate revenue - for salons, use appointment-linked orders
+        let totalRevenue = 0
+        if (isSalon) {
+          // Get revenue from orders linked to COMPLETED appointments with PAID status
+          const appointmentOrders = await prisma.appointment.findMany({
+            where: {
+              businessId,
+              appointmentDate: { gte: startDate },
+              status: 'COMPLETED' // Only completed appointments count as revenue
+            },
+            include: {
+              order: {
+                select: {
+                  total: true,
+                  status: true,
+                  paymentStatus: true
+                }
+              }
+            }
+          })
+          // Filter for paid orders only
+          totalRevenue = appointmentOrders
+            .filter(apt => apt.order && apt.order.paymentStatus === 'PAID')
+            .reduce((sum, apt) => sum + (apt.order?.total || 0), 0)
+        } else {
+          // For non-salons: Revenue from paid orders that are completed/fulfilled
+          // - DELIVERY orders: DELIVERED + PAID
+          // - PICKUP orders: PICKED_UP + PAID
+          // - DINE_IN orders: PICKED_UP + PAID
+          totalRevenue = orders
+            .filter(o => {
+              if (o.paymentStatus !== 'PAID') return false
+              if (o.status === 'CANCELLED' || o.status === 'RETURNED' || o.status === 'REFUNDED') return false
+              
+              if (o.type === 'DELIVERY') {
+                return o.status === 'DELIVERED'
+              } else if (o.type === 'PICKUP' || o.type === 'DINE_IN') {
+                return o.status === 'PICKED_UP'
+              }
+              
+              return false
+            })
+            .reduce((sum, o) => sum + o.total, 0)
+        }
+
+        // Get product/service count
+        let productCount = await prisma.product.count({
+          where: { 
+            businessId, 
+            isActive: true,
+            ...(isSalon ? { isService: true } : { isService: false })
+          }
         })
+        let serviceCount = isSalon ? productCount : 0
 
         // Get customer count
         const customerCount = await prisma.customer.count({
@@ -86,13 +148,17 @@ export async function GET(request: NextRequest) {
           slug: bu.business.slug,
           logo: bu.business.logo,
           currency: bu.business.currency,
+          businessType: bu.business.businessType,
           stats: {
             orders: totalOrders,
+            appointments: totalAppointments,
             revenue: totalRevenue,
             products: productCount,
+            services: serviceCount,
             customers: customerCount,
             views: pageViews,
-            avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+            avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+            avgAppointmentValue: isSalon && totalAppointments > 0 ? totalRevenue / totalAppointments : 0
           }
         }
       })

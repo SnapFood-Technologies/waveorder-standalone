@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Search, Calendar, Clock, User, Phone, ChevronLeft, ChevronRight, Eye, Filter, X } from 'lucide-react'
+import { Search, Calendar, Clock, User, Phone, ChevronLeft, ChevronRight, Eye, Filter, X, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useImpersonation } from '@/lib/impersonation'
@@ -220,6 +220,13 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
             Manage customer appointments and bookings
           </p>
         </div>
+        <Link
+          href={addParams(`/admin/stores/${businessId}/appointments/create`)}
+          className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Appointment
+        </Link>
       </div>
 
       {/* Filters and Search */}
