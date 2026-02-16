@@ -16,6 +16,14 @@ export async function GET(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
+    // Get business type to determine if we're dealing with services or products
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { businessType: true }
+    })
+
+    const isSalon = business?.businessType === 'SALON'
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -26,6 +34,8 @@ export async function GET(
     const where: any = {
       businessId,
       originalPrice: { not: null },
+      // For salons, only show services; for others, exclude services
+      isService: isSalon ? true : false,
     }
 
     if (search) {

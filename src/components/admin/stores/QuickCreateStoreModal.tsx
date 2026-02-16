@@ -116,11 +116,11 @@ const timezones = [
 ]
 
 const businessGoalOptions = [
-  { id: 'ACCEPT_WHATSAPP_ORDERS', name: 'Accept WhatsApp Orders', icon: Phone },
-  { id: 'MANAGE_PRODUCTS_INVENTORY', name: 'Manage Products & Inventory', icon: ShoppingBag },
-  { id: 'TRACK_DELIVERY_PICKUP', name: 'Track Delivery & Pickup', icon: Truck },
+  { id: 'ACCEPT_WHATSAPP_ORDERS', name: 'Accept WhatsApp Orders & Bookings', icon: Phone },
+  { id: 'MANAGE_PRODUCTS_INVENTORY', name: 'Manage Catalog & Inventory', icon: ShoppingBag },
+  { id: 'TRACK_DELIVERY_PICKUP', name: 'Manage Orders & Appointments', icon: Truck },
   { id: 'BUILD_CUSTOMER_RELATIONSHIPS', name: 'Build Customer Relationships', icon: User },
-  { id: 'TEAM_COLLABORATION', name: 'Team Collaboration', icon: Building2 }
+  { id: 'TEAM_COLLABORATION', name: 'Team Collaboration & Staff Management', icon: Building2 }
 ]
 
 function AddressAutocomplete({

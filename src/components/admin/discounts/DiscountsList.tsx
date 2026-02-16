@@ -30,11 +30,12 @@ interface Pagination {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
 export default function DiscountsList({ businessId }: DiscountsListProps) {
   const [products, setProducts] = useState<DiscountedProduct[]>([])
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -58,7 +59,10 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ 
+          currency: data.business.currency,
+          businessType: data.business.businessType || 'RESTAURANT'
+        })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -142,7 +146,9 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <h1 className="text-xl font-semibold">Discounts</h1>
           </div>
           <p className="text-gray-600 mt-1">
-            Manage your product discounts and their statuses
+            {business.businessType === 'SALON' 
+              ? 'Manage your service discounts and their statuses'
+              : 'Manage your product discounts and their statuses'}
           </p>
         </div>
       </div>
@@ -155,7 +161,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name or SKU..."
+              placeholder={business.businessType === 'SALON' ? 'Search by name...' : 'Search by name or SKU...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
@@ -187,7 +193,9 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             </select>
 
             {/* Count */}
-            <div className="text-sm text-gray-600">{pagination.total} discounted products</div>
+            <div className="text-sm text-gray-600">
+              {pagination.total} discounted {business.businessType === 'SALON' ? 'services' : 'products'}
+            </div>
           </div>
         </div>
       </div>
@@ -199,7 +207,9 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                {business.businessType !== 'SALON' && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
@@ -211,17 +221,21 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <tbody className="bg-white divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">Loading...</td>
+                  <td colSpan={business.businessType === 'SALON' ? 7 : 8} className="px-4 py-8 text-center text-gray-500">Loading...</td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">No discounted products found</td>
+                  <td colSpan={business.businessType === 'SALON' ? 7 : 8} className="px-4 py-8 text-center text-gray-500">
+                    No discounted {business.businessType === 'SALON' ? 'services' : 'products'} found
+                  </td>
                 </tr>
               ) : (
                 products.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.name}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.sku || '-'}</td>
+                    {business.businessType !== 'SALON' && (
+                      <td className="px-4 py-3 text-sm text-gray-600">{p.sku || '-'}</td>
+                    )}
                     <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(p.price)}</td>
                     <td className="px-4 py-3 text-sm text-gray-500 line-through">{formatCurrency(p.originalPrice)}</td>
                     <td className="px-4 py-3 text-sm text-teal-700 font-semibold">{discountPercent(p)}%</td>
@@ -233,9 +247,11 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
-                        href={`${baseUrl}/products/${p.id}`}
+                        href={business.businessType === 'SALON' 
+                          ? `${baseUrl}/services/${p.id}`
+                          : `${baseUrl}/products/${p.id}`}
                         className="inline-flex items-center px-2 py-1 text-teal-700 hover:text-teal-900"
-                        title="View product"
+                        title={business.businessType === 'SALON' ? 'View service' : 'View product'}
                       >
                         <Eye className="w-4 h-4" />
                       </Link>

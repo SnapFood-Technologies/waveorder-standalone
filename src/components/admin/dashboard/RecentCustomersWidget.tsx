@@ -28,6 +28,22 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
   
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
+
+  useEffect(() => {
+    const fetchBusinessType = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBusinessType(data.business.businessType || 'RESTAURANT')
+        }
+      } catch (error) {
+        console.error('Error fetching business type:', error)
+      }
+    }
+    fetchBusinessType()
+  }, [businessId])
 
   useEffect(() => {
     const fetchRecentCustomers = async () => {
@@ -46,9 +62,11 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
 
     fetchRecentCustomers()
   }, [businessId])
+  
+  const isSalon = businessType === 'SALON'
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No orders'
+    if (!dateString) return isSalon ? 'No appointments' : 'No orders'
     const date = new Date(dateString)
     const now = new Date()
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
@@ -133,7 +151,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
               <tr className="border-b border-gray-200">
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Customer</th>
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Contact</th>
-                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Orders</th>
+                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">{isSalon ? 'Appointments' : 'Orders'}</th>
                 <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Type</th>
                 <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Last Order</th>
               </tr>

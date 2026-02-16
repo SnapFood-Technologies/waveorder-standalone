@@ -125,11 +125,16 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       if (businessResponse.ok) {
         const data = await businessResponse.json()
+        const businessType = data.business.businessType || 'RESTAURANT'
         setBusiness({ 
           currency: data.business.currency,
-          businessType: data.business.businessType || 'RESTAURANT',
+          businessType: businessType,
           language: data.business.language || 'en'
         })
+        // Set default active section based on business type
+        if (businessType === 'SALON') {
+          setActiveSection('payment')
+        }
       }
     } catch (error) {
       console.error('Error fetching configuration:', error)
@@ -263,7 +268,9 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       {
         id: 'CASH',
         name: 'Cash',
-        description: `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
+        description: business.businessType === 'SALON'
+          ? `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when appointment is completed`
+          : `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
         available: true
       }
     ]
@@ -335,8 +342,15 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   const { availablePaymentMethods, comingSoonPaymentMethods } = getCurrencyPaymentMethods()
 
+  // For SALON businesses, only show payment, WhatsApp, and hours (no delivery methods/zones)
   // For RETAIL businesses, hide delivery zones (they use postal services instead)
-  const sections = business.businessType === 'RETAIL'
+  const sections = business.businessType === 'SALON'
+    ? [
+        { id: 'payment', name: 'Payment Methods', icon: CreditCard },
+        { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
+        { id: 'hours', name: 'Business Hours', icon: Calendar }
+      ]
+    : business.businessType === 'RETAIL'
     ? [
         { id: 'delivery', name: 'Delivery Methods', icon: Truck },
         { id: 'payment', name: 'Payment Methods', icon: CreditCard },
@@ -401,7 +415,9 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
             Business Configuration
           </h2>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
-            Manage your delivery methods, payment options, and communication settings
+            {business.businessType === 'SALON' 
+              ? 'Manage your payment options, WhatsApp settings, and business hours'
+              : 'Manage your delivery methods, payment options, and communication settings'}
           </p>
         </div>
         <button
@@ -439,7 +455,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       {/* Content Sections */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-        {activeSection === 'delivery' && (
+        {activeSection === 'delivery' && business.businessType !== 'SALON' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Truck className="w-5 h-5 text-teal-600 mr-2" />
@@ -808,7 +824,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
-        {activeSection === 'zones' && business.businessType !== 'RETAIL' && (
+        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
           <DeliveryZonesManagement businessId={businessId} />
         )}
 

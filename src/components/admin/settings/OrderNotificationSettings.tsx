@@ -224,6 +224,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const formatStatus = (status: string) => {
+    if (business.businessType === 'SALON') {
+      return 'New Appointment Booked'
+    }
     return 'New Order Received'
   }
 
@@ -316,7 +319,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const handleNotificationClick = (orderNumber: string) => {
-    router.push(addParams(`/admin/stores/${businessId}/orders?search=${orderNumber}`))
+    const route = business.businessType === 'SALON' 
+      ? `/admin/stores/${businessId}/appointments?search=${orderNumber}`
+      : `/admin/stores/${businessId}/orders?search=${orderNumber}`
+    router.push(addParams(route))
   }
 
   const refreshNotifications = () => {
@@ -396,7 +402,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
             />
             <label className="ml-3 text-sm font-medium text-gray-700">
-              Enable order email notifications
+              Enable {business.businessType === 'SALON' ? 'appointment' : 'order'} email notifications
             </label>
           </div>
 
@@ -416,7 +422,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Order notifications will be sent to this email address. Leave empty to use your business email.
+                  {business.businessType === 'SALON' ? 'Appointment' : 'Order'} notifications will be sent to this email address. Leave empty to use your business email.
                 </p>
               </div>
 
@@ -444,11 +450,15 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                       className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                     />
                     <label className="ml-3 text-sm font-medium text-gray-700">
-                      Notify me when customer picks up order and payment is received
+                      {business.businessType === 'SALON' 
+                        ? 'Notify me when appointment is completed and payment is received'
+                        : 'Notify me when customer picks up order and payment is received'}
                     </label>
                   </div>
                   <p className="text-xs text-gray-500 ml-7 mt-1">
-                    You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.
+                    {business.businessType === 'SALON'
+                      ? 'You will receive an email notification when an appointment is completed (status is COMPLETED) and payment is marked as PAID.'
+                      : 'You will receive an email notification when an order is picked up (status is READY or DELIVERED) and payment is marked as PAID.'}
                   </p>
                 </>
               )}
@@ -485,7 +495,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </label>
               </div>
               <p className="text-xs text-gray-500 ml-7 mt-1">
-                When enabled, you will receive email notifications for all order status updates (Confirmed, Preparing, Ready, etc.) just like your customers do. This helps you stay informed about order progress.
+                When enabled, you will receive email notifications for all {business.businessType === 'SALON' ? 'appointment' : 'order'} status updates (Confirmed, Preparing, Ready, etc.) just like your customers do. This helps you stay informed about {business.businessType === 'SALON' ? 'appointment' : 'order'} progress.
               </p>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -494,6 +504,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   <li>• New {business.businessType === 'SALON' ? 'appointments booked' : 'orders placed'} by customers</li>
                   {settings.notifyOnAdminCreatedOrders && (
                     <li>• {business.businessType === 'SALON' ? 'Appointments' : 'Orders'} you create from the admin panel</li>
+                  )}
+                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType === 'SALON' && (
+                    <li>• Appointments completed and paid (COMPLETED status with PAID payment)</li>
                   )}
                   {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
                     <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
@@ -526,6 +539,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   <div className="flex items-center text-sm text-gray-600">
                     <ShoppingBag className="w-4 h-4 mr-2" />
                     Last notified: {settings.lastOrderNotified}
+                    {business.businessType === 'SALON' && ' (appointment)'}
                   </div>
                 )}
               </div>
@@ -541,8 +555,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           Customer Email Notifications
         </h2>
         <p className="text-sm text-gray-600 mb-6">
-          Choose which order status updates should trigger email notifications to your customers.
-          Customers will only receive emails if they have an email address on file.
+          {business.businessType === 'SALON'
+            ? 'Choose which appointment status updates should trigger email notifications to your customers.'
+            : 'Choose which order status updates should trigger email notifications to your customers.'}
+          {' '}Customers will only receive emails if they have an email address on file.
         </p>
 
         <div className="space-y-6">
@@ -562,13 +578,16 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           {settings.customerNotificationEnabled && (
             <div className="pl-7 space-y-6 border-l-2 border-teal-200">
               <p className="text-sm text-gray-600 mb-4">
-                {business.businessType === 'RETAIL' 
+                {business.businessType === 'SALON'
+                  ? 'Configure notifications for appointment status updates. Appointments use in-salon service fulfillment.'
+                  : business.businessType === 'RETAIL' 
                   ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY.'
                   : 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.'
                 }
               </p>
 
-              {/* Delivery Orders */}
+              {/* Delivery Orders - Hidden for SALON */}
+              {business.businessType !== 'SALON' && (
               <div className="space-y-3 border border-blue-200 rounded-lg p-4 bg-blue-50">
                 <h3 className="text-sm font-semibold text-blue-900 mb-3 flex items-center">
                   🚚 Delivery Orders
@@ -594,8 +613,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   </div>
                 </div>
               </div>
+              )}
 
-              {/* Pickup Orders - Hidden for RETAIL */}
+              {/* Pickup Orders - Hidden for RETAIL and SALON */}
               {business.businessType !== 'RETAIL' && (
                 <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
                   <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
@@ -622,8 +642,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </div>
               )}
 
-              {/* Dine-in Orders - Hidden for RETAIL */}
-              {business.businessType !== 'RETAIL' && (
+              {/* Dine-in Orders - Hidden for RETAIL and SALON */}
+              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
                 <div className="space-y-3 border border-purple-200 rounded-lg p-4 bg-purple-50">
                   <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
                     🍽️ Dine-in Orders
@@ -651,7 +671,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
 
               {/* Global Settings */}
               <div className="space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">All Order Types</h3>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  {business.businessType === 'SALON' ? 'All Appointments' : 'All Order Types'}
+                </h3>
                 <div className="flex items-center justify-between p-2 bg-white rounded">
                   <label className="text-sm text-gray-700">Cancelled</label>
                   <input type="checkbox" name="notifyCustomerOnCancelled" checked={settings.notifyCustomerOnCancelled} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
@@ -661,8 +683,12 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-700">
                   <strong>Note:</strong> Customers will only receive email notifications if they have an email address on file. 
-                  Notifications are sent automatically when you update order status in the order details page.
-                  {business.businessType === 'RETAIL' 
+                  {business.businessType === 'SALON'
+                    ? ' Notifications are sent automatically when you update appointment status in the appointment details page.'
+                    : ' Notifications are sent automatically when you update order status in the order details page.'}
+                  {business.businessType === 'SALON'
+                    ? ''
+                    : business.businessType === 'RETAIL' 
                     ? ' Settings are applied based on the order type (DELIVERY).'
                     : ' Settings are applied based on the order type (DELIVERY, PICKUP, or DINE_IN).'
                   }
@@ -840,9 +866,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
             <ul className="space-y-1">
               <li>• Check your spam folder if you don't receive notifications</li>
               <li>• Add the sender to your contacts to ensure delivery</li>
-              <li>• Test notifications by placing a test order</li>
+              <li>• Test notifications by {business.businessType === 'SALON' ? 'booking a test appointment' : 'placing a test order'}</li>
               <li>• Use a dedicated email for better organization</li>
-              <li>• Click on notification rows above to view order details</li>
+              <li>• Click on notification rows above to view {business.businessType === 'SALON' ? 'appointment' : 'order'} details</li>
             </ul>
           </div>
         </div>

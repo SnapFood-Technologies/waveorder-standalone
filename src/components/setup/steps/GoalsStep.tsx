@@ -20,32 +20,32 @@ interface GoalsStepProps {
 const businessGoals = [
   {
     value: 'ACCEPT_WHATSAPP_ORDERS',
-    label: 'Accept WhatsApp orders easily',
-    description: 'Enable customers to order directly through WhatsApp',
+    label: 'Accept WhatsApp orders & bookings',
+    description: 'Enable customers to order products or book appointments directly through WhatsApp',
     icon: MessageSquare
   },
   {
     value: 'MANAGE_PRODUCTS_INVENTORY',
-    label: 'Manage products and inventory',
-    description: 'Track your menu items and stock levels',
+    label: 'Manage catalog & inventory',
+    description: 'Track your products, services, and stock levels in one place',
     icon: Package
   },
   {
     value: 'TRACK_DELIVERY_PICKUP',
-    label: 'Track delivery and pickup orders',
-    description: 'Monitor order status and delivery progress',
+    label: 'Manage orders & appointments',
+    description: 'Monitor order status, delivery progress, and appointment schedules',
     icon: Truck
   },
   {
     value: 'BUILD_CUSTOMER_RELATIONSHIPS',
     label: 'Build customer relationships',
-    description: 'Maintain customer data and order history',
+    description: 'Maintain customer data, order history, and preferences',
     icon: Users
   },
   {
     value: 'TEAM_COLLABORATION',
-    label: 'Grow with team collaboration',
-    description: 'Add team members to help manage orders',
+    label: 'Team collaboration & staff management',
+    description: 'Add team members and assign roles to help manage your business',
     icon: UserPlus
   }
 ]

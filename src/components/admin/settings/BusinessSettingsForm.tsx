@@ -1086,7 +1086,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     </optgroup>
   </select>
   <p className="text-xs text-gray-500 mt-1">
-    This timezone will be used for business hours and order timestamps
+    This timezone will be used for business hours and {settings.businessType === 'SALON' ? 'appointment' : 'order'} timestamps
   </p>
 </div>
 
@@ -1105,7 +1105,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   <option value="12">12-hour format (2:30 PM)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  This format will be used for pickup and delivery time selection on your storefront
+                  {settings.businessType === 'SALON' 
+                    ? 'This format will be used for appointment time selection on your storefront'
+                    : 'This format will be used for pickup and delivery time selection on your storefront'}
                 </p>
               </div>
 
@@ -1161,7 +1163,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     businessData={settings}
   />
   <p className="text-xs text-gray-500 mt-1">
-    Required for delivery zones and customer directions
+    {settings.businessType === 'SALON' 
+      ? 'Required for customer directions and location display'
+      : 'Required for delivery zones and customer directions'}
   </p>
   {/* Manual coordinates input */}
   <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -1403,7 +1407,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               Store Status & Closure
             </h2>
             <p className="text-sm text-gray-600 mb-3">
-              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new orders.
+              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new {settings.businessType === 'SALON' ? 'appointments' : 'orders'}.
             </p>
 
             <div className="space-y-6">
