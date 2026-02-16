@@ -13,6 +13,7 @@ export default function Header() {
   const [industriesOpen, setIndustriesOpen] = useState(false)
   const [useCasesOpen, setUseCasesOpen] = useState(false)
   const [mobileIndustriesOpen, setMobileIndustriesOpen] = useState(false)
+  const [mobileUseCasesOpen, setMobileUseCasesOpen] = useState(false)
 
   const closeMenu = () => setIsMenuOpen(false)
   const { data: session } = useSession()
@@ -151,7 +152,10 @@ export default function Header() {
             className="md:hidden p-2 text-gray-900"
             onClick={() => {
               setIsMenuOpen(!isMenuOpen)
-              if (!isMenuOpen) setMobileIndustriesOpen(false) // Reset submenu when opening
+              if (!isMenuOpen) {
+                setMobileIndustriesOpen(false) // Reset submenu when opening
+                setMobileUseCasesOpen(false) // Reset submenu when opening
+              }
             }}
             aria-label="Toggle menu"
           >
@@ -185,6 +189,30 @@ export default function Header() {
                     </Link>
                     <Link href="/salons" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
                       Salons & Beauty
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {/* Use Cases Section - Collapsible */}
+              <div>
+                <button
+                  onClick={() => setMobileUseCasesOpen(!mobileUseCasesOpen)}
+                  className="flex items-center justify-between w-full py-2 text-gray-700 font-medium"
+                >
+                  <span>Use Cases</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileUseCasesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {mobileUseCasesOpen && (
+                  <div className="pl-4 space-y-2 pb-2">
+                    <Link href="/instagram-sellers" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Instagram Sellers
+                    </Link>
+                    <Link href="/features" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      WhatsApp Business
+                    </Link>
+                    <Link href="/features" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+                      Link-in-Bio Stores
                     </Link>
                   </div>
                 )}

@@ -40,7 +40,8 @@ import {
   Key,
   Link as LinkIcon,
   HelpCircle,
-  ArrowRight
+  ArrowRight,
+  Calendar
 } from 'lucide-react'
 
 interface FormData {

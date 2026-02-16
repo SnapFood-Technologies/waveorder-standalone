@@ -69,11 +69,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Create new business if it doesn't exist
+      const businessType = data.businessType || 'OTHER'
       business = await prisma.business.create({
         data: {
           name: data.businessName || 'My Business',
           slug: data.storeSlug || `business-${Date.now()}`,
-          businessType: data.businessType || 'OTHER',
+          businessType: businessType,
           currency: data.currency || 'USD',
           language: data.language || 'en',
           storefrontLanguage: data.language || 'en', // Defaults to business language
@@ -81,6 +82,10 @@ export async function POST(request: NextRequest) {
           subscriptionPlan: data.subscriptionPlan || 'STARTER',
           subscriptionStatus: 'ACTIVE',
           onboardingStep: step === 'complete' ? 99 : (typeof step === 'number' ? step : parseInt(step) || 0),
+          // Set delivery defaults based on business type
+          deliveryEnabled: businessType === 'SALON' ? false : true,
+          pickupEnabled: false,
+          dineInEnabled: businessType === 'SALON' ? true : false,
           users: {
             create: {
               userId: user.id,
@@ -152,19 +157,31 @@ export async function POST(request: NextRequest) {
 
       // Handle delivery methods
       if (data.deliveryMethods) {
-        updateData.deliveryEnabled = Boolean(data.deliveryMethods.delivery)
-        updateData.pickupEnabled = Boolean(data.deliveryMethods.pickup)
-        updateData.dineInEnabled = false
-        
-        if (data.deliveryMethods.delivery) {
-          updateData.deliveryFee = data.deliveryMethods.deliveryFee || 0
-          updateData.deliveryRadius = data.deliveryMethods.deliveryRadius || 10
-          updateData.estimatedDeliveryTime = data.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
+        // For salons, always set delivery/pickup to false and dineIn to true
+        if (data.businessType === 'SALON') {
+          updateData.deliveryEnabled = false
+          updateData.pickupEnabled = false
+          updateData.dineInEnabled = true
+        } else {
+          updateData.deliveryEnabled = Boolean(data.deliveryMethods.delivery)
+          updateData.pickupEnabled = Boolean(data.deliveryMethods.pickup)
+          updateData.dineInEnabled = Boolean(data.deliveryMethods.dineIn) || false
+          
+          if (data.deliveryMethods.delivery) {
+            updateData.deliveryFee = data.deliveryMethods.deliveryFee || 0
+            updateData.deliveryRadius = data.deliveryMethods.deliveryRadius || 10
+            updateData.estimatedDeliveryTime = data.deliveryMethods.estimatedDeliveryTime || '30-45 minutes'
+          }
+          
+          if (data.deliveryMethods.pickup) {
+            updateData.estimatedPickupTime = data.deliveryMethods.estimatedPickupTime || '15-20 minutes'
+          }
         }
-        
-        if (data.deliveryMethods.pickup) {
-          updateData.estimatedPickupTime = data.deliveryMethods.estimatedPickupTime || '15-20 minutes'
-        }
+      } else if (data.businessType === 'SALON') {
+        // If deliveryMethods not provided but it's a salon, set defaults
+        updateData.deliveryEnabled = false
+        updateData.pickupEnabled = false
+        updateData.dineInEnabled = true
       }
 
       // Handle WhatsApp settings

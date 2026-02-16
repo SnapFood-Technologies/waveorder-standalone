@@ -28,7 +28,8 @@ import {
   Banknote,
   Building2,
   User,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from 'lucide-react'
 
 interface QuickCreateStoreModalProps {
@@ -235,6 +236,23 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
     estimatedPickupTime: '15-20 minutes',
     businessGoals: ['ACCEPT_WHATSAPP_ORDERS']
   })
+
+  // Update delivery/pickup defaults when business type changes
+  useEffect(() => {
+    if (formData.businessType === 'SALON') {
+      setFormData(prev => ({
+        ...prev,
+        deliveryEnabled: false,
+        pickupEnabled: false
+      }))
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        deliveryEnabled: true,
+        pickupEnabled: prev.pickupEnabled || false
+      }))
+    }
+  }, [formData.businessType])
 
   // Fetch existing store defaults when modal opens
   useEffect(() => {
@@ -753,43 +771,60 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
           {/* Step 4: Delivery Options */}
           {currentStep === 4 && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div 
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    formData.deliveryEnabled ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
-                  }`}
-                  onClick={() => setFormData(prev => ({ ...prev, deliveryEnabled: !prev.deliveryEnabled }))}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <Truck className={`w-5 h-5 ${formData.deliveryEnabled ? 'text-teal-600' : 'text-gray-400'}`} />
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      formData.deliveryEnabled ? 'border-teal-500 bg-teal-500' : 'border-gray-300'
-                    }`}>
-                      {formData.deliveryEnabled && <Check className="w-3 h-3 text-white" />}
+              {formData.businessType === 'SALON' ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Appointment-Based Business</h4>
+                      <p className="text-gray-700 text-sm">
+                        Salons use appointments instead of delivery or pickup. Your customers will book appointments through your storefront. 
+                        You can skip this step and configure appointment settings later.
+                      </p>
                     </div>
                   </div>
-                  <h4 className="font-medium text-gray-900">Delivery</h4>
-                  <p className="text-xs text-gray-500">Orders delivered to customers</p>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div 
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        formData.deliveryEnabled ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
+                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, deliveryEnabled: !prev.deliveryEnabled }))}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <Truck className={`w-5 h-5 ${formData.deliveryEnabled ? 'text-teal-600' : 'text-gray-400'}`} />
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          formData.deliveryEnabled ? 'border-teal-500 bg-teal-500' : 'border-gray-300'
+                        }`}>
+                          {formData.deliveryEnabled && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                      </div>
+                      <h4 className="font-medium text-gray-900">Delivery</h4>
+                      <p className="text-xs text-gray-500">Orders delivered to customers</p>
+                    </div>
 
-                <div 
-                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                    formData.pickupEnabled ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
-                  }`}
-                  onClick={() => setFormData(prev => ({ ...prev, pickupEnabled: !prev.pickupEnabled }))}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <MapPin className={`w-5 h-5 ${formData.pickupEnabled ? 'text-teal-600' : 'text-gray-400'}`} />
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      formData.pickupEnabled ? 'border-teal-500 bg-teal-500' : 'border-gray-300'
-                    }`}>
-                      {formData.pickupEnabled && <Check className="w-3 h-3 text-white" />}
+                    <div 
+                      className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                        formData.pickupEnabled ? 'border-teal-500 bg-teal-50' : 'border-gray-200'
+                      }`}
+                      onClick={() => setFormData(prev => ({ ...prev, pickupEnabled: !prev.pickupEnabled }))}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <MapPin className={`w-5 h-5 ${formData.pickupEnabled ? 'text-teal-600' : 'text-gray-400'}`} />
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          formData.pickupEnabled ? 'border-teal-500 bg-teal-500' : 'border-gray-300'
+                        }`}>
+                          {formData.pickupEnabled && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                      </div>
+                      <h4 className="font-medium text-gray-900">Pickup</h4>
+                      <p className="text-xs text-gray-500">Customers collect from store</p>
                     </div>
                   </div>
-                  <h4 className="font-medium text-gray-900">Pickup</h4>
-                  <p className="text-xs text-gray-500">Customers collect from store</p>
-                </div>
-              </div>
+                </>
+              )}
 
               {formData.deliveryEnabled && (
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">

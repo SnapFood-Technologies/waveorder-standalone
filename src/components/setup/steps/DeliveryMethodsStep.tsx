@@ -112,6 +112,11 @@ const businessTypeConfig = {
       }
     ]
   },
+  SALON: {
+    title: 'Appointment Booking Setup',
+    subtitle: 'Salons use appointments instead of delivery or pickup',
+    methods: [] // No delivery/pickup for salons
+  },
   OTHER: {
     title: 'How do customers receive orders?',
     subtitle: 'Choose the fulfillment methods for your business',
@@ -180,9 +185,10 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
   // Initialize state with existing data or sensible defaults
   const [methods, setMethods] = useState(() => {
     const existingMethods = data.deliveryMethods
+    const isSalon = data.businessType === 'SALON'
     
     return {
-      delivery: existingMethods?.delivery ?? true,
+      delivery: existingMethods?.delivery ?? (isSalon ? false : true),
       pickup: existingMethods?.pickup ?? false,
       deliveryFee: existingMethods?.deliveryFee ?? 0,
       deliveryRadius: existingMethods?.deliveryRadius ?? 10,
@@ -195,6 +201,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
 
   const config = businessTypeConfig[data.businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
   const currencySymbol = getCurrencySymbol(data.currency || 'USD')
+  const isSalon = data.businessType === 'SALON'
 
   const toggleMethod = (method: keyof typeof methods) => {
     if (typeof methods[method] === 'boolean') {
@@ -232,7 +239,21 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
   }
 
   const handleSubmit = async () => {
-    // Ensure at least one method is selected
+    // For salons, skip delivery/pickup - they use appointments
+    if (isSalon) {
+      const processedMethods = {
+        delivery: false,
+        pickup: false,
+        dineIn: true
+      }
+      setLoading(true)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      onComplete({ deliveryMethods: processedMethods })
+      setLoading(false)
+      return
+    }
+
+    // Ensure at least one method is selected for non-salon businesses
     if (!methods.delivery && !methods.pickup) {
       return
     }
@@ -252,7 +273,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
     setLoading(false)
   }
 
-  const hasSelection = methods.delivery || methods.pickup
+  const hasSelection = isSalon ? true : (methods.delivery || methods.pickup)
 
   // Get field labels based on business type
   const getFieldLabel = (field: string) => {
@@ -311,7 +332,24 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
         </p>
       </div>
 
+      {/* Salon-specific message */}
+      {isSalon && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 sm:mb-8">
+          <div className="flex items-start gap-3">
+            <Calendar className="w-6 h-6 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-2">Appointment-Based Business</h3>
+              <p className="text-gray-700 text-sm leading-relaxed">
+                Since you're setting up a salon, your customers will book appointments instead of placing orders for delivery or pickup. 
+                The appointment booking system will be configured automatically. You can skip this step.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delivery Method Options */}
+      {!isSalon && (
       <div className="space-y-4 sm:space-y-6 mb-6 sm:mb-8">
         {config.methods.map(option => {
           const IconComponent = option.icon
@@ -448,9 +486,10 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
           )
         })}
       </div>
+      )}
 
       {/* Preview of selected methods */}
-      {hasSelection && (
+      {hasSelection && !isSalon && (
         <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
           <h3 className="font-semibold text-gray-900 mb-3">Order Options Preview:</h3>
           <div className="text-sm text-gray-600 space-y-1">
@@ -464,7 +503,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
         </div>
       )}
 
-      {!hasSelection && (
+      {!hasSelection && !isSalon && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 sm:mb-8">
           <p className="text-yellow-800 text-sm">
             Please select at least one fulfillment method for your customers.
