@@ -27,6 +27,9 @@ interface OrderNotificationData {
   deliveryAddress?: string
   deliveryTime?: string | null
   specialInstructions?: string
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null // Invoice/Receipt selection (for Greek storefronts)
+  language?: string // Business language
+  businessLanguage?: string // Business language (alternative field name)
   currencySymbol: string
   postalPricingDetails?: {
     name: string
@@ -151,6 +154,12 @@ export function formatOrderNotificationMessage(data: OrderNotificationData): str
   
   if (data.specialInstructions) {
     message += `\n*Notes:* ${data.specialInstructions}\n`
+  }
+  
+  // Add invoice/receipt selection if present (for Greek storefronts)
+  if (data.invoiceType && (data.language === 'el' || data.businessLanguage === 'el')) {
+    const invoiceLabel = data.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'
+    message += `\n*${invoiceLabel}:* Ναι\n`
   }
   
   message += `\n---\n`

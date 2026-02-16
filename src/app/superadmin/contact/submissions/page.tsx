@@ -1081,8 +1081,7 @@ export default function WebSubmissionsPage() {
                     <option value="CAFE">Cafe</option>
                     <option value="RETAIL">Retail</option>
                     <option value="GROCERY">Grocery</option>
-                    <option value="JEWELRY">Jewelry</option>
-                    <option value="FLORIST">Florist</option>
+                    <option value="SALON">Salon & Beauty</option>
                     <option value="OTHER">Other</option>
                   </select>
                 </div>

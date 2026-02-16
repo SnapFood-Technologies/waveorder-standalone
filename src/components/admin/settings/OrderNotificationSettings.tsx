@@ -341,10 +341,12 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 flex items-center">
             <Bell className="w-6 h-6 text-teal-600 mr-3" />
-            Order Notifications
+            {business.businessType === 'SALON' ? 'Appointment Notifications' : 'Order Notifications'}
           </h1>
           <p className="text-gray-600 mt-1">
-            Get notified when customers place orders
+            {business.businessType === 'SALON' 
+              ? 'Get notified when customers book appointments'
+              : 'Get notified when customers place orders'}
           </p>
         </div>
         <button
@@ -427,7 +429,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
                 />
                 <label className="ml-3 text-sm font-medium text-gray-700">
-                  Also notify when I create orders from admin panel
+                  Also notify when I create {business.businessType === 'SALON' ? 'appointments' : 'orders'} from admin panel
                 </label>
               </div>
 
@@ -489,18 +491,18 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-blue-900 mb-2">What you'll be notified about:</h3>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• New orders placed by customers</li>
+                  <li>• New {business.businessType === 'SALON' ? 'appointments booked' : 'orders placed'} by customers</li>
                   {settings.notifyOnAdminCreatedOrders && (
-                    <li>• Orders you create from the admin panel</li>
+                    <li>• {business.businessType === 'SALON' ? 'Appointments' : 'Orders'} you create from the admin panel</li>
                   )}
-                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && (
+                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
                     <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
                   )}
                   {settings.notifyAdminOnPickedUpAndPaid && business.businessType === 'RETAIL' && (
                     <li>• Orders delivered and paid (DELIVERED status with PAID payment)</li>
                   )}
                   {settings.notifyAdminOnStatusUpdates && (
-                    <li>• All order status updates (same notifications as customers receive)</li>
+                    <li>• All {business.businessType === 'SALON' ? 'appointment' : 'order'} status updates (same notifications as customers receive)</li>
                   )}
                 </ul>
               </div>
@@ -716,8 +718,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
             <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications yet</h3>
             <p className="text-gray-600">
               {settings.orderNotificationsEnabled 
-                ? "Notifications will appear here when customers place orders"
-                : "Enable notifications above to start receiving order alerts"
+                ? `Notifications will appear here when customers ${business.businessType === 'SALON' ? 'book appointments' : 'place orders'}`
+                : `Enable notifications above to start receiving ${business.businessType === 'SALON' ? 'appointment' : 'order'} alerts`
               }
             </p>
           </div>

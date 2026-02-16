@@ -1,7 +1,8 @@
 # Salon / Beauty Business — Feature Requirements
 
-**Status:** Planning
-**Last Updated:** February 11, 2026
+**Status:** ✅ COMPLETE
+**Last Updated:** February 12, 2026
+**Lead Engineer:** Griseld
 
 ---
 
@@ -76,8 +77,6 @@ enum BusinessType {
   RESTAURANT
   CAFE
   RETAIL
-  JEWELRY
-  FLORIST
   GROCERY
   SALON      // NEW
   OTHER
@@ -248,21 +247,139 @@ SALON: {
 
 ---
 
+### D. Marketing & Public-Facing Pages
+
+| Feature | What Changes | Priority | File Location |
+|---------|-------------|----------|---------------|
+| **Header Navigation** | Add "Salons & Beauty" to Industries dropdown (desktop + mobile) | P1 | `src/components/site/Header.tsx` (lines 71-80, 174-182) |
+| **Footer Links** | Add "Salons & Beauty" link in Industries section | P1 | `src/components/site/Footer.tsx` (lines 79-95) |
+| **Home Page** | Add Salons card in "Built for Every Business" section | P1 | `src/components/site/Home.tsx` (lines 203-227) |
+| **Sitemap** | Add `/salons` static page entry | P1 | `src/app/sitemap.ts` (lines 97-115) |
+| **Onboarding** | Add SALON option to business type selection | P1 | `src/components/setup/steps/BusinessTypeStep.tsx` (lines 25-34) |
+| **Storefront Route** | Route SALON businesses to SalonStoreFront component | P1 | `src/app/(site)/[slug]/page.tsx` |
+| **Layout Routes** | Already includes `/salons` — no change needed | ✅ | `src/app/(site)/layout.tsx` (line 43) |
+
+#### Header Changes (`src/components/site/Header.tsx`)
+
+**Desktop Industries Dropdown (lines 71-80):**
+```tsx
+<Link href="/salons" className="block px-4 py-2 text-gray-700 hover:bg-teal-50 hover:text-teal-600 transition-colors">
+  Salons & Beauty
+</Link>
+```
+
+**Mobile Industries Section (lines 174-182):**
+```tsx
+<Link href="/salons" onClick={closeMenu} className="block text-gray-600 hover:text-teal-600 py-1">
+  Salons & Beauty
+</Link>
+```
+
+#### Footer Changes (`src/components/site/Footer.tsx`)
+
+**Industries Links Section (lines 79-95):**
+```tsx
+<li>
+  <Link href="/salons" className="text-gray-400 hover:text-white transition-colors">
+    Salons & Beauty
+  </Link>
+</li>
+```
+
+#### Home Page Changes (`src/components/site/Home.tsx`)
+
+**"Built for Every Business" Section (lines 203-227):**
+- Add 4th card for Salons:
+```tsx
+<Link href="/salons" className="bg-white p-6 rounded-2xl text-center border-2 border-transparent hover:border-teal-500 hover:-translate-y-1 transition-all hover:shadow-xl group">
+  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-pink-500">
+    <Scissors className="w-8 h-8 text-white" />
+  </div>
+  <h3 className="font-semibold text-gray-900 mb-2">Salons & Beauty</h3>
+  <p className="text-sm text-gray-500">Service booking and appointment management. Let clients book services and send requests via WhatsApp.</p>
+</Link>
+```
+
+- Update description (line 199) to mention salons:
+```tsx
+"Whether you sell on Instagram, run a restaurant, operate a salon, or offer services — WaveOrder adapts to how you work."
+```
+
+#### Sitemap Changes (`src/app/sitemap.ts`)
+
+**Static Pages Section (lines 97-115):**
+```typescript
+{
+  url: `${baseUrl}/salons`,
+  lastModified: formatDate('2026-02-11'),
+  changeFrequency: 'monthly',
+  priority: 0.8,
+},
+```
+
+**Note:** Business pages already include all business types (no filter needed) — SALON businesses will automatically appear in sitemap if they meet criteria (isActive, isIndexable, etc.).
+
+#### Onboarding Changes (`src/components/setup/steps/BusinessTypeStep.tsx`)
+
+**Business Types Array (lines 25-34):**
+```typescript
+const businessTypes = [
+  { value: 'RESTAURANT', label: 'Restaurant', icon: UtensilsCrossed },
+  { value: 'CAFE', label: 'Cafe', icon: Coffee },
+  { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
+  { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
+  { value: 'SALON', label: 'Salon & Beauty', icon: Sparkles }, // NEW - using Sparkles icon
+  { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
+]
+```
+
+**Note:** Need to import `Sparkles` icon from `lucide-react` (or use `Scissors` if Sparkles not available).
+
+#### Storefront Route Changes (`src/app/(site)/[slug]/page.tsx`)
+
+**Add conditional routing:**
+```typescript
+if (business.businessType === 'SALON') {
+  return <SalonStoreFront data={storeData} />
+} else {
+  return <StoreFront data={storeData} />
+}
+```
+
+**Note:** This requires `SalonStoreFront.tsx` to be built first (Phase 1b). Until then, can route to existing `StoreFront` with a note that salon-specific UI is coming.
+
+---
+
 ## Implementation Phases
 
 ### Phase 1 — Foundation (MVP)
 **Goal:** Salons can list services with duration and accept booking requests via WhatsApp
 
-1. Add `SALON` to `BusinessType` enum
-2. Add `isService`, `serviceDuration`, `requiresAppointment` to Product model
-3. Update admin product form for salon mode (duration, hide stock)
-4. Update WhatsApp message formatting for salon terminology
-5. Update admin orders page labels for salon
-6. Create `SalonStoreFront.tsx` with service-oriented UI
-7. Route salon businesses to the salon storefront
-8. Update SuperAdmin business type dropdowns
+#### Phase 1a — Backend Foundation & Marketing (Low Risk, Deployable Independently)
+
+**Marketing & Public Pages:**
+1. Add `SALON` to `BusinessType` enum in Prisma schema
+2. Update Header navigation (Industries dropdown — desktop + mobile)
+3. Update Footer (Industries links section)
+4. Update Home page ("Built for Every Business" section — add Salons card)
+5. Add `/salons` to sitemap static pages
+6. Add SALON option to onboarding BusinessTypeStep
+7. Update SuperAdmin business type dropdowns/filters
+
+**Backend/Admin:**
+8. Add `isService`, `serviceDuration`, `requiresAppointment` to Product model
+9. Update admin product form for salon mode (duration field, hide stock/SKU)
+10. Update WhatsApp message formatting for salon terminology
+11. Update admin orders page labels for salon (terminology only)
 
 **No new models needed — orders are still "orders" but with salon terminology and duration display.**
+
+#### Phase 1b — Storefront Component (Higher Complexity)
+
+12. Create `SalonStoreFront.tsx` with service-oriented UI
+13. Route salon businesses to the salon storefront in `[slug]/page.tsx`
+
+**Note:** Phase 1a can be deployed independently and tested. Phase 1b requires design decisions and is a larger build (~1500-2500 lines).
 
 ### Phase 2 — Appointment Management
 **Goal:** In-app appointment tracking, staff assignment, calendar
@@ -320,3 +437,99 @@ src/components/storefront/
 3. **Do we need a real calendar/booking system or just WhatsApp requests?** (Recommended: Phase 1 = WhatsApp only, Phase 2 = calendar)
 4. **Should salon onboarding be different?** (Recommended: Phase 3, for now reuse existing with salon labels)
 5. **Do we support walk-ins?** (Recommended: Yes, treat as PICKUP order type)
+
+---
+
+## Complete File Checklist
+
+### Phase 1a — Backend Foundation & Marketing
+
+| File | Change | Status |
+|------|--------|--------|
+| `prisma/schema.prisma` | Add `SALON` to `BusinessType` enum | ✅ |
+| `prisma/schema.prisma` | Add `isService`, `serviceDuration`, `requiresAppointment` to Product model | ✅ |
+| `src/components/site/Header.tsx` | Add "Salons & Beauty" to Industries dropdown (desktop + mobile) | ✅ |
+| `src/components/site/Footer.tsx` | Add "Salons & Beauty" link in Industries section | ✅ |
+| `src/components/site/Home.tsx` | Add Salons card in "Built for Every Business" section | ✅ |
+| `src/app/sitemap.ts` | Add `/salons` static page entry | ✅ |
+| `src/components/setup/steps/BusinessTypeStep.tsx` | Add SALON option to businessTypes array | ✅ |
+| `src/components/admin/products/ProductForm.tsx` | Add salon mode (duration field, hide stock/SKU) | ✅ |
+| `src/app/api/storefront/[slug]/order/route.ts` | Add salon-specific WhatsApp message terms | ✅ |
+| `src/components/admin/stores/[businessId]/orders/page.tsx` | Update labels for salon (terminology) | ✅ |
+| `src/components/superadmin/*` | Add SALON to all business type dropdowns/filters | ✅ |
+
+### Phase 1b — Storefront Component
+
+| File | Change | Status |
+|------|--------|--------|
+| `src/components/storefront/SalonStoreFront.tsx` | Create new salon-specific storefront component | ✅ |
+| `src/app/(site)/[slug]/page.tsx` | Add conditional routing for SALON businesses | ✅ |
+
+### Phase 2 — Appointment Management
+
+| File | Change | Status |
+|------|--------|--------|
+| `prisma/schema.prisma` | Add `Appointment` model and `AppointmentStatus` enum | ✅ |
+| `src/app/admin/stores/[businessId]/appointments/page.tsx` | Create appointments list page | ✅ |
+| `src/app/admin/stores/[businessId]/appointments/calendar/page.tsx` | Create calendar view page | ✅ |
+| `src/app/admin/stores/[businessId]/appointments/[appointmentId]/page.tsx` | Create appointment details page | ✅ |
+| `src/app/admin/stores/[businessId]/services/page.tsx` | Create services list page | ✅ |
+| `src/app/admin/stores/[businessId]/services/[serviceId]/page.tsx` | Create service form page | ✅ |
+| `src/app/admin/stores/[businessId]/service-categories/page.tsx` | Create service categories page | ✅ |
+| `src/app/admin/stores/[businessId]/staff/availability/page.tsx` | Create staff availability page | ✅ |
+| `src/components/admin/products/ProductForm.tsx` | Add staff assignment to services | ✅ |
+| `src/components/admin/stores/[businessId]/orders/[orderId]/page.tsx` | Add staff assignment to appointments | ⬜ (Not needed - separate appointments pages) |
+| `src/components/admin/stores/[businessId]/settings/BusinessConfiguration.tsx` | Add appointment buffer time settings | ✅ |
+
+**Legend:** ⬜ Not Started | 🟡 In Progress | ✅ Complete
+
+---
+
+## ✅ IMPLEMENTATION COMPLETE
+
+**All Phase 1 and Phase 2 features have been successfully implemented.**
+
+**Completed Date:** February 12, 2026  
+**Lead Engineer:** Griseld
+
+### Summary of Completed Work:
+
+✅ **Schema Changes**
+- Added `SALON` to BusinessType enum
+- Added service fields to Product model (`isService`, `serviceDuration`, `requiresAppointment`, `staffIds`)
+- Created `Appointment` model with `AppointmentStatus` enum
+- Added salon-specific business settings
+
+✅ **Admin Pages**
+- Services List, Create/Edit, Categories
+- Appointments List, Details, Calendar View
+- Staff Availability Management
+- Salon-specific Dashboard
+
+✅ **Storefront**
+- Created `SalonStoreFront.tsx` component
+- Conditional routing based on business type
+- Service-oriented UI with booking flow
+
+✅ **SuperAdmin**
+- Updated all pages with SALON support
+- Added SALON to all dropdowns and filters
+- Created Bookings analytics page
+- Updated Business Details page
+
+✅ **Marketing & Public Pages**
+- Header navigation updated
+- Footer links updated
+- Home page updated
+- Sitemap updated
+- Onboarding updated
+
+✅ **Notifications & Messaging**
+- WhatsApp message terminology updated
+- Email notification terminology updated
+- Admin notification terminology updated
+
+✅ **Sidebar & Navigation**
+- Conditional menu items based on business type
+- Plan-based feature access
+- Proper guards and redirects

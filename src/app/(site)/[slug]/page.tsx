@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
+import SalonStoreFront from '@/components/storefront/SalonStoreFront'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -61,7 +62,7 @@ async function getStoreData(slug: string, searchParams?: Record<string, string |
   }
 }
 
-function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
+function getBusinessTypeDefaults(businessType: string, language = 'en') {
   const defaults = {
     RESTAURANT: {
       en: {
@@ -69,10 +70,30 @@ function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
         description: 'Fresh food delivered to your door',
         keywords: 'restaurant, food delivery, takeout, dining'
       },
+      sq: {
+        titleSuffix: 'Porosit Ushqim Online',
+        description: 'Ushqim i freskët dërguar në shtëpinë tuaj',
+        keywords: 'restorant, dërgim ushqimi, marrje në vend, ngrënie'
+      },
       al: {
         titleSuffix: 'Porosit Ushqim Online',
         description: 'Ushqim i freskët dërguar në shtëpinë tuaj',
         keywords: 'restorant, dërgim ushqimi, marrje në vend, ngrënie'
+      },
+      es: {
+        titleSuffix: 'Pedir Comida Online',
+        description: 'Comida fresca entregada en tu puerta',
+        keywords: 'restaurante, entrega de comida, comida para llevar, cena'
+      },
+      el: {
+        titleSuffix: 'Παραγγελία Φαγητού Online',
+        description: 'Φρέσκο φαγητό στην πόρτα σας',
+        keywords: 'εστιατόριο, διανομή φαγητού, πακέτο, φαγητό'
+      },
+      gr: {
+        titleSuffix: 'Παραγγελία Φαγητού Online',
+        description: 'Φρέσκο φαγητό στην πόρτα σας',
+        keywords: 'εστιατόριο, διανομή φαγητού, πακέτο, φαγητό'
       }
     },
     CAFE: {
@@ -81,10 +102,30 @@ function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
         description: 'Fresh coffee and food delivered to your door',
         keywords: 'cafe, coffee, food delivery, breakfast, lunch'
       },
+      sq: {
+        titleSuffix: 'Porosit Kafe dhe Ushqim Online',
+        description: 'Kafe dhe ushqim i freskët dërguar në shtëpinë tuaj',
+        keywords: 'kafe, kafe, dërgim ushqimi, mëngjes, drekë'
+      },
       al: {
         titleSuffix: 'Porosit Kafe dhe Ushqim Online',
         description: 'Kafe dhe ushqim i freskët dërguar në shtëpinë tuaj',
         keywords: 'kafe, kafe, dërgim ushqimi, mëngjes, drekë'
+      },
+      es: {
+        titleSuffix: 'Pedir Café y Comida Online',
+        description: 'Café y comida fresca entregada en tu puerta',
+        keywords: 'cafetería, café, entrega de comida, desayuno, almuerzo'
+      },
+      el: {
+        titleSuffix: 'Παραγγελία Καφέ & Φαγητού Online',
+        description: 'Φρέσκο καφέ και φαγητό στην πόρτα σας',
+        keywords: 'καφετέρια, καφές, διανομή φαγητού, πρωινό, μεσημεριανό'
+      },
+      gr: {
+        titleSuffix: 'Παραγγελία Καφέ & Φαγητού Online',
+        description: 'Φρέσκο καφέ και φαγητό στην πόρτα σας',
+        keywords: 'καφετέρια, καφές, διανομή φαγητού, πρωινό, μεσημεριανό'
       }
     },
     RETAIL: {
@@ -93,10 +134,30 @@ function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
         description: 'Quality products delivered to your door',
         keywords: 'shopping, retail, products, delivery'
       },
+      sq: {
+        titleSuffix: 'Blej Online',
+        description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
+        keywords: 'blerje, shitje me pakicë, produkte, dërgim'
+      },
       al: {
         titleSuffix: 'Blej Online',
         description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
         keywords: 'blerje, shitje me pakicë, produkte, dërgim'
+      },
+      es: {
+        titleSuffix: 'Comprar Online',
+        description: 'Productos de calidad entregados en tu puerta',
+        keywords: 'compras, retail, productos, entrega'
+      },
+      el: {
+        titleSuffix: 'Αγορές Online',
+        description: 'Προϊόντα ποιότητας στην πόρτα σας',
+        keywords: 'αγορές, retail, προϊόντα, διανομή'
+      },
+      gr: {
+        titleSuffix: 'Αγορές Online',
+        description: 'Προϊόντα ποιότητας στην πόρτα σας',
+        keywords: 'αγορές, retail, προϊόντα, διανομή'
       }
     },
     GROCERY: {
@@ -105,52 +166,103 @@ function getBusinessTypeDefaults(businessType: string, isAlbanian = false) {
         description: 'Fresh groceries delivered to your door',
         keywords: 'grocery, food delivery, fresh produce, groceries'
       },
+      sq: {
+        titleSuffix: 'Dërgim Ushqimesh',
+        description: 'Ushqime të freskëta të dërguara në shtëpinë tuaj',
+        keywords: 'ushqimore, dërgim ushqimi, prodhime të freskëta, ushqime'
+      },
       al: {
         titleSuffix: 'Dërgim Ushqimesh',
         description: 'Ushqime të freskëta të dërguara në shtëpinë tuaj',
-        keywords: 'ushqimore, dërgim ushqimi, prodhime të freskëta, ushqimore'
+        keywords: 'ushqimore, dërgim ushqimi, prodhime të freskëτα, ushqime'
+      },
+      es: {
+        titleSuffix: 'Entrega de Comestibles',
+        description: 'Comestibles frescos entregados en tu puerta',
+        keywords: 'supermercado, entrega de comida, productos frescos, comestibles'
+      },
+      el: {
+        titleSuffix: 'Διανομή Προϊόντων',
+        description: 'Φρέσκα προϊόντα στην πόρτα σας',
+        keywords: 'σούπερ μάρκετ, διανομή φαγητού, φρέσκα προϊόντα, προϊόντα'
+      },
+      gr: {
+        titleSuffix: 'Διανομή Προϊόντων',
+        description: 'Φρέσκα προϊόντα στην πόρτα σας',
+        keywords: 'σούπερ μάρκετ, διανομή φαγητού, φρέσκα προϊόντα, προϊόντα'
       }
     },
-    JEWELRY: {
+    SALON: {
       en: {
-        titleSuffix: 'Jewelry Store',
-        description: 'Beautiful jewelry and accessories',
-        keywords: 'jewelry, rings, necklaces, accessories'
+        titleSuffix: 'Book Appointment Online',
+        description: 'Book your beauty and wellness services online',
+        keywords: 'salon, beauty, appointments, booking, hair, nails, spa'
+      },
+      sq: {
+        titleSuffix: 'Rezervo Termin Online',
+        description: 'Rezervoni shërbimet tuaja të bukurisë dhe mirëqenies online',
+        keywords: 'sallon, bukuri, termina, rezervim, flokë, thonj, spa'
       },
       al: {
-        titleSuffix: 'Dyqan Bizhuterish',
-        description: 'Bizhuteri të bukura dhe aksesorë',
-        keywords: 'bizhuteri, unaza, gjerdan, aksesorë'
-      }
-    },
-    FLORIST: {
-      en: {
-        titleSuffix: 'Fresh Flowers',
-        description: 'Beautiful fresh flowers delivered',
-        keywords: 'flowers, florist, bouquets, delivery'
+        titleSuffix: 'Rezervo Termin Online',
+        description: 'Rezervoni shërbimet tuaja të bukurisë dhe mirëqenies online',
+        keywords: 'sallon, bukuri, termina, rezervim, flokë, thonj, spa'
       },
-      al: {
-        titleSuffix: 'Lule të Freskëta',
-        description: 'Lule të bukura të freskëta të dërguara',
-        keywords: 'lule, lulëtar, buketa, dërgim'
+      es: {
+        titleSuffix: 'Reservar Cita Online',
+        description: 'Reserva tus servicios de belleza y bienestar online',
+        keywords: 'salón, belleza, citas, reserva, cabello, uñas, spa'
+      },
+      el: {
+        titleSuffix: 'Κράτηση Ραντεβού Online',
+        description: 'Κρατήστε τις υπηρεσίες ομορφιάς και ευεξίας σας online',
+        keywords: 'σαλόνι, ομορφιά, ραντεβού, κράτηση, μαλλιά, νύχια, σπα'
+      },
+      gr: {
+        titleSuffix: 'Κράτηση Ραντεβού Online',
+        description: 'Κρατήστε τις υπηρεσίες ομορφιάς και ευεξίας σας online',
+        keywords: 'σαλόνι, ομορφιά, ραντεβού, κράτηση, μαλλιά, νύχια, σπα'
       }
     }
   }
 
+  // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  
   const businessDefaults = defaults[businessType as keyof typeof defaults] || {
     en: {
       titleSuffix: 'Order Online',
       description: 'Quality products delivered to your door',
       keywords: 'business, products, services, delivery'
     },
+    sq: {
+      titleSuffix: 'Porosit Online',
+      description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
+      keywords: 'biznes, produkte, shërbime, dërgim'
+    },
     al: {
       titleSuffix: 'Porosit Online',
       description: 'Produkte cilësore të dërguara në shtëpinë tuaj',
       keywords: 'biznes, produkte, shërbime, dërgim'
+    },
+    es: {
+      titleSuffix: 'Pedir Online',
+      description: 'Productos de calidad entregados en tu puerta',
+      keywords: 'negocio, productos, servicios, entrega'
+    },
+    el: {
+      titleSuffix: 'Παραγγελία Online',
+      description: 'Προϊόντα ποιότητας στην πόρτα σας',
+      keywords: 'επιχείρηση, προϊόντα, υπηρεσίες, διανομή'
+    },
+    gr: {
+      titleSuffix: 'Παραγγελία Online',
+      description: 'Προϊόντα ποιότητας στην πόρτα σας',
+      keywords: 'επιχείρηση, προϊόντα, υπηρεσίες, διανομή'
     }
   }
 
-  return isAlbanian ? businessDefaults.al : businessDefaults.en
+  return businessDefaults[normalizedLang as keyof typeof businessDefaults] || businessDefaults.en
 }
 
 function getPriceRange(categories: any[], currency: string): string {
@@ -175,12 +287,13 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
 
   // FIXED: Use store's language setting from database
   const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
-  const isGreek = storeData.language === 'el'
+  const isGreek = storeData.language === 'el' || storeData.language === 'gr'
+  const isSpanish = storeData.language === 'es'
 
   // Check if store should be indexed
   const shouldIndex = storeData.isIndexable && !storeData.noIndex && !storeData.isTemporarilyClosed
 
-  const businessDefaults = getBusinessTypeDefaults(storeData.businessType, isAlbanian)
+  const businessDefaults = getBusinessTypeDefaults(storeData.businessType, storeData.language || 'en')
   
   // Use localized SEO fields based on language, otherwise fall back to default
   const businessDescription = isAlbanian && storeData.descriptionAl 
@@ -234,7 +347,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       images,
       type: 'website',
       siteName: storeData.name,
-      locale: isAlbanian ? 'sq_AL' : 'en_US',
+      locale: isAlbanian ? 'sq_AL' : isGreek ? 'el_GR' : isSpanish ? 'es_ES' : 'en_US',
     },
     twitter: {
       card: 'summary_large_image',
@@ -271,7 +384,8 @@ export default async function StorePage({ params, searchParams }: PageProps) {
 
   // FIXED: Use store's language setting from database
   const isAlbanian = storeData.language === 'sq' || storeData.language === 'al'
-  const isGreek = storeData.language === 'el'
+  const isGreek = storeData.language === 'el' || storeData.language === 'gr'
+  const isSpanish = storeData.language === 'es'
 
   const priceRange = getPriceRange(storeData.categories, storeData.currency)
   const primaryImage = storeData.ogImage || storeData.coverImage || storeData.logo
@@ -345,9 +459,9 @@ export default async function StorePage({ params, searchParams }: PageProps) {
               "@type": "ContactPoint",
               "telephone": storeData.whatsappNumber,
               "contactType": "customer service",
-              "availableLanguage": isAlbanian ? "sq" : "en"
+              "availableLanguage": isAlbanian ? "sq" : isGreek ? "el" : isSpanish ? "es" : "en"
             },
-            "inLanguage": isAlbanian ? "sq" : "en",
+            "inLanguage": isAlbanian ? "sq" : isGreek ? "el" : isSpanish ? "es" : "en",
             "sameAs": storeData.website ? [storeData.website] : undefined,
             ...(storeData.schemaData || {})
           })
@@ -363,13 +477,17 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       )}
 
       {/* Language Alternates */}
-      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang={isAlbanian ? "sq" : "en"} />
+      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang={isAlbanian ? "sq" : isGreek ? "el" : isSpanish ? "es" : "en"} />
       <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang="x-default" />
       
       {/* Canonical URL */}
       <link rel="canonical" href={storeData.canonicalUrl || `https://waveorder.app/${slug}`} />
     
-      <StoreFront storeData={storeData} />
+      {storeData.businessType === 'SALON' ? (
+        <SalonStoreFront storeData={storeData} />
+      ) : (
+        <StoreFront storeData={storeData} />
+      )}
     </>
   )
 }

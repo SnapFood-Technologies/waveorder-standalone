@@ -41,7 +41,9 @@ inCartLabel: string
     // Form Fields
     name: string
     whatsappNumber: string
+    phone: string
     email: string
+    notes: string
     addressLine1: string
     addressLine2: string
     deliveryTime: string
@@ -276,6 +278,33 @@ close: string
     // Product Loading
     tryAgain: string
     loadMore: string
+    
+    // Salon/Appointment specific
+    bookAppointment: string
+    selectedServices: string
+    appointmentDate: string
+    appointmentTime: string
+    submitting: string
+    bookViaWhatsapp: string
+    specialRequests: string
+    
+    // Invoice/Receipt Selection (for Greek storefronts)
+    invoiceOrReceipt: string
+    invoiceOrReceiptQuestion: string
+    selectInvoiceOrReceipt: string
+    invoice: string
+    receipt: string
+    invoiceMinimumOrderError: string
+    invoiceMinimumOrderErrorWithCurrent: string
+    invoiceNote: string
+    invoiceDetails: string
+    taxId: string
+    taxIdRequired: string
+    taxIdDigits: string
+    taxIdDigitsCount: string
+    companyName: string
+    taxOffice: string
+    enterValidTaxId: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -314,7 +343,9 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     // Form Fields
     name: "Name",
     whatsappNumber: "WhatsApp Number",
+    phone: "Phone",
     email: "Email",
+    notes: "Notes",
     addressLine1: "Address Line 1",
     addressLine2: "Address Line 2",
     deliveryTime: "Delivery Time",
@@ -555,7 +586,34 @@ canBeAdded: "more can be added to cart",
     
     // Product Loading
     tryAgain: "Try Again",
-    loadMore: "Load More"
+    loadMore: "Load More",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Book Appointment",
+    selectedServices: "Selected Services",
+    appointmentDate: "Appointment Date",
+    appointmentTime: "Appointment Time",
+    submitting: "Submitting...",
+    bookViaWhatsapp: "Book via WhatsApp",
+    specialRequests: "Any special requests...",
+    
+    // Invoice/Receipt Selection (for Greek storefronts)
+    invoiceOrReceipt: "Invoice or Receipt",
+    invoiceOrReceiptQuestion: "Invoice or Receipt? *",
+    selectInvoiceOrReceipt: "Select if you need an invoice or receipt for your order",
+    invoice: "Invoice",
+    receipt: "Receipt",
+    invoiceMinimumOrderError: "To select Invoice, your order must be at least {amount}",
+    invoiceMinimumOrderErrorWithCurrent: "To select Invoice, your order must be at least {amount}. Current order: {current}",
+    invoiceNote: "Note: We will contact you to ask for any details if you need to include in your Invoice.",
+    invoiceDetails: "Invoice Details",
+    taxId: "Tax ID (AFM)",
+    taxIdRequired: "Tax ID (AFM) *",
+    taxIdDigits: "9 digits",
+    taxIdDigitsCount: "9 digits ({count}/9)",
+    companyName: "Company Name",
+    taxOffice: "Tax Office (ΔΟΥ)",
+    enterValidTaxId: "Please enter a valid Tax ID (9 digits)"
 
   }
   
@@ -631,7 +689,9 @@ itemOutOfStockOrMaxQuantity: "Na vjen keq, ky artikull është jashtë stokut os
     // Form Fields
     name: "Emri",
     whatsappNumber: "Numri i WhatsApp",
+    phone: "Telefoni",
     email: "Email",
+    notes: "Shënime",
     addressLine1: "Adresa Linja 1",
     addressLine2: "Adresa Linja 2",
     deliveryTime: "Koha e Dërgesës",
@@ -831,7 +891,34 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Provo Përsëri",
-    loadMore: "Shfaq Më Shumë"
+    loadMore: "Shfaq Më Shumë",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Rezervo Takim",
+    selectedServices: "Shërbimet e Zgjedhura",
+    appointmentDate: "Data e Takimit",
+    appointmentTime: "Ora e Takimit",
+    submitting: "Duke dërguar...",
+    bookViaWhatsapp: "Rezervo përmes WhatsApp",
+    specialRequests: "Kërkesa të veçanta...",
+    
+    // Invoice/Receipt Selection (for Greek storefronts)
+    invoiceOrReceipt: "Faturë ose Faturë",
+    invoiceOrReceiptQuestion: "Faturë ose Faturë? *",
+    selectInvoiceOrReceipt: "Zgjidhni nëse keni nevojë për një faturë ose faturë për porosinë tuaj",
+    invoice: "Faturë",
+    receipt: "Faturë",
+    invoiceMinimumOrderError: "Për të zgjedhur Faturë, porosia juaj duhet të jetë të paktën {amount}",
+    invoiceMinimumOrderErrorWithCurrent: "Për të zgjedhur Faturë, porosia juaj duhet të jetë të paktën {amount}. Porosia aktuale: {current}",
+    invoiceNote: "Shënim: Do të ju kontaktojmë për të kërkuar çdo detaj nëse keni nevojë të përfshini në Faturën tuaj.",
+    invoiceDetails: "Detajet e Faturës",
+    taxId: "Numri i Taksës (AFM)",
+    taxIdRequired: "Numri i Taksës (AFM) *",
+    taxIdDigits: "9 shifra",
+    taxIdDigitsCount: "9 shifra ({count}/9)",
+    companyName: "Emri i Kompanisë",
+    taxOffice: "Zyra e Taksave (ΔΟΥ)",
+    enterValidTaxId: "Ju lutem shkruani një numër taksë të vlefshëm (9 shifra)"
 
   }
 
@@ -871,7 +958,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Form Fields
     name: "Nombre",
     whatsappNumber: "Número de WhatsApp",
+    phone: "Teléfono",
     email: "Email",
+    notes: "Notas",
     addressLine1: "Dirección Línea 1",
     addressLine2: "Dirección Línea 2",
     deliveryTime: "Hora de Entrega",
@@ -1107,7 +1196,34 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Intentar de Nuevo",
-    loadMore: "Cargar Más"
+    loadMore: "Cargar Más",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Reservar Cita",
+    selectedServices: "Servicios Seleccionados",
+    appointmentDate: "Fecha de la Cita",
+    appointmentTime: "Hora de la Cita",
+    submitting: "Enviando...",
+    bookViaWhatsapp: "Reservar por WhatsApp",
+    specialRequests: "Solicitudes especiales...",
+    
+    // Invoice/Receipt Selection (for Greek storefronts)
+    invoiceOrReceipt: "Factura o Recibo",
+    invoiceOrReceiptQuestion: "¿Factura o Recibo? *",
+    selectInvoiceOrReceipt: "Seleccione si necesita una factura o recibo para su pedido",
+    invoice: "Factura",
+    receipt: "Recibo",
+    invoiceMinimumOrderError: "Para seleccionar Factura, su pedido debe ser de al menos {amount}",
+    invoiceMinimumOrderErrorWithCurrent: "Para seleccionar Factura, su pedido debe ser de al menos {amount}. Pedido actual: {current}",
+    invoiceNote: "Nota: Nos pondremos en contacto con usted para solicitar cualquier detalle si necesita incluir en su Factura.",
+    invoiceDetails: "Detalles de la Factura",
+    taxId: "ID Fiscal (AFM)",
+    taxIdRequired: "ID Fiscal (AFM) *",
+    taxIdDigits: "9 dígitos",
+    taxIdDigitsCount: "9 dígitos ({count}/9)",
+    companyName: "Nombre de la Empresa",
+    taxOffice: "Oficina Fiscal (ΔΟΥ)",
+    enterValidTaxId: "Por favor ingrese un ID fiscal válido (9 dígitos)"
 
   }
 
@@ -1147,7 +1263,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Form Fields
     name: "Όνομα",
     whatsappNumber: "Αριθμός WhatsApp",
+    phone: "Τηλέφωνο",
     email: "Email",
+    notes: "Σημειώσεις",
     addressLine1: "Διεύθυνση Γραμμή 1",
     addressLine2: "Διεύθυνση Γραμμή 2",
     deliveryTime: "Ώρα Παράδοσης",
@@ -1385,7 +1503,34 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Product Loading
     tryAgain: "Δοκίμασε Ξανά",
-    loadMore: "Φόρτωσε Περισσότερα"
+    loadMore: "Φόρτωσε Περισσότερα",
+    
+    // Salon/Appointment specific
+    bookAppointment: "Κράτηση Ραντεβού",
+    selectedServices: "Επιλεγμένες Υπηρεσίες",
+    appointmentDate: "Ημερομηνία Ραντεβού",
+    appointmentTime: "Ώρα Ραντεβού",
+    submitting: "Υποβολή...",
+    bookViaWhatsapp: "Κράτηση μέσω WhatsApp",
+    specialRequests: "Ειδικές αιτήσεις...",
+    
+    // Invoice/Receipt Selection (for Greek storefronts)
+    invoiceOrReceipt: "Τιμολόγιο ή Απόδειξη",
+    invoiceOrReceiptQuestion: "Τιμολόγιο ή Απόδειξη? *",
+    selectInvoiceOrReceipt: "Επιλέξτε αν χρειάζεστε τιμολόγιο ή απόδειξη για την παραγγελία σας",
+    invoice: "Τιμολόγιο",
+    receipt: "Απόδειξη",
+    invoiceMinimumOrderError: "Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {amount}",
+    invoiceMinimumOrderErrorWithCurrent: "Για να επιλέξετε Τιμολόγιο, η παραγγελία σας πρέπει να είναι τουλάχιστον {amount}. Τρέχουσα παραγγελία: {current}",
+    invoiceNote: "Σημείωση: Θα επικοινωνήσουμε μαζί σας για να ζητήσουμε τυχόν επιπλέον στοιχεία που χρειάζονται για το Τιμολόγιο σας.",
+    invoiceDetails: "Στοιχεία Τιμολογίου",
+    taxId: "ΑΦΜ (Φορολογικός Αριθμός)",
+    taxIdRequired: "ΑΦΜ (Φορολογικός Αριθμός) *",
+    taxIdDigits: "9 ψηφία",
+    taxIdDigitsCount: "9 ψηφία ({count}/9)",
+    companyName: "Επωνυμία Εταιρείας",
+    taxOffice: "ΔΟΥ (Δημόσια Οικονομική Υπηρεσία)",
+    enterValidTaxId: "Παρακαλώ εισάγετε έγκυρο ΑΦΜ (9 ψηφία)"
 
   }
 

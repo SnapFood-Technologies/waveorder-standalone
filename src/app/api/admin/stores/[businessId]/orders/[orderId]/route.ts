@@ -129,6 +129,10 @@ export async function GET(
         deliveryAddress: true,
         deliveryTime: true,
         notes: true,
+        invoiceType: true, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceAfm: true, // Tax ID (AFM) - 9 digits
+        invoiceCompanyName: true, // Company name
+        invoiceTaxOffice: true, // Tax office (ΔΟΥ)
         paymentStatus: true,
         paymentMethod: true,
         customerLatitude: true,
@@ -461,6 +465,17 @@ export async function PUT(
 
     if (body.notes !== undefined) {
       updateData.notes = body.notes
+    }
+
+    // Invoice fields (only for INVOICE type orders)
+    if (body.invoiceAfm !== undefined) {
+      updateData.invoiceAfm = body.invoiceAfm || null
+    }
+    if (body.invoiceCompanyName !== undefined) {
+      updateData.invoiceCompanyName = body.invoiceCompanyName || null
+    }
+    if (body.invoiceTaxOffice !== undefined) {
+      updateData.invoiceTaxOffice = body.invoiceTaxOffice || null
     }
 
     // Only set deliveryTime from body if it's explicitly provided AND we haven't auto-set it for PICKED_UP status
@@ -832,7 +847,8 @@ export async function PUT(
               postalPricingDetails: postalPricingDetails,
               countryCode: countryCode,
               city: city,
-              postalCode: postalCode
+              postalCode: postalCode,
+              invoiceType: (updatedOrder as any).invoiceType || undefined // Invoice/Receipt selection (for Greek storefronts)
             }
           ).catch((error) => {
             // Log error but don't fail the request

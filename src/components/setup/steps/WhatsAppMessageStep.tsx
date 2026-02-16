@@ -36,18 +36,6 @@ const messageTemplates = {
       sampleItems: '2x Bananas (1kg) - $2.99 each\n1x Milk (1L) - $3.49\n1x Bread - $2.99',
       itemLabel: 'Groceries'
     },
-    JEWELRY: {
-      greeting: (businessName: string, storeSlug: string) => 
-        `Hello! Welcome to ${businessName}.\nView our jewelry collection at waveorder.app/${storeSlug}\nLooking for something special?`,
-      sampleItems: '1x Silver Ring (Size 7) - $149.99\n1x Gold Necklace - $299.99',
-      itemLabel: 'Jewelry'
-    },
-    FLORIST: {
-      greeting: (businessName: string, storeSlug: string) => 
-        `Hello! Welcome to ${businessName}.\nOrder beautiful flowers at waveorder.app/${storeSlug}\nPerfect for any occasion!`,
-      sampleItems: '1x Rose Bouquet (12 roses) - $45.99\n1x Greeting Card - $4.99',
-      itemLabel: 'Flowers'
-    },
     orderTerms: {
       subtotal: 'Subtotal',
       delivery: 'Delivery',
@@ -91,18 +79,6 @@ const messageTemplates = {
         `Përshëndetje! Mirë se vini në ${businessName}.\nPorosit ushqime të freskëta në waveorder.app/${storeSlug}\nI dorëzojmë të freskët në shtëpinë tuaj!`,
       sampleItems: '2x Banane (1kg) - $2.99 secila\n1x Qumësht (1L) - $3.49\n1x Bukë - $2.99',
       itemLabel: 'Ushqime'
-    },
-    JEWELRY: {
-      greeting: (businessName: string, storeSlug: string) => 
-        `Përshëndetje! Mirë se vini në ${businessName}.\nShikoni koleksionin tonë të stolitë në waveorder.app/${storeSlug}\nKërkoni diçka të veçantë?`,
-      sampleItems: '1x Unazë Argjendi (Madhësia 7) - $149.99\n1x Gjerdan Ari - $299.99',
-      itemLabel: 'Stolira'
-    },
-    FLORIST: {
-      greeting: (businessName: string, storeSlug: string) => 
-        `Përshëndetje! Mirë se vini në ${businessName}.\nPorosit lule të bukura në waveorder.app/${storeSlug}\nPërfekte për çdo rast!`,
-      sampleItems: '1x Buqetë Trëndafilash (12 trëndafila) - $45.99\n1x Kartë Urimi - $4.99',
-      itemLabel: 'Lule'
     },
     orderTerms: {
       subtotal: 'Nëntotali',
@@ -159,7 +135,7 @@ export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsA
 
     // Get appropriate delivery term based on business type
     const getDeliveryTerm = () => {
-      if (businessTypeKey === 'RETAIL' || businessTypeKey === 'JEWELRY') {
+      if (businessTypeKey === 'RETAIL') {
         return terms.shipping
       }
       return terms.delivery
@@ -167,7 +143,7 @@ export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsA
 
     // Get appropriate address term based on business type
     const getAddressTerm = () => {
-      if (businessTypeKey === 'RETAIL' || businessTypeKey === 'JEWELRY') {
+      if (businessTypeKey === 'RETAIL') {
         return terms.shippingAddress
       }
       return terms.deliveryAddress
@@ -175,9 +151,6 @@ export default function WhatsAppMessageStep({ data, onComplete, onBack }: WhatsA
 
     // Get appropriate time term based on business type and delivery method
     const getTimeTerm = () => {
-      if (businessTypeKey === 'JEWELRY' && !data.deliveryMethods?.delivery) {
-        return terms.appointmentTime
-      }
       return data.deliveryMethods?.delivery ? terms.deliveryTime : terms.pickupTime
     }
 
@@ -193,7 +166,7 @@ ${terms.total}: ${(40.97 + (data.deliveryMethods?.delivery ? deliveryFee : 0)).t
 ---
 ${terms.customer}: John Doe
 ${terms.phone}: +1234567890
-${data.deliveryMethods?.delivery ? `${getAddressTerm()}: 123 Main St` : businessTypeKey === 'JEWELRY' ? 'Store Visit' : 'Pickup'}
+${data.deliveryMethods?.delivery ? `${getAddressTerm()}: 123 Main St` : 'Pickup'}
 ${getTimeTerm()}: ${terms.asap}
 ${terms.payment}: ${selectedLanguage === 'sq' ? 'Para në dorë' : 'Cash'} ${data.deliveryMethods?.delivery ? terms.onDelivery : terms.onPickup}
 ${terms.notes}: ${selectedLanguage === 'sq' ? getAlbanianNote(businessTypeKey) : getEnglishNote(businessTypeKey)}
@@ -209,8 +182,6 @@ ${storeUrl}`
       case 'CAFE': return 'Extra sugar please'
       case 'RETAIL': return 'Gift wrap please'
       case 'GROCERY': return 'Double bag please'
-      case 'JEWELRY': return 'Gift box please'
-      case 'FLORIST': return 'Add a card please'
       default: return 'Thank you'
     }
   }
@@ -221,8 +192,6 @@ ${storeUrl}`
       case 'CAFE': return 'Sheqer shtesë ju lutem'
       case 'RETAIL': return 'Paketim dhurate ju lutem'
       case 'GROCERY': return 'Qese të dyfishta ju lutem'
-      case 'JEWELRY': return 'Kuti dhurate ju lutem'
-      case 'FLORIST': return 'Shtoni një kartë ju lutem'
       default: return 'Faleminderit'
     }
   }

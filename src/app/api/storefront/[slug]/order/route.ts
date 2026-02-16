@@ -445,65 +445,25 @@ const messageTerms = {
       pickup_type: 'Pickup',
       dineIn_type: 'Visit'
     },
-    JEWELRY: {
-      order: 'Order',
+    SALON: {
+      order: 'Booking Request',
       subtotal: 'Subtotal',
-      delivery: 'Shipping',
+      delivery: 'Appointment',
       total: 'Total',
-      customer: 'Customer',
+      customer: 'Client',
       phone: 'Phone',
-      deliveryAddress: 'Shipping Address',
-      pickupLocation: 'Store Location',
-      deliveryTime: 'Shipping Time',
+      deliveryAddress: 'Address',
+      pickupLocation: 'Salon Location',
+      deliveryTime: 'Appointment Date & Time',
       pickupTime: 'Appointment Time',
       arrivalTime: 'Appointment Time',
       payment: 'Payment',
       notes: 'Notes',
       asap: 'ASAP',
-      orderType: 'Service Type',
-      delivery_type: 'Shipping',
-      pickup_type: 'Store Visit',
-      dineIn_type: 'Consultation'
-    },
-    FLORIST: {
-      order: 'Order',
-      subtotal: 'Subtotal',
-      delivery: 'Delivery',
-      total: 'Total',
-      customer: 'Customer',
-      phone: 'Phone',
-      deliveryAddress: 'Delivery Address',
-      pickupLocation: 'Pickup Location',
-      deliveryTime: 'Delivery Time',
-      pickupTime: 'Pickup Time',
-      arrivalTime: 'Visit Time',
-      payment: 'Payment',
-      notes: 'Notes',
-      asap: 'ASAP',
-      orderType: 'Order Type',
-      delivery_type: 'Delivery',
-      pickup_type: 'Pickup',
-      dineIn_type: 'Visit'
-    },
-    HEALTH_BEAUTY: {
-      order: 'Order',
-      subtotal: 'Subtotal',
-      delivery: 'Delivery',
-      total: 'Total',
-      customer: 'Customer',
-      phone: 'Phone',
-      deliveryAddress: 'Delivery Address',
-      pickupLocation: 'Pickup Location',
-      deliveryTime: 'Delivery Time',
-      pickupTime: 'Appointment Time',
-      arrivalTime: 'Appointment Time',
-      payment: 'Payment',
-      notes: 'Notes',
-      asap: 'ASAP',
-      orderType: 'Service Type',
-      delivery_type: 'Delivery',
-      pickup_type: 'Store Visit',
-      dineIn_type: 'Consultation'
+      orderType: 'Booking Type',
+      delivery_type: 'Appointment',
+      pickup_type: 'Walk-in',
+      dineIn_type: 'In-Salon'
     },
     OTHER: {
       order: 'Order',
@@ -607,65 +567,25 @@ const messageTerms = {
       pickup_type: 'Marrje',
       dineIn_type: 'Vizitë'
     },
-    JEWELRY: {
-      order: 'Porosia',
+    SALON: {
+      order: 'Kërkesë për Rezervim',
       subtotal: 'Nëntotali',
-      delivery: 'Dërgimi',
+      delivery: 'Takim',
       total: 'Totali',
       customer: 'Klienti',
       phone: 'Telefoni',
-      deliveryAddress: 'Adresa e Dërgimit',
-      pickupLocation: 'Vendndodhja e Dyqanit',
-      deliveryTime: 'Koha e Dërgimit',
+      deliveryAddress: 'Adresa',
+      pickupLocation: 'Vendndodhja e Salonit',
+      deliveryTime: 'Data dhe Koha e Takimit',
       pickupTime: 'Koha e Takimit',
       arrivalTime: 'Koha e Takimit',
       payment: 'Pagesa',
       notes: 'Shënime',
       asap: 'SA MË SHPEJT',
-      orderType: 'Lloji i Shërbimit',
-      delivery_type: 'Dërgim',
-      pickup_type: 'Vizitë në Dyqan',
-      dineIn_type: 'Konsultim'
-    },
-    FLORIST: {
-      order: 'Porosia',
-      subtotal: 'Nëntotali',
-      delivery: 'Dorëzimi',
-      total: 'Totali',
-      customer: 'Klienti',
-      phone: 'Telefoni',
-      deliveryAddress: 'Adresa e Dorëzimit',
-      pickupLocation: 'Vendi i Marrjes',
-      deliveryTime: 'Koha e Dorëzimit',
-      pickupTime: 'Koha e Marrjes',
-      arrivalTime: 'Koha e Vizitës',
-      payment: 'Pagesa',
-      notes: 'Shënime',
-      asap: 'SA MË SHPEJT',
-      orderType: 'Lloji i Porosisë',
-      delivery_type: 'Dorëzim',
-      pickup_type: 'Marrje',
-      dineIn_type: 'Vizitë'
-    },
-    HEALTH_BEAUTY: {
-      order: 'Porosia',
-      subtotal: 'Nëntotali',
-      delivery: 'Dorëzimi',
-      total: 'Totali',
-      customer: 'Klienti',
-      phone: 'Telefoni',
-      deliveryAddress: 'Adresa e Dorëzimit',
-      pickupLocation: 'Vendi i Marrjes',
-      deliveryTime: 'Koha e Dorëzimit',
-      pickupTime: 'Koha e Takimit',
-      arrivalTime: 'Koha e Takimit',
-      payment: 'Pagesa',
-      notes: 'Shënime',
-      asap: 'SA MË SHPEJT',
-      orderType: 'Lloji i Shërbimit',
-      delivery_type: 'Dorëzim',
-      pickup_type: 'Vizitë në Dyqan',
-      dineIn_type: 'Konsultim'
+      orderType: 'Lloji i Rezervimit',
+      delivery_type: 'Takim',
+      pickup_type: 'Pa Rezervim',
+      dineIn_type: 'Në Salon'
     },
     OTHER: {
       order: 'Porosia',
@@ -769,65 +689,25 @@ const messageTerms = {
       pickup_type: 'Recogida',
       dineIn_type: 'Visita'
     },
-    JEWELRY: {
-      order: 'Pedido',
+    SALON: {
+      order: 'Solicitud de Reserva',
       subtotal: 'Subtotal',
-      delivery: 'Envío',
+      delivery: 'Cita',
       total: 'Total',
       customer: 'Cliente',
       phone: 'Teléfono',
-      deliveryAddress: 'Dirección de Envío',
-      pickupLocation: 'Ubicación de la Tienda',
-      deliveryTime: 'Hora de Envío',
-      pickupTime: 'Hora de Cita',
-      arrivalTime: 'Hora de Cita',
+      deliveryAddress: 'Dirección',
+      pickupLocation: 'Ubicación del Salón',
+      deliveryTime: 'Fecha y Hora de la Cita',
+      pickupTime: 'Hora de la Cita',
+      arrivalTime: 'Hora de la Cita',
       payment: 'Pago',
       notes: 'Notas',
       asap: 'LO ANTES POSIBLE',
-      orderType: 'Tipo de Servicio',
-      delivery_type: 'Envío',
-      pickup_type: 'Visita a la Tienda',
-      dineIn_type: 'Consulta'
-    },
-    FLORIST: {
-      order: 'Pedido',
-      subtotal: 'Subtotal',
-      delivery: 'Entrega',
-      total: 'Total',
-      customer: 'Cliente',
-      phone: 'Teléfono',
-      deliveryAddress: 'Dirección de Entrega',
-      pickupLocation: 'Ubicación de Recogida',
-      deliveryTime: 'Hora de Entrega',
-      pickupTime: 'Hora de Recogida',
-      arrivalTime: 'Hora de Visita',
-      payment: 'Pago',
-      notes: 'Notas',
-      asap: 'LO ANTES POSIBLE',
-      orderType: 'Tipo de Pedido',
-      delivery_type: 'Entrega',
-      pickup_type: 'Recogida',
-      dineIn_type: 'Visita'
-    },
-    HEALTH_BEAUTY: {
-      order: 'Pedido',
-      subtotal: 'Subtotal',
-      delivery: 'Entrega',
-      total: 'Total',
-      customer: 'Cliente',
-      phone: 'Teléfono',
-      deliveryAddress: 'Dirección de Entrega',
-      pickupLocation: 'Ubicación de Recogida',
-      deliveryTime: 'Hora de Entrega',
-      pickupTime: 'Hora de Cita',
-      arrivalTime: 'Hora de Cita',
-      payment: 'Pago',
-      notes: 'Notas',
-      asap: 'LO ANTES POSIBLE',
-      orderType: 'Tipo de Servicio',
-      delivery_type: 'Entrega',
-      pickup_type: 'Visita a la Tienda',
-      dineIn_type: 'Consulta'
+      orderType: 'Tipo de Reserva',
+      delivery_type: 'Cita',
+      pickup_type: 'Sin Cita',
+      dineIn_type: 'En el Salón'
     },
     OTHER: {
       order: 'Pedido',
@@ -931,65 +811,25 @@ const messageTerms = {
       pickup_type: 'Παραλαβή',
       dineIn_type: 'Επίσκεψη'
     },
-    JEWELRY: {
-      order: 'Παραγγελία',
+    SALON: {
+      order: 'Αίτημα Κράτησης',
       subtotal: 'Υποσύνολο',
-      delivery: 'Αποστολή',
+      delivery: 'Ραντεβού',
       total: 'Σύνολο',
       customer: 'Πελάτης',
       phone: 'Τηλέφωνο',
-      deliveryAddress: 'Διεύθυνση Αποστολής',
-      pickupLocation: 'Τοποθεσία Καταστήματος',
-      deliveryTime: 'Ώρα Αποστολής',
+      deliveryAddress: 'Διεύθυνση',
+      pickupLocation: 'Τοποθεσία Σαλονιού',
+      deliveryTime: 'Ημερομηνία και Ώρα Ραντεβού',
       pickupTime: 'Ώρα Ραντεβού',
       arrivalTime: 'Ώρα Ραντεβού',
       payment: 'Πληρωμή',
       notes: 'Σημειώσεις',
       asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
-      orderType: 'Τύπος Υπηρεσίας',
-      delivery_type: 'Αποστολή',
-      pickup_type: 'Επίσκεψη Καταστήματος',
-      dineIn_type: 'Συμβουλευτική'
-    },
-    FLORIST: {
-      order: 'Παραγγελία',
-      subtotal: 'Υποσύνολο',
-      delivery: 'Παράδοση',
-      total: 'Σύνολο',
-      customer: 'Πελάτης',
-      phone: 'Τηλέφωνο',
-      deliveryAddress: 'Διεύθυνση Παράδοσης',
-      pickupLocation: 'Τοποθεσία Παραλαβής',
-      deliveryTime: 'Ώρα Παράδοσης',
-      pickupTime: 'Ώρα Παραλαβής',
-      arrivalTime: 'Ώρα Επίσκεψης',
-      payment: 'Πληρωμή',
-      notes: 'Σημειώσεις',
-      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
-      orderType: 'Τύπος Παραγγελίας',
-      delivery_type: 'Παράδοση',
-      pickup_type: 'Παραλαβή',
-      dineIn_type: 'Επίσκεψη'
-    },
-    HEALTH_BEAUTY: {
-      order: 'Παραγγελία',
-      subtotal: 'Υποσύνολο',
-      delivery: 'Παράδοση',
-      total: 'Σύνολο',
-      customer: 'Πελάτης',
-      phone: 'Τηλέφωνο',
-      deliveryAddress: 'Διεύθυνση Παράδοσης',
-      pickupLocation: 'Τοποθεσία Παραλαβής',
-      deliveryTime: 'Ώρα Παράδοσης',
-      pickupTime: 'Ώρα Ραντεβού',
-      arrivalTime: 'Ώρα Ραντεβού',
-      payment: 'Πληρωμή',
-      notes: 'Σημειώσεις',
-      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
-      orderType: 'Τύπος Υπηρεσίας',
-      delivery_type: 'Παράδοση',
-      pickup_type: 'Επίσκεψη Καταστήματος',
-      dineIn_type: 'Συμβουλευτική'
+      orderType: 'Τύπος Κράτησης',
+      delivery_type: 'Ραντεβού',
+      pickup_type: 'Χωρίς Κράτηση',
+      dineIn_type: 'Στο Σαλόνι'
     },
     OTHER: {
       order: 'Παραγγελία',
@@ -1100,6 +940,10 @@ export async function POST(
       deliveryTime,
       paymentMethod,
       specialInstructions,
+      invoiceType, // 'INVOICE' | 'RECEIPT' | null (for Greek storefronts)
+      invoiceAfm, // Tax ID (AFM) - 9 digits (required for invoices)
+      invoiceCompanyName, // Company name (optional for invoices)
+      invoiceTaxOffice, // Tax office (ΔΟΥ) (optional for invoices)
       latitude,
       longitude,
       postalPricingId, // For RETAIL businesses
@@ -1737,6 +1581,10 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
         deliveryTime: deliveryTime ? new Date(deliveryTime) : null,
         notes: specialInstructions,
+        invoiceType: invoiceType || null, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceAfm: invoiceType === 'INVOICE' ? (invoiceAfm || null) : null, // Tax ID (AFM) - 9 digits
+        invoiceCompanyName: invoiceType === 'INVOICE' ? (invoiceCompanyName || null) : null, // Company name
+        invoiceTaxOffice: invoiceType === 'INVOICE' ? (invoiceTaxOffice || null) : null, // Tax office (ΔΟΥ)
         paymentMethod,
         paymentStatus: 'PENDING',
         // Store coordinates for delivery orders
@@ -1923,7 +1771,8 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           postalPricingDetails: postalPricingDetails,
           countryCode: finalCountryCode || undefined,
           city: finalCity || undefined,
-          postalCode: finalPostalCode || undefined
+          postalCode: finalPostalCode || undefined,
+          invoiceType: (order as any).invoiceType || undefined // Invoice/Receipt selection (for Greek storefronts)
         }
       ).catch((error) => {
         // Log error but don't fail the request
@@ -2042,7 +1891,8 @@ try {
         postalPricingDetails: postalPricingDetails,
         countryCode: countryCode || null,
         city: city || null,
-        postalCode: postalCode || null
+        postalCode: postalCode || null,
+        invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
       },
       {
         name: business.name,
@@ -2215,6 +2065,8 @@ try {
           deliveryAddress: order.deliveryAddress || undefined,
           deliveryTime: orderData.deliveryTime || null,
           specialInstructions: order.notes || undefined,
+          invoiceType: (order as any).invoiceType || undefined, // Invoice/Receipt selection (for Greek storefronts)
+          language: business.language || undefined,
           currencySymbol: getCurrencySymbol(business.currency),
           postalPricingDetails: postalPricingDetailsForWhatsApp
         }
@@ -2381,10 +2233,20 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
   message += `${terms.orderType}: *${deliveryTypeLabel}*\n\n`
   
-  // Items
+  // Items (Services for salons)
+  const itemsLabel = businessType === 'SALON' ? 'Services' : 'Items'
   items.forEach((item: any) => {
     message += `${item.quantity}x ${item.name}`
     if (item.variant) message += ` (${item.variant})`
+    // For salons, show duration if available
+    if (businessType === 'SALON' && item.duration) {
+      const hours = Math.floor(item.duration / 60)
+      const minutes = item.duration % 60
+      const durationText = hours > 0 
+        ? `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim()
+        : `${minutes}min`
+      message += ` — ${durationText}`
+    }
     message += ` - ${currencySymbol}${item.price.toFixed(2)}\n`
     if (item.modifiers?.length) {
       item.modifiers.forEach((mod: any) => {
@@ -2392,6 +2254,21 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
       })
     }
   })
+  
+  // For salons, show total duration
+  if (businessType === 'SALON') {
+    const totalDuration = items.reduce((sum: number, item: any) => {
+      return sum + ((item.duration || 0) * item.quantity)
+    }, 0)
+    if (totalDuration > 0) {
+      const hours = Math.floor(totalDuration / 60)
+      const minutes = totalDuration % 60
+      const durationText = hours > 0 
+        ? `${hours}h ${minutes > 0 ? `${minutes}min` : ''}`.trim()
+        : `${minutes}min`
+      message += `\nEst. Duration: ${durationText}\n`
+    }
+  }
   
   message += `\n---\n`
   message += `${terms.subtotal}: ${currencySymbol}${orderData.subtotal.toFixed(2)}\n`
@@ -2528,6 +2405,12 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   
   if (orderData.specialInstructions) {
     message += `${terms.notes}: ${orderData.specialInstructions}\n`
+  }
+  
+  // Add invoice/receipt selection if present (for Greek storefronts)
+  if (orderData.invoiceType && language === 'el') {
+    const invoiceLabel = orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'
+    message += `\n${invoiceLabel}: Ναι\n`
   }
   
   message += `\n---\n`

@@ -66,11 +66,9 @@ interface FormData {
 const businessTypes = [
   { value: 'RESTAURANT', label: 'Restaurant', icon: UtensilsCrossed },
   { value: 'CAFE', label: 'Cafe', icon: Coffee },
-  { value: 'RETAIL', label: 'Retail', icon: ShoppingBag },
-  { value: 'GROCERY', label: 'Grocery', icon: Apple },
-  { value: 'HEALTH_BEAUTY', label: 'Health & Beauty', icon: Scissors },
-  { value: 'JEWELRY', label: 'Jewelry', icon: Gem },
-  { value: 'FLORIST', label: 'Florist', icon: Flower2 },
+  { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
+  { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
+  { value: 'SALON', label: 'Salon & Beauty', icon: Scissors },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 

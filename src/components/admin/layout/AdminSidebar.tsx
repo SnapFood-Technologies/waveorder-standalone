@@ -45,6 +45,9 @@ import {
   ChefHat,
   Key,
   Truck,
+  Scissors,
+  Calendar,
+  CalendarClock,
   Shield
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
@@ -95,12 +98,14 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showCostPriceEnabled, setShowCostPriceEnabled] = useState(false)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
   const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
   const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
+  const [businessType, setBusinessType] = useState<string | null>(null)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -132,7 +137,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setHappyHourEnabled(data.business?.happyHourEnabled || false)
           setShowCostPriceEnabled(data.business?.showCostPrice || false)
           setShowProductionPlanningEnabled(data.business?.showProductionPlanning || false)
+          setBusinessType(data.business?.businessType || null)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+          setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
           setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
@@ -185,6 +192,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   
   // Check if user can access products (STAFF cannot)
   const canAccessProducts = userRole !== 'STAFF'
+  const isSalon = businessType === 'SALON'
 
   const baseUrl = `/admin/stores/${businessId}`
 
@@ -195,81 +203,130 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: LayoutDashboard, 
       requiredPlan: 'STARTER'
     },
-    // Orders - with optional Production Queue submenu
+    // SALON: Appointments (replaces Orders)
     // @ts-ignore
-    ...(showProductionPlanningEnabled ? [{
-      name: 'Orders',
-      icon: ShoppingBag,
-      requiredPlan: 'STARTER' as Plan,
-      children: [
-        {
-          name: 'All Orders',
-          href: `${baseUrl}/orders`,
-          icon: ShoppingBag,
-          requiredPlan: 'STARTER' as Plan
-        },
-        {
-          name: 'Production Queue',
-          href: `${baseUrl}/orders/production`,
-          icon: ChefHat,
-          requiredPlan: 'STARTER' as Plan
-        }
-      ]
-    }] : [{
-      name: 'Orders', 
-      href: `${baseUrl}/orders`, 
-      icon: ShoppingBag, 
-      requiredPlan: 'STARTER' as Plan
-    }]),
-    // Products menu - hidden for STAFF role (they can only view/manage orders)
-    // @ts-ignore
-    ...(canAccessProducts ? [{ 
-      name: 'Products', 
-      icon: Package, 
-      requiredPlan: 'STARTER',
-      children: [
-        { 
-          name: 'List', 
-          href: `${baseUrl}/products`, 
-          icon: List, 
-          requiredPlan: 'STARTER'
-        },
-        { 
-          name: 'Categories', 
-          href: `${baseUrl}/product-categories`, 
-          icon: Boxes, 
-          requiredPlan: 'STARTER'
-        },
-        // @ts-ignore
-        ...(brandsEnabled ? [{
-          name: 'Brands', 
-          href: `${baseUrl}/brands`, 
-          icon: Tag, 
-          requiredPlan: 'STARTER'
-        }] : []),
-        // @ts-ignore
-        ...(collectionsEnabled ? [{
-          name: 'Collections', 
-          href: `${baseUrl}/collections`, 
-          icon: Layers, 
-          requiredPlan: 'STARTER'
-        }] : []),
-        // @ts-ignore
-        ...(groupsEnabled ? [{
-          name: 'Groups', 
-          href: `${baseUrl}/groups`, 
-          icon: FolderTree, 
-          requiredPlan: 'STARTER'
-        }] : []),
-        { 
-          name: 'Import', 
-          href: `${baseUrl}/products/import`, 
-          icon: Upload, 
+    ...(isSalon ? [
+      {
+        name: 'Appointments',
+        icon: Calendar,
+        requiredPlan: 'STARTER' as Plan,
+        children: [
+          {
+            name: 'All Appointments',
+            href: `${baseUrl}/appointments`,
+            icon: Calendar,
+            requiredPlan: 'STARTER' as Plan
+          },
           // @ts-ignore
-          requiredPlan: 'STARTER'
-        },
-      ]
-    }] : []),
+          ...((subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') ? [{
+            name: 'Calendar View',
+            href: `${baseUrl}/appointments/calendar`,
+            icon: CalendarClock,
+            requiredPlan: 'PRO' as Plan
+          }] : []),
+        ]
+      }
+    ] : [
+      // NON-SALON: Orders - with optional Production Queue submenu
+      // @ts-ignore
+      ...(showProductionPlanningEnabled ? [{
+        name: 'Orders',
+        icon: ShoppingBag,
+        requiredPlan: 'STARTER' as Plan,
+        children: [
+          {
+            name: 'All Orders',
+            href: `${baseUrl}/orders`,
+            icon: ShoppingBag,
+            requiredPlan: 'STARTER' as Plan
+          },
+          {
+            name: 'Production Queue',
+            href: `${baseUrl}/orders/production`,
+            icon: ChefHat,
+            requiredPlan: 'STARTER' as Plan
+          }
+        ]
+      }] : [{
+        name: 'Orders', 
+        href: `${baseUrl}/orders`, 
+        icon: ShoppingBag, 
+        requiredPlan: 'STARTER' as Plan
+      }])
+    ]),
+    // SALON: Services (replaces Products)
+    // @ts-ignore
+    ...(isSalon ? [
+      {
+        name: 'Services',
+        icon: Scissors,
+        requiredPlan: 'STARTER' as Plan,
+        children: [
+          {
+            name: 'List',
+            href: `${baseUrl}/services`,
+            icon: List,
+            requiredPlan: 'STARTER' as Plan
+          },
+          {
+            name: 'Categories',
+            href: `${baseUrl}/service-categories`,
+            icon: Boxes,
+            requiredPlan: 'STARTER' as Plan
+          },
+        ]
+      }
+    ] : [
+      // NON-SALON: Products menu - hidden for STAFF role
+      // @ts-ignore
+      ...(canAccessProducts ? [{ 
+        name: 'Products', 
+        icon: Package, 
+        requiredPlan: 'STARTER',
+        children: [
+          { 
+            name: 'List', 
+            href: `${baseUrl}/products`, 
+            icon: List, 
+            requiredPlan: 'STARTER'
+          },
+          { 
+            name: 'Categories', 
+            href: `${baseUrl}/product-categories`, 
+            icon: Boxes, 
+            requiredPlan: 'STARTER'
+          },
+          // @ts-ignore
+          ...(brandsEnabled ? [{
+            name: 'Brands', 
+            href: `${baseUrl}/brands`, 
+            icon: Tag, 
+            requiredPlan: 'STARTER'
+          }] : []),
+          // @ts-ignore
+          ...(collectionsEnabled ? [{
+            name: 'Collections', 
+            href: `${baseUrl}/collections`, 
+            icon: Layers, 
+            requiredPlan: 'STARTER'
+          }] : []),
+          // @ts-ignore
+          ...(groupsEnabled ? [{
+            name: 'Groups', 
+            href: `${baseUrl}/groups`, 
+            icon: FolderTree, 
+            requiredPlan: 'STARTER'
+          }] : []),
+          { 
+            name: 'Import', 
+            href: `${baseUrl}/products/import`, 
+            icon: Upload, 
+            // @ts-ignore
+            requiredPlan: 'STARTER'
+          },
+        ]
+      }] : [])
+    ]),
     { 
       name: 'Customers', 
       href: `${baseUrl}/customers`, 
@@ -325,7 +382,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     // PRO and BUSINESS plan features (BUSINESS includes all PRO features)
     // @ts-ignore
     ...((subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') ? [
-      { 
+      // Inventory - only for non-salon businesses
+      // @ts-ignore
+      ...(!isSalon ? [{
         name: 'Inventory', 
         icon: Boxes,
         requiredPlan: 'PRO' as Plan,
@@ -349,7 +408,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             requiredPlan: 'PRO' as Plan
           },
         ]
-      },
+      }] : []),
       { 
         name: 'Discounts', 
         href: `${baseUrl}/discounts`, 
@@ -362,17 +421,26 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: BarChart3, 
         requiredPlan: 'PRO' as Plan
       },
-      { 
-        name: 'Team Management', 
-        href: `${baseUrl}/team`, 
-        icon: UserPlus, 
-        requiredPlan: 'PRO' as Plan
-      },
     ] : []),
     
     // BUSINESS plan features
     // @ts-ignore
     ...(subscription.plan === 'BUSINESS' ? [
+      // Team Management - BUSINESS plan only (all business types)
+      {
+        name: 'Team Management', 
+        href: `${baseUrl}/team`, 
+        icon: UserPlus, 
+        requiredPlan: 'BUSINESS' as Plan
+      },
+      // Staff Availability - SALON only
+      // @ts-ignore
+      ...(isSalon ? [{
+        name: 'Staff Availability',
+        href: `${baseUrl}/staff/availability`,
+        icon: Clock,
+        requiredPlan: 'BUSINESS' as Plan
+      }] : []),
       { 
         name: 'Custom Domain', 
         href: `${baseUrl}/domains`, 
@@ -396,6 +464,34 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       requiredPlan: 'STARTER' as Plan
     }] : []),
     
+    // Packaging Tracking - only shown when enabled by SuperAdmin
+    // @ts-ignore
+    ...(packagingTrackingEnabled ? [{
+      name: 'Packaging',
+      icon: Package,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        {
+          name: 'Types',
+          href: `${baseUrl}/packaging/types`,
+          icon: Boxes,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Purchases',
+          href: `${baseUrl}/packaging/purchases`,
+          icon: ShoppingBag,
+          requiredPlan: 'STARTER' as Plan
+        },
+        {
+          name: 'Dashboard',
+          href: `${baseUrl}/packaging/dashboard`,
+          icon: LayoutDashboard,
+          requiredPlan: 'STARTER' as Plan
+        },
+      ]
+    }] : []),
+
     // Delivery Management - only shown when enabled by SuperAdmin
     // @ts-ignore
     ...(enableDeliveryManagement ? [{
@@ -472,7 +568,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
         { 
-          name: 'Order Notifications', 
+          name: isSalon ? 'Appointment Notifications' : 'Order Notifications', 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 
           requiredPlan: 'STARTER'
