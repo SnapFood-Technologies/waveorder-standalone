@@ -1355,50 +1355,52 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
             </div>
           </div>
 
-          {/* Uncategorized Category Name Override */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-              <Tag className="w-5 h-5 text-teal-600 mr-2" />
-              Uncategorized Category Display
-            </h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Override the display name for "Uncategorized" categories on your storefront. This only affects how categories are shown to customers, not the actual category name in your admin panel.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  English Name Override
-                </label>
-                <input
-                  type="text"
-                  name="uncategorizedNameOverride"
-                  value={settings.uncategorizedNameOverride || ''}
-                  onChange={handleInputChange}
-                  placeholder="e.g., General, All Items, Other"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to use "Uncategorized"
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Albanian Name Override
-                </label>
-                <input
-                  type="text"
-                  name="uncategorizedNameOverrideAl"
-                  value={settings.uncategorizedNameOverrideAl || ''}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Të përgjithshme, Të gjitha, Të tjera"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave empty to use "Uncategorized"
-                </p>
+          {/* Uncategorized Category Name Override - Only show for non-salon businesses */}
+          {settings.businessType !== 'SALON' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                <Tag className="w-5 h-5 text-teal-600 mr-2" />
+                Uncategorized Category Display
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Override the display name for "Uncategorized" categories on your storefront. This only affects how categories are shown to customers, not the actual category name in your admin panel.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    English Name Override
+                  </label>
+                  <input
+                    type="text"
+                    name="uncategorizedNameOverride"
+                    value={settings.uncategorizedNameOverride || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., General, All Items, Other"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to use "Uncategorized"
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Albanian Name Override
+                  </label>
+                  <input
+                    type="text"
+                    name="uncategorizedNameOverrideAl"
+                    value={settings.uncategorizedNameOverrideAl || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Të përgjithshme, Të gjitha, Të tjera"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty to use "Uncategorized"
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Store Closure Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -1553,7 +1555,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   value={settings.seoKeywords || ''}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                  placeholder="restaurant, delivery, local business (comma-separated)"
+                  placeholder={settings.businessType === 'SALON' 
+                    ? "salon, beauty, appointments, local business (comma-separated)"
+                    : settings.businessType === 'RETAIL'
+                    ? "retail, shop, products, local business (comma-separated)"
+                    : "restaurant, delivery, local business (comma-separated)"}
                 />
               </div>
 
@@ -1608,7 +1614,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.seoKeywordsAl || ''}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                      placeholder="restorant, dërgesë, biznes lokal (të ndara me presje)"
+                      placeholder={settings.businessType === 'SALON' 
+                        ? 'sallon, bukuri, takime, biznes lokal (të ndara me presje)'
+                        : settings.businessType === 'RETAIL'
+                        ? 'shitje, dyqan, produkte, biznes lokal (të ndara me presje)'
+                        : 'restorant, dërgesë, biznes lokal (të ndara me presje)'}
                     />
                   </div>
                 </div>
@@ -1665,7 +1675,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.seoKeywordsEl || ''}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                      placeholder="εστιατόριο, παράδοση, τοπική επιχείρηση (χωρισμένα με κόμμα)"
+                      placeholder={settings.businessType === 'SALON' 
+                        ? "κομμωτήριο, ομορφιά, ραντεβού, τοπική επιχείρηση (χωρισμένα με κόμμα)"
+                        : settings.businessType === 'RETAIL'
+                        ? "καταστήματα, προϊόντα, τοπική επιχείρηση (χωρισμένα με κόμμα)"
+                        : "εστιατόριο, παράδοση, τοπική επιχείρηση (χωρισμένα με κόμμα)"}
                     />
                   </div>
                 </div>
@@ -1774,7 +1788,11 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       }}
                       rows={4}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm font-mono"
-                      placeholder='{"additionalType": "Restaurant", "cuisine": "Italian"}'
+                      placeholder={settings.businessType === 'SALON' 
+                        ? '{"additionalType": "BeautySalon", "service": "Haircut"}'
+                        : settings.businessType === 'RETAIL'
+                        ? '{"additionalType": "Store", "product": "Clothing"}'
+                        : '{"additionalType": "Restaurant", "cuisine": "Italian"}'}
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Valid JSON format for additional structured data

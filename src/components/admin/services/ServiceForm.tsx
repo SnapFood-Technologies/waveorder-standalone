@@ -893,7 +893,7 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">Service Add-ons</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Add optional extras or upgrades (e.g., "Deep Conditioning +$20")
+                      Add optional extras or upgrades (e.g., "Deep Conditioning +{getCurrencySymbol()}20")
                     </p>
                   </div>
                   <button
