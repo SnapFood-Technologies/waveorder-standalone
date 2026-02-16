@@ -2,7 +2,7 @@
 'use client'
 
 import Link from 'next/link'
-import { CheckCircle, ArrowRight, Star, Zap, Shield, Users, Globe, CreditCard, MessageSquare, HelpCircle, Award, Building2, Sparkles, Scissors, Calendar } from 'lucide-react'
+import { CheckCircle, ArrowRight, Star, Zap, Shield, Users, Globe, CreditCard, MessageSquare, HelpCircle, Award, Building2, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 
 export default function PricingComponent() {
@@ -278,61 +278,51 @@ export default function PricingComponent() {
         </div>
       </section>
 
-      {/* Salon-Specific Features Section */}
-      <section className="py-20 bg-gradient-to-br from-pink-50 via-white to-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Scissors className="w-8 h-8" />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Built for Salons & Beauty Businesses
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Specialized features designed specifically for salons, spas, and beauty studios
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-              <div className="w-12 h-12 bg-pink-100 text-pink-600 rounded-xl flex items-center justify-center mb-4">
-                <Scissors className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Service Management</h3>
+      {/* Glossary / Note Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-200">
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Same Pricing for All Business Types
+              </h3>
               <p className="text-gray-600">
-                List your services with duration, pricing, and add-ons. Organize by categories like Hair, Nails, Spa, and more.
+                Whether you offer products or services, our pricing stays the same
               </p>
             </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-              <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-4">
-                <Calendar className="w-6 h-6" />
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <HelpCircle className="w-6 h-6 text-blue-600 mt-0.5" />
+                </div>
+                <div className="ml-4">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    Don't Offer Products? Offering Services Instead?
+                  </h4>
+                  <p className="text-gray-700 leading-relaxed mb-4">
+                    If your business offers <strong>services</strong> (like salons, spas, beauty studios, or professional services) instead of physical products, the same pricing plans apply. Simply think of:
+                  </p>
+                  <ul className="mt-4 space-y-2 text-gray-700">
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span><strong>"Services"</strong> instead of "Products"</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span><strong>"WhatsApp Booking"</strong> instead of "WhatsApp Ordering"</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span><strong>"Appointments"</strong> instead of "Orders"</span>
+                    </li>
+                  </ul>
+                  <p className="mt-4 text-gray-700 leading-relaxed">
+                    All features, limits, and pricing remain exactly the same. The platform adapts to your business type automatically.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Appointment Booking</h3>
-              <p className="text-gray-600">
-                Clients can book appointments directly through your storefront. Manage appointments, track status, and view calendar (Pro+).
-              </p>
             </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-              <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center mb-4">
-                <Users className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Staff Management</h3>
-              <p className="text-gray-600">
-                Assign staff to services and appointments. Manage working hours and availability (Business plan).
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link
-              href="/salons"
-              className="inline-flex items-center text-pink-600 font-semibold hover:text-pink-700"
-            >
-              Learn more about salon features
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
           </div>
         </div>
       </section>
