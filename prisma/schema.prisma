@@ -1351,6 +1351,13 @@ model ProductEvent {
   // Context
   source String? // "product_card", "product_modal", "search", "featured"
 
+  // UTM Parameters (from URL when event occurred)
+  utmSource   String? // utm_source from URL
+  utmMedium   String? // utm_medium from URL
+  utmCampaign String? // utm_campaign from URL
+  utmTerm     String? // utm_term from URL
+  utmContent  String? // utm_content from URL
+
   // Timestamps
   createdAt DateTime @default(now())
 
@@ -1363,6 +1370,8 @@ model ProductEvent {
   @@index([businessId, createdAt])
   @@index([productId, eventType])
   @@index([businessId, productId, eventType, createdAt])
+  @@index([businessId, utmCampaign])
+  @@index([businessId, utmSource, utmMedium])
 }
 
 enum UserRole {

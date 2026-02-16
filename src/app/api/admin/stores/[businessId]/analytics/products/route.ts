@@ -78,11 +78,11 @@ export async function GET(
       }
     })
 
-    // Aggregate events by product
-    const eventsByProduct = new Map<string, { views: number; addToCarts: number }>()
+    // Aggregate events by product and track which events led to orders
+    const eventsByProduct = new Map<string, { views: number; addToCarts: number; viewsThatLedToOrders: number; addToCartsThatLedToOrders: number }>()
     
     for (const event of productEvents) {
-      const existing = eventsByProduct.get(event.productId) || { views: 0, addToCarts: 0 }
+      const existing = eventsByProduct.get(event.productId) || { views: 0, addToCarts: 0, viewsThatLedToOrders: 0, addToCartsThatLedToOrders: 0 }
       if (event.eventType === 'view') {
         existing.views++
       } else if (event.eventType === 'add_to_cart') {
@@ -105,6 +105,7 @@ export async function GET(
         status: true,
         paymentStatus: true,
         createdAt: true,
+        sessionId: true, // Include sessionId for direct linking
         items: {
           select: {
             productId: true,
@@ -167,43 +168,71 @@ export async function GET(
     }
 
     // Calculate abandoned cart rate
-    // Definition: Sessions with add_to_cart but no order within 24 hours
-    const addToCartSessions = new Map<string, { productIds: Set<string>; timestamp: Date }>()
+    // Definition: Sessions with add_to_cart but no order with matching sessionId
+    const addToCartSessions = new Map<string, { productIds: Set<string> }>()
     
     for (const event of productEvents) {
       if (event.eventType === 'add_to_cart' && event.sessionId) {
         const existing = addToCartSessions.get(event.sessionId) || { 
-          productIds: new Set<string>(), 
-          timestamp: event.createdAt 
+          productIds: new Set<string>()
         }
         existing.productIds.add(event.productId)
-        // Keep the earliest add_to_cart timestamp for this session
-        if (event.createdAt < existing.timestamp) {
-          existing.timestamp = event.createdAt
-        }
         addToCartSessions.set(event.sessionId, existing)
       }
     }
 
-    // Check which sessions resulted in orders (within 24 hours of add_to_cart)
+    // Create a set of sessionIds that have orders (for fast lookup)
+    const sessionsWithOrders = new Set<string>()
+    // Also track which products were ordered per session for accurate conversion tracking
+    const sessionsWithOrdersByProduct = new Map<string, Set<string>>()
+    for (const order of orders) {
+      if (order.sessionId) {
+        sessionsWithOrders.add(order.sessionId)
+        // Track which products were ordered in this session
+        const productIds = new Set(order.items.map(item => item.productId))
+        sessionsWithOrdersByProduct.set(order.sessionId, productIds)
+      }
+    }
+
+    // Track which events led to orders (for accurate conversion rates)
+    for (const event of productEvents) {
+      if (!event.sessionId) continue
+      
+      const productId = event.productId
+      const existing = eventsByProduct.get(productId)
+      if (!existing) continue
+      
+      // Check if this sessionId has an order that includes this product
+      const sessionProductIds = sessionsWithOrdersByProduct.get(event.sessionId)
+      if (sessionProductIds && sessionProductIds.has(productId)) {
+        if (event.eventType === 'view') {
+          existing.viewsThatLedToOrders++
+        } else if (event.eventType === 'add_to_cart') {
+          existing.addToCartsThatLedToOrders++
+        }
+        eventsByProduct.set(productId, existing)
+      }
+    }
+
+    // Check which sessions resulted in orders (direct link via sessionId)
     let abandonedCarts = 0
     let convertedCarts = 0
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 
     for (const [sessionId, cartData] of addToCartSessions) {
-      const cartTime = cartData.timestamp.getTime()
-      const cartProductIds = cartData.productIds
-      
-      // Check if any order was placed within 24 hours containing any of the cart products
-      const hasOrder = orders.some(order => {
-        const orderTime = order.createdAt.getTime()
-        const withinWindow = orderTime >= cartTime && orderTime <= cartTime + TWENTY_FOUR_HOURS
-        const hasMatchingProduct = order.items.some(item => cartProductIds.has(item.productId))
-        return withinWindow && hasMatchingProduct
-      })
-
-      if (hasOrder) {
-        convertedCarts++
+      // Direct link: check if this sessionId has any order
+      if (sessionsWithOrders.has(sessionId)) {
+        // Verify the order contains at least one product from the cart
+        const hasMatchingOrder = orders.some(order => 
+          order.sessionId === sessionId && 
+          order.items.some(item => cartData.productIds.has(item.productId))
+        )
+        
+        if (hasMatchingOrder) {
+          convertedCarts++
+        } else {
+          // Session has order but not for these products - still counts as converted
+          convertedCarts++
+        }
       } else {
         abandonedCarts++
       }
@@ -247,7 +276,7 @@ export async function GET(
       const product = productMap.get(productId)
       if (!product) continue // Skip if product no longer exists
 
-      const events = eventsByProduct.get(productId) || { views: 0, addToCarts: 0 }
+      const events = eventsByProduct.get(productId) || { views: 0, addToCarts: 0, viewsThatLedToOrders: 0, addToCartsThatLedToOrders: 0 }
       const orderData = ordersByProduct.get(productId) || { 
         ordersPlaced: 0, 
         ordersCompleted: 0, 
@@ -260,13 +289,13 @@ export async function GET(
         ? (events.addToCarts / events.views) * 100 
         : 0
       
-      // Use ordersPlaced for conversion rates (customer action)
+      // Use sessionId linking for accurate conversion rates (direct link via sessionId)
       const cartToOrderRate = events.addToCarts > 0 
-        ? (orderData.ordersPlaced / events.addToCarts) * 100 
+        ? (events.addToCartsThatLedToOrders / events.addToCarts) * 100 
         : 0
       
       const conversionRate = events.views > 0 
-        ? (orderData.ordersPlaced / events.views) * 100 
+        ? (events.viewsThatLedToOrders / events.views) * 100 
         : 0
 
       analyticsData.push({

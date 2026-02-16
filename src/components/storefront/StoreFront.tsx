@@ -2147,12 +2147,30 @@ const trackProductEvent = useCallback((
   
   const sessionId = getSessionId()
   
+  // Get UTM params from localStorage (captured on page load)
+  const storedUtm = typeof window !== 'undefined' 
+    ? localStorage.getItem(`utm_params_${storeData.slug}`)
+    : null
+  let utmParams: any = {}
+  if (storedUtm) {
+    try {
+      utmParams = JSON.parse(storedUtm)
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+  
   // Use sendBeacon for reliable delivery (doesn't block page navigation)
   const data = JSON.stringify({
     productId,
     eventType,
     sessionId,
-    source
+    source,
+    utmSource: utmParams.utm_source || null,
+    utmMedium: utmParams.utm_medium || null,
+    utmCampaign: utmParams.utm_campaign || null,
+    utmTerm: utmParams.utm_term || null,
+    utmContent: utmParams.utm_content || null
   })
   
   const url = `/api/storefront/${storeData.slug}/track`
