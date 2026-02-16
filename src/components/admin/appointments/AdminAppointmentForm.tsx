@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Phone, Mail, Calendar, Clock, Scissors, Plus, X, Search, Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
+import { User, Phone, Mail, Calendar, Clock, Scissors, Plus, X, Search, Save, ArrowLeft, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface AdminAppointmentFormProps {
@@ -605,43 +605,47 @@ export default function AdminAppointmentForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Customer Selection */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Customer
-          </h2>
+              {/* Customer Selection */}
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-teal-600" />
+                  Customer Information
+                </h2>
 
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={formData.customerType === 'existing'}
-                  onChange={() => setFormData(prev => ({ ...prev, customerType: 'existing' }))}
-                  className="mr-2"
-                />
-                Existing Customer
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  checked={formData.customerType === 'new'}
-                  onChange={() => setFormData(prev => ({ 
-                    ...prev, 
-                    customerType: 'new',
-                    newCustomer: prev.newCustomer || {
-                      name: '',
-                      phone: '',
-                      email: '',
-                      tier: 'REGULAR'
-                    }
-                  }))}
-                  className="mr-2"
-                />
-                New Customer
-              </label>
-            </div>
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="customerType"
+                        value="existing"
+                        checked={formData.customerType === 'existing'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, customerType: e.target.value as any }))}
+                        className="text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="ml-2">Existing Customer</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="customerType"
+                        value="new"
+                        checked={formData.customerType === 'new'}
+                        onChange={(e) => setFormData(prev => ({ 
+                          ...prev, 
+                          customerType: e.target.value as any,
+                          newCustomer: prev.newCustomer || {
+                            name: '',
+                            phone: '',
+                            email: '',
+                            tier: 'REGULAR'
+                          }
+                        }))}
+                        className="text-teal-600 focus:ring-teal-500"
+                      />
+                      <span className="ml-2">New Customer</span>
+                    </label>
+                  </div>
 
             {formData.customerType === 'existing' ? (
               <div>
@@ -721,12 +725,12 @@ export default function AdminAppointmentForm({
           </div>
         </div>
 
-        {/* Services Selection */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Scissors className="w-5 h-5" />
-            Services
-          </h2>
+              {/* Services Selection */}
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Scissors className="w-5 h-5 mr-2 text-teal-600" />
+                  Services
+                </h2>
 
           <ServiceSearch
             businessId={businessId}
@@ -780,151 +784,264 @@ export default function AdminAppointmentForm({
           )}
         </div>
 
-        {/* Appointment Details */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Appointment Details
-          </h2>
+              {/* Appointment Details */}
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-teal-600" />
+                  Appointment Details
+                </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date *
-              </label>
-              <input
-                type="date"
-                value={formData.appointmentDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, appointmentDate: e.target.value }))}
-                min={format(new Date(), 'yyyy-MM-dd')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-              />
-              {errors.appointmentDate && (
-                <p className="text-red-600 text-sm mt-1">{errors.appointmentDate}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.appointmentDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, appointmentDate: e.target.value }))}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 ${
+                        errors.appointmentDate ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.appointmentDate && (
+                      <p className="text-red-600 text-sm mt-1">{errors.appointmentDate}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Time *
+                    </label>
+                    <input
+                      type="time"
+                      value={formData.appointmentTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, appointmentTime: e.target.value }))}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 ${
+                        errors.appointmentTime ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                    {errors.appointmentTime && (
+                      <p className="text-red-600 text-sm mt-1">{errors.appointmentTime}</p>
+                    )}
+                  </div>
+                </div>
+
+                {teamMembers.length > 0 && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Assign Staff (Optional)
+                    </label>
+                    <select
+                      value={formData.staffId || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, staffId: e.target.value || undefined }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                    >
+                      <option value="">No assignment</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.userId} value={member.userId}>
+                          {member.name} ({member.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'REQUESTED' | 'CONFIRMED' }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                  >
+                    <option value="REQUESTED">Requested</option>
+                    <option value="CONFIRMED">Confirmed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Payment & Notes */}
+              <div>
+                <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-teal-600" />
+                  Payment & Notes
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Method
+                    </label>
+                    <select
+                      value={formData.paymentMethod}
+                      onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900"
+                    >
+                      <option value="CASH">Cash</option>
+                      <option value="CARD">Card</option>
+                      <option value="ONLINE">Online</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Total Amount
+                    </label>
+                    <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
+                      {formatCurrency(totals)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
+                    placeholder="Any special notes or instructions..."
+                  />
+                </div>
+              </div>
+
+              {errors.submit && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{errors.submit}</p>
+                </div>
               )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Time *
-              </label>
-              <input
-                type="time"
-                value={formData.appointmentTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, appointmentTime: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-              />
-              {errors.appointmentTime && (
-                <p className="text-red-600 text-sm mt-1">{errors.appointmentTime}</p>
-              )}
-            </div>
-          </div>
 
-          {teamMembers.length > 0 && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign Staff (Optional)
-              </label>
-              <select
-                value={formData.staffId || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, staffId: e.target.value || undefined }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-              >
-                <option value="">No assignment</option>
-                {teamMembers.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.name} ({member.role})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'REQUESTED' | 'CONFIRMED' }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-            >
-              <option value="REQUESTED">Requested</option>
-              <option value="CONFIRMED">Confirmed</option>
-            </select>
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSubmitting ? 'Creating...' : 'Create Appointment'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 
-        {/* Payment & Notes */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Payment & Notes
-          </h2>
+        {/* Sidebar - 1/3 width */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+            {/* Appointment Summary */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Appointment Summary</h3>
+              
+              {formData.services.length > 0 ? (
+                <div>
+                  <div className="space-y-2 mb-4">
+                    {formData.services.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-gray-900 font-medium truncate">{item.name}</p>
+                          <p className="text-gray-500 text-xs">{item.duration} min</p>
+                        </div>
+                        <span className="text-gray-900 ml-2">{formatCurrency(item.price)}</span>
+                      </div>
+                    ))}
+                  </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payment Method
-              </label>
-              <select
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-              >
-                <option value="CASH">Cash</option>
-                <option value="CARD">Card</option>
-                <option value="ONLINE">Online</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Total Amount
-              </label>
-              <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-lg font-semibold text-gray-900">
-                {formatCurrency(totals)}
+                  <div className="border-t border-gray-200 pt-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Total Duration:</span>
+                      <span className="text-gray-900">{formatDuration(totalDuration)}</span>
+                    </div>
+                    
+                    <div className="flex justify-between text-lg font-semibold border-t border-gray-200 pt-2">
+                      <span className="text-gray-900">Total:</span>
+                      <span className="text-teal-600">{formatCurrency(totals)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No services added yet</p>
+                  <p className="text-gray-400 text-xs">Search and add services above</p>
+                </div>
+              )}
+
+              {/* Appointment Info */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Appointment Details</h4>
+                
+                <div className="space-y-2 text-xs text-gray-600">
+                  {formData.appointmentDate && (
+                    <div className="flex justify-between">
+                      <span>Date:</span>
+                      <span className="font-medium">
+                        {new Date(formData.appointmentDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {formData.appointmentTime && (
+                    <div className="flex justify-between">
+                      <span>Time:</span>
+                      <span className="font-medium">{formData.appointmentTime}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="font-medium">{formData.status}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span>Payment:</span>
+                    <span className="font-medium">{formData.paymentMethod}</span>
+                  </div>
+                  
+                  {formData.staffId && teamMembers.find(m => m.userId === formData.staffId) && (
+                    <div className="flex justify-between">
+                      <span>Staff:</span>
+                      <span className="font-medium">
+                        {teamMembers.find(m => m.userId === formData.staffId)?.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-xs font-semibold text-gray-800 mb-2 flex items-center">
+                  <Info className="w-3 h-3 mr-1" />
+                  Quick Tips
+                </h4>
+                <ul className="space-y-1 text-xs text-gray-600">
+                  <li>• Appointments are set to {formData.status} status</li>
+                  <li>• Total duration is calculated automatically</li>
+                  <li>• Staff assignment is optional</li>
+                  <li>• Customer will receive confirmation notification</li>
+                </ul>
               </div>
             </div>
           </div>
-
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-gray-900"
-              placeholder="Any special notes or instructions..."
-            />
-          </div>
         </div>
-
-        {errors.submit && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <span className="text-red-800">{errors.submit}</span>
-          </div>
-        )}
-
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {isSubmitting ? 'Creating...' : 'Create Appointment'}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   )
 }
