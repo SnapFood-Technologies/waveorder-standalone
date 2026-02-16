@@ -799,6 +799,10 @@ export async function GET(
       collections: collections || [],
       groups: groups || [],
       brands: brands || [],
+      
+      // Invoice/Receipt Selection (for Greek storefronts)
+      invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled || false,
+      invoiceMinimumOrderValue: business.invoiceMinimumOrderValue || null,
 
       // Happy Hour / Daily Discounts
       happyHour: (() => {

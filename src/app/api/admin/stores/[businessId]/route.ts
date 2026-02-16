@@ -133,6 +133,7 @@ export async function GET(
         showProductionPlanning: true, // For Production Queue feature
         enableManualTeamCreation: true, // For Manual Team Creation feature
         enableDeliveryManagement: true, // For Delivery Management feature
+        packagingTrackingEnabled: true, // For Packaging Tracking feature
         enableAffiliateSystem: true, // For Affiliate System feature
         legalPagesEnabled: true, // For Legal Pages feature
         

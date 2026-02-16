@@ -114,6 +114,10 @@ interface Order {
     name: string
     email: string
   } | null
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null  // Invoice/Receipt selection (for Greek storefronts)
+  invoiceAfm?: string | null  // Tax ID (AFM) - 9 digits
+  invoiceCompanyName?: string | null  // Company name
+  invoiceTaxOffice?: string | null  // Tax office (ΔΟΥ)
   createdAt: string
   updatedAt: string
 }
@@ -124,6 +128,7 @@ interface Business {
   whatsappNumber: string
   businessType: string
   language: string
+  storefrontLanguage?: string
   translateContentToBusinessLanguage?: boolean
   timeFormat?: string
   // Notification settings
@@ -159,6 +164,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
+  
+  // Invoice/Receipt editing states
+  const [editingInvoice, setEditingInvoice] = useState(false)
+  const [invoiceAfm, setInvoiceAfm] = useState<string>('')
+  const [invoiceCompanyName, setInvoiceCompanyName] = useState<string>('')
+  const [invoiceTaxOffice, setInvoiceTaxOffice] = useState<string>('')
 
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -167,6 +178,26 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [deliveryPersons, setDeliveryPersons] = useState<Array<{ id: string; name: string; email: string }>>([])
   const [assigningDelivery, setAssigningDelivery] = useState(false)
   const [selectedDeliveryPersonId, setSelectedDeliveryPersonId] = useState<string>('')
+  
+  // Packaging tracking
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
+  const [packagingTypes, setPackagingTypes] = useState<Array<{ id: string; name: string; unit: string }>>([])
+  const [orderPackaging, setOrderPackaging] = useState<Array<{
+    id: string
+    packagingTypeId: string
+    quantity: number
+    itemsPerPackage: number | null
+    cost: number | null
+    notes: string | null
+    packagingType: { id: string; name: string; unit: string }
+  }>>([])
+  const [showAddPackaging, setShowAddPackaging] = useState(false)
+  const [newPackagingTypeId, setNewPackagingTypeId] = useState('')
+  const [newPackagingQuantity, setNewPackagingQuantity] = useState('1')
+  const [newPackagingItemsPerPackage, setNewPackagingItemsPerPackage] = useState('')
+  const [newPackagingCost, setNewPackagingCost] = useState('')
+  const [newPackagingNotes, setNewPackagingNotes] = useState('')
+  const [addingPackaging, setAddingPackaging] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -175,6 +206,13 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       fetchDeliveryPersons()
     }
   }, [businessId, orderId])
+
+  useEffect(() => {
+    if (packagingTrackingEnabled) {
+      fetchPackagingTypes()
+      fetchOrderPackaging()
+    }
+  }, [packagingTrackingEnabled, orderId])
 
   useEffect(() => {
     if (order?.type === 'DELIVERY' && enableDeliveryManagement) {
@@ -189,9 +227,96 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       if (response.ok) {
         const data = await response.json()
         setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+        setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
       }
     } catch (error) {
       console.error('Error fetching business settings:', error)
+    }
+  }
+
+  const fetchPackagingTypes = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/packaging/types`)
+      if (response.ok) {
+        const data = await response.json()
+        setPackagingTypes(data.packagingTypes || [])
+      }
+    } catch (error) {
+      console.error('Error fetching packaging types:', error)
+    }
+  }
+
+  const fetchOrderPackaging = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging`)
+      if (response.ok) {
+        const data = await response.json()
+        setOrderPackaging(data.orderPackaging || [])
+      }
+    } catch (error) {
+      console.error('Error fetching order packaging:', error)
+    }
+  }
+
+  const handleAddPackaging = async () => {
+    if (!newPackagingTypeId || !newPackagingQuantity) {
+      toast.error('Please select packaging type and enter quantity')
+      return
+    }
+
+    setAddingPackaging(true)
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          packagingTypeId: newPackagingTypeId,
+          quantity: parseInt(newPackagingQuantity),
+          itemsPerPackage: newPackagingItemsPerPackage ? parseInt(newPackagingItemsPerPackage) : null,
+          cost: newPackagingCost ? parseFloat(newPackagingCost) : null,
+          notes: newPackagingNotes.trim() || null
+        })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to add packaging')
+      }
+
+      toast.success('Packaging added to order')
+      setShowAddPackaging(false)
+      setNewPackagingTypeId('')
+      setNewPackagingQuantity('1')
+      setNewPackagingItemsPerPackage('')
+      setNewPackagingCost('')
+      setNewPackagingNotes('')
+      fetchOrderPackaging()
+    } catch (error) {
+      console.error('Error adding packaging:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to add packaging')
+    } finally {
+      setAddingPackaging(false)
+    }
+  }
+
+  const handleRemovePackaging = async (packagingId: string) => {
+    if (!confirm('Remove this packaging from the order?')) return
+
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/packaging/${packagingId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Failed to remove packaging')
+      }
+
+      toast.success('Packaging removed')
+      fetchOrderPackaging()
+    } catch (error) {
+      console.error('Error removing packaging:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to remove packaging')
     }
   }
 
@@ -259,6 +384,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         setSelectedPaymentStatus(data.order.paymentStatus)
         setOrderNotes(data.order.notes || '')
         setDeliveryTime(data.order.deliveryTime ? new Date(data.order.deliveryTime).toISOString().slice(0, 16) : '')
+        setInvoiceAfm(data.order.invoiceAfm || '')
+        setInvoiceCompanyName(data.order.invoiceCompanyName || '')
+        setInvoiceTaxOffice(data.order.invoiceTaxOffice || '')
       } else if (response.status === 404) {
         setError('Order not found')
       } else {
@@ -577,10 +705,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'RESTAURANT':
           case 'CAFE':
           case 'GROCERY':
-          case 'FLORIST':
             return <Truck className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <Package className="w-5 h-5" />
           default:
             return <Truck className="w-5 h-5" />
@@ -591,12 +717,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'CAFE':
             return <ShoppingBag className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <Store className="w-5 h-5" />
           case 'GROCERY':
             return <ShoppingBag className="w-5 h-5" />
-          case 'FLORIST':
-            return <Store className="w-5 h-5" />
           default:
             return <Store className="w-5 h-5" />
         }
@@ -606,12 +729,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           case 'CAFE':
             return <UtensilsCrossed className="w-5 h-5" />
           case 'RETAIL':
-          case 'JEWELRY':
             return <User className="w-5 h-5" />
           case 'GROCERY':
             return <ShoppingBag className="w-5 h-5" />
-          case 'FLORIST':
-            return <User className="w-5 h-5" />
           default:
             return <User className="w-5 h-5" />
         }
@@ -728,6 +848,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     }
     
     message += `💰 ${whatsappLabels.total}: ${formatCurrency(order.total)}\n`
+    
+    // Add invoice/receipt selection if present (for Greek storefronts)
+    if (order.invoiceType && language === 'el') {
+      const invoiceLabel = order.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'
+      message += `\n${invoiceLabel}: Ναι\n`
+    }
     
     if (order.deliveryTime) {
       const deliveryDate = new Date(order.deliveryTime)
@@ -1490,6 +1616,139 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             </div>
           )}
 
+          {/* Packaging Tracking */}
+          {packagingTrackingEnabled && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <Package className="w-5 h-5 mr-2 text-teal-600" />
+                  Packaging
+                </h3>
+                {!showAddPackaging && (
+                  <button
+                    onClick={() => setShowAddPackaging(true)}
+                    className="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    Add Packaging
+                  </button>
+                )}
+              </div>
+
+              {showAddPackaging && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Packaging Type *</label>
+                    <select
+                      value={newPackagingTypeId}
+                      onChange={(e) => setNewPackagingTypeId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="">Select packaging type</option>
+                      {packagingTypes.filter(t => t.id).map((type) => (
+                        <option key={type.id} value={type.id}>{type.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newPackagingQuantity}
+                        onChange={(e) => setNewPackagingQuantity(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Items per Package</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={newPackagingItemsPerPackage}
+                        onChange={(e) => setNewPackagingItemsPerPackage(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost ({business?.currency || 'USD'})</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newPackagingCost}
+                      onChange={(e) => setNewPackagingCost(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea
+                      value={newPackagingNotes}
+                      onChange={(e) => setNewPackagingNotes(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      rows={2}
+                      placeholder="Optional notes"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleAddPackaging}
+                      disabled={addingPackaging || !newPackagingTypeId || !newPackagingQuantity}
+                      className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {addingPackaging ? 'Adding...' : 'Add'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddPackaging(false)
+                        setNewPackagingTypeId('')
+                        setNewPackagingQuantity('1')
+                        setNewPackagingItemsPerPackage('')
+                        setNewPackagingCost('')
+                        setNewPackagingNotes('')
+                      }}
+                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {orderPackaging.length > 0 ? (
+                <div className="space-y-2">
+                  {orderPackaging.map((pkg) => (
+                    <div key={pkg.id} className="bg-gray-50 p-3 rounded-lg flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{pkg.packagingType.name}</p>
+                        <p className="text-sm text-gray-600">
+                          Quantity: {pkg.quantity} {pkg.packagingType.unit}
+                          {pkg.itemsPerPackage && ` • ${pkg.itemsPerPackage} items per package`}
+                          {pkg.cost && ` • Cost: ${business?.currency || 'USD'} ${pkg.cost.toFixed(2)}`}
+                        </p>
+                        {pkg.notes && (
+                          <p className="text-xs text-gray-500 mt-1">{pkg.notes}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemovePackaging(pkg.id)}
+                        className="ml-2 p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No packaging assigned to this order</p>
+              )}
+            </div>
+          )}
+
           {/* Delivery Information */}
           {order.type === 'DELIVERY' && order.deliveryAddress && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
@@ -1735,6 +1994,169 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">
                   {order.notes}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Invoice/Receipt Selection - Only show for Greek storefronts */}
+          {order.invoiceType && (business?.language === 'el' || business?.storefrontLanguage === 'el') && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Τιμολόγιο / Απόδειξη
+                </h3>
+                {order.invoiceType === 'INVOICE' && !editingInvoice && (
+                  <button
+                    onClick={() => setEditingInvoice(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Edit
+                  </button>
+                )}
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center mb-3">
+                  <div className={`px-3 py-1 rounded-lg font-medium text-sm ${
+                    order.invoiceType === 'INVOICE' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-green-600 text-white'
+                  }`}>
+                    {order.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}
+                  </div>
+                  <p className="ml-3 text-sm text-gray-700">
+                    Ο πελάτης έχει επιλέξει να λάβει {order.invoiceType === 'INVOICE' ? 'τιμολόγιο' : 'απόδειξη'} για αυτή την παραγγελία.
+                  </p>
+                </div>
+
+                {/* Invoice Details - Show when INVOICE is selected */}
+                {order.invoiceType === 'INVOICE' && (
+                  <>
+                    {!editingInvoice ? (
+                      <div className="mt-4 space-y-2">
+                        {order.invoiceAfm && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">ΑΦΜ:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceAfm}</span>
+                          </div>
+                        )}
+                        {order.invoiceCompanyName && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">Επωνυμία:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceCompanyName}</span>
+                          </div>
+                        )}
+                        {order.invoiceTaxOffice && (
+                          <div>
+                            <span className="text-xs font-medium text-gray-600">ΔΟΥ:</span>
+                            <span className="ml-2 text-sm text-gray-900">{order.invoiceTaxOffice}</span>
+                          </div>
+                        )}
+                        {!order.invoiceAfm && !order.invoiceCompanyName && !order.invoiceTaxOffice && (
+                          <p className="text-xs text-gray-500 italic">No invoice details provided yet</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            ΑΦΜ (Φορολογικός Αριθμός) *
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceAfm}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 9)
+                              setInvoiceAfm(value)
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="123456789"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            {invoiceAfm.length === 9 ? '✓ 9 digits' : `${invoiceAfm.length}/9 digits`}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Επωνυμία Εταιρείας (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceCompanyName}
+                            onChange={(e) => setInvoiceCompanyName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="Company name"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            ΔΟΥ (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={invoiceTaxOffice}
+                            onChange={(e) => setInvoiceTaxOffice(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            placeholder="Tax office"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 pt-2">
+                          <button
+                            onClick={async () => {
+                              if (!invoiceAfm || invoiceAfm.length !== 9) {
+                                toast.error('Please enter a valid AFM (9 digits)')
+                                return
+                              }
+                              setUpdating(true)
+                              try {
+                                const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    invoiceAfm: invoiceAfm || null,
+                                    invoiceCompanyName: invoiceCompanyName || null,
+                                    invoiceTaxOffice: invoiceTaxOffice || null
+                                  })
+                                })
+                                if (response.ok) {
+                                  toast.success('Invoice details updated')
+                                  setEditingInvoice(false)
+                                  fetchOrder()
+                                } else {
+                                  const data = await response.json()
+                                  toast.error(data.message || 'Failed to update invoice details')
+                                }
+                              } catch (error) {
+                                console.error('Error updating invoice details:', error)
+                                toast.error('Failed to update invoice details')
+                              } finally {
+                                setUpdating(false)
+                              }
+                            }}
+                            disabled={updating}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50"
+                          >
+                            {updating ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingInvoice(false)
+                              setInvoiceAfm(order.invoiceAfm || '')
+                              setInvoiceCompanyName(order.invoiceCompanyName || '')
+                              setInvoiceTaxOffice(order.invoiceTaxOffice || '')
+                            }}
+                            disabled={updating}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           )}

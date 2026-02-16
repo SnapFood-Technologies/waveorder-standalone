@@ -38,6 +38,7 @@ import {
   Search,
   ChefHat,
   Key,
+  FileText,
   Shield
 } from 'lucide-react'
 import Link from 'next/link'
@@ -71,6 +72,8 @@ interface BusinessDetails {
   showProductionPlanning?: boolean
   enableManualTeamCreation?: boolean
   enableDeliveryManagement?: boolean
+  invoiceReceiptSelectionEnabled?: boolean
+  packagingTrackingEnabled?: boolean
   enableAffiliateSystem?: boolean
   legalPagesEnabled?: boolean
   address?: string
@@ -168,8 +171,7 @@ const businessTypeIcons: Record<string, any> = {
   CAFE: '☕',
   RETAIL: '🛍️',
   GROCERY: '🛒',
-  BEAUTY: '💄',
-  FITNESS: '💪',
+  SALON: '✂️',
   OTHER: '🏢'
 }
 
@@ -668,18 +670,20 @@ export default function BusinessDetailsPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Business Statistics</h2>
               <Link
-                href={`/superadmin/businesses/${businessId}/orders`}
+                href={`/superadmin/businesses/${businessId}/${business.businessType === 'SALON' ? 'appointments' : 'orders'}`}
                 className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
               >
                 <ShoppingBag className="w-4 h-4 mr-1" />
-                Order Stats
+                {business.businessType === 'SALON' ? 'Appointment Stats' : 'Order Stats'}
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-                <p className="text-xs text-gray-500">Total Orders</p>
+                <p className="text-xs text-gray-500">
+                  {business.businessType === 'SALON' ? 'Total Appointments' : 'Total Orders'}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Users className="w-6 h-6 text-gray-400 mx-auto mb-2" />
@@ -689,7 +693,9 @@ export default function BusinessDetailsPage() {
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <ShoppingBag className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
-                <p className="text-xs text-gray-500">Products</p>
+                <p className="text-xs text-gray-500">
+                  {business.businessType === 'SALON' ? 'Services' : 'Products'}
+                </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <TrendingUp className="w-6 h-6 text-gray-400 mx-auto mb-2" />
@@ -801,12 +807,12 @@ export default function BusinessDetailsPage() {
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-amber-900">
-                          {business.stats.productsWithoutPhotos} Product{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
+                          {business.stats.productsWithoutPhotos} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
                         </p>
                         <p className="text-xs text-amber-700 mt-1">
                           {business.stats.productsWithoutPhotos === 0 
-                            ? 'All products have photos' 
-                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} products are missing images`}
+                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have photos` 
+                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} are missing images`}
                         </p>
                       </div>
                     </div>
@@ -820,12 +826,12 @@ export default function BusinessDetailsPage() {
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-red-900">
-                          {business.stats.productsWithZeroPrice} Product{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
+                          {business.stats.productsWithZeroPrice} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
                         </p>
                         <p className="text-xs text-red-700 mt-1">
                           {business.stats.productsWithZeroPrice === 0 
-                            ? 'All products have valid prices' 
-                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} products have price ≤ 0`}
+                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have valid prices` 
+                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} have price ≤ 0`}
                         </p>
                       </div>
                     </div>
@@ -1405,6 +1411,12 @@ export default function BusinessDetailsPage() {
 
           {/* Delivery Management Settings */}
           <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
+          {/* Invoice/Receipt Selection Settings */}
+          <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
+
+          {/* Packaging Tracking Settings */}
+          <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Legal Pages Settings */}
           <LegalPagesSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -2627,6 +2639,187 @@ function DeliveryManagementSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Delivery management features not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Invoice/Receipt Selection Settings Section Component (SuperAdmin toggle only)
+function InvoiceReceiptSelectionSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [invoiceReceiptEnabled, setInvoiceReceiptEnabled] = useState(business.invoiceReceiptSelectionEnabled || false)
+  const isGreekStorefront = (business.storefrontLanguage || business.language) === 'el'
+
+  const handleToggle = async () => {
+    const newValue = !invoiceReceiptEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceReceiptSelectionEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setInvoiceReceiptEnabled(newValue)
+        toast.success(newValue ? 'Invoice/Receipt Selection enabled' : 'Invoice/Receipt Selection disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling invoice/receipt selection:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <FileText className="w-5 h-5 mr-2 text-blue-600" />
+        Invoice/Receipt Selection
+      </h3>
+      
+      {!isGreekStorefront && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800">
+            <AlertTriangle className="w-4 h-4 inline mr-1" />
+            <span className="font-medium">Note:</span> This feature is only available for businesses with Greek storefront language (el). Current language: {business.storefrontLanguage || business.language || 'en'}
+          </p>
+        </div>
+      )}
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Invoice/Receipt Selection</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, Greek storefronts will show an option for customers to select between "Τιμολόγιο" (Invoice) or "Απόδειξη" (Receipt) during checkout. This selection will be included in WhatsApp messages and email notifications.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving || !isGreekStorefront}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+            invoiceReceiptEnabled && isGreekStorefront ? 'bg-blue-600' : 'bg-gray-200'
+          } ${saving || !isGreekStorefront ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              invoiceReceiptEnabled && isGreekStorefront ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {invoiceReceiptEnabled && isGreekStorefront && (
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-700">
+            <span className="font-medium">Enabled:</span> Customers will see "Τιμολόγιο" (Invoice) and "Απόδειξη" (Receipt) options during checkout. The selection will be included in order notifications.
+          </p>
+        </div>
+      )}
+      
+      {!invoiceReceiptEnabled && isGreekStorefront && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Invoice/receipt selection feature not available to customers.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Packaging Tracking Settings Section Component
+function PackagingTrackingSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(business.packagingTrackingEnabled || false)
+
+  const handleToggle = async () => {
+    const newValue = !packagingTrackingEnabled
+    setSaving(true)
+    
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packagingTrackingEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setPackagingTrackingEnabled(newValue)
+        toast.success(newValue ? 'Packaging Tracking enabled' : 'Packaging Tracking disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling packaging tracking:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Package className="w-5 h-5 mr-2 text-purple-600" />
+        Packaging Tracking
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Packaging Tracking</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admin can track packaging materials, record purchases from suppliers, and assign packaging to orders. Useful for jewelry, retail, and other businesses that need to track packaging expenses.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+            packagingTrackingEnabled ? 'bg-purple-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              packagingTrackingEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      
+      {packagingTrackingEnabled && (
+        <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-xs text-purple-700">
+            <span className="font-medium">Enabled:</span> Business admin can now manage packaging types, record purchases, assign packaging to orders, and view packaging usage reports.
+          </p>
+        </div>
+      )}
+      {!packagingTrackingEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Packaging tracking feature not available to business admin.
           </p>
         </div>
       )}

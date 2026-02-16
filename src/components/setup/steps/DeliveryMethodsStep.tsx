@@ -112,50 +112,6 @@ const businessTypeConfig = {
       }
     ]
   },
-  JEWELRY: {
-    title: 'How do customers receive jewelry?',
-    subtitle: 'Choose the fulfillment methods for your jewelry business',
-    methods: [
-      {
-        key: 'delivery' as const,
-        icon: Package,
-        title: 'Secure Shipping',
-        description: 'Ship jewelry with insurance and tracking',
-        color: 'teal',
-        settings: ['deliveryFee', 'deliveryRadius', 'estimatedDeliveryTime']
-      },
-      {
-        key: 'pickup' as const,
-        icon: Store,
-        title: 'Store Pickup',
-        description: 'Customers collect jewelry from your store',
-        color: 'emerald',
-        settings: ['estimatedPickupTime']
-      }
-    ]
-  },
-  FLORIST: {
-    title: 'How do customers receive flowers?',
-    subtitle: 'Choose the fulfillment methods for your flower business',
-    methods: [
-      {
-        key: 'delivery' as const,
-        icon: Truck,
-        title: 'Flower Delivery',
-        description: 'Deliver fresh flowers to any location',
-        color: 'teal',
-        settings: ['deliveryFee', 'deliveryRadius', 'estimatedDeliveryTime']
-      },
-      {
-        key: 'pickup' as const,
-        icon: Store,
-        title: 'Shop Pickup',
-        description: 'Customers collect arrangements from your shop',
-        color: 'emerald',
-        settings: ['estimatedPickupTime']
-      }
-    ]
-  },
   OTHER: {
     title: 'How do customers receive orders?',
     subtitle: 'Choose the fulfillment methods for your business',
@@ -197,12 +153,9 @@ const getDefaultPickupTime = (businessType: string) => {
     case 'CAFE':
       return '15-20 min'
     case 'RETAIL':
-    case 'JEWELRY':
       return '1-2 hours'
     case 'GROCERY':
       return '30 min'
-    case 'FLORIST':
-      return '2-4 hours'
     default:
       return '15-20 min'
   }
@@ -215,11 +168,8 @@ const getDefaultDeliveryTime = (businessType: string) => {
     case 'CAFE':
       return '30-45 min'
     case 'RETAIL':
-    case 'JEWELRY':
       return '2-5 business days'
     case 'GROCERY':
-      return '2-4 hours'
-    case 'FLORIST':
       return '2-4 hours'
     default:
       return '30-45 min'
@@ -308,16 +258,16 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
   const getFieldLabel = (field: string) => {
     switch (field) {
       case 'deliveryFee':
-        if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Fee'
+        if (data.businessType === 'RETAIL') return 'Shipping Fee'
         return 'Delivery Fee'
       case 'deliveryRadius':
-        if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Radius (km)'
+        if (data.businessType === 'RETAIL') return 'Shipping Radius (km)'
         return 'Delivery Radius (km)'
       case 'estimatedDeliveryTime':
-        if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Shipping Time'
+        if (data.businessType === 'RETAIL') return 'Shipping Time'
         return 'Delivery Time'
       case 'estimatedPickupTime':
-        if (data.businessType === 'RETAIL' || data.businessType === 'JEWELRY') return 'Pickup Time'
+        if (data.businessType === 'RETAIL') return 'Pickup Time'
         if (data.businessType === 'GROCERY') return 'Preparation Time'
         return 'Pickup Time'
       default:
@@ -328,9 +278,8 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
   const getDeliveryTimePlaceholder = () => {
     switch (data.businessType) {
       case 'RETAIL':
-      case 'JEWELRY':
         return '2-5 business days'
-      case 'FLORIST':
+      case 'GROCERY':
         return '2-4 hours'
       default:
         return '30-45 min'
@@ -343,12 +292,9 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
       case 'CAFE':
         return '15-20 min'
       case 'RETAIL':
-      case 'JEWELRY':
         return '1-2 hours'
       case 'GROCERY':
         return '30 min'
-      case 'FLORIST':
-        return '2-4 hours'
       default:
         return '15-20 min'
     }

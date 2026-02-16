@@ -36,9 +36,13 @@ export async function GET(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
+        invoiceReceiptSelectionEnabled: true,
+        packagingTrackingEnabled: true,
         enableAffiliateSystem: true,
         legalPagesEnabled: true,
-        currency: true
+        currency: true,
+        storefrontLanguage: true,
+        language: true
       }
     })
 
@@ -117,6 +121,8 @@ export async function GET(
       settings: {
         enableManualTeamCreation: business.enableManualTeamCreation,
         enableDeliveryManagement: business.enableDeliveryManagement,
+        invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
+        packagingTrackingEnabled: business.packagingTrackingEnabled,
         enableAffiliateSystem: business.enableAffiliateSystem,
         legalPagesEnabled: business.legalPagesEnabled
       },
@@ -158,7 +164,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, enableAffiliateSystem, legalPagesEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, enableAffiliateSystem, legalPagesEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -177,6 +183,12 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       updateData.enableDeliveryManagement = enableDeliveryManagement === true
     }
+    if (invoiceReceiptSelectionEnabled !== undefined) {
+      updateData.invoiceReceiptSelectionEnabled = invoiceReceiptSelectionEnabled === true
+    }
+    if (packagingTrackingEnabled !== undefined) {
+      updateData.packagingTrackingEnabled = packagingTrackingEnabled === true
+    }
     if (enableAffiliateSystem !== undefined) {
       updateData.enableAffiliateSystem = enableAffiliateSystem === true
     }
@@ -193,6 +205,8 @@ export async function PATCH(
         name: true,
         enableManualTeamCreation: true,
         enableDeliveryManagement: true,
+        invoiceReceiptSelectionEnabled: true,
+        packagingTrackingEnabled: true,
         enableAffiliateSystem: true,
         legalPagesEnabled: true
       }
@@ -205,6 +219,15 @@ export async function PATCH(
     if (enableDeliveryManagement !== undefined) {
       messages.push(`Delivery Management ${updatedBusiness.enableDeliveryManagement ? 'enabled' : 'disabled'}`)
     }
+    if (invoiceReceiptSelectionEnabled !== undefined) {
+      messages.push(`Invoice/Receipt Selection ${updatedBusiness.invoiceReceiptSelectionEnabled ? 'enabled' : 'disabled'}`)
+    }
+    if (packagingTrackingEnabled !== undefined) {
+      messages.push(`Packaging Tracking ${updatedBusiness.packagingTrackingEnabled ? 'enabled' : 'disabled'}`)
+    }
+    if (enableAffiliateSystem !== undefined) {
+      messages.push(`Affiliate System ${updatedBusiness.enableAffiliateSystem ? 'enabled' : 'disabled'}`)
+    }
     if (legalPagesEnabled !== undefined) {
       messages.push(`Legal Pages ${updatedBusiness.legalPagesEnabled ? 'enabled' : 'disabled'}`)
     }
@@ -215,6 +238,8 @@ export async function PATCH(
       settings: {
         enableManualTeamCreation: updatedBusiness.enableManualTeamCreation,
         enableDeliveryManagement: updatedBusiness.enableDeliveryManagement,
+        invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled,
+        packagingTrackingEnabled: updatedBusiness.packagingTrackingEnabled,
         enableAffiliateSystem: updatedBusiness.enableAffiliateSystem,
         legalPagesEnabled: updatedBusiness.legalPagesEnabled
       }

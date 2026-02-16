@@ -41,6 +41,7 @@ interface OrderData {
   countryCode?: string | null
   city?: string | null
   postalCode?: string | null
+  invoiceType?: 'INVOICE' | 'RECEIPT' | null // Invoice/Receipt selection (for Greek storefronts)
 }
 
 interface BusinessData {
@@ -97,7 +98,7 @@ export async function sendOrderNotification(
 
     // Business notification emails are always in English (sent to business owners)
     const language = 'en'
-    const labels = getEmailLabels(language)
+    const labels = getEmailLabels(language, businessData.businessType)
 
     // Create email content
     const emailContent = createOrderNotificationEmail({
@@ -164,89 +165,97 @@ export async function sendOrderNotification(
   }
 }
 
-// Helper function to get email labels in the specified language
-function getEmailLabels(language: string = 'en'): Record<string, string> {
+// Helper function to get email labels in the specified language, customized for business type
+function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
+  const isSalon = businessType === 'SALON'
+  
   const labels: Record<string, Record<string, string>> = {
     en: {
-      newOrderReceived: 'New Order Received!',
-      orderUpdate: 'Order Update',
-      newOrder: 'New Order',
-      order: 'Order',
+      newOrderReceived: isSalon ? 'New Booking Request Received!' : 'New Order Received!',
+      orderUpdate: isSalon ? 'Booking Update' : 'Order Update',
+      newOrder: isSalon ? 'New Booking Request' : 'New Order',
+      order: isSalon ? 'Booking' : 'Order',
       new: 'New',
       customerInformation: 'Customer Information',
       name: 'Name',
       phone: 'Phone',
-      deliveryAddress: 'Delivery Address',
-      deliveryMethod: 'Delivery Method',
+      deliveryAddress: isSalon ? 'Address' : 'Delivery Address',
+      deliveryMethod: isSalon ? 'Booking Type' : 'Delivery Method',
       postalService: 'Postal Service',
-      deliveryTime: 'Delivery Time',
-      deliveryFee: 'Delivery Fee',
+      deliveryTime: isSalon ? 'Appointment Date & Time' : 'Delivery Time',
+      deliveryFee: isSalon ? 'Service Fee' : 'Delivery Fee',
       city: 'City',
       country: 'Country',
       postalCode: 'Postal Code',
-      orderItems: 'Order Items',
+      orderItems: isSalon ? 'Services' : 'Order Items',
       variant: 'Variant',
       specialInstructions: 'Special Instructions',
-      viewOrderDetails: 'View Order Details',
-      notificationEnabled: 'This notification was sent because you have order notifications enabled.',
+      viewOrderDetails: isSalon ? 'View Booking Details' : 'View Order Details',
+      notificationEnabled: isSalon 
+        ? 'This notification was sent because you have booking notifications enabled.'
+        : 'This notification was sent because you have order notifications enabled.',
       manageSettings: 'Manage notification settings',
-      orderStatusUpdated: 'Order status has been updated',
-      newOrderSubject: 'New Order',
-      orderUpdateSubject: 'Order Update'
+      orderStatusUpdated: isSalon ? 'Booking status has been updated' : 'Order status has been updated',
+      newOrderSubject: isSalon ? 'New Booking Request' : 'New Order',
+      orderUpdateSubject: isSalon ? 'Booking Update' : 'Order Update'
     },
     sq: {
-      newOrderReceived: 'Porosi e Re e Marrë!',
-      orderUpdate: 'Përditësim i Porosisë',
-      newOrder: 'Porosi e Re',
-      order: 'Porosi',
+      newOrderReceived: isSalon ? 'Kërkesë për Rezervim e Re e Marrë!' : 'Porosi e Re e Marrë!',
+      orderUpdate: isSalon ? 'Përditësim i Rezervimit' : 'Përditësim i Porosisë',
+      newOrder: isSalon ? 'Kërkesë për Rezervim e Re' : 'Porosi e Re',
+      order: isSalon ? 'Rezervim' : 'Porosi',
       new: 'E Re',
       customerInformation: 'Informacioni i Klientit',
       name: 'Emri',
       phone: 'Telefoni',
-      deliveryAddress: 'Adresa e Dorëzimit',
-      deliveryMethod: 'Metoda e Dorëzimit',
+      deliveryAddress: isSalon ? 'Adresa' : 'Adresa e Dorëzimit',
+      deliveryMethod: isSalon ? 'Lloji i Rezervimit' : 'Metoda e Dorëzimit',
       postalService: 'Shërbimi Postar',
-      deliveryTime: 'Koha e Dorëzimit',
-      deliveryFee: 'Tarifa e Dorëzimit',
+      deliveryTime: isSalon ? 'Data dhe Koha e Takimit' : 'Koha e Dorëzimit',
+      deliveryFee: isSalon ? 'Tarifa e Shërbimit' : 'Tarifa e Dorëzimit',
       city: 'Qyteti',
       country: 'Shteti',
       postalCode: 'Kodi Postar',
-      orderItems: 'Artikujt e Porosisë',
+      orderItems: isSalon ? 'Shërbimet' : 'Artikujt e Porosisë',
       variant: 'Varianti',
       specialInstructions: 'Udhëzime të Veçanta',
-      viewOrderDetails: 'Shiko Detajet e Porosisë',
-      notificationEnabled: 'Kjo njoftim u dërgua sepse keni aktivizuar njoftimet e porosive.',
+      viewOrderDetails: isSalon ? 'Shiko Detajet e Rezervimit' : 'Shiko Detajet e Porosisë',
+      notificationEnabled: isSalon
+        ? 'Kjo njoftim u dërgua sepse keni aktivizuar njoftimet e rezervimeve.'
+        : 'Kjo njoftim u dërgua sepse keni aktivizuar njoftimet e porosive.',
       manageSettings: 'Menaxho cilësimet e njoftimeve',
-      orderStatusUpdated: 'Statusi i porosisë është përditësuar',
-      newOrderSubject: 'Porosi e Re',
-      orderUpdateSubject: 'Përditësim i Porosisë'
+      orderStatusUpdated: isSalon ? 'Statusi i rezervimit është përditësuar' : 'Statusi i porosisë është përditësuar',
+      newOrderSubject: isSalon ? 'Kërkesë për Rezervim e Re' : 'Porosi e Re',
+      orderUpdateSubject: isSalon ? 'Përditësim i Rezervimit' : 'Përditësim i Porosisë'
     },
     es: {
-      newOrderReceived: '¡Nuevo Pedido Recibido!',
-      orderUpdate: 'Actualización de Pedido',
-      newOrder: 'Nuevo Pedido',
-      order: 'Pedido',
+      newOrderReceived: isSalon ? '¡Nueva Solicitud de Reserva Recibida!' : '¡Nuevo Pedido Recibido!',
+      orderUpdate: isSalon ? 'Actualización de Reserva' : 'Actualización de Pedido',
+      newOrder: isSalon ? 'Nueva Solicitud de Reserva' : 'Nuevo Pedido',
+      order: isSalon ? 'Reserva' : 'Pedido',
       new: 'Nuevo',
       customerInformation: 'Información del Cliente',
       name: 'Nombre',
       phone: 'Teléfono',
-      deliveryAddress: 'Dirección de Entrega',
-      deliveryMethod: 'Método de Entrega',
+      deliveryAddress: isSalon ? 'Dirección' : 'Dirección de Entrega',
+      deliveryMethod: isSalon ? 'Tipo de Reserva' : 'Método de Entrega',
       postalService: 'Servicio Postal',
-      deliveryTime: 'Tiempo de Entrega',
-      deliveryFee: 'Tarifa de Entrega',
+      deliveryTime: isSalon ? 'Fecha y Hora de la Cita' : 'Tiempo de Entrega',
+      deliveryFee: isSalon ? 'Tarifa del Servicio' : 'Tarifa de Entrega',
       city: 'Ciudad',
       country: 'País',
       postalCode: 'Código Postal',
-      orderItems: 'Artículos del Pedido',
+      orderItems: isSalon ? 'Servicios' : 'Artículos del Pedido',
       variant: 'Variante',
       specialInstructions: 'Instrucciones Especiales',
-      viewOrderDetails: 'Ver Detalles del Pedido',
-      notificationEnabled: 'Esta notificación se envió porque tienes las notificaciones de pedidos habilitadas.',
+      viewOrderDetails: isSalon ? 'Ver Detalles de la Reserva' : 'Ver Detalles del Pedido',
+      notificationEnabled: isSalon
+        ? 'Esta notificación se envió porque tienes las notificaciones de reservas habilitadas.'
+        : 'Esta notificación se envió porque tienes las notificaciones de pedidos habilitadas.',
       manageSettings: 'Gestionar configuración de notificaciones',
-      orderStatusUpdated: 'El estado del pedido ha sido actualizado',
-      newOrderSubject: 'Nuevo Pedido',
-      orderUpdateSubject: 'Actualización de Pedido'
+      orderStatusUpdated: isSalon ? 'El estado de la reserva ha sido actualizado' : 'El estado del pedido ha sido actualizado',
+      newOrderSubject: isSalon ? 'Nueva Solicitud de Reserva' : 'Nuevo Pedido',
+      orderUpdateSubject: isSalon ? 'Actualización de Reserva' : 'Actualización de Pedido'
     }
   }
 
@@ -335,7 +344,7 @@ function createOrderNotificationEmail({
   formatCurrency: (amount: number, currency: string) => string
   language?: string
 }) {
-  const labels = getEmailLabels(language)
+  const labels = getEmailLabels(language, businessData.businessType)
   const orderTypeLabel = formatOrderType(orderData.type, businessData.businessType, language)
   const statusColor = getStatusColorBox(orderData.status)
   const statusLabel = formatStatus(orderData.status, language)
@@ -461,6 +470,14 @@ function createOrderNotificationEmail({
       <div style="margin-bottom: 30px; padding: 15px; background-color: #fef3cd; border-radius: 8px; border: 1px solid #f59e0b;">
         <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">${labels.specialInstructions}</h3>
         <p style="color: #92400e; margin: 0; font-size: 14px; white-space: pre-wrap;">${orderData.notes}</p>
+      </div>
+      ` : ''}
+      
+      ${orderData.invoiceType && language === 'el' ? `
+      <!-- Invoice/Receipt Selection -->
+      <div style="margin-bottom: 30px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #0ea5e9;">
+        <h3 style="color: #0c4a6e; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📄 ${orderData.invoiceType === 'INVOICE' ? 'Τιμολόγιο' : 'Απόδειξη'}</h3>
+        <p style="color: #0c4a6e; margin: 0; font-size: 14px;">${orderData.invoiceType === 'INVOICE' ? 'Ο πελάτης έχει επιλέξει να λάβει τιμολόγιο για αυτή την παραγγελία.' : 'Ο πελάτης έχει επιλέξει να λάβει απόδειξη για αυτή την παραγγελία.'}</p>
       </div>
       ` : ''}
       
