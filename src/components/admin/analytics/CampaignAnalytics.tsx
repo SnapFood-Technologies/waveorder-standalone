@@ -73,7 +73,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState('month')
-  const [business, setBusiness] = useState<{ currency: string }>({ currency: 'EUR' })
+  const [business, setBusiness] = useState<{ currency: string; businessType?: string }>({ currency: 'EUR', businessType: 'RESTAURANT' })
 
   useEffect(() => {
     fetchBusinessData()
@@ -85,7 +85,10 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const result = await response.json()
-        setBusiness({ currency: result.business.currency })
+        setBusiness({ 
+          currency: result.business.currency,
+          businessType: result.business.businessType || 'RESTAURANT'
+        })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -255,7 +258,9 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
               <ShoppingCart className="w-5 h-5 text-purple-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{data.summary.totalOrders.toLocaleString()}</p>
-            <p className="text-sm text-gray-600">Orders from Campaigns</p>
+            <p className="text-sm text-gray-600">
+              {business.businessType === 'SALON' ? 'Appointments from Campaigns' : 'Orders from Campaigns'}
+            </p>
           </div>
 
           <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -292,7 +297,9 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
               <TrendingUp className="w-5 h-5 text-purple-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{data.summary.overallCartToOrderRate}%</p>
-            <p className="text-sm text-gray-600">Cart to Order Rate</p>
+            <p className="text-sm text-gray-600">
+              {business.businessType === 'SALON' ? 'Cart to Appointment Rate' : 'Cart to Order Rate'}
+            </p>
           </div>
         </div>
       )}
@@ -324,7 +331,9 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medium</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Add to Cart</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {business.businessType === 'SALON' ? 'Appointments' : 'Orders'}
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion</th>
                 </tr>
@@ -363,7 +372,9 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
                           <span className="text-xs text-gray-700">{campaign.viewToCartRate}%</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-500">Cart→Order:</span>
+                          <span className="text-xs text-gray-500">
+                            {business.businessType === 'SALON' ? 'Cart→Appt:' : 'Cart→Order:'}
+                          </span>
                           <span className="text-xs text-gray-700">{campaign.cartToOrderRate}%</span>
                         </div>
                       </div>
@@ -384,7 +395,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
             <p className="font-medium mb-2">How Campaign Analytics Works</p>
             <ul className="list-disc list-inside space-y-1 text-blue-700">
               <li>Campaigns are tracked via UTM parameters in your storefront URLs</li>
-              <li>Views and add-to-cart events are linked to orders via sessionId for accurate conversion tracking</li>
+              <li>Views and add-to-cart events are linked to {business.businessType === 'SALON' ? 'appointments' : 'orders'} via sessionId for accurate conversion tracking</li>
               <li>Only campaigns with UTM parameters (utm_campaign, utm_source, or utm_medium) are shown</li>
               <li>Share links like: <code className="bg-blue-100 px-1 py-0.5 rounded text-xs">yoursite.com/store?utm_campaign=summer_sale&utm_source=instagram</code></li>
             </ul>

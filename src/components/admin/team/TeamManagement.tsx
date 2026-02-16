@@ -97,6 +97,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
   const [auditLoading, setAuditLoading] = useState(false)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   
   // Confirmation modals
   const [cancelInviteModal, setCancelInviteModal] = useState<string | null>(null)
@@ -114,6 +115,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
           const data = await response.json()
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
+          setBusinessType(data.business?.businessType || 'RESTAURANT')
         }
       } catch (error) {
         console.error('Error fetching business settings:', error)
@@ -595,6 +597,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
                 canRemove={canRemove}
                 // @ts-ignore
                 currentUserId={session?.user?.id}
+                businessType={businessType}
                 onUpdateRole={handleUpdateRole}
                 onRemove={handleRemoveMember}
               />

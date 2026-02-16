@@ -25,7 +25,8 @@ import {
   Share2,
   Search,
   Lock,
-  Loader2
+  Loader2,
+  Scissors
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
@@ -71,7 +72,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
   const { isPro } = useSubscription()
   const { addParams } = useImpersonation(businessId)
   const [data, setData] = useState<any>(null)
-  const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '' })
+  const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '', businessType: 'RESTAURANT' })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [dateRange, setDateRange] = useState({
@@ -96,7 +97,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         const result = await response.json()
         setBusiness({ 
           currency: result.business.currency,
-          subscriptionPlan: result.business.subscriptionPlan 
+          subscriptionPlan: result.business.subscriptionPlan,
+          businessType: result.business.businessType || 'RESTAURANT'
         })
       }
     } catch (error) {
@@ -216,10 +218,12 @@ export default function Analytics({ businessId }: AnalyticsProps) {
     return num.toLocaleString()
   }
 
+  const isSalon = business.businessType === 'SALON'
+  
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'trends', label: 'Trends', icon: TrendingUp },
-    { id: 'products', label: 'Products', icon: Package },
+    { id: 'products', label: isSalon ? 'Services' : 'Products', icon: isSalon ? Scissors : Package },
     { id: 'time', label: 'Time Analysis', icon: Clock },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'search', label: 'Search', icon: Search },
@@ -528,7 +532,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         </div>
       )}
 
-      {/* Products Tab */}
+      {/* Products/Services Tab */}
       {activeTab === 'products' && (
         <div className="space-y-6">
           {data.products.topProducts.length > 0 ? (
@@ -536,11 +540,19 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Top Products</h3>
-                    <p className="text-sm text-gray-600 mt-1">Best performing products by revenue in the selected period</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{isSalon ? 'Top Services' : 'Top Products'}</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {isSalon 
+                        ? 'Best performing services by revenue in the selected period'
+                        : 'Best performing products by revenue in the selected period'
+                      }
+                    </p>
                   </div>
                   <Link
-                    href={`/admin/stores/${businessId}/analytics/products`}
+                    href={isSalon 
+                      ? `/admin/stores/${businessId}/analytics/services`
+                      : `/admin/stores/${businessId}/analytics/products`
+                    }
                     className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
                   >
                     View Detailed Analytics <ArrowRight className="w-4 h-4" />
@@ -552,9 +564,9 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Rank</th>
-                      <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Product</th>
-                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">Orders</th>
-                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">Quantity Sold</th>
+                      <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Service' : 'Product'}</th>
+                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Appointments' : 'Orders'}</th>
+                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Quantity Booked' : 'Quantity Sold'}</th>
                       <th className="text-right py-3 px-6 text-sm font-medium text-gray-600">Revenue</th>
                     </tr>
                   </thead>
@@ -586,10 +598,19 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </div>
           ) : (
             <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
-              <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Product Data</h3>
+              {isSalon ? (
+                <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              ) : (
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              )}
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {isSalon ? 'No Service Data' : 'No Product Data'}
+              </h3>
               <p className="text-gray-600 mb-4">
-                No products have been sold during the selected period.
+                {isSalon 
+                  ? 'No services have been booked during the selected period.'
+                  : 'No products have been sold during the selected period.'
+                }
               </p>
               <p className="text-sm text-gray-500">
                 Once you have orders, your top-selling products will appear here.

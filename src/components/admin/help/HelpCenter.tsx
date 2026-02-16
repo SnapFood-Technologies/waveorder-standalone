@@ -1,7 +1,7 @@
 // src/components/admin/help/HelpCenter.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, BookOpen, MessageSquare, Ticket, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react'
 import { FAQSection } from './FAQSection'
 
@@ -12,6 +12,25 @@ interface HelpCenterProps {
 export function HelpCenter({ businessId }: HelpCenterProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedSections, setExpandedSections] = useState<string[]>(['getting-started'])
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
+
+  // Fetch business type
+  useEffect(() => {
+    const fetchBusinessType = async () => {
+      try {
+        const response = await fetch(`/api/admin/stores/${businessId}`)
+        if (response.ok) {
+          const result = await response.json()
+          setBusinessType(result.business?.businessType || 'RESTAURANT')
+        }
+      } catch (error) {
+        console.error('Error fetching business type:', error)
+      }
+    }
+    fetchBusinessType()
+  }, [businessId])
+
+  const isSalon = businessType === 'SALON'
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 
@@ -26,31 +45,41 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
       id: 'getting-started',
       title: 'Getting Started',
       icon: BookOpen,
-      description: 'Learn the basics of WaveOrder and set up your WhatsApp ordering system'
+      description: isSalon 
+        ? 'Learn the basics of WaveOrder and set up your WhatsApp booking system'
+        : 'Learn the basics of WaveOrder and set up your WhatsApp ordering system'
     },
     {
       id: 'product-management',
-      title: 'Product Management',
+      title: isSalon ? 'Service Management' : 'Product Management',
       icon: BookOpen,
-      description: 'Add, organize, and manage your products and categories'
+      description: isSalon
+        ? 'Add, organize, and manage your services and categories'
+        : 'Add, organize, and manage your products and categories'
     },
     {
       id: 'order-management',
-      title: 'Order Management',
+      title: isSalon ? 'Appointment Management' : 'Order Management',
       icon: BookOpen,
-      description: 'Handle incoming orders, track status, and manage customer information'
+      description: isSalon
+        ? 'Handle incoming appointments, track status, and manage customer information'
+        : 'Handle incoming orders, track status, and manage customer information'
     },
     {
       id: 'customer-management',
       title: 'Customer Management',
       icon: BookOpen,
-      description: 'Manage customer information, orders, and communication'
+      description: isSalon
+        ? 'Manage customer information, appointments, and communication'
+        : 'Manage customer information, orders, and communication'
     },
     {
       id: 'whatsapp-integration',
       title: 'WhatsApp Integration',
       icon: BookOpen,
-      description: 'Set up and configure WhatsApp for order management'
+      description: isSalon
+        ? 'Set up and configure WhatsApp for appointment management'
+        : 'Set up and configure WhatsApp for order management'
     },
     {
       id: 'billing-subscriptions',
@@ -68,7 +97,9 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
       id: 'advanced-features',
       title: 'Advanced Features',
       icon: BookOpen,
-      description: 'Inventory management, analytics, custom domains, and more'
+      description: isSalon
+        ? 'Analytics, custom domains, API access, and more'
+        : 'Inventory management, analytics, custom domains, and more'
     },
     {
       id: 'troubleshooting',
@@ -144,7 +175,7 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
             
             {expandedSections.includes(section.id) && (
               <div className="px-6 pb-4">
-                <FAQSection sectionId={section.id} searchQuery={searchQuery} />
+                <FAQSection sectionId={section.id} searchQuery={searchQuery} businessType={businessType} />
               </div>
             )}
           </div>

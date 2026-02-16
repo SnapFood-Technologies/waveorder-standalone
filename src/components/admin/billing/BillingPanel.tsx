@@ -34,7 +34,7 @@ interface UserSubscription {
   isGracePeriod?: boolean
 }
 
-const PLANS = {
+const getPlans = (isSalon: boolean) => ({
   STARTER: {
     name: 'Starter',
     price: 19,
@@ -42,10 +42,10 @@ const PLANS = {
     description: 'Perfect for getting started',
     icon: Package,
     features: [
-      'Up to 50 products',
+      isSalon ? 'Up to 50 services' : 'Up to 50 products',
       '1 store/catalog',
       'Basic analytics',
-      'WhatsApp ordering',
+      isSalon ? 'WhatsApp booking' : 'WhatsApp ordering',
       'CSV import',
       'Email support',
     ]
@@ -57,10 +57,10 @@ const PLANS = {
     description: 'For growing businesses',
     icon: Crown,
     features: [
-      'Unlimited products',
+      isSalon ? 'Unlimited services' : 'Unlimited products',
       'Up to 5 stores/catalogs',
       'Full analytics & insights',
-      'Delivery scheduling',
+      isSalon ? 'Appointment scheduling' : 'Delivery scheduling',
       'Customer insights',
       'Priority support',
     ]
@@ -80,7 +80,7 @@ const PLANS = {
       'Dedicated support',
     ]
   }
-}
+})
 
 interface BillingPanelProps {
   businessId: string
@@ -92,6 +92,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   const [isUpgrading, setIsUpgrading] = useState<Plan | null>(null)
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
   const [error, setError] = useState<string | null>(null)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   
   // Modal states
   const [showDowngradeModal, setShowDowngradeModal] = useState(false)
@@ -99,7 +100,20 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
 
   useEffect(() => {
     fetchSubscription()
+    fetchBusinessType()
   }, [])
+  
+  const fetchBusinessType = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const result = await response.json()
+        setBusinessType(result.business?.businessType || 'RESTAURANT')
+      }
+    } catch (error) {
+      console.error('Error fetching business type:', error)
+    }
+  }
 
   const fetchSubscription = async () => {
     try {
@@ -241,6 +255,8 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     )
   }
 
+  const isSalon = businessType === 'SALON'
+  const PLANS = getPlans(isSalon)
   const currentPlan = PLANS[subscription.plan]
   const isFreePlan = subscription.billingType === 'free'
   const isTrialActive = subscription.isTrialActive || subscription.trialStatus === 'TRIAL_ACTIVE'
@@ -515,14 +531,17 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {[
-                { feature: 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
+                { feature: isSalon ? 'Services' : 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
                 { feature: 'Stores/Catalogs', starter: '1', pro: '5', business: 'Unlimited' },
-                { feature: 'WhatsApp Orders', starter: '✅', pro: '✅', business: '✅' },
+                { feature: isSalon ? 'WhatsApp Appointments' : 'WhatsApp Orders', starter: '✅', pro: '✅', business: '✅' },
                 { feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' },
                 { feature: 'Basic Analytics', starter: '✅', pro: '✅', business: '✅' },
                 { feature: 'Full Analytics', starter: '❌', pro: '✅', business: '✅' },
                 { feature: 'Customer Insights', starter: '❌', pro: '✅', business: '✅' },
-                { feature: 'Delivery Scheduling', starter: '❌', pro: '✅', business: '✅' },
+                ...(isSalon 
+                  ? [{ feature: 'Appointment Scheduling', starter: '❌', pro: '✅', business: '✅' }]
+                  : [{ feature: 'Delivery Scheduling', starter: '❌', pro: '✅', business: '✅' }]
+                ),
                 { feature: 'Team Access', starter: '❌', pro: '❌', business: '5 users' },
                 { feature: 'Custom Domain', starter: '❌', pro: '❌', business: '✅' },
                 { feature: 'API Access', starter: '❌', pro: '❌', business: '✅' },
@@ -560,7 +579,13 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
             </p>
             
             <ul className="space-y-2 mb-6">
-              {['Unlimited products', 'Advanced analytics', 'Inventory management', 'Custom domains', 'Priority support'].map((feature, index) => (
+              {[
+                isSalon ? 'Unlimited services' : 'Unlimited products',
+                'Advanced analytics',
+                ...(isSalon ? [] : ['Inventory management']),
+                'Custom domains',
+                'Priority support'
+              ].map((feature, index) => (
                 <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
                   <X className="w-4 h-4 text-red-500 flex-shrink-0" />
                   {feature}

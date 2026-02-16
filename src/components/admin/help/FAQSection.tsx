@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, ExternalLink, Search } from 'lucide-react'
 interface FAQSectionProps {
   sectionId: string
   searchQuery: string
+  businessType?: string
 }
 
 interface FAQ {
@@ -305,8 +306,9 @@ const faqData: Record<string, FAQ[]> = {
   ]
 }
 
-export function FAQSection({ sectionId, searchQuery }: FAQSectionProps) {
+export function FAQSection({ sectionId, searchQuery, businessType = 'RESTAURANT' }: FAQSectionProps) {
   const [expandedFAQs, setExpandedFAQs] = useState<string[]>([])
+  const isSalon = businessType === 'SALON'
 
   const toggleFAQ = (faqId: string) => {
     setExpandedFAQs(prev => 
@@ -316,7 +318,116 @@ export function FAQSection({ sectionId, searchQuery }: FAQSectionProps) {
     )
   }
 
-  const faqs = faqData[sectionId] || []
+  // Get FAQ data with conditional rendering based on business type
+  const getFAQData = () => {
+    const baseFAQs = faqData[sectionId] || []
+    
+    if (!isSalon) {
+      return baseFAQs
+    }
+
+    // For salons, transform FAQ content
+    return baseFAQs.map(faq => {
+      let transformedFAQ = { ...faq }
+      
+      // Transform answers based on section
+      if (sectionId === 'getting-started') {
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/browse your menu/g, 'browse your service catalog')
+          .replace(/place orders/g, 'book appointments')
+          .replace(/order management/g, 'appointment management')
+          .replace(/product categories/g, 'service categories')
+          .replace(/products/g, 'services')
+          .replace(/ordering system/g, 'booking system')
+          .replace(/menu/g, 'service catalog')
+      } else if (sectionId === 'product-management') {
+        // For salons, this section should be service-management
+        transformedFAQ.question = transformedFAQ.question.replace(/product/gi, 'service')
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/Products/g, 'Services')
+          .replace(/products/g, 'services')
+          .replace(/product categories/g, 'service categories')
+          .replace(/product images/g, 'service images')
+          .replace(/product variants/g, 'service options')
+          .replace(/order value/g, 'appointment value')
+          .replace(/Add Product/g, 'Add Service')
+          .replace(/Manage Categories/g, 'Manage Service Categories')
+        if (transformedFAQ.links) {
+          transformedFAQ.links = transformedFAQ.links.map(link => ({
+            ...link,
+            href: link.href.replace(/products/g, 'services').replace(/product-categories/g, 'service-categories'),
+            text: link.text.replace(/Product/gi, 'Service')
+          }))
+        }
+      } else if (sectionId === 'order-management') {
+        // For salons, this section should be appointment-management
+        transformedFAQ.question = transformedFAQ.question.replace(/order/gi, 'appointment')
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/Orders/g, 'Appointments')
+          .replace(/orders/g, 'appointments')
+          .replace(/order status/g, 'appointment status')
+          .replace(/order details/g, 'appointment details')
+          .replace(/Pending, Confirmed, Preparing, Ready, Delivered/g, 'Requested, Confirmed, In Progress, Completed')
+          .replace(/Orders Dashboard/g, 'Appointments Dashboard')
+          .replace(/Order Analytics/g, 'Appointment Analytics')
+        if (transformedFAQ.links) {
+          transformedFAQ.links = transformedFAQ.links.map(link => ({
+            ...link,
+            href: link.href.replace(/orders/g, 'appointments'),
+            text: link.text.replace(/Order/gi, 'Appointment')
+          }))
+        }
+      } else if (sectionId === 'customer-management') {
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/order history/g, 'appointment history')
+          .replace(/delivery address/g, 'address')
+      } else if (sectionId === 'whatsapp-integration') {
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/place orders/g, 'book appointments')
+          .replace(/order details/g, 'appointment details')
+          .replace(/Orders dashboard/g, 'Appointments dashboard')
+        if (transformedFAQ.links) {
+          transformedFAQ.links = transformedFAQ.links.map(link => ({
+            ...link,
+            href: link.href.replace(/orders/g, 'appointments'),
+            text: link.text.replace(/Order/gi, 'Appointment')
+          }))
+        }
+      } else if (sectionId === 'team-management') {
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/manage products, orders/g, 'manage services, appointments')
+          .replace(/orders and products/g, 'appointments and services')
+      } else if (sectionId === 'billing-subscriptions') {
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/up to 30 products/g, 'up to 50 services')
+          .replace(/Unlimited products/g, 'Unlimited services')
+          .replace(/inventory management/g, 'appointment scheduling')
+      } else if (sectionId === 'advanced-features') {
+        // Hide inventory management for salons
+        if (faq.id === 'inventory-management') {
+          return null
+        }
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/popular products/g, 'popular services')
+          .replace(/order trends/g, 'appointment trends')
+      } else if (sectionId === 'troubleshooting') {
+        transformedFAQ.question = transformedFAQ.question.replace(/orders/g, 'appointments')
+        transformedFAQ.answer = transformedFAQ.answer
+          .replace(/orders appearing/g, 'appointments appearing')
+          .replace(/Orders dashboard/g, 'Appointments dashboard')
+        if (transformedFAQ.links) {
+          transformedFAQ.links = transformedFAQ.links.map(link => ({
+            ...link,
+            href: link.href.replace(/orders/g, 'appointments')
+          }))
+        }
+      }
+      
+      return transformedFAQ
+    }).filter(faq => faq !== null) as FAQ[]
+  }
+
+  const faqs = getFAQData()
   
   // If no FAQs found and no search query, show a message
   if (faqs.length === 0 && searchQuery.trim() === '') {

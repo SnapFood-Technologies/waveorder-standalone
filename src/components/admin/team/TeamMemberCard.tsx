@@ -27,6 +27,7 @@ interface TeamMemberCardProps {
   canUpdateRoles: boolean
   canRemove: boolean
   currentUserId: string
+  businessType?: string
   onUpdateRole: (userId: string, newRole: string) => void
   onRemove: (userId: string) => void
 }
@@ -196,9 +197,13 @@ export function TeamMemberCard({
                         {getRoleDisplayName(role)}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {role === 'MANAGER' 
-                          ? 'Can manage products, orders, and invite staff'
-                          : 'Can view and manage orders and products'
+                        {businessType === 'SALON' 
+                          ? role === 'MANAGER' 
+                            ? 'Can manage services, appointments, and invite staff'
+                            : 'Can view and manage appointments and services'
+                          : role === 'MANAGER' 
+                            ? 'Can manage products, orders, and invite staff'
+                            : 'Can view and manage orders and products'
                         }
                       </div>
                     </div>
