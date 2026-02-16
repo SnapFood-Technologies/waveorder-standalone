@@ -68,7 +68,7 @@ const PERIODS = [
 
 export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
   const { addParams } = useImpersonation(businessId)
-  const { isPro } = useSubscription()
+  const { isPro, loading: subscriptionLoading } = useSubscription()
   const [data, setData] = useState<CampaignAnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -129,7 +129,16 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
     }).format(amount)
   }
 
-  // Check if user has PRO or BUSINESS plan
+  // Show loading state while subscription status is being checked
+  if (subscriptionLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      </div>
+    )
+  }
+
+  // Check if user has PRO or BUSINESS plan (only after subscription loading is complete)
   if (!isPro) {
     return (
       <div className="space-y-6">
