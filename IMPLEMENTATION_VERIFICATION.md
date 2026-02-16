@@ -55,10 +55,12 @@
 
 ### 6. TeamMemberCard.tsx
 - ✅ **File:** `src/components/admin/team/TeamMemberCard.tsx`
-- ✅ **Status:** Already had conditional logic
-- ✅ **Verified:**
+- ✅ **Status:** Fixed - Added businessType to props destructuring
+- ✅ **Changes:**
+  - Added `businessType = 'RESTAURANT'` to component props
   - Role descriptions conditional
   - "products, orders" → "services, appointments" for salons
+  - Remove modal text conditional
 
 ### 7. FAQSection.tsx
 - ✅ **File:** `src/components/admin/help/FAQSection.tsx`

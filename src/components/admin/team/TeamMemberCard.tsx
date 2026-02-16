@@ -37,6 +37,7 @@ export function TeamMemberCard({
   canUpdateRoles, 
   canRemove, 
   currentUserId,
+  businessType = 'RESTAURANT',
   onUpdateRole,
   onRemove 
 }: TeamMemberCardProps) {
@@ -245,7 +246,7 @@ export function TeamMemberCard({
               </p>
               <ul className="text-sm text-red-700 mt-2 list-disc list-inside">
                 <li>Business dashboard</li>
-                <li>Orders and products</li>
+                <li>{businessType === 'SALON' ? 'Appointments and services' : 'Orders and products'}</li>
                 <li>All business data</li>
               </ul>
             </div>
