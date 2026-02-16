@@ -1141,9 +1141,9 @@ model Order {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   items            OrderItem[]
-  notifications   OrderNotification[]
-  appointments    Appointment[]
-  deliveryEarning DeliveryEarning?
+  notifications    OrderNotification[]
+  appointments     Appointment[]
+  deliveryEarning  DeliveryEarning?
   affiliateEarning AffiliateEarning?
 
   customerLatitude  Float?
