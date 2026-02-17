@@ -116,7 +116,9 @@ export async function GET(
 
     const isSalon = business.businessType === 'SALON'
 
-    // Count products/services by various filter criteria (only for non-salons)
+    // Count products/services by various filter criteria
+    // For salons: query services (isService: true) for relevant stats
+    // For non-salons: query products as before
     const [
       productsWithoutPhotosCount,
       productsWithZeroPriceCount,
@@ -124,7 +126,10 @@ export async function GET(
       productsWithVariantsAllZeroStockCount,
       productsWithVariantsSomeZeroStockCount,
       productsWithVariantsAllNonZeroStockCount,
-      inactiveProductsCount
+      inactiveProductsCount,
+      servicesWithoutPhotosCount,
+      servicesWithZeroPriceCount,
+      inactiveServicesCount
     ] = await Promise.all([
       // Products without photos (skip for salons)
       isSalon ? 0 : prisma.product.count({
@@ -235,7 +240,33 @@ export async function GET(
           businessId: businessId,
           isActive: false
         }
-      })
+      }),
+      // Services without photos (salon only)
+      isSalon ? prisma.product.count({
+        where: {
+          businessId: businessId,
+          isService: true,
+          isActive: true,
+          images: { isEmpty: true }
+        }
+      }) : 0,
+      // Services with zero price (salon only)
+      isSalon ? prisma.product.count({
+        where: {
+          businessId: businessId,
+          isService: true,
+          isActive: true,
+          price: { lte: 0 }
+        }
+      }) : 0,
+      // Inactive services (salon only)
+      isSalon ? prisma.product.count({
+        where: {
+          businessId: businessId,
+          isService: true,
+          isActive: false
+        }
+      }) : 0
     ])
 
     // Get owner info
@@ -343,7 +374,11 @@ export async function GET(
           productsWithVariantsAllZeroStock: isSalon ? 0 : productsWithVariantsAllZeroStockCount,
           productsWithVariantsSomeZeroStock: isSalon ? 0 : productsWithVariantsSomeZeroStockCount,
           productsWithVariantsAllNonZeroStock: isSalon ? 0 : productsWithVariantsAllNonZeroStockCount,
-          inactiveProducts: isSalon ? 0 : inactiveProductsCount
+          inactiveProducts: isSalon ? 0 : inactiveProductsCount,
+          // Salon-specific stats
+          servicesWithoutPhotos: isSalon ? servicesWithoutPhotosCount : 0,
+          servicesWithZeroPrice: isSalon ? servicesWithZeroPriceCount : 0,
+          inactiveServices: isSalon ? inactiveServicesCount : 0
         },
         apiKeys: apiKeys.map(key => ({
           id: key.id,

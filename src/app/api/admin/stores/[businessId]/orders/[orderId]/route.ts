@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { sendCustomerOrderStatusEmail } from '@/lib/customer-email-notification'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import * as Sentry from '@sentry/nextjs'
 
 
@@ -1018,6 +1019,37 @@ export async function PUT(
     //   console.error('[ByBestShop] Order status sync failed:', err);
     // });
 
+    // Log order status change
+    if (body.status && body.status !== existingOrder.status) {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+
+      logSystemEvent({
+        logType: 'order_status_changed',
+        severity: 'info',
+        businessId,
+        endpoint: '/api/admin/stores/[businessId]/orders/[orderId]',
+        method: 'PUT',
+        statusCode: 200,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: actualUrl,
+        metadata: {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          previousStatus: existingOrder.status,
+          newStatus: body.status,
+          updatedByAdmin: true,
+          updatedBy: access.session.user.id
+        }
+      })
+    }
+
     return NextResponse.json({
       order: {
         id: updatedOrder.id,
@@ -1033,6 +1065,34 @@ export async function PUT(
 
   } catch (error) {
     console.error('Error updating order:', error)
+
+    // Log order update error
+    try {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+      const { businessId: bId, orderId: oId } = await params
+
+      logSystemEvent({
+        logType: 'order_error',
+        severity: 'error',
+        businessId: bId,
+        endpoint: '/api/admin/stores/[businessId]/orders/[orderId]',
+        method: 'PUT',
+        statusCode: 500,
+        ipAddress,
+        userAgent,
+        url: actualUrl,
+        errorMessage: error instanceof Error ? error.message : 'Failed to update order',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        metadata: { orderId: oId, updatedByAdmin: true }
+      })
+    } catch {
+      // Silently fail logging
+    }
+
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

@@ -119,6 +119,10 @@ interface BusinessDetails {
     productsWithVariantsSomeZeroStock?: number
     productsWithVariantsAllNonZeroStock?: number
     inactiveProducts?: number
+    // Salon-specific stats
+    servicesWithoutPhotos?: number
+    servicesWithZeroPrice?: number
+    inactiveServices?: number
   }
   apiKeys?: Array<{
     id: string
@@ -803,9 +807,9 @@ export default function BusinessDetailsPage() {
               Storefront Settings
             </h2>
             <div className="space-y-4">
-              {/* Product Filtering Statistics Cards */}
+              {/* Product/Service Filtering Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Products Without Photos Count Card - Hide for salons */}
+                {/* Products Without Photos Count Card - Non-salons only */}
                 {business.businessType !== 'SALON' && typeof business.stats.productsWithoutPhotos === 'number' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
@@ -824,19 +828,57 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Products With Zero Price Count Card */}
-                {typeof business.stats.productsWithZeroPrice === 'number' && (
+                {/* Services Without Photos Count Card - Salons only */}
+                {business.businessType === 'SALON' && typeof business.stats.servicesWithoutPhotos === 'number' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-amber-900">
+                          {business.stats.servicesWithoutPhotos} Service{business.stats.servicesWithoutPhotos !== 1 ? 's' : ''} Without Photos
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          {business.stats.servicesWithoutPhotos === 0 
+                            ? 'All services have photos' 
+                            : `${business.stats.servicesWithoutPhotos} of ${business.stats.totalProducts} services are missing images`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Services With Zero Price Count Card - Salons only */}
+                {business.businessType === 'SALON' && typeof business.stats.servicesWithZeroPrice === 'number' && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-red-900">
-                          {business.stats.productsWithZeroPrice} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
+                          {business.stats.servicesWithZeroPrice} Service{business.stats.servicesWithZeroPrice !== 1 ? 's' : ''} With Zero Price
+                        </p>
+                        <p className="text-xs text-red-700 mt-1">
+                          {business.stats.servicesWithZeroPrice === 0 
+                            ? 'All services have valid prices' 
+                            : `${business.stats.servicesWithZeroPrice} of ${business.stats.totalProducts} services have price ≤ 0`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Products With Zero Price Count Card - Non-salons only */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsWithZeroPrice === 'number' && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-900">
+                          {business.stats.productsWithZeroPrice} Product{business.stats.productsWithZeroPrice !== 1 ? 's' : ''} With Zero Price
                         </p>
                         <p className="text-xs text-red-700 mt-1">
                           {business.stats.productsWithZeroPrice === 0 
-                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have valid prices` 
-                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} have price ≤ 0`}
+                            ? 'All products have valid prices' 
+                            : `${business.stats.productsWithZeroPrice} of ${business.stats.totalProducts} products have price ≤ 0`}
                         </p>
                       </div>
                     </div>
@@ -919,8 +961,8 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Inactive Products Count Card */}
-                {typeof business.stats.inactiveProducts === 'number' && (
+                {/* Inactive Products Count Card - Non-salons only */}
+                {business.businessType !== 'SALON' && typeof business.stats.inactiveProducts === 'number' && (
                   <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <PowerOff className="w-5 h-5 text-gray-600 flex-shrink-0" />
@@ -937,33 +979,52 @@ export default function BusinessDetailsPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Inactive Services Count Card - Salons only */}
+                {business.businessType === 'SALON' && typeof business.stats.inactiveServices === 'number' && (
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <PowerOff className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {business.stats.inactiveServices} Inactive Service{business.stats.inactiveServices !== 1 ? 's' : ''}
+                        </p>
+                        <p className="text-xs text-gray-700 mt-1">
+                          {business.stats.inactiveServices === 0 
+                            ? 'All services are active' 
+                            : `${business.stats.inactiveServices} services are inactive and not shown on storefront`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
-              {/* Hide Products Without Photos Toggle - Hide for salons */}
-              {business.businessType !== 'SALON' && (
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-medium text-gray-900 mb-1">
-                      Hide Products Without Photos
-                    </h3>
-                    <p className="text-xs text-gray-500">
-                      Products without images will be excluded from storefront listings and filters
-                    </p>
-                  </div>
-                  <button
-                    onClick={toggleHideProductsWithoutPhotos}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      business.hideProductsWithoutPhotos ? 'bg-teal-600' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        business.hideProductsWithoutPhotos ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
+              {/* Hide Products/Services Without Photos Toggle */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">
+                    Hide {business.businessType === 'SALON' ? 'Services' : 'Products'} Without Photos
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {business.businessType === 'SALON' 
+                      ? 'Services without images will be excluded from storefront listings' 
+                      : 'Products without images will be excluded from storefront listings and filters'}
+                  </p>
                 </div>
-              )}
+                <button
+                  onClick={toggleHideProductsWithoutPhotos}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    business.hideProductsWithoutPhotos ? 'bg-teal-600' : 'bg-gray-200'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      business.hideProductsWithoutPhotos ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1417,8 +1478,10 @@ export default function BusinessDetailsPage() {
           {/* Search Analytics Settings */}
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Cost & Margins Settings */}
-          <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Cost & Margins Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Production Planning Settings - Hide for salons */}
           {business.businessType !== 'SALON' && (
@@ -1433,8 +1496,10 @@ export default function BusinessDetailsPage() {
             <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
-          {/* Invoice/Receipt Selection Settings */}
-          <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Invoice/Receipt Selection Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Packaging Tracking Settings - Hide for salons */}
           {business.businessType !== 'SALON' && (

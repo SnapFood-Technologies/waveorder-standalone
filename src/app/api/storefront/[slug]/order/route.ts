@@ -2202,6 +2202,47 @@ try {
             error: twilioResult.error
           }
         })
+
+        // System log: Twilio message error
+        logSystemEvent({
+          logType: 'twilio_message_error',
+          severity: 'error',
+          slug: business.slug,
+          businessId: business.id,
+          endpoint: '/api/storefront/[slug]/order',
+          method: 'POST',
+          statusCode: 200,
+          ipAddress: extractIPAddress(request),
+          userAgent: request.headers.get('user-agent') || undefined,
+          url: request.url,
+          errorMessage: twilioResult.error || 'Twilio message send failed',
+          metadata: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            phone: business.whatsappNumber,
+            messageType: 'order_notification'
+          }
+        })
+      } else {
+        // System log: Twilio message sent successfully
+        logSystemEvent({
+          logType: 'twilio_message_sent',
+          severity: 'info',
+          slug: business.slug,
+          businessId: business.id,
+          endpoint: '/api/storefront/[slug]/order',
+          method: 'POST',
+          statusCode: 200,
+          ipAddress: extractIPAddress(request),
+          userAgent: request.headers.get('user-agent') || undefined,
+          url: request.url,
+          metadata: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            phone: business.whatsappNumber,
+            messageType: 'order_notification'
+          }
+        })
       }
     }
 

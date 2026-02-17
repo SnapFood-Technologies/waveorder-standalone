@@ -82,6 +82,7 @@ interface MagicLinkParams extends BaseEmailParams {
 
 interface PasswordResetParams extends BaseEmailParams {
   resetUrl: string
+  role?: 'SUPER_ADMIN' | 'BUSINESS_OWNER' | 'STAFF'
 }
 
 interface WelcomeEmailParams extends BaseEmailParams {
@@ -1040,11 +1041,22 @@ export async function sendTeamInvitationEmail({ to, name = 'there', businessName
 }
 
 // Password reset template
-const createPasswordResetEmailContent = (name: string, resetUrl: string) => `
+const createPasswordResetEmailContent = (name: string, resetUrl: string, role?: string) => {
+  // Customize the account description based on user role
+  let accountDescription = 'your WaveOrder account'
+  if (role === 'SUPER_ADMIN') {
+    accountDescription = 'your WaveOrder admin account'
+  } else if (role === 'BUSINESS_OWNER') {
+    accountDescription = 'your business account on WaveOrder'
+  } else if (role === 'STAFF') {
+    accountDescription = 'your team account on WaveOrder'
+  }
+
+  return `
 <div style="padding: 40px 30px;">
   <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 24px; font-weight: 600;">Reset Your Password</h2>
   <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
-    Hi ${name}! We received a request to reset the password for your WaveOrder account. Click the button below to create a new password.
+    Hi ${name}! We received a request to reset the password for ${accountDescription}. Click the button below to create a new password.
   </p>
   
   <!-- Reset Button -->
@@ -1069,6 +1081,7 @@ const createPasswordResetEmailContent = (name: string, resetUrl: string) => `
   </div>
 </div>
 `
+}
 
 // Welcome email template
 const createWelcomeEmailContent = (
@@ -1237,8 +1250,8 @@ export async function sendMagicLinkEmail({ to, magicLinkUrl }: MagicLinkParams) 
   }
 }
 
-export async function sendPasswordResetEmail({ to, name = 'there', resetUrl }: PasswordResetParams) {
-  const content = createPasswordResetEmailContent(name, resetUrl)
+export async function sendPasswordResetEmail({ to, name = 'there', resetUrl, role }: PasswordResetParams) {
+  const content = createPasswordResetEmailContent(name, resetUrl, role)
   const html = createEmailTemplate(content, 'Reset Your Password')
 
   try {

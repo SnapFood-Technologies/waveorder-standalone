@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { sendAppointmentStatusEmail } from '@/lib/customer-email-notification'
 
 export async function GET(
   request: NextRequest,
@@ -247,7 +248,7 @@ export async function PUT(
       const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
       
       logSystemEvent({
-        logType: 'appointment_created', // Use same log type for status changes
+        logType: 'appointment_status_changed',
         severity: 'info',
         businessId: businessId,
         endpoint: '/api/admin/stores/[businessId]/appointments/[appointmentId]',
@@ -269,6 +270,56 @@ export async function PUT(
           appointmentDate: appointment.appointmentDate.toISOString()
         }
       })
+
+      // Send email notification for appointment status changes (CONFIRMED, COMPLETED, CANCELLED)
+      const notifiableStatuses = ['CONFIRMED', 'COMPLETED', 'CANCELLED']
+      if (notifiableStatuses.includes(body.status) && appointment.order?.customer?.email) {
+        try {
+          // Fetch business details for email
+          const business = await prisma.business.findUnique({
+            where: { id: businessId },
+            select: {
+              name: true,
+              address: true,
+              phone: true,
+              currency: true,
+              language: true,
+              customerNotificationEnabled: true
+            }
+          })
+
+          if (business?.customerNotificationEnabled) {
+            sendAppointmentStatusEmail(
+              {
+                name: appointment.order.customer.name || '',
+                email: appointment.order.customer.email
+              },
+              {
+                orderNumber: appointment.order.orderNumber || appointment.orderId,
+                status: body.status,
+                total: appointment.order.total || 0,
+                businessName: business.name,
+                businessAddress: business.address,
+                businessPhone: business.phone,
+                currency: business.currency || 'EUR',
+                language: business.language || 'en',
+                items: appointment.order.items?.map((item: any) => ({
+                  name: item.product?.name || 'Service',
+                  quantity: item.quantity || 1,
+                  price: item.price || 0,
+                  variant: null
+                })) || [],
+                appointmentDate: appointment.appointmentDate?.toISOString() || null,
+                startTime: appointment.startTime || null
+              }
+            ).catch((emailError) => {
+              console.error('Failed to send appointment status email:', emailError)
+            })
+          }
+        } catch (emailError) {
+          console.error('Error preparing appointment status email:', emailError)
+        }
+      }
     }
 
     return NextResponse.json({ appointment })

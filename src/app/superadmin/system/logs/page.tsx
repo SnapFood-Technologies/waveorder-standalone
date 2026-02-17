@@ -78,6 +78,10 @@ interface LogsResponse {
     appointmentStats?: { created: number; errors: number; total: number }
     storefrontStats: { success: number; errors: number; notFound: number; total: number }
     userStats: { registered: number; logins: number; total: number }
+    passwordResetStats: { requested: number; completed: number; errors: number; total: number }
+    orderStatusChangedStats: { changed: number; total: number }
+    appointmentStatusChangedStats: { changed: number; total: number }
+    twilioStats: { sent: number; errors: number; total: number }
     subscriptionStats: { changed: number; total: number }
     integrationStats: { apiCalls: number; total: number }
     topSlugsByLogs: Array<{ slug: string; count: number }>
@@ -217,7 +221,14 @@ export default function SystemLogsPage() {
       integration_api_call: 'Integration API Call',
       user_registered: 'User Registered',
       user_login: 'User Login',
-      subscription_changed: 'Subscription Changed'
+      subscription_changed: 'Subscription Changed',
+      password_reset_requested: 'Password Reset Requested',
+      password_reset_completed: 'Password Reset Completed',
+      password_reset_error: 'Password Reset Error',
+      order_status_changed: 'Order Status Changed',
+      appointment_status_changed: 'Appointment Status Changed',
+      twilio_message_sent: 'Twilio Message Sent',
+      twilio_message_error: 'Twilio Message Error'
     }
     return labels[logType] || logType
   }
@@ -342,12 +353,21 @@ export default function SystemLogsPage() {
                 <optgroup label="Orders &amp; Appointments">
                   <option value="order_created">Order Created</option>
                   <option value="order_error">Order Error</option>
+                  <option value="order_status_changed">Order Status Changed</option>
                   <option value="appointment_created">Appointment Created</option>
                   <option value="appointment_error">Appointment Error</option>
+                  <option value="appointment_status_changed">Appointment Status Changed</option>
                 </optgroup>
                 <optgroup label="Users &amp; Auth">
                   <option value="user_registered">User Registered</option>
                   <option value="user_login">User Login</option>
+                  <option value="password_reset_requested">Password Reset Requested</option>
+                  <option value="password_reset_completed">Password Reset Completed</option>
+                  <option value="password_reset_error">Password Reset Error</option>
+                </optgroup>
+                <optgroup label="Notifications">
+                  <option value="twilio_message_sent">Twilio Message Sent</option>
+                  <option value="twilio_message_error">Twilio Message Error</option>
                 </optgroup>
                 <optgroup label="Onboarding &amp; Trial">
                   <option value="onboarding_step_completed">Onboarding Step Completed</option>
@@ -838,6 +858,92 @@ export default function SystemLogsPage() {
                 <p className="text-xs text-gray-400">External integration API activity</p>
               </div>
             </div>
+          </div>
+
+          {/* Password Reset, Order/Appointment Status Changes & Twilio */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Password Reset Activity */}
+            {analytics.passwordResetStats && analytics.passwordResetStats.total > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Password Resets</h3>
+                  <span className="text-lg font-bold text-gray-900">{analytics.passwordResetStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Requested</span>
+                    <span className="text-sm font-medium text-blue-600">{analytics.passwordResetStats.requested.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Completed</span>
+                    <span className="text-sm font-medium text-green-600">{analytics.passwordResetStats.completed.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Errors</span>
+                    <span className="text-sm font-medium text-red-600">{analytics.passwordResetStats.errors.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Order Status Changes */}
+            {analytics.orderStatusChangedStats && analytics.orderStatusChangedStats.total > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Order Status Changes</h3>
+                  <span className="text-lg font-bold text-gray-900">{analytics.orderStatusChangedStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Status Updates</span>
+                    <span className="text-sm font-medium text-teal-600">{analytics.orderStatusChangedStats.changed.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">Admin-initiated order status transitions</p>
+                </div>
+              </div>
+            )}
+
+            {/* Appointment Status Changes */}
+            {analytics.appointmentStatusChangedStats && analytics.appointmentStatusChangedStats.total > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Appointment Status Changes</h3>
+                  <span className="text-lg font-bold text-gray-900">{analytics.appointmentStatusChangedStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Status Updates</span>
+                    <span className="text-sm font-medium text-purple-600">{analytics.appointmentStatusChangedStats.changed.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">Admin-initiated appointment status transitions</p>
+                </div>
+              </div>
+            )}
+
+            {/* Twilio Message Activity */}
+            {analytics.twilioStats && analytics.twilioStats.total > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900">Twilio Messages</h3>
+                  <span className="text-lg font-bold text-gray-900">{analytics.twilioStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Sent</span>
+                    <span className="text-sm font-medium text-green-600">{analytics.twilioStats.sent.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">Errors</span>
+                    <span className="text-sm font-medium text-red-600">{analytics.twilioStats.errors.toLocaleString()}</span>
+                  </div>
+                  {analytics.twilioStats.total > 0 && (
+                    <p className="text-xs text-gray-400">
+                      Success Rate: {((analytics.twilioStats.sent / analytics.twilioStats.total) * 100).toFixed(1)}%
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Onboarding Funnel Summary */}

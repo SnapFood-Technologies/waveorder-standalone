@@ -98,11 +98,23 @@ export async function GET(request: NextRequest) {
     })
 
     // Get user & subscription stats
-    const [userRegisteredCount, userLoginCount, subscriptionChangedCount, integrationApiCallCount] = await Promise.all([
+    const [
+      userRegisteredCount, userLoginCount, subscriptionChangedCount, integrationApiCallCount,
+      passwordResetRequestedCount, passwordResetCompletedCount, passwordResetErrorCount,
+      orderStatusChangedCount, appointmentStatusChangedCount,
+      twilioMessageSentCount, twilioMessageErrorCount
+    ] = await Promise.all([
       prisma.systemLog.count({ where: { logType: 'user_registered' } }),
       prisma.systemLog.count({ where: { logType: 'user_login' } }),
       prisma.systemLog.count({ where: { logType: 'subscription_changed' } }),
-      prisma.systemLog.count({ where: { logType: 'integration_api_call' } })
+      prisma.systemLog.count({ where: { logType: 'integration_api_call' } }),
+      prisma.systemLog.count({ where: { logType: 'password_reset_requested' } }),
+      prisma.systemLog.count({ where: { logType: 'password_reset_completed' } }),
+      prisma.systemLog.count({ where: { logType: 'password_reset_error' } }),
+      prisma.systemLog.count({ where: { logType: 'order_status_changed' } }),
+      prisma.systemLog.count({ where: { logType: 'appointment_status_changed' } }),
+      prisma.systemLog.count({ where: { logType: 'twilio_message_sent' } }),
+      prisma.systemLog.count({ where: { logType: 'twilio_message_error' } })
     ])
 
     // Get order-related stats
@@ -295,6 +307,25 @@ export async function GET(request: NextRequest) {
           registered: userRegisteredCount,
           logins: userLoginCount,
           total: userRegisteredCount + userLoginCount
+        },
+        passwordResetStats: {
+          requested: passwordResetRequestedCount,
+          completed: passwordResetCompletedCount,
+          errors: passwordResetErrorCount,
+          total: passwordResetRequestedCount + passwordResetCompletedCount + passwordResetErrorCount
+        },
+        orderStatusChangedStats: {
+          changed: orderStatusChangedCount,
+          total: orderStatusChangedCount
+        },
+        appointmentStatusChangedStats: {
+          changed: appointmentStatusChangedCount,
+          total: appointmentStatusChangedCount
+        },
+        twilioStats: {
+          sent: twilioMessageSentCount,
+          errors: twilioMessageErrorCount,
+          total: twilioMessageSentCount + twilioMessageErrorCount
         },
         subscriptionStats: {
           changed: subscriptionChangedCount,

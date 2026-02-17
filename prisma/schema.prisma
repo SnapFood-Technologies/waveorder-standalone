@@ -55,6 +55,10 @@ model User {
 
   lastPasswordChange DateTime?
 
+  // Password reset
+  resetToken  String?
+  resetExpiry DateTime?
+
   setupToken  String?
   setupExpiry DateTime?
 
