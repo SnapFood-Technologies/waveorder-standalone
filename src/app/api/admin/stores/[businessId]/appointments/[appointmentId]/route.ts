@@ -117,6 +117,44 @@ export async function PUT(
       select: { status: true, orderId: true }
     })
 
+    // Handle payment status update on the related order
+    if (body.paymentStatus) {
+      const validPaymentStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED']
+      if (!validPaymentStatuses.includes(body.paymentStatus)) {
+        return NextResponse.json({ message: 'Invalid payment status' }, { status: 400 })
+      }
+
+      // Update the order's payment status
+      const existingOrderId = existingAppointment?.orderId
+      if (existingOrderId) {
+        await prisma.order.update({
+          where: { id: existingOrderId },
+          data: { paymentStatus: body.paymentStatus }
+        })
+      }
+    }
+
+    // Auto-update payment status when appointment is cancelled
+    if (body.status === 'CANCELLED' && !body.paymentStatus && existingAppointment?.orderId) {
+      const currentOrder = await prisma.order.findUnique({
+        where: { id: existingAppointment.orderId },
+        select: { paymentStatus: true }
+      })
+      if (currentOrder) {
+        if (currentOrder.paymentStatus === 'PENDING') {
+          await prisma.order.update({
+            where: { id: existingAppointment.orderId },
+            data: { paymentStatus: 'FAILED' }
+          })
+        } else if (currentOrder.paymentStatus === 'PAID') {
+          await prisma.order.update({
+            where: { id: existingAppointment.orderId },
+            data: { paymentStatus: 'REFUNDED' }
+          })
+        }
+      }
+    }
+
     const appointment = await prisma.appointment.update({
       where: {
         id: appointmentId,
@@ -308,6 +346,7 @@ export async function PUT(
                   name: item.product?.name || 'Service',
                   quantity: item.quantity || 1,
                   price: item.price || 0,
+                  originalPrice: item.originalPrice || null,
                   variant: null
                 })) || [],
                 appointmentDate: appointment.appointmentDate?.toISOString() || null,

@@ -55,6 +55,8 @@ interface Appointment {
     id: string
     orderNumber: string
     total: number
+    paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'
+    paymentMethod: string | null
     customer: Customer
     items: Array<{
       id: string
@@ -111,6 +113,7 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
   
   // Form states
   const [selectedStatus, setSelectedStatus] = useState<string>('')
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string>('')
   const [appointmentNotes, setAppointmentNotes] = useState<string>('')
   const [selectedStaffId, setSelectedStaffId] = useState<string>('')
   const [editingNotes, setEditingNotes] = useState(false)
@@ -133,6 +136,7 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
         setAppointment(data.appointment)
         setBusiness(data.appointment.business)
         setSelectedStatus(data.appointment.status)
+        setSelectedPaymentStatus(data.appointment.order?.paymentStatus || 'PENDING')
         setAppointmentNotes(data.appointment.notes || '')
         setSelectedStaffId(data.appointment.staffId || '')
       } else if (response.status === 404) {
@@ -235,6 +239,33 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
     } catch (error) {
       console.error('Error updating appointment:', error)
       setError('Network error updating appointment')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const updatePaymentStatus = async (newPaymentStatus: string) => {
+    if (!appointment) return
+
+    try {
+      setUpdating(true)
+      
+      const response = await fetch(`/api/admin/stores/${businessId}/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: newPaymentStatus })
+      })
+
+      if (response.ok) {
+        await fetchAppointment()
+        showSuccess(`Payment status updated to ${newPaymentStatus.toLowerCase()}`)
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || 'Failed to update payment status')
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error)
+      setError('Network error updating payment status')
     } finally {
       setUpdating(false)
     }
@@ -440,7 +471,7 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center">
             <div className={`p-2 rounded-lg ${getStatusColor(appointment.status).split(' ')[1]}`}>
@@ -463,6 +494,38 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Total Amount</p>
               <p className="text-lg font-bold text-emerald-600">{formatCurrency(appointment.order.total)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg border border-gray-200">
+          <div className="flex items-center">
+            <div className={`p-2 rounded-lg ${
+              appointment.order.paymentStatus === 'PAID' ? 'bg-emerald-100' :
+              appointment.order.paymentStatus === 'REFUNDED' ? 'bg-orange-100' :
+              appointment.order.paymentStatus === 'FAILED' ? 'bg-red-100' :
+              'bg-yellow-100'
+            }`}>
+              <CreditCard className={`w-5 h-5 ${
+                appointment.order.paymentStatus === 'PAID' ? 'text-emerald-600' :
+                appointment.order.paymentStatus === 'REFUNDED' ? 'text-orange-600' :
+                appointment.order.paymentStatus === 'FAILED' ? 'text-red-600' :
+                'text-yellow-600'
+              }`} />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-500">Payment</p>
+              <p className={`text-lg font-bold ${
+                appointment.order.paymentStatus === 'PAID' ? 'text-emerald-600' :
+                appointment.order.paymentStatus === 'REFUNDED' ? 'text-orange-600' :
+                appointment.order.paymentStatus === 'FAILED' ? 'text-red-600' :
+                'text-yellow-600'
+              }`}>
+                {appointment.order.paymentStatus === 'PAID' ? 'Paid' :
+                 appointment.order.paymentStatus === 'REFUNDED' ? 'Refunded' :
+                 appointment.order.paymentStatus === 'FAILED' ? 'Failed' :
+                 'Pending'}
+              </p>
             </div>
           </div>
         </div>
@@ -707,6 +770,51 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+
+          {/* Payment Status */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
+              Payment Status
+            </h3>
+            
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <select
+                  value={selectedPaymentStatus}
+                  onChange={(e) => setSelectedPaymentStatus(e.target.value)}
+                  disabled={updating}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 disabled:opacity-50"
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="PAID">Paid</option>
+                  <option value="FAILED">Failed</option>
+                  <option value="REFUNDED">Refunded</option>
+                </select>
+                <button
+                  onClick={() => updatePaymentStatus(selectedPaymentStatus)}
+                  disabled={updating || selectedPaymentStatus === appointment.order.paymentStatus}
+                  className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap"
+                >
+                  {updating ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Update'
+                  )}
+                </button>
+              </div>
+              {appointment.order.paymentMethod && (
+                <p className="text-xs text-gray-500">
+                  Payment method: {appointment.order.paymentMethod}
+                </p>
+              )}
+              {selectedPaymentStatus === 'PAID' && appointment.order.paymentStatus !== 'PAID' && (
+                <p className="text-xs text-emerald-600">
+                  Marking as paid will include this appointment in revenue calculations
+                </p>
+              )}
             </div>
           </div>
 

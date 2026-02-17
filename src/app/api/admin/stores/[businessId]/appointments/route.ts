@@ -34,6 +34,7 @@ export async function GET(
     const status = searchParams.get('status') || ''
     const date = searchParams.get('date') || ''
     const staffId = searchParams.get('staffId') || ''
+    const sort = searchParams.get('sort') || 'newest'
 
     const skip = (page - 1) * limit
 
@@ -100,9 +101,9 @@ export async function GET(
             }
           }
         },
-        orderBy: {
-          appointmentDate: 'desc'
-        },
+        orderBy: sort === 'upcoming' 
+          ? [{ appointmentDate: 'asc' }, { startTime: 'asc' }]
+          : { createdAt: 'desc' },
         skip,
         take: limit
       }),

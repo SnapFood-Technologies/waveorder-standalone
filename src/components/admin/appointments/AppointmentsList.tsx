@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Search, Calendar, Clock, User, Phone, ChevronLeft, ChevronRight, Eye, Filter, X, Plus } from 'lucide-react'
+import { Search, Calendar, Clock, User, Phone, ChevronLeft, ChevronRight, Eye, Filter, X, Plus, ArrowUpDown } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useImpersonation } from '@/lib/impersonation'
@@ -59,6 +59,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
   })
   const [currency, setCurrency] = useState('USD')
   const [showFilters, setShowFilters] = useState(false)
+  const [sortBy, setSortBy] = useState<'newest' | 'upcoming'>('newest')
 
   // Debounce search query
   useEffect(() => {
@@ -76,7 +77,8 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '10',
-        search: debouncedSearchQuery
+        search: debouncedSearchQuery,
+        sort: sortBy
       })
 
       if (filterStatus !== 'all') params.append('status', filterStatus)
@@ -98,7 +100,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
 
   useEffect(() => {
     fetchAppointments()
-  }, [businessId, currentPage, debouncedSearchQuery, filterStatus, filterDate])
+  }, [businessId, currentPage, debouncedSearchQuery, filterStatus, filterDate, sortBy])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -120,6 +122,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
     setFilterDate('')
     setSearchQuery('')
     setDebouncedSearchQuery('')
+    setSortBy('newest')
     setCurrentPage(1)
     
     const newUrl = window.location.pathname
@@ -244,8 +247,24 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
             />
           </div>
 
-          {/* Filter Controls */}
+          {/* Sort & Filter Controls */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            {/* Sort Dropdown */}
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as 'newest' | 'upcoming')
+                  setCurrentPage(1)
+                }}
+                className="appearance-none flex items-center pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="upcoming">Upcoming Next</option>
+              </select>
+              <ArrowUpDown className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center px-3 py-2 border rounded-lg transition-colors ${
