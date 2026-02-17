@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateApiRequest, addRateLimitHeaders } from '@/lib/api-auth'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 // ===========================================
 // GET - Get Single Appointment
@@ -194,11 +196,89 @@ export async function PUT(
       }
     }
 
+    // Log appointment status change if status was updated
+    if (body.status && body.status !== existingAppointment.status) {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+      
+      logSystemEvent({
+        logType: 'appointment_created', // Use same log type for status changes
+        severity: 'info',
+        businessId: auth.businessId,
+        endpoint: '/api/v1/appointments/[appointmentId]',
+        method: 'PUT',
+        statusCode: 200,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: actualUrl,
+        metadata: {
+          appointmentId: appointment.id,
+          orderId: appointment.orderId,
+          previousStatus: existingAppointment.status,
+          newStatus: body.status,
+          statusChanged: true,
+          updatedViaApi: true,
+          apiKeyId: auth.id,
+          staffId: appointment.staffId || null,
+          appointmentDate: appointment.appointmentDate.toISOString()
+        }
+      })
+    }
+
     const response = NextResponse.json({ appointment })
     return addRateLimitHeaders(response, auth.id)
 
   } catch (error) {
     console.error('API v1 Appointment PUT error:', error)
+    
+    // Log appointment update error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    // Try to get auth info for error logging
+    let businessId: string | undefined
+    let apiKeyId: string | undefined
+    try {
+      const authResult = await authenticateApiRequest(request, 'appointments:write')
+      if (!(authResult instanceof NextResponse)) {
+        businessId = authResult.auth.businessId
+        apiKeyId = authResult.auth.id
+      }
+    } catch {
+      // Ignore auth errors in error logging
+    }
+    
+    logSystemEvent({
+      logType: 'appointment_error',
+      severity: 'error',
+      businessId: businessId,
+      endpoint: '/api/v1/appointments/[appointmentId]',
+      method: 'PUT',
+      statusCode: 500,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      errorMessage: error instanceof Error ? error.message : 'Failed to update appointment',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      metadata: {
+        appointmentId: (await params).appointmentId,
+        updatedViaApi: true,
+        apiKeyId: apiKeyId || null
+      }
+    })
+    
     return NextResponse.json(
       { error: 'Failed to update appointment' },
       { status: 500 }

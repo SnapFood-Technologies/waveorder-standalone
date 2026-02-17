@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 export async function GET(
   request: NextRequest,
@@ -373,6 +374,46 @@ export async function POST(
       }
     })
 
+    // Log successful appointment creation
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    // Construct actual URL from headers
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    logSystemEvent({
+      logType: 'appointment_created',
+      severity: 'info',
+      businessId: businessId,
+      endpoint: '/api/admin/stores/[businessId]/appointments',
+      method: 'POST',
+      statusCode: 201,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      metadata: {
+        appointmentId: appointment.id,
+        orderId: appointment.orderId,
+        orderNumber: appointment.order.orderNumber,
+        customerId: appointment.customerId || null,
+        customerName: appointment.order.customer.name || null,
+        staffId: appointment.staffId || null,
+        appointmentDate: appointment.appointmentDate.toISOString(),
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        duration: appointment.duration,
+        status: appointment.status,
+        createdByAdmin: true,
+        createdBy: access.session.user.id,
+        serviceCount: order.items.length,
+        total: order.total
+      }
+    })
+
     return NextResponse.json({ 
       appointment: {
         id: appointment.id,
@@ -391,6 +432,35 @@ export async function POST(
 
   } catch (error) {
     console.error('Error creating appointment:', error)
+    
+    // Log appointment creation error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    logSystemEvent({
+      logType: 'appointment_error',
+      severity: 'error',
+      businessId: (await params).businessId,
+      endpoint: '/api/admin/stores/[businessId]/appointments',
+      method: 'POST',
+      statusCode: 500,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      errorMessage: error instanceof Error ? error.message : 'Failed to create appointment',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      metadata: {
+        createdByAdmin: true,
+        createdBy: (await checkBusinessAccess((await params).businessId)).session?.user.id || null
+      }
+    })
+    
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

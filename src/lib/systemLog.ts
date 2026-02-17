@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 const prisma = globalForPrisma.prisma || new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed'
+export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'appointment_created' | 'appointment_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed'
 export type LogSeverity = 'error' | 'warning' | 'info'
 
 interface SystemLogData {

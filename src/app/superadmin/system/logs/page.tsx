@@ -201,6 +201,8 @@ export default function SystemLogsPage() {
       products_error: 'Products Error',
       order_created: 'Order Created',
       order_error: 'Order Error',
+      appointment_created: 'Appointment Created',
+      appointment_error: 'Appointment Error',
       system_error: 'System Error',
       trial_error: 'Trial Error',
       trial_started: 'Trial Started',
@@ -611,8 +613,8 @@ export default function SystemLogsPage() {
             <p className="text-gray-600 text-sm mt-1">Insights and distribution of system logs</p>
           </div>
 
-          {/* Storefront vs Orders Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Storefront vs Orders vs Appointments Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Storefront Stats */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
@@ -722,6 +724,54 @@ export default function SystemLogsPage() {
                 </div>
               )}
             </div>
+
+            {/* Appointment Stats */}
+            {analytics.appointmentStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-purple-600" />
+                    Appointment Activity
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">{analytics.appointmentStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Appointments Created</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-purple-500 rounded-full" 
+                          style={{ width: `${analytics.appointmentStats.total > 0 ? (analytics.appointmentStats.created / analytics.appointmentStats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.appointmentStats.created.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Appointment Errors</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-red-500 rounded-full" 
+                          style={{ width: `${analytics.appointmentStats.total > 0 ? (analytics.appointmentStats.errors / analytics.appointmentStats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.appointmentStats.errors.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                {analytics.appointmentStats.total > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="text-sm text-gray-600">
+                      Success Rate: <span className="font-semibold text-purple-600">
+                        {((analytics.appointmentStats.created / analytics.appointmentStats.total) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Users, Subscriptions & Integrations */}
