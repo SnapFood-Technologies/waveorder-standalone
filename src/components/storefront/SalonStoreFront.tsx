@@ -18,10 +18,13 @@ import {
   ChevronRight,
   Scissors,
   User,
-  CheckCircle
+  CheckCircle,
+  Share2,
+  Check
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { PhoneInput } from '../site/PhoneInput'
+import { encodeBase62, decodeBase62, isValidBase62 } from '@/utils/base62'
 
 interface StoreData {
   id: string
@@ -93,6 +96,9 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoading, setServicesLoading] = useState(false)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [showServiceModal, setShowServiceModal] = useState(false)
+  const [showCopied, setShowCopied] = useState(false)
+  const shareHandledRef = useRef(false)
   const [bookingItems, setBookingItems] = useState<BookingItem[]>([])
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [appointmentDate, setAppointmentDate] = useState<Date | null>(null)
@@ -190,6 +196,82 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       return `${hours}h ${mins > 0 ? `${mins}min` : ''}`.trim()
     }
     return `${mins}min`
+  }
+
+  // Handle shared service from URL parameters
+  useEffect(() => {
+    if (shareHandledRef.current) return
+    
+    // Try ps (raw service ID) first, then fall back to decoding p (Base62 encoded)
+    const rawServiceId = searchParams.get('ps')
+    const encodedServiceId = searchParams.get('p')
+    
+    let serviceId: string | null = null
+    
+    if (rawServiceId && /^[0-9a-fA-F]{24}$/.test(rawServiceId)) {
+      // Use raw service ID directly (more reliable)
+      serviceId = rawServiceId
+    } else if (encodedServiceId && isValidBase62(encodedServiceId)) {
+      // Fall back to decoding Base62
+      serviceId = decodeBase62(encodedServiceId)
+    }
+    
+    if (serviceId) {
+      // Find the service in our loaded services
+      const service = services.find(s => s.id === serviceId)
+      if (service) {
+        // Mark as handled before opening modal
+        shareHandledRef.current = true
+        // Open the service modal
+        setSelectedService(service)
+        setShowServiceModal(true)
+      } else if (services.length > 0) {
+        // Mark as handled before fetching
+        shareHandledRef.current = true
+        // Service not in loaded services - fetch it directly from API
+        const fetchSharedService = async () => {
+          try {
+            const response = await fetch(`/api/storefront/${storeData.slug}/products?productId=${serviceId}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data.products && data.products.length > 0) {
+                const fetchedService = data.products[0]
+                // Ensure it's a service
+                if (fetchedService.isService === true) {
+                  setSelectedService(fetchedService)
+                  setShowServiceModal(true)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Failed to fetch shared service:', error)
+          }
+        }
+        fetchSharedService()
+      }
+    }
+  }, [searchParams, services, storeData.slug])
+
+  // Share service handler - creates URL with encoded service ID and tracking params
+  const handleShareService = (serviceId: string) => {
+    const encoded = encodeBase62(serviceId)
+    const shareUrl = `${window.location.origin}/${storeData.slug}?p=${encoded}&utm_source=service_share&ps=${serviceId}`
+    
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setShowCopied(true)
+      setTimeout(() => setShowCopied(false), 2000)
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = shareUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      setShowCopied(true)
+      setTimeout(() => setShowCopied(false), 2000)
+    })
   }
 
   // Generate time slots based on business hours
@@ -406,8 +488,11 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               return (
                 <div
                   key={service.id}
-                  className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => addToBooking(service)}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative"
+                  onClick={() => {
+                    setSelectedService(service)
+                    setShowServiceModal(true)
+                  }}
                 >
                   {service.images?.[0] && (
                     <div className="aspect-square bg-gray-100">
@@ -460,6 +545,121 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           </div>
         )}
       </div>
+
+      {/* Service Detail Modal */}
+      {showServiceModal && selectedService && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
+            {/* Header */}
+            <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {useAlbanian && selectedService.nameAl ? selectedService.nameAl :
+                   useGreek && selectedService.nameEl ? selectedService.nameEl :
+                   selectedService.name}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {/* Share Button */}
+                  <button 
+                    onClick={() => handleShareService(selectedService.id)}
+                    className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors relative"
+                    title={translations.share || 'Share'}
+                  >
+                    {showCopied ? (
+                      <Check className="w-5 h-5 text-green-600" />
+                    ) : (
+                      <Share2 className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                  {/* Close Button */}
+                  <button 
+                    onClick={() => {
+                      setShowServiceModal(false)
+                      setSelectedService(null)
+                    }} 
+                    className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6 space-y-6">
+                {/* Service Images */}
+                {selectedService.images && selectedService.images.length > 0 && (
+                  <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                      src={selectedService.images[0]} 
+                      alt={useAlbanian && selectedService.nameAl ? selectedService.nameAl :
+                           useGreek && selectedService.nameEl ? selectedService.nameEl :
+                           selectedService.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                
+                {/* Service Details */}
+                <div className="space-y-4">
+                  {/* Duration */}
+                  {selectedService.serviceDuration && (
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Clock className="w-5 h-5" />
+                      <span className="font-medium">{formatDuration(selectedService.serviceDuration)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Price */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-gray-900">
+                      {currencySymbol}{selectedService.price.toFixed(2)}
+                    </span>
+                    {selectedService.originalPrice && selectedService.originalPrice > selectedService.price && (
+                      <>
+                        <span className="text-lg text-gray-500 line-through">
+                          {currencySymbol}{selectedService.originalPrice.toFixed(2)}
+                        </span>
+                        <span className="bg-red-100 text-red-700 text-sm px-2 py-1 rounded-full font-medium">
+                          -{Math.round(((selectedService.originalPrice - selectedService.price) / selectedService.originalPrice) * 100)}%
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Description */}
+                  {(selectedService.description || (useAlbanian && selectedService.descriptionAl) || (useGreek && selectedService.descriptionEl)) && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Description</h3>
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {useAlbanian && selectedService.descriptionAl ? selectedService.descriptionAl :
+                         useGreek && selectedService.descriptionEl ? selectedService.descriptionEl :
+                         selectedService.description}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer - Add to Booking Button */}
+            <div className="p-6 border-t border-gray-200 flex-shrink-0">
+              <button
+                onClick={() => {
+                  addToBooking(selectedService)
+                  setShowServiceModal(false)
+                  setSelectedService(null)
+                }}
+                className="w-full py-3 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: storeData.primaryColor }}
+              >
+                {translations.addToBooking || 'Add to Booking'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Summary Bar */}
       {bookingItems.length > 0 && (

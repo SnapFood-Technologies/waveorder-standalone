@@ -31,12 +31,13 @@ export async function GET(
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
     }
 
-    // Count own products (products created by this business)
+    // Count own products/services (products created by this business)
+    // For salons, products are actually services
     const ownProductsCount = await prisma.product.count({
       where: { businessId }
     })
 
-    // Count products shared with this business (instead of fetching all)
+    // Count products/services shared with this business (instead of fetching all)
     const productsSharedWithThisBusinessCount = await prisma.product.count({
       where: {
         connectedBusinesses: { has: businessId },
@@ -44,7 +45,7 @@ export async function GET(
       }
     })
 
-    // Count products this business has shared (instead of fetching all)
+    // Count products/services this business has shared (instead of fetching all)
     const productsSharedByThisBusinessCount = await prisma.product.count({
       where: {
         businessId,

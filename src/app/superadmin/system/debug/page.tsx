@@ -1082,14 +1082,17 @@ function SyncDebugResults({ data }: { data: any }) {
 
 // Connections Debug Results
 function ConnectionsDebugResults({ data }: { data: any }) {
+  const isSalon = data.business?.businessType === 'SALON'
+  const itemLabel = isSalon ? 'services' : 'products'
+  
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'receiver':
-        return { class: 'bg-blue-100 text-blue-800', label: 'Receiver (Marketplace/Originator - receives products from others)' }
+        return { class: 'bg-blue-100 text-blue-800', label: `Receiver (Marketplace/Originator - receives ${itemLabel} from others)` }
       case 'sharer':
-        return { class: 'bg-purple-100 text-purple-800', label: 'Sharer (Supplier - shares products with others)' }
+        return { class: 'bg-purple-100 text-purple-800', label: `Sharer (Supplier - shares ${itemLabel} with others)` }
       case 'both':
-        return { class: 'bg-green-100 text-green-800', label: 'Both (Receives and shares products)' }
+        return { class: 'bg-green-100 text-green-800', label: `Both (Receives and shares ${itemLabel})` }
       default:
         return { class: 'bg-gray-100 text-gray-800', label: 'Standalone (No connections)' }
     }
@@ -1164,7 +1167,7 @@ function ConnectionsDebugResults({ data }: { data: any }) {
 
       {data.connectedBusinesses?.length === 0 && (
         <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-          This business has no product sharing connections with other businesses
+          This business has no {itemLabel} sharing connections with other businesses
         </div>
       )}
     </div>

@@ -1162,8 +1162,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </Link>
           </div>
 
-          {/* Geographic & Product Shares - 2 column grid */}
-          <div className={`grid grid-cols-1 ${isSalon ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-4`}>
+          {/* Geographic & Product/Service Shares - 2 column grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               href={`/admin/stores/${businessId}/advanced-analytics`}
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-teal-300 transition-all duration-200 group"
@@ -1177,20 +1177,18 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               </div>
             </Link>
             
-            {!isSalon && (
-              <Link
-                href={`/admin/stores/${businessId}/product-shares`}
-                className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-all duration-200 group"
-              >
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
-                  <Share2 className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">Product Shares</h4>
-                  <p className="text-sm text-gray-600">Track shared products and traffic</p>
-                </div>
-              </Link>
-            )}
+            <Link
+              href={isSalon ? `/admin/stores/${businessId}/service-shares` : `/admin/stores/${businessId}/product-shares`}
+              className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">
+                <Share2 className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">{isSalon ? 'Service Shares' : 'Product Shares'}</h4>
+                <p className="text-sm text-gray-600">Track shared {isSalon ? 'services' : 'products'} and traffic</p>
+              </div>
+            </Link>
           </div>
         </div>
       )}

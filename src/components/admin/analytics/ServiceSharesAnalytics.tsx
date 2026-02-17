@@ -1,4 +1,4 @@
-// src/components/admin/analytics/ProductSharesAnalytics.tsx
+// src/components/admin/analytics/ServiceSharesAnalytics.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -8,16 +8,16 @@ import {
   ArrowLeft,
   RefreshCw,
   TrendingUp,
-  Package,
+  Scissors,
   Eye
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 
-interface ProductSharesAnalyticsProps {
+interface ServiceSharesAnalyticsProps {
   businessId: string
 }
 
-interface ProductShareData {
+interface ServiceShareData {
   productId: string
   productName: string
   productImage?: string
@@ -26,13 +26,12 @@ interface ProductShareData {
 
 interface SharesData {
   totalShareVisits: number
-  topSharedProducts: ProductShareData[]
+  topSharedProducts: ServiceShareData[]
 }
 
-export default function ProductSharesAnalytics({ businessId }: ProductSharesAnalyticsProps) {
+export default function ServiceSharesAnalytics({ businessId }: ServiceSharesAnalyticsProps) {
   const [data, setData] = useState<SharesData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isSalon, setIsSalon] = useState(false)
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     end: new Date()
@@ -40,21 +39,8 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
 
   useEffect(() => {
-    fetchBusinessType()
     fetchSharesData()
   }, [businessId, dateRange])
-
-  const fetchBusinessType = async () => {
-    try {
-      const response = await fetch(`/api/admin/stores/${businessId}`)
-      if (response.ok) {
-        const result = await response.json()
-        setIsSalon(result.business?.businessType === 'SALON')
-      }
-    } catch (error) {
-      console.error('Error fetching business type:', error)
-    }
-  }
 
   const fetchSharesData = async () => {
     try {
@@ -70,7 +56,7 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
         setData(result.data)
       }
     } catch (error) {
-      console.error('Error fetching product shares data:', error)
+      console.error('Error fetching service shares data:', error)
     } finally {
       setLoading(false)
     }
@@ -88,8 +74,8 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{isSalon ? 'Service Shares' : 'Product Shares'}</h1>
-            <p className="text-sm text-gray-600">Track how your {isSalon ? 'services' : 'products'} are being shared</p>
+            <h1 className="text-2xl font-bold text-gray-900">Service Shares</h1>
+            <p className="text-sm text-gray-600">Track how your services are being shared</p>
           </div>
         </div>
         
@@ -142,56 +128,54 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
               </div>
             </div>
             <p className="text-xs text-gray-500">
-              Visits from {isSalon ? 'service' : 'product'} share links in the selected period
+              Visits from service share links in the selected period
             </p>
           </div>
 
-          {/* Top Shared Products/Services */}
+          {/* Top Shared Services */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-purple-600" />
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Top Shared {isSalon ? 'Services' : 'Products'}
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">Top Shared Services</h2>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {isSalon ? 'Services' : 'Products'} that drive the most traffic from share links
+                Services that drive the most traffic from share links
               </p>
             </div>
             
             {data?.topSharedProducts && data.topSharedProducts.length > 0 ? (
               <div className="divide-y divide-gray-100">
-                {data.topSharedProducts.map((product, index) => (
-                  <div key={product.productId} className="p-4 flex items-center gap-4 hover:bg-gray-50">
+                {data.topSharedProducts.map((service, index) => (
+                  <div key={service.productId} className="p-4 flex items-center gap-4 hover:bg-gray-50">
                     <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                       <span className="text-sm font-semibold text-purple-600">
                         {index + 1}
                       </span>
                     </div>
                     
-                    {product.productImage ? (
+                    {service.productImage ? (
                       <img 
-                        src={product.productImage} 
-                        alt={product.productName}
+                        src={service.productImage} 
+                        alt={service.productName}
                         className="w-12 h-12 object-cover rounded-lg"
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Package className="w-6 h-6 text-gray-400" />
+                        <Scissors className="w-6 h-6 text-gray-400" />
                       </div>
                     )}
                     
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 truncate">
-                        {product.productName}
+                        {service.productName}
                       </p>
                     </div>
                     
                     <div className="flex items-center gap-2 text-gray-600">
                       <Eye className="w-4 h-4" />
                       <span className="font-semibold">
-                        {product.shareVisits.toLocaleString()}
+                        {service.shareVisits.toLocaleString()}
                       </span>
                       <span className="text-sm text-gray-500">visits</span>
                     </div>
@@ -203,7 +187,7 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
                 <Share2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No Share Data Yet</h3>
                 <p className="text-gray-600 max-w-sm mx-auto">
-                  When customers share your {isSalon ? 'services' : 'products'} and others visit those links, the data will appear here.
+                  When customers share your services and others visit those links, the data will appear here.
                 </p>
               </div>
             )}
@@ -211,9 +195,9 @@ export default function ProductSharesAnalytics({ businessId }: ProductSharesAnal
 
           {/* Info Card */}
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h3 className="font-medium text-purple-900 mb-2">How {isSalon ? 'Service' : 'Product'} Sharing Works</h3>
+            <h3 className="font-medium text-purple-900 mb-2">How Service Sharing Works</h3>
             <ul className="text-sm text-purple-700 space-y-1">
-              <li>• Customers can share {isSalon ? 'services' : 'products'} using the share button on {isSalon ? 'service' : 'product'} details</li>
+              <li>• Customers can share services using the share button on service details</li>
               <li>• Each visit from a share link is tracked automatically</li>
               <li>• Share links include tracking parameters to identify the source</li>
             </ul>

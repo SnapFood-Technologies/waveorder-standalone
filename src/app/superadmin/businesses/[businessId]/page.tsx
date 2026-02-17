@@ -967,8 +967,8 @@ export default function BusinessDetailsPage() {
             </div>
           </div>
 
-          {/* Delivery Settings */}
-          {(business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
+          {/* Delivery Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Settings</h2>
               
@@ -1316,8 +1316,9 @@ export default function BusinessDetailsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* External Syncs CTA */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          {/* External Syncs CTA - Hide for salons */}
+          {business?.businessType !== 'SALON' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <Settings className="w-6 h-6 text-teal-600" />
               <h3 className="text-lg font-semibold text-gray-900">External Syncs</h3>
@@ -1333,10 +1334,12 @@ export default function BusinessDetailsPage() {
               Manage External Syncs
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
-          </div>
+            </div>
+          )}
 
-          {/* Anomalies CTA */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          {/* Anomalies CTA - Hide for salons */}
+          {business?.businessType !== 'SALON' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <AlertTriangle className="w-6 h-6 text-orange-600" />
               <h3 className="text-lg font-semibold text-gray-900">Anomalies</h3>
@@ -1353,6 +1356,7 @@ export default function BusinessDetailsPage() {
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
           </div>
+          )}
 
           {/* Custom Features CTA - Hide for salons */}
           {business.businessType !== 'SALON' && (
@@ -1854,9 +1858,9 @@ function WhatsAppSettingsSection({
       
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Direct Order Notifications (Twilio)</p>
+          <p className="text-sm font-medium text-gray-900">Direct {business.businessType === 'SALON' ? 'Appointment' : 'Order'} Notifications (Twilio)</p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, orders are sent directly to the business via Twilio WhatsApp API. 
+            When enabled, {business.businessType === 'SALON' ? 'appointments' : 'orders'} are sent directly to the business via Twilio WhatsApp API. 
             When disabled, customers use the traditional wa.me link.
           </p>
         </div>
@@ -1878,7 +1882,7 @@ function WhatsAppSettingsSection({
       {directNotifications && (
         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700">
-            <span className="font-medium">Active:</span> Orders will be sent automatically to {business.whatsappNumber} via Twilio.
+            <span className="font-medium">Active:</span> {business.businessType === 'SALON' ? 'Appointments' : 'Orders'} will be sent automatically to {business.whatsappNumber} via Twilio.
           </p>
         </div>
       )}
