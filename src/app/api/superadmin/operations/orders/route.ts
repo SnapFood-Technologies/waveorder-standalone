@@ -65,9 +65,11 @@ export async function GET(request: NextRequest) {
         prevEndDate = new Date(startDate)
     }
 
-    // Build business type filter
-    const businessFilter: any = {}
-    if (businessType !== 'all') {
+    // Build business type filter - exclude salons (they use bookings page)
+    const businessFilter: any = {
+      businessType: { not: 'SALON' } // Exclude salons - they have separate bookings page
+    }
+    if (businessType !== 'all' && businessType !== 'SALON') {
       businessFilter.businessType = businessType
     }
 

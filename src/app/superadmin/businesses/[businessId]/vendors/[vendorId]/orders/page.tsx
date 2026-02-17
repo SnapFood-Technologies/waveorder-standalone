@@ -122,9 +122,29 @@ export default function VendorOrdersStatsPage() {
   const businessId = params.businessId as string
   const vendorId = params.vendorId as string
 
+  const [business, setBusiness] = useState<{ businessType?: string } | null>(null)
   const [data, setData] = useState<VendorOrderStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Check business type and redirect salons
+  useEffect(() => {
+    const checkBusinessType = async () => {
+      try {
+        const response = await fetch(`/api/superadmin/businesses/${businessId}`)
+        if (response.ok) {
+          const result = await response.json()
+          setBusiness(result.business)
+          if (result.business?.businessType === 'SALON') {
+            router.replace(`/superadmin/businesses/${businessId}`)
+          }
+        }
+      } catch (err) {
+        console.error('Error checking business type:', err)
+      }
+    }
+    checkBusinessType()
+  }, [businessId, router])
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('last_30_days')
   const [chartType, setChartType] = useState<ChartType>('line')
   const [currentPage, setCurrentPage] = useState(1)

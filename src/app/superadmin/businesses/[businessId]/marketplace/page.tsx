@@ -25,7 +25,7 @@ export default function MarketplacePage() {
   const router = useRouter()
   const businessId = params.businessId as string
 
-  const [business, setBusiness] = useState<{ id: string; name: string } | null>(null)
+  const [business, setBusiness] = useState<{ id: string; name: string; businessType?: string } | null>(null)
   const [marketplaceInfo, setMarketplaceInfo] = useState<MarketplaceInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +33,13 @@ export default function MarketplacePage() {
   useEffect(() => {
     fetchData()
   }, [businessId])
+
+  // Redirect salons - marketplace is product-focused
+  useEffect(() => {
+    if (business?.businessType === 'SALON') {
+      router.replace(`/superadmin/businesses/${businessId}`)
+    }
+  }, [business, businessId, router])
 
   const fetchData = async () => {
     try {

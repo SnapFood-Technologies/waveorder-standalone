@@ -193,7 +193,7 @@ export function SuperAdminDashboard() {
     if (!hasWhatsApp) {
       missingFields.push('WhatsApp Number');
       suggestions.push('Reach out to the business owner to help them set up their WhatsApp Business number');
-      suggestions.push('Explain that WhatsApp is essential for receiving customer orders directly');
+      suggestions.push(`Explain that WhatsApp is essential for receiving customer ${business.businessType === 'SALON' ? 'appointments' : 'orders'} directly`);
       suggestions.push('Offer support to guide them through the setup process if needed');
     }
 

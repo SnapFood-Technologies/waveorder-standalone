@@ -272,7 +272,7 @@ export function SuperAdminAnalytics() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">Operations Analytics</h3>
-              <p className="text-sm text-teal-100">View orders, reservations, bookings, and search analytics across all businesses</p>
+              <p className="text-sm text-teal-100">View orders/appointments, reservations, bookings, and search analytics across all businesses</p>
             </div>
           </div>
           <ArrowRight className="w-6 h-6 text-white" />
@@ -420,14 +420,14 @@ export function SuperAdminAnalytics() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <p className="text-sm font-semibold text-gray-900">Active</p>
                 </div>
-                <p className="text-xs text-gray-700">Business is live and visible to customers. Can receive orders and operate normally.</p>
+                <p className="text-xs text-gray-700">Business is live and visible to customers. Can receive orders/appointments and operate normally.</p>
               </div>
               <div className="p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-5 h-5 text-red-600" />
                   <p className="text-sm font-semibold text-gray-900">Inactive</p>
                 </div>
-                <p className="text-xs text-gray-700">Business has been deactivated. Not visible to customers and cannot receive orders. Data is preserved and can be reactivated.</p>
+                <p className="text-xs text-gray-700">Business has been deactivated. Not visible to customers and cannot receive orders/appointments. Data is preserved and can be reactivated.</p>
               </div>
               <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-r-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -500,7 +500,7 @@ export function SuperAdminAnalytics() {
                   <Calendar className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Affected Metrics</p>
                 </div>
-                <p className="text-xs text-gray-700">Business Growth, User Growth, Orders, and Conversion Rate calculations</p>
+                <p className="text-xs text-gray-700">Business Growth, User Growth, Orders/Appointments, and Conversion Rate calculations</p>
               </div>
               <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                 <div className="flex items-center gap-2 mb-1">

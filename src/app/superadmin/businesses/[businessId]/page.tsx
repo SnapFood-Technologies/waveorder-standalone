@@ -800,19 +800,19 @@ export default function BusinessDetailsPage() {
             <div className="space-y-4">
               {/* Product Filtering Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Products Without Photos Count Card */}
-                {typeof business.stats.productsWithoutPhotos === 'number' && (
+                {/* Products Without Photos Count Card - Hide for salons */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsWithoutPhotos === 'number' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-semibold text-amber-900">
-                          {business.stats.productsWithoutPhotos} {business.businessType === 'SALON' ? 'Service' : 'Product'}{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
+                          {business.stats.productsWithoutPhotos} Product{business.stats.productsWithoutPhotos !== 1 ? 's' : ''} Without Photos
                         </p>
                         <p className="text-xs text-amber-700 mt-1">
                           {business.stats.productsWithoutPhotos === 0 
-                            ? `All ${business.businessType === 'SALON' ? 'services' : 'products'} have photos` 
-                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} ${business.businessType === 'SALON' ? 'services' : 'products'} are missing images`}
+                            ? 'All products have photos' 
+                            : `${business.stats.productsWithoutPhotos} of ${business.stats.totalProducts} products are missing images`}
                         </p>
                       </div>
                     </div>
@@ -838,8 +838,8 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Products Out Of Stock (No Variants) Count Card */}
-                {typeof business.stats.productsOutOfStock === 'number' && (
+                {/* Products Out Of Stock (No Variants) Count Card - Hide for salons */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsOutOfStock === 'number' && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-orange-600 flex-shrink-0" />
@@ -857,8 +857,8 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Products With Variants - All Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsAllZeroStock === 'number' && (
+                {/* Products With Variants - All Zero Stock Count Card - Hide for salons */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsAllZeroStock === 'number' && (
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
@@ -876,8 +876,8 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Products With Variants - Some Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && (
+                {/* Products With Variants - Some Zero Stock Count Card - Hide for salons */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && (
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-indigo-600 flex-shrink-0" />
@@ -895,8 +895,8 @@ export default function BusinessDetailsPage() {
                   </div>
                 )}
 
-                {/* Products With Variants - All Non-Zero Stock Count Card */}
-                {typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && (
+                {/* Products With Variants - All Non-Zero Stock Count Card - Hide for salons */}
+                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -934,29 +934,31 @@ export default function BusinessDetailsPage() {
                 )}
               </div>
               
-              {/* Hide Products Without Photos Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-gray-900 mb-1">
-                    Hide Products Without Photos
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    Products without images will be excluded from storefront listings and filters
-                  </p>
-                </div>
-                <button
-                  onClick={toggleHideProductsWithoutPhotos}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    business.hideProductsWithoutPhotos ? 'bg-teal-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      business.hideProductsWithoutPhotos ? 'translate-x-6' : 'translate-x-1'
+              {/* Hide Products Without Photos Toggle - Hide for salons */}
+              {business.businessType !== 'SALON' && (
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-gray-900 mb-1">
+                      Hide Products Without Photos
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      Products without images will be excluded from storefront listings and filters
+                    </p>
+                  </div>
+                  <button
+                    onClick={toggleHideProductsWithoutPhotos}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      business.hideProductsWithoutPhotos ? 'bg-teal-600' : 'bg-gray-200'
                     }`}
-                  />
-                </button>
-              </div>
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        business.hideProductsWithoutPhotos ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1316,7 +1318,7 @@ export default function BusinessDetailsPage() {
               <h3 className="text-lg font-semibold text-gray-900">External Syncs</h3>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Manage product synchronization with external systems
+              Manage {business.businessType === 'SALON' ? 'service' : 'product'} synchronization with external systems
             </p>
             <Link
               href={`/superadmin/businesses/${business.id}/external-syncs`}
@@ -1347,43 +1349,47 @@ export default function BusinessDetailsPage() {
             </Link>
           </div>
 
-          {/* Custom Features CTA */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Custom Features</h3>
+          {/* Custom Features CTA - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Sparkles className="w-6 h-6 text-purple-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Custom Features</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Enable advanced features like brands, collections, custom menus and filtering
+              </p>
+              <Link
+                href={`/superadmin/businesses/${business.id}/custom-features`}
+                className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Manage Custom Features
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Enable advanced features like brands, collections, custom menus and filtering
-            </p>
-            <Link
-              href={`/superadmin/businesses/${business.id}/custom-features`}
-              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Manage Custom Features
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </div>
+          )}
 
-          {/* Connected Businesses CTA */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Link2 className="w-6 h-6 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Connected Businesses</h3>
+          {/* Connected Businesses CTA - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Link2 className="w-6 h-6 text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Connected Businesses</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Manage business connections for marketplace and shared products
+              </p>
+              <Link
+                href={`/superadmin/businesses/${business.id}/connections`}
+                className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Link2 className="w-4 h-4 mr-2" />
+                Manage Connections
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Manage business connections for marketplace and shared products
-            </p>
-            <Link
-              href={`/superadmin/businesses/${business.id}/connections`}
-              className="w-full inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Link2 className="w-4 h-4 mr-2" />
-              Manage Connections
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </div>
+          )}
 
           {/* Quick Actions */}
           <QuickActionsSection business={business} onTrialReset={fetchBusinessDetails} />
@@ -1394,8 +1400,10 @@ export default function BusinessDetailsPage() {
           {/* WhatsApp Settings */}
           <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Happy Hour Settings */}
-          <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Happy Hour Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Search Analytics Settings */}
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -1409,14 +1417,18 @@ export default function BusinessDetailsPage() {
           {/* Manual Team Creation Settings */}
           <ManualTeamCreationSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Delivery Management Settings */}
-          <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Delivery Management Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Invoice/Receipt Selection Settings */}
           <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Packaging Tracking Settings */}
-          <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Packaging Tracking Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Legal Pages Settings */}
           <LegalPagesSettingsSection business={business} onUpdate={fetchBusinessDetails} />

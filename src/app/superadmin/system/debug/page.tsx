@@ -27,6 +27,7 @@ interface Business {
   id: string
   name: string
   slug: string
+  businessType?: string
 }
 
 interface Brand {
@@ -48,6 +49,7 @@ export default function DebugToolsPage() {
   const [activeModal, setActiveModal] = useState<DebugTool | null>(null)
   const [selectedBusinessId, setSelectedBusinessId] = useState('')
   const [selectedBusinessName, setSelectedBusinessName] = useState('')
+  const [selectedBusinessType, setSelectedBusinessType] = useState<string | undefined>(undefined)
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [productIdInput, setProductIdInput] = useState('')
   const [domainInput, setDomainInput] = useState('')
@@ -115,6 +117,7 @@ export default function DebugToolsPage() {
   const selectBusiness = (business: Business) => {
     setSelectedBusinessId(business.id)
     setSelectedBusinessName(`${business.name} (${business.slug})`)
+    setSelectedBusinessType(business.businessType)
     setBusinesses([]) // Clear dropdown
     setBusinessSearch('') // Clear search
   }
@@ -162,6 +165,11 @@ export default function DebugToolsPage() {
         case 'stock':
           if (!selectedBusinessId) {
             setDebugError('Please select a business')
+            setDebugLoading(false)
+            return
+          }
+          if (selectedBusinessType === 'SALON') {
+            setDebugError('Stock debug is not available for salon businesses - services do not have stock')
             setDebugLoading(false)
             return
           }
@@ -249,7 +257,8 @@ export default function DebugToolsPage() {
       description: 'Quick overview of any business problems - products, categories, sync status',
       icon: Building2,
       color: 'bg-blue-500',
-      priority: 'High'
+      priority: 'High',
+      hideForSalons: false
     },
     {
       id: 'brand' as DebugTool,
@@ -257,7 +266,8 @@ export default function DebugToolsPage() {
       description: 'Analyze products by brand - stock, variants, why products are hidden',
       icon: Tag,
       color: 'bg-purple-500',
-      priority: 'High'
+      priority: 'High',
+      hideForSalons: false
     },
     {
       id: 'category' as DebugTool,
@@ -265,7 +275,8 @@ export default function DebugToolsPage() {
       description: 'Find categories with 0 products or 0 displayable products',
       icon: Layers,
       color: 'bg-green-500',
-      priority: 'Medium'
+      priority: 'Medium',
+      hideForSalons: false
     },
     {
       id: 'stock' as DebugTool,
@@ -273,7 +284,8 @@ export default function DebugToolsPage() {
       description: 'Products with 0 stock, variants with 0 stock, low stock alerts',
       icon: AlertTriangle,
       color: 'bg-yellow-500',
-      priority: 'Medium'
+      priority: 'Medium',
+      hideForSalons: true // Hide for salons - services don't have stock
     },
     {
       id: 'sync' as DebugTool,
@@ -281,7 +293,8 @@ export default function DebugToolsPage() {
       description: 'External sync health - last sync, errors, products synced',
       icon: RefreshCw,
       color: 'bg-orange-500',
-      priority: 'Medium'
+      priority: 'Medium',
+      hideForSalons: false
     },
     {
       id: 'product' as DebugTool,
@@ -289,7 +302,8 @@ export default function DebugToolsPage() {
       description: 'Analyze a single product - why is it hidden, stock, variants',
       icon: Package,
       color: 'bg-pink-500',
-      priority: 'Low'
+      priority: 'Low',
+      hideForSalons: false
     },
     {
       id: 'connections' as DebugTool,
@@ -297,7 +311,8 @@ export default function DebugToolsPage() {
       description: 'Originator/supplier relationships, product visibility',
       icon: Link2,
       color: 'bg-teal-500',
-      priority: 'Low'
+      priority: 'Low',
+      hideForSalons: false
     },
     {
       id: 'domain' as DebugTool,
@@ -305,9 +320,16 @@ export default function DebugToolsPage() {
       description: 'Check DNS records, SSL certificate, and connectivity for custom domains',
       icon: Globe,
       color: 'bg-indigo-500',
-      priority: 'Medium'
+      priority: 'Medium',
+      hideForSalons: false
     }
-  ]
+  ].filter(tool => {
+    // Hide stock debug for salons
+    if (selectedBusinessType === 'SALON' && tool.hideForSalons) {
+      return false
+    }
+    return true
+  })
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {

@@ -50,7 +50,8 @@ export async function GET(
           select: {
             orders: true,
             products: true,
-            customers: true
+            customers: true,
+            appointments: true
           }
         },
         orders: {
@@ -113,7 +114,9 @@ export async function GET(
       domainError: business.domainError
     }
 
-    // Count products by various filter criteria
+    const isSalon = business.businessType === 'SALON'
+
+    // Count products/services by various filter criteria (only for non-salons)
     const [
       productsWithoutPhotosCount,
       productsWithZeroPriceCount,
@@ -123,24 +126,24 @@ export async function GET(
       productsWithVariantsAllNonZeroStockCount,
       inactiveProductsCount
     ] = await Promise.all([
-      // Products without photos
-      prisma.product.count({
+      // Products without photos (skip for salons)
+      isSalon ? 0 : prisma.product.count({
         where: {
           businessId: businessId,
           isActive: true,
           images: { isEmpty: true }
         }
       }),
-      // Products with zero price
-      prisma.product.count({
+      // Products with zero price (skip for salons)
+      isSalon ? 0 : prisma.product.count({
         where: {
           businessId: businessId,
           isActive: true,
           price: { lte: 0 }
         }
       }),
-      // Products out of stock (no variants, trackInventory = true, stock <= 0)
-      prisma.product.count({
+      // Products out of stock (no variants, trackInventory = true, stock <= 0) (skip for salons)
+      isSalon ? 0 : prisma.product.count({
         where: {
           businessId: businessId,
           isActive: true,
@@ -149,8 +152,8 @@ export async function GET(
           variants: { none: {} } // No variants
         }
       }),
-      // Products with variants where ALL variants have stock = 0
-      (async () => {
+      // Products with variants where ALL variants have stock = 0 (skip for salons)
+      isSalon ? 0 : (async () => {
         const productsWithVariants = await prisma.product.findMany({
           where: {
             businessId: businessId,
@@ -174,8 +177,8 @@ export async function GET(
           product.variants.every(v => v.stock === 0)
         ).length
       })(),
-      // Products with variants where SOME variants have stock = 0 (but not all)
-      (async () => {
+      // Products with variants where SOME variants have stock = 0 (but not all) (skip for salons)
+      isSalon ? 0 : (async () => {
         const productsWithVariants = await prisma.product.findMany({
           where: {
             businessId: businessId,
@@ -201,8 +204,8 @@ export async function GET(
           return hasZeroStock && !allZeroStock
         }).length
       })(),
-      // Products with variants where ALL variants have stock > 0
-      (async () => {
+      // Products with variants where ALL variants have stock > 0 (skip for salons)
+      isSalon ? 0 : (async () => {
         const productsWithVariants = await prisma.product.findMany({
           where: {
             businessId: businessId,
@@ -226,8 +229,8 @@ export async function GET(
           product.variants.every(v => v.stock > 0)
         ).length
       })(),
-      // Inactive products
-      prisma.product.count({
+      // Inactive products (skip for salons)
+      isSalon ? 0 : prisma.product.count({
         where: {
           businessId: businessId,
           isActive: false
@@ -324,17 +327,22 @@ export async function GET(
           authMethod
         } : null,
         stats: {
-          totalOrders: (business as any)._count.orders,
+          // For salons, include appointments in totalOrders; for non-salons, just orders
+          totalOrders: isSalon 
+            ? (business as any)._count.orders + (business as any)._count.appointments
+            : (business as any)._count.orders,
           totalRevenue,
           totalCustomers: (business as any)._count.customers,
+          // For salons, this represents services; for non-salons, products
           totalProducts: (business as any)._count.products,
-          productsWithoutPhotos: productsWithoutPhotosCount,
-          productsWithZeroPrice: productsWithZeroPriceCount,
-          productsOutOfStock: productsOutOfStockCount,
-          productsWithVariantsAllZeroStock: productsWithVariantsAllZeroStockCount,
-          productsWithVariantsSomeZeroStock: productsWithVariantsSomeZeroStockCount,
-          productsWithVariantsAllNonZeroStock: productsWithVariantsAllNonZeroStockCount,
-          inactiveProducts: inactiveProductsCount
+          // Product-specific stats - only for non-salons
+          productsWithoutPhotos: isSalon ? 0 : productsWithoutPhotosCount,
+          productsWithZeroPrice: isSalon ? 0 : productsWithZeroPriceCount,
+          productsOutOfStock: isSalon ? 0 : productsOutOfStockCount,
+          productsWithVariantsAllZeroStock: isSalon ? 0 : productsWithVariantsAllZeroStockCount,
+          productsWithVariantsSomeZeroStock: isSalon ? 0 : productsWithVariantsSomeZeroStockCount,
+          productsWithVariantsAllNonZeroStock: isSalon ? 0 : productsWithVariantsAllNonZeroStockCount,
+          inactiveProducts: isSalon ? 0 : inactiveProductsCount
         },
         apiKeys: apiKeys.map(key => ({
           id: key.id,

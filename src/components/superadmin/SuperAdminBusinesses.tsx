@@ -1232,14 +1232,20 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
                 <p className="text-xs text-gray-500">Customers</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                {business.businessType === 'SALON' ? (
+                  <Scissors className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                ) : (
+                  <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                )}
                 <p className="text-xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
                 <p className="text-xs text-gray-500">
-                  {business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined
-                    ? `Own Products`
-                    : 'Products'}
+                  {business.businessType === 'SALON' 
+                    ? 'Services'
+                    : business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined
+                      ? `Own Products`
+                      : 'Products'}
                 </p>
-                {business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined && business.stats.supplierProductCount > 0 && (
+                {business.businessType !== 'SALON' && business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined && business.stats.supplierProductCount > 0 && (
                   <p className="text-xs text-teal-600 mt-0.5">
                     +{business.stats.supplierProductCount} from suppliers
                   </p>

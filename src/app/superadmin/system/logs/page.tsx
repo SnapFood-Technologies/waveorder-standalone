@@ -75,6 +75,7 @@ interface LogsResponse {
   analytics: {
     logTypeDistribution: Array<{ logType: string; count: number }>
     orderStats: { created: number; errors: number; total: number }
+    appointmentStats?: { created: number; errors: number; total: number }
     storefrontStats: { success: number; errors: number; notFound: number; total: number }
     userStats: { registered: number; logins: number; total: number }
     subscriptionStats: { changed: number; total: number }
@@ -336,9 +337,11 @@ export default function SystemLogsPage() {
                   <option value="storefront_error">Storefront Error</option>
                   <option value="products_error">Products Error</option>
                 </optgroup>
-                <optgroup label="Orders">
+                <optgroup label="Orders &amp; Appointments">
                   <option value="order_created">Order Created</option>
                   <option value="order_error">Order Error</option>
+                  <option value="appointment_created">Appointment Created</option>
+                  <option value="appointment_error">Appointment Error</option>
                 </optgroup>
                 <optgroup label="Users &amp; Auth">
                   <option value="user_registered">User Registered</option>

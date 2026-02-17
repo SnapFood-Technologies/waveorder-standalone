@@ -108,6 +108,12 @@ export async function PUT(
       }, { status: 403 })
     }
 
+    // Fetch existing appointment to check status change
+    const existingAppointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { status: true, orderId: true }
+    })
+
     const appointment = await prisma.appointment.update({
       where: {
         id: appointmentId,
@@ -143,11 +149,91 @@ export async function PUT(
                   }
                 }
               }
+            },
+            business: {
+              select: { enableAffiliateSystem: true, currency: true }
             }
           }
         }
       }
     })
+
+    // Handle affiliate commission creation if appointment status changed to COMPLETED
+    if (body.status && 
+        body.status !== existingAppointment?.status && 
+        body.status === 'COMPLETED' &&
+        appointment.order?.affiliateId &&
+        appointment.order.business.enableAffiliateSystem &&
+        appointment.order.paymentStatus === 'PAID') {
+      try {
+        // Check if commission already exists
+        const existingCommission = await prisma.affiliateEarning.findUnique({
+          where: { orderId: appointment.order.id }
+        })
+
+        if (!existingCommission) {
+          // Get affiliate details
+          const affiliate = await prisma.affiliate.findUnique({
+            where: { id: appointment.order.affiliateId },
+            select: {
+              id: true,
+              commissionType: true,
+              commissionValue: true
+            }
+          })
+
+          if (affiliate) {
+            // Calculate commission
+            let commissionAmount = 0
+            if (affiliate.commissionType === 'PERCENTAGE') {
+              commissionAmount = appointment.order.total * (affiliate.commissionValue / 100)
+            } else {
+              // FIXED
+              commissionAmount = affiliate.commissionValue
+            }
+
+            // Create affiliate earning
+            await prisma.affiliateEarning.create({
+              data: {
+                businessId,
+                orderId: appointment.order.id,
+                affiliateId: affiliate.id,
+                orderTotal: appointment.order.total,
+                commissionType: affiliate.commissionType,
+                commissionValue: affiliate.commissionValue,
+                amount: commissionAmount,
+                currency: appointment.order.business.currency || 'EUR',
+                status: 'PENDING',
+                orderCompletedAt: new Date()
+              }
+            })
+          }
+        }
+      } catch (error) {
+        // Silently fail - commission creation shouldn't break appointment update
+        console.error('Error creating affiliate commission for appointment:', error)
+      }
+    }
+
+    // Cancel affiliate commission if appointment is cancelled
+    if (body.status && 
+        body.status !== existingAppointment?.status && 
+        body.status === 'CANCELLED' &&
+        appointment.order?.affiliateId) {
+      try {
+        await prisma.affiliateEarning.updateMany({
+          where: {
+            orderId: appointment.order.id,
+            status: 'PENDING'
+          },
+          data: {
+            status: 'CANCELLED'
+          }
+        })
+      } catch (error) {
+        console.error('Error cancelling affiliate commission:', error)
+      }
+    }
 
     return NextResponse.json({ appointment })
 

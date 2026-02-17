@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
       multiStoreUsersData,
       testModeBusinesses,
       totalOrders,
+      totalAppointments,
       deliveredOrders,
       businesses,
       users,
@@ -105,9 +106,19 @@ export async function GET(request: NextRequest) {
       prisma.business.count({
         where: { testMode: true }
       }),
+      // Total orders (including appointments for salons)
       prisma.order.count({
         where: {
           business: excludeTestCondition
+        }
+      }),
+      // Total appointments (for salons)
+      prisma.appointment.count({
+        where: {
+          business: {
+            ...excludeTestCondition,
+            businessType: 'SALON'
+          }
         }
       }),
       
@@ -327,8 +338,10 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.date.localeCompare(b.date))
 
     // Calculate conversion rate (delivered orders / total orders)
-    const conversionRate = totalOrders > 0 
-      ? (deliveredOrders.length / totalOrders) * 100 
+    // For salons, include appointments in total orders count
+    const totalOrdersAndAppointments = totalOrders + totalAppointments
+    const conversionRate = totalOrdersAndAppointments > 0 
+      ? (deliveredOrders.length / totalOrdersAndAppointments) * 100 
       : 0
 
     // Business growth over time (group by date)
@@ -521,7 +534,7 @@ export async function GET(request: NextRequest) {
         activeUsers, // Users with at least one active non-test business
         multiStoreUsers, // Users with more than 1 store
         testModeBusinesses, // Test mode businesses count
-        totalOrders,
+        totalOrders: totalOrdersAndAppointments, // Includes appointments for salons
         totalRevenue,
         pageViews: totalPageViews, // Total page views across all businesses
         conversionRate
