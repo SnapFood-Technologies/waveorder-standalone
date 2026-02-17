@@ -1209,7 +1209,6 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     submitting: "Enviando...",
     bookViaWhatsapp: "Reservar por WhatsApp",
     addToBooking: "Añadir a Reserva",
-    addToBooking: "Añadir a Reserva",
     specialRequests: "Solicitudes especiales...",
     
     // Invoice/Receipt Selection (for Greek storefronts)
