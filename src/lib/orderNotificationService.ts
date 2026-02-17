@@ -54,6 +54,7 @@ interface BusinessData {
   currency: string
   businessType: string
   language: string
+  timezone?: string // Business timezone for formatting appointment date/time
 }
 
 export async function sendOrderNotification(
@@ -483,7 +484,7 @@ function createOrderNotificationEmail({
       <div style="margin-bottom: 30px; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.appointmentDateTime || labels.deliveryTime || 'Appointment Date & Time'}</h3>
         <p style="color: #065f46; margin: 0; font-size: 16px; font-weight: 600;">
-          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: businessData.timezone || 'UTC' })}
         </p>
       </div>
       ` : ''}

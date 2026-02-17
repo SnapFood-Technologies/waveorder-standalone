@@ -1943,7 +1943,8 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           countryCode: finalCountryCode || undefined,
           city: finalCity || undefined,
           postalCode: finalPostalCode || undefined,
-          invoiceType: (order as any).invoiceType || undefined // Invoice/Receipt selection (for Greek storefronts)
+          invoiceType: (order as any).invoiceType || undefined, // Invoice/Receipt selection (for Greek storefronts)
+          timezone: business.timezone || 'UTC'
         }
       ).catch((error) => {
         // Log error but don't fail the request
@@ -2073,7 +2074,8 @@ try {
         email: businessWithNotifications.email,
         currency: business.currency,
         businessType: business.businessType,
-        language: business.language
+        language: business.language,
+        timezone: business.timezone || 'UTC'
       }
     )
   }

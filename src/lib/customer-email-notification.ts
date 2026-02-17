@@ -40,6 +40,7 @@ interface CustomerOrderData {
   city?: string | null
   postalCode?: string | null
   invoiceType?: 'INVOICE' | 'RECEIPT' | null // Invoice/Receipt selection (for Greek storefronts)
+  timezone?: string // Business timezone for formatting appointment date/time
 }
 
 interface CustomerData {
@@ -559,7 +560,7 @@ function createCustomerOrderStatusEmail({
         
         ${orderData.deliveryTime && (!orderData.businessType || orderData.businessType !== 'RETAIL' || !orderData.postalPricingDetails?.deliveryTime) ? `
         <p style="color: #1e40af; margin: 10px 0 0; font-size: 14px;">
-          <strong>${labels.expectedDelivery}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale)}
+          <strong>${labels.expectedDelivery}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale, orderData.timezone ? { timeZone: orderData.timezone } : undefined)}
         </p>
         ` : ''}
       </div>
@@ -572,7 +573,7 @@ function createCustomerOrderStatusEmail({
         <p style="color: #065f46; margin: 0; font-size: 14px;">${orderData.businessAddress || orderData.businessName}</p>
         ${orderData.deliveryTime ? `
         <p style="color: #065f46; margin: 10px 0 0; font-size: 14px;">
-          <strong>${labels.pickupTime}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale)}
+          <strong>${labels.pickupTime}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale, orderData.timezone ? { timeZone: orderData.timezone } : undefined)}
         </p>
         ` : ''}
       </div>
@@ -582,7 +583,7 @@ function createCustomerOrderStatusEmail({
       <!-- Dine-in Info -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <p style="color: #065f46; margin: 10px 0 0; font-size: 14px;">
-          <strong>${labels.arrivalTime}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale)}
+          <strong>${labels.arrivalTime}:</strong> ${new Date(orderData.deliveryTime).toLocaleString(locale, orderData.timezone ? { timeZone: orderData.timezone } : undefined)}
         </p>
       </div>
       ` : ''}
@@ -770,7 +771,7 @@ function createCustomerOrderPlacedEmail({
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.expectedDelivery}</h3>
         <p style="color: #065f46; margin: 0; font-size: 16px; font-weight: 600;">
-          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: orderData.timezone || 'UTC' })}
         </p>
       </div>
       ` : ''}
