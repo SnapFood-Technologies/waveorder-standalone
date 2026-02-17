@@ -235,6 +235,8 @@ close: string
 
  // NEW STOCK-RELATED TRANSLATIONS
  inCart: string
+ inBooking: string
+ inBookingPlural: string
  available: string
  onlyAvailable: string
  item: string
