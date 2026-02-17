@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { 
   Search, 
@@ -25,8 +25,16 @@ import {
   Check,
   SlidersHorizontal,
   Shield,
-  Plus
+  Plus,
+  Copy,
+  ExternalLink,
+  Package,
+  Store,
+  UtensilsCrossed
 } from 'lucide-react'
+import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
+import { FaXTwitter } from 'react-icons/fa6'
+import LegalPagesModal from './LegalPagesModal'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { PhoneInput } from '../site/PhoneInput'
 import { encodeBase62, decodeBase62, isValidBase62 } from '@/utils/base62'
@@ -225,12 +233,21 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       // Silent fail - don't affect user experience
     })
   }
+  }
 
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [services, setServices] = useState<Service[]>([])
   const [servicesLoading, setServicesLoading] = useState(false)
+  const [servicesError, setServicesError] = useState<string | null>(null)
+  
+  // Performance: Infinite scroll pagination
+  const SERVICES_PER_PAGE = 20
+  const [currentPage, setCurrentPage] = useState(1)
+  const [hasMoreServices, setHasMoreServices] = useState(true)
+  const [displayedServicesCount, setDisplayedServicesCount] = useState(SERVICES_PER_PAGE)
+  const isFetchingRef = useRef(false)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showCopied, setShowCopied] = useState(false)
@@ -259,6 +276,49 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const [showBusinessInfoModal, setShowBusinessInfoModal] = useState(false)
   const [showLegalPagesModal, setShowLegalPagesModal] = useState(false)
   const [legalPagesData, setLegalPagesData] = useState<any>(null)
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
+  
+  // Scroll to top button visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0
+      setShowScrollToTop(scrollY > 800) // Show after scrolling 800px
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  // Fetch legal pages data on mount
+  useEffect(() => {
+    if (storeData.legalPagesEnabled) {
+      fetch(`/api/storefront/${storeData.slug}/pages`)
+        .then(res => res.json())
+        .then(data => {
+          const storefrontLang = storeData.storefrontLanguage || storeData.language || 'en'
+          const t = getStorefrontTranslations(storefrontLang)
+          setLegalPagesData({
+            pages: data.pages || [],
+            ctaEnabled: data.ctaEnabled || false,
+            ctaText: data.ctaText || t.legalPoliciesCta,
+          })
+        })
+        .catch(err => {
+          console.error('Error fetching legal pages:', err)
+        })
+    }
+  }, [storeData.slug, storeData.legalPagesEnabled])
   
   // Capture UTM parameters from URL for affiliate tracking
   const [utmParams, setUtmParams] = useState<{
@@ -299,34 +359,47 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   }, [storeData.slug])
 
   const lang = storeData.storefrontLanguage || storeData.language || 'en'
-  const translations = getStorefrontTranslations(lang)
-  const currencySymbol = storeData.currency === 'USD' ? '$' : 
-                         storeData.currency === 'EUR' ? '€' : 
-                         storeData.currency === 'GBP' ? '£' : 
-                         storeData.currency === 'ALL' ? 'L' : storeData.currency
+  
+  // Memoize translations to avoid recalculation
+  const translations = useMemo(() => getStorefrontTranslations(lang), [lang])
+  
+  // Memoize currency symbol
+  const currencySymbol = useMemo(() => {
+    return storeData.currency === 'USD' ? '$' : 
+           storeData.currency === 'EUR' ? '€' : 
+           storeData.currency === 'GBP' ? '£' : 
+           storeData.currency === 'ALL' ? 'L' : storeData.currency
+  }, [storeData.currency])
+  
   const primaryColor = storeData.primaryColor || '#14b8a6'
+  
+  // Memoize categories list
+  const categoriesList = useMemo(() => {
+    if (!storeData.categories || storeData.categories.length === 0) return []
+    return storeData.categories.filter((cat: any) => {
+      // Only show categories that have services
+      return services.some((s: Service) => s.categoryId === cat.id)
+    })
+  }, [storeData.categories, services])
+  
+  // Memoize displayed services (for pagination)
+  const displayedServices = useMemo(() => {
+    return services.slice(0, displayedServicesCount)
+  }, [services, displayedServicesCount])
 
-  // Debounce search term - wait 400ms after user stops typing
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm)
-    }, 400)
+  // Fetch services function - defined before useEffect hooks that use it
+  const fetchServices = useCallback(async (page: number = 1, reset: boolean = false) => {
+    if (isFetchingRef.current) return
     
-    return () => clearTimeout(timer)
-  }, [searchTerm])
-
-  // Track previous debounced search term to detect when search is cleared
-  const prevDebouncedSearchTermRef = useRef('')
-
-  // Fetch services
-  useEffect(() => {
-    fetchServices()
-  }, [selectedCategory, debouncedSearchTerm])
-
-  const fetchServices = async () => {
+    isFetchingRef.current = true
     setServicesLoading(true)
+    setServicesError(null)
+    
     try {
       const params = new URLSearchParams()
+      params.set('page', page.toString())
+      params.set('limit', SERVICES_PER_PAGE.toString())
+      
       if (selectedCategory !== 'all') {
         params.set('categoryId', selectedCategory)
       }
@@ -371,13 +444,73 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         servicesData.sort((a: Service, b: Service) => b.price - a.price)
       }
       
-      setServices(servicesData)
+      if (reset) {
+        setServices(servicesData)
+        setCurrentPage(1)
+        setDisplayedServicesCount(Math.min(SERVICES_PER_PAGE, servicesData.length))
+      } else {
+        setServices(prev => [...prev, ...servicesData])
+        setDisplayedServicesCount(prev => prev + servicesData.length)
+      }
+      
+      // Check if there are more services
+      setHasMoreServices(servicesData.length === SERVICES_PER_PAGE)
+      setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching services:', error)
+      setServicesError('Failed to load services. Please try again.')
     } finally {
       setServicesLoading(false)
+      isFetchingRef.current = false
     }
-  }
+  }, [selectedCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, storeData.slug, lang])
+
+  // Debounce search term - wait 400ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm)
+    }, 400)
+    
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Track previous debounced search term to detect when search is cleared
+  const prevDebouncedSearchTermRef = useRef('')
+
+  // Fetch services on filter changes (reset to page 1)
+  useEffect(() => {
+    fetchServices(1, true)
+    setDisplayedServicesCount(SERVICES_PER_PAGE)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [selectedCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, fetchServices])
+
+  // Infinite scroll: Load more services on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isFetchingRef.current || servicesLoading || !hasMoreServices) return
+      
+      const scrollY = window.scrollY || document.documentElement.scrollTop
+      const windowHeight = window.innerHeight
+      const documentHeight = document.documentElement.scrollHeight
+      
+      // Load more when within 800px of bottom
+      if (scrollY + windowHeight >= documentHeight - 800) {
+        if (displayedServicesCount >= services.length && hasMoreServices) {
+          const nextPage = currentPage + 1
+          isFetchingRef.current = true
+          fetchServices(nextPage, false)
+        } else if (displayedServicesCount < services.length) {
+          // Show more of already-loaded services
+          setDisplayedServicesCount(prev => Math.min(prev + SERVICES_PER_PAGE, services.length))
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [displayedServicesCount, services.length, hasMoreServices, servicesLoading, currentPage, fetchServices])
 
   const addToBooking = (service: Service) => {
     const existing = bookingItems.find(item => item.service.id === service.id)
@@ -408,14 +541,16 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     }
   }
 
-  const calculateTotal = () => {
+  // Memoize total calculation
+  const total = useMemo(() => {
     return bookingItems.reduce((sum, item) => sum + (item.service.price * item.quantity), 0)
-  }
+  }, [bookingItems])
 
-  const calculateTotalDuration = () => {
+  // Memoize total duration calculation
+  const totalDuration = useMemo(() => {
     return bookingItems.reduce((sum, item) => 
       sum + ((item.service.serviceDuration || 0) * item.quantity), 0)
-  }
+  }, [bookingItems])
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return ''
@@ -576,8 +711,8 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         invoiceCompanyName: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceCompanyName || null) : null,
         invoiceTaxOffice: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceTaxOffice || null) : null,
         paymentMethod: 'Cash', // Default, can be updated
-        total: calculateTotal(),
-        subtotal: calculateTotal(),
+        total: total,
+        subtotal: total,
         deliveryFee: 0
       }
 
@@ -597,7 +732,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       bookingItems.forEach(item => {
         trackServiceEvent(item.service.id, 'booking_submitted', 'booking_modal', {
           orderId: result.orderId,
-          total: calculateTotal(),
+          total: total,
           itemCount: bookingItems.length
         })
       })
@@ -863,7 +998,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
             >
               {translations.all || 'All'}
             </button>
-            {storeData.categories?.map((cat: any) => (
+            {categoriesList.map((cat: any) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
@@ -897,7 +1032,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[75rem] mx-auto">
-            {services.map((service) => {
+            {displayedServices.map((service) => {
               const displayName = useAlbanian && service.nameAl ? service.nameAl :
                                  useGreek && service.nameEl ? service.nameEl :
                                  service.name
@@ -1231,7 +1366,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 {bookingItems.length} {bookingItems.length > 1 ? 'services' : 'service'}
               </p>
               <p className="text-xs text-gray-600">
-                {formatDuration(calculateTotalDuration())} • {currencySymbol}{calculateTotal().toFixed(2)}
+                {formatDuration(totalDuration)} • {currencySymbol}{total.toFixed(2)}
               </p>
             </div>
             <button
@@ -1306,7 +1441,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between font-bold text-lg">
                   <span>{translations.total || 'Total'}</span>
                   <span style={{ color: storeData.primaryColor }}>
-                    {currencySymbol}{calculateTotal().toFixed(2)}
+                    {currencySymbol}{total.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -1440,19 +1575,19 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                       </p>
 
                       {/* Check minimum order value for invoice */}
-                      {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && calculateTotal() < storeData.invoiceMinimumOrderValue && (
+                      {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && total < storeData.invoiceMinimumOrderValue && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                           <p className="text-sm text-red-700">
                             {translations.invoiceMinimumOrderErrorWithCurrent
                               ?.replace('{amount}', `${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}`)
-                              ?.replace('{current}', `${currencySymbol}${calculateTotal().toFixed(2)}`)
-                              || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}. Current order: ${currencySymbol}${calculateTotal().toFixed(2)}`}
+                              ?.replace('{current}', `${currencySymbol}${total.toFixed(2)}`)
+                              || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}. Current order: ${currencySymbol}${total.toFixed(2)}`}
                           </p>
                         </div>
                       )}
 
                       {/* Message when invoice is selected */}
-                      {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                      {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || total >= storeData.invoiceMinimumOrderValue) && (
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-700">
                             <strong>{translations.invoiceNote?.split(':')[0] || 'Note'}:</strong> {translations.invoiceNote?.split(':')[1]?.trim() || 'We will contact you to ask for any details if you need to include in your Invoice.'}
@@ -1462,7 +1597,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                     </div>
 
                     {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
-                    {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                    {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || total >= storeData.invoiceMinimumOrderValue) && (
                       <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <h4 className="text-sm font-semibold text-gray-900">{translations.invoiceDetails || 'Invoice Details'}</h4>
                         
@@ -1535,11 +1670,12 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               >
                 {isSubmitting 
                   ? (translations.submitting || 'Submitting...')
-                  : `${translations.bookViaWhatsapp || 'Book via WhatsApp'} - ${currencySymbol}${calculateTotal().toFixed(2)}`
+                  : `${translations.bookViaWhatsapp || 'Book via WhatsApp'} - ${currencySymbol}${total.toFixed(2)}`
                 }
               </button>
               </div>
             </div>
+          </div>
           </div>
           
           {/* Desktop: Centered Modal */}
@@ -1599,7 +1735,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                   <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between font-bold text-lg">
                     <span>{translations.total || 'Total'}</span>
                     <span style={{ color: primaryColor }}>
-                      {currencySymbol}{calculateTotal().toFixed(2)}
+                      {currencySymbol}{total.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1733,19 +1869,19 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                         </p>
 
                         {/* Check minimum order value for invoice */}
-                        {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && calculateTotal() < storeData.invoiceMinimumOrderValue && (
+                        {customerInfo.invoiceType === 'INVOICE' && storeData.invoiceMinimumOrderValue && total < storeData.invoiceMinimumOrderValue && (
                           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
                             <p className="text-sm text-red-700">
                               {translations.invoiceMinimumOrderErrorWithCurrent
                                 ?.replace('{amount}', `${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}`)
-                                ?.replace('{current}', `${currencySymbol}${calculateTotal().toFixed(2)}`)
-                                || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}. Current order: ${currencySymbol}${calculateTotal().toFixed(2)}`}
+                                ?.replace('{current}', `${currencySymbol}${total.toFixed(2)}`)
+                                || `To select Invoice, your order must be at least ${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}. Current order: ${currencySymbol}${total.toFixed(2)}`}
                             </p>
                           </div>
                         )}
 
                         {/* Message when invoice is selected */}
-                        {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                        {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || total >= storeData.invoiceMinimumOrderValue) && (
                           <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-700">
                               <strong>{translations.invoiceNote?.split(':')[0] || 'Note'}:</strong> {translations.invoiceNote?.split(':')[1]?.trim() || 'We will contact you to ask for any details if you need to include in your Invoice.'}
@@ -1755,7 +1891,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                       </div>
 
                       {/* Invoice-specific fields - Only show when INVOICE is selected and minimum order met */}
-                      {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || calculateTotal() >= storeData.invoiceMinimumOrderValue) && (
+                      {customerInfo.invoiceType === 'INVOICE' && (!storeData.invoiceMinimumOrderValue || total >= storeData.invoiceMinimumOrderValue) && (
                         <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                           <h4 className="text-sm font-semibold text-gray-900">{translations.invoiceDetails || 'Invoice Details'}</h4>
                           
@@ -1828,7 +1964,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 >
                   {isSubmitting 
                     ? (translations.submitting || 'Submitting...')
-                    : `${translations.bookViaWhatsapp || 'Book via WhatsApp'} - ${currencySymbol}${calculateTotal().toFixed(2)}`
+                    : `${translations.bookViaWhatsapp || 'Book via WhatsApp'} - ${currencySymbol}${total.toFixed(2)}`
                   }
                 </button>
               </div>
@@ -1952,6 +2088,387 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           </div>
         </>
       )}
+
+      {/* Scroll to Top Button */}
+      {showScrollToTop && !showBookingModal && !showServiceModal && !showBusinessInfoModal && !showShareModal && !showFilterModal && (
+        <button
+          onClick={scrollToTop}
+          className={`fixed ${bookingItems.length > 0 ? 'bottom-24' : 'bottom-10'} right-5 lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
+          style={{ backgroundColor: primaryColor }}
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="w-6 h-6 text-white" />
+        </button>
+      )}
+
+      {/* Business Info Modal */}
+      <BusinessInfoModal
+        isOpen={showBusinessInfoModal}
+        onClose={() => setShowBusinessInfoModal(false)}
+        storeData={storeData}
+        primaryColor={primaryColor}
+        translations={translations}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        storeData={storeData}
+        primaryColor={primaryColor}
+        translations={translations}
+      />
+
+      {/* Legal Pages Modal */}
+      {storeData.legalPagesEnabled && (
+        <LegalPagesModal
+          isOpen={showLegalPagesModal}
+          onClose={() => setShowLegalPagesModal(false)}
+          businessSlug={storeData.slug}
+          primaryColor={primaryColor}
+          translations={translations}
+        />
+      )}
+    </div>
+  )
+}
+
+// Business Info Modal Component
+function BusinessInfoModal({
+  isOpen,
+  onClose,
+  storeData,
+  primaryColor,
+  translations
+}: {
+  isOpen: boolean
+  onClose: () => void
+  storeData: any
+  primaryColor: string
+  translations: any
+}) {
+  if (!isOpen) return null
+
+  const formatBusinessHours = (businessHours: any) => {
+    if (!businessHours) return null
+    
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const today = new Date().getDay()
+    const todayIndex = today === 0 ? 6 : today - 1 // Convert Sunday=0 to our array index
+    
+    return days.map((day, index) => {
+      const hours = businessHours[day]
+      const isToday = index === todayIndex
+      return (
+        <div key={day} className={`flex justify-between items-center py-2 px-3 rounded-lg ${
+          isToday ? 'bg-blue-50' : ''
+        }`}>
+          <span className={`text-sm font-medium ${
+            isToday ? 'text-blue-900' : 'text-gray-700'
+          }`}>
+            {dayLabels[index]} {isToday && '(Today)'}
+          </span>
+          <span className={`text-sm ${
+            isToday ? 'text-blue-700 font-medium' : 'text-gray-600'
+          }`}>
+            {hours?.closed ? 'Closed' : `${hours?.open} - ${hours?.close}`}
+          </span>
+        </div>
+      )
+    })
+  }
+
+  const lang = storeData.storefrontLanguage || storeData.language || 'en'
+  const displayDescription = (lang === 'sq' || lang === 'al') && storeData.descriptionAl 
+    ? storeData.descriptionAl 
+    : lang === 'el' && storeData.descriptionEl
+      ? storeData.descriptionEl
+      : storeData.description
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[85vh] overflow-hidden shadow-xl">
+        {/* Header */}
+        <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">{translations.businessInfo || 'Business Info'}</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="overflow-y-auto max-h-[calc(85vh-100px)] p-6 space-y-6">
+          {/* Business Description */}
+          {displayDescription && (
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.about || 'About'}
+              </h3>
+              <p className="text-gray-700 leading-relaxed">{displayDescription}</p>
+            </div>
+          )}
+          
+          {/* Contact Information */}
+          <div>
+            {/* Website */}
+            {storeData.website && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                  {translations.website || 'Website'}
+                </h3>
+                <a href={storeData.website} target="_blank" rel="noopener noreferrer" className="flex items-center p-3 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors group">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3 group-hover:bg-purple-200 transition-colors">
+                    <Globe className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-700 font-medium">{storeData.website.replace(/^https?:\/\//, '')}</span>
+                    <ExternalLink className="w-4 h-4 ml-2 text-purple-600" />
+                  </div>
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          {storeData.address && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.address || 'Address'}
+              </h3>
+              <div className="flex items-start p-4 bg-gray-50 rounded-xl">
+                <MapPin className="w-5 h-5 text-gray-500 mr-3 mt-0.5 flex-shrink-0" />
+                <p className="text-gray-700 leading-relaxed">{storeData.address}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Business Hours */}
+          {storeData.businessHours && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.hours || 'Hours'}
+              </h3>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-1">
+                {formatBusinessHours(storeData.businessHours)}
+              </div>
+            </div>
+          )}
+
+          {/* Contact Options */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+              {translations.contact || 'Contact'}
+            </h3>
+            <div className="space-y-3">
+              {storeData.phone && (
+                <div className="flex items-center p-3 bg-blue-50 rounded-xl">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                    <Phone className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <a href={`tel:${storeData.phone}`} className="font-medium text-gray-800">
+                    {storeData.phone}
+                  </a>
+                </div>
+              )}
+              {storeData.email && (
+                <div className="flex items-center p-3 bg-purple-50 rounded-xl">
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                    <Mail className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <a href={`mailto:${storeData.email}`} className="font-medium text-gray-800">
+                    {storeData.email}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Share Modal Component
+function ShareModal({
+  isOpen,
+  onClose,
+  storeData,
+  primaryColor,
+  translations
+}: {
+  isOpen: boolean
+  onClose: () => void
+  storeData: any
+  primaryColor: string
+  translations: any
+}) {
+  const [copied, setCopied] = useState(false)
+
+  if (!isOpen) return null
+
+  const storeUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const shareText = `Check out ${storeData.name}! Book your appointment online.`
+  
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(storeUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy: ', err)
+    }
+  }
+
+  const shareOptions = [
+    {
+      name: 'WhatsApp',
+      icon: FaWhatsapp,
+      color: 'bg-green-500 hover:bg-green-600',
+      action: () => {
+        const text = `${shareText} ${storeUrl}`
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+      }
+    },
+    {
+      name: 'Facebook',
+      icon: FaFacebook,
+      color: 'bg-blue-600 hover:bg-blue-700',
+      action: () => {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(storeUrl)}`, '_blank')
+      }
+    },
+    {
+      name: 'X',
+      icon: FaXTwitter,
+      color: 'bg-black hover:bg-gray-800',
+      action: () => {
+        const text = `${shareText} ${storeUrl}`
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank')
+      }
+    },
+    {
+      name: 'LinkedIn',
+      icon: FaLinkedin,
+      color: 'bg-blue-700 hover:bg-blue-800',
+      action: () => {
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(storeUrl)}`, '_blank')
+      }
+    },
+    {
+      name: 'Telegram',
+      icon: FaTelegram,
+      color: 'bg-sky-400 hover:bg-sky-500',
+      action: () => {
+        const text = `${shareText} ${storeUrl}`
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(storeUrl)}&text=${encodeURIComponent(shareText)}`, '_blank')
+      }
+    },
+    {
+      name: 'Email',
+      icon: Mail,
+      color: 'bg-gray-600 hover:bg-gray-700',
+      action: () => {
+        const subject = `Check out ${storeData.name}`
+        const body = `${shareText}\n\n${storeUrl}`
+        window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank')
+      }
+    }
+  ]
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden">
+        <div className="p-6 bg-gradient-to-r from-gray-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">
+              {translations.share || 'Share'} {storeData.name}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white hover:bg-opacity-80 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-3">
+              {translations.copyLink || 'Copy Link'}
+            </label>
+            <div className="flex items-center space-x-3">
+              <input
+                type="text"
+                value={storeUrl}
+                readOnly
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none"
+              />
+              <button
+                onClick={copyToClipboard}
+                className={`px-4 py-3 rounded-xl text-white font-medium transition-all flex items-center ${
+                  copied ? 'bg-green-500' : ''
+                }`}
+                style={{ backgroundColor: copied ? undefined : primaryColor }}
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+            {copied && (
+              <p className="text-green-600 text-sm mt-2 font-medium">{translations.linkCopied || 'Link copied!'}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-4">
+              {translations.shareVia || 'Share via'}
+            </label>
+            <div className="grid grid-cols-6 gap-3">
+              {shareOptions.map((option) => {
+                const IconComponent = option.icon
+                return (
+                  <button
+                    key={option.name}
+                    onClick={option.action}
+                    title={option.name}
+                    className={`w-12 h-12 rounded-full text-white transition-colors flex items-center justify-center ${option.color}`}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {typeof navigator !== 'undefined' && navigator.share && (
+            <div>
+              <button
+                onClick={() => {
+                  navigator.share({
+                    title: storeData.name,
+                    text: shareText,
+                    url: storeUrl,
+                  })
+                }}
+                className="w-full flex items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                {translations.shareViaNative || 'Share via...'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
