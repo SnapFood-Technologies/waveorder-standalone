@@ -1416,8 +1416,10 @@ export default function BusinessDetailsPage() {
           {/* Cost & Margins Settings */}
           <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Production Planning Settings */}
-          <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Production Planning Settings - Hide for salons */}
+          {business.businessType !== 'SALON' && (
+            <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Manual Team Creation Settings */}
           <ManualTeamCreationSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -2982,7 +2984,9 @@ function AffiliateSystemSettingsSection({
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">Enable Affiliate System</p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, business admins can create affiliates, generate tracking links, track commissions, and manage affiliate payments. Orders from affiliate links are automatically attributed and commissions are calculated when orders are completed.
+            When enabled, business admins can create affiliates, generate tracking links, track commissions, and manage affiliate payments. {business.businessType === 'SALON'
+              ? 'Appointments from affiliate links are automatically attributed and commissions are calculated when appointments are completed.'
+              : 'Orders from affiliate links are automatically attributed and commissions are calculated when orders are completed.'}
           </p>
         </div>
         <button
@@ -3006,7 +3010,9 @@ function AffiliateSystemSettingsSection({
             <span className="font-medium">Enabled:</span> Business admins can now manage affiliates, track commissions, and process payments from the admin panel.
           </p>
           <p className="text-xs text-teal-600">
-            Affiliates receive unique tracking links with UTM parameters. Commissions are automatically calculated when orders are completed (PAID + DELIVERED/PICKED_UP).
+            Affiliates receive unique tracking links with UTM parameters. Commissions are automatically calculated when {business.businessType === 'SALON'
+              ? 'appointments are completed (PAID + COMPLETED).'
+              : 'orders are completed (PAID + DELIVERED/PICKED_UP).'}
           </p>
         </div>
       )}

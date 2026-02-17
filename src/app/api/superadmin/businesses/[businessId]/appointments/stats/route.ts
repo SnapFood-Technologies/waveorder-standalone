@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 import { format, startOfDay, startOfWeek, startOfMonth, parseISO } from 'date-fns'
 
 
@@ -42,6 +43,7 @@ export async function GET(
     // Calculate date range based on period
     const now = new Date()
     let startDate: Date
+    let endDate: Date | undefined
     let grouping: 'day' | 'week' | 'month' = 'day'
 
     switch (period) {
@@ -67,6 +69,7 @@ export async function GET(
         break
       case 'last_year':
         startDate = new Date(now.getFullYear() - 1, 0, 1)
+        endDate = new Date(now.getFullYear(), 0, 1) // Jan 1 of current year
         grouping = 'month'
         break
       default:
@@ -75,9 +78,12 @@ export async function GET(
     }
 
     // Build where clause for appointments
-    const whereClause: any = {
+    const whereClause: Prisma.AppointmentWhereInput = {
       businessId: businessId,
-      appointmentDate: { gte: startDate }
+      appointmentDate: {
+        gte: startDate,
+        ...(endDate && { lt: endDate })
+      }
     }
 
     if (status && status !== 'all') {
@@ -122,21 +128,44 @@ export async function GET(
               }
             }
           }
-        },
-        staff: {
-          select: {
-            id: true,
-            name: true
-          }
         }
       }
     })
+
+    // Fetch staff names separately (staffId refers to User ID via BusinessUser)
+    const staffIds = appointments.map(a => a.staffId).filter((id): id is string => id !== null)
+    const staffMap = new Map<string, string>()
+    
+    if (staffIds.length > 0) {
+      const businessUsers = await prisma.businessUser.findMany({
+        where: {
+          businessId: businessId,
+          userId: { in: staffIds }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
+      })
+      businessUsers.forEach(bu => {
+        if (bu.userId && bu.user?.name) {
+          staffMap.set(bu.userId, bu.user.name)
+        }
+      })
+    }
 
     // Calculate stats
     const allAppointments = await prisma.appointment.findMany({
       where: {
         businessId: businessId,
-        appointmentDate: { gte: startDate }
+        appointmentDate: {
+          gte: startDate,
+          ...(endDate && { lt: endDate })
+        }
       },
       include: {
         order: {
@@ -190,7 +219,7 @@ export async function GET(
       customerName: a.order.customer.name,
       customerPhone: a.order.customer.phone,
       customerEmail: a.order.customer.email,
-      staffName: a.staff?.name || null,
+      staffName: a.staffId ? (staffMap.get(a.staffId) || null) : null,
       itemCount: a.order.items.length,
       createdAt: a.createdAt.toISOString(),
       updatedAt: a.updatedAt.toISOString()
@@ -204,7 +233,7 @@ export async function GET(
         businessType: business.businessType
       },
       stats: {
-        totalAppointments,
+        totalAppointments: allAppointments.length, // Use unfiltered count for stats
         totalRevenue,
         averageAppointmentValue,
         completionRate,

@@ -504,7 +504,10 @@ export default function BusinessAppointmentsStatsPage() {
                   <div className="text-right">
                     <span className="text-sm font-bold text-gray-900">{item.value}</span>
                     <span className="text-xs text-gray-500 ml-2">
-                      ({((item.value / data.stats.totalAppointments) * 100).toFixed(1)}%)
+                      ({data.stats.totalAppointments > 0
+                        ? ((item.value / data.stats.totalAppointments) * 100).toFixed(1)
+                        : '0.0'
+                      }%)
                     </span>
                   </div>
                 </div>

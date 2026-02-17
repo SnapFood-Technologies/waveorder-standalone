@@ -172,8 +172,11 @@ export default function BusinessOrdersStatsPage() {
   }, [searchQuery])
 
   useEffect(() => {
-    fetchData()
-  }, [businessId, selectedPeriod, currentPage, debouncedSearchQuery, filterStatus, filterType])
+    // Only fetch data if business is not a salon (salons are redirected to appointments page)
+    if (businessType && businessType !== 'SALON') {
+      fetchData()
+    }
+  }, [businessType, businessId, selectedPeriod, currentPage, debouncedSearchQuery, filterStatus, filterType])
 
   const fetchData = async () => {
     try {
