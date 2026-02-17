@@ -88,68 +88,80 @@ const useGooglePlaces = () => {
 
 // Time slot generator for scheduling
 // @ts-ignore
-const generateTimeSlots = (businessHours, currentDate, orderType, timeFormat = '24') => {
-  // @ts-ignore
-  const slots = []
-  const now = new Date()
-  const today = new Date().toDateString()
-  const selectedDate = currentDate.toDateString()
+const generateTimeSlots = (businessHours: any, currentDate: Date, orderType: string, timeFormat = '24', businessTimezone?: string) => {
+  const slots: { value: string; label: string }[] = []
   
-  // @ts-ignore
   if (!businessHours) return slots
   
-  // Get business hours for the selected day
-  const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
+  // Determine "now" and "today" in the business timezone for correct slot filtering
+  const now = new Date()
+  let businessNow = now
+  let businessToday: string
+  let selectedDateStr: string
+  
+  if (businessTimezone) {
+    try {
+      businessNow = new Date(now.toLocaleString('en-US', { timeZone: businessTimezone }))
+      businessToday = now.toLocaleDateString('en-CA', { timeZone: businessTimezone })
+      selectedDateStr = currentDate.toLocaleDateString('en-CA', { timeZone: businessTimezone })
+    } catch {
+      businessToday = now.toDateString()
+      selectedDateStr = currentDate.toDateString()
+    }
+  } else {
+    businessToday = now.toDateString()
+    selectedDateStr = currentDate.toDateString()
+  }
+  
+  // Get business hours for the selected day using business timezone
+  const dayOfWeek = businessTimezone
+    ? currentDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: businessTimezone }).toLowerCase()
+    : currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase()
   const dayHours = businessHours[dayOfWeek]
   
-  // @ts-ignore
   if (!dayHours || dayHours.closed) return slots
   
   const [openHour, openMinute] = dayHours.open.split(':').map(Number)
   const [closeHour, closeMinute] = dayHours.close.split(':').map(Number)
   
-  let currentTime = new Date(currentDate)
-  currentTime.setHours(openHour, openMinute, 0, 0)
-  
-  const closeTime = new Date(currentDate)
-  closeTime.setHours(closeHour, closeMinute, 0, 0)
-  
-  // If it's today, start from current time + buffer
-  if (selectedDate === today) {
-    const buffer = orderType === 'delivery' ? 45 : 20 // minutes
-    const minTime = new Date(now.getTime() + buffer * 60000)
-    if (currentTime < minTime) {
-      currentTime = minTime
-      // Round up to next 30-minute slot
-      const minutes = currentTime.getMinutes()
-      const roundedMinutes = Math.ceil(minutes / 30) * 30
-      currentTime.setMinutes(roundedMinutes, 0, 0)
-    }
-  }
+  // Generate slot times as HH:MM strings (business-local time)
+  let currentHour = openHour
+  let currentMinute = openMinute
   
   const use24Hour = timeFormat === '24'
+  const isToday = businessToday === selectedDateStr
   
-  while (currentTime < closeTime) {
-    const timeValue = currentTime.toTimeString().slice(0, 5) // HH:MM format
+  while (currentHour < closeHour || (currentHour === closeHour && currentMinute < closeMinute)) {
+    // If today, skip past slots based on business "now" + buffer
+    if (isToday) {
+      const buffer = orderType === 'delivery' ? 45 : 20
+      const minHour = businessNow.getHours()
+      const minMinute = businessNow.getMinutes() + buffer
+      const minTotalMin = minHour * 60 + minMinute
+      const slotTotalMin = currentHour * 60 + currentMinute
+      // Round up to nearest 30-min slot
+      const roundedMinTotalMin = Math.ceil(minTotalMin / 30) * 30
+      if (slotTotalMin < roundedMinTotalMin) {
+        currentMinute += 30
+        if (currentMinute >= 60) { currentHour++; currentMinute -= 60 }
+        continue
+      }
+    }
+    
+    const timeValue = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`
     let timeLabel: string
     
     if (use24Hour) {
-      // 24-hour format: "14:30"
       timeLabel = timeValue
     } else {
-      // 12-hour format: "2:30 PM"
-      timeLabel = currentTime.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit',
-        hour12: true 
-      })
+      const period = currentHour >= 12 ? 'PM' : 'AM'
+      const displayHour = currentHour === 0 ? 12 : currentHour > 12 ? currentHour - 12 : currentHour
+      timeLabel = `${displayHour}:${String(currentMinute).padStart(2, '0')} ${period}`
     }
     
-    slots.push({
-      value: timeValue,
-      label: timeLabel
-    })
-    currentTime.setMinutes(currentTime.getMinutes() + 30)
+    slots.push({ value: timeValue, label: timeLabel })
+    currentMinute += 30
+    if (currentMinute >= 60) { currentHour++; currentMinute -= 60 }
   }
   
   return slots
@@ -1439,8 +1451,8 @@ function TimeSelection({
   }
   const locale = getLocaleFromLanguage(storeData.storefrontLanguage || storeData.language || 'en')
   
-  // Generate time slots with time format
-  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType, timeFormat)
+  // Generate time slots with time format and business timezone
+  const timeSlots = generateTimeSlots(storeData.businessHours, selectedDate, deliveryType, timeFormat, storeData.timezone)
   
   useEffect(() => {
     if (forceScheduleMode) {
@@ -1463,14 +1475,31 @@ function TimeSelection({
     if (mode === 'now') {
       onTimeChange('asap')
     } else if (mode === 'schedule') {
-      // If just switching to schedule mode without time, clear it
       if (!date || !time) {
         onTimeChange('')
       } else {
-        // If date and time provided, set the scheduled time
+        // Time slot value (e.g., "12:30") represents business-local time
+        const [hours, minutes] = time.split(':').map(Number)
         const dateTime = new Date(date)
-        const [hours, minutes] = time.split(':')
-        dateTime.setHours(parseInt(hours), parseInt(minutes))
+        dateTime.setHours(hours, minutes, 0, 0)
+        
+        // Adjust for timezone difference between browser and business
+        const bizTz = storeData.timezone
+        if (bizTz) {
+          try {
+            const browserStr = dateTime.toLocaleString('en-US', { hour12: false })
+            const businessStr = dateTime.toLocaleString('en-US', { timeZone: bizTz, hour12: false })
+            const browserLocal = new Date(browserStr)
+            const businessLocal = new Date(businessStr)
+            const diffMs = browserLocal.getTime() - businessLocal.getTime()
+            if (diffMs !== 0) {
+              dateTime.setTime(dateTime.getTime() + diffMs)
+            }
+          } catch {
+            // If timezone is invalid, fall back to browser timezone (no adjustment)
+          }
+        }
+        
         onTimeChange(dateTime.toISOString())
       }
     }
@@ -1635,15 +1664,14 @@ function TimeSelection({
                <span>{selectedTime && timeMode === 'schedule' && selectedTime !== 'asap' ? 
   (() => {
     const date = new Date(selectedTime)
+    const tzOpts = storeData.timezone ? { timeZone: storeData.timezone } : {}
     if (timeFormat === '24') {
-      // 24-hour format: "14:30"
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+      return date.toLocaleTimeString('en-GB', { 
+        hour: '2-digit', minute: '2-digit', hour12: false, ...tzOpts 
+      })
     } else {
-      // 12-hour format: "2:30 PM"
       return date.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
-        minute: '2-digit', 
-        hour12: true 
+        hour: 'numeric', minute: '2-digit', hour12: true, ...tzOpts 
       })
     }
   })() : 
@@ -1811,6 +1839,7 @@ interface StoreData {
   bannerIcon?: string | null
   bannerFontSize?: string
   rememberCustomerEnabled?: boolean
+  timezone?: string
 }
 
 interface Category {

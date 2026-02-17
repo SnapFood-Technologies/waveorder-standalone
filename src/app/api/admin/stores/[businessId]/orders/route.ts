@@ -98,7 +98,13 @@ export async function GET(
     }
 
     if (status) {
-      whereClause.status = status
+      // Support comma-separated statuses (e.g., "DELIVERED,PICKED_UP")
+      const statuses = status.split(',').map(s => s.trim()).filter(Boolean)
+      if (statuses.length === 1) {
+        whereClause.status = statuses[0]
+      } else if (statuses.length > 1) {
+        whereClause.status = { in: statuses }
+      }
     }
 
     if (type) {
@@ -184,7 +190,7 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { currency: true, timeFormat: true, businessType: true, mobileStackedOrdersEnabled: true }
+      select: { currency: true, timeFormat: true, businessType: true, mobileStackedOrdersEnabled: true, completedOrdersPageEnabled: true }
     })
 
     return NextResponse.json({
@@ -237,7 +243,8 @@ export async function GET(
       currency: business?.currency || 'USD',
       timeFormat: business?.timeFormat || '24',
       businessType: business?.businessType || 'RESTAURANT',
-      mobileStackedOrdersEnabled: business?.mobileStackedOrdersEnabled || false
+      mobileStackedOrdersEnabled: business?.mobileStackedOrdersEnabled || false,
+      completedOrdersPageEnabled: business?.completedOrdersPageEnabled || false
     })
 
   } catch (error) {

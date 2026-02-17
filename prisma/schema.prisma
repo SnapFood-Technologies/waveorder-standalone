@@ -281,6 +281,7 @@ model Business {
   hideProductsWithoutPhotos          Boolean @default(false) // Hide products without photos from storefront
   rememberCustomerEnabled            Boolean @default(false) // Save returning customer info in browser for faster checkout
   mobileStackedOrdersEnabled         Boolean @default(false) // Show orders as stacked cards on mobile instead of table
+  completedOrdersPageEnabled         Boolean @default(false) // Separate page for completed orders in admin
 
   // Uncategorized category name override (for storefront display only)
   uncategorizedNameOverride   String? // Override "Uncategorized" name in English for storefront

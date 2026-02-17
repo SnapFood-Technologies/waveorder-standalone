@@ -1,6 +1,6 @@
 // src/components/admin/orders/OrdersList.tsx
 import React, { useState, useEffect } from 'react'
-import { Search, Plus, ShoppingBag, Phone, Clock, MapPin, ChevronLeft, ChevronRight, Eye, Filter, X, Star, User, RotateCcw } from 'lucide-react'
+import { Search, Plus, ShoppingBag, Phone, Clock, MapPin, ChevronLeft, ChevronRight, Eye, Filter, X, Star, User, RotateCcw, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useImpersonation } from '@/lib/impersonation'
@@ -71,6 +71,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
   const [timeFormat, setTimeFormat] = useState('24')
   const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   const [mobileStackedOrders, setMobileStackedOrders] = useState(false)
+  const [completedOrdersPage, setCompletedOrdersPage] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   // Debounce search query for user typing
@@ -105,6 +106,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
         setTimeFormat(data.timeFormat || '24')
         setBusinessType(data.businessType || 'RESTAURANT')
         setMobileStackedOrders(data.mobileStackedOrdersEnabled || false)
+        setCompletedOrdersPage(data.completedOrdersPageEnabled || false)
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -282,7 +284,16 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
             }
           </p>
         </div>
-        <div className="flex gap-2 w-full sm:w-auto">
+        <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+          {completedOrdersPage && (
+            <Link
+              href={addParams(`/admin/stores/${businessId}/orders/completed`)}
+              className="flex items-center justify-center px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Completed
+            </Link>
+          )}
           {businessType === 'RETAIL' && (
             <Link
               href={addParams(`/admin/stores/${businessId}/refunds-returns`)}

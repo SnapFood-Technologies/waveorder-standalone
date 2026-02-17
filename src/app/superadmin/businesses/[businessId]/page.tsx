@@ -1519,6 +1519,9 @@ export default function BusinessDetailsPage() {
           {/* Mobile Stacked Orders Settings */}
           <MobileStackedOrdersSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Completed Orders Page Settings */}
+          <CompletedOrdersPageSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -3097,6 +3100,90 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Completed Orders Page Settings Section Component (SuperAdmin toggle only)
+function CompletedOrdersPageSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: any
+  onUpdate: () => void 
+}) {
+  const [enabled, setEnabled] = useState(business.completedOrdersPageEnabled || false)
+  const [updating, setUpdating] = useState(false)
+
+  const toggle = async () => {
+    setUpdating(true)
+    const newValue = !enabled
+
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completedOrdersPageEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setEnabled(newValue)
+        toast.success(newValue ? 'Completed Orders Page enabled' : 'Completed Orders Page disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Failed to update setting')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <CheckCircle className="w-5 h-5 mr-2 text-emerald-600" />
+        Completed Orders Page
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Separate Completed Orders Page</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, a &quot;Completed&quot; button appears in the admin orders page, linking to a dedicated page 
+            showing only delivered/picked-up orders. Helps keep the main orders list clean.
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={updating}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            enabled ? 'bg-emerald-600' : 'bg-gray-200'
+          } ${updating ? 'opacity-50' : ''}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            enabled ? 'translate-x-5' : 'translate-x-0'
+          }`} />
+        </button>
+      </div>
+      
+      {enabled && (
+        <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <p className="text-xs text-emerald-700">
+            <span className="font-medium">Enabled:</span> Business admin will see a &quot;Completed&quot; button in their orders page header.
+          </p>
+        </div>
+      )}
+      
+      {!enabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> All orders shown in a single list. No separate completed orders page.
           </p>
         </div>
       )}

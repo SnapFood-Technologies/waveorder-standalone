@@ -233,14 +233,7 @@ export default function BusinessAppointmentsStatsPage() {
     return STATUS_COLORS[status] || '#6b7280'
   }
 
-  // Process chart data based on period
-  const processedChartData = data?.chartData.map(item => ({
-    ...item,
-    label: formatXAxisLabel(item.date, selectedPeriod === 'last_7_days' || selectedPeriod === 'last_30_days' ? 'day' :
-                             selectedPeriod === 'last_3_months' || selectedPeriod === 'last_6_months' ? 'week' :
-                             'month')
-  })) || []
-
+  // Format X-axis labels (must be defined before processedChartData uses it)
   const formatXAxisLabel = (dateStr: string, grouping: 'day' | 'week' | 'month'): string => {
     const date = new Date(dateStr)
     switch (grouping) {
@@ -253,6 +246,14 @@ export default function BusinessAppointmentsStatsPage() {
         return formatDateStr(date, 'MMM d')
     }
   }
+
+  // Process chart data based on period
+  const processedChartData = data?.chartData.map(item => ({
+    ...item,
+    label: formatXAxisLabel(item.date, selectedPeriod === 'last_7_days' || selectedPeriod === 'last_30_days' ? 'day' :
+                             selectedPeriod === 'last_3_months' || selectedPeriod === 'last_6_months' ? 'week' :
+                             'month')
+  })) || []
 
   // Prepare status breakdown for pie chart
   const statusChartData = data?.stats.statusBreakdown ? Object.entries(data.stats.statusBreakdown).map(([status, count]) => ({
