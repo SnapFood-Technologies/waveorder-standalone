@@ -63,7 +63,8 @@ export function DateRangeFilter({
       
       case 'this_month':
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        return { start: thisMonthStart, end: now }
+        const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+        return { start: thisMonthStart, end: thisMonthEnd }
       
       case 'last_month':
         const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)

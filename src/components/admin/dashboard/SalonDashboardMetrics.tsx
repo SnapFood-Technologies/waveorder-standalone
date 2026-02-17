@@ -34,9 +34,11 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
   })
   const [business, setBusiness] = useState<Business>({ currency: 'USD' })
   const [loading, setLoading] = useState(true)
-  const [dateRange, setDateRange] = useState({
-    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    end: new Date()
+  const [dateRange, setDateRange] = useState(() => {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+    return { start, end }
   })
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
   const [showRevenueModal, setShowRevenueModal] = useState(false)

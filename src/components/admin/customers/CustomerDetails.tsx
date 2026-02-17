@@ -395,7 +395,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <ShoppingBag className="w-5 h-5 text-blue-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">Total Orders</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Total Appointments' : 'Total Orders'}</p>
               <p className="text-xl font-bold text-gray-900">{stats.totalOrders}</p>
             </div>
           </div>
@@ -431,7 +431,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <Calendar className="w-5 h-5 text-teal-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">First Order</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'First Appointment' : 'First Order'}</p>
               <p className="text-sm font-bold text-gray-900">
                 {stats.firstOrderDate 
                   ? formatDateShort(stats.firstOrderDate)
@@ -707,16 +707,22 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               {orders.length === 0 ? (
                 <div className="text-center py-12">
                   <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{isSalon ? 'No appointments yet' : 'No orders yet'}</h3>
                   <p className="text-gray-600 mb-6">
-                    This customer hasn't placed any orders yet.
+                    {isSalon 
+                      ? "This customer hasn't booked any appointments yet."
+                      : "This customer hasn't placed any orders yet."
+                    }
                   </p>
                   <Link
-                    href={addParams(`/admin/stores/${businessId}/orders/create?customerId=${customerId}`)}
+                    href={addParams(isSalon 
+                      ? `/admin/stores/${businessId}/appointments/create?customerId=${customerId}`
+                      : `/admin/stores/${businessId}/orders/create?customerId=${customerId}`
+                    )}
                     className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
                     <ShoppingBag className="w-4 h-4 mr-2" />
-                    Create First Order
+                    {isSalon ? 'Create First Appointment' : 'Create First Order'}
                   </Link>
                 </div>
               ) : (
