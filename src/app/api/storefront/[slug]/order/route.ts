@@ -1625,6 +1625,122 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
       })
     }
 
+    // Create appointment for SALON businesses if deliveryTime is provided
+    let appointment: any = null
+    if (business.businessType === 'SALON' && deliveryTime) {
+      try {
+        // Calculate total duration from services
+        const orderItemsWithDuration = await prisma.orderItem.findMany({
+          where: { orderId: order.id },
+          include: {
+            product: {
+              select: {
+                serviceDuration: true
+              }
+            }
+          }
+        })
+
+        const totalDuration = orderItemsWithDuration.reduce((sum, item) => {
+          return sum + ((item.product.serviceDuration || 30) * item.quantity)
+        }, 0)
+
+        // Parse deliveryTime to get appointment date and time
+        const appointmentDateTime = new Date(deliveryTime)
+        const startTime = appointmentDateTime.toTimeString().slice(0, 5) // HH:MM format
+        const endDateTime = new Date(appointmentDateTime.getTime() + totalDuration * 60000)
+        const endTime = endDateTime.toTimeString().slice(0, 5)
+
+        // Create appointment linked to the order
+        appointment = await prisma.appointment.create({
+          data: {
+            orderId: order.id,
+            businessId: business.id,
+            customerId: customer.id,
+            appointmentDate: appointmentDateTime,
+            startTime: startTime,
+            endTime: endTime,
+            duration: totalDuration,
+            status: 'REQUESTED',
+            notes: specialInstructions || null
+          }
+        })
+
+        // Log appointment creation
+        const ipAddress = extractIPAddress(request)
+        const userAgent = request.headers.get('user-agent') || undefined
+        const referrer = request.headers.get('referer') || undefined
+        
+        const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+        const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+        const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+        
+        logSystemEvent({
+          logType: 'appointment_created',
+          severity: 'info',
+          slug,
+          businessId: business.id,
+          endpoint: '/api/storefront/[slug]/order',
+          method: 'POST',
+          statusCode: 200,
+          ipAddress,
+          userAgent,
+          referrer,
+          url: actualUrl,
+          metadata: {
+            appointmentId: appointment.id,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerId: customer.id,
+            customerName: customerName || customer.name,
+            appointmentDate: appointmentDateTime.toISOString(),
+            startTime: startTime,
+            endTime: endTime,
+            duration: totalDuration,
+            status: 'REQUESTED',
+            serviceCount: items.length,
+            total: order.total,
+            createdViaStorefront: true,
+            sessionId: sessionId || null,
+            utmSource: utmSource || null,
+            utmMedium: utmMedium || null,
+            utmCampaign: utmCampaign || null
+          }
+        })
+      } catch (appointmentError) {
+        // Log appointment creation error but don't fail the order
+        console.error('Error creating appointment for salon order:', appointmentError)
+        const ipAddress = extractIPAddress(request)
+        const userAgent = request.headers.get('user-agent') || undefined
+        const referrer = request.headers.get('referer') || undefined
+        
+        const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+        const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+        const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+        
+        logSystemEvent({
+          logType: 'appointment_error',
+          severity: 'error',
+          slug,
+          businessId: business.id,
+          endpoint: '/api/storefront/[slug]/order',
+          method: 'POST',
+          statusCode: 200, // Order was created successfully
+          ipAddress,
+          userAgent,
+          referrer,
+          url: actualUrl,
+          errorMessage: appointmentError instanceof Error ? appointmentError.message : 'Failed to create appointment',
+          errorStack: appointmentError instanceof Error ? appointmentError.stack : undefined,
+          metadata: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            createdViaStorefront: true
+          }
+        })
+      }
+    }
+
     // Create inventory activities for the order (after order creation)
     await createInventoryActivities(order.id, business.id, items);
 

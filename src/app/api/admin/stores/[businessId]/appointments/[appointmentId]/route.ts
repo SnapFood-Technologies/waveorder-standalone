@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 export async function GET(
   request: NextRequest,
@@ -235,10 +236,75 @@ export async function PUT(
       }
     }
 
+    // Log appointment status change if status was updated
+    if (body.status && body.status !== existingAppointment?.status) {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+      
+      logSystemEvent({
+        logType: 'appointment_created', // Use same log type for status changes
+        severity: 'info',
+        businessId: businessId,
+        endpoint: '/api/admin/stores/[businessId]/appointments/[appointmentId]',
+        method: 'PUT',
+        statusCode: 200,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: actualUrl,
+        metadata: {
+          appointmentId: appointment.id,
+          orderId: appointment.orderId,
+          previousStatus: existingAppointment?.status || null,
+          newStatus: body.status,
+          statusChanged: true,
+          updatedByAdmin: true,
+          updatedBy: access.session.user.id,
+          staffId: appointment.staffId || null,
+          appointmentDate: appointment.appointmentDate.toISOString()
+        }
+      })
+    }
+
     return NextResponse.json({ appointment })
 
   } catch (error) {
     console.error('Error updating appointment:', error)
+    
+    // Log appointment update error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    logSystemEvent({
+      logType: 'appointment_error',
+      severity: 'error',
+      businessId: (await params).businessId,
+      endpoint: '/api/admin/stores/[businessId]/appointments/[appointmentId]',
+      method: 'PUT',
+      statusCode: 500,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      errorMessage: error instanceof Error ? error.message : 'Failed to update appointment',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      metadata: {
+        appointmentId: (await params).appointmentId,
+        updatedByAdmin: true,
+        updatedBy: (await checkBusinessAccess((await params).businessId)).session?.user.id || null
+      }
+    })
+    
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
   }
 }

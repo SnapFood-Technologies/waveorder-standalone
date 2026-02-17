@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateApiRequest, addRateLimitHeaders } from '@/lib/api-auth'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 // ===========================================
 // GET - List Appointments
@@ -276,11 +277,85 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Log successful appointment creation
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    logSystemEvent({
+      logType: 'appointment_created',
+      severity: 'info',
+      businessId: auth.businessId,
+      endpoint: '/api/v1/appointments',
+      method: 'POST',
+      statusCode: 201,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      metadata: {
+        appointmentId: appointment.id,
+        orderId: appointment.orderId,
+        customerId: appointment.customerId,
+        staffId: appointment.staffId || null,
+        appointmentDate: appointment.appointmentDate.toISOString(),
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        duration: appointment.duration,
+        status: appointment.status,
+        createdViaApi: true,
+        apiKeyId: auth.id
+      }
+    })
+
     const response = NextResponse.json({ appointment }, { status: 201 })
     return addRateLimitHeaders(response, auth.id)
 
   } catch (error) {
     console.error('API v1 Appointments POST error:', error)
+    
+    // Log appointment creation error
+    const ipAddress = extractIPAddress(request)
+    const userAgent = request.headers.get('user-agent') || undefined
+    const referrer = request.headers.get('referer') || undefined
+    
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    
+    // Try to get businessId from auth if available
+    let businessId: string | undefined
+    try {
+      const authResult = await authenticateApiRequest(request, 'appointments:write')
+      if (!(authResult instanceof NextResponse)) {
+        businessId = authResult.auth.businessId
+      }
+    } catch {
+      // Ignore auth errors in error logging
+    }
+    
+    logSystemEvent({
+      logType: 'appointment_error',
+      severity: 'error',
+      businessId: businessId,
+      endpoint: '/api/v1/appointments',
+      method: 'POST',
+      statusCode: 500,
+      ipAddress,
+      userAgent,
+      referrer,
+      url: actualUrl,
+      errorMessage: error instanceof Error ? error.message : 'Failed to create appointment',
+      errorStack: error instanceof Error ? error.stack : undefined,
+      metadata: {
+        createdViaApi: true
+      }
+    })
+    
     return NextResponse.json(
       { error: 'Failed to create appointment' },
       { status: 500 }
