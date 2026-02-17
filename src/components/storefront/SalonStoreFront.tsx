@@ -1035,7 +1035,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
 
       {/* Search and Categories - Matching StoreFront */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="max-w-[75rem] mx-auto px-4 py-3">
+        <div className="max-w-[75rem] mx-auto md:px-0 px-4 py-3">
           {/* Search Bar and Filter Button */}
           <div className="flex items-center gap-3 mb-3">
             <div className="relative flex-1">
@@ -2579,35 +2579,37 @@ function BusinessInfoModal({
             </div>
           )}
 
-          {/* Contact Options */}
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
-              {translations.contact || 'Contact'}
-            </h3>
-            <div className="space-y-3">
-              {storeData.phone && (
-                <div className="flex items-center p-3 bg-blue-50 rounded-xl">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <Phone className="w-4 h-4 text-blue-600" />
+          {/* Contact Options - only show if there's contact info */}
+          {(storeData.phone || storeData.email) && (
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: primaryColor }}></div>
+                {translations.contact || 'Contact'}
+              </h3>
+              <div className="space-y-3">
+                {storeData.phone && (
+                  <div className="flex items-center p-3 bg-blue-50 rounded-xl">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                      <Phone className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <a href={`tel:${storeData.phone}`} className="font-medium text-gray-800">
+                      {storeData.phone}
+                    </a>
                   </div>
-                  <a href={`tel:${storeData.phone}`} className="font-medium text-gray-800">
-                    {storeData.phone}
-                  </a>
-                </div>
-              )}
-              {storeData.email && (
-                <div className="flex items-center p-3 bg-purple-50 rounded-xl">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                    <Mail className="w-4 h-4 text-purple-600" />
+                )}
+                {storeData.email && (
+                  <div className="flex items-center p-3 bg-purple-50 rounded-xl">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                      <Mail className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <a href={`mailto:${storeData.email}`} className="font-medium text-gray-800">
+                      {storeData.email}
+                    </a>
                   </div>
-                  <a href={`mailto:${storeData.email}`} className="font-medium text-gray-800">
-                    {storeData.email}
-                  </a>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -153,7 +153,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Contact</th>
                 <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">{isSalon ? 'Appointments' : 'Orders'}</th>
                 <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Type</th>
-                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">Last Order</th>
+                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">{isSalon ? 'Last Appointment' : 'Last Order'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
