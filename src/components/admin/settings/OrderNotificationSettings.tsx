@@ -495,7 +495,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </label>
               </div>
               <p className="text-xs text-gray-500 ml-7 mt-1">
-                When enabled, you will receive email notifications for all {business.businessType === 'SALON' ? 'appointment' : 'order'} status updates (Confirmed, Preparing, Ready, etc.) just like your customers do. This helps you stay informed about {business.businessType === 'SALON' ? 'appointment' : 'order'} progress.
+                When enabled, you will receive email notifications for all {business.businessType === 'SALON' ? 'appointment' : 'order'} status updates ({business.businessType === 'SALON' ? 'Confirmed, Completed, Cancelled' : 'Confirmed, Preparing, Ready, etc.'}) just like your customers do. This helps you stay informed about {business.businessType === 'SALON' ? 'appointment' : 'order'} progress.
               </p>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -520,13 +520,13 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 </ul>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                <p className="text-xs text-blue-700">
-                  {business.businessType === 'RETAIL' && (
-                    <>💡 <strong>Note for Retail:</strong> "Preparing Shipment" means your items are being packed and prepared for delivery via postal service.</>
-                  )}
-                </p>
-              </div>
+              {business.businessType === 'RETAIL' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                  <p className="text-xs text-blue-700">
+                    💡 <strong>Note for Retail:</strong> &quot;Preparing Shipment&quot; means your items are being packed and prepared for delivery via postal service.
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {settings.orderNotificationLastUpdate && (
@@ -615,8 +615,27 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               </div>
               )}
 
+              {/* Salon Appointments - Only for SALON */}
+              {business.businessType === 'SALON' && (
+                <div className="space-y-3 border border-teal-200 rounded-lg p-4 bg-teal-50">
+                  <h3 className="text-sm font-semibold text-teal-900 mb-3 flex items-center">
+                    ✂️ Appointments
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Confirmed</label>
+                      <input type="checkbox" name="notifyCustomerOnConfirmed" checked={settings.notifyCustomerOnConfirmed} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-white rounded">
+                      <label className="text-sm text-gray-700">Completed</label>
+                      <input type="checkbox" name="notifyCustomerOnDelivered" checked={settings.notifyCustomerOnDelivered} onChange={handleInputChange} className="rounded border-gray-300 text-teal-600 focus:ring-teal-500" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Pickup Orders - Hidden for RETAIL and SALON */}
-              {business.businessType !== 'RETAIL' && (
+              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
                 <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
                   <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
                     🏪 Pickup Orders

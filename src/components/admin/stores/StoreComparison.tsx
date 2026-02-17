@@ -187,6 +187,8 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
   const totals = getTotals()
   const avgOrderValue = totals.orders > 0 ? totals.revenue / totals.orders : 0
   const avgAppointmentValue = (totals.appointments || 0) > 0 ? totals.revenue / (totals.appointments || 1) : 0
+  const totalOrdersAndAppts = totals.orders + (totals.appointments || 0)
+  const avgMixedValue = totalOrdersAndAppts > 0 ? totals.revenue / totalOrdersAndAppts : 0
 
   // For mixed currencies, show revenue per currency
   const revenueByProperty = mixedCurrencies
@@ -280,7 +282,13 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
             {hasSalons && !hasNonSalons ? 'Total Appointments' : hasSalons && hasNonSalons ? 'Total Orders/Appts' : 'Total Orders'}
           </div>
           <p className="text-2xl font-bold text-gray-900">
-            {formatNumber(hasSalons && !hasNonSalons ? (totals.appointments || 0) : totals.orders)}
+            {formatNumber(
+              hasSalons && !hasNonSalons 
+                ? (totals.appointments || 0) 
+                : hasSalons && hasNonSalons 
+                  ? totalOrdersAndAppts 
+                  : totals.orders
+            )}
           </p>
           <p className="text-xs text-gray-500 mt-1">Across {stores.length} stores</p>
         </div>
@@ -295,13 +303,20 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
             <TrendingUp className="w-4 h-4" />
-            {hasSalons && !hasNonSalons ? 'Avg Appointment Value' : 'Avg Order Value'}
+            {hasSalons && !hasNonSalons ? 'Avg Appointment Value' : hasSalons && hasNonSalons ? 'Avg Order/Appt Value' : 'Avg Order Value'}
           </div>
           {mixedCurrencies ? (
             <p className="text-lg font-medium text-gray-500">Per store</p>
           ) : (
             <p className="text-2xl font-bold text-gray-900">
-              {formatCurrency(hasSalons && !hasNonSalons ? avgAppointmentValue : avgOrderValue, primaryCurrency)}
+              {formatCurrency(
+                hasSalons && !hasNonSalons 
+                  ? avgAppointmentValue 
+                  : hasSalons && hasNonSalons 
+                    ? avgMixedValue 
+                    : avgOrderValue, 
+                primaryCurrency
+              )}
             </p>
           )}
           <p className="text-xs text-gray-500 mt-1">{mixedCurrencies ? 'Mixed currencies' : 'Combined average'}</p>

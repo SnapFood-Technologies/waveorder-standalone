@@ -26,6 +26,7 @@ import {
   Check,
   SlidersHorizontal,
   Shield,
+  Navigation,
   Plus,
   Copy,
   ExternalLink,
@@ -68,6 +69,7 @@ interface StoreData {
   currency: string
   language: string
   storefrontLanguage?: string
+  timezone?: string
   timeFormat?: string
   deliveryFee: number
   minimumOrder: number
@@ -1028,6 +1030,85 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                   <span className="text-md">{storeData.address}</span>
                 </div>
               )}
+
+              {/* Open/Closed Status with Hours + Get Directions */}
+              <div className="flex flex-wrap items-center gap-3 mb-2">
+                {/* Open/Closed status with closing/opening time */}
+                {(() => {
+                  if (storeData.isTemporarilyClosed) {
+                    return (
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                        {translations.temporarilyClosed || 'Temporarily Closed'}
+                      </span>
+                    )
+                  }
+
+                  if (!storeData.businessHours) return null
+
+                  const tz = storeData.timezone || 'UTC'
+                  const now = new Date()
+                  const businessTime = new Date(now.toLocaleString('en-US', { timeZone: tz }))
+                  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                  const currentDay = dayNames[businessTime.getDay()]
+                  const todayHours = storeData.businessHours[currentDay]
+                  const is24h = storeData.timeFormat === '24'
+
+                  const formatTime = (timeStr: string) => {
+                    if (!timeStr) return ''
+                    if (is24h) return timeStr
+                    const [h, m] = timeStr.split(':').map(Number)
+                    const period = h >= 12 ? 'PM' : 'AM'
+                    const hour12 = h % 12 || 12
+                    return `${hour12}:${m.toString().padStart(2, '0')} ${period}`
+                  }
+
+                  if (storeData.isOpen && todayHours && !todayHours.closed) {
+                    const closingFormatted = formatTime(todayHours.close)
+                    return (
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        {(translations.openUntil || 'Open until {time}').replace('{time}', closingFormatted)}
+                      </span>
+                    )
+                  }
+
+                  // Closed -- find next opening time
+                  const nextDay = dayNames[(businessTime.getDay() + 1) % 7]
+                  const tomorrowHours = storeData.businessHours[nextDay]
+                  const nextOpenFormatted = tomorrowHours && !tomorrowHours.closed
+                    ? formatTime(tomorrowHours.open)
+                    : null
+
+                  return (
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                      {nextOpenFormatted
+                        ? (translations.opensAt || 'Opens at {time}').replace('{time}', nextOpenFormatted)
+                        : (translations.closedNow || 'Closed now')}
+                    </span>
+                  )
+                })()}
+
+                {/* Separator dot */}
+                {storeData.businessHours && storeData.address && (
+                  <span className="text-gray-300">•</span>
+                )}
+
+                {/* Get Directions link */}
+                {storeData.address && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeData.address)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                    style={{ color: primaryColor }}
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    {translations.getDirections || 'Get Directions'}
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>

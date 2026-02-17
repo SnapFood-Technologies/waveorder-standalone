@@ -759,7 +759,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Order Number Format
+                  {business.businessType === 'SALON' ? 'Appointment Number Format' : 'Order Number Format'}
                 </label>
                 <select
                   value={config.whatsappSettings.orderNumberFormat}
@@ -841,7 +841,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
             <BusinessHoursManagement businessId={businessId} />
             {/* Hide scheduling configuration for RETAIL businesses (they don't use time slots) */}
             {business.businessType !== 'RETAIL' && (
-              <SchedulingConfiguration businessId={businessId} />
+              <SchedulingConfiguration businessId={businessId} businessType={business.businessType} />
             )}
           </div>
         )}

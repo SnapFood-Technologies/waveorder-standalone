@@ -10,6 +10,10 @@ export interface StorefrontTranslations {
     // Status
     open: string
     closed: string
+    openUntil: string
+    closedNow: string
+    opensAt: string
+    getDirections: string
 
 
     itemOutOfStockOrMaxQuantity: string
@@ -345,6 +349,10 @@ close: string
     // Status
     open: "● Open",
     closed: "● Closed",
+    openUntil: "Open until {time}",
+    closedNow: "Closed now",
+    opensAt: "Opens at {time}",
+    getDirections: "Get Directions",
     
     // General
     welcome: "Welcome!",
@@ -683,6 +691,10 @@ canBeAdded: "more can be added to cart",
     // Status
     open: "● Hapur",
     closed: "● Mbyllur",
+    openUntil: "Hapur deri në {time}",
+    closedNow: "Mbyllur tani",
+    opensAt: "Hapet në {time}",
+    getDirections: "Merr Udhëzime",
     
     // General
     welcome: "Mirë se erdhet!",
@@ -1016,6 +1028,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Status
     open: "● Abierto",
     closed: "● Cerrado",
+    openUntil: "Abierto hasta las {time}",
+    closedNow: "Cerrado ahora",
+    opensAt: "Abre a las {time}",
+    getDirections: "Cómo Llegar",
     
     // General
     welcome: "¡Bienvenido!",
@@ -1349,6 +1365,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     // Status
     open: "● Ανοιχτό",
     closed: "● Κλειστό",
+    openUntil: "Ανοιχτό μέχρι τις {time}",
+    closedNow: "Κλειστό τώρα",
+    opensAt: "Ανοίγει στις {time}",
+    getDirections: "Οδηγίες",
     
     // General
     welcome: "Καλώς ήρθατε!",

@@ -16,6 +16,7 @@ interface SchedulingConfig {
 
 interface SchedulingConfigurationProps {
   businessId: string
+  businessType?: string
 }
 
 interface SuccessMessage {
@@ -61,7 +62,8 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   }
 })
 
-export function SchedulingConfiguration({ businessId }: SchedulingConfigurationProps) {
+export function SchedulingConfiguration({ businessId, businessType }: SchedulingConfigurationProps) {
+  const isSalon = businessType === 'SALON'
   const [config, setConfig] = useState<SchedulingConfig>({
     schedulingEnabled: true,
     slotDuration: 30,
@@ -207,7 +209,9 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
             Scheduling Configuration
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Configure time slots, capacity limits, and special hours
+            {isSalon 
+              ? 'Configure appointment time slots, capacity limits, and special hours'
+              : 'Configure time slots, capacity limits, and special hours'}
           </p>
         </div>
       </div>
@@ -241,10 +245,12 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div>
             <label className="block text-sm font-medium text-gray-900">
-              Enable Order Scheduling
+              {isSalon ? 'Enable Appointment Scheduling' : 'Enable Order Scheduling'}
             </label>
             <p className="text-xs text-gray-500 mt-1">
-              Allow customers to schedule orders for specific times. When disabled, only instant orders are accepted.
+              {isSalon 
+                ? 'Allow customers to book appointments for specific time slots based on your business hours.'
+                : 'Allow customers to schedule orders for specific times. When disabled, only instant orders are accepted.'}
             </p>
           </div>
           <button
@@ -278,14 +284,14 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            How long each booking time slot should be
+            {isSalon ? 'How long each appointment time slot should be' : 'How long each booking time slot should be'}
           </p>
         </div>
 
         {/* Slot Capacity */}
         <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Orders per Time Slot
+            {isSalon ? 'Appointments per Time Slot' : 'Orders per Time Slot'}
           </label>
           <div className="flex items-center space-x-4">
             <input
@@ -302,42 +308,28 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               disabled={!config.schedulingEnabled}
             />
             <span className="text-sm text-gray-500">
-              {config.slotCapacity ? `Max ${config.slotCapacity} orders per slot` : 'No limit'}
+              {config.slotCapacity 
+                ? `Max ${config.slotCapacity} ${isSalon ? 'appointments' : 'orders'} per slot` 
+                : 'No limit'}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Leave empty for unlimited orders per slot
+            {isSalon ? 'Leave empty for unlimited appointments per slot' : 'Leave empty for unlimited orders per slot'}
           </p>
         </div>
 
         {/* Buffer Times */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
-          <div>
+        {isSalon ? (
+          <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Delivery Preparation Time
-            </label>
-            <select
-              value={config.deliveryBufferMinutes}
-              onChange={(e) => setConfig({ ...config, deliveryBufferMinutes: Number(e.target.value) })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              disabled={!config.schedulingEnabled}
-            >
-              {BUFFER_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Minimum time before delivery slot can be booked
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pickup Preparation Time
+              Appointment Buffer Time
             </label>
             <select
               value={config.pickupBufferMinutes}
-              onChange={(e) => setConfig({ ...config, pickupBufferMinutes: Number(e.target.value) })}
+              onChange={(e) => {
+                const value = Number(e.target.value)
+                setConfig({ ...config, pickupBufferMinutes: value, deliveryBufferMinutes: value })
+              }}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               disabled={!config.schedulingEnabled}
             >
@@ -346,10 +338,50 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Minimum time before pickup slot can be booked
+              Minimum time before an appointment slot can be booked. This prevents last-minute bookings.
             </p>
           </div>
-        </div>
+        ) : (
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Delivery Preparation Time
+              </label>
+              <select
+                value={config.deliveryBufferMinutes}
+                onChange={(e) => setConfig({ ...config, deliveryBufferMinutes: Number(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                disabled={!config.schedulingEnabled}
+              >
+                {BUFFER_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Minimum time before delivery slot can be booked
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pickup Preparation Time
+              </label>
+              <select
+                value={config.pickupBufferMinutes}
+                onChange={(e) => setConfig({ ...config, pickupBufferMinutes: Number(e.target.value) })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                disabled={!config.schedulingEnabled}
+              >
+                {BUFFER_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Minimum time before pickup slot can be booked
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Max Advance Booking Days */}
         <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
@@ -367,7 +399,7 @@ export function SchedulingConfiguration({ businessId }: SchedulingConfigurationP
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            How far in advance customers can schedule their orders
+            {isSalon ? 'How far in advance customers can book appointments' : 'How far in advance customers can schedule their orders'}
           </p>
         </div>
 
