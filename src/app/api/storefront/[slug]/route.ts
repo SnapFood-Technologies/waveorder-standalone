@@ -715,6 +715,13 @@ export async function GET(
       cartBadgeColor: business.cartBadgeColor,
       featuredBadgeColor: business.featuredBadgeColor,
       
+      // Storefront Banner
+      bannerEnabled: business.bannerEnabled || false,
+      bannerTitle: business.bannerTitle || null,
+      bannerSubtitle: business.bannerSubtitle || null,
+      bannerIcon: business.bannerIcon || null,
+      bannerFontSize: business.bannerFontSize || 'md',
+      
       // Settings
       currency: business.currency,
       timezone: business.timezone,

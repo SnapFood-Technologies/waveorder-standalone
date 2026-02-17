@@ -2237,7 +2237,15 @@ try {
           invoiceType: (order as any).invoiceType || undefined, // Invoice/Receipt selection (for Greek storefronts)
           language: business.language || undefined,
           currencySymbol: getCurrencySymbol(business.currency),
-          postalPricingDetails: postalPricingDetailsForWhatsApp
+          postalPricingDetails: postalPricingDetailsForWhatsApp,
+          isSalon: isSalon,
+          appointmentDateTime: isSalon && order.deliveryTime 
+            ? order.deliveryTime.toLocaleString('en-US', { 
+                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true,
+                timeZone: business.timezone || 'UTC'
+              })
+            : null
         }
       )
 

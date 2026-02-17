@@ -32,7 +32,16 @@ import {
   ExternalLink,
   Package,
   Store,
-  UtensilsCrossed
+  UtensilsCrossed,
+  Sparkles,
+  Star,
+  Gift,
+  Zap,
+  Heart,
+  Bell,
+  Tag,
+  Percent,
+  Megaphone
 } from 'lucide-react'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
@@ -91,6 +100,11 @@ interface StoreData {
   legalPagesEnabled?: boolean
   featuredBadgeColor?: string
   initialProducts?: any[]
+  bannerEnabled?: boolean
+  bannerTitle?: string | null
+  bannerSubtitle?: string | null
+  bannerIcon?: string | null
+  bannerFontSize?: string
 }
 
 interface Service {
@@ -1324,6 +1338,48 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               </button>
             </div>
           )}
+
+          {/* Storefront Banner */}
+          {storeData.bannerEnabled && (storeData.bannerTitle || storeData.bannerSubtitle) && (() => {
+            const bannerIconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+              Sparkles, Star, Gift, Zap, Heart, Info, Bell, Tag, Percent, Clock, MapPin, Phone, Megaphone
+            }
+            const BannerIcon = storeData.bannerIcon ? bannerIconMap[storeData.bannerIcon] : null
+            const fontSize = storeData.bannerFontSize || 'md'
+            return (
+              <div 
+                className="mb-3 rounded-xl flex items-center gap-3"
+                style={{ 
+                  backgroundColor: `${primaryColor}10`, 
+                  borderLeft: `4px solid ${primaryColor}`,
+                  padding: fontSize === 'sm' ? '8px 12px' : fontSize === 'lg' ? '14px 16px' : '10px 14px'
+                }}
+              >
+                {BannerIcon && (
+                  <BannerIcon 
+                    className={`flex-shrink-0 ${fontSize === 'sm' ? 'w-4 h-4' : fontSize === 'lg' ? 'w-6 h-6' : 'w-5 h-5'}`}
+                    style={{ color: primaryColor }} 
+                  />
+                )}
+                <div className="min-w-0">
+                  {storeData.bannerTitle && (
+                    <p 
+                      className={`font-semibold text-gray-900 leading-tight ${fontSize === 'sm' ? 'text-xs' : fontSize === 'lg' ? 'text-base' : 'text-sm'}`}
+                    >
+                      {storeData.bannerTitle}
+                    </p>
+                  )}
+                  {storeData.bannerSubtitle && (
+                    <p 
+                      className={`text-gray-600 leading-tight ${fontSize === 'sm' ? 'text-[10px] mt-0.5' : fontSize === 'lg' ? 'text-sm mt-1' : 'text-xs mt-0.5'}`}
+                    >
+                      {storeData.bannerSubtitle}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Search Bar and Filter Button */}
           <div className="flex items-center gap-3 mb-3">

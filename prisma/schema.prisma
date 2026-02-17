@@ -255,6 +255,13 @@ model Business {
   logoPadding   String? // e.g., '0px', '4px', '6px', '8px'
   logoObjectFit String? // 'cover' or 'contain', default 'cover'
 
+  // Storefront Banner
+  bannerEnabled   Boolean @default(false)
+  bannerTitle     String? // Banner title text
+  bannerSubtitle  String? // Banner subtitle text
+  bannerIcon      String? // Lucide icon name (e.g., "Sparkles", "Star", "Gift")
+  bannerFontSize  String  @default("md") // "sm", "md", "lg"
+
   deliveryZones      DeliveryZone[]
   postals            Postal[]
   postalPricing      PostalPricing[]

@@ -18,7 +18,12 @@ const appearanceSchema = z.object({
   coverHeightMobile: z.string().optional(),
   coverHeightDesktop: z.string().optional(),
   logoPadding: z.string().optional(),
-  logoObjectFit: z.string().optional()
+  logoObjectFit: z.string().optional(),
+  bannerEnabled: z.boolean().optional(),
+  bannerTitle: z.string().max(100, 'Banner title too long').optional(),
+  bannerSubtitle: z.string().max(200, 'Banner subtitle too long').optional(),
+  bannerIcon: z.string().max(50).optional(),
+  bannerFontSize: z.enum(['sm', 'md', 'lg']).optional()
 })
 
 export async function PUT(
@@ -72,6 +77,11 @@ export async function PUT(
         coverHeightDesktop: validatedData.coverHeightDesktop || null,
         logoPadding: validatedData.logoPadding || null,
         logoObjectFit: validatedData.logoObjectFit || null,
+        bannerEnabled: validatedData.bannerEnabled ?? false,
+        bannerTitle: validatedData.bannerTitle || null,
+        bannerSubtitle: validatedData.bannerSubtitle || null,
+        bannerIcon: validatedData.bannerIcon || null,
+        bannerFontSize: validatedData.bannerFontSize || 'md',
         updatedAt: new Date()
       },
       select: {
@@ -90,6 +100,11 @@ export async function PUT(
         coverHeight: true,
         logoPadding: true,
         logoObjectFit: true,
+        bannerEnabled: true,
+        bannerTitle: true,
+        bannerSubtitle: true,
+        bannerIcon: true,
+        bannerFontSize: true,
         updatedAt: true
       }
     })
@@ -158,6 +173,11 @@ export async function GET(
         coverHeightDesktop: true,
         logoPadding: true,
         logoObjectFit: true,
+        bannerEnabled: true,
+        bannerTitle: true,
+        bannerSubtitle: true,
+        bannerIcon: true,
+        bannerFontSize: true,
         currency: true,
         language: true,
         description: true,

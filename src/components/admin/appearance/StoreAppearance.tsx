@@ -17,7 +17,19 @@ import {
   Star,
   Badge,
   Image,
-  AlertTriangle
+  AlertTriangle,
+  Megaphone,
+  Sparkles,
+  Gift,
+  Zap,
+  Heart,
+  Info,
+  Bell,
+  Tag,
+  Percent,
+  Clock,
+  MapPin,
+  Phone
 } from 'lucide-react'
 import { StorePreview } from './StorePreview'
 
@@ -62,6 +74,11 @@ interface AppearanceSettings {
   coverHeightDesktop?: string
   logoPadding?: string
   logoObjectFit?: string
+  bannerEnabled?: boolean
+  bannerTitle?: string
+  bannerSubtitle?: string
+  bannerIcon?: string
+  bannerFontSize?: string
 }
 
 const defaultColors = [
@@ -116,7 +133,12 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     coverHeightMobile: '160px',
     coverHeightDesktop: '220px',
     logoPadding: '0px',
-    logoObjectFit: 'cover'
+    logoObjectFit: 'cover',
+    bannerEnabled: false,
+    bannerTitle: '',
+    bannerSubtitle: '',
+    bannerIcon: 'Sparkles',
+    bannerFontSize: 'md'
   })
   const [originalSettings, setOriginalSettings] = useState<AppearanceSettings>({
     primaryColor: '#0D9488',
@@ -132,7 +154,12 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
     coverHeightMobile: '160px',
     coverHeightDesktop: '220px',
     logoPadding: '0px',
-    logoObjectFit: 'cover'
+    logoObjectFit: 'cover',
+    bannerEnabled: false,
+    bannerTitle: '',
+    bannerSubtitle: '',
+    bannerIcon: 'Sparkles',
+    bannerFontSize: 'md'
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -169,7 +196,12 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           coverHeightMobile: data.business.coverHeightMobile || data.business.coverHeight || '160px',
           coverHeightDesktop: data.business.coverHeightDesktop || data.business.coverHeight || '220px',
           logoPadding: data.business.logoPadding || '0px',
-          logoObjectFit: data.business.logoObjectFit || 'cover'
+          logoObjectFit: data.business.logoObjectFit || 'cover',
+          bannerEnabled: data.business.bannerEnabled || false,
+          bannerTitle: data.business.bannerTitle || '',
+          bannerSubtitle: data.business.bannerSubtitle || '',
+          bannerIcon: data.business.bannerIcon || 'Sparkles',
+          bannerFontSize: data.business.bannerFontSize || 'md'
         }
         
         setSettings(appearanceSettings)
@@ -735,6 +767,164 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
               </div>
             </div>
           )}
+
+          {/* Storefront Banner Section */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <Megaphone className="w-5 h-5 text-teal-600 mr-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Storefront Banner</h3>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.bannerEnabled || false}
+                  onChange={(e) => setSettings(prev => ({ ...prev, bannerEnabled: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+              </label>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Display an announcement banner above the search bar on your storefront.
+            </p>
+
+            {settings.bannerEnabled && (
+              <div className="space-y-4">
+                {/* Banner Preview */}
+                <div 
+                  className="rounded-lg p-3 flex items-center gap-3"
+                  style={{ backgroundColor: settings.primaryColor + '15', borderLeft: `4px solid ${settings.primaryColor}` }}
+                >
+                  {settings.bannerIcon && (() => {
+                    const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
+                      Sparkles, Star, Gift, Zap, Heart, Info, Bell, Tag, Percent, Clock, MapPin, Phone, Megaphone
+                    }
+                    const IconComponent = iconMap[settings.bannerIcon]
+                    return IconComponent ? <IconComponent className={`flex-shrink-0 ${settings.bannerFontSize === 'sm' ? 'w-4 h-4' : settings.bannerFontSize === 'lg' ? 'w-6 h-6' : 'w-5 h-5'}`} style={{ color: settings.primaryColor }} /> : null
+                  })()}
+                  <div className="min-w-0">
+                    {settings.bannerTitle && (
+                      <p className={`font-semibold text-gray-900 ${settings.bannerFontSize === 'sm' ? 'text-xs' : settings.bannerFontSize === 'lg' ? 'text-base' : 'text-sm'}`}>
+                        {settings.bannerTitle}
+                      </p>
+                    )}
+                    {settings.bannerSubtitle && (
+                      <p className={`text-gray-600 ${settings.bannerFontSize === 'sm' ? 'text-[10px]' : settings.bannerFontSize === 'lg' ? 'text-sm' : 'text-xs'}`}>
+                        {settings.bannerSubtitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Icon Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Banner Icon
+                  </label>
+                  <div className="grid grid-cols-7 gap-2">
+                    {[
+                      { name: 'Sparkles', Icon: Sparkles },
+                      { name: 'Star', Icon: Star },
+                      { name: 'Gift', Icon: Gift },
+                      { name: 'Zap', Icon: Zap },
+                      { name: 'Heart', Icon: Heart },
+                      { name: 'Info', Icon: Info },
+                      { name: 'Bell', Icon: Bell },
+                      { name: 'Tag', Icon: Tag },
+                      { name: 'Percent', Icon: Percent },
+                      { name: 'Clock', Icon: Clock },
+                      { name: 'MapPin', Icon: MapPin },
+                      { name: 'Phone', Icon: Phone },
+                      { name: 'Megaphone', Icon: Megaphone },
+                    ].map(({ name, Icon }) => (
+                      <button
+                        key={name}
+                        onClick={() => setSettings(prev => ({ ...prev, bannerIcon: name }))}
+                        className={`p-2 rounded-lg border transition-colors flex items-center justify-center ${
+                          settings.bannerIcon === name
+                            ? 'border-teal-500 bg-teal-50 text-teal-600'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-500'
+                        }`}
+                        title={name}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setSettings(prev => ({ ...prev, bannerIcon: '' }))}
+                      className={`p-2 rounded-lg border transition-colors flex items-center justify-center text-xs ${
+                        !settings.bannerIcon
+                          ? 'border-teal-500 bg-teal-50 text-teal-600'
+                          : 'border-gray-200 hover:border-gray-300 text-gray-500'
+                      }`}
+                      title="No icon"
+                    >
+                      None
+                    </button>
+                  </div>
+                </div>
+
+                {/* Banner Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.bannerTitle || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, bannerTitle: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
+                    placeholder="e.g., Free shipping on orders over €25!"
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{(settings.bannerTitle || '').length}/100</p>
+                </div>
+
+                {/* Banner Subtitle */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subtitle (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.bannerSubtitle || ''}
+                    onChange={(e) => setSettings(prev => ({ ...prev, bannerSubtitle: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm text-gray-900 bg-white"
+                    placeholder="e.g., Use code WELCOME10 at checkout"
+                    maxLength={200}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">{(settings.bannerSubtitle || '').length}/200</p>
+                </div>
+
+                {/* Font Size */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Font Size
+                  </label>
+                  <div className="flex gap-2">
+                    {[
+                      { value: 'sm', label: 'Small' },
+                      { value: 'md', label: 'Medium' },
+                      { value: 'lg', label: 'Large' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSettings(prev => ({ ...prev, bannerFontSize: option.value }))}
+                        className={`flex-1 px-3 py-2 text-sm rounded-lg border transition-colors ${
+                          settings.bannerFontSize === option.value
+                            ? 'border-teal-500 bg-teal-50 text-teal-700 font-medium'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Tips */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">

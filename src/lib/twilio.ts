@@ -5,7 +5,8 @@ interface TwilioConfig {
   accountSid: string
   authToken: string
   whatsappNumber: string // Twilio WhatsApp sender number (e.g., +14155238886)
-  contentSid?: string // WhatsApp template Content SID (for business-initiated messages)
+  contentSid?: string // WhatsApp template Content SID (for order notifications)
+  appointmentContentSid?: string // WhatsApp template Content SID (for appointment notifications)
 }
 
 interface OrderNotificationData {
@@ -37,6 +38,8 @@ interface OrderNotificationData {
     deliveryTime?: string | null
     price: number
   } | null
+  isSalon?: boolean // Whether this is a salon appointment notification
+  appointmentDateTime?: string | null // Formatted appointment date & time for salons
 }
 
 /**
@@ -46,7 +49,8 @@ export function getTwilioConfig(): TwilioConfig | null {
   const accountSid = process.env.TWILIO_ACCOUNT_SID
   const authToken = process.env.TWILIO_AUTH_TOKEN
   const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER
-  const contentSid = process.env.TWILIO_CONTENT_SID // Optional: WhatsApp template SID
+  const contentSid = process.env.TWILIO_CONTENT_SID // Optional: WhatsApp template SID for orders
+  const appointmentContentSid = process.env.TWILIO_APPOINTMENT_CONTENT_SID // Optional: WhatsApp template SID for appointments
 
   if (!accountSid || !authToken || !whatsappNumber) {
     return null
@@ -56,7 +60,8 @@ export function getTwilioConfig(): TwilioConfig | null {
     accountSid,
     authToken,
     whatsappNumber,
-    contentSid
+    contentSid,
+    appointmentContentSid
   }
 }
 
@@ -103,6 +108,37 @@ function getCurrencySymbol(currency: string): string {
 export function formatOrderNotificationMessage(data: OrderNotificationData): string {
   const { currencySymbol } = data
   
+  // Salon appointment: use appointment-specific format
+  if (data.isSalon) {
+    let message = `📅 *New Appointment via WaveOrder*\n\n`
+    message += `*Booking #${data.orderNumber}*\n`
+    message += `Salon: ${data.businessName}\n\n`
+    
+    message += `*Customer:* ${data.customerName}\n`
+    message += `*Phone:* ${data.customerPhone}\n`
+    
+    if (data.appointmentDateTime) {
+      message += `\n📅 *Appointment:* ${data.appointmentDateTime}\n`
+    }
+    
+    message += `\n---\n\n`
+    
+    message += `*Services:*\n`
+    data.items.forEach(item => {
+      message += `${item.quantity}x ${item.name} - ${currencySymbol}${item.price.toFixed(2)}\n`
+    })
+    
+    message += `\n*Total: ${currencySymbol}${data.total.toFixed(2)}*\n`
+    
+    if (data.specialInstructions) {
+      message += `\n*Notes:* ${data.specialInstructions}\n`
+    }
+    
+    message += `\n---\n_Manage appointments at waveorder.app/admin_`
+    return message
+  }
+
+  // Regular order format
   let message = `🛒 *New Order via WaveOrder*\n\n`
   message += `*Order #${data.orderNumber}*\n`
   message += `Store: ${data.businessName}\n\n`
@@ -303,7 +339,33 @@ export async function sendOrderNotification(
     }
   }
 
-  // If template is configured, use it (required for business-initiated WhatsApp messages)
+  // Salon appointment: use appointment-specific template if available
+  if (orderData.isSalon && config.appointmentContentSid) {
+    const itemsText = orderData.items.map(item => {
+      let line = `${item.quantity}x ${item.name}`
+      if (item.variant) line += ` (${item.variant})`
+      line += ` - ${orderData.currencySymbol}${item.price.toFixed(2)}`
+      return line
+    }).join(', ')
+
+    // Appointment template: {{1}}=bookingNumber, {{2}}=salonName, {{3}}=customerName,
+    //   {{4}}=phone, {{5}}=appointmentDateTime, {{6}}=services, {{7}}=total, {{8}}=notes
+    const contentVariables: Record<string, string> = {
+      '1': orderData.orderNumber,
+      '2': orderData.businessName,
+      '3': orderData.customerName,
+      '4': orderData.customerPhone,
+      '5': orderData.appointmentDateTime || 'Not specified',
+      '6': itemsText,
+      '7': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
+      '8': orderData.specialInstructions || 'None'
+    }
+
+    console.log('Sending WhatsApp appointment notification via template:', config.appointmentContentSid)
+    return sendWhatsAppTemplateMessage(businessWhatsAppNumber, config.appointmentContentSid, contentVariables)
+  }
+
+  // Regular order: use order template if available
   if (config.contentSid) {
     // Format items as a single string for the template
     const itemsText = orderData.items.map(item => {
@@ -324,7 +386,6 @@ export async function sendOrderNotification(
     // Template: {{1}}=orderNumber, {{2}}=storeName, {{3}}=type, {{4}}=customerName,
     //           {{5}}=phone, {{6}}=address, {{7}}=items, {{8}}=subtotal,
     //           {{9}}=delivery, {{10}}=total, {{11}}=notes
-    // Note: Delivery method is included in the freeform message but may not be in template
     let addressLine = orderData.deliveryAddress || 'N/A'
     if (orderData.deliveryType === 'delivery' && orderData.postalPricingDetails) {
       const deliveryMethod = orderData.postalPricingDetails.nameEn || orderData.postalPricingDetails.name
