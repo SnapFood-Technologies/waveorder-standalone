@@ -73,15 +73,31 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
   const [geographicData, setGeographicData] = useState<GeographicData | null>(null)
   const [trafficData, setTrafficData] = useState<TrafficData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     end: new Date()
   })
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
 
+  const isSalon = businessType === 'SALON'
+
   useEffect(() => {
+    fetchBusinessData()
     fetchAnalyticsData()
   }, [businessId, dateRange])
+
+  const fetchBusinessData = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const result = await response.json()
+        setBusinessType(result.business.businessType || 'RESTAURANT')
+      }
+    } catch (error) {
+      console.error('Error fetching business data:', error)
+    }
+  }
 
   const fetchAnalyticsData = async () => {
     try {
@@ -239,7 +255,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                               </span>
                               <span className="flex items-center gap-1">
                                 <ShoppingBag className="w-3 h-3" />
-                                {country.orders} orders
+                                {country.orders} {isSalon ? 'appointments' : 'orders'}
                               </span>
                             </div>
                           </div>
@@ -292,7 +308,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                               </span>
                               <span className="flex items-center gap-1">
                                 <ShoppingBag className="w-3 h-3" />
-                                {city.orders} orders
+                                {city.orders} {isSalon ? 'appointments' : 'orders'}
                               </span>
                             </div>
                           </div>
@@ -371,7 +387,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {source.orders} orders
+                            {source.orders} {isSalon ? 'appointments' : 'orders'}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -429,7 +445,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {campaign.orders} orders
+                            {campaign.orders} {isSalon ? 'appointments' : 'orders'}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -487,7 +503,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {placement.orders} orders
+                            {placement.orders} {isSalon ? 'appointments' : 'orders'}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -544,7 +560,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {medium.orders} orders
+                            {medium.orders} {isSalon ? 'appointments' : 'orders'}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />

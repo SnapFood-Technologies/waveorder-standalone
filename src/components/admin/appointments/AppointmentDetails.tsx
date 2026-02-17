@@ -752,9 +752,9 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
             </div>
           )}
 
-          {/* Order Summary */}
+          {/* Appointment Summary */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Order Summary</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Appointment Summary</h3>
             
             <div className="space-y-3">
               <div className="flex justify-between text-sm">

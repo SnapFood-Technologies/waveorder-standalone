@@ -90,6 +90,7 @@ interface StoreData {
   invoiceMinimumOrderValue?: number | null
   legalPagesEnabled?: boolean
   featuredBadgeColor?: string
+  initialProducts?: any[]
 }
 
 interface Service {
@@ -318,15 +319,23 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [services, setServices] = useState<Service[]>([])
-  const [servicesLoading, setServicesLoading] = useState(false)
+  // Use initial products from server-side render if available (filtered for services only)
+  const initialServices = useMemo(() => {
+    if (!storeData.initialProducts || storeData.initialProducts.length === 0) return []
+    return storeData.initialProducts.filter((p: any) => p.isService === true)
+  }, [storeData.initialProducts])
+  
+  const [services, setServices] = useState<Service[]>(initialServices)
+  const [servicesLoading, setServicesLoading] = useState(initialServices.length === 0)
   const [servicesError, setServicesError] = useState<string | null>(null)
   
   // Performance: Infinite scroll pagination
   const SERVICES_PER_PAGE = 20
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(initialServices.length > 0 ? 1 : 0)
   const [hasMoreServices, setHasMoreServices] = useState(true)
-  const [displayedServicesCount, setDisplayedServicesCount] = useState(SERVICES_PER_PAGE)
+  const [displayedServicesCount, setDisplayedServicesCount] = useState(
+    initialServices.length > 0 ? initialServices.length : SERVICES_PER_PAGE
+  )
   const isFetchingRef = useRef(false)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [showServiceModal, setShowServiceModal] = useState(false)
@@ -593,8 +602,18 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   // Track previous debounced search term to detect when search is cleared
   const prevDebouncedSearchTermRef = useRef('')
 
+  // Track if this is the initial mount to avoid refetching when we have initialProducts
+  const [isInitialMount, setIsInitialMount] = useState(true)
+
   // Fetch services on filter changes (reset to page 1)
   useEffect(() => {
+    // Skip on initial mount if we have initial services from server
+    if (isInitialMount && initialServices.length > 0) {
+      setIsInitialMount(false)
+      return
+    }
+    setIsInitialMount(false)
+
     fetchServices(1, true)
     setDisplayedServicesCount(SERVICES_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1023,91 +1042,100 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 )
               })()}
               
-              {/* Address */}
-              {storeData.address && (
-                <div className="flex items-center gap-1 mb-2 text-gray-500">
-                  <MapPin className="w-4 h-4" style={{ color: primaryColor }} />
-                  <span className="text-md">{storeData.address}</span>
-                </div>
-              )}
+              {/* Address + Open/Closed Status + Get Directions */}
+              {/* Desktop: single line | Mobile: address above, hours + directions below */}
+              <div className="flex flex-col md:flex-row md:items-center md:flex-wrap gap-1 md:gap-3 mb-2">
+                {/* Address */}
+                {storeData.address && (
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <MapPin className="w-4 h-4 flex-shrink-0" style={{ color: primaryColor }} />
+                    <span className="text-md">{storeData.address}</span>
+                  </div>
+                )}
 
-              {/* Open/Closed Status with Hours + Get Directions */}
-              <div className="flex flex-wrap items-center gap-3 mb-2">
-                {/* Open/Closed status with closing/opening time */}
-                {(() => {
-                  if (storeData.isTemporarilyClosed) {
+                {/* Hours + Directions row (mobile: own line, desktop: continues inline) */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Separator dot - only visible on desktop when address exists */}
+                  {storeData.address && (storeData.businessHours || storeData.isTemporarilyClosed) && (
+                    <span className="hidden md:inline text-gray-300">•</span>
+                  )}
+
+                  {/* Open/Closed status with closing/opening time */}
+                  {(() => {
+                    if (storeData.isTemporarilyClosed) {
+                      return (
+                        <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                          {translations.temporarilyClosed || 'Temporarily Closed'}
+                        </span>
+                      )
+                    }
+
+                    if (!storeData.businessHours) return null
+
+                    const tz = storeData.timezone || 'UTC'
+                    const now = new Date()
+                    const businessTime = new Date(now.toLocaleString('en-US', { timeZone: tz }))
+                    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+                    const currentDay = dayNames[businessTime.getDay()]
+                    const todayHours = storeData.businessHours[currentDay]
+                    const is24h = storeData.timeFormat === '24'
+
+                    const formatTime = (timeStr: string) => {
+                      if (!timeStr) return ''
+                      if (is24h) return timeStr
+                      const [h, m] = timeStr.split(':').map(Number)
+                      const period = h >= 12 ? 'PM' : 'AM'
+                      const hour12 = h % 12 || 12
+                      return `${hour12}:${m.toString().padStart(2, '0')} ${period}`
+                    }
+
+                    if (storeData.isOpen && todayHours && !todayHours.closed) {
+                      const closingFormatted = formatTime(todayHours.close)
+                      return (
+                        <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
+                          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                          {(translations.openUntil || 'Open until {time}').replace('{time}', closingFormatted)}
+                        </span>
+                      )
+                    }
+
+                    // Closed -- find next opening time
+                    const nextDay = dayNames[(businessTime.getDay() + 1) % 7]
+                    const tomorrowHours = storeData.businessHours[nextDay]
+                    const nextOpenFormatted = tomorrowHours && !tomorrowHours.closed
+                      ? formatTime(tomorrowHours.open)
+                      : null
+
                     return (
                       <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
                         <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                        {translations.temporarilyClosed || 'Temporarily Closed'}
+                        {nextOpenFormatted
+                          ? (translations.opensAt || 'Opens at {time}').replace('{time}', nextOpenFormatted)
+                          : (translations.closedNow || 'Closed now')}
                       </span>
                     )
-                  }
+                  })()}
 
-                  if (!storeData.businessHours) return null
+                  {/* Separator dot between hours and directions */}
+                  {(storeData.businessHours || storeData.isTemporarilyClosed) && storeData.address && (
+                    <span className="text-gray-300">•</span>
+                  )}
 
-                  const tz = storeData.timezone || 'UTC'
-                  const now = new Date()
-                  const businessTime = new Date(now.toLocaleString('en-US', { timeZone: tz }))
-                  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-                  const currentDay = dayNames[businessTime.getDay()]
-                  const todayHours = storeData.businessHours[currentDay]
-                  const is24h = storeData.timeFormat === '24'
-
-                  const formatTime = (timeStr: string) => {
-                    if (!timeStr) return ''
-                    if (is24h) return timeStr
-                    const [h, m] = timeStr.split(':').map(Number)
-                    const period = h >= 12 ? 'PM' : 'AM'
-                    const hour12 = h % 12 || 12
-                    return `${hour12}:${m.toString().padStart(2, '0')} ${period}`
-                  }
-
-                  if (storeData.isOpen && todayHours && !todayHours.closed) {
-                    const closingFormatted = formatTime(todayHours.close)
-                    return (
-                      <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        {(translations.openUntil || 'Open until {time}').replace('{time}', closingFormatted)}
-                      </span>
-                    )
-                  }
-
-                  // Closed -- find next opening time
-                  const nextDay = dayNames[(businessTime.getDay() + 1) % 7]
-                  const tomorrowHours = storeData.businessHours[nextDay]
-                  const nextOpenFormatted = tomorrowHours && !tomorrowHours.closed
-                    ? formatTime(tomorrowHours.open)
-                    : null
-
-                  return (
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      {nextOpenFormatted
-                        ? (translations.opensAt || 'Opens at {time}').replace('{time}', nextOpenFormatted)
-                        : (translations.closedNow || 'Closed now')}
-                    </span>
-                  )
-                })()}
-
-                {/* Separator dot */}
-                {storeData.businessHours && storeData.address && (
-                  <span className="text-gray-300">•</span>
-                )}
-
-                {/* Get Directions link */}
-                {storeData.address && (
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeData.address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
-                    style={{ color: primaryColor }}
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    {translations.getDirections || 'Get Directions'}
-                  </a>
-                )}
+                  {/* Get Directions link */}
+                  {storeData.address && (
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storeData.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                      style={{ color: primaryColor }}
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      {translations.getDirections || 'Get Directions'}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1123,7 +1151,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder={translations.search || 'Search services...'}
+                placeholder={translations.searchServices || 'Search services...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl text-base focus:outline-none transition-colors"
@@ -1658,7 +1686,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           
           {/* Mobile: Bottom Sheet */}
           <div className="lg:hidden fixed inset-0 z-50 flex items-end pointer-events-none">
-            <div className="bg-white w-full max-h-[85vh] rounded-t-3xl overflow-hidden pointer-events-auto">
+            <div className="bg-white w-full max-w-full max-h-[85vh] rounded-t-3xl overflow-hidden pointer-events-auto">
             <div className="p-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">{translations.bookAppointment || 'Book Appointment'}</h2>
               <button
@@ -1668,8 +1696,8 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="overflow-y-auto max-h-[calc(85vh-180px)] scrollbar-hide">
-              <div className="p-6 space-y-6">
+            <div className="overflow-y-auto overflow-x-hidden max-h-[calc(85vh-180px)] scrollbar-hide">
+              <div className="p-6 space-y-6 overflow-hidden">
               {/* Selected Services */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">{translations.selectedServices || 'Selected Services'}</h3>
@@ -1679,30 +1707,32 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                                      useGreek && item.service.nameEl ? item.service.nameEl :
                                      item.service.name
                     return (
-                      <div key={item.service.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{displayName}</p>
-                          {item.service.serviceDuration && (
-                            <p className="text-xs text-gray-600">{formatDuration(item.service.serviceDuration)}</p>
-                          )}
+                      <div key={item.service.id} className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">{displayName}</p>
+                            {item.service.serviceDuration && (
+                              <p className="text-xs text-gray-600">{formatDuration(item.service.serviceDuration)}</p>
+                            )}
+                          </div>
+                          <span className="font-semibold text-gray-900 whitespace-nowrap flex-shrink-0">
+                            {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => updateQuantity(item.service.id, item.quantity - 1)}
-                            className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                            className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-sm"
                           >
                             -
                           </button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
+                          <span className="w-6 text-center font-medium text-sm">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.service.id, item.quantity + 1)}
-                            className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center"
+                            className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-sm"
                           >
                             +
                           </button>
-                          <span className="ml-2 font-semibold text-gray-900 min-w-[60px] text-right">
-                            {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
-                          </span>
                         </div>
                       </div>
                     )
@@ -1717,7 +1747,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               </div>
 
               {/* Appointment Date */}
-              <div>
+              <div className="overflow-hidden">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {translations.appointmentDate || 'Appointment Date'}
                 </label>
@@ -1729,7 +1759,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                     setAppointmentDate(new Date(e.target.value))
                     setAppointmentTime('')
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full max-w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 box-border"
                 />
               </div>
 
@@ -2256,7 +2286,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           <div className="fixed inset-y-0 right-0 lg:inset-auto lg:top-1/2 lg:left-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 w-full max-w-md lg:max-w-lg bg-white z-50 lg:z-50 lg:rounded-2xl shadow-2xl flex flex-col max-h-screen lg:max-h-[90vh]">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">{translations.filterProducts || 'Filter Services'}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{translations.filterServices || 'Filter Services'}</h2>
               <button
                 onClick={() => setShowFilterModal(false)}
                 className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"

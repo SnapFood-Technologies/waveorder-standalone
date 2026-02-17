@@ -263,6 +263,10 @@ close: string
     deliveryMethod: string
     noDeliveryOptions: string
     
+    // Salon-specific overrides
+    searchServices: string
+    filterServices: string
+
     // Filter
     filterProducts: string
     priceRange: string
@@ -603,6 +607,10 @@ canBeAdded: "more can be added to cart",
     enterAddressForDelivery: "Enter address to see delivery options",
     deliveryMethod: "Delivery Method",
     noDeliveryOptions: "No delivery options available for this city",
+
+    // Salon-specific overrides
+    searchServices: "Search services...",
+    filterServices: "Filter Services",
     
     // Filter
     filterProducts: "Filter Products",
@@ -940,6 +948,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Shkruani adresën për të parë opsionet e dërgesës",
     deliveryMethod: "Metoda e Dërgesës",
     noDeliveryOptions: "Nuk ka opsione dërgese të disponueshme për këtë qytet",
+
+    // Salon-specific overrides
+    searchServices: "Kërko shërbime...",
+    filterServices: "Filtro Shërbimet",
     
     // Filter
     filterProducts: "Filtro Produktet",
@@ -1277,6 +1289,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Ingresa la dirección para ver las opciones de entrega",
     deliveryMethod: "Método de Entrega",
     noDeliveryOptions: "No hay opciones de entrega disponibles para esta ciudad",
+
+    // Salon-specific overrides
+    searchServices: "Buscar servicios...",
+    filterServices: "Filtrar Servicios",
     
     // Filter
     filterProducts: "Filtrar Productos",
@@ -1616,6 +1632,10 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     enterAddressForDelivery: "Εισάγετε διεύθυνση για να δείτε τις επιλογές παράδοσης",
     deliveryMethod: "Μέθοδος Παράδοσης",
     noDeliveryOptions: "Δεν υπάρχουν επιλογές παράδοσης διαθέσιμες για αυτή την πόλη",
+
+    // Salon-specific overrides
+    searchServices: "Αναζήτηση υπηρεσιών...",
+    filterServices: "Φιλτράρισμα Υπηρεσιών",
     
     // Filter
     filterProducts: "Φιλτράρισμα Προϊόντων",

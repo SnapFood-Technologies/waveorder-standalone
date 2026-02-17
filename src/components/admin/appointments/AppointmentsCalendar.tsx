@@ -456,7 +456,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
                           <span className="font-medium">{apt.startTime} - {apt.endTime}</span>
                         </div>
                         <div className="font-semibold text-base mb-1">{apt.customerName}</div>
-                        <div className="text-sm opacity-75">Order #{apt.orderNumber}</div>
+                        <div className="text-sm opacity-75">Appt #{apt.orderNumber}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm font-medium mb-1">{formatStatus(apt.status)}</div>

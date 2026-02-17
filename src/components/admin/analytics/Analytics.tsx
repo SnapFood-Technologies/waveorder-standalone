@@ -382,7 +382,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">Avg Order Value</p>
+                  <p className="text-sm text-gray-600">{isSalon ? 'Avg Appointment Value' : 'Avg Order Value'}</p>
                   <p className="text-xl font-bold text-gray-900">{formatCurrency(data.overview.avgOrderValue)}</p>
                 </div>
                 <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -434,7 +434,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                   <p className="font-medium text-gray-900">Revenue Performance</p>
                   <p className="text-sm text-gray-600">
                     Revenue is {data.overview.revenueGrowth >= 0 ? 'up' : 'down'} {Math.abs(data.overview.revenueGrowth)}% 
-                    with an average order value of {formatCurrency(data.overview.avgOrderValue)}
+                    with an average {isSalon ? 'appointment' : 'order'} value of {formatCurrency(data.overview.avgOrderValue)}
                   </p>
                 </div>
               </div>
@@ -613,7 +613,10 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 }
               </p>
               <p className="text-sm text-gray-500">
-                Once you have orders, your top-selling products will appear here.
+                {isSalon 
+                  ? 'Once you have appointments, your top services will appear here.'
+                  : 'Once you have orders, your top-selling products will appear here.'
+                }
               </p>
             </div>
           )}
@@ -775,7 +778,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <div>
                   <p className="font-medium text-gray-900">Customer Loyalty</p>
                   <p className="text-sm text-gray-600">
-                    {data.customers.repeatRate}% of your customers have made repeat purchases, 
+                    {data.customers.repeatRate}% of your customers have made repeat {isSalon ? 'bookings' : 'purchases'}, 
                     indicating {data.customers.repeatRate >= 30 ? 'strong' : 'moderate'} customer loyalty
                   </p>
                 </div>
@@ -787,8 +790,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <div>
                   <p className="font-medium text-gray-900">Growth Potential</p>
                   <p className="text-sm text-gray-600">
-                    You have {data.customers.total - data.customers.repeat} customers who have ordered once. 
-                    Focus on retention strategies to convert them into repeat buyers
+                    You have {data.customers.total - data.customers.repeat} customers who have {isSalon ? 'booked once' : 'ordered once'}. 
+                    Focus on retention strategies to convert them into repeat {isSalon ? 'clients' : 'buyers'}
                   </p>
                 </div>
               </div>
