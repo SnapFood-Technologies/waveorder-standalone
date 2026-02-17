@@ -1312,6 +1312,38 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 </div>
               )
             })}
+            
+            {/* Subtle loading indicator for pagination - 3 bouncing dots */}
+            {servicesLoading && services.length > 0 && (
+              <div className="col-span-full text-center py-4">
+                <div className="flex items-center justify-center gap-1.5">
+                  <div 
+                    className="w-2 h-2 rounded-full animate-bounce"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      animationDelay: '0ms',
+                      animationDuration: '1.4s'
+                    }}
+                  ></div>
+                  <div 
+                    className="w-2 h-2 rounded-full animate-bounce"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      animationDelay: '160ms',
+                      animationDuration: '1.4s'
+                    }}
+                  ></div>
+                  <div 
+                    className="w-2 h-2 rounded-full animate-bounce"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      animationDelay: '320ms',
+                      animationDuration: '1.4s'
+                    }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -370,8 +370,10 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             {/* NEW: Cart Badge Color */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Cart Badge Color
-                <span className="text-gray-500 text-xs ml-1">(cart item count badge)</span>
+                {businessData.businessType === 'SALON' ? 'Booking Badge Color' : 'Cart Badge Color'}
+                <span className="text-gray-500 text-xs ml-1">
+                  ({businessData.businessType === 'SALON' ? 'booking' : 'cart'} item count badge)
+                </span>
               </label>
               <div className="grid grid-cols-4 gap-3 mb-3">
                 {badgeColors.map(color => (
@@ -406,7 +408,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Featured Badge Color
-                <span className="text-gray-500 text-xs ml-1">("Popular" product badges)</span>
+                <span className="text-gray-500 text-xs ml-1">
+                  ("Popular" {businessData.businessType === 'SALON' ? 'service' : 'product'} badges)
+                </span>
               </label>
               <div className="grid grid-cols-4 gap-3 mb-3">
                 {badgeColors.map(color => (
@@ -492,7 +496,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Cart Style</label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                {businessData.businessType === 'SALON' ? 'Booking Style' : 'Cart Style'}
+              </label>
               <div className="space-y-3">
                 <label className="flex items-center">
                   <input
@@ -505,7 +511,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                   <span className="ml-3 flex items-center text-gray-900">
                     <ShoppingCart className="w-4 h-4 mr-2 text-gray-700" />
                     Bottom Bar (Recommended)
-                    <span className="text-gray-500 text-xs ml-2">- Full-width cart button at bottom</span>
+                    <span className="text-gray-500 text-xs ml-2">
+                      - Full-width {businessData.businessType === 'SALON' ? 'booking' : 'cart'} button at bottom
+                    </span>
                   </span>
                 </label>
                 <label className="flex items-center">
@@ -524,7 +532,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                       <span className="text-white text-xs">3</span>
                     </div>
                     Floating Badge
-                    <span className="text-gray-500 text-xs ml-2">- Small floating cart badge</span>
+                    <span className="text-gray-500 text-xs ml-2">
+                      - Small floating {businessData.businessType === 'SALON' ? 'booking' : 'cart'} badge
+                    </span>
                   </span>
                 </label>
               </div>
@@ -540,7 +550,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">Cart Badge</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {businessData.businessType === 'SALON' ? 'Booking Badge' : 'Cart Badge'}
+                </span>
                 <div 
                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
                   style={{ backgroundColor: settings.cartBadgeColor }}
