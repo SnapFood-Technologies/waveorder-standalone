@@ -332,7 +332,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 WhatsApp Button Color
-                <span className="text-gray-500 text-xs ml-1">(order button color)</span>
+                <span className="text-gray-500 text-xs ml-1">
+                  ({businessData.businessType === 'SALON' ? 'booking' : 'order'} button color)
+                </span>
               </label>
               <div className="flex items-center space-x-3">
                 <button

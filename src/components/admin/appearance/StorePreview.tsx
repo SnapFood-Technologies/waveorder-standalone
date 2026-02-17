@@ -744,35 +744,49 @@ if (isMobile && device === 'mobile') {
                 <span className="truncate">123 Sample Street</span>
               </div>
               
-              <div className="flex items-center gap-3 text-xs text-gray-600">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>20-30 min</span>
+              {/* Delivery info - Hidden for salons */}
+              {!isSalon && (
+                <div className="flex items-center gap-3 text-xs text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>20-30 min</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Package className="w-3 h-3" />
+                    <span>Free delivery</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Package className="w-3 h-3" />
-                  <span>Free delivery</span>
+              )}
+              {/* Service duration for salons */}
+              {isSalon && (
+                <div className="flex items-center gap-3 text-xs text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    <span>60 min</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Delivery Type Switcher */}
-          <div className="px-4 py-2">
-            <div className="inline-flex bg-gray-100 p-1 rounded-full">
-              <button 
-                className="px-3 py-1 rounded-full text-xs font-medium text-white"
-                style={{ backgroundColor: settings.primaryColor }}
-              >
-                <Package className="w-3 h-3 mr-1 inline" />
-                Delivery
-              </button>
-              <button className="px-3 py-1 rounded-full text-xs font-medium text-gray-600">
-                <Store className="w-3 h-3 mr-1 inline" />
-                Pickup
-              </button>
+          {/* Delivery Type Switcher - Hidden for salons */}
+          {!isSalon && (
+            <div className="px-4 py-2">
+              <div className="inline-flex bg-gray-100 p-1 rounded-full">
+                <button 
+                  className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                  style={{ backgroundColor: settings.primaryColor }}
+                >
+                  <Package className="w-3 h-3 mr-1 inline" />
+                  Delivery
+                </button>
+                <button className="px-3 py-1 rounded-full text-xs font-medium text-gray-600">
+                  <Store className="w-3 h-3 mr-1 inline" />
+                  Pickup
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Search Bar */}
           <div className="px-4 py-2">
