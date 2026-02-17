@@ -286,6 +286,7 @@ close: string
     appointmentTime: string
     submitting: string
     bookViaWhatsapp: string
+    addToBooking: string
     specialRequests: string
     
     // Invoice/Receipt Selection (for Greek storefronts)
@@ -595,6 +596,7 @@ canBeAdded: "more can be added to cart",
     appointmentTime: "Appointment Time",
     submitting: "Submitting...",
     bookViaWhatsapp: "Book via WhatsApp",
+    addToBooking: "Add to Booking",
     specialRequests: "Any special requests...",
     
     // Invoice/Receipt Selection (for Greek storefronts)
@@ -900,6 +902,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     appointmentTime: "Ora e Takimit",
     submitting: "Duke dërguar...",
     bookViaWhatsapp: "Rezervo përmes WhatsApp",
+    addToBooking: "Shto në Rezervim",
     specialRequests: "Kërkesa të veçanta...",
     
     // Invoice/Receipt Selection (for Greek storefronts)
@@ -1205,6 +1208,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     appointmentTime: "Hora de la Cita",
     submitting: "Enviando...",
     bookViaWhatsapp: "Reservar por WhatsApp",
+    addToBooking: "Añadir a Reserva",
+    addToBooking: "Añadir a Reserva",
     specialRequests: "Solicitudes especiales...",
     
     // Invoice/Receipt Selection (for Greek storefronts)
@@ -1512,6 +1517,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     appointmentTime: "Ώρα Ραντεβού",
     submitting: "Υποβολή...",
     bookViaWhatsapp: "Κράτηση μέσω WhatsApp",
+    addToBooking: "Προσθήκη σε Κράτηση",
     specialRequests: "Ειδικές αιτήσεις...",
     
     // Invoice/Receipt Selection (for Greek storefronts)
