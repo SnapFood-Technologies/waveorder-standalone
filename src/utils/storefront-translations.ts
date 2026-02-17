@@ -547,6 +547,8 @@ selectAddressFromSuggestions: "Please type and select your address from the sugg
 
 // NEW STOCK-RELATED TRANSLATIONS
 inCart: "in cart",
+    inBooking: "in booking",
+    inBookingPlural: "in booking",
 available: "available",
 onlyAvailable: "Only available",
 item: "item",
@@ -853,6 +855,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
 
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "në shportë",
+  inBooking: "në rezervim",
+  inBookingPlural: "në rezervim",
   available: "të disponueshme",
   onlyAvailable: "Vetëm të disponueshme",
   item: "artikull",
@@ -1159,6 +1163,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
 
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "en carrito",
+  inBooking: "en reserva",
+  inBookingPlural: "en reserva",
   available: "disponibles",
   onlyAvailable: "Solo disponibles",
   item: "artículo",
@@ -1467,6 +1473,8 @@ addDeliveryAddress: "Shto adresën e dërgesës",
 
   // NEW STOCK-RELATED TRANSLATIONS
   inCart: "στο καλάθι",
+  inBooking: "σε κράτηση",
+  inBookingPlural: "σε κράτηση",
   available: "διαθέσιμα",
   onlyAvailable: "Μόνο διαθέσιμα",
   item: "προϊόν",
