@@ -21,7 +21,9 @@ import {
   ShoppingCart,
   FolderOpen,
   User,
-  ExternalLink
+  ExternalLink,
+  Scissors,
+  Calendar
 } from 'lucide-react'
 
 export const metadata: Metadata = {
@@ -138,7 +140,12 @@ export default function DevelopersPage() {
             </div>
             <div className="ml-8 bg-gray-900 rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm text-gray-100">
-{`curl -X GET "https://waveorder.app/api/v1/products" \\
+{`# For Restaurants/Retail:
+curl -X GET "https://waveorder.app/api/v1/products" \\
+  -H "Authorization: Bearer wo_live_YOUR_API_KEY"
+
+# For Salons:
+curl -X GET "https://waveorder.app/api/v1/services" \\
   -H "Authorization: Bearer wo_live_YOUR_API_KEY"`}
               </pre>
             </div>
@@ -152,7 +159,8 @@ export default function DevelopersPage() {
             </div>
             <div className="ml-8 bg-gray-900 rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm text-gray-100">
-{`{
+{`# Restaurants/Retail Response:
+{
   "products": [
     {
       "id": "507f1f77bcf86cd799439011",
@@ -167,6 +175,26 @@ export default function DevelopersPage() {
     "limit": 50,
     "total": 125,
     "pages": 3
+  }
+}
+
+# Salons Response:
+{
+  "services": [
+    {
+      "id": "507f1f77bcf86cd799439011",
+      "name": "Classic Haircut",
+      "price": 20.00,
+      "serviceDuration": 30,
+      "requiresAppointment": true,
+      "isActive": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 25,
+    "pages": 1
   }
 }`}
               </pre>
@@ -227,7 +255,13 @@ export default function DevelopersPage() {
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-4">
               <Package className="h-5 w-5 text-blue-600" />
-              <h3 className="text-xl font-semibold text-gray-900">Products</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Products <span className="text-sm font-normal text-gray-500">(Restaurants & Retail)</span></h3>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> These endpoints are for RESTAURANT and RETAIL businesses. For salons, use the Services endpoints instead.
+              </p>
             </div>
             
             <div className="space-y-3">
@@ -272,7 +306,13 @@ export default function DevelopersPage() {
           <div className="mb-12">
             <div className="flex items-center gap-2 mb-4">
               <ShoppingCart className="h-5 w-5 text-green-600" />
-              <h3 className="text-xl font-semibold text-gray-900">Orders</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Orders <span className="text-sm font-normal text-gray-500">(Restaurants & Retail)</span></h3>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> These endpoints are for RESTAURANT and RETAIL businesses. For salons, use the Appointments endpoints instead.
+              </p>
             </div>
             
             <div className="space-y-3">
@@ -292,6 +332,102 @@ export default function DevelopersPage() {
             
             <div className="mt-4 text-sm text-gray-600">
               <strong>Query Parameters:</strong> page, limit (max 100), status, type (DELIVERY/PICKUP/DINE_IN), from, to
+            </div>
+          </div>
+
+          {/* Services (Salons) */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <Scissors className="h-5 w-5 text-pink-600" />
+              <h3 className="text-xl font-semibold text-gray-900">Services <span className="text-sm font-normal text-gray-500">(Salons Only)</span></h3>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> These endpoints are only available for SALON businesses. For restaurants and retail stores, use the Products endpoints instead.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <EndpointRow 
+                method="GET" 
+                path="/services" 
+                description="List all services (paginated)" 
+                scope="services:read"
+              />
+              <EndpointRow 
+                method="GET" 
+                path="/services/:id" 
+                description="Get single service" 
+                scope="services:read"
+              />
+              <EndpointRow 
+                method="POST" 
+                path="/services" 
+                description="Create new service" 
+                scope="services:write"
+              />
+              <EndpointRow 
+                method="PUT" 
+                path="/services/:id" 
+                description="Update service" 
+                scope="services:write"
+              />
+              <EndpointRow 
+                method="DELETE" 
+                path="/services/:id" 
+                description="Delete service" 
+                scope="services:write"
+              />
+            </div>
+            
+            <div className="mt-4 text-sm text-gray-600">
+              <strong>Query Parameters:</strong> page, limit (max 100), categoryId, search, isActive
+            </div>
+          </div>
+
+          {/* Appointments (Salons) */}
+          <div className="mb-12">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="h-5 w-5 text-indigo-600" />
+              <h3 className="text-xl font-semibold text-gray-900">Appointments <span className="text-sm font-normal text-gray-500">(Salons Only)</span></h3>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> These endpoints are only available for SALON businesses. For restaurants and retail stores, use the Orders endpoints instead.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <EndpointRow 
+                method="GET" 
+                path="/appointments" 
+                description="List all appointments (paginated)" 
+                scope="appointments:read"
+              />
+              <EndpointRow 
+                method="GET" 
+                path="/appointments/:id" 
+                description="Get single appointment" 
+                scope="appointments:read"
+              />
+              <EndpointRow 
+                method="POST" 
+                path="/appointments" 
+                description="Create new appointment" 
+                scope="appointments:write"
+              />
+              <EndpointRow 
+                method="PUT" 
+                path="/appointments/:id" 
+                description="Update appointment" 
+                scope="appointments:write"
+              />
+            </div>
+            
+            <div className="mt-4 text-sm text-gray-600">
+              <strong>Query Parameters:</strong> page, limit (max 100), status, from, to
             </div>
           </div>
 

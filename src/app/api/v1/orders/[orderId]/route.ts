@@ -22,6 +22,19 @@ export async function GET(
   const { auth } = authResult
 
   try {
+    // Check if business is a salon - redirect to appointments endpoint
+    const business = await prisma.business.findUnique({
+      where: { id: auth.businessId },
+      select: { businessType: true }
+    })
+
+    if (business?.businessType === 'SALON') {
+      return NextResponse.json(
+        { error: 'Orders endpoint is not available for SALON businesses. Use /appointments endpoint instead.' },
+        { status: 403 }
+      )
+    }
+
     const { orderId } = await params
 
     const order = await prisma.order.findFirst({

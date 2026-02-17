@@ -98,6 +98,19 @@ export async function PUT(
   const { auth } = authResult
 
   try {
+    // Check if business is a salon - redirect to services endpoint
+    const business = await prisma.business.findUnique({
+      where: { id: auth.businessId },
+      select: { businessType: true }
+    })
+
+    if (business?.businessType === 'SALON') {
+      return NextResponse.json(
+        { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
+        { status: 403 }
+      )
+    }
+
     const { productId } = await params
 
     // Verify product exists and belongs to this business
@@ -181,6 +194,19 @@ export async function DELETE(
   const { auth } = authResult
 
   try {
+    // Check if business is a salon - redirect to services endpoint
+    const business = await prisma.business.findUnique({
+      where: { id: auth.businessId },
+      select: { businessType: true }
+    })
+
+    if (business?.businessType === 'SALON') {
+      return NextResponse.json(
+        { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
+        { status: 403 }
+      )
+    }
+
     const { productId } = await params
 
     // Verify product exists and belongs to this business

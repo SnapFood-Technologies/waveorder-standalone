@@ -100,13 +100,14 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
         setLoading(true)
         setError(null)
         
-        // Fetch business data for currency
+        // Fetch business data for currency and business type
         const businessResponse = await fetch(`/api/admin/stores/${businessId}`)
         if (businessResponse.ok) {
           const businessData = await businessResponse.json()
           setBusiness({
             currency: businessData.business.currency || 'USD',
-            name: businessData.business.name || ''
+            name: businessData.business.name || '',
+            businessType: businessData.business.businessType || 'RESTAURANT'
           })
         }
 

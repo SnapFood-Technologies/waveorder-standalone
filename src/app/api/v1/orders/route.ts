@@ -19,6 +19,19 @@ export async function GET(request: NextRequest) {
   const { auth } = authResult
 
   try {
+    // Check if business is a salon - redirect to appointments endpoint
+    const businessCheck = await prisma.business.findUnique({
+      where: { id: auth.businessId },
+      select: { businessType: true }
+    })
+
+    if (businessCheck?.businessType === 'SALON') {
+      return NextResponse.json(
+        { error: 'Orders endpoint is not available for SALON businesses. Use /appointments endpoint instead.' },
+        { status: 403 }
+      )
+    }
+    
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Max 100

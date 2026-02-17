@@ -17,9 +17,7 @@ export default async function StaffAvailabilityPage({ params }: StaffAvailabilit
       redirectTo={`/admin/stores/${businessId}/dashboard`}
     >
       <SubscriptionGuard requiredPlan="BUSINESS">
-        <div className="p-6">
-          <StaffAvailabilityManagement businessId={businessId} />
-        </div>
+        <StaffAvailabilityManagement businessId={businessId} />
       </SubscriptionGuard>
     </BusinessTypeGuard>
   )

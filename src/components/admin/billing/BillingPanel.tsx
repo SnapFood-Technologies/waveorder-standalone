@@ -46,7 +46,7 @@ const getPlans = (isSalon: boolean) => ({
       '1 store/catalog',
       'Basic analytics',
       isSalon ? 'WhatsApp booking' : 'WhatsApp ordering',
-      'CSV import',
+      ...(isSalon ? [] : ['CSV import']), // CSV import only for products, not services
       'Email support',
     ]
   },
@@ -534,7 +534,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 { feature: isSalon ? 'Services' : 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
                 { feature: 'Stores/Catalogs', starter: '1', pro: '5', business: 'Unlimited' },
                 { feature: isSalon ? 'WhatsApp Appointments' : 'WhatsApp Orders', starter: '✅', pro: '✅', business: '✅' },
-                { feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' },
+                ...(isSalon ? [] : [{ feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' }]), // CSV import only for products, not services
                 { feature: 'Basic Analytics', starter: '✅', pro: '✅', business: '✅' },
                 { feature: 'Full Analytics', starter: '❌', pro: '✅', business: '✅' },
                 { feature: 'Customer Insights', starter: '❌', pro: '✅', business: '✅' },

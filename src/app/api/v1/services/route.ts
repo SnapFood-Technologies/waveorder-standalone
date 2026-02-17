@@ -1,63 +1,60 @@
-// src/app/api/v1/products/route.ts
+// src/app/api/v1/services/route.ts
 /**
- * Public API v1: Products endpoint
- * GET - List products
- * POST - Create product (requires products:write scope)
+ * Public API v1: Services endpoint (for SALON businesses)
+ * GET - List services
+ * POST - Create service (requires services:write scope)
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateApiRequest, addRateLimitHeaders } from '@/lib/api-auth'
 
 // ===========================================
-// GET - List Products
+// GET - List Services
 // ===========================================
 export async function GET(request: NextRequest) {
   // Authenticate request
-  const authResult = await authenticateApiRequest(request, 'products:read')
+  const authResult = await authenticateApiRequest(request, 'services:read')
   if (authResult instanceof NextResponse) {
     return authResult
   }
   const { auth } = authResult
 
   try {
-    // Check if business is a salon - redirect to services endpoint
+    // Check if business is a salon
     const business = await prisma.business.findUnique({
       where: { id: auth.businessId },
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if (business?.businessType !== 'SALON') {
       return NextResponse.json(
-        { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
+        { error: 'Services endpoint is only available for SALON businesses. Use /products endpoint for other business types.' },
         { status: 403 }
       )
     }
+
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Max 100
     const categoryId = searchParams.get('categoryId')
-    const brandId = searchParams.get('brandId')
     const search = searchParams.get('search')
     const isActive = searchParams.get('isActive')
     const offset = (page - 1) * limit
 
-    // Build where clause
+    // Build where clause - services are products with isService = true
     const where: any = {
-      businessId: auth.businessId
+      businessId: auth.businessId,
+      isService: true
     }
 
     if (categoryId) {
       where.categoryId = categoryId
     }
 
-    if (brandId) {
-      where.brandId = brandId
-    }
-
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } }
+        { description: { contains: search, mode: 'insensitive' } }
       ]
     }
 
@@ -65,8 +62,8 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive === 'true'
     }
 
-    // Fetch products
-    const [products, total] = await Promise.all([
+    // Fetch services
+    const [services, total] = await Promise.all([
       prisma.product.findMany({
         where,
         select: {
@@ -75,23 +72,24 @@ export async function GET(request: NextRequest) {
           description: true,
           price: true,
           originalPrice: true,
-          costPrice: true,
-          sku: true,
-          stock: true,
-          lowStockAlert: true,
-          trackInventory: true,
           images: true,
           isActive: true,
           featured: true,
           categoryId: true,
-          brandId: true,
-          variants: {
+          serviceDuration: true,
+          requiresAppointment: true,
+          modifiers: {
             select: {
               id: true,
               name: true,
               price: true,
-              stock: true,
-              sku: true
+              required: true
+            }
+          },
+          category: {
+            select: {
+              id: true,
+              name: true
             }
           },
           createdAt: true,
@@ -105,7 +103,7 @@ export async function GET(request: NextRequest) {
     ])
 
     const response = NextResponse.json({
-      products,
+      services,
       pagination: {
         page,
         limit,
@@ -117,38 +115,39 @@ export async function GET(request: NextRequest) {
     return addRateLimitHeaders(response, auth.id)
 
   } catch (error) {
-    console.error('API v1 Products GET error:', error)
+    console.error('API v1 Services GET error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { error: 'Failed to fetch services' },
       { status: 500 }
     )
   }
 }
 
 // ===========================================
-// POST - Create Product
+// POST - Create Service
 // ===========================================
 export async function POST(request: NextRequest) {
   // Authenticate request
-  const authResult = await authenticateApiRequest(request, 'products:write')
+  const authResult = await authenticateApiRequest(request, 'services:write')
   if (authResult instanceof NextResponse) {
     return authResult
   }
   const { auth } = authResult
 
   try {
-    // Check if business is a salon - redirect to services endpoint
+    // Check if business is a salon
     const business = await prisma.business.findUnique({
       where: { id: auth.businessId },
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if (business?.businessType !== 'SALON') {
       return NextResponse.json(
-        { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
+        { error: 'Services endpoint is only available for SALON businesses. Use /products endpoint for other business types.' },
         { status: 403 }
       )
     }
+
     const body = await request.json()
 
     // Validate required fields
@@ -178,8 +177,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create product
-    const product = await prisma.product.create({
+    // Create service (product with isService = true)
+    const service = await prisma.product.create({
       data: {
         businessId: auth.businessId,
         categoryId,
@@ -187,34 +186,31 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         price: parseFloat(price),
         originalPrice: body.originalPrice ? parseFloat(body.originalPrice) : null,
-        costPrice: body.costPrice ? parseFloat(body.costPrice) : null,
-        sku: body.sku || null,
-        stock: body.stock ? parseInt(body.stock) : 0,
-        lowStockAlert: body.lowStockAlert ? parseInt(body.lowStockAlert) : null,
-        trackInventory: body.trackInventory ?? true,
         images: body.images || [],
         isActive: body.isActive ?? true,
         featured: body.featured ?? false,
-        brandId: body.brandId || null
+        isService: true, // Mark as service
+        serviceDuration: body.serviceDuration ? parseInt(body.serviceDuration) : null,
+        requiresAppointment: body.requiresAppointment ?? true
       },
       select: {
         id: true,
         name: true,
         price: true,
-        sku: true,
-        stock: true,
+        serviceDuration: true,
+        requiresAppointment: true,
         isActive: true,
         createdAt: true
       }
     })
 
-    const response = NextResponse.json({ product }, { status: 201 })
+    const response = NextResponse.json({ service }, { status: 201 })
     return addRateLimitHeaders(response, auth.id)
 
   } catch (error) {
-    console.error('API v1 Products POST error:', error)
+    console.error('API v1 Services POST error:', error)
     return NextResponse.json(
-      { error: 'Failed to create product' },
+      { error: 'Failed to create service' },
       { status: 500 }
     )
   }

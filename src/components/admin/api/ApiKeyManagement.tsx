@@ -49,6 +49,8 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
   const [availableScopes, setAvailableScopes] = useState<AvailableScope[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
+  const isSalon = businessType === 'SALON'
   
   // Create key modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -90,7 +92,20 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
 
   useEffect(() => {
     fetchApiKeys()
+    fetchBusinessType()
   }, [fetchApiKeys])
+
+  const fetchBusinessType = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setBusinessType(data.business?.businessType || 'RESTAURANT')
+      }
+    } catch (error) {
+      console.error('Error fetching business type:', error)
+    }
+  }
 
   /**
    * Create a new API key
@@ -421,10 +436,21 @@ export function ApiKeyManagement({ businessId }: ApiKeyManagementProps) {
               <div>
                 <h4 className="font-medium text-gray-900 text-sm mb-1">Endpoints</h4>
                 <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• GET /products</li>
-                  <li>• GET /orders</li>
-                  <li>• GET /categories</li>
-                  <li>• GET /me</li>
+                  {isSalon ? (
+                    <>
+                      <li>• GET /services</li>
+                      <li>• GET /appointments</li>
+                      <li>• GET /categories</li>
+                      <li>• GET /me</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>• GET /products</li>
+                      <li>• GET /orders</li>
+                      <li>• GET /categories</li>
+                      <li>• GET /me</li>
+                    </>
+                  )}
                 </ul>
               </div>
               
