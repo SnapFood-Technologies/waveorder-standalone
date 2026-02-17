@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Search, ChevronLeft, ChevronRight, Eye, Percent } from 'lucide-react'
+import { useImpersonation } from '@/lib/impersonation'
 
 interface DiscountsListProps {
   businessId: string
@@ -34,6 +35,7 @@ interface Business {
 }
 
 export default function DiscountsList({ businessId }: DiscountsListProps) {
+  const { addParams } = useImpersonation(businessId)
   const [products, setProducts] = useState<DiscountedProduct[]>([])
   const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
   const [loading, setLoading] = useState(true)
@@ -247,9 +249,10 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
-                        href={business.businessType === 'SALON' 
-                          ? `${baseUrl}/services/${p.id}`
-                          : `${baseUrl}/products/${p.id}`}
+                        href={addParams(business.businessType === 'SALON' 
+                          ? `/admin/stores/${businessId}/services/${p.id}`
+                          : `/admin/stores/${businessId}/products/${p.id}`
+                        )}
                         className="inline-flex items-center px-2 py-1 text-teal-700 hover:text-teal-900"
                         title={business.businessType === 'SALON' ? 'View service' : 'View product'}
                       >

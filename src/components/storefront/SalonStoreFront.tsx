@@ -427,9 +427,21 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-900">
-                        {currencySymbol}{service.price.toFixed(2)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900">
+                          {currencySymbol}{service.price.toFixed(2)}
+                        </span>
+                        {service.originalPrice && service.originalPrice > service.price && (
+                          <>
+                            <span className="text-sm text-gray-500 line-through">
+                              {currencySymbol}{service.originalPrice.toFixed(2)}
+                            </span>
+                            <span className="bg-red-100 text-red-700 text-xs px-1.5 py-0.5 rounded-full font-medium">
+                              -{Math.round(((service.originalPrice - service.price) / service.originalPrice) * 100)}%
+                            </span>
+                          </>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()

@@ -729,7 +729,7 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Service Price * ({business.currency})
+                      Regular Price * ({business.currency})
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
@@ -739,18 +739,75 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                         type="number"
                         step="0.01"
                         required
-                        value={form.price || ''}
-                        onChange={(e) => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                        value={form.originalPrice || form.price || ''}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0
+                          if (!form.originalPrice) {
+                            setForm(prev => ({ ...prev, price: value }))
+                          } else {
+                            setForm(prev => ({ ...prev, originalPrice: value }))
+                          }
+                        }}
                         className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                         placeholder="0.00"
                       />
                     </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Your standard selling price
+                    </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Duration *
+                      Sale Price ({business.currency})
                     </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
+                        {getCurrencySymbol()}
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={form.originalPrice ? form.price || '' : ''}
+                        onChange={(e) => {
+                          const salePrice = parseFloat(e.target.value) || 0
+                          if (salePrice > 0) {
+                            if (!form.originalPrice) {
+                              setForm(prev => ({ 
+                                ...prev, 
+                                originalPrice: prev.price || 0, 
+                                price: salePrice 
+                              }))
+                            } else {
+                              setForm(prev => ({ ...prev, price: salePrice }))
+                            }
+                          } else {
+                            setForm(prev => ({ 
+                              ...prev, 
+                              price: prev.originalPrice || prev.price, 
+                              originalPrice: undefined
+                            }))
+                          }
+                        }}
+                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Discounted price (leave empty to use regular price)
+                    </p>
+                    {form.originalPrice && form.price < form.originalPrice && (
+                      <p className="text-xs text-teal-600 mt-1 font-medium">
+                        Discount: {Math.round(((form.originalPrice - form.price) / form.originalPrice) * 100)}% off
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duration *
+                  </label>
                     <select
                       required
                       value={form.serviceDuration || ''}
@@ -768,7 +825,6 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                       ))}
                       <option value="custom">Custom (enter minutes)</option>
                     </select>
-                  </div>
                 </div>
 
                 {form.serviceDuration === 0 && (

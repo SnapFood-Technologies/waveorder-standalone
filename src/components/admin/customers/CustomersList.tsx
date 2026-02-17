@@ -34,11 +34,12 @@ interface Pagination {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
-const SORT_OPTIONS = [
+const SORT_OPTIONS = (isSalon: boolean) => [
   { value: 'recent', label: 'Most Recent' },
-  { value: 'orders', label: 'Most Orders' },
+  { value: 'orders', label: isSalon ? 'Most Appointments' : 'Most Orders' },
   { value: 'spent', label: 'Highest Spent' },
   { value: 'name', label: 'Name (A-Z)' }
 ]
@@ -60,7 +61,8 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     total: 0,
     pages: 0
   })
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
+  const isSalon = business.businessType === 'SALON'
 
   // Fetch business data for currency
   useEffect(() => {
@@ -69,7 +71,10 @@ export default function CustomersList({ businessId }: CustomersListProps) {
         const response = await fetch(`/api/admin/stores/${businessId}`)
         if (response.ok) {
           const data = await response.json()
-          setBusiness({ currency: data.business.currency })
+          setBusiness({ 
+            currency: data.business.currency,
+            businessType: data.business.businessType || 'RESTAURANT'
+          })
         }
       } catch (error) {
         console.error('Error fetching business data:', error)
@@ -224,7 +229,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                 }}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
               >
-                {SORT_OPTIONS.map(option => (
+                {SORT_OPTIONS(isSalon).map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -306,13 +311,13 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Orders
+                      {isSalon ? 'Appointments' : 'Orders'}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Total Spent
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Order
+                      {isSalon ? 'Last Appointment' : 'Last Order'}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions

@@ -70,11 +70,25 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const [limitError, setLimitError] = useState<{ currentCount: number; limit: number; plan: string } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; pages: number } | null>(null)
+  const [isSalon, setIsSalon] = useState(false)
   const ITEMS_PER_PAGE = 20
 
   useEffect(() => {
+    fetchBusinessType()
     fetchCategories()
   }, [businessId, currentPage])
+
+  const fetchBusinessType = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsSalon(data.business?.businessType === 'SALON')
+      }
+    } catch (error) {
+      console.error('Error fetching business type:', error)
+    }
+  }
 
   const fetchCategories = async () => {
     try {
@@ -225,7 +239,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
           <p className="text-gray-600 mt-1">
-            Organize your products into categories
+            {isSalon ? 'Organize your services into categories' : 'Organize your products into categories'}
           </p>
         </div>
         
@@ -268,7 +282,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Products</p>
+              <p className="text-sm text-gray-600">{isSalon ? 'Total Services' : 'Total Products'}</p>
               <p className="text-2xl font-bold text-purple-600">
                 {totalProducts || categories.reduce((sum, c) => sum + (c.parentId ? 0 : c._count.products), 0)}
               </p>
@@ -284,7 +298,9 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
           <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No categories yet</h3>
           <p className="text-gray-600 mb-6">
-            Start organizing your products by creating your first category
+            {isSalon 
+              ? 'Start organizing your services by creating your first category'
+              : 'Start organizing your products by creating your first category'}
           </p>
           <button
             onClick={() => {
@@ -490,7 +506,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
                                   <p className="text-xs text-gray-600 mt-1">{child.description}</p>
                                 )}
                                 <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
-                                  <span>{child._count.products} product(s)</span>
+                                  <span>{child._count.products} {isSalon ? 'service(s)' : 'product(s)'}</span>
                                   <span>Sort: {child.sortOrder}</span>
                                 </div>
                               </div>
@@ -682,6 +698,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
           isDeleting={isDeleting}
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
+          isSalon={isSalon}
         />
       )}
     </div>
@@ -694,9 +711,10 @@ interface DeleteConfirmationModalProps {
   isDeleting: boolean
   onConfirm: (confirmationText?: string) => void
   onCancel: () => void
+  isSalon: boolean
 }
 
-function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: DeleteConfirmationModalProps) {
+function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel, isSalon }: DeleteConfirmationModalProps) {
   const [confirmationText, setConfirmationText] = useState('')
   const hasProducts = category._count.products > 0
   const hasChildren = (category._count.children || 0) > 0
@@ -759,10 +777,10 @@ function DeleteConfirmationModal({ category, isDeleting, onConfirm, onCancel }: 
                   <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-red-800">
-                      Warning: This category contains {category._count.products} product(s)
+                      Warning: This category contains {category._count.products} {isSalon ? 'service(s)' : 'product(s)'}
                     </p>
                     <p className="text-xs text-red-700 mt-1">
-                      Deleting this category will also permanently delete all products within it. This action cannot be undone.
+                      Deleting this category will also permanently delete all {isSalon ? 'services' : 'products'} within it. This action cannot be undone.
                     </p>
                   </div>
                 </div>

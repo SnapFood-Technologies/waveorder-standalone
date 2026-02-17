@@ -12,7 +12,7 @@ import {
   X,
   Eye
 } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek, isToday } from 'date-fns'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 
@@ -143,7 +143,13 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
   }
 
   const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1))
+    if (viewMode === 'month') {
+      setCurrentDate(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1))
+    } else if (viewMode === 'week') {
+      setCurrentDate(prev => direction === 'prev' ? subWeeks(prev, 1) : addWeeks(prev, 1))
+    } else if (viewMode === 'day') {
+      setCurrentDate(prev => direction === 'prev' ? subDays(prev, 1) : addDays(prev, 1))
+    }
   }
 
   const goToToday = () => {

@@ -177,6 +177,9 @@ export async function GET(
         }
       })
     } else {
+      // For non-salons: Count all orders in the date range
+      totalOrders = allOrders.length
+      
       // For non-salons: Revenue includes orders that are paid and completed/fulfilled:
       // - DELIVERY orders: DELIVERED + PAID (final status)
       // - PICKUP orders: PICKED_UP + PAID (final status - only when actually picked up)
