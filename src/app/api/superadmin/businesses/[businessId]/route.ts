@@ -327,9 +327,10 @@ export async function GET(
           authMethod
         } : null,
         stats: {
-          // For salons, include appointments in totalOrders; for non-salons, just orders
+          // For salons, count appointments only (appointments are linked to orders, so don't double-count)
+          // For non-salons, count orders
           totalOrders: isSalon 
-            ? (business as any)._count.orders + (business as any)._count.appointments
+            ? (business as any)._count.appointments
             : (business as any)._count.orders,
           totalRevenue,
           totalCustomers: (business as any)._count.customers,

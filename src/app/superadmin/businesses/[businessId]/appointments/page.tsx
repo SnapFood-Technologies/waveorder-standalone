@@ -153,12 +153,14 @@ export default function BusinessAppointmentsStatsPage() {
       const response = await fetch(`/api/superadmin/businesses/${businessId}/appointments/stats?${params}`)
       
       if (!response.ok) {
-        throw new Error('Failed to fetch business appointment stats')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `Failed to fetch business appointment stats (${response.status})`)
       }
 
       const result = await response.json()
       setData(result)
     } catch (err) {
+      console.error('Error fetching appointment stats:', err)
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setLoading(false)
