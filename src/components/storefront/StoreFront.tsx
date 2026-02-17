@@ -1810,6 +1810,7 @@ interface StoreData {
   bannerSubtitle?: string | null
   bannerIcon?: string | null
   bannerFontSize?: string
+  rememberCustomerEnabled?: boolean
 }
 
 interface Category {
@@ -2238,6 +2239,25 @@ const trackProductEvent = useCallback((
     city: undefined,
     postalCode: undefined
   })
+
+  // Load saved customer info from localStorage if feature is enabled for this business
+  useEffect(() => {
+    if (!storeData.rememberCustomerEnabled) return
+    try {
+      const saved = localStorage.getItem(`customer_info_${storeData.slug}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setCustomerInfo(prev => ({
+          ...prev,
+          name: parsed.name || '',
+          phone: parsed.phone || '',
+          email: parsed.email || ''
+        }))
+      }
+    } catch (e) {
+      // Silently ignore parse errors
+    }
+  }, [storeData.slug, storeData.rememberCustomerEnabled])
   
   // Postal pricing state (for RETAIL businesses)
   const [postalPricingOptions, setPostalPricingOptions] = useState<any[]>([])
@@ -3593,6 +3613,19 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         }
         setCart([])
         setShowCartModal(false)
+
+        // Save customer info for returning customers (only if enabled for this business)
+        if (storeData.rememberCustomerEnabled && typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`customer_info_${storeData.slug}`, JSON.stringify({
+              name: customerInfo.name,
+              phone: customerInfo.phone,
+              email: customerInfo.email
+            }))
+          } catch (e) {
+            // Silently ignore quota or storage errors
+          }
+        }
         
         // Reset customer info form
         setCustomerInfo({

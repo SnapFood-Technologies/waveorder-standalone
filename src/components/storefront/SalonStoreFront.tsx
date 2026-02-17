@@ -105,6 +105,7 @@ interface StoreData {
   bannerSubtitle?: string | null
   bannerIcon?: string | null
   bannerFontSize?: string
+  rememberCustomerEnabled?: boolean
 }
 
 interface Service {
@@ -462,6 +463,26 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     invoiceCompanyName: '',
     invoiceTaxOffice: ''
   })
+
+  // Load saved customer info from localStorage if feature is enabled for this business
+  useEffect(() => {
+    if (!storeData.rememberCustomerEnabled) return
+    try {
+      const saved = localStorage.getItem(`customer_info_${storeData.slug}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setCustomerInfo(prev => ({
+          ...prev,
+          name: parsed.name || '',
+          phone: parsed.phone || '',
+          email: parsed.email || ''
+        }))
+      }
+    } catch (e) {
+      // Silently ignore parse errors
+    }
+  }, [storeData.slug, storeData.rememberCustomerEnabled])
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [priceMin, setPriceMin] = useState<number | ''>('')
@@ -1035,6 +1056,19 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       // Open WhatsApp if not direct notification (traditional wa.me flow)
       if (!result.directNotification && result.whatsappUrl) {
         window.open(result.whatsappUrl, '_blank')
+      }
+
+      // Save customer info for returning customers (only if enabled for this business)
+      if (storeData.rememberCustomerEnabled && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`customer_info_${storeData.slug}`, JSON.stringify({
+            name: customerInfo.name,
+            phone: customerInfo.phone,
+            email: customerInfo.email
+          }))
+        } catch (e) {
+          // Silently ignore quota or storage errors
+        }
       }
 
       // Reset form

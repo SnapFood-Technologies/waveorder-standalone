@@ -722,6 +722,9 @@ export async function GET(
       bannerIcon: business.bannerIcon || null,
       bannerFontSize: business.bannerFontSize || 'md',
       
+      // Customer convenience
+      rememberCustomerEnabled: business.rememberCustomerEnabled || false,
+      
       // Settings
       currency: business.currency,
       timezone: business.timezone,

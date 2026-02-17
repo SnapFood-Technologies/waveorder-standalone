@@ -1512,6 +1512,9 @@ export default function BusinessDetailsPage() {
           {/* Affiliate System Settings */}
           <AffiliateSystemSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* Remember Customer Settings */}
+          <RememberCustomerSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
             <CustomDomainSection business={business} />
@@ -3090,6 +3093,91 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Remember Customer Settings Section Component (SuperAdmin toggle only)
+function RememberCustomerSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: any
+  onUpdate: () => void 
+}) {
+  const [rememberCustomerEnabled, setRememberCustomerEnabled] = useState(business.rememberCustomerEnabled || false)
+  const [updating, setUpdating] = useState(false)
+
+  const toggleRememberCustomer = async () => {
+    setUpdating(true)
+    const newValue = !rememberCustomerEnabled
+
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rememberCustomerEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setRememberCustomerEnabled(newValue)
+        toast.success(newValue ? 'Remember Customer enabled' : 'Remember Customer disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Failed to update setting')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <UserCheck className="w-5 h-5 mr-2 text-blue-600" />
+        Remember Customer
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Remember Customer Info</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, returning customers&apos; name, phone, and email will be saved in their browser after a successful order. 
+            The form will be pre-filled on their next visit for faster checkout. Customers can always edit their details.
+          </p>
+        </div>
+        <button
+          onClick={toggleRememberCustomer}
+          disabled={updating}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            rememberCustomerEnabled ? 'bg-blue-600' : 'bg-gray-200'
+          } ${updating ? 'opacity-50' : ''}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            rememberCustomerEnabled ? 'translate-x-5' : 'translate-x-0'
+          }`} />
+        </button>
+      </div>
+      
+      {rememberCustomerEnabled && (
+        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-700">
+            <span className="font-medium">Enabled:</span> Customer details (name, phone, email) will be saved in the browser after successful orders. 
+            Data is stored per-store and only in the customer&apos;s browser — no server-side storage.
+          </p>
+        </div>
+      )}
+      
+      {!rememberCustomerEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Customer information is not saved between sessions.
           </p>
         </div>
       )}

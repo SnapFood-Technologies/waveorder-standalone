@@ -279,6 +279,7 @@ model Business {
   timeFormat                         String  @default("24") // "12" for 12-hour format, "24" for 24-hour format
   translateContentToBusinessLanguage Boolean @default(true) // Translate customer-facing content to business language
   hideProductsWithoutPhotos          Boolean @default(false) // Hide products without photos from storefront
+  rememberCustomerEnabled            Boolean @default(false) // Save returning customer info in browser for faster checkout
 
   // Uncategorized category name override (for storefront display only)
   uncategorizedNameOverride   String? // Override "Uncategorized" name in English for storefront
