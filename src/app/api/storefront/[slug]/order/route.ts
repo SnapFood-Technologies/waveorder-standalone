@@ -974,28 +974,64 @@ export async function POST(
     })
     Sentry.setTag('delivery_type', orderData.deliveryType)
 
+    // Helper to log validation errors to internal system logs
+    const logValidationError = (errorMsg: string) => {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+
+      logSystemEvent({
+        logType: 'order_validation_error',
+        severity: 'warning',
+        slug,
+        businessId: business.id,
+        endpoint: '/api/storefront/[slug]/order',
+        method: 'POST',
+        statusCode: 400,
+        errorMessage: errorMsg,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: actualUrl,
+        metadata: {
+          deliveryType: orderData.deliveryType,
+          itemCount: orderData.items?.length || 0,
+          hasCustomerName: !!customerName,
+          hasCustomerPhone: !!customerPhone,
+          businessType: business.businessType,
+        }
+      })
+    }
+
     // Validate required fields
     if (!customerName || !customerName.trim()) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
+      logValidationError('Customer name is required')
       return NextResponse.json({ error: 'Customer name is required' }, { status: 400 })
     }
 
     if (!customerPhone || !customerPhone.trim()) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
+      logValidationError('Customer phone is required')
       return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
     }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
+      logValidationError('At least one item is required')
       return NextResponse.json({ error: 'At least one item is required' }, { status: 400 })
     }
 
     if (!deliveryType) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
+      logValidationError('Delivery type is required')
       return NextResponse.json({ error: 'Delivery type is required' }, { status: 400 })
     }
 

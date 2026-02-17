@@ -603,16 +603,16 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const prevDebouncedSearchTermRef = useRef('')
 
   // Track if this is the initial mount to avoid refetching when we have initialProducts
-  const [isInitialMount, setIsInitialMount] = useState(true)
+  const isInitialMountRef = useRef(true)
 
   // Fetch services on filter changes (reset to page 1)
   useEffect(() => {
     // Skip on initial mount if we have initial services from server
-    if (isInitialMount && initialServices.length > 0) {
-      setIsInitialMount(false)
+    if (isInitialMountRef.current && initialServices.length > 0) {
+      isInitialMountRef.current = false
       return
     }
-    setIsInitialMount(false)
+    isInitialMountRef.current = false
 
     fetchServices(1, true)
     setDisplayedServicesCount(SERVICES_PER_PAGE)
@@ -835,19 +835,17 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           price: item.service.price,
           name: item.service.name
         })),
-        customer: {
-          name: customerInfo.name,
-          phone: customerInfo.phone,
-          email: customerInfo.email || undefined
-        },
+        customerName: customerInfo.name,
+        customerPhone: customerInfo.phone,
+        customerEmail: customerInfo.email || undefined,
         deliveryType: 'dineIn', // Salon appointments are in-salon
         deliveryTime: appointmentDateTime.toISOString(),
         specialInstructions: customerInfo.notes,
-        invoiceType: customerInfo.invoiceType || null, // Invoice/Receipt selection (for Greek storefronts)
+        invoiceType: customerInfo.invoiceType || null,
         invoiceAfm: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceAfm || null) : null,
         invoiceCompanyName: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceCompanyName || null) : null,
         invoiceTaxOffice: customerInfo.invoiceType === 'INVOICE' ? (customerInfo.invoiceTaxOffice || null) : null,
-        paymentMethod: 'Cash', // Default, can be updated
+        paymentMethod: 'Cash',
         total: total,
         subtotal: total,
         deliveryFee: 0
