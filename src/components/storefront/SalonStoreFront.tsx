@@ -668,12 +668,14 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
 
   const formatDuration = (minutes: number) => {
     if (!minutes) return ''
-    const hours = Math.floor(minutes / 60)
+    const hoursVal = Math.floor(minutes / 60)
     const mins = minutes % 60
-    if (hours > 0) {
-      return `${hours}h ${mins > 0 ? `${mins}min` : ''}`.trim()
+    const hLabel = translations.durationHours || 'h'
+    const mLabel = translations.durationMins || 'min'
+    if (hoursVal > 0) {
+      return `${hoursVal}${hLabel} ${mins > 0 ? `${mins}${mLabel}` : ''}`.trim()
     }
-    return `${mins}min`
+    return `${mins}${mLabel}`
   }
 
   // Handle shared service from URL parameters
@@ -1083,7 +1085,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
             <div className="py-3 flex flex-wrap gap-2">
               {priceMin !== '' && (
                 <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-2">
-                  Min: {currencySymbol}{priceMin}
+                  {translations.minPrice || 'Min'}: {currencySymbol}{priceMin}
                   <button onClick={() => setPriceMin('')} className="hover:text-gray-900">
                     <X className="w-3 h-3" />
                   </button>
@@ -1091,7 +1093,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
               )}
               {priceMax !== '' && (
                 <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-2">
-                  Max: {currencySymbol}{priceMax}
+                  {translations.maxPrice || 'Max'}: {currencySymbol}{priceMax}
                   <button onClick={() => setPriceMax('')} className="hover:text-gray-900">
                     <X className="w-3 h-3" />
                   </button>
@@ -1511,7 +1513,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                   {/* Description */}
                   {(selectedService.description || (useAlbanian && selectedService.descriptionAl) || (useGreek && selectedService.descriptionEl)) && (
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Description</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">{translations.description || 'Description'}</h3>
                       <p className="text-gray-700 whitespace-pre-wrap">
                         {useAlbanian && selectedService.descriptionAl ? selectedService.descriptionAl :
                          useGreek && selectedService.descriptionEl ? selectedService.descriptionEl :
@@ -1550,7 +1552,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           <div className="max-w-md mx-auto flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-900">
-                {bookingItems.length} {bookingItems.length > 1 ? 'services' : 'service'}
+                {bookingItems.length} {bookingItems.length > 1 ? (translations.servicePlural || 'services') : (translations.serviceSingular || 'service')}
               </p>
               <p className="text-xs text-gray-600">
                 {formatDuration(totalDuration)} • {currencySymbol}{total.toFixed(2)}
@@ -1880,7 +1882,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                 </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
                 {/* Selected Services */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">{translations.selectedServices || 'Selected Services'}</h3>
@@ -2459,7 +2461,15 @@ function BusinessInfoModal({
     if (!businessHours) return null
     
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-    const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const dayLabels = [
+      translations.dayMon || 'Mon',
+      translations.dayTue || 'Tue',
+      translations.dayWed || 'Wed',
+      translations.dayThu || 'Thu',
+      translations.dayFri || 'Fri',
+      translations.daySat || 'Sat',
+      translations.daySun || 'Sun'
+    ]
     const today = new Date().getDay()
     const todayIndex = today === 0 ? 6 : today - 1 // Convert Sunday=0 to our array index
     
@@ -2473,12 +2483,12 @@ function BusinessInfoModal({
           <span className={`text-sm font-medium ${
             isToday ? 'text-blue-900' : 'text-gray-700'
           }`}>
-            {dayLabels[index]} {isToday && '(Today)'}
+            {dayLabels[index]} {isToday && `(${translations.todayLabel || 'Today'})`}
           </span>
           <span className={`text-sm ${
             isToday ? 'text-blue-700 font-medium' : 'text-gray-600'
           }`}>
-            {hours?.closed ? 'Closed' : `${hours?.open} - ${hours?.close}`}
+            {hours?.closed ? (translations.closedLabel || 'Closed') : `${hours?.open} - ${hours?.close}`}
           </span>
         </div>
       )
@@ -2623,7 +2633,7 @@ function ShareModal({
   if (!isOpen) return null
 
   const storeUrl = typeof window !== 'undefined' ? window.location.href : ''
-  const shareText = `Check out ${storeData.name}! Book your appointment online.`
+  const shareText = (translations.shareStoreText || 'Check out {name}! Book your appointment online.').replace('{name}', storeData.name)
   
   const copyToClipboard = async () => {
     try {
@@ -2684,7 +2694,7 @@ function ShareModal({
       icon: Mail,
       color: 'bg-gray-600 hover:bg-gray-700',
       action: () => {
-        const subject = `Check out ${storeData.name}`
+        const subject = (translations.shareStoreSubject || 'Check out {name}').replace('{name}', storeData.name)
         const body = `${shareText}\n\n${storeUrl}`
         window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank')
       }
@@ -2769,7 +2779,7 @@ function ShareModal({
                 className="w-full flex items-center justify-center px-4 py-3 border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Share2 className="w-4 h-4 mr-2" />
-                {translations.shareViaNative || 'Share via...'}
+                {translations.moreSharingOptions || 'More sharing options...'}
               </button>
             </div>
           )}

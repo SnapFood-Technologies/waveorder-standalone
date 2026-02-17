@@ -89,6 +89,9 @@ inCartLabel: string
     emailPlaceholder: string
     linkCopied: string
     moreSharingOptions: string
+    shareViaNative: string
+    shareStoreText: string
+    shareStoreSubject: string
 
     inCartAvailable: string
 onlyStockAvailable: string
@@ -290,6 +293,28 @@ close: string
     bookViaWhatsapp: string
     addToBooking: string
     specialRequests: string
+
+    // Duration units (for salon service durations)
+    durationHours: string
+    durationMins: string
+
+    // Salon bottom cart bar
+    serviceSingular: string
+    servicePlural: string
+
+    // Service modal
+    description: string
+
+    // Day labels (abbreviated)
+    dayMon: string
+    dayTue: string
+    dayWed: string
+    dayThu: string
+    dayFri: string
+    daySat: string
+    daySun: string
+    todayLabel: string
+    closedLabel: string
     
     // Invoice/Receipt Selection (for Greek storefronts)
     invoiceOrReceipt: string
@@ -363,6 +388,9 @@ itemOutOfStockOrMaxQuantity: "Sorry, this item is out of stock or already at max
     emailPlaceholder: "your.email@example.com",
     linkCopied: "Link copied to clipboard!",
     moreSharingOptions: "More sharing options",
+    shareViaNative: "More sharing options...",
+    shareStoreText: "Check out {name}! Book your appointment online.",
+    shareStoreSubject: "Check out {name}",
 
     // English translations:
     now: "Now",
@@ -602,6 +630,28 @@ canBeAdded: "more can be added to cart",
     bookViaWhatsapp: "Book via WhatsApp",
     addToBooking: "Add to Booking",
     specialRequests: "Any special requests...",
+
+    // Duration units
+    durationHours: "h",
+    durationMins: "min",
+
+    // Salon bottom cart bar
+    serviceSingular: "service",
+    servicePlural: "services",
+
+    // Service modal
+    description: "Description",
+
+    // Day labels (abbreviated)
+    dayMon: "Mon",
+    dayTue: "Tue",
+    dayWed: "Wed",
+    dayThu: "Thu",
+    dayFri: "Fri",
+    daySat: "Sat",
+    daySun: "Sun",
+    todayLabel: "Today",
+    closedLabel: "Closed",
     
     // Invoice/Receipt Selection (for Greek storefronts)
     invoiceOrReceipt: "Invoice or Receipt",
@@ -649,6 +699,9 @@ canBeAdded: "more can be added to cart",
     emailPlaceholder: "email.juaj@shembull.com",
     linkCopied: "Linku u kopjua në clipboard!",
     moreSharingOptions: "Më shumë opsione",
+    shareViaNative: "Më shumë opsione...",
+    shareStoreText: "Shiko {name}! Rezervo takimin tënd online.",
+    shareStoreSubject: "Shiko {name}",
 
     onlyMoreCanBeAdded: "Vetëm {count} më shumë mund të shtohen në shportë",
 stockLabel: "Stoku",
@@ -910,6 +963,28 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     bookViaWhatsapp: "Rezervo përmes WhatsApp",
     addToBooking: "Shto në Rezervim",
     specialRequests: "Kërkesa të veçanta...",
+
+    // Duration units
+    durationHours: "orë",
+    durationMins: "min",
+
+    // Salon bottom cart bar
+    serviceSingular: "shërbim",
+    servicePlural: "shërbime",
+
+    // Service modal
+    description: "Përshkrimi",
+
+    // Day labels (abbreviated)
+    dayMon: "Hën",
+    dayTue: "Mar",
+    dayWed: "Mër",
+    dayThu: "Enj",
+    dayFri: "Pre",
+    daySat: "Sht",
+    daySun: "Die",
+    todayLabel: "Sot",
+    closedLabel: "Mbyllur",
     
     // Invoice/Receipt Selection (for Greek storefronts)
     invoiceOrReceipt: "Faturë ose Faturë",
@@ -984,6 +1059,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     emailPlaceholder: "tu.email@ejemplo.com",
     linkCopied: "¡Enlace copiado al portapapeles!",
     moreSharingOptions: "Más opciones de compartir",
+    shareViaNative: "Más opciones para compartir...",
+    shareStoreText: "¡Descubre {name}! Reserva tu cita en línea.",
+    shareStoreSubject: "Descubre {name}",
 
     // Spanish translations:
     now: "Ahora",
@@ -1218,6 +1296,28 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     bookViaWhatsapp: "Reservar por WhatsApp",
     addToBooking: "Añadir a Reserva",
     specialRequests: "Solicitudes especiales...",
+
+    // Duration units
+    durationHours: "h",
+    durationMins: "min",
+
+    // Salon bottom cart bar
+    serviceSingular: "servicio",
+    servicePlural: "servicios",
+
+    // Service modal
+    description: "Descripción",
+
+    // Day labels (abbreviated)
+    dayMon: "Lun",
+    dayTue: "Mar",
+    dayWed: "Mié",
+    dayThu: "Jue",
+    dayFri: "Vie",
+    daySat: "Sáb",
+    daySun: "Dom",
+    todayLabel: "Hoy",
+    closedLabel: "Cerrado",
     
     // Invoice/Receipt Selection (for Greek storefronts)
     invoiceOrReceipt: "Factura o Recibo",
@@ -1274,7 +1374,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     
     // Form Fields
     name: "Όνομα",
-    whatsappNumber: "Αριθμός WhatsApp",
+    whatsappNumber: "Αριθμός Τηλεφώνου",
     phone: "Τηλέφωνο",
     email: "Email",
     notes: "Σημειώσεις",
@@ -1323,6 +1423,9 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     emailPlaceholder: "το.email@παράδειγμα.com",
     linkCopied: "Ο σύνδεσμος αντιγράφηκε στο πρόχειρο!",
     moreSharingOptions: "Περισσότερες επιλογές κοινοποίησης",
+    shareViaNative: "Περισσότερες επιλογές...",
+    shareStoreText: "Δείτε το {name}! Κλείστε ραντεβού online.",
+    shareStoreSubject: "Δείτε το {name}",
 
     // Greek translations:
     now: "Τώρα",
@@ -1525,9 +1628,31 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     appointmentDate: "Ημερομηνία Ραντεβού",
     appointmentTime: "Ώρα Ραντεβού",
     submitting: "Υποβολή...",
-    bookViaWhatsapp: "Κράτηση μέσω WhatsApp",
+    bookViaWhatsapp: "Κράτηση Ραντεβού",
     addToBooking: "Προσθήκη σε Κράτηση",
     specialRequests: "Ειδικές αιτήσεις...",
+
+    // Duration units
+    durationHours: "ώ",
+    durationMins: "λεπ",
+
+    // Salon bottom cart bar
+    serviceSingular: "υπηρεσία",
+    servicePlural: "υπηρεσίες",
+
+    // Service modal
+    description: "Περιγραφή",
+
+    // Day labels (abbreviated)
+    dayMon: "Δευ",
+    dayTue: "Τρί",
+    dayWed: "Τετ",
+    dayThu: "Πέμ",
+    dayFri: "Παρ",
+    daySat: "Σάβ",
+    daySun: "Κυρ",
+    todayLabel: "Σήμερα",
+    closedLabel: "Κλειστό",
     
     // Invoice/Receipt Selection (for Greek storefronts)
     invoiceOrReceipt: "Τιμολόγιο ή Απόδειξη",

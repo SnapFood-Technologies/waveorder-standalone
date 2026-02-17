@@ -1051,7 +1051,15 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
       if (!businessHours) return null
       
       const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-      const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+      const dayLabels = [
+        translations.dayMon || 'Mon',
+        translations.dayTue || 'Tue',
+        translations.dayWed || 'Wed',
+        translations.dayThu || 'Thu',
+        translations.dayFri || 'Fri',
+        translations.daySat || 'Sat',
+        translations.daySun || 'Sun'
+      ]
       const today = new Date().getDay()
       const todayIndex = today === 0 ? 6 : today - 1 // Convert Sunday=0 to our array index
       
@@ -1065,12 +1073,12 @@ function detectCountryFromBusiness(storeData: any): 'AL' | 'US' | 'GR' | 'IT' | 
             <span className={`text-sm font-medium ${
               isToday ? 'text-blue-900' : 'text-gray-700'
             }`}>
-              {dayLabels[index]} {isToday && '(Today)'}
+              {dayLabels[index]} {isToday && `(${translations.todayLabel || 'Today'})`}
             </span>
             <span className={`text-sm ${
               isToday ? 'text-blue-700 font-medium' : 'text-gray-600'
             }`}>
-              {hours?.closed ? 'Closed' : `${hours?.open} - ${hours?.close}`}
+              {hours?.closed ? (translations.closedLabel || 'Closed') : `${hours?.open} - ${hours?.close}`}
             </span>
           </div>
         )
