@@ -150,11 +150,17 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
   const currencySymbol = getCurrencySymbol(businessData.currency)
   const demoProducts = getDemoProducts(businessData.businessType)
 
-  const categories = [
-    { id: 'all', name: 'All' },
-    { id: 'popular', name: 'Popular' },
-    { id: 'specials', name: 'Specials' }
-  ]
+  const categories = isSalon 
+    ? [
+        { id: 'all', name: 'All' },
+        { id: 'popular', name: 'Popular' },
+        { id: 'hair', name: 'Hair Services' }
+      ]
+    : [
+        { id: 'all', name: 'All' },
+        { id: 'popular', name: 'Popular' },
+        { id: 'specials', name: 'Specials' }
+      ]
 
   const addToCart = () => {
     setCartCount(prev => prev + 1)
@@ -736,7 +742,7 @@ if (isMobile && device === 'mobile') {
               </div>
               
               <div className="text-xs text-gray-600 mb-2">
-                {businessData.description || 'Fresh food delivered to your door'}
+                {businessData.description || (isSalon ? 'Professional beauty services, book online' : 'Fresh food delivered to your door')}
               </div>
               
               <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
@@ -794,7 +800,7 @@ if (isMobile && device === 'mobile') {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search dishes..."
+                placeholder={isSalon ? "Search services..." : "Search dishes..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-8 pr-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-2 transition-colors"
