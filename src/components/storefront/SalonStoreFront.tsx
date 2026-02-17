@@ -14,6 +14,7 @@ import {
   Globe,
   Info,
   AlertCircle,
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
@@ -151,6 +152,83 @@ const getSessionId = () => {
   return sessionId
 }
 
+// Error Message Component
+function ErrorMessage({ 
+  isVisible, 
+  onClose, 
+  message, 
+  type = 'error',
+  primaryColor, 
+  translations 
+}: {
+  isVisible: boolean
+  onClose: () => void
+  message: string
+  type?: 'error' | 'warning' | 'info'
+  primaryColor: string
+  translations: any
+}) {
+  if (!isVisible) return null
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'error':
+        return {
+          bg: 'bg-red-50',
+          border: 'border-red-200',
+          iconBg: 'bg-red-100',
+          iconColor: 'text-red-600',
+          textColor: 'text-red-800',
+          icon: AlertCircle
+        }
+      case 'warning':
+        return {
+          bg: 'bg-orange-50',
+          border: 'border-orange-200',
+          iconBg: 'bg-orange-100',
+          iconColor: 'text-orange-600',
+          textColor: 'text-orange-800',
+          icon: AlertTriangle
+        }
+      default:
+        return {
+          bg: 'bg-blue-50',
+          border: 'border-blue-200',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-600',
+          textColor: 'text-blue-800',
+          icon: Info
+        }
+    }
+  }
+
+  const styles = getTypeStyles()
+  const IconComponent = styles.icon
+
+  return (
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+      <div className={`${styles.bg} ${styles.border} border rounded-xl shadow-xl p-4 sm:p-6`}>
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 ${styles.iconBg} rounded-full flex items-center justify-center flex-shrink-0`}>
+            <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${styles.iconColor}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm sm:text-base ${styles.textColor} leading-relaxed`}>
+              {message}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SalonStoreFront({ storeData }: { storeData: StoreData }) {
   const searchParams = useSearchParams()
   
@@ -277,6 +355,22 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const [showLegalPagesModal, setShowLegalPagesModal] = useState(false)
   const [legalPagesData, setLegalPagesData] = useState<any>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+  
+  // Error message state
+  const [errorMessage, setErrorMessage] = useState<{
+    visible: boolean
+    message: string
+    type?: 'error' | 'warning' | 'info'
+  } | null>(null)
+
+  // Show error helper function - memoized to avoid dependency issues
+  const showError = useCallback((message: string, type: 'error' | 'warning' | 'info' = 'error') => {
+    setErrorMessage({ visible: true, message, type })
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+      setErrorMessage(null)
+    }, 5000)
+  }, [])
   
   // Scroll to top button visibility
   useEffect(() => {
@@ -419,9 +513,24 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       }
       
       const response = await fetch(`/api/storefront/${storeData.slug}/products?${params.toString()}`)
-      if (!response.ok) throw new Error('Failed to fetch services')
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorMessage = 'Failed to fetch services'
+        try {
+          const errorData = JSON.parse(errorText)
+          errorMessage = errorData.error || errorData.message || errorMessage
+        } catch {
+          // If response is not JSON, use default message
+        }
+        throw new Error(errorMessage)
+      }
       
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        throw new Error('Invalid response from server')
+      }
       // Filter for services only (isService: true)
       let servicesData = (data.products || []).filter((p: any) => p.isService === true)
       
@@ -458,12 +567,17 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching services:', error)
-      setServicesError('Failed to load services. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : 'Failed to load services. Please try again.'
+      setServicesError(errorMsg)
+      // Don't show error toast for initial load failures, only for user-initiated actions
+      if (page > 1 || debouncedSearchTerm.trim().length >= 3) {
+        showError(errorMsg, 'error')
+      }
     } finally {
       setServicesLoading(false)
       isFetchingRef.current = false
     }
-  }, [selectedCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, storeData.slug, lang])
+  }, [selectedCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, storeData.slug, lang, showError])
 
   // Debounce search term - wait 400ms after user stops typing
   useEffect(() => {
@@ -722,11 +836,19 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         body: JSON.stringify(orderData)
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to submit booking')
+      let result
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        showError(translations.failedToSubmitOrder || translations.failedToCreateOrder || 'Failed to submit booking. Please try again.', 'error')
+        return
       }
 
-      const result = await response.json()
+      if (!response.ok) {
+        const errorMsg = result.error || result.message || (translations.failedToSubmitOrder || 'Failed to submit booking. Please try again.')
+        showError(errorMsg, 'error')
+        return
+      }
       
       // Track booking submission
       bookingItems.forEach(item => {
@@ -750,7 +872,8 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       setCustomerInfo({ name: '', phone: '', email: '', notes: '', invoiceType: '' as '', invoiceAfm: '', invoiceCompanyName: '', invoiceTaxOffice: '' })
     } catch (error) {
       console.error('Error submitting booking:', error)
-      alert('Failed to submit booking. Please try again.')
+      const errorMsg = error instanceof Error ? error.message : (translations.failedToSubmitOrder || 'Failed to submit booking. Please try again.')
+      showError(errorMsg, 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -788,6 +911,18 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
+      {/* Error Message */}
+      {errorMessage && (
+        <ErrorMessage
+          isVisible={errorMessage.visible}
+          onClose={() => setErrorMessage(null)}
+          message={errorMessage.message}
+          type={errorMessage.type || 'error'}
+          primaryColor={primaryColor}
+          translations={translations}
+        />
+      )}
+
       {/* Header Section - Matching StoreFront */}
       <div className="bg-white">
         <div className="max-w-[75rem] mx-auto">
@@ -1025,11 +1160,31 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
             <p className="mt-4 text-gray-600">{translations.loading || 'Loading...'}</p>
           </div>
-        ) : services.length === 0 ? (
+        ) : servicesError ? (
           <div className="text-center py-12">
-            <Scissors className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">{translations.noProductsFound || 'No services found'}</p>
+            <AlertCircle className="w-16 h-16 text-red-300 mx-auto mb-4" />
+            <p className="text-gray-900 font-semibold mb-2">{'Error loading services'}</p>
+            <p className="text-gray-600 mb-4">{servicesError}</p>
+            <button
+              onClick={() => fetchServices(1, true)}
+              className="px-6 py-2 rounded-lg text-white font-medium hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: primaryColor }}
+            >
+              {translations.tryAgain || 'Try Again'}
+            </button>
           </div>
+        ) : services.length === 0 ? (
+          <EmptyState
+            type={debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 ? 'search-empty' : selectedCategory !== 'all' ? 'category-empty' : 'no-services'}
+            primaryColor={primaryColor}
+            translations={translations}
+            onClearSearch={() => {
+              setSearchTerm('')
+              setDebouncedSearchTerm('')
+            }}
+            onShowAll={() => setSelectedCategory('all')}
+            searchTerm={debouncedSearchTerm}
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-[75rem] mx-auto">
             {displayedServices.map((service) => {
@@ -2129,6 +2284,125 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           translations={translations}
         />
       )}
+
+      {/* Error Message */}
+      {errorMessage && (
+        <ErrorMessage
+          isVisible={errorMessage.visible}
+          onClose={() => setErrorMessage(null)}
+          message={errorMessage.message}
+          type={errorMessage.type || 'error'}
+          primaryColor={primaryColor}
+          translations={translations}
+        />
+      )}
+    </div>
+  )
+}
+
+// Empty State Component for Services
+function EmptyState({ 
+  type, 
+  primaryColor, 
+  translations,
+  onClearSearch,
+  onShowAll,
+  searchTerm
+}: { 
+  type: 'no-services' | 'category-empty' | 'search-empty'
+  primaryColor: string
+  translations: any
+  onClearSearch?: () => void
+  onShowAll?: () => void
+  searchTerm?: string
+}) {
+  const getEmptyStateContent = () => {
+    switch (type) {
+      case 'no-services':
+        return {
+          icon: Scissors,
+          title: translations.comingSoon || 'Coming Soon',
+          description: translations.checkBackLater || 'Check back later for amazing services!',
+          showActions: false
+        }
+      case 'category-empty':
+        return {
+          icon: Scissors,
+          title: translations.noServicesInCategory || 'No services in this category',
+          description: translations.noServicesInCategoryDescription || 'This category is currently empty. Browse other categories or check back later.',
+          showActions: true,
+          actionText: translations.browseAllServices || 'Browse All Services',
+          actionCallback: onShowAll
+        }
+      case 'search-empty':
+        return {
+          icon: Search,
+          title: `${translations.noServicesFound || 'No results found'} "${searchTerm}"`,
+          description: translations.noServicesFoundDescription || 'Try a different search term or browse all services',
+          showActions: true,
+          actionText: translations.tryDifferentSearch || 'Clear Search',
+          actionCallback: onClearSearch,
+          secondaryActionText: translations.browseAllServices || 'Browse All Services',
+          secondaryActionCallback: onShowAll
+        }
+      default:
+        return {
+          icon: Scissors,
+          title: translations.comingSoon || 'Coming Soon',
+          description: translations.checkBackLater || 'Check back later for amazing services!',
+          showActions: false
+        }
+    }
+  }
+
+  const content = getEmptyStateContent()
+  const IconComponent = content.icon
+
+  return (
+    <div className="text-center py-16 px-4">
+      <div className="max-w-md mx-auto">
+        <div 
+          className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+          style={{ backgroundColor: `${primaryColor}15` }}
+        >
+          <IconComponent 
+            className="w-10 h-10"
+            style={{ color: primaryColor }}
+          />
+        </div>
+        
+        <h3 className="text-xl font-semibold text-gray-900 mb-3">
+          {content.title}
+        </h3>
+        
+        <p className="text-gray-600 mb-6 leading-relaxed">
+          {content.description}
+        </p>
+        
+        {content.showActions && (
+          <div className="space-y-3">
+            {content.actionCallback && (
+              <button
+                onClick={content.actionCallback}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl text-white font-medium hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {content.actionText}
+              </button>
+            )}
+            
+            {content.secondaryActionCallback && (
+              <button
+                onClick={content.secondaryActionCallback}
+                className="block w-full sm:w-auto px-6 py-3 border-2 rounded-xl font-medium hover:bg-gray-50 transition-colors mx-auto"
+                style={{ borderColor: primaryColor, color: primaryColor }}
+              >
+                {content.secondaryActionText}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
