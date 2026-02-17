@@ -52,7 +52,7 @@ interface CXData {
   ces: {
     score: number | null
     avgOnboardingTimeHours: number | null
-    avgTimeToFirstOrderDays: number | null
+    avgTimeToFirstOrderDays: number | null // For salons, this represents first appointment
     businessesAnalyzed: number
   }
   churn: {
@@ -95,7 +95,7 @@ interface CXData {
       name: string
       riskScore: number
       reasons: string[]
-      lastOrderDate: string | null
+      lastOrderDate: string | null // For salons, this represents last appointment date
       supportTicketsCount: number
       lastFeedbackRating: number | null
     }>

@@ -400,7 +400,7 @@ export function SuperAdminAnalytics() {
                 <BarChart3 className="w-4 h-4 text-pink-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Conversion Rate</p>
-                  <p className="text-xs text-gray-600 mt-1">Percentage of storefront visits that result in orders</p>
+                  <p className="text-xs text-gray-600 mt-1">Percentage of storefront visits that result in orders/appointments</p>
                 </div>
               </div>
             </div>
@@ -514,7 +514,7 @@ export function SuperAdminAnalytics() {
                   <ShoppingCart className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Operations Analytics</p>
                 </div>
-                <p className="text-xs text-gray-700">Order counts, trends, and detailed analytics are available in the Operations Analytics section</p>
+                <p className="text-xs text-gray-700">Order/appointment counts, trends, and detailed analytics are available in the Operations Analytics section</p>
               </div>
             </div>
           </div>

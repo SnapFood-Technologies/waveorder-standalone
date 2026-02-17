@@ -226,6 +226,11 @@ export default function BusinessDetailsPage() {
   }
 
   const fetchMarketplaceInfo = async (businessData: BusinessDetails) => {
+    // Skip marketplace info for salons - marketplace is product-focused
+    if (businessData.businessType === 'SALON') {
+      return
+    }
+    
     try {
       // Check if business is originator (has connectedBusinesses)
       const isOriginator = !!(businessData.connectedBusinesses && businessData.connectedBusinesses.length > 0)
@@ -539,8 +544,8 @@ export default function BusinessDetailsPage() {
             </div>
           </div>
 
-          {/* Marketplace Card */}
-          {marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
+          {/* Marketplace Card - Hide for salons */}
+          {business.businessType !== 'SALON' && marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -564,7 +569,7 @@ export default function BusinessDetailsPage() {
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm font-medium text-blue-900 mb-1">Originator</p>
                   <p className="text-sm text-blue-700">{marketplaceInfo.originator.name}</p>
-                  <p className="text-xs text-blue-600 mt-1">This business's products are visible to the originator</p>
+                  <p className="text-xs text-blue-600 mt-1">This business's {business.businessType === 'SALON' ? 'services' : 'products'} are visible to the originator</p>
                 </div>
               )}
               
@@ -576,7 +581,7 @@ export default function BusinessDetailsPage() {
                       <div key={supplier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex-1">
                           <span className="text-sm text-gray-900">{supplier.name}</span>
-                          <span className="text-sm text-gray-600 ml-2">{supplier.productCount} products</span>
+                          <span className="text-sm text-gray-600 ml-2">{supplier.productCount} {business.businessType === 'SALON' ? 'services' : 'products'}</span>
                         </div>
                       </div>
                     ))}

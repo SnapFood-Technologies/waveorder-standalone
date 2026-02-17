@@ -1224,7 +1224,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <Package className="w-5 h-5 text-gray-400 mx-auto mb-1" />
                 <p className="text-xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-                <p className="text-xs text-gray-500">Orders</p>
+                <p className="text-xs text-gray-500">{business.businessType === 'SALON' ? 'Appointments' : 'Orders'}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <UserCheck className="w-5 h-5 text-gray-400 mx-auto mb-1" />

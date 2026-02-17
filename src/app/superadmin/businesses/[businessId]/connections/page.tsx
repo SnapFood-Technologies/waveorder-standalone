@@ -20,7 +20,7 @@ export default function BusinessConnectionsPage() {
   const router = useRouter()
   const businessId = params.businessId as string
 
-  const [businessName, setBusinessName] = useState('')
+  const [business, setBusiness] = useState<{ businessType?: string; name: string } | null>(null)
   const [connectedBusinesses, setConnectedBusinesses] = useState<Business[]>([])
   const [availableBusinesses, setAvailableBusinesses] = useState<Business[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,12 +31,37 @@ export default function BusinessConnectionsPage() {
   const [disconnectModalBusiness, setDisconnectModalBusiness] = useState<Business | null>(null)
   const [isDisconnecting, setIsDisconnecting] = useState(false)
 
+  // Redirect salons - marketplace/connections are product-focused
   useEffect(() => {
-    fetchBusinessName()
-    fetchConnectedBusinesses()
-  }, [businessId])
+    const checkBusinessType = async () => {
+      try {
+        const response = await fetch(`/api/superadmin/businesses/${businessId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setBusiness(data.business)
+          if (data.business?.businessType === 'SALON') {
+            router.replace(`/superadmin/businesses/${businessId}`)
+          }
+        }
+      } catch (err) {
+        console.error('Error checking business type:', err)
+      }
+    }
+    checkBusinessType()
+  }, [businessId, router])
+
+  useEffect(() => {
+    if (business?.businessType !== 'SALON') {
+      fetchBusinessName()
+      fetchConnectedBusinesses()
+    }
+  }, [business, businessId])
 
   const fetchBusinessName = async () => {
+    if (business?.name) {
+      setBusinessName(business.name)
+      return
+    }
     try {
       const response = await fetch(`/api/superadmin/businesses/${businessId}`)
       if (response.ok) {
@@ -160,7 +185,7 @@ export default function BusinessConnectionsPage() {
                 Connected Businesses {businessName && `- ${businessName}`}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Manage business connections for marketplace and shared products
+                Manage business connections for marketplace and shared {business?.businessType === 'SALON' ? 'services' : 'products'}
               </p>
             </div>
           </div>
@@ -181,7 +206,7 @@ export default function BusinessConnectionsPage() {
           <div>
             <h3 className="font-semibold text-blue-900 mb-1">About Business Connections</h3>
             <p className="text-sm text-blue-800">
-              Connected businesses can share products, categories, collections, and groups with the same pricing and inventory. This feature is perfect for marketplaces, franchises, or multi-store operations. Connections are bidirectional - when you connect Business A with Business B, both businesses can access each other's shared resources.
+              Connected businesses can share {business?.businessType === 'SALON' ? 'services' : 'products'}, categories, collections, and groups with the same pricing{business?.businessType === 'SALON' ? '' : ' and inventory'}. This feature is perfect for marketplaces, franchises, or multi-store operations. Connections are bidirectional - when you connect Business A with Business B, both businesses can access each other's shared resources.
             </p>
           </div>
         </div>
@@ -205,7 +230,7 @@ export default function BusinessConnectionsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <Link2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No connected businesses yet</h3>
-          <p className="text-gray-600 mb-4">Connect businesses to enable product sharing and marketplace features.</p>
+          <p className="text-gray-600 mb-4">Connect businesses to enable {business?.businessType === 'SALON' ? 'service' : 'product'} sharing and marketplace features.</p>
           <button
             onClick={() => setShowConnectModal(true)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -348,7 +373,7 @@ export default function BusinessConnectionsPage() {
                     Disconnect Business
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Are you sure you want to disconnect from "{disconnectModalBusiness.name}"? They will no longer be able to share products, categories, collections, and groups.
+                    Are you sure you want to disconnect from "{disconnectModalBusiness.name}"? They will no longer be able to share {business?.businessType === 'SALON' ? 'services' : 'products'}, categories, collections, and groups.
                   </p>
                 </div>
               </div>

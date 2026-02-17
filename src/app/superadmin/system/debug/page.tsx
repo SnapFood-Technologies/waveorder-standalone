@@ -298,12 +298,12 @@ export default function DebugToolsPage() {
     },
     {
       id: 'product' as DebugTool,
-      name: 'Product Debug',
-      description: 'Analyze a single product - why is it hidden, stock, variants',
+      name: 'Product/Service Debug',
+      description: 'Analyze a single product or service - why is it hidden, stock (products only), variants',
       icon: Package,
       color: 'bg-pink-500',
       priority: 'Low',
-      hideForSalons: false
+      hideForSalons: false // Works for both products and services (same Product model)
     },
     {
       id: 'connections' as DebugTool,
@@ -517,11 +517,11 @@ export default function DebugToolsPage() {
                 {activeModal === 'product' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Product ID
+                      Product/Service ID
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter product ID..."
+                      placeholder="Enter product or service ID..."
                       value={productIdInput}
                       onChange={(e) => setProductIdInput(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 font-mono"
@@ -894,7 +894,7 @@ function ProductDebugResults({ data }: { data: any }) {
     <div className="space-y-4">
       {/* Product Info */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">Product Info</h3>
+        <h3 className="font-semibold text-gray-900 mb-2">Product/Service Info</h3>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div><span className="text-gray-500">Name:</span> <span className="font-medium">{data.product?.name}</span></div>
           <div><span className="text-gray-500">Price:</span> <span className="font-medium">{data.product?.price}</span></div>
