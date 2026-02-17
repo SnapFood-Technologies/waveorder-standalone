@@ -494,7 +494,8 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
 
   // Fetch services function - defined before useEffect hooks that use it
   const fetchServices = useCallback(async (page: number = 1, reset: boolean = false) => {
-    if (isFetchingRef.current) return
+    // Only block duplicate scroll-triggered (pagination) fetches, not search/filter resets
+    if (isFetchingRef.current && !reset) return
     
     isFetchingRef.current = true
     setServicesLoading(true)
@@ -776,6 +777,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   }
 
   // Generate time slots based on business hours
+  // If selected date is today, only show future time slots (with a buffer)
   const generateTimeSlots = (date: Date) => {
     if (!storeData.businessHours) return []
     
@@ -788,11 +790,28 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     const [closeHour, closeMinute] = dayHours.close.split(':').map(Number)
     
     const slots: string[] = []
+    const now = new Date()
+    const today = new Date().toDateString()
+    const selectedDate = date.toDateString()
+
     let currentTime = new Date(date)
     currentTime.setHours(openHour, openMinute, 0, 0)
     
     const closeTime = new Date(date)
     closeTime.setHours(closeHour, closeMinute, 0, 0)
+
+    // If booking for today, skip past time slots and add a 20-minute buffer
+    if (selectedDate === today) {
+      const bufferMinutes = 20
+      const minTime = new Date(now.getTime() + bufferMinutes * 60000)
+      if (currentTime < minTime) {
+        currentTime = minTime
+        // Round up to next 30-minute slot
+        const minutes = currentTime.getMinutes()
+        const roundedMinutes = Math.ceil(minutes / 30) * 30
+        currentTime.setMinutes(roundedMinutes, 0, 0)
+      }
+    }
     
     const use24Hour = storeData.timeFormat === '24'
     

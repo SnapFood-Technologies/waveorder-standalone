@@ -860,6 +860,7 @@ export async function POST(
 ) {
   let orderData: any = null
   let slug: string = 'unknown'
+  let isSalon = false
   
   try {
     slug = (await context.params).slug
@@ -918,6 +919,7 @@ export async function POST(
     // Set business context for Sentry
     Sentry.setTag('business_id', business.id)
     Sentry.setTag('business_type', business.businessType)
+    isSalon = business.businessType === 'SALON'
 
     // Check if store is temporarily closed
     if (business.isTemporarilyClosed) {
@@ -984,7 +986,7 @@ export async function POST(
       const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
 
       logSystemEvent({
-        logType: 'order_validation_error',
+        logType: isSalon ? 'appointment_validation_error' : 'order_validation_error',
         severity: 'warning',
         slug,
         businessId: business.id,
@@ -1600,12 +1602,20 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
       }
     }
 
+    // Map frontend delivery type values to Prisma OrderType enum
+    const orderTypeMap: Record<string, string> = {
+      'delivery': 'DELIVERY',
+      'pickup': 'PICKUP',
+      'dineIn': 'DINE_IN',
+    }
+    const orderType = orderTypeMap[deliveryType] || deliveryType.toUpperCase()
+
     // Create order with enhanced data
     const order = await prisma.order.create({
       data: {
         orderNumber,
         status: 'PENDING',
-        type: deliveryType.toUpperCase(),
+        type: orderType,
         customerId: customer.id,
         businessId: business.id,
         customerName: customerName || customer.name || '', // Store customer name at order creation time
@@ -2093,16 +2103,16 @@ try {
     })
 
     // Set success context
-    Sentry.setTag('order_created', 'true')
-    Sentry.setTag('order_id', order.id)
-    Sentry.setContext('order_success', {
+    Sentry.setTag(isSalon ? 'appointment_created' : 'order_created', 'true')
+    Sentry.setTag(isSalon ? 'appointment_id' : 'order_id', order.id)
+    Sentry.setContext(isSalon ? 'appointment_success' : 'order_success', {
       orderId: order.id,
       orderNumber: order.orderNumber,
       total: order.total,
       deliveryType: order.type,
     })
 
-    // Log successful order creation
+    // Log successful order/appointment creation
     const ipAddress = extractIPAddress(request)
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
@@ -2113,7 +2123,7 @@ try {
     const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
     
     logSystemEvent({
-      logType: 'order_created',
+      logType: isSalon ? 'appointment_created' : 'order_created',
       severity: 'info',
       slug,
       businessId: business.id,
@@ -2315,10 +2325,11 @@ try {
       tags: {
         endpoint: 'storefront_order_post',
         method: 'POST',
-        error_type: 'order_creation_error',
+        error_type: isSalon ? 'appointment_creation_error' : 'order_creation_error',
       },
       extra: {
         slug,
+        isSalon,
         orderData: orderData ? {
           deliveryType: orderData.deliveryType,
           itemCount: orderData.items?.length,
@@ -2327,7 +2338,7 @@ try {
       },
     })
     
-    // Log order creation error
+    // Log order/appointment creation error
     const ipAddress = extractIPAddress(request)
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
@@ -2339,7 +2350,7 @@ try {
     const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
     
     logSystemEvent({
-      logType: 'order_error',
+      logType: isSalon ? 'appointment_error' : 'order_error',
       severity: 'error',
       slug,
       businessId,
@@ -2353,7 +2364,8 @@ try {
       referrer,
       url: actualUrl,
       metadata: {
-        errorType: 'order_creation_error',
+        errorType: isSalon ? 'appointment_creation_error' : 'order_creation_error',
+        isSalon,
         orderData: orderData ? {
           deliveryType: orderData.deliveryType,
           itemCount: orderData.items?.length,
@@ -2362,7 +2374,7 @@ try {
       }
     })
     
-    console.error('Order creation error:', error)
+    console.error(isSalon ? 'Appointment creation error:' : 'Order creation error:', error)
     
     // Provide more specific error messages
     if (error instanceof Error) {
