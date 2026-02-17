@@ -229,6 +229,17 @@ onlyStockAvailable: string
      directStep3: string
      youCanCloseThisPage: string
 
+     // Salon Appointment Success Message
+     appointmentBooked: string
+     appointmentNumber: string
+     appointmentSentDirectMessage: string
+     appointmentStep1: string
+     appointmentStep2: string
+     appointmentStep3: string
+     appointmentPreparedMessage: string
+     awaitBookingConfirmation: string
+     salonWillConfirm: string
+
      cannotPlaceNowOrder: string
 schedulingBenefits: string
 guaranteedPreparation: string
@@ -564,6 +575,17 @@ onlyStockAvailable: "Only {stock} available",
   directStep2: "They will prepare your order",
   directStep3: "You'll be contacted for any updates",
   youCanCloseThisPage: "You can safely close this page",
+
+  // Salon Appointment Success Message
+  appointmentBooked: "Appointment Booked!",
+  appointmentNumber: "Appointment Number",
+  appointmentSentDirectMessage: "Your appointment has been sent directly to the salon. They have received all your booking details.",
+  appointmentStep1: "The salon has received your appointment",
+  appointmentStep2: "They will confirm your booking",
+  appointmentStep3: "You'll be contacted for any updates",
+  appointmentPreparedMessage: "Your appointment details have been prepared and WhatsApp should now be open. Please send the message to complete your booking.",
+  awaitBookingConfirmation: "Wait for booking confirmation",
+  salonWillConfirm: "The salon will confirm your appointment",
 
   cannotPlaceNowOrder: "We're currently closed and cannot accept orders for immediate delivery/pickup. However, you can schedule your order for when we're open!",
 schedulingBenefits: "Why schedule your order?",
@@ -907,6 +929,17 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     directStep3: "Do të kontaktoheni për çdo përditësim",
     youCanCloseThisPage: "Mund ta mbyllni këtë faqe me siguri",
 
+    // Salon Appointment Success Message
+    appointmentBooked: "Takimi u Rezervua!",
+    appointmentNumber: "Numri i Takimit",
+    appointmentSentDirectMessage: "Takimi juaj u dërgua drejtpërdrejt te saloni. Ata kanë marrë të gjitha detajet e rezervimit tuaj.",
+    appointmentStep1: "Saloni ka marrë takimin tuaj",
+    appointmentStep2: "Ata do të konfirmojnë rezervimin tuaj",
+    appointmentStep3: "Do të kontaktoheni për çdo përditësim",
+    appointmentPreparedMessage: "Detajet e takimit tuaj janë përgatitur dhe WhatsApp duhet të jetë hapur tani. Ju lutem dërgoni mesazhin për të përfunduar rezervimin tuaj.",
+    awaitBookingConfirmation: "Prisni konfirmimin e rezervimit",
+    salonWillConfirm: "Saloni do të konfirmojë takimin tuaj",
+
     cannotPlaceNowOrder: "Aktualisht jemi të mbyllur dhe nuk mund të pranojmë porosi për dërgim/marrje të menjëhershme. Megjithatë, mund ta planifikosh porosinë tënde për kur të jemi të hapur!",
 schedulingBenefits: "Pse të planifikosh porosinë?",
 guaranteedPreparation: "Përgatitje e garantuar kur jemi të hapur",
@@ -1247,6 +1280,17 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   directStep2: "Prepararán tu pedido",
   directStep3: "Te contactarán para cualquier actualización",
   youCanCloseThisPage: "Puedes cerrar esta página de forma segura",
+
+  // Salon Appointment Success Message
+  appointmentBooked: "¡Cita Reservada!",
+  appointmentNumber: "Número de Cita",
+  appointmentSentDirectMessage: "Tu cita ha sido enviada directamente al salón. Han recibido todos los detalles de tu reserva.",
+  appointmentStep1: "El salón ha recibido tu cita",
+  appointmentStep2: "Confirmarán tu reserva",
+  appointmentStep3: "Te contactarán para cualquier actualización",
+  appointmentPreparedMessage: "Los detalles de tu cita han sido preparados y WhatsApp debería estar abierto. Por favor envía el mensaje para completar tu reserva.",
+  awaitBookingConfirmation: "Espera la confirmación de la reserva",
+  salonWillConfirm: "El salón confirmará tu cita",
 
   cannotPlaceNowOrder: "Actualmente estamos cerrados y no podemos aceptar pedidos para entrega/recogida inmediata. Sin embargo, ¡puedes programar tu pedido para cuando estemos abiertos!",
   schedulingBenefits: "¿Por qué programar tu pedido?",
@@ -1590,6 +1634,17 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   directStep2: "Θα ετοιμάσουν την παραγγελία σας",
   directStep3: "Θα επικοινωνήσουν μαζί σας για ενημερώσεις",
   youCanCloseThisPage: "Μπορείτε να κλείσετε αυτή τη σελίδα με ασφάλεια",
+
+  // Salon Appointment Success Message
+  appointmentBooked: "Το Ραντεβού Κλείστηκε!",
+  appointmentNumber: "Αριθμός Ραντεβού",
+  appointmentSentDirectMessage: "Το ραντεβού σας στάλθηκε απευθείας στο σαλόνι. Έχουν λάβει όλες τις λεπτομέρειες της κράτησής σας.",
+  appointmentStep1: "Το σαλόνι έλαβε το ραντεβού σας",
+  appointmentStep2: "Θα επιβεβαιώσουν την κράτησή σας",
+  appointmentStep3: "Θα επικοινωνήσουν μαζί σας για ενημερώσεις",
+  appointmentPreparedMessage: "Τα στοιχεία του ραντεβού σας έχουν ετοιμαστεί και το WhatsApp πρέπει να είναι ανοιχτό τώρα. Παρακαλώ στείλτε το μήνυμα για να ολοκληρώσετε την κράτησή σας.",
+  awaitBookingConfirmation: "Αναμένετε επιβεβαίωση κράτησης",
+  salonWillConfirm: "Το σαλόνι θα επιβεβαιώσει το ραντεβού σας",
 
   cannotPlaceNowOrder: "Είμαστε προσωρινά κλειστά και δεν μπορούμε να δεχτούμε παραγγελίες για άμεση παράδοση/παραλαβή. Ωστόσο, μπορείτε να προγραμματίσετε την παραγγελία σας για όταν είμαστε ανοιχτά!",
   schedulingBenefits: "Γιατί να προγραμματίσετε την παραγγελία σας;",

@@ -5,6 +5,12 @@ import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 
 export async function POST(request: NextRequest) {
+  // Build the actual public URL from headers to avoid logging localhost in dev/proxy setups
+  const reqHost = request.headers.get('host') || request.headers.get('x-forwarded-host')
+  const reqProtocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const parsedUrl = new URL(request.url)
+  const actualUrl = reqHost ? `${reqProtocol}://${reqHost}${parsedUrl.pathname}${parsedUrl.search}` : request.url
+
   try {
     const { token, password } = await request.json()
 
@@ -37,7 +43,7 @@ export async function POST(request: NextRequest) {
         statusCode: 400,
         ipAddress,
         userAgent,
-        url: request.url,
+        url: actualUrl,
         errorMessage: 'Invalid or expired reset token',
         metadata: { tokenProvided: !!token }
       })
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
       statusCode: 200,
       ipAddress,
       userAgent,
-      url: request.url,
+      url: actualUrl,
       metadata: { userId: user.id, email: user.email }
     })
 
@@ -95,7 +101,7 @@ export async function POST(request: NextRequest) {
       statusCode: 500,
       ipAddress,
       userAgent,
-      url: request.url,
+      url: actualUrl,
       errorMessage: error instanceof Error ? error.message : 'Reset password internal error',
       errorStack: error instanceof Error ? error.stack : undefined
     })

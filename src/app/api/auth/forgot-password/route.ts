@@ -6,6 +6,12 @@ import crypto from 'crypto'
 
 
 export async function POST(request: NextRequest) {
+  // Build the actual public URL from headers to avoid logging localhost in dev/proxy setups
+  const reqHost = request.headers.get('host') || request.headers.get('x-forwarded-host')
+  const reqProtocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const parsedUrl = new URL(request.url)
+  const actualUrl = reqHost ? `${reqProtocol}://${reqHost}${parsedUrl.pathname}${parsedUrl.search}` : request.url
+
   try {
     const { email } = await request.json()
 
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
         statusCode: 500,
         ipAddress,
         userAgent,
-        url: request.url,
+        url: actualUrl,
         errorMessage: 'Failed to send password reset email',
         metadata: { userId: user.id, email: user.email }
       })
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest) {
       statusCode: 200,
       ipAddress,
       userAgent,
-      url: request.url,
+      url: actualUrl,
       metadata: { userId: user.id, email: user.email, role: user.role }
     })
 
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
       statusCode: 500,
       ipAddress,
       userAgent,
-      url: request.url,
+      url: actualUrl,
       errorMessage: error instanceof Error ? error.message : 'Forgot password internal error',
       errorStack: error instanceof Error ? error.stack : undefined
     })

@@ -955,6 +955,9 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           productId: item.service.id,
           quantity: item.quantity,
           price: item.service.price,
+          originalPrice: item.service.originalPrice && item.service.originalPrice > item.service.price
+            ? item.service.originalPrice
+            : null,
           name: item.service.name
         })),
         customerName: customerInfo.name,
@@ -1892,9 +1895,22 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                               <p className="text-xs text-gray-600">{formatDuration(item.service.serviceDuration)}</p>
                             )}
                           </div>
-                          <span className="font-semibold text-gray-900 whitespace-nowrap flex-shrink-0">
-                            {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
-                          </span>
+                          <div className="text-right whitespace-nowrap flex-shrink-0">
+                            {item.service.originalPrice && item.service.originalPrice > item.service.price ? (
+                              <>
+                                <span className="text-xs text-gray-400 line-through mr-1.5">
+                                  {currencySymbol}{(item.service.originalPrice * item.quantity).toFixed(2)}
+                                </span>
+                                <span className="font-semibold" style={{ color: primaryColor }}>
+                                  {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-semibold text-gray-900">
+                                {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <button
@@ -2201,9 +2217,22 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
                             >
                               +
                             </button>
-                            <span className="ml-2 font-semibold text-gray-900 min-w-[60px] text-right">
-                              {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
-                            </span>
+                            <div className="ml-2 min-w-[80px] text-right">
+                              {item.service.originalPrice && item.service.originalPrice > item.service.price ? (
+                                <>
+                                  <span className="text-xs text-gray-400 line-through mr-1">
+                                    {currencySymbol}{(item.service.originalPrice * item.quantity).toFixed(2)}
+                                  </span>
+                                  <span className="font-semibold" style={{ color: primaryColor }}>
+                                    {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-semibold text-gray-900">
+                                  {currencySymbol}{(item.service.price * item.quantity).toFixed(2)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )

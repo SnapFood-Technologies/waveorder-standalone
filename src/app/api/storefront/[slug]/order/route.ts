@@ -862,6 +862,12 @@ export async function POST(
   let slug: string = 'unknown'
   let isSalon = false
   
+  // Build the actual public URL from headers to avoid logging localhost in dev/proxy setups
+  const reqHost = request.headers.get('host') || request.headers.get('x-forwarded-host')
+  const reqProtocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const parsedUrl = new URL(request.url)
+  const actualUrl = reqHost ? `${reqProtocol}://${reqHost}${parsedUrl.pathname}${parsedUrl.search}` : request.url
+
   try {
     slug = (await context.params).slug
     orderData = await request.json()
@@ -903,6 +909,7 @@ export async function POST(
         closureMessage: true,
         translateContentToBusinessLanguage: true,
         enableAffiliateSystem: true,
+        timezone: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -981,9 +988,6 @@ export async function POST(
       const ipAddress = extractIPAddress(request)
       const userAgent = request.headers.get('user-agent') || undefined
       const referrer = request.headers.get('referer') || undefined
-      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
 
       logSystemEvent({
         logType: isSalon ? 'appointment_validation_error' : 'order_validation_error',
@@ -1691,11 +1695,23 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           return sum + ((item.product.serviceDuration || 30) * item.quantity)
         }, 0)
 
-        // Parse deliveryTime to get appointment date and time
+        // Parse deliveryTime to get appointment date and time in the business timezone
         const appointmentDateTime = new Date(deliveryTime)
-        const startTime = appointmentDateTime.toTimeString().slice(0, 5) // HH:MM format
+        const bizTimezone = business.timezone || 'UTC'
+        
+        // Extract HH:MM in the business timezone (not server timezone)
+        const formatTimeInBizTz = (date: Date): string => {
+          return date.toLocaleTimeString('en-GB', { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: false, 
+            timeZone: bizTimezone 
+          })
+        }
+        
+        const startTime = formatTimeInBizTz(appointmentDateTime)
         const endDateTime = new Date(appointmentDateTime.getTime() + totalDuration * 60000)
-        const endTime = endDateTime.toTimeString().slice(0, 5)
+        const endTime = formatTimeInBizTz(endDateTime)
 
         // Create appointment linked to the order
         appointment = await prisma.appointment.create({
@@ -1716,10 +1732,6 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         const ipAddress = extractIPAddress(request)
         const userAgent = request.headers.get('user-agent') || undefined
         const referrer = request.headers.get('referer') || undefined
-        
-        const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-        const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-        const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
         
         logSystemEvent({
           logType: 'appointment_created',
@@ -1759,10 +1771,6 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
         const ipAddress = extractIPAddress(request)
         const userAgent = request.headers.get('user-agent') || undefined
         const referrer = request.headers.get('referer') || undefined
-        
-        const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-        const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-        const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
         
         logSystemEvent({
           logType: 'appointment_error',
@@ -2120,10 +2128,6 @@ try {
       const userAgent = request.headers.get('user-agent') || undefined
       const referrer = request.headers.get('referer') || undefined
       
-      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
-      
       logSystemEvent({
         logType: 'order_created',
         severity: 'info',
@@ -2263,7 +2267,7 @@ try {
           statusCode: 200,
           ipAddress: extractIPAddress(request),
           userAgent: request.headers.get('user-agent') || undefined,
-          url: request.url,
+          url: actualUrl,
           errorMessage: twilioResult.error || 'Twilio message send failed',
           metadata: {
             orderId: order.id,
@@ -2284,7 +2288,7 @@ try {
           statusCode: 200,
           ipAddress: extractIPAddress(request),
           userAgent: request.headers.get('user-agent') || undefined,
-          url: request.url,
+          url: actualUrl,
           metadata: {
             orderId: order.id,
             orderNumber: order.orderNumber,
@@ -2346,11 +2350,6 @@ try {
     const userAgent = request.headers.get('user-agent') || undefined
     const referrer = request.headers.get('referer') || undefined
     const businessId = orderData?.businessId || undefined
-    
-    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
-    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
     
     logSystemEvent({
       logType: isSalon ? 'appointment_error' : 'order_error',
