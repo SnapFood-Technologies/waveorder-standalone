@@ -341,6 +341,8 @@ export async function GET(
           collectionIds: true,
           groupIds: true,
           brandId: true,
+          isService: true,
+          serviceDuration: true,
           variants: {
             orderBy: { price: 'asc' },
             select: {
@@ -441,6 +443,8 @@ export async function GET(
             collectionIds: product.collectionIds || [],
             groupIds: product.groupIds || [],
             brandId: product.brandId,
+            isService: product.isService || false,
+            serviceDuration: product.serviceDuration || null,
             variants: product.variants.map((variant: any) => {
               const variantPricing = calculateEffectivePrice(
                 variant.price,
