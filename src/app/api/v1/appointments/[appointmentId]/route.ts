@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateApiRequest, addRateLimitHeaders } from '@/lib/api-auth'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
-import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 // ===========================================
 // GET - Get Single Appointment
