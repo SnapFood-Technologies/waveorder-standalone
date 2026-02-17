@@ -70,23 +70,44 @@ export async function GET(
     }
 
     // Calculate total revenue (only paid orders that are completed/fulfilled)
-    const totalRevenue = (business as any).orders
-      .filter((order: any) => {
-        if (order.paymentStatus !== 'PAID') return false
-        if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
-        
-        // Order-type specific revenue calculation
-        if (order.type === 'DELIVERY') {
-          return order.status === 'DELIVERED'
-        } else if (order.type === 'PICKUP') {
-          return order.status === 'PICKED_UP'
-        } else if (order.type === 'DINE_IN') {
-          return order.status === 'PICKED_UP'
+    let totalRevenue = 0
+    
+    if (business.businessType === 'SALON') {
+      // For salons: revenue from completed appointments with paid orders
+      const paidCompletedAppointments = await prisma.appointment.findMany({
+        where: {
+          businessId: businessId,
+          status: 'COMPLETED',
+          order: {
+            paymentStatus: 'PAID'
+          }
+        },
+        include: {
+          order: {
+            select: { total: true }
+          }
         }
-        
-        return false
       })
-      .reduce((sum: number, order: any) => sum + order.total, 0)
+      totalRevenue = paidCompletedAppointments.reduce((sum, apt) => sum + (apt.order?.total || 0), 0)
+    } else {
+      // For non-salons: revenue from delivered/picked-up paid orders
+      totalRevenue = (business as any).orders
+        .filter((order: any) => {
+          if (order.paymentStatus !== 'PAID') return false
+          if (order.status === 'CANCELLED' || order.status === 'REFUNDED') return false
+          
+          if (order.type === 'DELIVERY') {
+            return order.status === 'DELIVERED'
+          } else if (order.type === 'PICKUP') {
+            return order.status === 'PICKED_UP'
+          } else if (order.type === 'DINE_IN') {
+            return order.status === 'PICKED_UP'
+          }
+          
+          return false
+        })
+        .reduce((sum: number, order: any) => sum + order.total, 0)
+    }
 
     // Fetch API keys for this business
     const apiKeys = await prisma.apiKey.findMany({

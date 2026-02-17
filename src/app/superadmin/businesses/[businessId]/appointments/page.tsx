@@ -38,7 +38,41 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts'
-import { format, parseISO, startOfWeek, startOfMonth } from 'date-fns'
+// Native date helpers (avoids date-fns tree-shaking issues in production builds)
+function formatDateStr(date: Date, pattern: string): string {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  
+  if (pattern === 'MMM d, yyyy') {
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+  } else if (pattern === 'MMM d') {
+    return `${months[date.getMonth()]} ${date.getDate()}`
+  } else if (pattern === 'MMM yyyy') {
+    return `${months[date.getMonth()]} ${date.getFullYear()}`
+  } else if (pattern === 'yyyy-MM-dd') {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  }
+  return date.toLocaleDateString()
+}
+
+function getStartOfDay(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function getStartOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Monday as start
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function getStartOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
 
 interface BusinessAppointmentStats {
   business: {
@@ -208,15 +242,15 @@ export default function BusinessAppointmentsStatsPage() {
   })) || []
 
   const formatXAxisLabel = (dateStr: string, grouping: 'day' | 'week' | 'month'): string => {
-    const date = parseISO(dateStr)
+    const date = new Date(dateStr)
     switch (grouping) {
       case 'week':
-        return format(startOfWeek(date, { weekStartsOn: 1 }), 'MMM d')
+        return formatDateStr(getStartOfWeek(date), 'MMM d')
       case 'month':
-        return format(startOfMonth(date), 'MMM yyyy')
+        return formatDateStr(getStartOfMonth(date), 'MMM yyyy')
       case 'day':
       default:
-        return format(date, 'MMM d')
+        return formatDateStr(date, 'MMM d')
     }
   }
 
@@ -674,7 +708,7 @@ export default function BusinessAppointmentsStatsPage() {
                       <td className="px-6 py-4 text-center">
                         <div className="space-y-1">
                           <div className="text-sm font-medium text-gray-900">
-                            {format(new Date(appointment.appointmentDate), 'MMM d, yyyy')}
+                            {formatDateStr(new Date(appointment.appointmentDate), 'MMM d, yyyy')}
                           </div>
                           <div className="flex items-center justify-center text-xs text-gray-600">
                             <Clock className="w-3 h-3 mr-1" />

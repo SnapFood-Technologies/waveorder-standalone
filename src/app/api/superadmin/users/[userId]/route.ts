@@ -61,7 +61,8 @@ export async function GET(
                 _count: {
                   select: {
                     orders: true,
-                    products: true
+                    products: true,
+                    appointments: true
                   }
                 }
               }
@@ -91,11 +92,16 @@ export async function GET(
       authMethod = 'magic-link'
     }
 
-    // Calculate stats
+    // Calculate stats - separate orders/appointments and products/services based on business type
+    const salonBusinesses = user.businesses.filter(bu => bu.business.businessType === 'SALON')
+    const nonSalonBusinesses = user.businesses.filter(bu => bu.business.businessType !== 'SALON')
+    
     const stats = {
       totalBusinesses: user.businesses.length,
-      totalOrders: user.businesses.reduce((sum, bu) => sum + (bu.business._count?.orders || 0), 0),
-      totalProducts: user.businesses.reduce((sum, bu) => sum + (bu.business._count?.products || 0), 0)
+      totalOrders: nonSalonBusinesses.reduce((sum, bu) => sum + (bu.business._count?.orders || 0), 0),
+      totalProducts: nonSalonBusinesses.reduce((sum, bu) => sum + (bu.business._count?.products || 0), 0),
+      totalAppointments: salonBusinesses.reduce((sum, bu) => sum + (bu.business._count?.appointments || 0), 0),
+      totalServices: salonBusinesses.reduce((sum, bu) => sum + (bu.business._count?.products || 0), 0)
     }
 
     // Calculate store limits based on plan

@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 import { Prisma, AppointmentStatus } from '@prisma/client'
-import { format, startOfDay, startOfWeek, startOfMonth, parseISO } from 'date-fns'
 
 
 export async function GET(
@@ -197,7 +196,8 @@ export async function GET(
     // Chart data - group by date
     const chartDataMap = new Map<string, number>()
     allAppointments.forEach(a => {
-      const dateKey = format(startOfDay(a.appointmentDate), 'yyyy-MM-dd')
+      const d = new Date(a.appointmentDate)
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       chartDataMap.set(dateKey, (chartDataMap.get(dateKey) || 0) + 1)
     })
 

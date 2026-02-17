@@ -19,7 +19,9 @@ import {
   AlertCircle,
   Copy,
   Check,
-  FlaskConical
+  FlaskConical,
+  Scissors,
+  CalendarCheck
 } from 'lucide-react'
 import { AuthMethodIcon } from './AuthMethodIcon'
 import Link from 'next/link'
@@ -84,6 +86,8 @@ interface UserData {
     totalBusinesses: number
     totalOrders: number
     totalProducts: number
+    totalAppointments: number
+    totalServices: number
   }
   storeLimit?: StoreLimit
 }
@@ -557,20 +561,60 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                   )}
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Package className="w-4 h-4" />
-                  <span className="text-sm">Total Orders</span>
+              {user.stats.totalOrders > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Package className="w-4 h-4" />
+                    <span className="text-sm">Total Orders</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{user.stats.totalOrders}</span>
                 </div>
-                <span className="text-lg font-semibold text-gray-900">{user.stats.totalOrders}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <ShoppingBag className="w-4 h-4" />
-                  <span className="text-sm">Total Products</span>
+              )}
+              {user.stats.totalAppointments > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <CalendarCheck className="w-4 h-4" />
+                    <span className="text-sm">Total Appointments</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{user.stats.totalAppointments}</span>
                 </div>
-                <span className="text-lg font-semibold text-gray-900">{user.stats.totalProducts}</span>
-              </div>
+              )}
+              {user.stats.totalProducts > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span className="text-sm">Total Products</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{user.stats.totalProducts}</span>
+                </div>
+              )}
+              {user.stats.totalServices > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Scissors className="w-4 h-4" />
+                    <span className="text-sm">Total Services</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">{user.stats.totalServices}</span>
+                </div>
+              )}
+              {user.stats.totalOrders === 0 && user.stats.totalAppointments === 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Package className="w-4 h-4" />
+                    <span className="text-sm">Total Orders</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">0</span>
+                </div>
+              )}
+              {user.stats.totalProducts === 0 && user.stats.totalServices === 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span className="text-sm">Total Products</span>
+                  </div>
+                  <span className="text-lg font-semibold text-gray-900">0</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
