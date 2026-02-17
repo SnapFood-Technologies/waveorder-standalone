@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
-import { Prisma } from '@prisma/client'
+import { Prisma, AppointmentStatus } from '@prisma/client'
 import { format, startOfDay, startOfWeek, startOfMonth, parseISO } from 'date-fns'
 
 
@@ -87,9 +87,9 @@ export async function GET(
     }
 
     if (status && status !== 'all') {
-      const validStatuses = ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW']
-      if (validStatuses.includes(status)) {
-        whereClause.status = status
+      const validStatuses: AppointmentStatus[] = ['REQUESTED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW']
+      if (validStatuses.includes(status as AppointmentStatus)) {
+        whereClause.status = status as AppointmentStatus
       }
     }
 

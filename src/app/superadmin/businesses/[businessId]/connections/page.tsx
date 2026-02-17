@@ -52,26 +52,9 @@ export default function BusinessConnectionsPage() {
 
   useEffect(() => {
     if (business?.businessType !== 'SALON') {
-      fetchBusinessName()
       fetchConnectedBusinesses()
     }
   }, [business, businessId])
-
-  const fetchBusinessName = async () => {
-    if (business?.name) {
-      setBusinessName(business.name)
-      return
-    }
-    try {
-      const response = await fetch(`/api/superadmin/businesses/${businessId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setBusinessName(data.business.name)
-      }
-    } catch (error) {
-      console.error('Error fetching business name:', error)
-    }
-  }
 
   const fetchConnectedBusinesses = async () => {
     try {
@@ -182,7 +165,7 @@ export default function BusinessConnectionsPage() {
             </Link>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Connected Businesses {businessName && `- ${businessName}`}
+                Connected Businesses {business?.name && `- ${business.name}`}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
                 Manage business connections for marketplace and shared {business?.businessType === 'SALON' ? 'services' : 'products'}
