@@ -58,6 +58,8 @@ interface Appointment {
     customer: Customer
     items: Array<{
       id: string
+      price: number
+      originalPrice: number | null
       product: Service
       modifiers: Array<{
         id: string
@@ -384,7 +386,9 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
     return null
   }
 
-  const service = appointment.order.items[0]?.product
+  const orderItem = appointment.order.items[0]
+  const service = orderItem?.product
+  const hasDiscount = orderItem?.originalPrice != null && orderItem.originalPrice > orderItem.price
   const validStatuses = getValidStatusOptions(appointment.status)
 
   return (
@@ -607,9 +611,20 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
                 </div>
                 
                 <div className="text-right flex-shrink-0">
-                  <div className="text-lg font-bold text-gray-900">
-                    {formatCurrency(service.price)}
-                  </div>
+                  {hasDiscount ? (
+                    <div>
+                      <div className="text-sm text-gray-400 line-through">
+                        {formatCurrency(orderItem.originalPrice!)}
+                      </div>
+                      <div className="text-lg font-bold text-emerald-600">
+                        {formatCurrency(orderItem.price)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-lg font-bold text-gray-900">
+                      {formatCurrency(orderItem?.price || service.price)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -760,7 +775,14 @@ export default function AppointmentDetails({ businessId, appointmentId }: Appoin
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Service</span>
                 <span className="text-gray-900 font-medium">
-                  {formatCurrency(service?.price || 0)}
+                  {hasDiscount ? (
+                    <>
+                      <span className="text-gray-400 line-through mr-2">{formatCurrency(orderItem.originalPrice!)}</span>
+                      <span className="text-emerald-600">{formatCurrency(orderItem.price)}</span>
+                    </>
+                  ) : (
+                    formatCurrency(orderItem?.price || service?.price || 0)
+                  )}
                 </span>
               </div>
               

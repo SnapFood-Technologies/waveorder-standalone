@@ -29,6 +29,8 @@ interface OrderData {
     originalPrice?: number | null
   }[]
   businessId: string
+  // Appointment date/time for SALON businesses
+  deliveryTime?: string | null
   // For RETAIL businesses
   postalPricingDetails?: {
     name: string // Localized postal service name
@@ -197,7 +199,8 @@ function getEmailLabels(language: string = 'en', businessType?: string): Record<
       manageSettings: 'Manage notification settings',
       orderStatusUpdated: isSalon ? 'Booking status has been updated' : 'Order status has been updated',
       newOrderSubject: isSalon ? 'New Booking Request' : 'New Order',
-      orderUpdateSubject: isSalon ? 'Booking Update' : 'Order Update'
+      orderUpdateSubject: isSalon ? 'Booking Update' : 'Order Update',
+      appointmentDateTime: 'Appointment Date & Time'
     },
     sq: {
       newOrderReceived: isSalon ? 'Kërkesë për Rezervim e Re e Marrë!' : 'Porosi e Re e Marrë!',
@@ -226,7 +229,8 @@ function getEmailLabels(language: string = 'en', businessType?: string): Record<
       manageSettings: 'Menaxho cilësimet e njoftimeve',
       orderStatusUpdated: isSalon ? 'Statusi i rezervimit është përditësuar' : 'Statusi i porosisë është përditësuar',
       newOrderSubject: isSalon ? 'Kërkesë për Rezervim e Re' : 'Porosi e Re',
-      orderUpdateSubject: isSalon ? 'Përditësim i Rezervimit' : 'Përditësim i Porosisë'
+      orderUpdateSubject: isSalon ? 'Përditësim i Rezervimit' : 'Përditësim i Porosisë',
+      appointmentDateTime: 'Data dhe Koha e Takimit'
     },
     es: {
       newOrderReceived: isSalon ? '¡Nueva Solicitud de Reserva Recibida!' : '¡Nuevo Pedido Recibido!',
@@ -255,11 +259,44 @@ function getEmailLabels(language: string = 'en', businessType?: string): Record<
       manageSettings: 'Gestionar configuración de notificaciones',
       orderStatusUpdated: isSalon ? 'El estado de la reserva ha sido actualizado' : 'El estado del pedido ha sido actualizado',
       newOrderSubject: isSalon ? 'Nueva Solicitud de Reserva' : 'Nuevo Pedido',
-      orderUpdateSubject: isSalon ? 'Actualización de Reserva' : 'Actualización de Pedido'
+      orderUpdateSubject: isSalon ? 'Actualización de Reserva' : 'Actualización de Pedido',
+      appointmentDateTime: 'Fecha y Hora de la Cita'
+    },
+    el: {
+      newOrderReceived: isSalon ? 'Νέο Αίτημα Κράτησης Ελήφθη!' : 'Νέα Παραγγελία Ελήφθη!',
+      orderUpdate: isSalon ? 'Ενημέρωση Κράτησης' : 'Ενημέρωση Παραγγελίας',
+      newOrder: isSalon ? 'Νέο Αίτημα Κράτησης' : 'Νέα Παραγγελία',
+      order: isSalon ? 'Κράτηση' : 'Παραγγελία',
+      new: 'Νέο',
+      customerInformation: 'Στοιχεία Πελάτη',
+      name: 'Όνομα',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: isSalon ? 'Διεύθυνση' : 'Διεύθυνση Παράδοσης',
+      deliveryMethod: isSalon ? 'Τύπος Κράτησης' : 'Μέθοδος Παράδοσης',
+      postalService: 'Ταχυδρομική Υπηρεσία',
+      deliveryTime: isSalon ? 'Ημερομηνία & Ώρα Ραντεβού' : 'Χρόνος Παράδοσης',
+      deliveryFee: isSalon ? 'Κόστος Υπηρεσίας' : 'Έξοδα Αποστολής',
+      city: 'Πόλη',
+      country: 'Χώρα',
+      postalCode: 'Ταχυδρομικός Κώδικας',
+      orderItems: isSalon ? 'Υπηρεσίες' : 'Προϊόντα Παραγγελίας',
+      variant: 'Παραλλαγή',
+      specialInstructions: 'Ειδικές Οδηγίες',
+      viewOrderDetails: isSalon ? 'Δείτε τα Στοιχεία Κράτησης' : 'Δείτε τα Στοιχεία Παραγγελίας',
+      notificationEnabled: isSalon 
+        ? 'Αυτή η ειδοποίηση στάλθηκε επειδή έχετε ενεργοποιήσει τις ειδοποιήσεις κρατήσεων.'
+        : 'Αυτή η ειδοποίηση στάλθηκε επειδή έχετε ενεργοποιήσει τις ειδοποιήσεις παραγγελιών.',
+      manageSettings: 'Διαχείριση ρυθμίσεων ειδοποιήσεων',
+      orderStatusUpdated: isSalon ? 'Η κατάσταση της κράτησης ενημερώθηκε' : 'Η κατάσταση της παραγγελίας ενημερώθηκε',
+      newOrderSubject: isSalon ? 'Νέο Αίτημα Κράτησης' : 'Νέα Παραγγελία',
+      orderUpdateSubject: isSalon ? 'Ενημέρωση Κράτησης' : 'Ενημέρωση Παραγγελίας',
+      appointmentDateTime: 'Ημερομηνία & Ώρα Ραντεβού'
     }
   }
 
-  return labels[language] || labels.en
+  // Normalize language codes: 'gr' -> 'el', 'al' -> 'sq'
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  return labels[normalizedLang] || labels.en
 }
 
 // Helper function to format order status in the specified language
@@ -344,11 +381,15 @@ function createOrderNotificationEmail({
   formatCurrency: (amount: number, currency: string) => string
   language?: string
 }) {
-  const labels = getEmailLabels(language, businessData.businessType)
-  const orderTypeLabel = formatOrderType(orderData.type, businessData.businessType, language)
+  // Normalize language codes
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  const labels = getEmailLabels(normalizedLang, businessData.businessType)
+  const orderTypeLabel = formatOrderType(orderData.type, businessData.businessType, normalizedLang)
   const statusColor = getStatusColorBox(orderData.status)
-  const statusLabel = formatStatus(orderData.status, language)
+  const statusLabel = formatStatus(orderData.status, normalizedLang)
   const statusIcon = getStatusIcon(orderData.status)
+  const isSalon = businessData.businessType === 'SALON'
+  const locale = normalizedLang === 'es' ? 'es-ES' : normalizedLang === 'sq' ? 'sq-AL' : normalizedLang === 'el' ? 'el-GR' : 'en-US'
   
   return `
 <!DOCTYPE html>
@@ -437,6 +478,16 @@ function createOrderNotificationEmail({
         ` : ''}
       </div>
       
+      ${isSalon && orderData.deliveryTime ? `
+      <!-- Appointment Date & Time -->
+      <div style="margin-bottom: 30px; padding: 20px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
+        <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.appointmentDateTime || labels.deliveryTime || 'Appointment Date & Time'}</h3>
+        <p style="color: #065f46; margin: 0; font-size: 16px; font-weight: 600;">
+          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+      ` : ''}
+
       <!-- Order Items -->
       <div style="margin-bottom: 30px;">
         <h3 style="color: #1f2937; margin: 0 0 15px; font-size: 16px; font-weight: 600;">${labels.orderItems}</h3>
@@ -483,7 +534,7 @@ function createOrderNotificationEmail({
       
       <!-- Quick Actions -->
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXTAUTH_URL}/admin/stores/${orderData.businessId}/orders/${orderData.id}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+        <a href="${process.env.NEXTAUTH_URL}/admin/stores/${orderData.businessId}/${isSalon ? 'appointments' : 'orders'}/${orderData.id}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
           ${labels.viewOrderDetails}
         </a>
       </div>
@@ -560,6 +611,9 @@ function getStatusIcon(status: string): string {
 }
 
 function formatOrderType(type: string, businessType: string, language: string = 'en'): string {
+  // Normalize language codes
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+
   const typeMap: Record<string, Record<string, Record<string, string>>> = {
     RESTAURANT: {
       en: {
@@ -576,6 +630,11 @@ function formatOrderType(type: string, businessType: string, language: string = 
         DELIVERY: 'Pedido de Entrega',
         PICKUP: 'Pedido para Recoger',
         DINE_IN: 'Pedido en el Local'
+      },
+      el: {
+        DELIVERY: 'Παραγγελία Παράδοσης',
+        PICKUP: 'Παραγγελία Παραλαβής',
+        DINE_IN: 'Επιτόπια Παραγγελία'
       }
     },
     RETAIL: {
@@ -593,10 +652,37 @@ function formatOrderType(type: string, businessType: string, language: string = 
         DELIVERY: 'Pedido de Envío',
         PICKUP: 'Recogida en Tienda',
         DINE_IN: 'Pedido en Tienda'
+      },
+      el: {
+        DELIVERY: 'Παραγγελία Αποστολής',
+        PICKUP: 'Παραλαβή από Κατάστημα',
+        DINE_IN: 'Παραγγελία στο Κατάστημα'
+      }
+    },
+    SALON: {
+      en: {
+        DELIVERY: 'Appointment',
+        PICKUP: 'Walk-in',
+        DINE_IN: 'In-Salon Appointment'
+      },
+      sq: {
+        DELIVERY: 'Takim',
+        PICKUP: 'Pa Rezervim',
+        DINE_IN: 'Takim Në Salon'
+      },
+      es: {
+        DELIVERY: 'Cita',
+        PICKUP: 'Sin Cita',
+        DINE_IN: 'Cita en el Salón'
+      },
+      el: {
+        DELIVERY: 'Ραντεβού',
+        PICKUP: 'Χωρίς Κράτηση',
+        DINE_IN: 'Ραντεβού στο Σαλόνι'
       }
     }
   }
   
-  const langLabels = typeMap[businessType]?.[language] || typeMap[businessType]?.en || {}
+  const langLabels = typeMap[businessType]?.[normalizedLang] || typeMap[businessType]?.en || {}
   return langLabels[type.toUpperCase()] || `${type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()} Order`
 }

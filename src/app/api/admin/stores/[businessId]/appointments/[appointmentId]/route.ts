@@ -40,6 +40,7 @@ export async function GET(
                 id: true,
                 quantity: true,
                 price: true,
+                originalPrice: true,
                 modifiers: true,
                 product: {
                   select: {

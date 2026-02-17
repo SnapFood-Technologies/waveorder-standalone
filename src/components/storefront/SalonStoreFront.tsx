@@ -232,6 +232,98 @@ function ErrorMessage({
   )
 }
 
+// Booking Success Message Component - shown after successful appointment booking
+function BookingSuccessMessage({ 
+  isVisible, 
+  onClose, 
+  orderNumber, 
+  directNotification = false,
+  storeName,
+  translations
+}: {
+  isVisible: boolean
+  onClose: () => void
+  orderNumber: string
+  directNotification?: boolean
+  storeName: string
+  translations: any
+}) {
+  if (!isVisible) return null
+
+  return (
+    <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+      <div className="bg-white border border-green-200 rounded-xl shadow-xl p-4 sm:p-6">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-bold text-gray-900 text-base sm:text-lg mb-2">
+              {translations.appointmentBooked || 'Appointment Booked!'}
+            </h4>
+            <div className="space-y-2 sm:space-y-3">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <span className="font-medium">{translations.appointmentNumber || 'Appointment Number'}:</span> {orderNumber}
+              </p>
+              {directNotification ? (
+                <>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {translations.appointmentSentDirectMessage || `Your appointment has been sent directly to ${storeName}. They have received all your booking details.`}
+                  </p>
+                  <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-sm text-green-800 font-medium mb-1">
+                      {translations.directNextSteps || 'What Happens Now?'}
+                    </p>
+                    <div className="text-sm text-green-700 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <span>{translations.appointmentStep1 || 'The salon has received your appointment'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <span>{translations.appointmentStep2 || 'They will confirm your booking'}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-green-600 flex-shrink-0" />
+                        <span>{translations.appointmentStep3 || "You'll be contacted for any updates"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {translations.appointmentPreparedMessage || 'Your appointment details have been prepared and WhatsApp should now be open. Please send the message to complete your booking (if you haven\'t already sent it).'}
+                  </p>
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-800 font-medium mb-1">
+                      {translations.nextSteps || 'Next Steps'}:
+                    </p>
+                    <div className="text-sm text-blue-700 space-y-1">
+                      <div>1. {translations.sendWhatsAppMessage || 'Send the WhatsApp message (if not sent yet)'}</div>
+                      <div>2. {translations.awaitBookingConfirmation || 'Wait for booking confirmation'}</div>
+                      <div>3. {translations.salonWillConfirm || 'The salon will confirm your appointment'}</div>
+                    </div>
+                  </div>
+                </>
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                {translations.youCanCloseThisPage || 'You can safely close this page'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+          >
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SalonStoreFront({ storeData }: { storeData: StoreData }) {
   const searchParams = useSearchParams()
   
@@ -364,7 +456,11 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const [showShareModal, setShowShareModal] = useState(false)
   const [showBusinessInfoModal, setShowBusinessInfoModal] = useState(false)
   const [showLegalPagesModal, setShowLegalPagesModal] = useState(false)
-  const [legalPagesData, setLegalPagesData] = useState<any>(null)
+  const [legalPagesData, setLegalPagesData] = useState<{
+    pages: Array<{ slug: string; title: string; showInFooter: boolean; sortOrder: number }>
+    ctaEnabled: boolean
+    ctaText: string
+  } | null>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   
   // Error message state
@@ -372,6 +468,13 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     visible: boolean
     message: string
     type?: 'error' | 'warning' | 'info'
+  } | null>(null)
+
+  // Booking success message state
+  const [bookingSuccessMessage, setBookingSuccessMessage] = useState<{
+    visible: boolean
+    orderNumber: string
+    directNotification?: boolean
   } | null>(null)
 
   // Show error helper function - memoized to avoid dependency issues
@@ -898,10 +1001,23 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           itemCount: bookingItems.length
         })
       })
+
+      // Show success message
+      setBookingSuccessMessage({
+        visible: true,
+        orderNumber: result.orderNumber || '',
+        directNotification: result.directNotification || false
+      })
+
+      // Auto-hide success message after 15 seconds for direct notification, 8 seconds otherwise
+      const hideDelay = result.directNotification ? 15000 : 8000
+      setTimeout(() => {
+        setBookingSuccessMessage(null)
+      }, hideDelay)
       
-      // Open WhatsApp with booking message
-      if (result.whatsappLink) {
-        window.open(result.whatsappLink, '_blank')
+      // Open WhatsApp if not direct notification (traditional wa.me flow)
+      if (!result.directNotification && result.whatsappUrl) {
+        window.open(result.whatsappUrl, '_blank')
       }
 
       // Reset form
@@ -962,6 +1078,16 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           translations={translations}
         />
       )}
+
+      {/* Booking Success Message */}
+      <BookingSuccessMessage
+        isVisible={bookingSuccessMessage?.visible || false}
+        onClose={() => setBookingSuccessMessage(null)}
+        orderNumber={bookingSuccessMessage?.orderNumber || ''}
+        directNotification={bookingSuccessMessage?.directNotification || false}
+        storeName={storeData.name}
+        translations={translations}
+      />
 
       {/* Header Section - Matching StoreFront */}
       <div className="bg-white">
@@ -1162,6 +1288,40 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
       {/* Search and Categories - Matching StoreFront */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
         <div className="max-w-[75rem] mx-auto md:px-0 px-4 py-3">
+          {/* Legal Pages CTA (above search) */}
+          {storeData.legalPagesEnabled && legalPagesData && legalPagesData.ctaEnabled && legalPagesData.pages.length > 0 && (
+            <div className="mb-4">
+              <button
+                onClick={() => setShowLegalPagesModal(true)}
+                className="w-full p-3 rounded-xl border-2 transition-colors text-left flex items-center justify-between group"
+                style={{
+                  borderColor: `${primaryColor}40`,
+                  backgroundColor: `${primaryColor}05`,
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: `${primaryColor}15` }}
+                  >
+                    <Shield className="w-4 h-4" style={{ color: primaryColor }} />
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                    {legalPagesData.ctaText}
+                  </span>
+                </div>
+                <svg
+                  className="w-5 h-5 text-gray-400 group-hover:text-gray-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          )}
+
           {/* Search Bar and Filter Button */}
           <div className="flex items-center gap-3 mb-3">
             <div className="relative flex-1">
@@ -2435,6 +2595,49 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         primaryColor={primaryColor}
         translations={translations}
       />
+
+      {/* Footer */}
+      <footer className="bg-white mt-8">
+        <div className="max-w-[75rem] mx-auto px-5 py-6">
+          {/* Legal Pages Links */}
+          {storeData.legalPagesEnabled && legalPagesData && legalPagesData.pages.filter(p => p.showInFooter).length > 0 && (
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                {legalPagesData.pages
+                  .filter(p => p.showInFooter)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((page) => (
+                    <a
+                      key={page.slug}
+                      href={`/${storeData.slug}/${page.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm hover:underline"
+                      style={{ color: primaryColor }}
+                    >
+                      {page.title}
+                    </a>
+                  ))}
+              </div>
+            </div>
+          )}
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              {translations.poweredBy || 'Powered by'}{' '}
+              <a 
+                href="https://waveorder.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-medium hover:underline"
+                style={{ color: primaryColor }}
+              >
+                WaveOrder
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
 
       {/* Legal Pages Modal */}
       {storeData.legalPagesEnabled && (

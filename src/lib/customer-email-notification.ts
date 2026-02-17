@@ -765,6 +765,16 @@ function createCustomerOrderPlacedEmail({
       </div>
       ` : ''}
 
+      ${orderData.type === 'DINE_IN' && orderData.deliveryTime && orderData.businessType === 'SALON' ? `
+      <!-- Appointment Date & Time -->
+      <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
+        <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.expectedDelivery}</h3>
+        <p style="color: #065f46; margin: 0; font-size: 16px; font-weight: 600;">
+          ${new Date(orderData.deliveryTime).toLocaleString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+      ` : ''}
+
       ${orderData.type === 'PICKUP' ? `
       <!-- Pickup Info -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">

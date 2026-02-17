@@ -1916,6 +1916,7 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           type: order.type,
           total: order.total,
           deliveryAddress: order.deliveryAddress || undefined,
+          deliveryTime: order.deliveryTime || undefined,
           businessName: business.name,
           businessAddress: business.address || undefined,
           businessPhone: business.whatsappNumber || undefined,
@@ -2046,6 +2047,7 @@ try {
         type: order.type,
         total: order.total,
         deliveryAddress: order.deliveryAddress,
+        deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
         notes: order.notes,
         customer: { name: customer.name, phone: customer.phone },
         items: orderItemsForEmail,
@@ -2112,43 +2114,44 @@ try {
       deliveryType: order.type,
     })
 
-    // Log successful order/appointment creation
-    const ipAddress = extractIPAddress(request)
-    const userAgent = request.headers.get('user-agent') || undefined
-    const referrer = request.headers.get('referer') || undefined
-    
-    // Construct actual public URL from headers (not internal fetch URL which may show localhost)
-    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
-    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
-    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
-    
-    logSystemEvent({
-      logType: isSalon ? 'appointment_created' : 'order_created',
-      severity: 'info',
-      slug,
-      businessId: business.id,
-      endpoint: '/api/storefront/[slug]/order',
-      method: 'POST',
-      statusCode: 200,
-      ipAddress,
-      userAgent,
-      referrer,
-      url: actualUrl,
-      metadata: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        customerId: customer.id,
-        customerName: customerName || customer.name,
-        orderType: order.type,
-        itemCount: items.length,
-        subtotal: order.subtotal,
-        deliveryFee: order.deliveryFee,
-        total: order.total,
-        paymentMethod: paymentMethod,
-        deliveryAddress: order.deliveryAddress || null,
-        hasEmail: !!customer.email,
-      }
-    })
+    // Log successful order creation (skip for salons — already logged in appointment block above with richer metadata)
+    if (!isSalon) {
+      const ipAddress = extractIPAddress(request)
+      const userAgent = request.headers.get('user-agent') || undefined
+      const referrer = request.headers.get('referer') || undefined
+      
+      const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+      const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+      const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}${new URL(request.url).search}` : request.url
+      
+      logSystemEvent({
+        logType: 'order_created',
+        severity: 'info',
+        slug,
+        businessId: business.id,
+        endpoint: '/api/storefront/[slug]/order',
+        method: 'POST',
+        statusCode: 200,
+        ipAddress,
+        userAgent,
+        referrer,
+        url: actualUrl,
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerId: customer.id,
+          customerName: customerName || customer.name,
+          orderType: order.type,
+          itemCount: items.length,
+          subtotal: order.subtotal,
+          deliveryFee: order.deliveryFee,
+          total: order.total,
+          paymentMethod: paymentMethod,
+          deliveryAddress: order.deliveryAddress || null,
+          hasEmail: !!customer.email,
+        }
+      })
+    }
 
     // Check if direct WhatsApp notifications are enabled via Twilio
     const useDirectNotification = business.whatsappDirectNotifications && isTwilioConfigured()
