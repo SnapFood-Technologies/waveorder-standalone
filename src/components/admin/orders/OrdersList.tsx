@@ -70,6 +70,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
   const [currency, setCurrency] = useState('USD')
   const [timeFormat, setTimeFormat] = useState('24')
   const [businessType, setBusinessType] = useState<string>('RESTAURANT')
+  const [mobileStackedOrders, setMobileStackedOrders] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
 
   // Debounce search query for user typing
@@ -103,6 +104,7 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
         setCurrency(data.currency || 'USD')
         setTimeFormat(data.timeFormat || '24')
         setBusinessType(data.businessType || 'RESTAURANT')
+        setMobileStackedOrders(data.mobileStackedOrdersEnabled || false)
       }
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -421,7 +423,92 @@ export default function OrdersList({ businessId, customerId }: OrdersListProps) 
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile stacked card layout (only when feature is enabled) */}
+            {mobileStackedOrders && (
+              <div className="md:hidden divide-y divide-gray-200">
+                {orders.map((order) => (
+                  <Link
+                    key={order.id}
+                    href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
+                    className="block p-4 hover:bg-gray-50 transition-colors"
+                  >
+                    {/* Card header: order number, status, total */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <ShoppingBag className="w-4 h-4 text-teal-600" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">#{order.orderNumber}</span>
+                      </div>
+                      <span className="text-sm font-bold text-gray-900">{formatCurrency(order.total)}</span>
+                    </div>
+                    
+                    {/* Customer name + badges */}
+                    <div className="flex items-center flex-wrap gap-1 mb-1.5">
+                      <span className="text-sm font-medium text-gray-800">{order.customer.name}</span>
+                      {order.customer.isFirstOrder && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 text-purple-700">
+                          <Star className="w-2.5 h-2.5 mr-0.5" />
+                          New
+                        </span>
+                      )}
+                      {order.createdByAdmin && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">
+                          <User className="w-2.5 h-2.5 mr-0.5" />
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Phone */}
+                    <div className="flex items-center text-xs text-gray-500 mb-2">
+                      <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                      {order.customer.phone}
+                    </div>
+                    
+                    {/* Bottom row: status, type, date, items count */}
+                    <div className="flex items-center flex-wrap gap-2">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${getStatusColor(order.status)}`}>
+                        {formatStatusLabel(order.status)}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                        order.type === 'DELIVERY' ? 'bg-blue-50 text-blue-700' :
+                        order.type === 'PICKUP' ? 'bg-green-50 text-green-700' :
+                        'bg-purple-50 text-purple-700'
+                      }`}>
+                        {getTypeIcon(order.type)}
+                        <span className="ml-1">{order.type}</span>
+                      </span>
+                      <span className="text-[11px] text-gray-400">
+                        {order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}
+                      </span>
+                      <span className="text-[11px] text-gray-400 ml-auto flex items-center">
+                        <Clock className="w-3 h-3 mr-0.5" />
+                        {formatDate(order.createdAt)}
+                      </span>
+                    </div>
+                    
+                    {/* Delivery address (if applicable) */}
+                    {order.type === 'DELIVERY' && order.deliveryAddress && (
+                      <div className="flex items-center text-xs text-gray-500 mt-1.5">
+                        <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
+                        <span className="truncate">{truncateAddress(parseStreetFromAddress(order.deliveryAddress))}</span>
+                      </div>
+                    )}
+                    
+                    {/* Delivery fee */}
+                    {order.deliveryFee > 0 && (
+                      <div className="text-[11px] text-gray-400 mt-1">
+                        +{formatCurrency(order.deliveryFee)} delivery
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Desktop table (always visible on md+, hidden on mobile when stacked cards are enabled) */}
+            <div className={`overflow-x-auto ${mobileStackedOrders ? 'hidden md:block' : ''}`}>
               <table className="w-full min-w-[1200px]">
                 <thead className="bg-gray-50">
                   <tr>

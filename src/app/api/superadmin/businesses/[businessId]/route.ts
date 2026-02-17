@@ -366,6 +366,7 @@ export async function GET(
         freeDeliveryText: business.freeDeliveryText,
         hideProductsWithoutPhotos: (business as any).hideProductsWithoutPhotos,
         rememberCustomerEnabled: business.rememberCustomerEnabled || false,
+        mobileStackedOrdersEnabled: business.mobileStackedOrdersEnabled || false,
         externalSystemName: business.externalSystemName,
         externalSystemBaseUrl: business.externalSystemBaseUrl,
         externalSystemApiKey: business.externalSystemApiKey,

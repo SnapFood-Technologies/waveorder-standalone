@@ -17,7 +17,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { hideProductsWithoutPhotos, testMode, rememberCustomerEnabled } = body
+    const { hideProductsWithoutPhotos, testMode, rememberCustomerEnabled, mobileStackedOrdersEnabled } = body
 
     // Update business settings
     await prisma.business.update({
@@ -25,7 +25,8 @@ export async function PATCH(
       data: {
         ...(hideProductsWithoutPhotos !== undefined && { hideProductsWithoutPhotos }),
         ...(testMode !== undefined && { testMode }),
-        ...(rememberCustomerEnabled !== undefined && { rememberCustomerEnabled })
+        ...(rememberCustomerEnabled !== undefined && { rememberCustomerEnabled }),
+        ...(mobileStackedOrdersEnabled !== undefined && { mobileStackedOrdersEnabled })
       }
     })
 

@@ -39,7 +39,8 @@ import {
   ChefHat,
   Key,
   FileText,
-  Shield
+  Shield,
+  Smartphone
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -1514,6 +1515,9 @@ export default function BusinessDetailsPage() {
 
           {/* Remember Customer Settings */}
           <RememberCustomerSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+
+          {/* Mobile Stacked Orders Settings */}
+          <MobileStackedOrdersSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
@@ -3093,6 +3097,90 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Mobile Stacked Orders Settings Section Component (SuperAdmin toggle only)
+function MobileStackedOrdersSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: any
+  onUpdate: () => void 
+}) {
+  const [enabled, setEnabled] = useState(business.mobileStackedOrdersEnabled || false)
+  const [updating, setUpdating] = useState(false)
+
+  const toggle = async () => {
+    setUpdating(true)
+    const newValue = !enabled
+
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileStackedOrdersEnabled: newValue })
+      })
+      
+      if (res.ok) {
+        setEnabled(newValue)
+        toast.success(newValue ? 'Mobile Stacked Orders enabled' : 'Mobile Stacked Orders disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      toast.error('Failed to update setting')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Smartphone className="w-5 h-5 mr-2 text-orange-600" />
+        Mobile Stacked Orders
+      </h3>
+      
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Stacked Card Layout on Mobile</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, orders in the admin panel are displayed as stacked cards on mobile devices instead of a wide scrollable table. 
+            Each order shows as a compact card with all key info visible without horizontal scrolling.
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={updating}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            enabled ? 'bg-orange-600' : 'bg-gray-200'
+          } ${updating ? 'opacity-50' : ''}`}
+        >
+          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            enabled ? 'translate-x-5' : 'translate-x-0'
+          }`} />
+        </button>
+      </div>
+      
+      {enabled && (
+        <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+          <p className="text-xs text-orange-700">
+            <span className="font-medium">Enabled:</span> Admin orders page will show stacked cards on mobile. Desktop view remains unchanged.
+          </p>
+        </div>
+      )}
+      
+      {!enabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Orders are displayed in the default table layout on all devices.
           </p>
         </div>
       )}
