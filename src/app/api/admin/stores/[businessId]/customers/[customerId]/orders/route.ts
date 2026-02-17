@@ -33,51 +33,71 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
 
+    // Check if business is a salon
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { businessType: true }
+    })
+    const isSalon = business?.businessType === 'SALON'
+
+    // Build select object conditionally
+    const selectFields: any = {
+      id: true,
+      orderNumber: true,
+      status: true,
+      type: true,
+      total: true,
+      subtotal: true,
+      deliveryFee: true,
+      tax: true,
+      discount: true,
+      deliveryAddress: true,
+      notes: true,
+      paymentStatus: true,
+      paymentMethod: true,
+      createdAt: true,
+      updatedAt: true,
+      customerName: true, // Include stored customer name
+      items: {
+        select: {
+          id: true,
+          quantity: true,
+          product: {
+            select: {
+              name: true
+            }
+          },
+          variant: {
+            select: {
+              name: true
+            }
+          }
+        }
+      },
+      _count: {
+        select: {
+          items: true
+        }
+      }
+    }
+
+    // Only include appointments if it's a salon
+    if (isSalon) {
+      selectFields.appointments = {
+        select: {
+          id: true
+        },
+        take: 1 // Usually one appointment per order
+      }
+    }
+
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where: {
           customerId: customerId,
           businessId: businessId
         },
-        select: {
-          id: true,
-          orderNumber: true,
-          status: true,
-          type: true,
-          total: true,
-          subtotal: true,
-          deliveryFee: true,
-          tax: true,
-          discount: true,
-          deliveryAddress: true,
-          notes: true,
-          paymentStatus: true,
-          paymentMethod: true,
-          createdAt: true,
-          updatedAt: true,
-          customerName: true, // Include stored customer name
-          items: {
-            select: {
-              id: true,
-              quantity: true,
-              product: {
-                select: {
-                  name: true
-                }
-              },
-              variant: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          },
-          _count: {
-            select: {
-              items: true
-            }
-          }
-        },
+        select: selectFields,
         orderBy: {
           createdAt: 'desc'
         },
@@ -92,7 +112,7 @@ export async function GET(
       })
     ])
 
-    const formattedOrders = orders.map(order => ({
+    const formattedOrders = orders.map((order: any) => ({
       id: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
@@ -109,7 +129,10 @@ export async function GET(
       paymentMethod: order.paymentMethod,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      items: order.items.map(item => ({
+      appointmentId: isSalon && order.appointments && order.appointments.length > 0 
+        ? order.appointments[0].id 
+        : null,
+      items: order.items.map((item: any) => ({
         id: item.id,
         quantity: item.quantity,
         productName: item.product.name,

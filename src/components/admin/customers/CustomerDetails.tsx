@@ -42,6 +42,7 @@ interface Order {
   deliveryFee: number
   createdAt: string
   itemCount: number
+  appointmentId?: string | null
   items: {
     id: string
     quantity: number
@@ -794,7 +795,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Link
                           href={addParams(isSalon 
-                            ? `/admin/stores/${businessId}/appointments/${order.id}`
+                            ? `/admin/stores/${businessId}/appointments/${order.appointmentId || order.id}`
                             : `/admin/stores/${businessId}/orders/${order.id}`
                           )}
                           className="text-teal-600 hover:text-teal-700 text-sm font-medium inline-flex items-center"
