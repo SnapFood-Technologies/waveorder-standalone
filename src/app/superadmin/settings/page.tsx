@@ -1,6 +1,5 @@
-// app/superadmin/settings/page.tsx
-import { SuperAdminSettings } from '@/components/superadmin/SuperAdminSettings'
+import { redirect } from 'next/navigation'
 
-export default function SuperAdminSettingsPage() {
-  return <SuperAdminSettings />
+export default function SettingsPage() {
+  redirect('/superadmin/settings/subscription')
 }

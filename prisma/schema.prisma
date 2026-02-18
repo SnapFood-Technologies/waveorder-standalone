@@ -115,6 +115,9 @@ model User {
   // Events created by this user
   createdEvents Event[]
 
+  // SuperAdmin notes created by this user
+  superAdminNotes SuperAdminNote[] @relation("SuperAdminNotes")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -2670,4 +2673,44 @@ model AffiliatePayment {
   @@index([businessId, affiliateId])
   @@index([businessId, paidAt])
   @@index([affiliateId])
+}
+
+// SuperAdmin Notes - internal/external notes with due dates and categories
+enum NoteType {
+  INTERNAL // Private team notes
+  EXTERNAL // Notes related to external communication
+}
+
+enum NoteCategory {
+  GENERAL
+  TASK
+  IDEA
+  BUG
+  FOLLOWUP
+  MEETING
+  DECISION
+}
+
+model SuperAdminNote {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  title    String
+  content  String?
+  type     NoteType     @default(INTERNAL)
+  category NoteCategory @default(GENERAL)
+  dueDate  DateTime?
+  isDone   Boolean      @default(false)
+
+  createdById String @db.ObjectId
+  createdBy   User   @relation("SuperAdminNotes", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+  @@index([type])
+  @@index([category])
+  @@index([dueDate])
+  @@index([isDone])
+  @@map("superadmin_notes")
 }

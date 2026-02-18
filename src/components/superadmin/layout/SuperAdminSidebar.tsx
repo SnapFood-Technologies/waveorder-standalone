@@ -39,7 +39,9 @@ import {
   Inbox,
   Puzzle,
   Heart,
-  Calendar
+  Calendar,
+  Crown,
+  StickyNote
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -61,6 +63,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/wavemind')) items.push('Wavemind Engine')
     if (pathname?.startsWith('/superadmin/contact')) items.push('Contact')
     if (pathname?.startsWith('/superadmin/integrations')) items.push('Integrations')
+    if (pathname?.startsWith('/superadmin/settings')) items.push('Settings')
     return items
   });
   
@@ -240,7 +243,22 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
         }
       ]
     },
-    { name: 'Settings', href: '/superadmin/settings', icon: Settings },
+    { 
+      name: 'Settings', 
+      icon: Settings,
+      children: [
+        { 
+          name: 'Subscription', 
+          href: '/superadmin/settings/subscription', 
+          icon: Crown
+        },
+        { 
+          name: 'Notes', 
+          href: '/superadmin/settings/notes', 
+          icon: StickyNote
+        }
+      ]
+    },
   ];
 
   // Updated isActive function to match parent routes
