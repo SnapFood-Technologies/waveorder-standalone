@@ -1,21 +1,45 @@
-// src/app/api/cron/low-stock-alerts/route.ts
+// src/app/api/integrations/[slug]/services/low-stock-alerts/route.ts
+/**
+ * External API endpoint for integrations to trigger low stock alert emails.
+ * Replaces the old cron-based approach with proper integration API key auth and logging.
+ *
+ * Authentication: Integration API key (wo_int_xxx)
+ * Method: POST
+ * Response: Stats on products found, emails sent/failed, and per-business results
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendLowStockAlertEmail } from '@/lib/email'
+import {
+  authenticateIntegrationRequest,
+  logIntegrationCall,
+} from '@/lib/integration-auth'
 
-export async function GET(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const startTime = Date.now()
+  const { slug } = await params
+  const endpoint = `/api/integrations/${slug}/services/low-stock-alerts`
+  let integrationId = ''
+
   try {
-    // Verify cron secret to prevent unauthorized access
-    const authHeader = request.headers.get('authorization')
-    
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    // Authenticate the integration
+    const authResult = await authenticateIntegrationRequest(request)
+    if (authResult instanceof NextResponse) return authResult
+    const { integration } = authResult
+    integrationId = integration.integrationId
+
+    // Verify slug matches the authenticated integration
+    if (integration.integrationSlug !== slug) {
+      return NextResponse.json(
+        { error: 'API key does not belong to this integration' },
+        { status: 403 }
+      )
     }
 
-    // Get all products that meet the criteria:
-    // 1. Low stock notification is enabled
-    // 2. Current stock is at or below the low stock alert threshold
-    // 3. Business is active
+    // Find products with low stock notifications enabled that are at/below threshold
     const lowStockProducts = await prisma.product.findMany({
       where: {
         enableLowStockNotification: true,
@@ -30,45 +54,43 @@ export async function GET(request: NextRequest) {
         business: {
           include: {
             users: {
-              where: {
-                role: 'OWNER'
-              },
+              where: { role: 'OWNER' },
               include: {
                 user: {
-                  select: {
-                    email: true,
-                    name: true
-                  }
+                  select: { email: true, name: true }
                 }
               }
             }
           }
         },
         category: {
-          select: {
-            name: true
-          }
+          select: { name: true }
         }
       }
     })
 
     // Group products by business
     const productsByBusiness = new Map<string, typeof lowStockProducts>()
-    
+
     for (const product of lowStockProducts) {
       const businessId = product.businessId
-      
       if (!productsByBusiness.has(businessId)) {
         productsByBusiness.set(businessId, [])
       }
-      
       productsByBusiness.get(businessId)!.push(product)
     }
 
-
     let emailsSent = 0
     let emailsFailed = 0
-    const results: any[] = []
+    const results: Array<{
+      businessId: string
+      businessName: string
+      ownerEmail?: string
+      productsCount?: number
+      status: string
+      reason?: string
+      error?: string
+    }> = []
 
     // Send email to each business owner
     for (const [businessId, products] of productsByBusiness.entries()) {
@@ -87,8 +109,7 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        // Format products for email
-        const formattedProducts = products.map((p: any) => ({
+        const formattedProducts = products.map((p) => ({
           name: p.name,
           sku: p.sku,
           currentStock: p.stock,
@@ -96,7 +117,6 @@ export async function GET(request: NextRequest) {
           category: p.category?.name || 'Uncategorized'
         }))
 
-        // Send email
         await sendLowStockAlertEmail({
           to: owner.email,
           ownerName: owner.name || 'Business Owner',
@@ -113,9 +133,8 @@ export async function GET(request: NextRequest) {
           productsCount: products.length,
           status: 'success'
         })
-
       } catch (error) {
-        console.error(`Failed to send email to ${owner.email}:`, error)
+        console.error(`Failed to send low stock email to ${owner.email}:`, error)
         emailsFailed++
         results.push({
           businessId,
@@ -128,7 +147,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const responseBody = {
       success: true,
       message: 'Low stock alert check complete',
       stats: {
@@ -138,16 +157,35 @@ export async function GET(request: NextRequest) {
         emailsFailed
       },
       results
+    }
+
+    await logIntegrationCall({
+      integrationId,
+      endpoint,
+      method: 'POST',
+      statusCode: 200,
+      responseBody: responseBody.stats,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      duration: Date.now() - startTime,
     })
 
+    return NextResponse.json(responseBody)
   } catch (error) {
-    console.error('Error in low stock alert cron:', error)
+    console.error('Low stock alerts service error:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Internal server error'
+
+    await logIntegrationCall({
+      integrationId,
+      endpoint,
+      method: 'POST',
+      statusCode: 500,
+      error: errorMsg,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      duration: Date.now() - startTime,
+    }).catch(() => {})
+
     return NextResponse.json(
-      { 
-        success: false,
-        message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     )
   }

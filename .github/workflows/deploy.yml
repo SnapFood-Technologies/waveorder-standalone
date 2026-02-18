@@ -4,9 +4,6 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch: # Allows manual triggering
-  schedule:
-    # Run low stock alerts daily at 8 AM UTC
-    - cron: '0 8 * * *'
 
 # Configuration variables - change these as needed
 env:
@@ -259,13 +256,3 @@ jobs:
           pm2 status
           pm2 logs ${{ env.APP_NAME }} --lines 5 --nostream
           echo "✅ Deployment verification complete!"
-
-      # 📧 LOW STOCK ALERTS (Only runs on schedule)
-      - name: 📧 Send Low Stock Alerts
-        if: github.event_name == 'schedule'
-        run: |
-          echo "📧 Triggering low stock alerts..."
-          curl -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-               -H "Content-Type: application/json" \
-               https://your-domain.com/api/cron/low-stock-alerts
-          echo "✅ Low stock alerts sent successfully"
