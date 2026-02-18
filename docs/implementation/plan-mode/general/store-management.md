@@ -1,5 +1,14 @@
 # WaveOrder SEO & Store Management Tasks
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Store SEO Metadata: DONE (seoTitle, seoDescription, multi-language SEO fields in Business model)
+> - Store Schema Markup (JSON-LD): DONE (LocalBusiness structured data in [slug]/page.tsx)
+> - Store Sitemap: DONE (dynamic app/sitemap.ts)
+> - SEO Fields in Database: DONE (seoTitle, seoDescription, seoTitleAl, seoDescriptionAl, seoTitleEl, seoDescriptionEl)
+> - Temporary Store Closure: DONE (isTemporarilyClosed, closureReason, closureMessage, closureStartDate, closureEndDate)
+> - Closure Banner: DONE (displayed on storefront when closed)
+> - WhatsApp Button Disabled on Closure: DONE
+
 This document outlines tasks related to making stores searchable and implementing temporary store closure functionality.
 
 ## 1. Make Stores Searchable

@@ -1,5 +1,13 @@
 # Custom Domain Implementation Plan
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Custom domain schema fields: DONE
+> - Domain settings admin UI: DONE
+> - Netlify API for adding/removing domains: DONE
+> - DNS verification flow: DONE
+>
+> Remaining items moved to `docs/REMAINING_TODOS.md`
+
 ## Overview
 
 Add custom domain support for businesses on PRO plan. Businesses configure DNS manually (CNAME), verify ownership via TXT record, domains are automatically added to Netlify via API, and SSL is auto-provisioned. Middleware detects custom domains and routes to correct storefront.

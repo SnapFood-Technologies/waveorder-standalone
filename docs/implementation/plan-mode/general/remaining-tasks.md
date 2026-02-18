@@ -1,5 +1,15 @@
 # WaveOrder Development Tasks
 
+> **STATUS: COMPLETED (Feb 2026)**
+> All tasks in this document have been implemented. This doc is kept for historical reference.
+> - Dynamic Categories: DONE (CategoriesManagement.tsx, category API routes)
+> - Public Storefront: DONE ([slug]/page.tsx)
+> - Admin Dashboard: DONE (/admin/stores/[businessId]/dashboard)
+> - SEO Metadata: DONE (seoTitle, seoDescription in Business model, JSON-LD in storefront)
+> - Sitemap: DONE (app/sitemap.ts)
+> - WhatsApp Integration: DONE (storefront order flow)
+> - Currency Chooser: DONE (multi-currency support in storefront)
+
 This document outlines the key development tasks needed to complete the WaveOrder application based on the current setup wizard implementation.
 
 ## 1. Dynamic Content Based on Business Type

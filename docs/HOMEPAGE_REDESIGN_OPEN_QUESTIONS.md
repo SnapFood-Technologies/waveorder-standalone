@@ -47,14 +47,10 @@ All decisions made on February 1, 2026:
 ---
 
 
-## TODO: Re-evaluate Later
+## Future Considerations
 
-The following items were skipped and should be re-evaluated in the future:
-
-- [ ] **Salons landing page** (`/salons`) - Consider creating when targeting beauty/salon industry
-- [ ] **Testimonials** - Consider replacing with real customer testimonials when available
-- [ ] **Additional industry pages** - Evaluate need for other verticals (cafes, florists, etc.)
+> Remaining items moved to `docs/REMAINING_TODOS.md`
 
 ---
 
-*Last updated: February 1, 2026*
+*Last updated: February 18, 2026*

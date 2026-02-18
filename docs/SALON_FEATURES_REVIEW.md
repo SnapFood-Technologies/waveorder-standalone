@@ -1,5 +1,10 @@
 # Salon Features Review - February 6, 2026
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Staff assignment UI plan gating: DONE (useSubscription hook added)
+>
+> Remaining items moved to `docs/REMAINING_TODOS.md`
+
 ## ✅ What's Working Well
 
 1. **Plan Restrictions on Pages**

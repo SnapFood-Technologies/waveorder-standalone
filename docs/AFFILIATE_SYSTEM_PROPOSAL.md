@@ -1,5 +1,13 @@
 # Affiliate System - Complete Proposal
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Affiliate model: DONE (prisma/schema.prisma)
+> - AffiliateEarning model: DONE
+> - AffiliatePayment model: DONE
+> - API routes: DONE (/api/admin/stores/[businessId]/affiliates/)
+> - Admin UI: DONE (affiliates list, create, earnings, payments)
+> - UTM tracking on orders: DONE
+
 ## Overview
 An affiliate/influencer marketing system that allows businesses to create affiliate users, assign tracking links with UTM parameters, automatically calculate commissions on completed orders, and manage affiliate payments.
 

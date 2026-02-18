@@ -1,5 +1,12 @@
 # Custom Domain Implementation - Final Refinements & Clarifications
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Domain schema (domainVerificationToken): DONE
+> - Domain settings UI: DONE
+> - Netlify API integration for adding domains: DONE
+>
+> Remaining items moved to `docs/REMAINING_TODOS.md`
+
 ## Critical Fixes Required
 
 ### 1. Database Schema Addition

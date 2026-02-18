@@ -1,5 +1,13 @@
 # WaveOrder Authentication Tasks
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Google OAuth: DONE (GoogleProvider in auth.ts)
+> - Magic Link: DONE (EmailProvider in auth.ts)
+> - Optional Name in Registration: DONE
+> - Account Linking (backend): DONE (allowDangerousEmailAccountLinking)
+>
+> Remaining items moved to `docs/REMAINING_TODOS.md`
+
 This document outlines authentication-related tasks including Google OAuth, optional name registration, and magic link functionality.
 
 ## 1. Google OAuth Integration

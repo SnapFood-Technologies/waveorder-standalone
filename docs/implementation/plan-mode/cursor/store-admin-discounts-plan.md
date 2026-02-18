@@ -1,5 +1,12 @@
 # Admin Discounts: List + API
 
+> **STATUS: COMPLETED (Feb 2026)**
+> - Product-level discounts (originalPrice > price): DONE
+> - Discounts list view: DONE
+> - Search/filter/pagination: DONE
+>
+> Remaining items moved to `docs/REMAINING_TODOS.md`
+
 ## Scope
 
 - List-only Discounts view for a store: products where originalPrice > price.
