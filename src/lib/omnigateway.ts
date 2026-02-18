@@ -1,13 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
 
-// OmniStack Gateway configuration from environment variables
+// OmniStack Gateway configuration from environment variables (server-side only)
 // Environment variables:
-// - NEXT_PUBLIC_OMNI_GATEWAY_URL: Base URL for OmniStack Gateway API
-// - NEXT_PUBLIC_OMNI_GATEWAY_API_KEY: Gateway API key (x-api-key header)
-// - NEXT_PUBLIC_PANDACOMET_OMNI_GATEWAY_CLIENT_API_KEY: Client API key (client-x-api-key header)
-const OMNISTACK_BASE_URL = process.env.NEXT_PUBLIC_OMNI_GATEWAY_URL!;
-const OMNISTACK_API_KEY = process.env.NEXT_PUBLIC_OMNI_GATEWAY_API_KEY!;
-const OMNISTACK_CLIENT_API_KEY = process.env.NEXT_PUBLIC_PANDACOMET_OMNI_GATEWAY_CLIENT_API_KEY!;
+// - OMNI_GATEWAY_URL: Base URL for OmniStack Gateway API
+// - OMNI_GATEWAY_API_KEY: Gateway API key (x-api-key header)
+// - PANDACOMET_OMNI_GATEWAY_CLIENT_API_KEY: Client API key (client-x-api-key header)
+const OMNISTACK_BASE_URL = process.env.OMNI_GATEWAY_URL!;
+const OMNISTACK_API_KEY = process.env.OMNI_GATEWAY_API_KEY!;
+const OMNISTACK_CLIENT_API_KEY = process.env.PANDACOMET_OMNI_GATEWAY_CLIENT_API_KEY!;
 
 /**
  * Creates an OmniStack Gateway axios instance with authentication headers
