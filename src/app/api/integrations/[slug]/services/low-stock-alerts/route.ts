@@ -111,9 +111,9 @@ export async function POST(
       try {
         const formattedProducts = products.map((p) => ({
           name: p.name,
-          sku: p.sku,
+          sku: p.sku || '',
           currentStock: p.stock,
-          lowStockAlert: p.lowStockAlert,
+          lowStockAlert: p.lowStockAlert || 0,
           category: p.category?.name || 'Uncategorized'
         }))
 
