@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
           lt: endOfDay
         },
         status: {
-          notIn: ['WON', 'LOST']
+          notIn: ['WON', 'LOST', 'STALE']
         }
       }
     })
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           lt: startOfDay
         },
         status: {
-          notIn: ['WON', 'LOST']
+          notIn: ['WON', 'LOST', 'STALE']
         }
       }
     })
@@ -96,9 +96,14 @@ export async function GET(request: NextRequest) {
       where: {
         assignedToId: null,
         status: {
-          notIn: ['WON', 'LOST']
+          notIn: ['WON', 'LOST', 'STALE']
         }
       }
+    })
+
+    // Stale leads count
+    const staleLeads = await prisma.lead.count({
+      where: { status: 'STALE' }
     })
 
     // Leads by team member
@@ -139,10 +144,10 @@ export async function GET(request: NextRequest) {
       leadsByDay[day] = (leadsByDay[day] || 0) + 1
     })
 
-    // Estimated pipeline value
+    // Estimated pipeline value (exclude closed and stale leads)
     const pipelineValue = await prisma.lead.aggregate({
       where: {
-        status: { notIn: ['WON', 'LOST'] },
+        status: { notIn: ['WON', 'LOST', 'STALE'] },
         estimatedValue: { not: null }
       },
       _sum: { estimatedValue: true }
@@ -180,6 +185,7 @@ export async function GET(request: NextRequest) {
         followUpsToday,
         overdueFollowUps,
         unassignedLeads,
+        staleLeads,
         pipelineValue: pipelineValue._sum.estimatedValue || 0,
         avgScore: Math.round(avgScore._avg.score || 0)
       },

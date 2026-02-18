@@ -75,6 +75,7 @@ interface Stats {
     followUpsToday: number
     overdueFollowUps: number
     unassignedLeads: number
+    staleLeads: number
     pipelineValue: number
     avgScore: number
   }
@@ -93,7 +94,8 @@ const statusConfig: Record<string, { color: string; bgColor: string; label: stri
   NEGOTIATING: { color: 'text-amber-700', bgColor: 'bg-amber-100', label: 'Negotiating' },
   WON: { color: 'text-green-700', bgColor: 'bg-green-100', label: 'Won' },
   LOST: { color: 'text-red-700', bgColor: 'bg-red-100', label: 'Lost' },
-  NURTURING: { color: 'text-gray-700', bgColor: 'bg-gray-100', label: 'Nurturing' }
+  NURTURING: { color: 'text-gray-700', bgColor: 'bg-gray-100', label: 'Nurturing' },
+  STALE: { color: 'text-orange-700', bgColor: 'bg-orange-100', label: 'Stale' }
 }
 
 const priorityConfig: Record<string, { color: string; bgColor: string; label: string }> = {
@@ -228,11 +230,10 @@ export default function LeadsPage() {
     return formatDate(date)
   }
 
-  // Check if follow-up is overdue (only for active leads, not WON/LOST)
+  // Check if follow-up is overdue (only for active leads, not WON/LOST/STALE)
   const isOverdue = (date: string | null, status?: string) => {
     if (!date) return false
-    // Don't show as overdue if lead is already closed (WON or LOST)
-    if (status === 'WON' || status === 'LOST') return false
+    if (status === 'WON' || status === 'LOST' || status === 'STALE') return false
     return new Date(date) < new Date()
   }
 
@@ -503,11 +504,11 @@ export default function LeadsPage() {
                       {lead.nextFollowUpAt ? (
                         <span className={`text-sm flex items-center ${
                           lead.status === 'WON' ? 'text-green-600' :
-                          lead.status === 'LOST' ? 'text-gray-400' :
+                          lead.status === 'LOST' || lead.status === 'STALE' ? 'text-gray-400' :
                           isOverdue(lead.nextFollowUpAt, lead.status) ? 'text-red-600 font-medium' : 'text-gray-600'
                         }`}>
                           {lead.status === 'WON' && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {lead.status === 'LOST' && <XCircle className="w-3 h-3 mr-1" />}
+                          {(lead.status === 'LOST' || lead.status === 'STALE') && <XCircle className="w-3 h-3 mr-1" />}
                           {isOverdue(lead.nextFollowUpAt, lead.status) && <AlertCircle className="w-3 h-3 mr-1" />}
                           {formatDate(lead.nextFollowUpAt)}
                         </span>

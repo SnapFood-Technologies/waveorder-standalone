@@ -20,6 +20,7 @@ interface LeadStats {
     followUpsToday: number
     overdueFollowUps: number
     unassignedLeads: number
+    staleLeads: number
     pipelineValue: number
     avgScore: number
   }
@@ -61,7 +62,8 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
   negotiating: { label: 'Negotiating', color: 'text-amber-700', bgColor: 'bg-amber-500' },
   won: { label: 'Won', color: 'text-green-700', bgColor: 'bg-green-500' },
   lost: { label: 'Lost', color: 'text-red-700', bgColor: 'bg-red-500' },
-  nurturing: { label: 'Nurturing', color: 'text-gray-700', bgColor: 'bg-gray-500' }
+  nurturing: { label: 'Nurturing', color: 'text-gray-700', bgColor: 'bg-gray-500' },
+  stale: { label: 'Stale', color: 'text-orange-700', bgColor: 'bg-orange-500' }
 }
 
 export default function MarketingAnalyticsPage() {
@@ -291,9 +293,9 @@ export default function MarketingAnalyticsPage() {
             ))}
           </div>
 
-          {/* Lost & Nurturing */}
+          {/* Lost, Nurturing & Stale */}
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                 <div className="flex items-center">
                   <XCircle className="w-5 h-5 text-red-500 mr-2" />
@@ -307,6 +309,13 @@ export default function MarketingAnalyticsPage() {
                   <span className="text-sm font-medium text-gray-700">Nurturing</span>
                 </div>
                 <span className="text-lg font-bold text-gray-700">{stats?.byStatus.nurturing || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div className="flex items-center">
+                  <AlertCircle className="w-5 h-5 text-orange-500 mr-2" />
+                  <span className="text-sm font-medium text-orange-700">Stale</span>
+                </div>
+                <span className="text-lg font-bold text-orange-700">{stats?.byStatus.stale || 0}</span>
               </div>
             </div>
           </div>

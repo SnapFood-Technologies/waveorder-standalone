@@ -2128,6 +2128,7 @@ enum LeadStatus {
   WON // Converted to customer
   LOST // Did not convert
   NURTURING // Long-term nurture (not ready now)
+  STALE // Lead went cold / no response for extended period
 }
 
 enum LeadPriority {
