@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Puzzle, Search, Plus, RefreshCw, Eye, Edit, Trash2,
   Key, Power, PowerOff, Copy, CheckCircle, XCircle,
-  Building2, Activity, Globe, Link2, X, AlertCircle, Clock
+  Building2, Activity, Globe, Link2, X, AlertCircle, Clock,
+  Zap, PackageSearch, Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -99,6 +100,16 @@ export default function IntegrationsPage() {
     webhookUrl: '',
   })
   const [formSubmitting, setFormSubmitting] = useState(false)
+
+  // Manual actions modal
+  const [showManualActionsModal, setShowManualActionsModal] = useState(false)
+  const [manualActionRunning, setManualActionRunning] = useState<string | null>(null)
+  const [manualActionResult, setManualActionResult] = useState<{
+    action: string
+    success: boolean
+    message: string
+    details?: Record<string, unknown>
+  } | null>(null)
 
   // API key display (shown once after create or regenerate)
   const [newApiKey, setNewApiKey] = useState('')
@@ -275,6 +286,46 @@ export default function IntegrationsPage() {
     }
   }
 
+  // Run manual action
+  const runManualAction = async (actionId: string, endpoint: string) => {
+    try {
+      setManualActionRunning(actionId)
+      setManualActionResult(null)
+
+      const res = await fetch(endpoint, { method: 'POST' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setManualActionResult({
+          action: actionId,
+          success: false,
+          message: data.message || data.error || 'Action failed',
+        })
+        toast.error('Action failed')
+        return
+      }
+
+      setManualActionResult({
+        action: actionId,
+        success: true,
+        message: data.stats
+          ? `Found ${data.stats.totalLowStockProducts} low stock products across ${data.stats.businessesNotified} businesses. Emails sent: ${data.stats.emailsSent}, failed: ${data.stats.emailsFailed}.`
+          : 'Action completed successfully',
+        details: data.stats,
+      })
+      toast.success('Action completed successfully')
+    } catch {
+      setManualActionResult({
+        action: actionId,
+        success: false,
+        message: 'Network error — could not reach the server',
+      })
+      toast.error('Action failed')
+    } finally {
+      setManualActionRunning(null)
+    }
+  }
+
   // Copy API key
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -400,6 +451,16 @@ export default function IntegrationsPage() {
             title="Refresh"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              setManualActionResult(null)
+              setShowManualActionsModal(true)
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
+          >
+            <Zap className="w-4 h-4" />
+            Manual Actions
           </button>
           <button
             onClick={openCreate}
@@ -1044,6 +1105,95 @@ export default function IntegrationsPage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
               >
                 I&apos;ve Saved the Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================= */}
+      {/* Manual Actions Modal */}
+      {/* ========================================= */}
+      {showManualActionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Zap className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Manual Actions</h3>
+                  <p className="text-xs text-gray-500">Run integration services manually</p>
+                </div>
+              </div>
+              <button onClick={() => setShowManualActionsModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3">
+              {/* Low Stock Alert Action */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg mt-0.5">
+                      <PackageSearch className="w-4 h-4 text-orange-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Low Stock Alert Check</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Scans all businesses for products below their low stock threshold and emails the business owner.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => runManualAction('low-stock-alerts', '/api/superadmin/manual-actions/low-stock-alerts')}
+                    disabled={manualActionRunning === 'low-stock-alerts'}
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {manualActionRunning === 'low-stock-alerts' ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Running...
+                      </>
+                    ) : (
+                      'Run Now'
+                    )}
+                  </button>
+                </div>
+
+                {manualActionResult?.action === 'low-stock-alerts' && (
+                  <div className={`mt-3 p-3 rounded-lg text-xs ${
+                    manualActionResult.success
+                      ? 'bg-green-50 border border-green-200 text-green-700'
+                      : 'bg-red-50 border border-red-200 text-red-700'
+                  }`}>
+                    <div className="flex items-start gap-1.5">
+                      {manualActionResult.success ? (
+                        <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      )}
+                      <p>{manualActionResult.message}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <p className="text-xs text-gray-400 text-center">
+                  More actions will appear here as new integration services are added.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end p-5 border-t border-gray-200">
+              <button
+                onClick={() => setShowManualActionsModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
