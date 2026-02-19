@@ -358,7 +358,7 @@ export default function FinancialDashboardPage() {
         <div className="text-xs text-gray-500 flex items-center gap-4 flex-wrap">
           <span>{data.meta.waveOrderSubscriptions} WaveOrder subs (of {data.meta.totalStripeSubscriptions} total in Stripe)</span>
           <span>{data.meta.waveOrderCharges} WaveOrder charges (of {data.meta.totalStripeCharges} total, {data.meta.chargeWindow})</span>
-          <span>{data.meta.knownCustomerIds} known customers</span>
+          <span>{data.meta.knownCustomerIds} known customers (excl. tests)</span>
         </div>
       )}
 
@@ -412,7 +412,7 @@ export default function FinancialDashboardPage() {
           color="amber"
         />
         <KPICard
-          title="Total Customers"
+          title="Total Businesses"
           value={String(data.subscriptions.total)}
           subtitle={`${data.subscriptions.paidActive} paying, ${data.subscriptions.trialing} trial, ${data.subscriptions.free} free`}
           icon={Users}
@@ -606,7 +606,7 @@ export default function FinancialDashboardPage() {
                   {syncData.businesses.filter(b => b.status === 'issues_found').length > 0 ? (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">Businesses with Issues</h3>
-                      <div className="divide-y divide-gray-100 border rounded-lg overflow-hidden">
+                      <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
                         {syncData.businesses.filter(b => b.status === 'issues_found').map(b => (
                           <div key={b.businessId} className="p-3 flex items-start justify-between">
                             <div>

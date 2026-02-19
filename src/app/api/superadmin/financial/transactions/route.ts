@@ -109,11 +109,30 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // Get WaveOrder customer IDs from DB
+  // Get WaveOrder customer IDs + plan info from DB (exclude test businesses)
   const waveOrderUsers = await prisma.user.findMany({
-    where: { stripeCustomerId: { not: null } },
-    select: { stripeCustomerId: true, name: true, email: true },
+    where: {
+      stripeCustomerId: { not: null },
+      businesses: { some: { business: { testMode: { not: true } } } },
+    },
+    select: {
+      stripeCustomerId: true, name: true, email: true,
+      businesses: {
+        where: { role: 'OWNER' },
+        select: { business: { select: { subscriptionPlan: true } } },
+        take: 1,
+      }
+    },
   })
+
+  // Map customer ID → plan for enriching transactions
+  const customerPlanMap = new Map<string, string>()
+  for (const u of waveOrderUsers) {
+    if (u.stripeCustomerId) {
+      const plan = u.businesses[0]?.business?.subscriptionPlan || null
+      if (plan) customerPlanMap.set(u.stripeCustomerId, plan)
+    }
+  }
 
   if (waveOrderUsers.length === 0) {
     return NextResponse.json({
@@ -157,6 +176,8 @@ async function getTransactionsFromStripe(
 
   for (const charge of allCharges) {
     const isRefunded = charge.refunded || (charge.amount_refunded && charge.amount_refunded > 0)
+    const custId = typeof charge.customer === 'string' ? charge.customer : null
+    const plan = custId ? (customerPlanMap.get(custId) || null) : null
 
     transactions.push({
       id: charge.id,
@@ -167,7 +188,7 @@ async function getTransactionsFromStripe(
       customerEmail: charge.billing_details?.email || null,
       customerName: charge.billing_details?.name || null,
       description: charge.description || 'Subscription payment',
-      plan: null,
+      plan,
       billingType: null,
       refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
       date: new Date(charge.created * 1000).toISOString(),
@@ -183,7 +204,7 @@ async function getTransactionsFromStripe(
         customerEmail: charge.billing_details?.email || null,
         customerName: charge.billing_details?.name || null,
         description: `Refund for ${charge.id}`,
-        plan: null,
+        plan,
         billingType: null,
         refundedAmount: null,
         date: new Date(charge.created * 1000).toISOString(),
