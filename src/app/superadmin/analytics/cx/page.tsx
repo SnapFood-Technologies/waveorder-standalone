@@ -59,6 +59,7 @@ interface CXData {
     rate: number
     churnedThisPeriod: number
     activeBusinesses: number
+    revenueChurnMRR?: number
     trend: Array<{
       month: string
       monthLabel: string
@@ -270,6 +271,11 @@ export default function CXAnalyticsPage() {
             {data.churn.rate.toFixed(1)}%
           </p>
           <p className="text-xs text-gray-500 mt-1">{data.churn.churnedThisPeriod} churned this period</p>
+          {data.churn.revenueChurnMRR != null && data.churn.revenueChurnMRR > 0 && (
+            <p className="text-xs text-red-500 mt-0.5">
+              ${data.churn.revenueChurnMRR.toFixed(0)}/mo revenue lost
+            </p>
+          )}
         </div>
 
         {/* CLV */}

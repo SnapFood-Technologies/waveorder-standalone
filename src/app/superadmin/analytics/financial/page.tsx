@@ -147,7 +147,11 @@ export default function FinancialPage() {
             <DollarSign className="w-7 h-7 text-green-600" />
             Financial Analytics
           </h1>
-          <p className="text-gray-600 mt-1">Revenue, subscriptions, and financial performance metrics</p>
+          <p className="text-gray-600 mt-1">Revenue, subscriptions, and financial performance metrics
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+              Stripe Verified
+            </span>
+          </p>
         </div>
         <button
           onClick={fetchData}
