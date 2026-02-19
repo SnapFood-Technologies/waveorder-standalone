@@ -101,7 +101,7 @@ export function SuperAdminAnalytics() {
         <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-lg border border-gray-200 animate-pulse">
+            <div key={i} className="bg-white p-6 rounded-xl border border-gray-200 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
               <div className="h-8 bg-gray-200 rounded w-3/4"></div>
             </div>
@@ -154,7 +154,7 @@ export function SuperAdminAnalytics() {
 
       {/* Overview Stats - Row 1: Business & User metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Businesses</p>
@@ -166,7 +166,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Businesses</p>
@@ -178,7 +178,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Incomplete Businesses</p>
@@ -190,7 +190,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
@@ -208,7 +208,7 @@ export function SuperAdminAnalytics() {
 
       {/* Overview Stats - Row 2: Platform metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Multi-Store Users</p>
@@ -221,7 +221,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Test Mode Businesses</p>
@@ -234,7 +234,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Page Views</p>
@@ -247,7 +247,7 @@ export function SuperAdminAnalytics() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Conversion Rate</p>
@@ -280,7 +280,7 @@ export function SuperAdminAnalytics() {
       </Link>
 
       {/* Revenue by Plan */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Subscription Plan</h3>
         <div className="space-y-4">
           {data.revenueByPlan.map((plan, index) => {
@@ -297,10 +297,14 @@ export function SuperAdminAnalytics() {
               <div key={displayKey} className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                    plan.plan === 'BUSINESS' ? 'bg-indigo-100' :
                     plan.plan === 'PRO' ? 'bg-purple-100' : 'bg-gray-100'
                   }`}>
-                    <span className={`text-xs font-bold ${plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'}`}>
-                      {plan.plan === 'PRO' ? 'PRO' : 'START'}
+                    <span className={`text-xs font-bold ${
+                      plan.plan === 'BUSINESS' ? 'text-indigo-700' :
+                      plan.plan === 'PRO' ? 'text-purple-700' : 'text-gray-700'
+                    }`}>
+                      {plan.plan === 'BUSINESS' ? 'BIZ' : plan.plan === 'PRO' ? 'PRO' : 'STR'}
                     </span>
                   </div>
                   <div>
@@ -326,7 +330,7 @@ export function SuperAdminAnalytics() {
       </div>
 
       {/* Analytics Guide Section */}
-      <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-lg border border-teal-200 p-6">
+      <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-xl border border-teal-200 p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
             <HelpCircle className="w-6 h-6 text-teal-600" />
@@ -339,7 +343,7 @@ export function SuperAdminAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Overview Metrics Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -407,7 +411,7 @@ export function SuperAdminAnalytics() {
           </div>
 
           {/* Business Statuses Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <Info className="w-5 h-5 text-green-600" />
@@ -461,7 +465,7 @@ export function SuperAdminAnalytics() {
           </div>
 
           {/* Revenue by Plan Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-purple-600" />
@@ -487,7 +491,7 @@ export function SuperAdminAnalytics() {
           </div>
 
           {/* Date Range Filter Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+          <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
                 <Filter className="w-5 h-5 text-indigo-600" />

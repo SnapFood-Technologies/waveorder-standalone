@@ -61,10 +61,13 @@ export async function GET(request: NextRequest) {
           orders: { take: 1, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }
         }
       }),
-      // All businesses for churn
+      // All businesses for churn (include order count to filter out non-real signups)
       prisma.business.findMany({
         where: { testMode: { not: true } },
-        select: { id: true, isActive: true, deactivatedAt: true, createdAt: true }
+        select: {
+          id: true, isActive: true, deactivatedAt: true, createdAt: true,
+          _count: { select: { orders: true } },
+        }
       }),
       // Support tickets
       prisma.supportTicket.findMany({
@@ -161,32 +164,46 @@ export async function GET(request: NextRequest) {
       : null
 
     // === ENHANCED CHURN RATE (DB + Stripe) ===
-    const activeBusinesses = allBusinesses.filter(b => b.isActive).length
-    const dbChurned = allBusinesses.filter(b =>
+    // "Real" churn = businesses that were active 7+ days OR had at least 1 order.
+    // Signups deactivated within a week with zero activity are not real customers.
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+
+    function isRealBusiness(b: { createdAt: Date; deactivatedAt?: Date | null; _count: { orders: number } }): boolean {
+      if (b._count.orders > 0) return true
+      const endDate = b.deactivatedAt ? new Date(b.deactivatedAt) : now
+      return (endDate.getTime() - new Date(b.createdAt).getTime()) >= SEVEN_DAYS_MS
+    }
+
+    const realBusinesses = allBusinesses.filter(isRealBusiness)
+    const activeBusinesses = realBusinesses.filter(b => b.isActive).length
+
+    const dbChurned = realBusinesses.filter(b =>
       !b.isActive && b.deactivatedAt && new Date(b.deactivatedAt) >= startDate
     ).length
 
-    // Stripe-detected churn: canceled subscriptions in the period
-    const stripeCanceled = stripeSubscriptions.filter(s => {
-      if (s.status !== 'canceled') return false
-      const canceledAt = s.canceled_at ? new Date(s.canceled_at * 1000) : null
-      return canceledAt && canceledAt >= startDate
-    }).length
-
-    // Use whichever is higher (some churn only visible in Stripe, some only in DB)
-    const churnedBusinesses = Math.max(dbChurned, stripeCanceled)
-    const businessesAtStart = allBusinesses.filter(b => new Date(b.createdAt) < startDate).length
+    const businessesAtStart = realBusinesses.filter(b => new Date(b.createdAt) < startDate).length
+    const churnedBusinesses = dbChurned
     const churnRate = businessesAtStart > 0
       ? Math.round((churnedBusinesses / businessesAtStart) * 100 * 10) / 10
       : 0
 
-    // Revenue churn: MRR lost from canceled subscriptions
+    // Revenue churn: only count canceled subs that had at least one successful charge
+    // (trial-only subs that never charged are not real revenue loss)
+    const knownPayingCustomers = new Set<string>()
+    const dbPaidTransactions = await prisma.stripeTransaction.findMany({
+      where: { status: { in: ['succeeded', 'paid'] }, amount: { gt: 0 } },
+      select: { customerId: true },
+    }).catch(() => [])
+    dbPaidTransactions.forEach(t => { if (t.customerId) knownPayingCustomers.add(t.customerId) })
+
     let revenueChurnMRR = 0
     stripeSubscriptions
       .filter(s => s.status === 'canceled' && s.canceled_at && new Date(s.canceled_at * 1000) >= startDate)
       .forEach(s => {
         const price = s.items.data[0]?.price
         if (!price || !price.unit_amount) return
+        const custId = typeof s.customer === 'string' ? s.customer : (s.customer as any)?.id
+        if (!custId || !knownPayingCustomers.has(custId)) return
         const monthlyAmount = price.recurring?.interval === 'year'
           ? price.unit_amount / 100 / 12
           : price.unit_amount / 100
@@ -198,20 +215,14 @@ export async function GET(request: NextRequest) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
 
-      const businessesAtMonthStart = allBusinesses.filter(b => new Date(b.createdAt) < monthStart).length
-      const dbChurnedThisMonth = allBusinesses.filter(b =>
+      const realAtMonthStart = realBusinesses.filter(b => new Date(b.createdAt) < monthStart).length
+      const churnedThisMonth = realBusinesses.filter(b =>
         !b.isActive && b.deactivatedAt &&
         new Date(b.deactivatedAt) >= monthStart && new Date(b.deactivatedAt) <= monthEnd
       ).length
-      const stripeChurnedThisMonth = stripeSubscriptions.filter(s => {
-        if (s.status !== 'canceled' || !s.canceled_at) return false
-        const d = new Date(s.canceled_at * 1000)
-        return d >= monthStart && d <= monthEnd
-      }).length
 
-      const churnedThisMonth = Math.max(dbChurnedThisMonth, stripeChurnedThisMonth)
-      const monthChurnRate = businessesAtMonthStart > 0
-        ? Math.round((churnedThisMonth / businessesAtMonthStart) * 100 * 10) / 10
+      const monthChurnRate = realAtMonthStart > 0
+        ? Math.round((churnedThisMonth / realAtMonthStart) * 100 * 10) / 10
         : 0
 
       churnTrend.push({
@@ -219,12 +230,16 @@ export async function GET(request: NextRequest) {
         monthLabel: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
         churnRate: monthChurnRate,
         churned: churnedThisMonth,
-        totalAtStart: businessesAtMonthStart
+        totalAtStart: realAtMonthStart
       })
     }
 
+    // Churn reasons — only from real businesses
+    const realChurnedIds = new Set(
+      realBusinesses.filter(b => !b.isActive && b.deactivatedAt && new Date(b.deactivatedAt) >= startDate).map(b => b.id)
+    )
     const churnedWithReasons = await prisma.business.findMany({
-      where: { isActive: false, deactivatedAt: { not: null, gte: startDate }, deactivationReason: { not: null } },
+      where: { id: { in: Array.from(realChurnedIds) }, deactivationReason: { not: null } },
       select: { deactivationReason: true }
     })
     const churnReasons: Record<string, number> = {}
