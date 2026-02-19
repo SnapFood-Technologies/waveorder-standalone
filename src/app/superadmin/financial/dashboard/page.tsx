@@ -497,7 +497,7 @@ export default function FinancialDashboardPage() {
                 <span className="text-gray-600">Converted</span>
                 <span className="font-medium">{data.trialFunnel.converted}</span>
               </div>
-              <div className="flex justify-between text-sm pt-2 border-t">
+              <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                 <span className="text-gray-600 font-medium">Conversion Rate</span>
                 <span className="font-semibold text-teal-600">{data.trialFunnel.conversionRate}%</span>
               </div>
