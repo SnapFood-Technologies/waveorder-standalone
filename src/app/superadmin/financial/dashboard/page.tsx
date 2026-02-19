@@ -398,7 +398,7 @@ export default function FinancialDashboardPage() {
       {/* KPI Cards Row 2 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Paid Subscriptions"
+          title="Paying Customers"
           value={String(data.subscriptions.paidActive)}
           subtitle={`ARPU: ${fmt(data.arpu)}`}
           icon={CreditCard}
@@ -414,7 +414,7 @@ export default function FinancialDashboardPage() {
         <KPICard
           title="Total Customers"
           value={String(data.subscriptions.total)}
-          subtitle={`${data.subscriptions.paidActive} paid, ${data.subscriptions.trialing} trial, ${data.subscriptions.free} free`}
+          subtitle={`${data.subscriptions.paidActive} paying, ${data.subscriptions.trialing} trial, ${data.subscriptions.free} free`}
           icon={Users}
           color="gray"
         />
@@ -497,7 +497,7 @@ export default function FinancialDashboardPage() {
                 <span className="text-gray-600">Converted</span>
                 <span className="font-medium">{data.trialFunnel.converted}</span>
               </div>
-              <div className="flex justify-between text-sm pt-2 border-t">
+              <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                 <span className="text-gray-600 font-medium">Conversion Rate</span>
                 <span className="font-semibold text-teal-600">{data.trialFunnel.conversionRate}%</span>
               </div>
