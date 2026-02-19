@@ -1,4 +1,4 @@
-// Financial Transactions API — all Stripe charges/invoices/refunds
+// Financial Transactions API — WaveOrder-only charges/invoices/refunds
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -118,13 +118,33 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // This Stripe account is dedicated to WaveOrder — fetch ALL records
-  const [chargesData, invoicesData] = await Promise.all([
+  // Build set of known WaveOrder customer IDs for filtering
+  const waveOrderUsers = await prisma.user.findMany({
+    where: { stripeCustomerId: { not: null } },
+    select: { stripeCustomerId: true },
+  })
+  const knownCustomerIds = new Set(
+    waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
+  )
+
+  // Fetch all Stripe records then filter to WaveOrder customers only
+  const [rawCharges, rawInvoices] = await Promise.all([
     fetchAllStripeRecords((p) => stripe.charges.list(p), {}).catch(() => []),
     fetchAllStripeRecords((p) => stripe.invoices.list(p), {}).catch(() => []),
   ])
-  const charges = { data: chargesData as Stripe.Charge[] }
-  const invoices = { data: invoicesData as Stripe.Invoice[] }
+
+  const charges = {
+    data: (rawCharges as Stripe.Charge[]).filter(c => {
+      const custId = typeof c.customer === 'string' ? c.customer : null
+      return custId && knownCustomerIds.has(custId)
+    })
+  }
+  const invoices = {
+    data: (rawInvoices as Stripe.Invoice[]).filter(inv => {
+      const custId = typeof (inv as any).customer === 'string' ? (inv as any).customer : null
+      return custId && knownCustomerIds.has(custId)
+    })
+  }
 
   // Build unified transaction list
   let transactions: Array<{

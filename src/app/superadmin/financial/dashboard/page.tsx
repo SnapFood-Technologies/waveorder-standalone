@@ -52,7 +52,10 @@ interface DashboardData {
   currency: string
   meta?: {
     totalStripeSubscriptions: number
+    waveOrderSubscriptions: number
     totalStripeCharges: number
+    waveOrderCharges: number
+    knownCustomerIds: number
     chargeWindow: string
     errors?: string[]
   }
@@ -316,9 +319,10 @@ export default function FinancialDashboardPage() {
 
       {/* Data Completeness Info */}
       {data.meta && !data.meta.errors && (
-        <div className="text-xs text-gray-500 flex items-center gap-4">
-          <span>{data.meta.totalStripeSubscriptions} subscriptions loaded</span>
-          <span>{data.meta.totalStripeCharges} charges loaded ({data.meta.chargeWindow})</span>
+        <div className="text-xs text-gray-500 flex items-center gap-4 flex-wrap">
+          <span>{data.meta.waveOrderSubscriptions} WaveOrder subs (of {data.meta.totalStripeSubscriptions} total in Stripe)</span>
+          <span>{data.meta.waveOrderCharges} WaveOrder charges (of {data.meta.totalStripeCharges} total, {data.meta.chargeWindow})</span>
+          <span>{data.meta.knownCustomerIds} known customers</span>
         </div>
       )}
 
@@ -347,7 +351,7 @@ export default function FinancialDashboardPage() {
           color="purple"
         />
         <KPICard
-          title="Stripe Balance"
+          title="Stripe Balance (Account-wide)"
           value={fmt(data.stripeBalance.available)}
           subtitle={`Pending: ${fmt(data.stripeBalance.pending)}`}
           icon={Wallet}

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, mapStripePlanToDb } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, isWaveOrderSubscription } from '@/lib/stripe'
 import Stripe from 'stripe'
 
 interface OrphanedRecord {
@@ -79,9 +79,10 @@ export async function GET() {
           limit: 20,
         })
 
-        // Only include non-canceled subscriptions (active, trialing, paused, past_due, unpaid)
+        // Only include non-canceled WaveOrder subscriptions
         const liveSubs = stripeSubs.data.filter(s =>
-          !['canceled', 'incomplete_expired'].includes(s.status)
+          !['canceled', 'incomplete_expired'].includes(s.status) &&
+          isWaveOrderSubscription(s)
         )
 
         if (liveSubs.length === 0) {
