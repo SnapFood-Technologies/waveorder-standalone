@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { createStripeCustomer, createTrialSubscription } from '@/lib/stripe'
+import { stripe, createStripeCustomer, createTrialSubscription, PLANS } from '@/lib/stripe'
 import { TRIAL_DAYS, calculateTrialEndDate, calculateGraceEndDate } from '@/lib/trial'
 import { logSystemEvent } from '@/lib/systemLog'
 
@@ -12,7 +12,6 @@ export async function POST(request: Request) {
   let userId: string | undefined
   let userEmail: string | undefined
   
-  // Construct actual URL from headers (for logging)
   const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
   const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
   const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
@@ -29,6 +28,7 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
+        subscription: true,
         businesses: {
           include: {
             business: true
@@ -42,14 +42,12 @@ export async function POST(request: Request) {
     }
     userId = user.id
 
-    // Check if user has already used their trial
     if ((user as any).trialUsed) {
       return NextResponse.json({ 
         message: 'You have already used your free trial. Please select a paid plan.' 
       }, { status: 400 })
     }
 
-    // Create Stripe customer if doesn't exist
     currentStep = 'stripe_customer'
     let stripeCustomerId = user.stripeCustomerId
     
@@ -63,44 +61,94 @@ export async function POST(request: Request) {
       })
     }
 
-    // Create Pro subscription with 14-day trial in Stripe
-    currentStep = 'stripe_subscription'
-    const subscription = await createTrialSubscription(stripeCustomerId)
-
-    // Calculate trial dates
-    currentStep = 'calculate_dates'
-    const trialEndsAt = calculateTrialEndDate()
-    const graceEndsAt = calculateGraceEndDate(trialEndsAt)
-
-    // Update user with trial info
-    currentStep = 'update_user'
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        plan: 'PRO',
-        trialEndsAt,
-        graceEndsAt,
-        trialUsed: true
-      } as any
+    // Check for existing Stripe subscriptions and clean up orphans
+    currentStep = 'check_existing_subs'
+    const existingStripeSubs = await stripe.subscriptions.list({
+      customer: stripeCustomerId,
+      limit: 10
     })
 
-    // Update all user's businesses with trial info
-    currentStep = 'update_businesses'
-    if (user.businesses && user.businesses.length > 0) {
-      for (const bu of user.businesses) {
-        await prisma.business.update({
-          where: { id: bu.businessId },
-          data: {
-            subscriptionPlan: 'PRO',
-            subscriptionStatus: 'ACTIVE',
-            trialEndsAt,
-            graceEndsAt
-          } as any
+    for (const existingSub of existingStripeSubs.data) {
+      if (existingSub.status === 'trialing' || existingSub.status === 'active') {
+        // Already has an active/trialing sub — reuse it instead of creating a new one
+        const trialEndsAt = calculateTrialEndDate()
+        const graceEndsAt = calculateGraceEndDate(trialEndsAt)
+        const priceId = existingSub.items.data[0]?.price?.id || PLANS.PRO.priceId
+
+        const dbSubscription = await saveSubscriptionToDB(
+          existingSub, priceId, 'PRO', user
+        )
+        await updateUserAndBusinesses(
+          user, dbSubscription.id, 'PRO', trialEndsAt, graceEndsAt
+        )
+
+        await logSystemEvent({
+          logType: 'trial_started',
+          severity: 'info',
+          endpoint: '/api/setup/start-trial',
+          method: 'POST',
+          statusCode: 200,
+          url: actualUrl,
+          metadata: {
+            userId, userEmail, plan: 'PRO',
+            trialEndsAt: trialEndsAt.toISOString(),
+            stripeSubscriptionId: existingSub.id,
+            action: 'trial_start_reused_existing'
+          }
+        })
+
+        return NextResponse.json({
+          success: true,
+          trial: {
+            plan: 'PRO',
+            trialStart: new Date(),
+            trialEnd: trialEndsAt,
+            status: 'TRIAL_ACTIVE',
+            stripeSubscriptionId: existingSub.id
+          },
+          message: `Pro trial started successfully. You have ${TRIAL_DAYS} days to explore all Pro features.`
+        })
+      }
+
+      // Cancel paused/past_due/incomplete subs to avoid duplicates
+      if (['paused', 'past_due', 'incomplete'].includes(existingSub.status)) {
+        try {
+          await stripe.subscriptions.cancel(existingSub.id)
+        } catch (cancelError) {
+          console.error(`Failed to cancel orphaned sub ${existingSub.id}:`, cancelError)
+        }
+      }
+    }
+
+    // Clean up any orphaned DB Subscription record that no longer exists in Stripe
+    if (user.subscription) {
+      try {
+        await stripe.subscriptions.retrieve(user.subscription.stripeId)
+      } catch {
+        // Stripe sub doesn't exist anymore — unlink from user
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { subscriptionId: null }
         })
       }
     }
 
-    // Log successful trial start
+    currentStep = 'stripe_subscription'
+    const stripeSubscription = await createTrialSubscription(stripeCustomerId)
+
+    currentStep = 'save_subscription'
+    const trialEndsAt = calculateTrialEndDate()
+    const graceEndsAt = calculateGraceEndDate(trialEndsAt)
+
+    const dbSubscription = await saveSubscriptionToDB(
+      stripeSubscription, PLANS.PRO.priceId, 'PRO', user
+    )
+
+    currentStep = 'update_user_and_businesses'
+    await updateUserAndBusinesses(
+      user, dbSubscription.id, 'PRO', trialEndsAt, graceEndsAt
+    )
+
     await logSystemEvent({
       logType: 'trial_started',
       severity: 'info',
@@ -109,11 +157,9 @@ export async function POST(request: Request) {
       statusCode: 200,
       url: actualUrl,
       metadata: {
-        userId,
-        userEmail,
-        plan: 'PRO',
+        userId, userEmail, plan: 'PRO',
         trialEndsAt: trialEndsAt.toISOString(),
-        stripeSubscriptionId: subscription.id,
+        stripeSubscriptionId: stripeSubscription.id,
         action: 'trial_start_success'
       }
     })
@@ -125,13 +171,12 @@ export async function POST(request: Request) {
         trialStart: new Date(),
         trialEnd: trialEndsAt,
         status: 'TRIAL_ACTIVE',
-        stripeSubscriptionId: subscription.id
+        stripeSubscriptionId: stripeSubscription.id
       },
       message: `Pro trial started successfully. You have ${TRIAL_DAYS} days to explore all Pro features.`
     })
 
   } catch (error: any) {
-    // Log to system logs for SuperAdmin visibility
     await logSystemEvent({
       logType: 'trial_error',
       severity: 'error',
@@ -143,15 +188,13 @@ export async function POST(request: Request) {
       errorStack: error.stack?.split('\n').slice(0, 5).join('\n'),
       metadata: {
         step: currentStep,
-        userId,
-        userEmail,
+        userId, userEmail,
         errorType: error.type || error.name,
         errorCode: error.code,
         stripeError: error.raw?.message || null
       }
     })
     
-    // Return more specific error messages
     if (error.type === 'StripeInvalidRequestError') {
       return NextResponse.json({ 
         message: `Payment system error: ${error.message}` 
@@ -167,5 +210,100 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       message: 'Failed to start trial. Please try again.' 
     }, { status: 500 })
+  }
+}
+
+/**
+ * Creates or updates the Subscription record in DB and links it to the user.
+ * Prevents duplicates by checking for existing record with the same stripeId.
+ */
+async function saveSubscriptionToDB(
+  stripeSub: { id: string; status: string; current_period_start: number; current_period_end: number },
+  priceId: string,
+  plan: string,
+  user: { id: string; subscription?: { id: string; stripeId: string } | null }
+) {
+  // Check if a DB record already exists for this Stripe subscription
+  const existing = await prisma.subscription.findUnique({
+    where: { stripeId: stripeSub.id }
+  })
+
+  if (existing) {
+    return await prisma.subscription.update({
+      where: { id: existing.id },
+      data: {
+        status: stripeSub.status,
+        priceId,
+        plan: plan as any,
+        currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+        currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+        cancelAtPeriodEnd: false,
+        canceledAt: null
+      }
+    })
+  }
+
+  // If user already has a different subscription record, update it
+  if (user.subscription) {
+    return await prisma.subscription.update({
+      where: { id: user.subscription.id },
+      data: {
+        stripeId: stripeSub.id,
+        status: stripeSub.status,
+        priceId,
+        plan: plan as any,
+        currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+        currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+        cancelAtPeriodEnd: false,
+        canceledAt: null
+      }
+    })
+  }
+
+  return await prisma.subscription.create({
+    data: {
+      stripeId: stripeSub.id,
+      status: stripeSub.status,
+      priceId,
+      plan: plan as any,
+      currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
+      currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+    }
+  })
+}
+
+/**
+ * Updates User plan/trial fields and syncs all associated businesses.
+ */
+async function updateUserAndBusinesses(
+  user: { id: string; businesses?: { businessId: string }[] },
+  subscriptionId: string,
+  plan: string,
+  trialEndsAt: Date,
+  graceEndsAt: Date
+) {
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      plan,
+      subscriptionId,
+      trialEndsAt,
+      graceEndsAt,
+      trialUsed: true
+    } as any
+  })
+
+  if (user.businesses && user.businesses.length > 0) {
+    for (const bu of user.businesses) {
+      await prisma.business.update({
+        where: { id: bu.businessId },
+        data: {
+          subscriptionPlan: plan,
+          subscriptionStatus: 'ACTIVE',
+          trialEndsAt,
+          graceEndsAt
+        } as any
+      })
+    }
   }
 }

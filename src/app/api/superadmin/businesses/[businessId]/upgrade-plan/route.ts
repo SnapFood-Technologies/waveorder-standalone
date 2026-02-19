@@ -151,12 +151,33 @@ export async function POST(
       }
     }
 
-    // Cancel existing subscription if any
-    if (owner.subscription?.stripeId) {
+    // Cancel ALL existing Stripe subscriptions (both DB-linked and orphaned)
+    if (stripeCustomerId) {
+      try {
+        const existingSubs = await stripe.subscriptions.list({
+          customer: stripeCustomerId,
+          limit: 20
+        })
+
+        for (const existingSub of existingSubs.data) {
+          if (['active', 'trialing', 'paused', 'past_due', 'incomplete'].includes(existingSub.status)) {
+            try {
+              await stripe.subscriptions.cancel(existingSub.id)
+            } catch (cancelErr: any) {
+              if (cancelErr?.code !== 'resource_missing') {
+                console.error(`Error canceling sub ${existingSub.id}:`, cancelErr)
+              }
+            }
+          }
+        }
+      } catch (listErr) {
+        console.error('Error listing Stripe subscriptions:', listErr)
+      }
+    } else if (owner.subscription?.stripeId) {
+      // Fallback: cancel DB-linked sub only if no stripeCustomerId
       try {
         await stripe.subscriptions.cancel(owner.subscription.stripeId)
       } catch (error: any) {
-        // Ignore if subscription doesn't exist in Stripe
         if (error?.code !== 'resource_missing') {
           console.error('Error canceling existing subscription:', error)
         }
