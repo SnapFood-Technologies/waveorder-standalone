@@ -109,9 +109,12 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // Get WaveOrder customer IDs + plan info from DB
+  // Get WaveOrder customer IDs + plan info from DB (exclude test businesses)
   const waveOrderUsers = await prisma.user.findMany({
-    where: { stripeCustomerId: { not: null } },
+    where: {
+      stripeCustomerId: { not: null },
+      businesses: { some: { business: { testMode: { not: true } } } },
+    },
     select: {
       stripeCustomerId: true, name: true, email: true,
       businesses: {

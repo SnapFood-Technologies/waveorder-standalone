@@ -4544,7 +4544,7 @@ function StripeSyncSection({ businessId, businessName }: { businessId: string; b
               <p className="text-xs text-purple-600 font-medium mb-2">Stripe</p>
               {analysis.stripeSubscriptions?.length > 0 ? (
                 <>
-                  <p className="text-sm text-gray-900">Plan: <span className="font-semibold">{analysis.stripeSubscriptions[0].plan}</span></p>
+                  <p className="text-sm text-gray-900">Plan: <span className="font-semibold">{analysis.stripeSubscriptions[0].displayPlan || analysis.stripeSubscriptions[0].plan}</span></p>
                   <p className="text-sm text-gray-900">Status: <span className="font-semibold">{analysis.stripeSubscriptions[0].status}</span></p>
                   <p className="text-sm text-gray-900">Period End: <span className="font-semibold">{new Date(analysis.stripeSubscriptions[0].currentPeriodEnd).toLocaleDateString()}</span></p>
                 </>

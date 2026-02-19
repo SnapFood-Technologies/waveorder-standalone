@@ -18,9 +18,12 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Build set of known WaveOrder customer IDs from DB
+    // Build set of known WaveOrder customer IDs from DB (exclude test businesses)
     const waveOrderUsers = await prisma.user.findMany({
-      where: { stripeCustomerId: { not: null } },
+      where: {
+        stripeCustomerId: { not: null },
+        businesses: { some: { business: { testMode: { not: true } } } },
+      },
       select: { stripeCustomerId: true },
     })
     const knownCustomerIds = new Set(
@@ -49,7 +52,7 @@ export async function GET() {
         return [] as Stripe.Charge[]
       }),
       prisma.business.findMany({
-        where: { isActive: true },
+        where: { isActive: true, testMode: { not: true } },
         select: {
           id: true, name: true, subscriptionPlan: true, subscriptionStatus: true,
           trialEndsAt: true, graceEndsAt: true, createdAt: true,
@@ -138,14 +141,20 @@ export async function GET() {
 
     const monthlyRevenue = buildMonthlyRevenue(succeededCharges, 6)
 
+    // DB-based customer breakdown (single source of truth so numbers add up)
+    const now = new Date()
+    const dbTrialing = dbBusinesses.filter(b =>
+      b.trialEndsAt && new Date(b.trialEndsAt) > now
+    )
+    const dbPaying = activePaid.length // from Stripe (actually paying money)
+    const dbFree = dbBusinesses.length - dbTrialing.length - dbPaying
+
     // Trial funnel
     const endedTrials = dbBusinesses.filter(b =>
-      b.trialEndsAt && new Date(b.trialEndsAt) < new Date()
+      b.trialEndsAt && new Date(b.trialEndsAt) < now
     ).length
-    const activeTrials = trialing.length + dbBusinesses.filter(b =>
-      b.trialEndsAt && new Date(b.trialEndsAt) > new Date()
-    ).length
-    const convertedTrials = activePaid.length
+    const activeTrials = dbTrialing.length
+    const convertedTrials = dbPaying
     const conversionRate = endedTrials > 0
       ? (convertedTrials / (endedTrials + convertedTrials)) * 100
       : 0
@@ -182,11 +191,11 @@ export async function GET() {
       arpu: Math.round(arpu * 100) / 100,
       stripeBalance: { available: 0, pending: 0 },
       subscriptions: {
-        paidActive: activePaid.length,
+        paidActive: dbPaying,
         trialing: activeTrials,
         paused: paused.length,
         canceled: canceled.length,
-        free: freeSubs.length,
+        free: Math.max(0, dbFree),
         total: dbBusinesses.length,
       },
       revenueByPlan,

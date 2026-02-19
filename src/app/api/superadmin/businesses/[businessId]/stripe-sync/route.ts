@@ -378,16 +378,24 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
     throw err
   }
 
-  // Map Stripe subs for the response
-  result.stripeSubscriptions = stripeSubs.map(s => ({
-    id: s.id,
-    status: s.status,
-    plan: s.metadata?.plan || mapStripePlanToDb(s.items.data[0]?.price?.id),
-    priceId: s.items.data[0]?.price?.id || '',
-    currentPeriodEnd: new Date(s.current_period_end * 1000).toISOString(),
-    cancelAtPeriodEnd: s.cancel_at_period_end,
-    created: new Date(s.created * 1000).toISOString(),
-  }))
+  // Map Stripe subs for the response (always use mapStripePlanToDb for consistency)
+  result.stripeSubscriptions = stripeSubs.map(s => {
+    const priceId = s.items.data[0]?.price?.id
+    const plan = mapStripePlanToDb(priceId)
+    const unitAmount = s.items.data[0]?.price?.unit_amount || 0
+    const billingLabel = unitAmount === 0 ? `${plan} (Free)` : plan
+
+    return {
+      id: s.id,
+      status: s.status,
+      plan,
+      displayPlan: billingLabel,
+      priceId: priceId || '',
+      currentPeriodEnd: new Date(s.current_period_end * 1000).toISOString(),
+      cancelAtPeriodEnd: s.cancel_at_period_end,
+      created: new Date(s.created * 1000).toISOString(),
+    }
+  })
 
   // Check for payment method
   try {
@@ -457,15 +465,17 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
 
   // Issue: Plan mismatch between Stripe and DB
   if (primaryStripeSub) {
-    const stripePlan = primaryStripeSub.metadata?.plan || mapStripePlanToDb(primaryStripeSub.items.data[0]?.price?.id)
+    const stripePlan = mapStripePlanToDb(primaryStripeSub.items.data[0]?.price?.id)
+    const unitAmount = primaryStripeSub.items.data[0]?.price?.unit_amount || 0
     const stripeIsActive = ['active', 'trialing'].includes(primaryStripeSub.status)
     const stripeIsPaused = primaryStripeSub.status === 'paused'
+    const displayPlan = unitAmount === 0 ? `${stripePlan} (Free)` : stripePlan
 
     if (stripeIsActive && business.subscriptionPlan !== stripePlan) {
       issues.push({
         type: 'plan_mismatch',
         severity: 'critical',
-        description: `Stripe has active ${stripePlan} subscription, but DB shows ${business.subscriptionPlan}`,
+        description: `Stripe has active ${displayPlan} subscription, but DB shows ${business.subscriptionPlan}`,
         stripeData: { plan: stripePlan, status: primaryStripeSub.status },
         dbData: { plan: business.subscriptionPlan },
         fix: `Update DB to ${stripePlan}`
