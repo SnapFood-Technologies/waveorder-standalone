@@ -68,16 +68,20 @@ export async function GET() {
       return custId && knownCustomerIds.has(custId)
     })
 
-    // Categorize subscriptions
-    const activePaid = allSubscriptions.filter(s =>
-      s.status === 'active' && !isFreePrice(s.items.data[0]?.price?.id)
-    )
+    // Categorize subscriptions — "paid" means actually paying money (unit_amount > 0)
+    const activePaid = allSubscriptions.filter(s => {
+      if (s.status !== 'active') return false
+      const price = s.items.data[0]?.price
+      return price && (price.unit_amount || 0) > 0
+    })
     const trialing = allSubscriptions.filter(s => s.status === 'trialing')
     const paused = allSubscriptions.filter(s => s.status === 'paused')
     const canceled = allSubscriptions.filter(s => ['canceled', 'incomplete_expired'].includes(s.status))
-    const freeSubs = allSubscriptions.filter(s =>
-      s.status === 'active' && isFreePrice(s.items.data[0]?.price?.id)
-    )
+    const freeSubs = allSubscriptions.filter(s => {
+      if (s.status !== 'active') return false
+      const price = s.items.data[0]?.price
+      return !price || (price.unit_amount || 0) === 0
+    })
 
     // Calculate MRR from active paid subscriptions
     let mrr = 0

@@ -41,21 +41,19 @@ export async function GET(request: NextRequest) {
     // Filter to WaveOrder subscriptions only (by price ID)
     const allSubs = rawSubsArray.filter(s => isWaveOrderSubscription(s))
 
-    // Identify free price IDs
-    const freePriceIds = new Set([
-      PLANS.STARTER.freePriceId,
-      PLANS.PRO.freePriceId,
-      PLANS.BUSINESS.freePriceId,
-    ].filter(Boolean))
-
-    const activePaid = allSubs.filter(s =>
-      s.status === 'active' && !freePriceIds.has(s.items.data[0]?.price?.id)
-    )
+    // "paid" = active + actually paying money (unit_amount > 0)
+    const activePaid = allSubs.filter(s => {
+      if (s.status !== 'active') return false
+      const price = s.items.data[0]?.price
+      return price && (price.unit_amount || 0) > 0
+    })
     const trialing = allSubs.filter(s => s.status === 'trialing')
     const paused = allSubs.filter(s => s.status === 'paused')
-    const freeSubs = allSubs.filter(s =>
-      s.status === 'active' && freePriceIds.has(s.items.data[0]?.price?.id)
-    )
+    const freeSubs = allSubs.filter(s => {
+      if (s.status !== 'active') return false
+      const price = s.items.data[0]?.price
+      return !price || (price.unit_amount || 0) === 0
+    })
 
     // === REAL MRR FROM STRIPE ===
     let totalMRR = 0
