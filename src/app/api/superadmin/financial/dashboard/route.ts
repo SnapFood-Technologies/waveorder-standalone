@@ -18,11 +18,11 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Build set of known WaveOrder customer IDs from DB (exclude test businesses)
+    // Build set of known WaveOrder customer IDs from DB (active non-test businesses only)
     const waveOrderUsers = await prisma.user.findMany({
       where: {
         stripeCustomerId: { not: null },
-        businesses: { some: { business: { testMode: { not: true } } } },
+        businesses: { some: { business: { isActive: true, testMode: { not: true } } } },
       },
       select: { stripeCustomerId: true },
     })

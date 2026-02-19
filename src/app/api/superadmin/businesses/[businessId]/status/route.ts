@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { stripe, isWaveOrderSubscription } from '@/lib/stripe'
 
 
 export async function PATCH(
@@ -28,13 +29,13 @@ export async function PATCH(
       return NextResponse.json({ message: 'isActive must be a boolean value' }, { status: 400 })
     }
 
-    // Check if business exists
     const existingBusiness = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { 
-        id: true, 
-        name: true, 
-        isActive: true 
+      include: {
+        users: {
+          where: { role: 'OWNER' },
+          include: { user: { select: { id: true, stripeCustomerId: true } } }
+        }
       }
     })
 
@@ -42,32 +43,56 @@ export async function PATCH(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    // Check if the status is actually changing
     if (existingBusiness.isActive === isActive) {
       return NextResponse.json({ 
         message: `Business is already ${isActive ? 'active' : 'inactive'}` 
       }, { status: 400 })
     }
 
-    // Prepare update data
     const updateData: any = {
       isActive,
       updatedAt: new Date()
     }
 
-    // If deactivating, set deactivation timestamp and reason
+    const stripeActions: string[] = []
+
     if (!isActive) {
       updateData.deactivatedAt = new Date()
       if (deactivationReason && deactivationReason.trim() !== '') {
         updateData.deactivationReason = deactivationReason.trim()
       }
+
+      // Cancel active Stripe subscriptions for this business's owner
+      const owner = existingBusiness.users[0]?.user
+      if (owner?.stripeCustomerId) {
+        try {
+          const stripeSubs = await stripe.subscriptions.list({
+            customer: owner.stripeCustomerId,
+            limit: 20,
+          })
+
+          for (const sub of stripeSubs.data) {
+            if (['active', 'trialing', 'paused', 'past_due'].includes(sub.status) && isWaveOrderSubscription(sub)) {
+              await stripe.subscriptions.cancel(sub.id)
+              stripeActions.push(`Canceled subscription ${sub.id} (${sub.status})`)
+            }
+          }
+        } catch (err: any) {
+          console.error('Failed to cancel Stripe subs on deactivation:', err.message)
+          stripeActions.push(`Warning: Stripe cleanup failed — ${err.message}`)
+        }
+      }
+
+      // Downgrade DB plan to STARTER
+      updateData.subscriptionPlan = 'STARTER'
+      updateData.subscriptionStatus = 'CANCELLED'
+      updateData.trialEndsAt = null
+      updateData.graceEndsAt = null
     } else {
-      // If reactivating, clear deactivation data
       updateData.deactivatedAt = null
       updateData.deactivationReason = null
     }
 
-    // Update business status
     const updatedBusiness = await prisma.business.update({
       where: { id: businessId },
       data: updateData,
@@ -84,7 +109,8 @@ export async function PATCH(
     return NextResponse.json({
       success: true,
       message: `Business "${updatedBusiness.name}" has been ${isActive ? 'activated' : 'deactivated'} successfully`,
-      business: updatedBusiness
+      business: updatedBusiness,
+      stripeActions: stripeActions.length > 0 ? stripeActions : undefined,
     })
 
   } catch (error) {

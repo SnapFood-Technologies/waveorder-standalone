@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getBillingTypeFromPriceId } from '@/lib/stripe'
+import { getBillingTypeFromPriceId, stripe, isWaveOrderSubscription } from '@/lib/stripe'
 
 
 export async function GET(
@@ -464,6 +464,28 @@ export async function DELETE(
 
     if (!business) {
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
+    }
+
+    // Cancel Stripe subscriptions and archive customer before DB deletion
+    for (const businessUser of business.users) {
+      if (businessUser.role === 'OWNER' && businessUser.user?.stripeCustomerId) {
+        const customerId = businessUser.user.stripeCustomerId
+        try {
+          const stripeSubs = await stripe.subscriptions.list({
+            customer: customerId,
+            limit: 50,
+          })
+          for (const sub of stripeSubs.data) {
+            if (['active', 'trialing', 'paused', 'past_due'].includes(sub.status) && isWaveOrderSubscription(sub)) {
+              await stripe.subscriptions.cancel(sub.id)
+            }
+          }
+          // Archive (delete) the Stripe customer so they don't appear in Stripe lists
+          await stripe.customers.del(customerId)
+        } catch (err: any) {
+          console.error(`Stripe cleanup failed for ${customerId}:`, err.message)
+        }
+      }
     }
 
     // Start a transaction to delete everything related to the business
