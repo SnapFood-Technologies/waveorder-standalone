@@ -17,6 +17,16 @@ export async function GET(request: NextRequest) {
     const timeRange = searchParams.get('range') || '30d'
     
     const now = new Date()
+
+    // Build set of known WaveOrder Stripe customer IDs
+    const waveorderUsers = await prisma.user.findMany({
+      where: { stripeCustomerId: { not: null } },
+      select: { stripeCustomerId: true }
+    })
+    const knownCustomerIds = new Set(
+      waveorderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
+    )
+
     let startDate = new Date()
     switch (timeRange) {
       case '7d': startDate.setDate(now.getDate() - 7); break
@@ -80,7 +90,7 @@ export async function GET(request: NextRequest) {
           orders: { where: { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }
         }
       }),
-      // Stripe subscriptions for churn/CLV
+      // Stripe subscriptions for churn/CLV (filtered to WaveOrder after fetch)
       stripe.subscriptions.list({ limit: 100, status: 'all' }).catch(() => ({ data: [] })),
       // DB transactions for actual revenue CLV
       prisma.stripeTransaction.findMany({
@@ -88,6 +98,14 @@ export async function GET(request: NextRequest) {
         select: { amount: true, stripeCreatedAt: true, customerId: true, userId: true, businessId: true }
       }).catch(() => [])
     ])
+
+    // Filter Stripe subscriptions to WaveOrder customers only
+    const filteredStripeSubs = {
+      data: stripeSubscriptions.data.filter(s =>
+        s.metadata?.source === 'waveorder_platform' ||
+        (typeof s.customer === 'string' && knownCustomerIds.has(s.customer))
+      )
+    }
 
     // === NPS CALCULATION ===
     const promoters = npsFeedbacks.filter(f => f.rating >= 9).length
@@ -161,7 +179,7 @@ export async function GET(request: NextRequest) {
     ).length
 
     // Stripe-detected churn: canceled subscriptions in the period
-    const stripeCanceled = stripeSubscriptions.data.filter(s => {
+    const stripeCanceled = filteredStripeSubs.data.filter(s => {
       if (s.status !== 'canceled') return false
       const canceledAt = s.canceled_at ? new Date(s.canceled_at * 1000) : null
       return canceledAt && canceledAt >= startDate
@@ -176,7 +194,7 @@ export async function GET(request: NextRequest) {
 
     // Revenue churn: MRR lost from canceled subscriptions
     let revenueChurnMRR = 0
-    stripeSubscriptions.data
+    filteredStripeSubs.data
       .filter(s => s.status === 'canceled' && s.canceled_at && new Date(s.canceled_at * 1000) >= startDate)
       .forEach(s => {
         const price = s.items.data[0]?.price
@@ -197,7 +215,7 @@ export async function GET(request: NextRequest) {
         !b.isActive && b.deactivatedAt &&
         new Date(b.deactivatedAt) >= monthStart && new Date(b.deactivatedAt) <= monthEnd
       ).length
-      const stripeChurnedThisMonth = stripeSubscriptions.data.filter(s => {
+      const stripeChurnedThisMonth = filteredStripeSubs.data.filter(s => {
         if (s.status !== 'canceled' || !s.canceled_at) return false
         const d = new Date(s.canceled_at * 1000)
         return d >= monthStart && d <= monthEnd
@@ -289,7 +307,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // Fallback: estimate CLV from Stripe subscriptions
-      const activeSubs = stripeSubscriptions.data.filter(s => s.status === 'active')
+      const activeSubs = filteredStripeSubs.data.filter(s => s.status === 'active')
       const clvValues: number[] = []
       const planCLVGroups: Record<string, number[]> = {}
 

@@ -199,7 +199,7 @@ export default function FinancialDashboardPage() {
         <KPICard
           title="Stripe Balance"
           value={fmt(data.stripeBalance.available)}
-          subtitle={`Pending: ${fmt(data.stripeBalance.pending)}`}
+          subtitle={`Pending: ${fmt(data.stripeBalance.pending)} (Account-wide)`}
           icon={Wallet}
           color="indigo"
         />

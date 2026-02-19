@@ -1,4 +1,4 @@
-// Financial Dashboard API — real-time Stripe data + DB context
+// Financial Dashboard API — real-time Stripe data filtered to WaveOrder customers only
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -12,7 +12,16 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch data in parallel
+    // Build set of known WaveOrder Stripe customer IDs from DB
+    const waveorderUsers = await prisma.user.findMany({
+      where: { stripeCustomerId: { not: null } },
+      select: { stripeCustomerId: true }
+    })
+    const knownCustomerIds = new Set(
+      waveorderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
+    )
+
+    // Fetch Stripe + DB data in parallel
     const [
       stripeBalance,
       subscriptions,
@@ -26,13 +35,8 @@ export async function GET() {
       prisma.business.findMany({
         where: { isActive: true },
         select: {
-          id: true,
-          name: true,
-          subscriptionPlan: true,
-          subscriptionStatus: true,
-          trialEndsAt: true,
-          graceEndsAt: true,
-          createdAt: true,
+          id: true, name: true, subscriptionPlan: true, subscriptionStatus: true,
+          trialEndsAt: true, graceEndsAt: true, createdAt: true,
         }
       }),
       prisma.stripeTransaction.findMany({
@@ -41,10 +45,17 @@ export async function GET() {
       }).catch(() => [])
     ])
 
-    // Categorize subscriptions
+    // Filter subscriptions to WaveOrder customers only
     const allSubs = subscriptions.data.filter(s =>
-      s.metadata?.source === 'waveorder_platform' || !s.metadata?.source
+      s.metadata?.source === 'waveorder_platform' ||
+      (typeof s.customer === 'string' && knownCustomerIds.has(s.customer))
     )
+
+    // Filter charges to WaveOrder customers only
+    const waveorderCharges = recentCharges.data.filter(c => {
+      const customerId = typeof c.customer === 'string' ? c.customer : null
+      return customerId && knownCustomerIds.has(customerId)
+    })
 
     const activePaid = allSubs.filter(s =>
       s.status === 'active' && !isFreePrice(s.items.data[0]?.price?.id)
@@ -86,13 +97,12 @@ export async function GET() {
     const arr = mrr * 12
     const arpu = activePaid.length > 0 ? mrr / activePaid.length : 0
 
-    // Calculate total revenue from charges
-    const allCharges = recentCharges.data.filter(c => c.status === 'succeeded')
+    // Calculate revenue from WaveOrder-only charges
+    const allCharges = waveorderCharges.filter(c => c.status === 'succeeded')
     const totalRevenue = allCharges.reduce((sum, c) => sum + c.amount, 0) / 100
     const totalRefunded = allCharges.reduce((sum, c) => sum + (c.amount_refunded || 0), 0) / 100
     const netRevenue = totalRevenue - totalRefunded
 
-    // This month's revenue
     const thisMonthStart = new Date()
     thisMonthStart.setDate(1)
     thisMonthStart.setHours(0, 0, 0, 0)
@@ -110,7 +120,6 @@ export async function GET() {
       ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
       : thisMonthRevenue > 0 ? 100 : 0
 
-    // Monthly revenue breakdown (last 6 months)
     const monthlyRevenue = buildMonthlyRevenue(allCharges, 6)
 
     // Trial funnel
@@ -125,32 +134,25 @@ export async function GET() {
       ? (convertedTrials / (endedTrials + convertedTrials)) * 100
       : 0
 
-    // Recent transactions (prefer DB, fallback to Stripe charges)
+    // Recent transactions (DB first, fallback to filtered charges)
     const recentTransactions = dbTransactions.length > 0
       ? dbTransactions.map(t => ({
-          id: t.stripeId,
-          type: t.type,
-          customerEmail: t.customerEmail,
-          customerName: t.customerName,
-          description: t.description,
-          amount: t.amount / 100,
-          currency: t.currency,
-          status: t.status,
+          id: t.stripeId, type: t.type,
+          customerEmail: t.customerEmail, customerName: t.customerName,
+          description: t.description, amount: t.amount / 100,
+          currency: t.currency, status: t.status,
           date: t.stripeCreatedAt.toISOString(),
         }))
       : allCharges.slice(0, 5).map(c => ({
-          id: c.id,
-          type: 'charge',
+          id: c.id, type: 'charge',
           customerEmail: c.billing_details?.email || null,
           customerName: c.billing_details?.name || null,
           description: c.description || 'Payment',
-          amount: c.amount / 100,
-          currency: c.currency,
-          status: c.status,
+          amount: c.amount / 100, currency: c.currency, status: c.status,
           date: new Date(c.created * 1000).toISOString(),
         }))
 
-    // Stripe balance
+    // Stripe balance (this is account-wide, cannot filter — label accordingly)
     const available = stripeBalance?.available?.reduce((s, b) => s + b.amount, 0) || 0
     const pending = stripeBalance?.pending?.reduce((s, b) => s + b.amount, 0) || 0
 
@@ -169,6 +171,7 @@ export async function GET() {
       stripeBalance: {
         available: available / 100,
         pending: pending / 100,
+        isAccountWide: true,
       },
       subscriptions: {
         paidActive: activePaid.length,
@@ -230,7 +233,6 @@ function buildMonthlyRevenue(charges: any[], months: number) {
 
     const revenue = monthCharges.reduce((s: number, c: any) => s + (c.amount - (c.amount_refunded || 0)), 0) / 100
     const refunds = monthCharges.reduce((s: number, c: any) => s + (c.amount_refunded || 0), 0) / 100
-
     const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
 
     result.push({
