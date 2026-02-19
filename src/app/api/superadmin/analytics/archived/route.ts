@@ -19,9 +19,12 @@ export async function GET(request: NextRequest) {
     // Fetch incomplete and inactive businesses (excluding test businesses)
     // Use BusinessUser relation with OWNER role to get the owner's email
     const [allBusinesses, inactiveBusinesses] = await Promise.all([
-      // Fetch all businesses for incomplete check (excluding test)
+      // Fetch active businesses for incomplete check (excluding test and deactivated)
       prisma.business.findMany({
-        where: excludeTestCondition,
+        where: {
+          isActive: true,
+          ...excludeTestCondition
+        },
         select: {
           id: true,
           name: true,
