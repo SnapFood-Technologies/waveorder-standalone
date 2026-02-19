@@ -218,11 +218,28 @@ export async function POST(request: Request) {
  * Prevents duplicates by checking for existing record with the same stripeId.
  */
 async function saveSubscriptionToDB(
-  stripeSub: { id: string; status: string; current_period_start: number; current_period_end: number },
+  stripeSub: Record<string, any> & { id: string; status: string },
   priceId: string,
   plan: string,
   user: { id: string; subscription?: { id: string; stripeId: string } | null }
 ) {
+  const periodStart = stripeSub.current_period_start
+    ? new Date(stripeSub.current_period_start * 1000)
+    : new Date()
+  const periodEnd = stripeSub.current_period_end
+    ? new Date(stripeSub.current_period_end * 1000)
+    : new Date()
+
+  const subData = {
+    status: stripeSub.status,
+    priceId,
+    plan: plan as any,
+    currentPeriodStart: periodStart,
+    currentPeriodEnd: periodEnd,
+    cancelAtPeriodEnd: false,
+    canceledAt: null,
+  }
+
   // Check if a DB record already exists for this Stripe subscription
   const existing = await prisma.subscription.findUnique({
     where: { stripeId: stripeSub.id }
@@ -231,15 +248,7 @@ async function saveSubscriptionToDB(
   if (existing) {
     return await prisma.subscription.update({
       where: { id: existing.id },
-      data: {
-        status: stripeSub.status,
-        priceId,
-        plan: plan as any,
-        currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
-        currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-        cancelAtPeriodEnd: false,
-        canceledAt: null
-      }
+      data: subData,
     })
   }
 
@@ -247,27 +256,14 @@ async function saveSubscriptionToDB(
   if (user.subscription) {
     return await prisma.subscription.update({
       where: { id: user.subscription.id },
-      data: {
-        stripeId: stripeSub.id,
-        status: stripeSub.status,
-        priceId,
-        plan: plan as any,
-        currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
-        currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-        cancelAtPeriodEnd: false,
-        canceledAt: null
-      }
+      data: { stripeId: stripeSub.id, ...subData },
     })
   }
 
   return await prisma.subscription.create({
     data: {
       stripeId: stripeSub.id,
-      status: stripeSub.status,
-      priceId,
-      plan: plan as any,
-      currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
-      currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
+      ...subData,
     }
   })
 }

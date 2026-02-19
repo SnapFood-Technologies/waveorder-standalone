@@ -343,6 +343,11 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       console.log(`ℹ️ Created missing Subscription record for ${sub.id} (user: ${user.email})`)
     }
 
+    if (!subscription) {
+      console.error(`❌ Subscription record still null after creation attempt: ${sub.id}`)
+      return
+    }
+
     const oldPlan = subscription.plan
     const user = subscription.users[0]
 
