@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { stripe, mapStripePlanToDb, getBillingTypeFromPriceId } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, fetchAllStripeRecords } from '@/lib/stripe'
+import Stripe from 'stripe'
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,8 +82,8 @@ export async function GET(request: NextRequest) {
           orders: { where: { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }
         }
       }),
-      // Stripe subscriptions for churn/CLV (filtered to WaveOrder after fetch)
-      stripe.subscriptions.list({ limit: 100, status: 'all' }).catch(() => ({ data: [] })),
+      // ALL Stripe subscriptions (auto-paginated) for churn/CLV
+      fetchAllStripeRecords((p) => stripe.subscriptions.list(p), { status: 'all' }).catch(() => [] as Stripe.Subscription[]),
       // DB transactions for actual revenue CLV
       prisma.stripeTransaction.findMany({
         where: { status: { in: ['succeeded', 'paid'] } },
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest) {
     ).length
 
     // Stripe-detected churn: canceled subscriptions in the period
-    const stripeCanceled = stripeSubscriptions.data.filter(s => {
+    const stripeCanceled = stripeSubscriptions.filter(s => {
       if (s.status !== 'canceled') return false
       const canceledAt = s.canceled_at ? new Date(s.canceled_at * 1000) : null
       return canceledAt && canceledAt >= startDate
@@ -179,7 +180,7 @@ export async function GET(request: NextRequest) {
 
     // Revenue churn: MRR lost from canceled subscriptions
     let revenueChurnMRR = 0
-    stripeSubscriptions.data
+    stripeSubscriptions
       .filter(s => s.status === 'canceled' && s.canceled_at && new Date(s.canceled_at * 1000) >= startDate)
       .forEach(s => {
         const price = s.items.data[0]?.price
@@ -200,7 +201,7 @@ export async function GET(request: NextRequest) {
         !b.isActive && b.deactivatedAt &&
         new Date(b.deactivatedAt) >= monthStart && new Date(b.deactivatedAt) <= monthEnd
       ).length
-      const stripeChurnedThisMonth = stripeSubscriptions.data.filter(s => {
+      const stripeChurnedThisMonth = stripeSubscriptions.filter(s => {
         if (s.status !== 'canceled' || !s.canceled_at) return false
         const d = new Date(s.canceled_at * 1000)
         return d >= monthStart && d <= monthEnd
@@ -292,7 +293,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // Fallback: estimate CLV from Stripe subscriptions
-      const activeSubs = stripeSubscriptions.data.filter(s => s.status === 'active')
+      const activeSubs = stripeSubscriptions.filter(s => s.status === 'active')
       const clvValues: number[] = []
       const planCLVGroups: Record<string, number[]> = {}
 

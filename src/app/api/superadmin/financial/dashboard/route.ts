@@ -3,14 +3,8 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, mapStripePlanToDb, PLANS, getBillingTypeFromPriceId } from '@/lib/stripe'
-
-// All WaveOrder price IDs — any subscription using these is a WaveOrder subscription
-const WAVEORDER_PRICE_IDS = new Set([
-  PLANS.STARTER.priceId, PLANS.STARTER.annualPriceId, PLANS.STARTER.freePriceId,
-  PLANS.PRO.priceId, PLANS.PRO.annualPriceId, PLANS.PRO.freePriceId,
-  PLANS.BUSINESS.priceId, PLANS.BUSINESS.annualPriceId, PLANS.BUSINESS.freePriceId,
-].filter(Boolean))
+import { stripe, mapStripePlanToDb, PLANS, fetchAllStripeRecords } from '@/lib/stripe'
+import Stripe from 'stripe'
 
 export async function GET() {
   try {
@@ -19,18 +13,34 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch all Stripe + DB data in parallel
-    // This Stripe account is dedicated to WaveOrder — all data belongs to us
+    const errors: string[] = []
+
+    // Fetch ALL Stripe data with auto-pagination + DB data in parallel
     const [
       stripeBalance,
-      subscriptions,
-      recentCharges,
+      allSubscriptions,
+      allCharges,
       dbBusinesses,
       dbTransactions
     ] = await Promise.all([
-      stripe.balance.retrieve().catch(() => null),
-      stripe.subscriptions.list({ limit: 100, expand: ['data.default_payment_method'] }).catch(() => ({ data: [] })),
-      stripe.charges.list({ limit: 100, created: { gte: getMonthsAgo(6) } }).catch(() => ({ data: [] })),
+      stripe.balance.retrieve().catch(err => {
+        errors.push(`Balance: ${err.message}`)
+        return null
+      }),
+      fetchAllStripeRecords(
+        (p) => stripe.subscriptions.list({ ...p, expand: ['data.default_payment_method'] }),
+        {}
+      ).catch(err => {
+        errors.push(`Subscriptions: ${err.message}`)
+        return [] as Stripe.Subscription[]
+      }),
+      fetchAllStripeRecords(
+        (p) => stripe.charges.list(p),
+        { created: { gte: getMonthsAgo(12) } }
+      ).catch(err => {
+        errors.push(`Charges: ${err.message}`)
+        return [] as Stripe.Charge[]
+      }),
       prisma.business.findMany({
         where: { isActive: true },
         select: {
@@ -44,16 +54,14 @@ export async function GET() {
       }).catch(() => [])
     ])
 
-    // All subscriptions in this account are WaveOrder subscriptions
-    const allSubs = subscriptions.data
-
-    const activePaid = allSubs.filter(s =>
+    // Categorize subscriptions
+    const activePaid = allSubscriptions.filter(s =>
       s.status === 'active' && !isFreePrice(s.items.data[0]?.price?.id)
     )
-    const trialing = allSubs.filter(s => s.status === 'trialing')
-    const paused = allSubs.filter(s => s.status === 'paused')
-    const canceled = allSubs.filter(s => ['canceled', 'incomplete_expired'].includes(s.status))
-    const freeSubs = allSubs.filter(s =>
+    const trialing = allSubscriptions.filter(s => s.status === 'trialing')
+    const paused = allSubscriptions.filter(s => s.status === 'paused')
+    const canceled = allSubscriptions.filter(s => ['canceled', 'incomplete_expired'].includes(s.status))
+    const freeSubs = allSubscriptions.filter(s =>
       s.status === 'active' && isFreePrice(s.items.data[0]?.price?.id)
     )
 
@@ -87,21 +95,21 @@ export async function GET() {
     const arr = mrr * 12
     const arpu = activePaid.length > 0 ? mrr / activePaid.length : 0
 
-    // All charges in this account are WaveOrder charges
-    const allCharges = recentCharges.data.filter(c => c.status === 'succeeded')
-    const totalRevenue = allCharges.reduce((sum, c) => sum + c.amount, 0) / 100
-    const totalRefunded = allCharges.reduce((sum, c) => sum + (c.amount_refunded || 0), 0) / 100
+    // Revenue from all charges (last 12 months)
+    const succeededCharges = allCharges.filter(c => c.status === 'succeeded')
+    const totalRevenue = succeededCharges.reduce((sum, c) => sum + c.amount, 0) / 100
+    const totalRefunded = succeededCharges.reduce((sum, c) => sum + (c.amount_refunded || 0), 0) / 100
     const netRevenue = totalRevenue - totalRefunded
 
     const thisMonthStart = new Date()
     thisMonthStart.setDate(1)
     thisMonthStart.setHours(0, 0, 0, 0)
-    const thisMonthCharges = allCharges.filter(c => new Date(c.created * 1000) >= thisMonthStart)
+    const thisMonthCharges = succeededCharges.filter(c => new Date(c.created * 1000) >= thisMonthStart)
     const thisMonthRevenue = thisMonthCharges.reduce((sum, c) => sum + c.amount, 0) / 100
 
     const lastMonthStart = new Date(thisMonthStart)
     lastMonthStart.setMonth(lastMonthStart.getMonth() - 1)
-    const lastMonthCharges = allCharges.filter(c => {
+    const lastMonthCharges = succeededCharges.filter(c => {
       const d = new Date(c.created * 1000)
       return d >= lastMonthStart && d < thisMonthStart
     })
@@ -110,7 +118,7 @@ export async function GET() {
       ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
       : thisMonthRevenue > 0 ? 100 : 0
 
-    const monthlyRevenue = buildMonthlyRevenue(allCharges, 6)
+    const monthlyRevenue = buildMonthlyRevenue(succeededCharges, 6)
 
     // Trial funnel
     const endedTrials = dbBusinesses.filter(b =>
@@ -133,7 +141,7 @@ export async function GET() {
           currency: t.currency, status: t.status,
           date: t.stripeCreatedAt.toISOString(),
         }))
-      : allCharges.slice(0, 5).map(c => ({
+      : succeededCharges.slice(0, 5).map(c => ({
           id: c.id, type: 'charge',
           customerEmail: c.billing_details?.email || null,
           customerName: c.billing_details?.name || null,
@@ -179,6 +187,13 @@ export async function GET() {
       monthlyRevenue,
       recentTransactions,
       currency: 'usd',
+      // Data completeness info
+      meta: {
+        totalStripeSubscriptions: allSubscriptions.length,
+        totalStripeCharges: allCharges.length,
+        chargeWindow: '12 months',
+        errors: errors.length > 0 ? errors : undefined,
+      }
     })
 
   } catch (error: any) {
@@ -205,7 +220,7 @@ function isFreePrice(priceId: string | undefined): boolean {
   )
 }
 
-function buildMonthlyRevenue(charges: any[], months: number) {
+function buildMonthlyRevenue(charges: Stripe.Charge[], months: number) {
   const result: Array<{ month: string; revenue: number; charges: number; refunds: number }> = []
 
   for (let i = months - 1; i >= 0; i--) {
@@ -219,8 +234,8 @@ function buildMonthlyRevenue(charges: any[], months: number) {
       return cd >= monthStart && cd < monthEnd
     })
 
-    const revenue = monthCharges.reduce((s: number, c: any) => s + (c.amount - (c.amount_refunded || 0)), 0) / 100
-    const refunds = monthCharges.reduce((s: number, c: any) => s + (c.amount_refunded || 0), 0) / 100
+    const revenue = monthCharges.reduce((s, c) => s + (c.amount - (c.amount_refunded || 0)), 0) / 100
+    const refunds = monthCharges.reduce((s, c) => s + (c.amount_refunded || 0), 0) / 100
     const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
 
     result.push({

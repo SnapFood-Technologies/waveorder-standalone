@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { stripe, mapStripePlanToDb, getBillingTypeFromPriceId, PLANS } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, getBillingTypeFromPriceId, PLANS, fetchAllStripeRecords } from '@/lib/stripe'
+import Stripe from 'stripe'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,10 +16,10 @@ export async function GET(request: NextRequest) {
 
     const now = new Date()
 
-    // Fetch Stripe subscriptions and DB businesses in parallel
+    // Fetch ALL Stripe subscriptions (auto-paginated) and DB businesses in parallel
     // This Stripe account is dedicated to WaveOrder — all data belongs to us
-    const [stripeSubscriptions, businesses, dbTransactions] = await Promise.all([
-      stripe.subscriptions.list({ limit: 100 }).catch(() => ({ data: [] })),
+    const [allSubsArray, businesses, dbTransactions] = await Promise.all([
+      fetchAllStripeRecords((p) => stripe.subscriptions.list(p), {}).catch(() => [] as Stripe.Subscription[]),
       prisma.business.findMany({
         where: { isActive: true, testMode: { not: true } },
         include: {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // All subscriptions in this account are WaveOrder subscriptions
-    const allSubs = stripeSubscriptions.data
+    const allSubs = allSubsArray
 
     // Identify free price IDs
     const freePriceIds = new Set([

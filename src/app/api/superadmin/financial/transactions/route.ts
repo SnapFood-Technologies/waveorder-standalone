@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, mapStripePlanToDb } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, fetchAllStripeRecords } from '@/lib/stripe'
+import Stripe from 'stripe'
 
 export async function GET(request: NextRequest) {
   try {
@@ -117,11 +118,13 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // This Stripe account is dedicated to WaveOrder — all data belongs to us
-  const [charges, invoices] = await Promise.all([
-    stripe.charges.list({ limit: 100 }).catch(() => ({ data: [] })),
-    stripe.invoices.list({ limit: 100 }).catch(() => ({ data: [] })),
+  // This Stripe account is dedicated to WaveOrder — fetch ALL records
+  const [chargesData, invoicesData] = await Promise.all([
+    fetchAllStripeRecords((p) => stripe.charges.list(p), {}).catch(() => []),
+    fetchAllStripeRecords((p) => stripe.invoices.list(p), {}).catch(() => []),
   ])
+  const charges = { data: chargesData as Stripe.Charge[] }
+  const invoices = { data: invoicesData as Stripe.Invoice[] }
 
   // Build unified transaction list
   let transactions: Array<{

@@ -50,6 +50,12 @@ interface DashboardData {
     date: string
   }>
   currency: string
+  meta?: {
+    totalStripeSubscriptions: number
+    totalStripeCharges: number
+    chargeWindow: string
+    errors?: string[]
+  }
 }
 
 interface SyncData {
@@ -171,6 +177,29 @@ export default function FinancialDashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Stripe Data Errors Warning */}
+      {data.meta?.errors && data.meta.errors.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">Some Stripe data could not be loaded</p>
+            <ul className="text-sm text-amber-700 mt-1 list-disc ml-4">
+              {data.meta.errors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Data Completeness Info */}
+      {data.meta && !data.meta.errors && (
+        <div className="text-xs text-gray-500 flex items-center gap-4">
+          <span>{data.meta.totalStripeSubscriptions} subscriptions loaded</span>
+          <span>{data.meta.totalStripeCharges} charges loaded ({data.meta.chargeWindow})</span>
+        </div>
+      )}
 
       {/* KPI Cards Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

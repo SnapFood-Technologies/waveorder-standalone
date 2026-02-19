@@ -365,6 +365,36 @@ export function getPriceId(plan: PlanId, billingType: 'monthly' | 'yearly' | 'fr
   return priceId
 }
 
+/**
+ * Auto-paginate a Stripe list endpoint to fetch ALL records.
+ * Stripe caps each page at 100 items; this loops until `has_more` is false.
+ */
+export async function fetchAllStripeRecords<T extends { id: string }>(
+  listFn: (params: Record<string, any>) => Stripe.ApiListPromise<T>,
+  params: Record<string, any> = {}
+): Promise<T[]> {
+  const all: T[] = []
+  let hasMore = true
+  let startingAfter: string | undefined
+
+  while (hasMore) {
+    const page = await listFn({
+      limit: 100,
+      ...params,
+      ...(startingAfter ? { starting_after: startingAfter } : {}),
+    })
+    all.push(...page.data)
+    hasMore = page.has_more
+    if (page.data.length > 0) {
+      startingAfter = page.data[page.data.length - 1].id
+    } else {
+      hasMore = false
+    }
+  }
+
+  return all
+}
+
 export function getBillingTypeFromPriceId(priceId: string): 'monthly' | 'yearly' | 'free' | null {
   if (!priceId || priceId.trim() === '') return null
   
