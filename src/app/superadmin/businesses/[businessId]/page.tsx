@@ -40,7 +40,11 @@ import {
   Key,
   FileText,
   Shield,
-  Smartphone
+  Smartphone,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Zap
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -548,6 +552,9 @@ export default function BusinessDetailsPage() {
               </button>
             </div>
           </div>
+
+          {/* Stripe Sync Section */}
+          <StripeSyncSection businessId={businessId} businessName={business.name} />
 
           {/* Marketplace Card - Hide for salons */}
           {business.businessType !== 'SALON' && marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
@@ -4383,6 +4390,222 @@ function CompleteSetupModal({
           </div>
         </form>
       </div>
+    </div>
+  )
+}
+
+// Stripe Sync Section — "Keep in Sync" feature
+function StripeSyncSection({ businessId, businessName }: { businessId: string; businessName: string }) {
+  const [analysis, setAnalysis] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+  const [fixing, setFixing] = useState(false)
+  const [fixResult, setFixResult] = useState<any>(null)
+
+  const analyse = async () => {
+    setLoading(true)
+    setFixResult(null)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/stripe-sync`)
+      if (!res.ok) throw new Error('Failed to analyse')
+      const data = await res.json()
+      setAnalysis(data)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to analyse sync status')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fix = async () => {
+    setFixing(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/stripe-sync`, {
+        method: 'POST'
+      })
+      if (!res.ok) throw new Error('Failed to fix')
+      const data = await res.json()
+      setFixResult(data)
+      toast.success(`Applied ${data.fixesApplied} fix(es)`)
+      // Re-analyse after fix
+      await analyse()
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fix sync issues')
+    } finally {
+      setFixing(false)
+    }
+  }
+
+  const statusColor = !analysis
+    ? 'gray'
+    : analysis.status === 'in_sync'
+    ? 'green'
+    : analysis.status === 'no_stripe_customer'
+    ? 'gray'
+    : 'red'
+
+  const statusIcon = !analysis
+    ? <RefreshCw className="w-5 h-5 text-gray-400" />
+    : analysis.status === 'in_sync'
+    ? <CheckCircle2 className="w-5 h-5 text-green-600" />
+    : <AlertCircle className="w-5 h-5 text-red-600" />
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${
+            statusColor === 'green' ? 'bg-green-50' :
+            statusColor === 'red' ? 'bg-red-50' : 'bg-gray-50'
+          }`}>
+            {statusIcon}
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Stripe Sync</h2>
+            <p className="text-sm text-gray-500">
+              {!analysis
+                ? 'Click "Analyse Now" to check sync status'
+                : analysis.status === 'in_sync'
+                ? `In sync — Last checked: ${new Date(analysis.stripeSubscriptions?.[0]?.created || Date.now()).toLocaleDateString()}`
+                : analysis.status === 'no_stripe_customer'
+                ? 'No Stripe customer linked'
+                : `${analysis.issues.length} issue(s) found`
+              }
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {analysis?.status === 'issues_found' && (
+            <button
+              onClick={fix}
+              disabled={fixing}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {fixing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+              Sync Now
+            </button>
+          )}
+          <button
+            onClick={analyse}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Analyse Now
+          </button>
+        </div>
+      </div>
+
+      {/* Analysis Results */}
+      {analysis && (
+        <div className="space-y-3">
+          {/* Stripe Info Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Stripe Customer</p>
+              <p className="text-sm font-mono text-gray-700 truncate">
+                {analysis.stripeCustomerId || 'None'}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Stripe Subs</p>
+              <p className="text-sm font-medium text-gray-900">
+                {analysis.stripeSubscriptions?.length || 0}
+                {analysis.stripeSubscriptions?.length > 1 && (
+                  <span className="ml-1 text-xs text-red-600 font-normal">(duplicates!)</span>
+                )}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Payment Method</p>
+              <p className={`text-sm font-medium ${analysis.hasPaymentMethod ? 'text-green-700' : 'text-amber-700'}`}>
+                {analysis.hasPaymentMethod ? 'On file' : 'None'}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 mb-1">Last Payment</p>
+              <p className="text-sm font-medium text-gray-900">
+                {analysis.lastPayment
+                  ? `${analysis.lastPayment.currency.toUpperCase()} ${analysis.lastPayment.amount}`
+                  : 'None'}
+              </p>
+            </div>
+          </div>
+
+          {/* DB vs Stripe comparison */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+              <p className="text-xs text-blue-600 font-medium mb-2">Database</p>
+              <p className="text-sm text-gray-900">Plan: <span className="font-semibold">{analysis.dbPlan}</span></p>
+              <p className="text-sm text-gray-900">Status: <span className="font-semibold">{analysis.dbStatus}</span></p>
+              <p className="text-sm text-gray-900">Sub Record: <span className="font-semibold">{analysis.dbSubscription ? 'Yes' : 'No'}</span></p>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+              <p className="text-xs text-purple-600 font-medium mb-2">Stripe</p>
+              {analysis.stripeSubscriptions?.length > 0 ? (
+                <>
+                  <p className="text-sm text-gray-900">Plan: <span className="font-semibold">{analysis.stripeSubscriptions[0].plan}</span></p>
+                  <p className="text-sm text-gray-900">Status: <span className="font-semibold">{analysis.stripeSubscriptions[0].status}</span></p>
+                  <p className="text-sm text-gray-900">Period End: <span className="font-semibold">{new Date(analysis.stripeSubscriptions[0].currentPeriodEnd).toLocaleDateString()}</span></p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No subscriptions</p>
+              )}
+            </div>
+          </div>
+
+          {/* Issues List */}
+          {analysis.issues?.length > 0 && (
+            <div className="border border-red-200 rounded-lg overflow-hidden">
+              <div className="bg-red-50 px-4 py-2 border-b border-red-200">
+                <p className="text-sm font-medium text-red-800">{analysis.issues.length} Issue(s) Found</p>
+              </div>
+              <div className="divide-y divide-red-100">
+                {analysis.issues.map((issue: any, i: number) => (
+                  <div key={i} className="px-4 py-3 flex items-start gap-3">
+                    <span className={`mt-0.5 inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+                      issue.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                      issue.severity === 'warning' ? 'bg-amber-100 text-amber-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {issue.severity}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">{issue.description}</p>
+                      {issue.fix && (
+                        <p className="text-xs text-gray-500 mt-1">Fix: {issue.fix}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Good State */}
+          {analysis.status === 'in_sync' && (
+            <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">All in sync</p>
+                <p className="text-xs text-green-600">Stripe data matches database records. No action needed.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Fix Results */}
+          {fixResult && (
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm font-medium text-blue-800 mb-2">
+                Sync Complete — {fixResult.fixesApplied} fix(es) applied
+              </p>
+              {fixResult.details?.map((detail: string, i: number) => (
+                <p key={i} className="text-xs text-blue-700">{detail}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -262,6 +262,10 @@ model Business {
   trialEndsAt DateTime?
   graceEndsAt DateTime?
 
+  // Stripe sync tracking
+  lastStripeSync   DateTime?
+  stripeSyncStatus String?    // "in_sync", "issues_found", "never_synced"
+
   // Happy Hour / Daily Discounts
   happyHourEnabled         Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
   happyHourActive          Boolean  @default(false) // Business toggle to activate happy hour
