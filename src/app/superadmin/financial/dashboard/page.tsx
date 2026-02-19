@@ -606,7 +606,7 @@ export default function FinancialDashboardPage() {
                   {syncData.businesses.filter(b => b.status === 'issues_found').length > 0 ? (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">Businesses with Issues</h3>
-                      <div className="divide-y divide-gray-100 border rounded-lg overflow-hidden">
+                      <div className="divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden">
                         {syncData.businesses.filter(b => b.status === 'issues_found').map(b => (
                           <div key={b.businessId} className="p-3 flex items-start justify-between">
                             <div>
