@@ -101,7 +101,7 @@ export default function TransactionsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-gray-600 mt-1">
           All payments, refunds, and invoices from Stripe
           {source === 'stripe_api' && (
             <span className="ml-2 text-xs text-amber-600">(Reading directly from Stripe API — transactions will be stored locally once captured by webhooks)</span>
@@ -112,20 +112,20 @@ export default function TransactionsPage() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 mb-1">Total Transactions</p>
             <p className="text-xl font-bold text-gray-900">{stats.totalTransactions}</p>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 mb-1">Net Amount</p>
             <p className="text-xl font-bold text-gray-900">{fmt(stats.netAmount)}</p>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 mb-1">Charges</p>
             <p className="text-xl font-bold text-green-700">{stats.totalCharges}</p>
             <p className="text-xs text-gray-500">{fmt(stats.totalChargeAmount)}</p>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 mb-1">Refunds</p>
             <p className="text-xl font-bold text-red-700">{stats.totalRefunds}</p>
             <p className="text-xs text-gray-500">{fmt(stats.totalRefundAmount)}</p>
@@ -134,7 +134,7 @@ export default function TransactionsPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row gap-3">
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
@@ -144,7 +144,7 @@ export default function TransactionsPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search by email, name, ID, or description..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
           </form>
@@ -152,7 +152,7 @@ export default function TransactionsPage() {
           <select
             value={typeFilter}
             onChange={e => { setTypeFilter(e.target.value); setPage(1) }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           >
             <option value="all">All Types</option>
             <option value="charge">Charges</option>
@@ -163,7 +163,7 @@ export default function TransactionsPage() {
           <select
             value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           >
             <option value="all">All Status</option>
             <option value="succeeded">Succeeded</option>
@@ -175,7 +175,7 @@ export default function TransactionsPage() {
           <button
             onClick={() => { setPage(1); fetchTransactions() }}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium disabled:opacity-50"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </button>
@@ -183,10 +183,10 @@ export default function TransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-16">
@@ -198,7 +198,7 @@ export default function TransactionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
+                  <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <th className="px-4 py-3">Transaction</th>
                     <th className="px-4 py-3">Customer</th>
                     <th className="px-4 py-3">Plan</th>
@@ -208,9 +208,9 @@ export default function TransactionsPage() {
                     <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-200">
                   {transactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={t.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {typeIcon(t.type)}
@@ -274,7 +274,7 @@ export default function TransactionsPage() {
                           href={`https://dashboard.stripe.com/${t.type === 'invoice' ? 'invoices' : 'payments'}/${t.id.replace('re_', '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-indigo-600 transition-colors"
+                          className="text-gray-400 hover:text-teal-600"
                           title="View in Stripe"
                         >
                           <ExternalLink className="w-4 h-4" />

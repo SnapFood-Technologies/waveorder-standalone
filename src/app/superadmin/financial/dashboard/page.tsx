@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   DollarSign, TrendingUp, CreditCard, Wallet, Users, Clock,
   RefreshCw, Loader2, ArrowUpRight, ArrowDownRight, BarChart3,
-  Zap, AlertCircle, CheckCircle2, ChevronRight
+  Zap, AlertCircle, CheckCircle2, ChevronRight, X
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -131,7 +131,7 @@ export default function FinancialDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
       </div>
     )
   }
@@ -140,7 +140,7 @@ export default function FinancialDashboardPage() {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500">Failed to load financial data</p>
-        <button onClick={fetchDashboard} className="mt-4 text-indigo-600 hover:underline">Retry</button>
+        <button onClick={fetchDashboard} className="mt-4 text-teal-600 hover:underline">Retry</button>
       </div>
     )
   }
@@ -148,10 +148,10 @@ export default function FinancialDashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time revenue and subscription data from Stripe</p>
+          <p className="text-gray-600 mt-1">Real-time revenue and subscription data from Stripe</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -164,7 +164,7 @@ export default function FinancialDashboardPage() {
           <button
             onClick={fetchDashboard}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium disabled:opacity-50"
           >
             {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
@@ -240,7 +240,7 @@ export default function FinancialDashboardPage() {
       {/* Monthly Revenue + Revenue by Plan */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Monthly Revenue */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue</h2>
           <div className="space-y-3">
             {data.monthlyRevenue.map((m) => (
@@ -249,7 +249,7 @@ export default function FinancialDashboardPage() {
                 <div className="flex-1 mx-4">
                   <div className="h-6 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all"
+                      className="h-full bg-teal-500 rounded-full transition-all"
                       style={{
                         width: `${Math.min(100, data.monthlyRevenue.length > 0
                           ? (m.revenue / Math.max(...data.monthlyRevenue.map(x => x.revenue), 1)) * 100
@@ -269,7 +269,7 @@ export default function FinancialDashboardPage() {
 
         {/* Revenue by Plan + Trial Funnel */}
         <div className="space-y-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Plan</h2>
             {Object.keys(data.revenueByPlan).length > 0 ? (
               <div className="space-y-3">
@@ -292,7 +292,7 @@ export default function FinancialDashboardPage() {
             )}
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Trial Funnel</h2>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -309,7 +309,7 @@ export default function FinancialDashboardPage() {
               </div>
               <div className="flex justify-between text-sm pt-2 border-t">
                 <span className="text-gray-600 font-medium">Conversion Rate</span>
-                <span className="font-semibold text-indigo-600">{data.trialFunnel.conversionRate}%</span>
+                <span className="font-semibold text-teal-600">{data.trialFunnel.conversionRate}%</span>
               </div>
             </div>
           </div>
@@ -317,12 +317,12 @@ export default function FinancialDashboardPage() {
       </div>
 
       {/* Recent Transactions */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
           <Link
             href="/superadmin/financial/transactions"
-            className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
           >
             View All <ChevronRight className="w-4 h-4" />
           </Link>
@@ -331,7 +331,7 @@ export default function FinancialDashboardPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-xs font-medium text-gray-500 uppercase border-b">
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                   <th className="pb-3 pr-4">Customer</th>
                   <th className="pb-3 pr-4">Description</th>
                   <th className="pb-3 pr-4 text-right">Amount</th>
@@ -339,9 +339,9 @@ export default function FinancialDashboardPage() {
                   <th className="pb-3">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-200">
                 {data.recentTransactions.map((t) => (
-                  <tr key={t.id} className="text-sm">
+                  <tr key={t.id} className="text-sm hover:bg-gray-50">
                     <td className="py-3 pr-4">
                       <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
                       <p className="text-xs text-gray-500">{t.customerEmail}</p>
@@ -377,21 +377,21 @@ export default function FinancialDashboardPage() {
       {/* Global Sync Modal */}
       {showSyncModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowSyncModal(false)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Global Stripe Sync</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Global Stripe Sync</h2>
                 <p className="text-sm text-gray-500">Compare all Stripe subscriptions with database records</p>
               </div>
               <button onClick={() => setShowSyncModal(false)} className="text-gray-400 hover:text-gray-600">
-                <span className="text-xl">&times;</span>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
+            <div className="p-6">
               {syncLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-indigo-600 mr-3" />
+                  <Loader2 className="w-6 h-6 animate-spin text-teal-600 mr-3" />
                   <span className="text-gray-600">Analysing all businesses...</span>
                 </div>
               ) : syncData ? (
@@ -428,7 +428,7 @@ export default function FinancialDashboardPage() {
                             </div>
                             <Link
                               href={`/superadmin/businesses/${b.businessId}`}
-                              className="text-xs text-indigo-600 hover:underline whitespace-nowrap"
+                              className="text-xs text-teal-600 hover:underline whitespace-nowrap"
                             >
                               View
                             </Link>
@@ -493,7 +493,7 @@ function KPICard({
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-5">
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm font-medium text-gray-500">{title}</span>
         <div className={`p-2 rounded-lg ${colorMap[color] || colorMap.gray}`}>
