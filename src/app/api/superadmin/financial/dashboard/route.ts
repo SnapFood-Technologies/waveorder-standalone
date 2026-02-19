@@ -27,18 +27,13 @@ export async function GET() {
       waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
     )
 
-    // Fetch ALL Stripe data with auto-pagination + DB data in parallel
+    // Fetch Stripe data with auto-pagination + DB data in parallel
     const [
-      stripeBalance,
       rawSubscriptions,
       rawCharges,
       dbBusinesses,
       dbTransactions
     ] = await Promise.all([
-      stripe.balance.retrieve().catch(err => {
-        errors.push(`Balance: ${err.message}`)
-        return null
-      }),
       fetchAllStripeRecords(
         (p) => stripe.subscriptions.list({ ...p, expand: ['data.default_payment_method'] }),
         {}
@@ -169,9 +164,6 @@ export async function GET() {
           date: new Date(c.created * 1000).toISOString(),
         }))
 
-    const available = stripeBalance?.available?.reduce((s, b) => s + b.amount, 0) || 0
-    const pending = stripeBalance?.pending?.reduce((s, b) => s + b.amount, 0) || 0
-
     return NextResponse.json({
       revenue: {
         total: netRevenue,
@@ -185,9 +177,8 @@ export async function GET() {
       arr: Math.round(arr * 100) / 100,
       arpu: Math.round(arpu * 100) / 100,
       stripeBalance: {
-        available: available / 100,
-        pending: pending / 100,
-        isAccountWide: true,
+        available: 0,
+        pending: 0,
       },
       subscriptions: {
         paidActive: activePaid.length,

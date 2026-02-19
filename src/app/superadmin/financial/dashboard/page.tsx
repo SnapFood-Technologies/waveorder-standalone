@@ -21,7 +21,7 @@ interface DashboardData {
   mrr: number
   arr: number
   arpu: number
-  stripeBalance: { available: number; pending: number }
+  stripeBalance: { available: number; pending: number; isAccountWide?: boolean }
   subscriptions: {
     paidActive: number
     trialing: number
@@ -330,8 +330,8 @@ export default function FinancialDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Revenue"
-          value={fmt(data.revenue.total)}
-          subtitle={`${data.recentTransactions.length > 0 ? data.monthlyRevenue.reduce((s, m) => s + m.charges, 0) : 0} payments - ${fmt(data.revenue.totalRefunded)} refunded`}
+          value={fmt(data.revenue.totalCharges)}
+          subtitle={`${data.monthlyRevenue.reduce((s, m) => s + m.charges, 0)} payments (last 12 months)`}
           icon={DollarSign}
           color="green"
         />
@@ -351,9 +351,9 @@ export default function FinancialDashboardPage() {
           color="purple"
         />
         <KPICard
-          title="Stripe Balance (Account-wide)"
-          value={fmt(data.stripeBalance.available)}
-          subtitle={`Pending: ${fmt(data.stripeBalance.pending)}`}
+          title="Net Revenue"
+          value={fmt(data.revenue.total)}
+          subtitle={`${fmt(data.revenue.totalCharges)} charges - ${fmt(data.revenue.totalRefunded)} refunded`}
           icon={Wallet}
           color="indigo"
         />

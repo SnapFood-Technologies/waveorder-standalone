@@ -3,8 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, mapStripePlanToDb, fetchAllStripeRecords } from '@/lib/stripe'
-import Stripe from 'stripe'
+import { stripe } from '@/lib/stripe'
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,19 +14,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
-    const type = searchParams.get('type') || 'all'  // all, charge, invoice, refund
+    const type = searchParams.get('type') || 'all'
     const status = searchParams.get('status') || 'all'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '25')
 
-    // First try DB transactions
+    // Use DB transactions if available, otherwise fetch from Stripe per-customer
     const dbCount = await prisma.stripeTransaction.count()
 
     if (dbCount > 0) {
       return await getTransactionsFromDB(search, type, status, page, limit)
     }
 
-    // Fallback to Stripe API directly
     return await getTransactionsFromStripe(search, type, status, page, limit)
 
   } catch (error: any) {
@@ -44,12 +42,8 @@ async function getTransactionsFromDB(
 ) {
   const where: any = {}
 
-  if (type !== 'all') {
-    where.type = type
-  }
-  if (status !== 'all') {
-    where.status = status
-  }
+  if (type !== 'all') where.type = type
+  if (status !== 'all') where.status = status
   if (search) {
     where.OR = [
       { customerEmail: { contains: search, mode: 'insensitive' } },
@@ -69,15 +63,13 @@ async function getTransactionsFromDB(
     })
   ])
 
-  // Calculate aggregates
   const allTransactions = await prisma.stripeTransaction.findMany({
     select: { type: true, status: true, amount: true, refundedAmount: true }
   })
 
-  const totalCharges = allTransactions
-    .filter(t => t.type === 'charge' || t.type === 'invoice')
-    .filter(t => t.status === 'succeeded' || t.status === 'paid')
-  const totalChargeAmount = totalCharges.reduce((s, t) => s + t.amount, 0) / 100
+  const successCharges = allTransactions
+    .filter(t => (t.type === 'charge' || t.type === 'invoice') && (t.status === 'succeeded' || t.status === 'paid'))
+  const totalChargeAmount = successCharges.reduce((s, t) => s + t.amount, 0) / 100
   const totalRefundAmount = allTransactions
     .filter(t => t.type === 'refund')
     .reduce((s, t) => s + Math.abs(t.amount), 0) / 100
@@ -97,16 +89,11 @@ async function getTransactionsFromDB(
       refundedAmount: t.refundedAmount ? t.refundedAmount / 100 : null,
       date: t.stripeCreatedAt.toISOString(),
     })),
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     stats: {
       totalTransactions: allTransactions.length,
       netAmount: Math.round((totalChargeAmount - totalRefundAmount) * 100) / 100,
-      totalCharges: totalCharges.length,
+      totalCharges: successCharges.length,
       totalChargeAmount: Math.round(totalChargeAmount * 100) / 100,
       totalRefunds: allTransactions.filter(t => t.type === 'refund').length,
       totalRefundAmount: Math.round(totalRefundAmount * 100) / 100,
@@ -115,55 +102,60 @@ async function getTransactionsFromDB(
   })
 }
 
+/**
+ * Fetch charges per WaveOrder customer (not the entire Stripe account).
+ * Much faster than fetching all charges + invoices and filtering.
+ */
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // Build set of known WaveOrder customer IDs for filtering
+  // Get WaveOrder customer IDs from DB
   const waveOrderUsers = await prisma.user.findMany({
     where: { stripeCustomerId: { not: null } },
-    select: { stripeCustomerId: true },
+    select: { stripeCustomerId: true, name: true, email: true },
   })
-  const knownCustomerIds = new Set(
-    waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
-  )
 
-  // Fetch all Stripe records then filter to WaveOrder customers only
-  const [rawCharges, rawInvoices] = await Promise.all([
-    fetchAllStripeRecords((p) => stripe.charges.list(p), {}).catch(() => []),
-    fetchAllStripeRecords((p) => stripe.invoices.list(p), {}).catch(() => []),
-  ])
-
-  const charges = {
-    data: (rawCharges as Stripe.Charge[]).filter(c => {
-      const custId = typeof c.customer === 'string' ? c.customer : null
-      return custId && knownCustomerIds.has(custId)
-    })
-  }
-  const invoices = {
-    data: (rawInvoices as Stripe.Invoice[]).filter(inv => {
-      const custId = typeof (inv as any).customer === 'string' ? (inv as any).customer : null
-      return custId && knownCustomerIds.has(custId)
+  if (waveOrderUsers.length === 0) {
+    return NextResponse.json({
+      transactions: [],
+      pagination: { page, limit, total: 0, totalPages: 0 },
+      stats: {
+        totalTransactions: 0, netAmount: 0,
+        totalCharges: 0, totalChargeAmount: 0,
+        totalRefunds: 0, totalRefundAmount: 0,
+      },
+      source: 'stripe_api',
     })
   }
 
-  // Build unified transaction list
-  let transactions: Array<{
-    id: string
-    type: string
-    status: string
-    amount: number
-    currency: string
-    customerEmail: string | null
-    customerName: string | null
-    description: string | null
-    plan: string | null
-    billingType: string | null
-    refundedAmount: number | null
-    date: string
-  }> = []
+  // Fetch charges per customer in parallel (max 50 per customer, most recent)
+  const chargePromises = waveOrderUsers.map(async (u) => {
+    if (!u.stripeCustomerId) return []
+    try {
+      const charges = await stripe.charges.list({
+        customer: u.stripeCustomerId,
+        limit: 50,
+      })
+      return charges.data
+    } catch {
+      return []
+    }
+  })
 
-  // Map charges
-  for (const charge of charges.data) {
+  const chargeArrays = await Promise.all(chargePromises)
+  const allCharges = chargeArrays.flat()
+
+  // Build transaction list from charges
+  type Transaction = {
+    id: string; type: string; status: string; amount: number;
+    currency: string; customerEmail: string | null; customerName: string | null;
+    description: string | null; plan: string | null; billingType: string | null;
+    refundedAmount: number | null; date: string;
+  }
+
+  let transactions: Transaction[] = []
+
+  for (const charge of allCharges) {
     const isRefunded = charge.refunded || (charge.amount_refunded && charge.amount_refunded > 0)
 
     transactions.push({
@@ -174,14 +166,13 @@ async function getTransactionsFromStripe(
       currency: charge.currency,
       customerEmail: charge.billing_details?.email || null,
       customerName: charge.billing_details?.name || null,
-      description: charge.description || 'Payment',
+      description: charge.description || 'Subscription payment',
       plan: null,
       billingType: null,
       refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
       date: new Date(charge.created * 1000).toISOString(),
     })
 
-    // If there was a refund, add a separate refund entry
     if (charge.amount_refunded && charge.amount_refunded > 0) {
       transactions.push({
         id: `re_${charge.id}`,
@@ -200,62 +191,27 @@ async function getTransactionsFromStripe(
     }
   }
 
-  // Map invoices (only add if no matching charge)
-  for (const inv of invoices.data) {
-    const chargeId = (inv as any).charge
-    if (chargeId && charges.data.find(c => c.id === chargeId)) continue // Already have the charge
-
-    let plan: string | null = null
-    if ((inv as any).subscription) {
-      try {
-        const sub = await stripe.subscriptions.retrieve((inv as any).subscription as string)
-        plan = sub.metadata?.plan || mapStripePlanToDb(sub.items.data[0]?.price?.id)
-      } catch { /* ignore */ }
-    }
-
-    transactions.push({
-      id: inv.id,
-      type: 'invoice',
-      status: inv.status || 'unknown',
-      amount: (inv.amount_paid || inv.amount_due || 0) / 100,
-      currency: inv.currency,
-      customerEmail: (inv as any).customer_email || null,
-      customerName: (inv as any).customer_name || null,
-      description: inv.billing_reason || 'Invoice',
-      plan,
-      billingType: null,
-      refundedAmount: null,
-      date: new Date(inv.created * 1000).toISOString(),
-    })
-  }
-
   // Sort by date descending
   transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   // Apply filters
-  if (type !== 'all') {
-    transactions = transactions.filter(t => t.type === type)
-  }
-  if (status !== 'all') {
-    transactions = transactions.filter(t => t.status === status)
-  }
+  if (type !== 'all') transactions = transactions.filter(t => t.type === type)
+  if (status !== 'all') transactions = transactions.filter(t => t.status === status)
   if (search) {
     const s = search.toLowerCase()
     transactions = transactions.filter(t =>
-      (t.customerEmail?.toLowerCase().includes(s)) ||
-      (t.customerName?.toLowerCase().includes(s)) ||
+      t.customerEmail?.toLowerCase().includes(s) ||
+      t.customerName?.toLowerCase().includes(s) ||
       t.id.toLowerCase().includes(s) ||
-      (t.description?.toLowerCase().includes(s))
+      t.description?.toLowerCase().includes(s)
     )
   }
 
-  // Filter out $0 amounts
   transactions = transactions.filter(t => t.amount !== 0)
 
   // Stats
   const successfulCharges = transactions.filter(t =>
-    (t.type === 'charge' || t.type === 'invoice') &&
-    (t.status === 'succeeded' || t.status === 'paid')
+    (t.type === 'charge') && (t.status === 'succeeded' || t.status === 'paid')
   )
   const totalChargeAmount = successfulCharges.reduce((s, t) => s + t.amount, 0)
   const refunds = transactions.filter(t => t.type === 'refund')
@@ -267,12 +223,7 @@ async function getTransactionsFromStripe(
 
   return NextResponse.json({
     transactions: paginated,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     stats: {
       totalTransactions: transactions.length,
       netAmount: Math.round((totalChargeAmount - totalRefundAmount) * 100) / 100,
