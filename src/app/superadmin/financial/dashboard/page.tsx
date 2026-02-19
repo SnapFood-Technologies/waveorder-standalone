@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import {
   DollarSign, TrendingUp, CreditCard, Wallet, Users, Clock,
   RefreshCw, Loader2, ArrowUpRight, ArrowDownRight, BarChart3,
-  Zap, AlertCircle, CheckCircle2, ChevronRight, X
+  Zap, AlertCircle, CheckCircle2, ChevronRight, X, Trash2, Archive, Shield
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -73,6 +73,40 @@ interface SyncData {
   }>
 }
 
+interface CleanupOrphan {
+  businessId: string
+  businessName: string
+  ownerEmail: string | null
+  deactivatedAt: string | null
+  deactivationReason: string | null
+  stripeCustomerId: string
+  subscriptions: Array<{
+    id: string
+    status: string
+    plan: string
+    priceId: string
+    amount: number
+    interval: string
+    currentPeriodEnd: string
+    created: string
+  }>
+  totalMonthlyCost: number
+}
+
+interface CleanupData {
+  summary: {
+    totalDeactivated: number
+    withOrphanedSubs: number
+    alreadyClean: number
+    withErrors: number
+    totalOrphanedSubs: number
+    wastedMRR: number
+  }
+  orphaned: CleanupOrphan[]
+  clean: Array<{ businessId: string; businessName: string; reason: string }>
+  errors: Array<{ businessId: string; businessName: string; error: string }>
+}
+
 export default function FinancialDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,6 +115,16 @@ export default function FinancialDashboardPage() {
   const [syncData, setSyncData] = useState<SyncData | null>(null)
   const [syncLoading, setSyncLoading] = useState(false)
   const [syncFixing, setSyncFixing] = useState(false)
+
+  // Cleanup modal state
+  const [showCleanupModal, setShowCleanupModal] = useState(false)
+  const [cleanupData, setCleanupData] = useState<CleanupData | null>(null)
+  const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [cleanupExecuting, setCleanupExecuting] = useState(false)
+  const [selectedSubs, setSelectedSubs] = useState<Set<string>>(new Set())
+  const [archiveCustomers, setArchiveCustomers] = useState(false)
+  const [cleanupStep, setCleanupStep] = useState<'preview' | 'confirm' | 'done'>('preview')
+  const [cleanupResult, setCleanupResult] = useState<any>(null)
 
   useEffect(() => { fetchDashboard() }, [])
 
@@ -130,6 +174,76 @@ export default function FinancialDashboardPage() {
     }
   }
 
+  const openCleanupModal = async () => {
+    setShowCleanupModal(true)
+    setCleanupLoading(true)
+    setCleanupStep('preview')
+    setCleanupResult(null)
+    setSelectedSubs(new Set())
+    setArchiveCustomers(false)
+    try {
+      const res = await fetch('/api/superadmin/financial/stripe-cleanup')
+      if (!res.ok) throw new Error('Failed to scan')
+      const data: CleanupData = await res.json()
+      setCleanupData(data)
+      // Pre-select all orphaned subscriptions
+      const allSubIds = new Set<string>()
+      data.orphaned.forEach(o => o.subscriptions.forEach(s => allSubIds.add(s.id)))
+      setSelectedSubs(allSubIds)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to scan for orphaned subscriptions')
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
+  const toggleSub = (subId: string) => {
+    setSelectedSubs(prev => {
+      const next = new Set(prev)
+      if (next.has(subId)) next.delete(subId)
+      else next.add(subId)
+      return next
+    })
+  }
+
+  const toggleAllForBusiness = (orphan: CleanupOrphan) => {
+    const subIds = orphan.subscriptions.map(s => s.id)
+    const allSelected = subIds.every(id => selectedSubs.has(id))
+    setSelectedSubs(prev => {
+      const next = new Set(prev)
+      subIds.forEach(id => allSelected ? next.delete(id) : next.add(id))
+      return next
+    })
+  }
+
+  const executeCleanup = async () => {
+    if (selectedSubs.size === 0) {
+      toast.error('No subscriptions selected')
+      return
+    }
+    setCleanupExecuting(true)
+    try {
+      const res = await fetch('/api/superadmin/financial/stripe-cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscriptionIds: Array.from(selectedSubs),
+          archiveCustomers,
+        }),
+      })
+      if (!res.ok) throw new Error('Cleanup failed')
+      const result = await res.json()
+      setCleanupResult(result)
+      setCleanupStep('done')
+      toast.success(`Canceled ${result.canceledSubscriptions} subscription(s)`)
+      fetchDashboard()
+    } catch (err: any) {
+      toast.error(err.message || 'Cleanup failed')
+    } finally {
+      setCleanupExecuting(false)
+    }
+  }
+
   const fmt = (n: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
   }
@@ -160,6 +274,13 @@ export default function FinancialDashboardPage() {
           <p className="text-gray-600 mt-1">Real-time revenue and subscription data from Stripe</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={openCleanupModal}
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+          >
+            <Trash2 className="w-4 h-4" />
+            Cleanup
+          </button>
           <button
             onClick={openSyncModal}
             className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
@@ -491,6 +612,273 @@ export default function FinancialDashboardPage() {
                   {syncFixing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                   Sync All ({syncData.withIssues} businesses)
                 </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Stripe Cleanup Modal */}
+      {showCleanupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowCleanupModal(false)}>
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Stripe Cleanup</h2>
+                <p className="text-sm text-gray-500">Cancel orphaned subscriptions for deactivated businesses</p>
+              </div>
+              <button onClick={() => setShowCleanupModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {cleanupLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-teal-600 mr-3" />
+                  <span className="text-gray-600">Scanning deactivated businesses in Stripe...</span>
+                </div>
+              ) : cleanupStep === 'done' && cleanupResult ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-semibold text-green-800">Cleanup Complete</p>
+                      <p className="text-sm text-green-700 mt-1">
+                        {cleanupResult.canceledSubscriptions} subscription(s) canceled
+                        {cleanupResult.archivedCustomers > 0 && `, ${cleanupResult.archivedCustomers} customer(s) archived`}
+                      </p>
+                    </div>
+                  </div>
+                  {cleanupResult.failedCancellations > 0 && (
+                    <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+                      <p className="text-sm font-medium text-red-800">
+                        {cleanupResult.failedCancellations} cancellation(s) failed
+                      </p>
+                      {cleanupResult.details?.filter((d: any) => !d.success).map((d: any, i: number) => (
+                        <p key={i} className="text-xs text-red-600 mt-1">{d.subscriptionId}: {d.error}</p>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowCleanupModal(false)}
+                    className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : cleanupData ? (
+                <div className="space-y-5">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3 bg-gray-50 rounded-xl text-center">
+                      <p className="text-xl font-bold text-gray-700">{cleanupData.summary.totalDeactivated}</p>
+                      <p className="text-xs text-gray-500">Deactivated</p>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded-xl text-center">
+                      <p className="text-xl font-bold text-red-700">{cleanupData.summary.withOrphanedSubs}</p>
+                      <p className="text-xs text-red-600">With Orphaned Subs</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-xl text-center">
+                      <p className="text-xl font-bold text-amber-700">{cleanupData.summary.totalOrphanedSubs}</p>
+                      <p className="text-xs text-amber-600">Total Orphaned Subs</p>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded-xl text-center">
+                      <p className="text-xl font-bold text-red-700">{fmt(cleanupData.summary.wastedMRR)}</p>
+                      <p className="text-xs text-red-600">Wasted MRR</p>
+                    </div>
+                  </div>
+
+                  {cleanupData.orphaned.length === 0 ? (
+                    <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <p className="text-sm text-green-800 font-medium">
+                        No orphaned subscriptions found — all deactivated businesses are clean
+                      </p>
+                    </div>
+                  ) : cleanupStep === 'preview' ? (
+                    <>
+                      {/* Orphaned businesses list */}
+                      <div className="space-y-3">
+                        {cleanupData.orphaned.map(orphan => {
+                          const allSelected = orphan.subscriptions.every(s => selectedSubs.has(s.id))
+                          const someSelected = orphan.subscriptions.some(s => selectedSubs.has(s.id))
+
+                          return (
+                            <div key={orphan.businessId} className="border border-gray-200 rounded-xl overflow-hidden">
+                              <div
+                                className="flex items-center gap-3 p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                                onClick={() => toggleAllForBusiness(orphan)}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={allSelected}
+                                  ref={el => { if (el) el.indeterminate = someSelected && !allSelected }}
+                                  onChange={() => toggleAllForBusiness(orphan)}
+                                  className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 truncate">{orphan.businessName}</p>
+                                  <p className="text-xs text-gray-500">{orphan.ownerEmail || 'No email'}</p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <p className="text-sm font-semibold text-red-600">{fmt(orphan.totalMonthlyCost)}/mo</p>
+                                  <p className="text-xs text-gray-400">
+                                    Deactivated {orphan.deactivatedAt
+                                      ? new Date(orphan.deactivatedAt).toLocaleDateString()
+                                      : 'unknown date'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="divide-y divide-gray-100">
+                                {orphan.subscriptions.map(sub => (
+                                  <label
+                                    key={sub.id}
+                                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedSubs.has(sub.id)}
+                                      onChange={() => toggleSub(sub.id)}
+                                      className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                                          sub.status === 'active' ? 'bg-green-100 text-green-700' :
+                                          sub.status === 'trialing' ? 'bg-blue-100 text-blue-700' :
+                                          sub.status === 'past_due' ? 'bg-red-100 text-red-700' :
+                                          'bg-gray-100 text-gray-700'
+                                        }`}>{sub.status}</span>
+                                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded ${
+                                          sub.plan === 'BUSINESS' ? 'bg-indigo-100 text-indigo-700' :
+                                          sub.plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
+                                          'bg-gray-100 text-gray-700'
+                                        }`}>{sub.plan}</span>
+                                      </div>
+                                      <p className="text-xs text-gray-400 mt-1 font-mono">{sub.id}</p>
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                      <p className="text-sm font-medium text-gray-900">
+                                        ${sub.amount.toFixed(2)}/{sub.interval === 'year' ? 'yr' : 'mo'}
+                                      </p>
+                                      <p className="text-xs text-gray-400">
+                                        Period ends {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Archive option */}
+                      <label className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={archiveCustomers}
+                          onChange={e => setArchiveCustomers(e.target.checked)}
+                          className="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500 mt-0.5"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-amber-800 flex items-center gap-1.5">
+                            <Archive className="w-4 h-4" />
+                            Also archive Stripe customers
+                          </p>
+                          <p className="text-xs text-amber-700 mt-1">
+                            Removes deactivated customers from your Stripe active list. Invoice/payment history is retained
+                            by Stripe. Their stripeCustomerId will be cleared in your database.
+                          </p>
+                        </div>
+                      </label>
+
+                      {/* Errors */}
+                      {cleanupData.errors.length > 0 && (
+                        <div className="p-3 bg-red-50 rounded-xl border border-red-200">
+                          <p className="text-xs font-medium text-red-800 mb-1">
+                            {cleanupData.errors.length} business(es) could not be scanned:
+                          </p>
+                          {cleanupData.errors.map((e, i) => (
+                            <p key={i} className="text-xs text-red-600">{e.businessName}: {e.error}</p>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : cleanupStep === 'confirm' ? (
+                    <div className="space-y-4">
+                      <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-red-800">Confirm Cleanup</p>
+                            <p className="text-sm text-red-700 mt-1">
+                              You are about to cancel <strong>{selectedSubs.size} subscription(s)</strong>
+                              {archiveCustomers && <> and <strong>archive the associated Stripe customers</strong></>}.
+                            </p>
+                            <p className="text-sm text-red-700 mt-2">
+                              This will immediately cancel these subscriptions in Stripe. Existing invoices and payment
+                              history will be retained.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <p className="text-sm text-gray-700">
+                          <strong>Selected:</strong> {selectedSubs.size} subscription(s) across{' '}
+                          {cleanupData.orphaned.filter(o => o.subscriptions.some(s => selectedSubs.has(s.id))).length} business(es)
+                        </p>
+                        {archiveCustomers && (
+                          <p className="text-sm text-gray-700 mt-1">
+                            <strong>Archive:</strong> Stripe customers will be deleted (data retained)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            {/* Footer actions */}
+            {cleanupData && cleanupData.orphaned.length > 0 && cleanupStep !== 'done' && (
+              <div className="p-4 border-t border-gray-200 flex justify-between items-center">
+                <button
+                  onClick={() => {
+                    if (cleanupStep === 'confirm') setCleanupStep('preview')
+                    else setShowCleanupModal(false)
+                  }}
+                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  {cleanupStep === 'confirm' ? 'Back' : 'Cancel'}
+                </button>
+
+                {cleanupStep === 'preview' ? (
+                  <button
+                    onClick={() => setCleanupStep('confirm')}
+                    disabled={selectedSubs.size === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Review Cleanup ({selectedSubs.size} subs)
+                  </button>
+                ) : (
+                  <button
+                    onClick={executeCleanup}
+                    disabled={cleanupExecuting}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-semibold disabled:opacity-50"
+                  >
+                    {cleanupExecuting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                    Confirm — Cancel {selectedSubs.size} Subscription(s)
+                  </button>
+                )}
               </div>
             )}
           </div>
