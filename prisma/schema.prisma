@@ -176,7 +176,42 @@ model Subscription {
   @@map("subscriptions")
 }
 
-// NEW: Webhook logging model
+model StripeTransaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  stripeId  String   @unique
+  type      String              // "charge", "invoice", "refund"
+  status    String              // "succeeded", "paid", "failed", "refunded"
+
+  amount    Int                 // Amount in cents
+  currency  String              // "usd", "eur", "bhd"
+
+  customerId     String?
+  subscriptionId String?
+
+  customerEmail  String?
+  customerName   String?
+
+  description    String?
+  plan           String?        // STARTER, PRO, BUSINESS
+  billingType    String?        // monthly, yearly, trial, free
+
+  refundedAmount Int?
+
+  businessId     String?  @db.ObjectId
+  userId         String?  @db.ObjectId
+
+  stripeCreatedAt DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([customerId])
+  @@index([businessId])
+  @@index([type])
+  @@index([status])
+  @@index([stripeCreatedAt])
+  @@map("stripe_transactions")
+}
+
 model WebhookLog {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   eventType String
@@ -226,6 +261,10 @@ model Business {
   // Trial tracking (business-level)
   trialEndsAt DateTime?
   graceEndsAt DateTime?
+
+  // Stripe sync tracking
+  lastStripeSync   DateTime?
+  stripeSyncStatus String?    // "in_sync", "issues_found", "never_synced"
 
   // Happy Hour / Daily Discounts
   happyHourEnabled         Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
