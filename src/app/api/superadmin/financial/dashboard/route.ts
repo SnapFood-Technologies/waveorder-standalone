@@ -1,9 +1,16 @@
-// Financial Dashboard API — real-time Stripe data filtered to WaveOrder customers only
+// Financial Dashboard API — real-time Stripe data (dedicated WaveOrder Stripe account)
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { stripe, mapStripePlanToDb, PLANS, getBillingTypeFromPriceId } from '@/lib/stripe'
+
+// All WaveOrder price IDs — any subscription using these is a WaveOrder subscription
+const WAVEORDER_PRICE_IDS = new Set([
+  PLANS.STARTER.priceId, PLANS.STARTER.annualPriceId, PLANS.STARTER.freePriceId,
+  PLANS.PRO.priceId, PLANS.PRO.annualPriceId, PLANS.PRO.freePriceId,
+  PLANS.BUSINESS.priceId, PLANS.BUSINESS.annualPriceId, PLANS.BUSINESS.freePriceId,
+].filter(Boolean))
 
 export async function GET() {
   try {
@@ -12,16 +19,8 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Build set of known WaveOrder Stripe customer IDs from DB
-    const waveorderUsers = await prisma.user.findMany({
-      where: { stripeCustomerId: { not: null } },
-      select: { stripeCustomerId: true }
-    })
-    const knownCustomerIds = new Set(
-      waveorderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
-    )
-
-    // Fetch Stripe + DB data in parallel
+    // Fetch all Stripe + DB data in parallel
+    // This Stripe account is dedicated to WaveOrder — all data belongs to us
     const [
       stripeBalance,
       subscriptions,
@@ -45,17 +44,8 @@ export async function GET() {
       }).catch(() => [])
     ])
 
-    // Filter subscriptions to WaveOrder customers only
-    const allSubs = subscriptions.data.filter(s =>
-      s.metadata?.source === 'waveorder_platform' ||
-      (typeof s.customer === 'string' && knownCustomerIds.has(s.customer))
-    )
-
-    // Filter charges to WaveOrder customers only
-    const waveorderCharges = recentCharges.data.filter(c => {
-      const customerId = typeof c.customer === 'string' ? c.customer : null
-      return customerId && knownCustomerIds.has(customerId)
-    })
+    // All subscriptions in this account are WaveOrder subscriptions
+    const allSubs = subscriptions.data
 
     const activePaid = allSubs.filter(s =>
       s.status === 'active' && !isFreePrice(s.items.data[0]?.price?.id)
@@ -97,8 +87,8 @@ export async function GET() {
     const arr = mrr * 12
     const arpu = activePaid.length > 0 ? mrr / activePaid.length : 0
 
-    // Calculate revenue from WaveOrder-only charges
-    const allCharges = waveorderCharges.filter(c => c.status === 'succeeded')
+    // All charges in this account are WaveOrder charges
+    const allCharges = recentCharges.data.filter(c => c.status === 'succeeded')
     const totalRevenue = allCharges.reduce((sum, c) => sum + c.amount, 0) / 100
     const totalRefunded = allCharges.reduce((sum, c) => sum + (c.amount_refunded || 0), 0) / 100
     const netRevenue = totalRevenue - totalRefunded
@@ -134,7 +124,7 @@ export async function GET() {
       ? (convertedTrials / (endedTrials + convertedTrials)) * 100
       : 0
 
-    // Recent transactions (DB first, fallback to filtered charges)
+    // Recent transactions (DB first, fallback to Stripe charges)
     const recentTransactions = dbTransactions.length > 0
       ? dbTransactions.map(t => ({
           id: t.stripeId, type: t.type,
@@ -152,7 +142,6 @@ export async function GET() {
           date: new Date(c.created * 1000).toISOString(),
         }))
 
-    // Stripe balance (this is account-wide, cannot filter — label accordingly)
     const available = stripeBalance?.available?.reduce((s, b) => s + b.amount, 0) || 0
     const pending = stripeBalance?.pending?.reduce((s, b) => s + b.amount, 0) || 0
 
@@ -171,7 +160,6 @@ export async function GET() {
       stripeBalance: {
         available: available / 100,
         pending: pending / 100,
-        isAccountWide: true,
       },
       subscriptions: {
         paidActive: activePaid.length,

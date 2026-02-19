@@ -117,34 +117,11 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // Build set of known WaveOrder customer IDs
-  const waveorderUsers = await prisma.user.findMany({
-    where: { stripeCustomerId: { not: null } },
-    select: { stripeCustomerId: true }
-  })
-  const knownCustomerIds = new Set(
-    waveorderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
-  )
-
-  // Fetch from Stripe directly — charges, invoices
-  const [chargesRaw, invoicesRaw] = await Promise.all([
+  // This Stripe account is dedicated to WaveOrder — all data belongs to us
+  const [charges, invoices] = await Promise.all([
     stripe.charges.list({ limit: 100 }).catch(() => ({ data: [] })),
     stripe.invoices.list({ limit: 100 }).catch(() => ({ data: [] })),
   ])
-
-  // Filter to WaveOrder customers only
-  const charges = {
-    data: chargesRaw.data.filter(c => {
-      const custId = typeof c.customer === 'string' ? c.customer : null
-      return custId && knownCustomerIds.has(custId)
-    })
-  }
-  const invoices = {
-    data: invoicesRaw.data.filter(i => {
-      const custId = typeof i.customer === 'string' ? i.customer : null
-      return custId && knownCustomerIds.has(custId)
-    })
-  }
 
   // Build unified transaction list
   let transactions: Array<{

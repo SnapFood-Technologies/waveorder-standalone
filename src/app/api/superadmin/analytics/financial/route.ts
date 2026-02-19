@@ -15,16 +15,8 @@ export async function GET(request: NextRequest) {
 
     const now = new Date()
 
-    // Build set of known WaveOrder Stripe customer IDs
-    const waveorderUsers = await prisma.user.findMany({
-      where: { stripeCustomerId: { not: null } },
-      select: { stripeCustomerId: true }
-    })
-    const knownCustomerIds = new Set(
-      waveorderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
-    )
-
     // Fetch Stripe subscriptions and DB businesses in parallel
+    // This Stripe account is dedicated to WaveOrder — all data belongs to us
     const [stripeSubscriptions, businesses, dbTransactions] = await Promise.all([
       stripe.subscriptions.list({ limit: 100 }).catch(() => ({ data: [] })),
       prisma.business.findMany({
@@ -46,11 +38,8 @@ export async function GET(request: NextRequest) {
       }).catch(() => [])
     ])
 
-    // Filter to WaveOrder customers only
-    const allSubs = stripeSubscriptions.data.filter(s =>
-      s.metadata?.source === 'waveorder_platform' ||
-      (typeof s.customer === 'string' && knownCustomerIds.has(s.customer))
-    )
+    // All subscriptions in this account are WaveOrder subscriptions
+    const allSubs = stripeSubscriptions.data
 
     // Identify free price IDs
     const freePriceIds = new Set([
