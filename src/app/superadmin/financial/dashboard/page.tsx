@@ -356,8 +356,8 @@ export default function FinancialDashboardPage() {
       {/* Data Completeness Info */}
       {data.meta && !data.meta.errors && (
         <div className="text-xs text-gray-500 flex items-center gap-4 flex-wrap">
-          <span>{data.meta.waveOrderSubscriptions} WaveOrder subs (of {data.meta.totalStripeSubscriptions} total in Stripe)</span>
-          <span>{data.meta.waveOrderCharges} WaveOrder charges (of {data.meta.totalStripeCharges} total, {data.meta.chargeWindow})</span>
+          <span>{data.meta.waveOrderSubscriptions} WaveOrder subs</span>
+          <span>{data.meta.waveOrderCharges} WaveOrder charges ({data.meta.chargeWindow})</span>
           <span>{data.meta.knownCustomerIds} known customers (excl. tests)</span>
         </div>
       )}

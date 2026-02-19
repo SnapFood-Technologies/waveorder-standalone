@@ -240,10 +240,10 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Fetch all businesses first (we'll filter for incomplete in memory, excluding test)
-      // Prisma/MongoDB has issues with null checks in nested OR conditions
+      // Fetch active businesses for incomplete check (excluding test)
+      // Only active businesses matter — deactivated ones don't need completing
       prisma.business.findMany({
-        where: excludeTestCondition,
+        where: { isActive: true, ...excludeTestCondition },
         select: {
           id: true,
           name: true,
