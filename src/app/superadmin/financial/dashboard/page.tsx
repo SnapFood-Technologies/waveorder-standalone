@@ -21,7 +21,7 @@ interface DashboardData {
   mrr: number
   arr: number
   arpu: number
-  stripeBalance: { available: number; pending: number }
+  stripeBalance: { available: number; pending: number; isAccountWide?: boolean }
   subscriptions: {
     paidActive: number
     trialing: number
@@ -52,7 +52,10 @@ interface DashboardData {
   currency: string
   meta?: {
     totalStripeSubscriptions: number
+    waveOrderSubscriptions: number
     totalStripeCharges: number
+    waveOrderCharges: number
+    knownCustomerIds: number
     chargeWindow: string
     errors?: string[]
   }
@@ -250,8 +253,36 @@ export default function FinancialDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
+          <p className="text-gray-600 mt-1">Real-time revenue and subscription data from Stripe</p>
+        </div>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-teal-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-teal-800">Communicating with Stripe...</p>
+            <p className="text-xs text-teal-600 mt-0.5">Fetching and analysing WaveOrder subscription and payment data. This may take a few seconds.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
+              <div className="h-7 bg-gray-200 rounded w-20 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-32" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
+              <div className="h-7 bg-gray-200 rounded w-20 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-32" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -299,6 +330,14 @@ export default function FinancialDashboardPage() {
         </div>
       </div>
 
+      {/* Refreshing Banner */}
+      {refreshing && (
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 flex items-center gap-3">
+          <Loader2 className="w-4 h-4 animate-spin text-teal-600 flex-shrink-0" />
+          <p className="text-sm text-teal-700">Refreshing data from Stripe...</p>
+        </div>
+      )}
+
       {/* Stripe Data Errors Warning */}
       {data.meta?.errors && data.meta.errors.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
@@ -316,9 +355,10 @@ export default function FinancialDashboardPage() {
 
       {/* Data Completeness Info */}
       {data.meta && !data.meta.errors && (
-        <div className="text-xs text-gray-500 flex items-center gap-4">
-          <span>{data.meta.totalStripeSubscriptions} subscriptions loaded</span>
-          <span>{data.meta.totalStripeCharges} charges loaded ({data.meta.chargeWindow})</span>
+        <div className="text-xs text-gray-500 flex items-center gap-4 flex-wrap">
+          <span>{data.meta.waveOrderSubscriptions} WaveOrder subs (of {data.meta.totalStripeSubscriptions} total in Stripe)</span>
+          <span>{data.meta.waveOrderCharges} WaveOrder charges (of {data.meta.totalStripeCharges} total, {data.meta.chargeWindow})</span>
+          <span>{data.meta.knownCustomerIds} known customers</span>
         </div>
       )}
 
@@ -326,8 +366,8 @@ export default function FinancialDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Revenue"
-          value={fmt(data.revenue.total)}
-          subtitle={`${data.recentTransactions.length > 0 ? data.monthlyRevenue.reduce((s, m) => s + m.charges, 0) : 0} payments - ${fmt(data.revenue.totalRefunded)} refunded`}
+          value={fmt(data.revenue.totalCharges)}
+          subtitle={`${data.monthlyRevenue.reduce((s, m) => s + m.charges, 0)} payments (last 12 months)`}
           icon={DollarSign}
           color="green"
         />
@@ -347,9 +387,9 @@ export default function FinancialDashboardPage() {
           color="purple"
         />
         <KPICard
-          title="Stripe Balance"
-          value={fmt(data.stripeBalance.available)}
-          subtitle={`Pending: ${fmt(data.stripeBalance.pending)}`}
+          title="Net Revenue"
+          value={fmt(data.revenue.total)}
+          subtitle={`${fmt(data.revenue.totalCharges)} charges - ${fmt(data.revenue.totalRefunded)} refunded`}
           icon={Wallet}
           color="indigo"
         />

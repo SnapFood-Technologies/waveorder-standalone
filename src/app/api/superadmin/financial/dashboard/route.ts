@@ -1,9 +1,12 @@
-// Financial Dashboard API — real-time Stripe data (dedicated WaveOrder Stripe account)
+// Financial Dashboard API — WaveOrder-only Stripe data
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe, mapStripePlanToDb, PLANS, fetchAllStripeRecords } from '@/lib/stripe'
+import {
+  stripe, mapStripePlanToDb, PLANS,
+  fetchAllStripeRecords, isWaveOrderSubscription, getWaveOrderPriceIds,
+} from '@/lib/stripe'
 import Stripe from 'stripe'
 
 export async function GET() {
@@ -15,18 +18,22 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Fetch ALL Stripe data with auto-pagination + DB data in parallel
+    // Build set of known WaveOrder customer IDs from DB
+    const waveOrderUsers = await prisma.user.findMany({
+      where: { stripeCustomerId: { not: null } },
+      select: { stripeCustomerId: true },
+    })
+    const knownCustomerIds = new Set(
+      waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
+    )
+
+    // Fetch Stripe data with auto-pagination + DB data in parallel
     const [
-      stripeBalance,
-      allSubscriptions,
-      allCharges,
+      rawSubscriptions,
+      rawCharges,
       dbBusinesses,
       dbTransactions
     ] = await Promise.all([
-      stripe.balance.retrieve().catch(err => {
-        errors.push(`Balance: ${err.message}`)
-        return null
-      }),
       fetchAllStripeRecords(
         (p) => stripe.subscriptions.list({ ...p, expand: ['data.default_payment_method'] }),
         {}
@@ -53,6 +60,13 @@ export async function GET() {
         take: 10
       }).catch(() => [])
     ])
+
+    // Filter to WaveOrder-only data
+    const allSubscriptions = rawSubscriptions.filter(s => isWaveOrderSubscription(s))
+    const allCharges = rawCharges.filter(c => {
+      const custId = typeof c.customer === 'string' ? c.customer : null
+      return custId && knownCustomerIds.has(custId)
+    })
 
     // Categorize subscriptions
     const activePaid = allSubscriptions.filter(s =>
@@ -95,7 +109,7 @@ export async function GET() {
     const arr = mrr * 12
     const arpu = activePaid.length > 0 ? mrr / activePaid.length : 0
 
-    // Revenue from all charges (last 12 months)
+    // Revenue from WaveOrder charges only (last 12 months)
     const succeededCharges = allCharges.filter(c => c.status === 'succeeded')
     const totalRevenue = succeededCharges.reduce((sum, c) => sum + c.amount, 0) / 100
     const totalRefunded = succeededCharges.reduce((sum, c) => sum + (c.amount_refunded || 0), 0) / 100
@@ -150,9 +164,6 @@ export async function GET() {
           date: new Date(c.created * 1000).toISOString(),
         }))
 
-    const available = stripeBalance?.available?.reduce((s, b) => s + b.amount, 0) || 0
-    const pending = stripeBalance?.pending?.reduce((s, b) => s + b.amount, 0) || 0
-
     return NextResponse.json({
       revenue: {
         total: netRevenue,
@@ -165,10 +176,7 @@ export async function GET() {
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
       arpu: Math.round(arpu * 100) / 100,
-      stripeBalance: {
-        available: available / 100,
-        pending: pending / 100,
-      },
+      stripeBalance: { available: 0, pending: 0 },
       subscriptions: {
         paidActive: activePaid.length,
         trialing: activeTrials,
@@ -187,10 +195,12 @@ export async function GET() {
       monthlyRevenue,
       recentTransactions,
       currency: 'usd',
-      // Data completeness info
       meta: {
-        totalStripeSubscriptions: allSubscriptions.length,
-        totalStripeCharges: allCharges.length,
+        totalStripeSubscriptions: rawSubscriptions.length,
+        waveOrderSubscriptions: allSubscriptions.length,
+        totalStripeCharges: rawCharges.length,
+        waveOrderCharges: allCharges.length,
+        knownCustomerIds: knownCustomerIds.size,
         chargeWindow: '12 months',
         errors: errors.length > 0 ? errors : undefined,
       }

@@ -395,6 +395,29 @@ export async function fetchAllStripeRecords<T extends { id: string }>(
   return all
 }
 
+/**
+ * Returns the full set of WaveOrder price IDs from PLANS config.
+ * Used to determine if a Stripe subscription belongs to WaveOrder.
+ */
+export function getWaveOrderPriceIds(): Set<string> {
+  const ids = new Set<string>()
+  for (const plan of Object.values(PLANS)) {
+    if (plan.priceId) ids.add(plan.priceId)
+    if (plan.annualPriceId) ids.add(plan.annualPriceId)
+    if (plan.freePriceId) ids.add(plan.freePriceId)
+  }
+  return ids
+}
+
+/**
+ * Check if a Stripe subscription belongs to WaveOrder based on its price ID.
+ */
+export function isWaveOrderSubscription(sub: { items: { data: Array<{ price?: { id?: string } | null }> } }): boolean {
+  const priceId = sub.items?.data?.[0]?.price?.id
+  if (!priceId) return false
+  return getWaveOrderPriceIds().has(priceId)
+}
+
 export function getBillingTypeFromPriceId(priceId: string): 'monthly' | 'yearly' | 'free' | null {
   if (!priceId || priceId.trim() === '') return null
   

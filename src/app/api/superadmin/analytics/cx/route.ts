@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { stripe, mapStripePlanToDb, fetchAllStripeRecords } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, fetchAllStripeRecords, isWaveOrderSubscription } from '@/lib/stripe'
 import Stripe from 'stripe'
 
 export async function GET(request: NextRequest) {
@@ -82,8 +82,10 @@ export async function GET(request: NextRequest) {
           orders: { where: { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }
         }
       }),
-      // ALL Stripe subscriptions (auto-paginated) for churn/CLV
-      fetchAllStripeRecords((p) => stripe.subscriptions.list(p), { status: 'all' }).catch(() => [] as Stripe.Subscription[]),
+      // ALL Stripe subscriptions (auto-paginated) — will filter to WaveOrder after
+      fetchAllStripeRecords((p) => stripe.subscriptions.list(p), { status: 'all' })
+        .then(subs => subs.filter(s => isWaveOrderSubscription(s)))
+        .catch(() => [] as Stripe.Subscription[]),
       // DB transactions for actual revenue CLV
       prisma.stripeTransaction.findMany({
         where: { status: { in: ['succeeded', 'paid'] } },
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
       }).catch(() => [])
     ])
 
-    // This Stripe account is dedicated to WaveOrder — all subscriptions are ours
+    // stripeSubscriptions is already filtered to WaveOrder-only via isWaveOrderSubscription
 
     // === NPS CALCULATION ===
     const promoters = npsFeedbacks.filter(f => f.rating >= 9).length
