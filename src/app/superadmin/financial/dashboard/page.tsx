@@ -253,8 +253,36 @@ export default function FinancialDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
+          <p className="text-gray-600 mt-1">Real-time revenue and subscription data from Stripe</p>
+        </div>
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-teal-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-teal-800">Communicating with Stripe...</p>
+            <p className="text-xs text-teal-600 mt-0.5">Fetching and analysing WaveOrder subscription and payment data. This may take a few seconds.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
+              <div className="h-7 bg-gray-200 rounded w-20 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-32" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
+              <div className="h-7 bg-gray-200 rounded w-20 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-32" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -301,6 +329,14 @@ export default function FinancialDashboardPage() {
           </button>
         </div>
       </div>
+
+      {/* Refreshing Banner */}
+      {refreshing && (
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 flex items-center gap-3">
+          <Loader2 className="w-4 h-4 animate-spin text-teal-600 flex-shrink-0" />
+          <p className="text-sm text-teal-700">Refreshing data from Stripe...</p>
+        </div>
+      )}
 
       {/* Stripe Data Errors Warning */}
       {data.meta?.errors && data.meta.errors.length > 0 && (

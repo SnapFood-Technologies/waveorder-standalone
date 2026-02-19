@@ -182,11 +182,33 @@ export default function TransactionsPage() {
         </div>
       </div>
 
+      {/* Loading Banner */}
+      {loading && (
+        <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 flex items-center gap-3">
+          <Loader2 className="w-5 h-5 animate-spin text-teal-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-teal-800">Communicating with Stripe...</p>
+            <p className="text-xs text-teal-600 mt-0.5">Fetching WaveOrder transaction data for each customer. This may take a few seconds.</p>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+          <div className="p-4 space-y-3">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 animate-pulse">
+                <div className="w-8 h-8 bg-gray-200 rounded" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-48" />
+                  <div className="h-3 bg-gray-100 rounded w-32" />
+                </div>
+                <div className="h-4 bg-gray-200 rounded w-20" />
+                <div className="h-5 bg-gray-200 rounded-full w-16" />
+                <div className="h-3 bg-gray-100 rounded w-24" />
+              </div>
+            ))}
           </div>
         ) : transactions.length === 0 ? (
           <div className="text-center py-16">

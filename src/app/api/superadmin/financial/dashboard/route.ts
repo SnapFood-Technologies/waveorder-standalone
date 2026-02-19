@@ -176,10 +176,7 @@ export async function GET() {
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
       arpu: Math.round(arpu * 100) / 100,
-      stripeBalance: {
-        available: 0,
-        pending: 0,
-      },
+      stripeBalance: { available: 0, pending: 0 },
       subscriptions: {
         paidActive: activePaid.length,
         trialing: activeTrials,
