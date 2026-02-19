@@ -41,7 +41,9 @@ import {
   Heart,
   Calendar,
   Crown,
-  StickyNote
+    StickyNote,
+    Banknote,
+    ArrowRightLeft
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -55,6 +57,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     const items: string[] = []
     if (pathname?.startsWith('/superadmin/system')) items.push('System')
+    if (pathname?.startsWith('/superadmin/financial')) items.push('Financial')
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
     if (pathname?.startsWith('/superadmin/operations')) items.push('Operations Analytics')
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
@@ -82,6 +85,22 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Feedback', 
           href: '/superadmin/marketing/feedback', 
           icon: Star
+        }
+      ]
+    },
+    { 
+      name: 'Financial', 
+      icon: Banknote,
+      children: [
+        { 
+          name: 'Dashboard', 
+          href: '/superadmin/financial/dashboard', 
+          icon: DollarSign
+        },
+        { 
+          name: 'Transactions', 
+          href: '/superadmin/financial/transactions', 
+          icon: ArrowRightLeft
         }
       ]
     },
