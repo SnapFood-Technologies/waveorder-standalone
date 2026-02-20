@@ -584,7 +584,6 @@ export async function GET(
           isService: true,
           serviceDuration: true,
           variants: {
-            orderBy: { price: 'asc' },
             select: {
               id: true,
               name: true,
