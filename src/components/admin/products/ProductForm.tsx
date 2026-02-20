@@ -23,7 +23,8 @@ import {
   CheckCircle,
   Tag,
   Search,
-  ChevronDown
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -486,6 +487,16 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     }))
   }
 
+  const moveImage = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= form.images.length) return
+    setForm(prev => {
+      const newImages = [...prev.images]
+      const [moved] = newImages.splice(fromIndex, 1)
+      newImages.splice(toIndex, 0, moved)
+      return { ...prev, images: newImages }
+    })
+  }
+
   const addVariant = () => {
     setForm(prev => ({
       ...prev,
@@ -544,6 +555,16 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
       ...prev,
       variants: prev.variants.filter((_, i) => i !== index)
     }))
+  }
+
+  const moveVariant = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= form.variants.length) return
+    setForm(prev => {
+      const newVariants = [...prev.variants]
+      const [moved] = newVariants.splice(fromIndex, 1)
+      newVariants.splice(toIndex, 0, moved)
+      return { ...prev, variants: newVariants }
+    })
   }
 
   const addModifier = () => {
@@ -1034,7 +1055,35 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                           >
                             <X className="w-3 h-3" />
                           </button>
+                          {form.images.length > 1 && (
+                            <span className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 rounded font-medium">
+                              {index === 0 ? 'Main' : `#${index + 1}`}
+                            </span>
+                          )}
                         </div>
+                        {form.images.length > 1 && (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveImage(index, index - 1)}
+                              disabled={index === 0}
+                              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Move earlier"
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </button>
+                            <span className="text-xs text-gray-400 min-w-[1rem] text-center">{index + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => moveImage(index, index + 1)}
+                              disabled={index === form.images.length - 1}
+                              className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              title="Move later"
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                     
@@ -1455,7 +1504,31 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     {form.variants.map((variant, index) => (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium text-gray-900">Variant {index + 1}</h4>
+                          <div className="flex items-center gap-2">
+                            {form.variants.length > 1 && (
+                              <div className="flex flex-col">
+                                <button
+                                  type="button"
+                                  onClick={() => moveVariant(index, index - 1)}
+                                  disabled={index === 0}
+                                  className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveVariant(index, index + 1)}
+                                  disabled={index === form.variants.length - 1}
+                                  className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                  title="Move down"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            <h4 className="font-medium text-gray-900">Variant {index + 1}</h4>
+                          </div>
                           <button
                             type="button"
                             onClick={() => removeVariant(index)}
