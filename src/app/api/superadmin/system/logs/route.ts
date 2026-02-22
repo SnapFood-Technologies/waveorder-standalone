@@ -28,6 +28,31 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
+    // Known scanner/spam slug patterns to exclude from main log views
+    const spamFilePatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
+    const spamExactSlugs = [
+      'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
+      'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
+      'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
+      'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc',
+      'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts',
+      'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json',
+      'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon',
+      'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain',
+      'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register',
+      'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup',
+      'install', 'superadmin', 'management', 'secure'
+    ]
+
+    const isSpamSlug = (s: string | null | undefined): boolean => {
+      if (!s) return false
+      const lower = s.toLowerCase()
+      if (spamFilePatterns.test(lower)) return true
+      if (spamExactSlugs.includes(lower)) return true
+      if (lower.startsWith('.')) return true
+      return false
+    }
+
     // Build where clause
     const where: any = {}
     
@@ -61,13 +86,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch logs with pagination
-    const [logs, total] = await Promise.all([
+    // Exclude known scanner/spam 404s from the main log list by
+    // filtering out storefront_404 logs whose slug matches spam patterns.
+    // MongoDB $not/$regex works with Prisma, but groupBy doesn't support it easily,
+    // so we add slug NOT IN for exact matches and do a post-filter for regex patterns.
+    const spamExcludeFilter = {
+      NOT: {
+        AND: [
+          { logType: 'storefront_404' },
+          { slug: { in: spamExactSlugs } }
+        ]
+      }
+    }
+
+    const mainWhere = { ...where, ...spamExcludeFilter }
+
+    // Fetch logs with pagination (excluding spam 404s)
+    const [rawLogs, total] = await Promise.all([
       prisma.systemLog.findMany({
-        where,
+        where: mainWhere,
         orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        skip: 0,
+        take: skip + limit + 50, // fetch extra to account for regex-pattern filtered entries
         include: {
           business: {
             select: {
@@ -81,14 +121,42 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where })
     ])
 
-    // Get summary statistics
-    const [totalLogs, errorLogs, warningLogs, infoLogs, storefront404s] = await Promise.all([
+    // Post-filter regex-pattern spam slugs (file extensions like .env.php, etc.)
+    const filteredLogs = rawLogs.filter(log => {
+      if (log.logType === 'storefront_404' && isSpamSlug(log.slug)) return false
+      return true
+    })
+    const logs = filteredLogs.slice(skip, skip + limit)
+
+    // Get all storefront_404 count, then subtract spam count for clean number
+    const [totalStorefront404s, spamExact404Count] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'storefront_404' } }),
+      prisma.systemLog.count({ where: { logType: 'storefront_404', slug: { in: spamExactSlugs } } }),
+    ])
+
+    // For regex-pattern spam, count by fetching slugs and filtering in JS
+    const all404Slugs = await prisma.systemLog.groupBy({
+      by: ['slug'],
+      where: { logType: 'storefront_404' },
+      _count: { id: true }
+    })
+    const regexSpam404Count = all404Slugs
+      .filter(item => item.slug && spamFilePatterns.test(item.slug.toLowerCase()) && !spamExactSlugs.includes(item.slug.toLowerCase()))
+      .reduce((sum, item) => sum + item._count.id, 0)
+
+    const totalSpam404s = spamExact404Count + regexSpam404Count
+    const cleanStorefront404s = totalStorefront404s - totalSpam404s
+
+    // Get summary statistics (with spam 404s excluded from error count)
+    const [rawTotalLogs, rawErrorLogs, warningLogs, infoLogs] = await Promise.all([
       prisma.systemLog.count({}),
       prisma.systemLog.count({ where: { severity: 'error' } }),
       prisma.systemLog.count({ where: { severity: 'warning' } }),
       prisma.systemLog.count({ where: { severity: 'info' } }),
-      prisma.systemLog.count({ where: { logType: 'storefront_404' } })
     ])
+    const totalLogs = rawTotalLogs - totalSpam404s
+    const errorLogs = rawErrorLogs - totalSpam404s
+    const storefront404s = cleanStorefront404s
 
     // Get log type distribution for analytics
     const logTypeDistribution = await prisma.systemLog.groupBy({
@@ -272,8 +340,8 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit)
+        total: total - totalSpam404s,
+        totalPages: Math.ceil((total - totalSpam404s) / limit)
       },
       stats: {
         total: totalLogs,
@@ -285,8 +353,8 @@ export async function GET(request: NextRequest) {
       analytics: {
         logTypeDistribution: logTypeDistribution.map(item => ({
           logType: item.logType,
-          count: item._count.id
-        })),
+          count: item.logType === 'storefront_404' ? item._count.id - totalSpam404s : item._count.id
+        })).filter(item => item.count > 0),
         orderStats: {
           created: orderCreatedCount,
           errors: orderErrorCount,
@@ -340,7 +408,11 @@ export async function GET(request: NextRequest) {
           count: item._count.id
         })),
         logsByDay: logsByDay,
-        onboardingStats
+        onboardingStats,
+        scannerTraffic: {
+          total: totalSpam404s,
+          note: 'Bot probes, vulnerability scanners, and noisy 404s filtered from main view'
+        }
       }
     })
   } catch (error) {

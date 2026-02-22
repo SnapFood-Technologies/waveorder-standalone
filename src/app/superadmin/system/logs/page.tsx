@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   FileText,
   AlertTriangle,
@@ -27,7 +28,8 @@ import {
   ArrowRight,
   LogIn,
   CreditCard,
-  Puzzle
+  Puzzle,
+  ShieldAlert
 } from 'lucide-react'
 
 interface SystemLog {
@@ -97,6 +99,10 @@ interface LogsResponse {
         completions: number
         errors: number
       }>
+    }
+    scannerTraffic?: {
+      total: number
+      note: string
     }
   }
 }
@@ -303,6 +309,33 @@ export default function SystemLogsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Scanner Traffic CTA */}
+      {analytics?.scannerTraffic && analytics.scannerTraffic.total > 0 && (
+        <Link href="/superadmin/system/scanner-traffic" className="block">
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200 p-4 hover:border-orange-300 transition-colors cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <ShieldAlert className="w-5 h-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {analytics.scannerTraffic.total.toLocaleString()} scanner/bot requests filtered
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Vulnerability probes, bot crawlers, and spam 404s are excluded from the counts above
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-medium text-orange-600">
+                View Scanner Traffic
+                <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+        </Link>
       )}
 
       {/* Filters */}
@@ -676,7 +709,7 @@ export default function SystemLogsPage() {
                     <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.storefrontStats.notFound.toLocaleString()}</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">* May include bot probes, hack attempts, and noisy traffic</p>
+                <p className="text-xs text-gray-400 mt-1">* Legitimate 404s only — scanner/bot traffic is filtered out</p>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Errors</span>
                   <div className="flex items-center gap-2">

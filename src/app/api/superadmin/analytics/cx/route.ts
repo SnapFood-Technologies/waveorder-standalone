@@ -257,9 +257,9 @@ export async function GET(request: NextRequest) {
       // Group transactions by business/customer
       const revenueByBusiness: Record<string, { total: number; plan: string }> = {}
 
-      // Get business owner mapping for plan info
+      // All businesses (including deactivated) so past revenue counts toward CLV
       const businessOwners = await prisma.business.findMany({
-        where: { isActive: true, testMode: { not: true } },
+        where: { testMode: { not: true } },
         select: {
           id: true,
           subscriptionPlan: true,

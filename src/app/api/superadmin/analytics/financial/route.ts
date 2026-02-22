@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const [rawSubsArray, businesses, dbTransactions] = await Promise.all([
       fetchAllStripeRecords((p) => stripe.subscriptions.list(p), {}).catch(() => [] as Stripe.Subscription[]),
       prisma.business.findMany({
-        where: { isActive: true, testMode: { not: true } },
+        where: { testMode: { not: true } },
         include: {
           users: {
             where: { role: 'OWNER' },
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     const arpu = totalPayingCustomers > 0 ? totalMRR / totalPayingCustomers : 0
 
     // === PROCESS BUSINESSES FOR DB-BASED METRICS ===
-    const processedBusinesses = businesses.map(business => {
+    const allProcessed = businesses.map(business => {
       const owner = business.users.find(u => u.role === 'OWNER')?.user
       const plan = business.subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS'
       const subscriptionPriceId = owner?.subscription?.priceId
@@ -123,11 +123,15 @@ export async function GET(request: NextRequest) {
         trialEndsAt: business.trialEndsAt,
         trialDaysRemaining,
         createdAt: business.createdAt,
-        ownerEmail: owner?.email
+        ownerEmail: owner?.email,
+        isActive: business.isActive !== false,
       }
     })
 
-    // === SUBSCRIPTION OVERVIEW (DB-based) ===
+    // Active businesses for current-state metrics; all businesses for historical/growth
+    const processedBusinesses = allProcessed.filter(b => b.isActive)
+
+    // === SUBSCRIPTION OVERVIEW (DB-based, active businesses only) ===
     const byPlan = {
       STARTER: processedBusinesses.filter(b => b.plan === 'STARTER').length,
       PRO: processedBusinesses.filter(b => b.plan === 'PRO').length,
@@ -149,16 +153,16 @@ export async function GET(request: NextRequest) {
       within30Days: activeTrials.filter(b => b.trialDaysRemaining !== null && b.trialDaysRemaining <= 30),
     }
 
-    const endedTrials = processedBusinesses.filter(b => {
+    // Trial funnel uses all businesses (including deactivated) for accurate conversion tracking
+    const endedTrials = allProcessed.filter(b => {
       const biz = businesses.find(bz => bz.id === b.id)
       if (!biz?.trialEndsAt) return false
       return new Date(biz.trialEndsAt) < now
     })
 
-    // Converted = paid in Stripe (more accurate than DB billingType)
     const convertedTrials = activePaid.length
     const totalTrialsEnded = endedTrials.length
-    const totalTrialsStarted = processedBusinesses.filter(b => {
+    const totalTrialsStarted = allProcessed.filter(b => {
       const biz = businesses.find(bz => bz.id === b.id)
       return biz?.trialEndsAt !== null
     }).length
@@ -195,7 +199,7 @@ export async function GET(request: NextRequest) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
 
-      const monthBusinesses = processedBusinesses.filter(b => {
+      const monthBusinesses = allProcessed.filter(b => {
         const created = new Date(b.createdAt)
         return created >= monthStart && created <= monthEnd
       })
