@@ -10,11 +10,13 @@ function generateFingerprint(request: NextRequest): string {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
+    const { itemId } = await params
+
     const item = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId, isPublic: true }
+      where: { id: itemId, isPublic: true }
     })
 
     if (!item) {
@@ -26,18 +28,17 @@ export async function POST(
     const existingVote = await prisma.roadmapVote.findUnique({
       where: {
         roadmapItemId_fingerprint: {
-          roadmapItemId: params.itemId,
+          roadmapItemId: itemId,
           fingerprint,
         }
       }
     })
 
     if (existingVote) {
-      // Remove vote (toggle off)
       await prisma.$transaction([
         prisma.roadmapVote.delete({ where: { id: existingVote.id } }),
         prisma.roadmapItem.update({
-          where: { id: params.itemId },
+          where: { id: itemId },
           data: { upvoteCount: { decrement: 1 } },
         }),
       ])
@@ -45,7 +46,6 @@ export async function POST(
       return NextResponse.json({ voted: false, upvoteCount: item.upvoteCount - 1 })
     }
 
-    // Body may optionally include email
     let email: string | null = null
     try {
       const body = await request.json()
@@ -57,13 +57,13 @@ export async function POST(
     await prisma.$transaction([
       prisma.roadmapVote.create({
         data: {
-          roadmapItemId: params.itemId,
+          roadmapItemId: itemId,
           fingerprint,
           email,
         }
       }),
       prisma.roadmapItem.update({
-        where: { id: params.itemId },
+        where: { id: itemId },
         data: { upvoteCount: { increment: 1 } },
       }),
     ])

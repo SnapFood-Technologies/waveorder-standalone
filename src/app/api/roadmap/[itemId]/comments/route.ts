@@ -3,11 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
+    const { itemId } = await params
+
     const item = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId, isPublic: true }
+      where: { id: itemId, isPublic: true }
     })
 
     if (!item) {
@@ -15,7 +17,7 @@ export async function GET(
     }
 
     const comments = await prisma.roadmapComment.findMany({
-      where: { roadmapItemId: params.itemId },
+      where: { roadmapItemId: itemId },
       orderBy: { createdAt: 'desc' },
       take: 50,
     })
@@ -29,11 +31,13 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
+    const { itemId } = await params
+
     const item = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId, isPublic: true }
+      where: { id: itemId, isPublic: true }
     })
 
     if (!item) {
@@ -65,7 +69,7 @@ export async function POST(
 
     const comment = await prisma.roadmapComment.create({
       data: {
-        roadmapItemId: params.itemId,
+        roadmapItemId: itemId,
         name: data.name.trim(),
         email: data.email.trim().toLowerCase(),
         body: data.body.trim(),

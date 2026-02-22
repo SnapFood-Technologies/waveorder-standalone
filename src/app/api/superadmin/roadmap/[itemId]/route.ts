@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,8 +13,10 @@ export async function GET(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    const { itemId } = await params
+
     const item = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId },
+      where: { id: itemId },
       include: {
         comments: {
           orderBy: { createdAt: 'desc' },
@@ -39,7 +41,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -47,10 +49,11 @@ export async function PUT(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    const { itemId } = await params
     const data = await request.json()
 
     const existing = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId }
+      where: { id: itemId }
     })
 
     if (!existing) {
@@ -67,7 +70,7 @@ export async function PUT(
     if (data.isPinned !== undefined) updateData.isPinned = data.isPinned
 
     const item = await prisma.roadmapItem.update({
-      where: { id: params.itemId },
+      where: { id: itemId },
       data: updateData,
     })
 
@@ -80,7 +83,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -88,8 +91,10 @@ export async function DELETE(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
+    const { itemId } = await params
+
     const existing = await prisma.roadmapItem.findUnique({
-      where: { id: params.itemId }
+      where: { id: itemId }
     })
 
     if (!existing) {
@@ -97,7 +102,7 @@ export async function DELETE(
     }
 
     await prisma.roadmapItem.delete({
-      where: { id: params.itemId }
+      where: { id: itemId }
     })
 
     return NextResponse.json({ success: true })
