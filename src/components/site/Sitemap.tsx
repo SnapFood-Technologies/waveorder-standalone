@@ -76,6 +76,11 @@ export default function Sitemap() {
           title: "Resources", 
           href: "/resources", 
           description: "Help center with FAQs, guides, and best practices for WhatsApp ordering" 
+        },
+        { 
+          title: "Roadmap", 
+          href: "/roadmap", 
+          description: "See what we're building next. Upvote features and share your feedback on the product roadmap." 
         }
       ]
     },

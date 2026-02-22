@@ -43,7 +43,8 @@ import {
   Crown,
     StickyNote,
     Banknote,
-    ArrowRightLeft
+    ArrowRightLeft,
+    Map
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -275,6 +276,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Notes', 
           href: '/superadmin/settings/notes', 
           icon: StickyNote
+        },
+        { 
+          name: 'Roadmap', 
+          href: '/superadmin/settings/roadmap', 
+          icon: Map
         }
       ]
     },

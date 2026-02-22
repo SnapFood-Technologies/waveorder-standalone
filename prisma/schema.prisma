@@ -2753,3 +2753,80 @@ model SuperAdminNote {
   @@index([isDone])
   @@map("superadmin_notes")
 }
+
+// ─── Roadmap ────────────────────────────────────────────
+
+enum RoadmapStatus {
+  IDEA
+  THINKING
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RoadmapCategory {
+  STOREFRONT
+  ADMIN
+  PAYMENTS
+  WHATSAPP_FLOWS
+  INTEGRATIONS
+  ANALYTICS
+  PERFORMANCE
+  MOBILE
+  OTHER
+}
+
+model RoadmapItem {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  status      RoadmapStatus   @default(IDEA)
+  category    RoadmapCategory @default(OTHER)
+  isPublic    Boolean         @default(false)
+  isPinned    Boolean         @default(false)
+  upvoteCount Int             @default(0)
+
+  votes    RoadmapVote[]
+  comments RoadmapComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([isPublic])
+  @@index([isPinned])
+  @@index([upvoteCount])
+  @@map("roadmap_items")
+}
+
+model RoadmapVote {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapItemId String @db.ObjectId
+  fingerprint   String
+  email         String?
+
+  roadmapItem RoadmapItem @relation(fields: [roadmapItemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roadmapItemId, fingerprint])
+  @@index([roadmapItemId])
+  @@map("roadmap_votes")
+}
+
+model RoadmapComment {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapItemId String @db.ObjectId
+  name          String
+  email         String
+  body          String
+
+  roadmapItem RoadmapItem @relation(fields: [roadmapItemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([roadmapItemId, createdAt])
+  @@map("roadmap_comments")
+}

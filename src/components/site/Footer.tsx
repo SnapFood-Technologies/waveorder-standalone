@@ -124,6 +124,11 @@ export default function Footer() {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link href="/roadmap" className="text-gray-400 hover:text-white transition-colors">
+                  Roadmap
+                </Link>
+              </li>
             </ul>
           </div>
           

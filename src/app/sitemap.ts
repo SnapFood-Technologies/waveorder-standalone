@@ -119,6 +119,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/roadmap`,
+      lastModified: formatDate('2026-02-18'),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
   ]
 
   let businessPages: MetadataRoute.Sitemap = []
