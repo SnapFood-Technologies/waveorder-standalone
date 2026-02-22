@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronUp, MessageSquare, X, Send, Map, Filter } from 'lucide-react'
+import { ChevronUp, MessageSquare, X, Send, Map, Filter, Lightbulb } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface RoadmapItem {
@@ -227,6 +227,59 @@ export default function PublicRoadmap() {
                 >
                   {categoryLabels[cat] || cat}
                 </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Ideas section */}
+      {!loading && getItemsByStatus('IDEA').length > 0 && (
+        <section className="pt-10 pb-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Lightbulb className="w-5 h-5 text-purple-500" />
+              <h2 className="font-semibold text-gray-900">Ideas &amp; Suggestions</h2>
+              <span className="text-sm text-gray-400 ml-1">Vote to help us prioritize</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {getItemsByStatus('IDEA').map(item => (
+                <div
+                  key={item.id}
+                  className="bg-white border border-purple-100 rounded-xl p-4 hover:border-purple-200 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => handleVote(item.id)}
+                      className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors flex-shrink-0 ${
+                        votedItems.has(item.id)
+                          ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                          : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                      <span>{item.upvoteCount}</span>
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 text-sm">{item.title}</h3>
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${categoryColors[item.category] || 'bg-gray-100 text-gray-700'}`}>
+                          {categoryLabels[item.category] || item.category}
+                        </span>
+                        <button
+                          onClick={() => openComments(item)}
+                          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          {item._count.comments}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
