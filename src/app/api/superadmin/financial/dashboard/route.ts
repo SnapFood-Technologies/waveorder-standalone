@@ -18,11 +18,12 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Build set of known WaveOrder customer IDs from DB (active non-test businesses only)
+    // Build set of known WaveOrder customer IDs from DB (all non-test businesses, including deactivated)
+    // Revenue must include past payments from businesses that were later deactivated
     const waveOrderUsers = await prisma.user.findMany({
       where: {
         stripeCustomerId: { not: null },
-        businesses: { some: { business: { isActive: true, testMode: { not: true } } } },
+        businesses: { some: { business: { testMode: { not: true } } } },
       },
       select: { stripeCustomerId: true },
     })
@@ -52,10 +53,10 @@ export async function GET() {
         return [] as Stripe.Charge[]
       }),
       prisma.business.findMany({
-        where: { isActive: true, testMode: { not: true } },
+        where: { testMode: { not: true } },
         select: {
           id: true, name: true, subscriptionPlan: true, subscriptionStatus: true,
-          trialEndsAt: true, graceEndsAt: true, createdAt: true,
+          trialEndsAt: true, graceEndsAt: true, createdAt: true, isActive: true,
         }
       }),
       prisma.stripeTransaction.findMany({
@@ -143,13 +144,14 @@ export async function GET() {
 
     // DB-based customer breakdown (single source of truth so numbers add up)
     const now = new Date()
-    const dbTrialing = dbBusinesses.filter(b =>
+    const activeBusinesses = dbBusinesses.filter(b => b.isActive)
+    const dbTrialing = activeBusinesses.filter(b =>
       b.trialEndsAt && new Date(b.trialEndsAt) > now
     )
     const dbPaying = activePaid.length // from Stripe (actually paying money)
-    const dbFree = dbBusinesses.length - dbTrialing.length - dbPaying
+    const dbFree = activeBusinesses.length - dbTrialing.length - dbPaying
 
-    // Trial funnel
+    // Trial funnel (includes all businesses, active or not, for accurate conversion tracking)
     const endedTrials = dbBusinesses.filter(b =>
       b.trialEndsAt && new Date(b.trialEndsAt) < now
     ).length
@@ -196,7 +198,7 @@ export async function GET() {
         paused: paused.length,
         canceled: canceled.length,
         free: Math.max(0, dbFree),
-        total: dbBusinesses.length,
+        total: activeBusinesses.length,
       },
       revenueByPlan,
       trialFunnel: {
