@@ -3,8 +3,23 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const spamFilePatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
-const spamExactSlugs = [
+const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war)$/i
+
+const spamStructuralPatterns = [
+  /^\d+$/,
+  /^:\d+/,
+  /\[/,
+  /\*/,
+  /\.\./,
+  /^(upload|uploads|fileupload|file-upload|uploadfile)$/i,
+  /^(import|export|migrate|migration|seed|seeder)$/i,
+  /^(controlpanel|cpanel|webmail|plesk|directadmin)$/i,
+  /^(package-updates|update|updates|upgrade)$/i,
+  /^(alfa|alfanew|alfa-rex|shell|r57|c99|b374k)/i,
+  /^(stripe\.yaml|stripe\.json|config\.|\.config)/i,
+]
+
+const spamExactSlugs = new Set([
   'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
   'admin', 'admin_', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
   'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
@@ -18,14 +33,17 @@ const spamExactSlugs = [
   'install', 'superadmin', 'management', 'secure',
   'getcmd', '_next', '1', 'feed', 'cookie',
   'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
-]
+])
 
 const isSpamSlug = (s: string | null | undefined): boolean => {
   if (!s) return false
   const lower = s.toLowerCase()
+  if (lower.startsWith('.') || lower.startsWith('_') || lower.startsWith(':')) return true
   if (spamFilePatterns.test(lower)) return true
-  if (spamExactSlugs.includes(lower)) return true
-  if (lower.startsWith('.') || lower.startsWith('_')) return true
+  if (spamExactSlugs.has(lower)) return true
+  for (const pattern of spamStructuralPatterns) {
+    if (pattern.test(lower)) return true
+  }
   return false
 }
 
@@ -78,12 +96,15 @@ export async function GET(request: NextRequest) {
       const slug = (log.slug || '').toLowerCase()
       let cat = 'other'
       if (/^(wp-|wordpress|xmlrpc)/i.test(slug)) cat = 'wordpress'
-      else if (/\.(php|asp|aspx|jsp|cgi)$/i.test(slug)) cat = 'server_probe'
-      else if (/\.(env|git|aws|config|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)/i.test(slug) || slug.startsWith('.')) cat = 'config_file'
+      else if (/\.(php\d?|asp|aspx|jsp|cgi)$/i.test(slug) || /^(alfa|alfanew|alfa-rex|r57|c99|b374k)/i.test(slug)) cat = 'server_probe'
+      else if (/\.(env|git|aws|yaml|yml|cfg|ini|conf|toml|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)/i.test(slug) || slug.startsWith('.') || /^(config\.|stripe\.)/i.test(slug)) cat = 'config_file'
       else if (/\.(png|ico|jpg|jpeg|gif|webp|svg)$/i.test(slug) || slug.includes('apple-touch-icon') || slug === 'favicon' || slug === 'browserconfig') cat = 'asset_probe'
-      else if (['phpmyadmin', 'cpanel', 'admin', 'admin_', 'administrator', 'dashboard', 'login', 'superadmin', 'management'].includes(slug)) cat = 'admin_panel'
-      else if (['passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'shell', 'cmd', 'eval', 'exec', 'system'].includes(slug)) cat = 'path_traversal'
+      else if (['phpmyadmin', 'cpanel', 'admin', 'admin_', 'administrator', 'dashboard', 'login', 'superadmin', 'management', 'controlpanel', 'webmail', 'plesk', 'directadmin'].includes(slug)) cat = 'admin_panel'
+      else if (['passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'shell', 'cmd', 'eval', 'exec', 'system'].includes(slug) || /\.\./.test(slug)) cat = 'path_traversal'
       else if (['chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot', 'feed', 'getcmd'].includes(slug)) cat = 'crawler'
+      else if (/^(upload|uploads|fileupload|file-upload|uploadfile|import|export)$/i.test(slug)) cat = 'server_probe'
+      else if (/^:\d+/.test(slug) || /^\d+$/.test(slug)) cat = 'server_probe'
+      else if (/\[/.test(slug) || /\*/.test(slug) || slug.startsWith('_')) cat = 'server_probe'
       return { ...log, category: cat, createdAt: log.createdAt.toISOString() }
     })
 
