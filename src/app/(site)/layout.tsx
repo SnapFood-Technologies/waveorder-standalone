@@ -43,7 +43,8 @@ export default function SiteLayout({
     '/retail',
     '/salons',
     // Developer pages
-    '/developers'
+    '/developers',
+    '/roadmap'
   ]
   
   // Check if it's a business slug (e.g., /naia-studio) or a business legal page (e.g., /naia-studio/privacy-policy)
