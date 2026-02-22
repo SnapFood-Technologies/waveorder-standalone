@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 const spamFilePatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
 const spamExactSlugs = [
   'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
-  'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
+  'admin', 'admin_', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
   'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
   'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc',
   'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts',
@@ -15,7 +15,9 @@ const spamExactSlugs = [
   'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain',
   'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register',
   'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup',
-  'install', 'superadmin', 'management', 'secure'
+  'install', 'superadmin', 'management', 'secure',
+  'getcmd', '_next', '1', 'feed', 'cookie',
+  'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
 ]
 
 const isSpamSlug = (s: string | null | undefined): boolean => {
@@ -23,7 +25,7 @@ const isSpamSlug = (s: string | null | undefined): boolean => {
   const lower = s.toLowerCase()
   if (spamFilePatterns.test(lower)) return true
   if (spamExactSlugs.includes(lower)) return true
-  if (lower.startsWith('.')) return true
+  if (lower.startsWith('.') || lower.startsWith('_')) return true
   return false
 }
 
@@ -79,8 +81,9 @@ export async function GET(request: NextRequest) {
       else if (/\.(php|asp|aspx|jsp|cgi)$/i.test(slug)) cat = 'server_probe'
       else if (/\.(env|git|aws|config|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)/i.test(slug) || slug.startsWith('.')) cat = 'config_file'
       else if (/\.(png|ico|jpg|jpeg|gif|webp|svg)$/i.test(slug) || slug.includes('apple-touch-icon') || slug === 'favicon' || slug === 'browserconfig') cat = 'asset_probe'
-      else if (['phpmyadmin', 'cpanel', 'admin', 'administrator', 'dashboard', 'login', 'superadmin', 'management'].includes(slug)) cat = 'admin_panel'
+      else if (['phpmyadmin', 'cpanel', 'admin', 'admin_', 'administrator', 'dashboard', 'login', 'superadmin', 'management'].includes(slug)) cat = 'admin_panel'
       else if (['passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'shell', 'cmd', 'eval', 'exec', 'system'].includes(slug)) cat = 'path_traversal'
+      else if (['chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot', 'feed', 'getcmd'].includes(slug)) cat = 'crawler'
       return { ...log, category: cat, createdAt: log.createdAt.toISOString() }
     })
 

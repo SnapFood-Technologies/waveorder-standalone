@@ -4,6 +4,33 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+// Shared spam detection for scanner/bot 404 traffic
+const spamFilePatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
+const spamExactSlugs = [
+  'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
+  'admin', 'admin_', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
+  'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
+  'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc',
+  'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts',
+  'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json',
+  'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon',
+  'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain',
+  'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register',
+  'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup',
+  'install', 'superadmin', 'management', 'secure',
+  'getcmd', '_next', '1', 'feed', 'cookie',
+  'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
+]
+
+const isSpamSlug = (s: string | null | undefined): boolean => {
+  if (!s) return false
+  const lower = s.toLowerCase()
+  if (spamFilePatterns.test(lower)) return true
+  if (spamExactSlugs.includes(lower)) return true
+  if (lower.startsWith('.') || lower.startsWith('_')) return true
+  return false
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -28,32 +55,25 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    // Known scanner/spam slug patterns to exclude from main log views
-    const spamFilePatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
-    const spamExactSlugs = [
-      'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
-      'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
-      'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
-      'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc',
-      'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts',
-      'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json',
-      'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon',
-      'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain',
-      'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register',
-      'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup',
-      'install', 'superadmin', 'management', 'secure'
-    ]
+    // Step 1: Pre-compute ALL spam slugs from DB (exact + regex-matched).
+    // This lets Prisma handle skip/take/count properly at the database level.
+    const all404SlugGroups = await prisma.systemLog.groupBy({
+      by: ['slug'],
+      where: { logType: 'storefront_404' },
+      _count: { id: true }
+    })
 
-    const isSpamSlug = (s: string | null | undefined): boolean => {
-      if (!s) return false
-      const lower = s.toLowerCase()
-      if (spamFilePatterns.test(lower)) return true
-      if (spamExactSlugs.includes(lower)) return true
-      if (lower.startsWith('.')) return true
-      return false
+    const allSpamSlugs: string[] = []
+    let totalSpam404s = 0
+
+    for (const group of all404SlugGroups) {
+      if (group.slug && isSpamSlug(group.slug)) {
+        allSpamSlugs.push(group.slug)
+        totalSpam404s += group._count.id
+      }
     }
 
-    // Build where clause
+    // Step 2: Build where clause with user filters
     const where: any = {}
     
     if (logType) {
@@ -65,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (slug) {
-      where.slug = slug
+      where.slug = { contains: slug, mode: 'insensitive' }
     }
     
     if (businessId) {
@@ -86,28 +106,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Exclude known scanner/spam 404s from the main log list by
-    // filtering out storefront_404 logs whose slug matches spam patterns.
-    // MongoDB $not/$regex works with Prisma, but groupBy doesn't support it easily,
-    // so we add slug NOT IN for exact matches and do a post-filter for regex patterns.
-    const spamExcludeFilter = {
+    // Step 3: Exclude spam 404 slugs — fully at the Prisma level
+    const mainWhere = {
+      ...where,
       NOT: {
         AND: [
           { logType: 'storefront_404' },
-          { slug: { in: spamExactSlugs } }
+          { slug: { in: allSpamSlugs } }
         ]
       }
     }
 
-    const mainWhere = { ...where, ...spamExcludeFilter }
-
-    // Fetch logs with pagination (excluding spam 404s)
-    const [rawLogs, total] = await Promise.all([
+    // Step 4: Fetch logs + count with proper Prisma pagination
+    const [logs, total] = await Promise.all([
       prisma.systemLog.findMany({
         where: mainWhere,
         orderBy: { createdAt: 'desc' },
-        skip: 0,
-        take: skip + limit + 50, // fetch extra to account for regex-pattern filtered entries
+        skip,
+        take: limit,
         include: {
           business: {
             select: {
@@ -118,45 +134,21 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
-      prisma.systemLog.count({ where })
+      prisma.systemLog.count({ where: mainWhere })
     ])
 
-    // Post-filter regex-pattern spam slugs (file extensions like .env.php, etc.)
-    const filteredLogs = rawLogs.filter(log => {
-      if (log.logType === 'storefront_404' && isSpamSlug(log.slug)) return false
-      return true
-    })
-    const logs = filteredLogs.slice(skip, skip + limit)
-
-    // Get all storefront_404 count, then subtract spam count for clean number
-    const [totalStorefront404s, spamExact404Count] = await Promise.all([
-      prisma.systemLog.count({ where: { logType: 'storefront_404' } }),
-      prisma.systemLog.count({ where: { logType: 'storefront_404', slug: { in: spamExactSlugs } } }),
-    ])
-
-    // For regex-pattern spam, count by fetching slugs and filtering in JS
-    const all404Slugs = await prisma.systemLog.groupBy({
-      by: ['slug'],
-      where: { logType: 'storefront_404' },
-      _count: { id: true }
-    })
-    const regexSpam404Count = all404Slugs
-      .filter(item => item.slug && spamFilePatterns.test(item.slug.toLowerCase()) && !spamExactSlugs.includes(item.slug.toLowerCase()))
-      .reduce((sum, item) => sum + item._count.id, 0)
-
-    const totalSpam404s = spamExact404Count + regexSpam404Count
-    const cleanStorefront404s = totalStorefront404s - totalSpam404s
-
-    // Get summary statistics (with spam 404s excluded from error count)
-    const [rawTotalLogs, rawErrorLogs, warningLogs, infoLogs] = await Promise.all([
+    // Step 5: Summary stats (with spam excluded)
+    const [rawTotalLogs, rawErrorLogs, warningLogs, infoLogs, totalStorefront404s] = await Promise.all([
       prisma.systemLog.count({}),
       prisma.systemLog.count({ where: { severity: 'error' } }),
       prisma.systemLog.count({ where: { severity: 'warning' } }),
       prisma.systemLog.count({ where: { severity: 'info' } }),
+      prisma.systemLog.count({ where: { logType: 'storefront_404' } }),
     ])
+
     const totalLogs = rawTotalLogs - totalSpam404s
     const errorLogs = rawErrorLogs - totalSpam404s
-    const storefront404s = cleanStorefront404s
+    const storefront404s = totalStorefront404s - totalSpam404s
 
     // Get log type distribution for analytics
     const logTypeDistribution = await prisma.systemLog.groupBy({
@@ -203,13 +195,10 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where: { logType: 'storefront_error' } })
     ])
 
-    // Get top slugs with most activity (last 7 days)
-    // Exclude obvious hack attempts (files with extensions like .php, .png, .xml, etc.)
+    // Top active stores (last 7 days) — uses the same spam filter
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     
-    // First get all slugs, then filter out file extensions in JS
-    // (MongoDB doesn't support regex NOT CONTAINS easily in groupBy)
     const allSlugsByLogs = await prisma.systemLog.groupBy({
       by: ['slug'],
       where: {
@@ -218,23 +207,13 @@ export async function GET(request: NextRequest) {
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
-      take: 50 // Get more to filter
+      take: 50
     })
     
-    // Filter out obvious non-store slugs (hack attempts, files, etc.)
-    const suspiciousPatterns = /\.(php|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html|htm|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore)$/i
-    const suspiciousExact = ['wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator', 'admin', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config', 'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug', 'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts', 'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json', 'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon', 'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain', 'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register', 'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup', 'install', 'superadmin', 'management', 'secure']
     const topSlugsByLogs = allSlugsByLogs
       .filter(item => {
         if (!item.slug) return false
-        const slug = item.slug.toLowerCase()
-        // Exclude file extensions
-        if (suspiciousPatterns.test(slug)) return false
-        // Exclude exact matches (common hack targets)
-        if (suspiciousExact.includes(slug)) return false
-        // Exclude slugs starting with . (hidden files/folders)
-        if (slug.startsWith('.')) return false
-        return true
+        return !isSpamSlug(item.slug)
       })
       .slice(0, 10)
 
@@ -257,7 +236,6 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Build onboarding funnel: count unique users who completed each step
     const stepNames: Record<number, string> = {
       1: 'Business Type',
       2: 'Goals',
@@ -271,7 +249,6 @@ export async function GET(request: NextRequest) {
       11: 'Store Ready'
     }
 
-    // Count completions per step and track unique users per step
     const stepCompletions: Record<number, number> = {}
     const stepErrors: Record<number, number> = {}
     let totalOnboardingCompleted = 0
@@ -291,7 +268,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build funnel array sorted by step number
     const onboardingFunnel = Object.keys(stepNames)
       .map(Number)
       .sort((a, b) => a - b)
@@ -312,15 +288,13 @@ export async function GET(request: NextRequest) {
       funnel: onboardingFunnel
     }
 
-    // Get logs by day (last 7 days) - using Prisma groupBy workaround
-    // Since MongoDB doesn't support DATE() function, we'll fetch recent logs and aggregate in JS
+    // Get logs by day (last 7 days)
     const recentLogs = await prisma.systemLog.findMany({
       where: { createdAt: { gte: sevenDaysAgo } },
       select: { createdAt: true },
       orderBy: { createdAt: 'desc' }
     })
     
-    // Aggregate by day in JavaScript
     const logsByDayMap = new Map<string, number>()
     recentLogs.forEach(log => {
       const dateKey = log.createdAt.toISOString().split('T')[0]
@@ -340,8 +314,8 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total: total - totalSpam404s,
-        totalPages: Math.ceil((total - totalSpam404s) / limit)
+        total,
+        totalPages: Math.ceil(total / limit)
       },
       stats: {
         total: totalLogs,

@@ -58,6 +58,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: any; color: string;
   asset_probe: { label: 'Asset/Favicon Probes', icon: Image, color: 'text-blue-600', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' },
   admin_panel: { label: 'Admin Panel Probes', icon: Server, color: 'text-purple-600', bgColor: 'bg-purple-50', borderColor: 'border-purple-200' },
   path_traversal: { label: 'Path Traversal', icon: Folder, color: 'text-pink-600', bgColor: 'bg-pink-50', borderColor: 'border-pink-200' },
+  crawler: { label: 'Bot Crawlers', icon: Bug, color: 'text-teal-600', bgColor: 'bg-teal-50', borderColor: 'border-teal-200' },
   other: { label: 'Other', icon: FileCode, color: 'text-gray-600', bgColor: 'bg-gray-50', borderColor: 'border-gray-200' },
 }
 
