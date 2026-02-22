@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
     const now = new Date()
 
     // Fetch ALL Stripe subscriptions (auto-paginated) and DB businesses in parallel
-    const [rawSubsArray, businesses, dbTransactions] = await Promise.all([
+    const [rawSubsArray, businesses, deactivatedBusinesses, dbTransactions] = await Promise.all([
       fetchAllStripeRecords((p) => stripe.subscriptions.list(p), {}).catch(() => [] as Stripe.Subscription[]),
       prisma.business.findMany({
-        where: { testMode: { not: true } },
+        where: { isActive: true, testMode: { not: true } },
         include: {
           users: {
             where: { role: 'OWNER' },
@@ -32,6 +32,17 @@ export async function GET(request: NextRequest) {
           }
         }
       }),
+      prisma.business.findMany({
+        where: { isActive: false, testMode: { not: true } },
+        select: {
+          id: true,
+          name: true,
+          subscriptionPlan: true,
+          trialEndsAt: true,
+          createdAt: true,
+          isActive: true,
+        }
+      }).catch(() => [] as any[]),
       prisma.stripeTransaction.findMany({
         where: { status: { in: ['succeeded', 'paid'] } },
         select: { amount: true, stripeCreatedAt: true, type: true, refundedAmount: true }
@@ -91,10 +102,10 @@ export async function GET(request: NextRequest) {
     const totalPayingCustomers = activePaid.length
     const arpu = totalPayingCustomers > 0 ? totalMRR / totalPayingCustomers : 0
 
-    // === PROCESS BUSINESSES FOR DB-BASED METRICS ===
-    const allProcessed = businesses.map(business => {
+    // === PROCESS ACTIVE BUSINESSES FOR CURRENT-STATE METRICS ===
+    const processedBusinesses = businesses.map(business => {
       const owner = business.users.find(u => u.role === 'OWNER')?.user
-      const plan = business.subscriptionPlan as 'STARTER' | 'PRO' | 'BUSINESS'
+      const plan = (business.subscriptionPlan || 'STARTER') as 'STARTER' | 'PRO' | 'BUSINESS'
       const subscriptionPriceId = owner?.subscription?.priceId
       const isOnTrial = business.trialEndsAt && new Date(business.trialEndsAt) > now
 
@@ -124,12 +135,24 @@ export async function GET(request: NextRequest) {
         trialDaysRemaining,
         createdAt: business.createdAt,
         ownerEmail: owner?.email,
-        isActive: business.isActive !== false,
       }
     })
 
-    // Active businesses for current-state metrics; all businesses for historical/growth
-    const processedBusinesses = allProcessed.filter(b => b.isActive)
+    // All businesses (active + deactivated) for historical/growth metrics
+    const allProcessed = [
+      ...processedBusinesses.map(b => ({ ...b, isActive: true })),
+      ...deactivatedBusinesses.map(b => ({
+        id: b.id,
+        name: b.name,
+        plan: (b.subscriptionPlan || 'STARTER') as 'STARTER' | 'PRO' | 'BUSINESS',
+        billingType: 'free' as const,
+        trialEndsAt: b.trialEndsAt,
+        trialDaysRemaining: null as number | null,
+        createdAt: b.createdAt,
+        ownerEmail: null as string | null | undefined,
+        isActive: false,
+      })),
+    ]
 
     // === SUBSCRIPTION OVERVIEW (DB-based, active businesses only) ===
     const byPlan = {
@@ -155,17 +178,13 @@ export async function GET(request: NextRequest) {
 
     // Trial funnel uses all businesses (including deactivated) for accurate conversion tracking
     const endedTrials = allProcessed.filter(b => {
-      const biz = businesses.find(bz => bz.id === b.id)
-      if (!biz?.trialEndsAt) return false
-      return new Date(biz.trialEndsAt) < now
+      if (!b.trialEndsAt) return false
+      return new Date(b.trialEndsAt) < now
     })
 
     const convertedTrials = activePaid.length
     const totalTrialsEnded = endedTrials.length
-    const totalTrialsStarted = allProcessed.filter(b => {
-      const biz = businesses.find(bz => bz.id === b.id)
-      return biz?.trialEndsAt !== null
-    }).length
+    const totalTrialsStarted = allProcessed.filter(b => b.trialEndsAt !== null).length
 
     const trialConversionRate = totalTrialsEnded > 0
       ? ((convertedTrials / totalTrialsEnded) * 100)
@@ -204,7 +223,7 @@ export async function GET(request: NextRequest) {
         return created >= monthStart && created <= monthEnd
       })
 
-      const trialsThisMonth = businesses.filter(b => {
+      const trialsThisMonth = allProcessed.filter(b => {
         if (!b.trialEndsAt) return false
         const trialEnd = new Date(b.trialEndsAt)
         const trialStart = new Date(trialEnd)
@@ -295,10 +314,10 @@ export async function GET(request: NextRequest) {
       dataSource: 'stripe_api',
     })
 
-  } catch (error) {
-    console.error('Error fetching financial analytics:', error)
+  } catch (error: any) {
+    console.error('Error fetching financial analytics:', error?.message, error?.stack)
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', detail: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }
