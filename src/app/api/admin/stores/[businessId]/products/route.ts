@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { syncProductToOmniGateway } from '@/lib/omnigateway'
 import { canAddProduct, getPlanLimits } from '@/lib/stripe'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 
 export async function GET(
@@ -387,6 +388,29 @@ export async function POST(
     syncProductToOmniGateway(product).catch(err => {
       console.error('[OmniGateway] Background sync failed:', err);
     });
+
+    // Log product creation (admin)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    logSystemEvent({
+      logType: 'product_created',
+      severity: 'info',
+      endpoint: `/api/admin/stores/${businessId}/products`,
+      method: 'POST',
+      statusCode: 201,
+      url: actualUrl,
+      businessId,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      errorMessage: `Product created: ${product.name}`,
+      metadata: {
+        productId: product.id,
+        productName: product.name,
+        userId: access.session?.user?.id,
+        userEmail: access.session?.user?.email
+      }
+    })
 
     // TODO: Sync to ByBest Shop (if product is linked)
     // Run in background - don't block the response

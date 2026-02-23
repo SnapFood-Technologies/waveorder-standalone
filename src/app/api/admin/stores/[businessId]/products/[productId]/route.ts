@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { syncProductToOmniGateway } from '@/lib/omnigateway'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 
 export async function GET(
@@ -185,7 +186,30 @@ export async function PUT(
     // Run in background - don't block the response
     syncProductToOmniGateway(product).catch(err => {
       console.error('[OmniGateway] Background sync failed:', err);
-    });
+    })
+
+    // Log product update (admin)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    logSystemEvent({
+      logType: 'product_updated',
+      severity: 'info',
+      endpoint: `/api/admin/stores/${businessId}/products/${productId}`,
+      method: 'PUT',
+      statusCode: 200,
+      url: actualUrl,
+      businessId,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      errorMessage: `Product updated: ${product.name}`,
+      metadata: {
+        productId: product.id,
+        productName: product.name,
+        userId: access.session?.user?.id,
+        userEmail: access.session?.user?.email
+      }
+    })
 
     // TODO: Sync to ByBest Shop (if product is linked)
     // Run in background - don't block the response
@@ -228,6 +252,28 @@ export async function PATCH(
     if (product.count === 0) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 })
     }
+
+    // Log product update (admin, partial/PATCH)
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    logSystemEvent({
+      logType: 'product_updated',
+      severity: 'info',
+      endpoint: `/api/admin/stores/${businessId}/products/${productId}`,
+      method: 'PATCH',
+      statusCode: 200,
+      url: actualUrl,
+      businessId,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      errorMessage: `Product updated (partial): ${productId}`,
+      metadata: {
+        productId,
+        userId: access.session?.user?.id,
+        userEmail: access.session?.user?.email
+      }
+    })
 
     return NextResponse.json({ message: 'Product updated successfully' })
 
