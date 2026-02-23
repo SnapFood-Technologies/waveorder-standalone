@@ -32,6 +32,8 @@ interface NotificationSettings {
   notifyOnAdminCreatedOrders: boolean
   notifyAdminOnPickedUpAndPaid: boolean
   notifyAdminOnStatusUpdates: boolean
+  notifyAdminOnServiceRequestStatusUpdates: boolean
+  notifyCustomerOnServiceRequestStatus: boolean
   lastOrderNotified?: string | null
   // Customer notification settings (global)
   customerNotificationEnabled: boolean
@@ -91,6 +93,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     notifyOnAdminCreatedOrders: false,
     notifyAdminOnPickedUpAndPaid: true,
     notifyAdminOnStatusUpdates: false,
+    notifyAdminOnServiceRequestStatusUpdates: false,
+    notifyCustomerOnServiceRequestStatus: true,
     lastOrderNotified: null,
     // Customer notification settings (global)
     customerNotificationEnabled: false,
@@ -149,6 +153,8 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           notifyOnAdminCreatedOrders: data.business.notifyOnAdminCreatedOrders || false,
           notifyAdminOnPickedUpAndPaid: data.business.notifyAdminOnPickedUpAndPaid ?? true,
           notifyAdminOnStatusUpdates: data.business.notifyAdminOnStatusUpdates ?? false,
+          notifyAdminOnServiceRequestStatusUpdates: data.business.notifyAdminOnServiceRequestStatusUpdates ?? false,
+          notifyCustomerOnServiceRequestStatus: data.business.notifyCustomerOnServiceRequestStatus ?? true,
           lastOrderNotified: data.business.lastOrderNotified,
           // Customer notification settings (global)
           customerNotificationEnabled: data.business.customerNotificationEnabled ?? false,
@@ -347,12 +353,16 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 flex items-center">
             <Bell className="w-6 h-6 text-teal-600 mr-3" />
-            {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Notifications' : 'Order Notifications'}
+            {business.businessType === 'SERVICES'
+              ? 'Appointments & service request notifications'
+              : (business.businessType === 'SALON' ? 'Appointment Notifications' : 'Order Notifications')}
           </h1>
           <p className="text-gray-600 mt-1">
-            {(business.businessType === 'SALON' || business.businessType === 'SERVICES') 
-              ? 'Get notified when customers book appointments'
-              : 'Get notified when customers place orders'}
+            {business.businessType === 'SERVICES'
+              ? 'Get notified when customers book appointments or submit service requests (Request by email / WhatsApp).'
+              : (business.businessType === 'SALON'
+                ? 'Get notified when customers book appointments'
+                : 'Get notified when customers place orders')}
           </p>
         </div>
         <button
@@ -402,7 +412,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
             />
             <label className="ml-3 text-sm font-medium text-gray-700">
-              Enable {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointment' : 'order'} email notifications
+              Enable {business.businessType === 'SERVICES' ? 'appointment and service request' : (business.businessType === 'SALON' ? 'appointment' : 'order')} email notifications
             </label>
           </div>
 
@@ -422,7 +432,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment' : 'Order'} notifications will be sent to this email address. Leave empty to use your business email.
+                  {business.businessType === 'SERVICES' ? 'Appointment and service request' : (business.businessType === 'SALON' ? 'Appointment' : 'Order')} notifications will be sent to this email address. Leave empty to use your business email.
                 </p>
               </div>
 
@@ -502,13 +512,16 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 <h3 className="text-sm font-medium text-blue-900 mb-2">What you'll be notified about:</h3>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• New {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointments booked' : 'orders placed'} by customers</li>
+                  {business.businessType === 'SERVICES' && (
+                    <li>• New service requests (Request by email / Request by WhatsApp form submissions)</li>
+                  )}
                   {settings.notifyOnAdminCreatedOrders && (
                     <li>• {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointments' : 'Orders'} you create from the admin panel</li>
                   )}
                   {settings.notifyAdminOnPickedUpAndPaid && (business.businessType === 'SALON' || business.businessType === 'SERVICES') && (
                     <li>• Appointments completed and paid (COMPLETED status with PAID payment)</li>
                   )}
-                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && business.businessType !== 'SERVICES' && (
+                  {settings.notifyAdminOnPickedUpAndPaid && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
                     <li>• Orders picked up and paid (READY/DELIVERED status with PAID payment)</li>
                   )}
                   {settings.notifyAdminOnPickedUpAndPaid && business.businessType === 'RETAIL' && (
@@ -517,8 +530,46 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   {settings.notifyAdminOnStatusUpdates && (
                     <li>• All {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointment' : 'order'} status updates (same notifications as customers receive)</li>
                   )}
+                  {business.businessType === 'SERVICES' && settings.notifyAdminOnServiceRequestStatusUpdates && (
+                    <li>• Service request status updates (when you change status on a request)</li>
+                  )}
                 </ul>
               </div>
+
+              {business.businessType === 'SERVICES' && (
+                <>
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="checkbox"
+                      name="notifyAdminOnServiceRequestStatusUpdates"
+                      checked={settings.notifyAdminOnServiceRequestStatusUpdates}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label className="ml-3 text-sm font-medium text-gray-700">
+                      Notify me when a service request&apos;s status is updated
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7 mt-1">
+                    You will receive an email when you or a team member updates the status of a service request (e.g. CONTACTED, QUOTED, COMPLETED).
+                  </p>
+                  <div className="flex items-center pt-2">
+                    <input
+                      type="checkbox"
+                      name="notifyCustomerOnServiceRequestStatus"
+                      checked={settings.notifyCustomerOnServiceRequestStatus}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    />
+                    <label className="ml-3 text-sm font-medium text-gray-700">
+                      Notify customer when I update their service request status
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-7 mt-1">
+                    The requester will receive an email when you update their service request status.
+                  </p>
+                </>
+              )}
 
               {business.businessType === 'RETAIL' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
@@ -635,7 +686,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               )}
 
               {/* Pickup Orders - Hidden for RETAIL and SALON */}
-              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && business.businessType !== 'SERVICES' && (
+              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
                 <div className="space-y-3 border border-green-200 rounded-lg p-4 bg-green-50">
                   <h3 className="text-sm font-semibold text-green-900 mb-3 flex items-center">
                     🏪 Pickup Orders
@@ -662,7 +713,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               )}
 
               {/* Dine-in Orders - Hidden for RETAIL and SALON */}
-              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && business.businessType !== 'SERVICES' && (
+              {business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
                 <div className="space-y-3 border border-purple-200 rounded-lg p-4 bg-purple-50">
                   <h3 className="text-sm font-semibold text-purple-900 mb-3 flex items-center">
                     🍽️ Dine-in Orders
