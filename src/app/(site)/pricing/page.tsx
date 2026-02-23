@@ -4,14 +4,14 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Pricing - WaveOrder WhatsApp Ordering Platform | Simple & Transparent',
-  description: 'Choose the perfect WaveOrder plan for your business. Starter plan at $6/month or upgrade to Pro for advanced features. No setup fees, no transaction fees, cancel anytime.',
+  description: 'Choose the perfect WaveOrder plan for your business. Starter $19/mo, Pro $39/mo, Business $79/mo. No setup fees, no transaction fees, cancel anytime.',
   keywords: 'waveorder pricing, whatsapp ordering cost, restaurant ordering platform price, free whatsapp ordering, pro business plan',
   alternates: {
     canonical: 'https://waveorder.app/pricing',
   },
   openGraph: {
     title: 'WaveOrder Pricing - Simple & Transparent Plans',
-    description: 'Starter plan at $6/month or upgrade to Pro for advanced WhatsApp ordering features. No hidden fees, no setup costs.',
+    description: 'Starter $19/mo, Pro $39/mo, Business $79/mo. No hidden fees, no setup costs.',
     type: 'website',
     url: 'https://waveorder.app/pricing',
     images: [{
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'WaveOrder Pricing - Starter & Pro Plans',
-    description: 'Simple, transparent pricing for WhatsApp ordering. Starter plan at $6/month.',
+    description: 'Simple, transparent pricing for WhatsApp ordering. Plans from $19/month.',
     images: ['https://waveorder.app/images/pricing-twitter.png'],
   },
   robots: {
@@ -44,7 +44,7 @@ export default function PricingPage() {
             "@context": "https://schema.org",
             "@type": "Product",
             "name": "WaveOrder Starter Plan",
-            "description": "WhatsApp ordering platform for small businesses. Up to 30 products, basic branding, and mobile catalog.",
+            "description": "WhatsApp ordering platform for small businesses. Up to 50 products, 1 store, basic analytics, CSV import, email support.",
             "brand": {
               "@type": "Brand",
               "name": "WaveOrder"
@@ -53,7 +53,7 @@ export default function PricingPage() {
               {
                 "@type": "Offer",
                 "name": "Monthly Billing",
-                "price": "6",
+                "price": "19",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
                 "validFrom": "2025-09-01",
@@ -66,7 +66,7 @@ export default function PricingPage() {
               {
                 "@type": "Offer",
                 "name": "Annual Billing",
-                "price": "5",
+                "price": "16",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
                 "validFrom": "2025-09-01",
@@ -94,7 +94,7 @@ export default function PricingPage() {
             "@context": "https://schema.org",
             "@type": "Product",
             "name": "WaveOrder Pro Plan",
-            "description": "Advanced WhatsApp ordering platform for growing businesses. Unlimited products, custom branding, analytics, and priority support.",
+            "description": "Advanced WhatsApp ordering for growing businesses. Unlimited products, up to 5 stores, full analytics, delivery scheduling, customer insights, priority support.",
             "brand": {
               "@type": "Brand",
               "name": "WaveOrder"
@@ -103,7 +103,7 @@ export default function PricingPage() {
               {
                 "@type": "Offer",
                 "name": "Monthly Billing",
-                "price": "19",
+                "price": "39",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
                 "validFrom": "2025-09-01",
@@ -116,7 +116,7 @@ export default function PricingPage() {
               {
                 "@type": "Offer",
                 "name": "Annual Billing",
-                "price": "15",
+                "price": "32",
                 "priceCurrency": "USD",
                 "availability": "https://schema.org/InStock",
                 "validFrom": "2025-09-01",
@@ -149,7 +149,7 @@ export default function PricingPage() {
                 "name": "What's included in the Starter plan?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Our Starter plan ($6/month) includes core WhatsApp ordering features for up to 30 products, 10 categories, basic branding, CSV import, and basic order analytics. It's perfect for small businesses getting started."
+                  "text": "Our Starter plan ($19/month or $16/month yearly) includes up to 50 products, 1 store/catalog, basic analytics, WhatsApp ordering, CSV import, and email support. It's perfect for small businesses getting started."
                 }
               },
               {
@@ -206,7 +206,7 @@ export default function PricingPage() {
                     "@type": "Service",
                     "name": "Starter Plan"
                   },
-                  "price": "6",
+                  "price": "19",
                   "priceCurrency": "USD"
                 },
                 {
@@ -215,7 +215,16 @@ export default function PricingPage() {
                     "@type": "Service",
                     "name": "Pro Plan"
                   },
-                  "price": "19",
+                  "price": "39",
+                  "priceCurrency": "USD"
+                },
+                {
+                  "@type": "Offer",
+                  "itemOffered": {
+                    "@type": "Service",
+                    "name": "Business Plan"
+                  },
+                  "price": "79",
                   "priceCurrency": "USD"
                 }
               ]

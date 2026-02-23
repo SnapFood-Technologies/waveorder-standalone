@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Check, 
-  Crown, 
+import { useSearchParams } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import {
+  Check,
+  Crown,
   Loader2,
   Sparkles,
   X,
@@ -87,13 +89,19 @@ interface BillingPanelProps {
 }
 
 export function BillingPanel({ businessId }: BillingPanelProps) {
+  const searchParams = useSearchParams()
+  const { data: session } = useSession()
+  const isImpersonating =
+    (session?.user as { role?: string })?.role === 'SUPER_ADMIN' &&
+    searchParams.get('impersonate') === 'true'
+
   const [subscription, setSubscription] = useState<UserSubscription | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpgrading, setIsUpgrading] = useState<Plan | null>(null)
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly')
   const [error, setError] = useState<string | null>(null)
   const [businessType, setBusinessType] = useState<string>('RESTAURANT')
-  
+
   // Modal states
   const [showDowngradeModal, setShowDowngradeModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -101,7 +109,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   useEffect(() => {
     fetchSubscription()
     fetchBusinessType()
-  }, [])
+  }, [businessId, isImpersonating])
   
   const fetchBusinessType = async () => {
     try {
@@ -117,7 +125,11 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
 
   const fetchSubscription = async () => {
     try {
-      const response = await fetch('/api/user/subscription')
+      const url =
+        isImpersonating && businessId
+          ? `/api/user/subscription?businessId=${encodeURIComponent(businessId)}`
+          : '/api/user/subscription'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setSubscription(data)
