@@ -170,7 +170,6 @@ export async function GET() {
     const monthlyRevenue = buildMonthlyRevenue(succeededCharges, 6)
 
     // DB-based customer breakdown (single source of truth so numbers add up)
-    const now = new Date()
     const activeBusinesses = dbBusinesses.filter(b => b.isActive)
     const dbTrialing = activeBusinesses.filter(b =>
       b.trialEndsAt && new Date(b.trialEndsAt) > now
