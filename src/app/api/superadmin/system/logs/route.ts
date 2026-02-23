@@ -281,9 +281,11 @@ export async function GET(request: NextRequest) {
     for (const log of onboardingLogs) {
       const meta = log.metadata as any
       const step = meta?.step as number
-      
+
       if (log.logType === 'onboarding_completed') {
         totalOnboardingCompleted++
+        // Store Ready is step 11; completion is logged as onboarding_completed, not onboarding_step_completed
+        stepCompletions[11] = (stepCompletions[11] || 0) + 1
       } else if (log.logType === 'onboarding_step_completed' && step) {
         stepCompletions[step] = (stepCompletions[step] || 0) + 1
       } else if (log.logType === 'onboarding_step_error' && step) {
