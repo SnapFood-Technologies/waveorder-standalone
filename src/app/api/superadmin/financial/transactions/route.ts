@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { stripe } from '@/lib/stripe'
+import { stripe, getBillingTypeFromPriceId } from '@/lib/stripe'
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,7 +109,7 @@ async function getTransactionsFromDB(
 async function getTransactionsFromStripe(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  // Get WaveOrder customer IDs + plan info from DB (exclude test businesses)
+  // Get WaveOrder customer IDs + plan + billing cycle from DB (exclude test businesses)
   const waveOrderUsers = await prisma.user.findMany({
     where: {
       stripeCustomerId: { not: null },
@@ -117,17 +117,21 @@ async function getTransactionsFromStripe(
     },
     select: {
       stripeCustomerId: true, name: true, email: true,
+      subscription: { select: { priceId: true } },
       businesses: {
         where: { role: 'OWNER' },
-        select: { business: { select: { subscriptionPlan: true } } },
+        select: { business: { select: { subscriptionPlan: true, trialEndsAt: true } } },
         take: 1,
       }
     },
   })
 
-  // Map customer ID → plan and customer ID → name/email (for when Stripe charge has no billing_details, e.g. invoice payments)
+  const now = new Date()
+
+  // Map customer ID → plan, name/email, and billing cycle (yearly | monthly | free | trial)
   const customerPlanMap = new Map<string, string>()
   const customerInfoMap = new Map<string, { name: string | null; email: string }>()
+  const customerBillingMap = new Map<string, string>()
   for (const u of waveOrderUsers) {
     if (u.stripeCustomerId) {
       const plan = u.businesses[0]?.business?.subscriptionPlan || null
@@ -136,6 +140,12 @@ async function getTransactionsFromStripe(
         name: u.name || null,
         email: u.email,
       })
+      const trialEndsAt = u.businesses[0]?.business?.trialEndsAt
+      const onTrial = trialEndsAt && new Date(trialEndsAt) > now
+      const billing = onTrial
+        ? 'trial'
+        : (u.subscription?.priceId ? getBillingTypeFromPriceId(u.subscription.priceId) : null)
+      customerBillingMap.set(u.stripeCustomerId, billing || 'free')
     }
   }
 
@@ -183,6 +193,7 @@ async function getTransactionsFromStripe(
     const isRefunded = charge.refunded || (charge.amount_refunded && charge.amount_refunded > 0)
     const custId = typeof charge.customer === 'string' ? charge.customer : null
     const plan = custId ? (customerPlanMap.get(custId) || null) : null
+    const billingType = custId ? (customerBillingMap.get(custId) || null) : null
     const dbInfo = custId ? customerInfoMap.get(custId) : null
     const customerEmail = charge.billing_details?.email || dbInfo?.email || null
     const customerName = charge.billing_details?.name || dbInfo?.name || null
@@ -197,7 +208,7 @@ async function getTransactionsFromStripe(
       customerName,
       description: charge.description || 'Subscription payment',
       plan,
-      billingType: null,
+      billingType,
       refundedAmount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
       date: new Date(charge.created * 1000).toISOString(),
     })
@@ -213,7 +224,7 @@ async function getTransactionsFromStripe(
         customerName,
         description: `Refund for ${charge.id}`,
         plan,
-        billingType: null,
+        billingType,
         refundedAmount: null,
         date: new Date(charge.created * 1000).toISOString(),
       })

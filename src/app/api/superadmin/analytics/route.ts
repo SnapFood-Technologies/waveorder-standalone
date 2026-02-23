@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getBillingTypeFromPriceId } from '@/lib/stripe'
+import {
+  getBillingTypeFromPriceId,
+  stripe,
+  fetchAllStripeRecords,
+  isWaveOrderSubscription,
+  mapStripePlanToDb,
+} from '@/lib/stripe'
 
 
 export async function GET(request: NextRequest) {
@@ -441,11 +447,32 @@ export async function GET(request: NextRequest) {
       planBillingGroups[key].businesses++
     })
     
+    // Subscription MRR from Stripe (so "Revenue by Plan" shows real revenue, not $0)
+    const mrrByPlanBilling: Record<string, number> = {}
+    try {
+      const rawSubs = await fetchAllStripeRecords((p) => stripe.subscriptions.list(p), { status: 'active' })
+      const waveOrderSubs = rawSubs.filter((s: any) => isWaveOrderSubscription(s))
+      for (const sub of waveOrderSubs) {
+        const price = sub.items?.data?.[0]?.price
+        if (!price || (price.unit_amount || 0) === 0) continue
+        const priceId = price.id
+        const plan = mapStripePlanToDb(priceId)
+        const billingType = getBillingTypeFromPriceId(priceId) || 'monthly'
+        const monthlyAmount = price.recurring?.interval === 'year'
+          ? (price.unit_amount || 0) / 100 / 12
+          : (price.unit_amount || 0) / 100
+        const key = `${plan}_${billingType}`
+        mrrByPlanBilling[key] = (mrrByPlanBilling[key] || 0) + monthlyAmount
+      }
+    } catch (err) {
+      console.error('Analytics: failed to fetch Stripe MRR for revenue by plan', err)
+    }
+
     const revenueByPlan = Object.values(planBillingGroups)
       .map(item => ({
         plan: item.plan,
         billingType: item.billingType,
-        revenue: 0, // Subscription revenue - TODO: Calculate actual revenue from Stripe
+        revenue: mrrByPlanBilling[`${item.plan}_${item.billingType}`] ?? 0,
         businesses: item.businesses
       }))
       .filter(item => item.businesses > 0) // Only show plans that have active businesses

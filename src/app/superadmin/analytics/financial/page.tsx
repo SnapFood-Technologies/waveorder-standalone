@@ -240,7 +240,7 @@ export default function FinancialPage() {
             <DollarSign className="w-4 h-4 text-gray-400" />
           </div>
           <p className="text-3xl font-bold text-gray-900">{formatCurrency(data.customers.arpu)}</p>
-          <p className="text-xs text-gray-500 mt-1">Average Revenue Per User</p>
+          <p className="text-xs text-gray-500 mt-1">Avg revenue per paying customer (per month)</p>
         </div>
       </div>
 
@@ -252,10 +252,11 @@ export default function FinancialPage() {
           
           {/* MRR Chart */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-teal-600" />
               MRR Over Time
             </h3>
+            <p className="text-xs text-gray-500 mb-4">Monthly recurring revenue at end of each month</p>
             <div className="h-64">
               {data.growth.monthlyData.length > 0 ? (
                 <div className="flex items-end justify-between h-full gap-2">
@@ -290,10 +291,11 @@ export default function FinancialPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Revenue by Plan */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                 <PieChart className="w-5 h-5 text-purple-600" />
                 Revenue by Plan
               </h3>
+              <p className="text-xs text-gray-500 mb-4">MRR by plan (yearly subscriptions shown as monthly equivalent)</p>
               <div className="space-y-4">
                 {(['STARTER', 'PRO', 'BUSINESS'] as const).map(plan => {
                   const revenue = data.revenue.revenueByPlan[plan]
@@ -308,7 +310,7 @@ export default function FinancialPage() {
                     <div key={plan}>
                       <div className="flex justify-between text-sm mb-1">
                         <span className="font-medium text-gray-700">{plan}</span>
-                        <span className="text-gray-600">{formatCurrency(revenue)} ({percentage}%)</span>
+                        <span className="text-gray-600">{formatCurrency(revenue)} MRR ({percentage}%)</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div 
@@ -324,24 +326,25 @@ export default function FinancialPage() {
 
             {/* Revenue by Billing Cycle */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-green-600" />
                 Revenue by Billing
               </h3>
+              <p className="text-xs text-gray-500 mb-4">MRR from monthly vs yearly subscribers (yearly = monthly equivalent)</p>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">Monthly</p>
+                    <p className="font-medium text-gray-900">Monthly billing</p>
                     <p className="text-sm text-gray-500">{data.customers.monthlySubscribers} subscribers</p>
                   </div>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(data.revenue.mrrFromMonthly)}</p>
+                  <p className="text-xl font-bold text-gray-900">{formatCurrency(data.revenue.mrrFromMonthly)} <span className="text-xs font-normal text-gray-500">MRR</span></p>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">Yearly</p>
+                    <p className="font-medium text-gray-900">Yearly billing</p>
                     <p className="text-sm text-gray-500">{data.customers.yearlySubscribers} subscribers</p>
                   </div>
-                  <p className="text-xl font-bold text-gray-900">{formatCurrency(data.revenue.mrrFromYearly)}</p>
+                  <p className="text-xl font-bold text-gray-900">{formatCurrency(data.revenue.mrrFromYearly)} <span className="text-xs font-normal text-gray-500">MRR</span></p>
                 </div>
               </div>
             </div>

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import {
-  stripe, mapStripePlanToDb, PLANS,
+  stripe, mapStripePlanToDb, getBillingTypeFromPriceId, PLANS,
   fetchAllStripeRecords, isWaveOrderSubscription, getWaveOrderPriceIds,
 } from '@/lib/stripe'
 import Stripe from 'stripe'
@@ -18,24 +18,41 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Build set of known WaveOrder customer IDs and map to name/email for display (e.g. invoice payments often have no billing_details)
+    // Build set of known WaveOrder customer IDs and maps: name/email, plan, billing (for display and recent transactions)
     const waveOrderUsers = await prisma.user.findMany({
       where: {
         stripeCustomerId: { not: null },
         businesses: { some: { business: { testMode: { not: true } } } },
       },
-      select: { stripeCustomerId: true, name: true, email: true },
+      select: {
+        stripeCustomerId: true, name: true, email: true,
+        subscription: { select: { priceId: true } },
+        businesses: {
+          where: { role: 'OWNER' },
+          select: { business: { select: { subscriptionPlan: true, trialEndsAt: true } } },
+          take: 1,
+        },
+      },
     })
     const knownCustomerIds = new Set(
       waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
     )
     const customerIdToInfo = new Map<string, { name: string | null; email: string }>()
+    const customerPlanMap = new Map<string, string>()
+    const customerBillingMap = new Map<string, string>()
+    const now = new Date()
     waveOrderUsers.forEach(u => {
       if (u.stripeCustomerId) {
         customerIdToInfo.set(u.stripeCustomerId, {
           name: u.name || null,
           email: u.email,
         })
+        const plan = u.businesses[0]?.business?.subscriptionPlan
+        if (plan) customerPlanMap.set(u.stripeCustomerId, plan)
+        const trialEndsAt = u.businesses[0]?.business?.trialEndsAt
+        const onTrial = trialEndsAt && new Date(trialEndsAt) > now
+        const billing = onTrial ? 'trial' : (u.subscription?.priceId ? getBillingTypeFromPriceId(u.subscription.priceId) : null)
+        customerBillingMap.set(u.stripeCustomerId, billing || 'free')
       }
     })
 
@@ -95,9 +112,9 @@ export async function GET() {
       return !price || (price.unit_amount || 0) === 0
     })
 
-    // Calculate MRR from active paid subscriptions
+    // Calculate MRR from active paid subscriptions (group by plan + billing type for clarity)
     let mrr = 0
-    const revenueByPlan: Record<string, { subscribers: number; mrr: number }> = {}
+    const revenueByPlan: Record<string, { subscribers: number; mrr: number; billingType: string }> = {}
 
     for (const sub of activePaid) {
       const priceId = sub.items.data[0]?.price?.id
@@ -105,6 +122,8 @@ export async function GET() {
       if (!price) continue
 
       const plan = mapStripePlanToDb(priceId)
+      const billingType = getBillingTypeFromPriceId(priceId) || 'monthly'
+      const key = `${plan}_${billingType}`
       let monthlyAmount = 0
 
       if (price.recurring?.interval === 'year') {
@@ -115,11 +134,11 @@ export async function GET() {
 
       mrr += monthlyAmount
 
-      if (!revenueByPlan[plan]) {
-        revenueByPlan[plan] = { subscribers: 0, mrr: 0 }
+      if (!revenueByPlan[key]) {
+        revenueByPlan[key] = { subscribers: 0, mrr: 0, billingType }
       }
-      revenueByPlan[plan].subscribers++
-      revenueByPlan[plan].mrr += monthlyAmount
+      revenueByPlan[key].subscribers++
+      revenueByPlan[key].mrr += monthlyAmount
     }
 
     const arr = mrr * 12
@@ -169,18 +188,26 @@ export async function GET() {
       ? (convertedTrials / (endedTrials + convertedTrials)) * 100
       : 0
 
-    // Recent transactions (DB first, fallback to Stripe charges)
+    // Recent transactions (DB first, fallback to Stripe charges) — include plan/billing for display
     const recentTransactions = dbTransactions.length > 0
-      ? dbTransactions.map(t => ({
-          id: t.stripeId, type: t.type,
-          customerEmail: t.customerEmail, customerName: t.customerName,
-          description: t.description, amount: t.amount / 100,
-          currency: t.currency, status: t.status,
-          date: t.stripeCreatedAt.toISOString(),
-        }))
+      ? dbTransactions.map(t => {
+          const plan = t.plan || (t.customerId ? customerPlanMap.get(t.customerId) || null : null)
+          const billingType = t.billingType || (t.customerId ? customerBillingMap.get(t.customerId) || null : null)
+          return {
+            id: t.stripeId, type: t.type,
+            customerEmail: t.customerEmail, customerName: t.customerName,
+            description: t.description, amount: t.amount / 100,
+            currency: t.currency, status: t.status,
+            date: t.stripeCreatedAt.toISOString(),
+            plan: plan ?? null,
+            billingType: billingType ?? null,
+          }
+        })
       : succeededCharges.slice(0, 5).map(c => {
           const custId = typeof c.customer === 'string' ? c.customer : null
           const dbInfo = custId ? customerIdToInfo.get(custId) : null
+          const plan = custId ? customerPlanMap.get(custId) || null : null
+          const billingType = custId ? customerBillingMap.get(custId) || null : null
           return {
             id: c.id, type: 'charge',
             customerEmail: c.billing_details?.email || dbInfo?.email || null,
@@ -188,6 +215,8 @@ export async function GET() {
             description: c.description || 'Payment',
             amount: c.amount / 100, currency: c.currency, status: c.status,
             date: new Date(c.created * 1000).toISOString(),
+            plan: plan ?? null,
+            billingType: billingType ?? null,
           }
         })
 

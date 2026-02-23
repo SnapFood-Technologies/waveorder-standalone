@@ -71,7 +71,7 @@ interface CXData {
   }
   clv: {
     average: number | null
-    byPlan: Record<string, { avgCLV: number; count: number }>
+    byPlan: Record<string, { avgCLV: number; count: number; billingType?: string }>
     businessesAnalyzed: number
   }
   support: {
@@ -329,6 +329,7 @@ export default function CXAnalyticsPage() {
             {formatCurrency(data.clv.average)}
           </p>
           <p className="text-xs text-gray-500 mt-1">Customer Lifetime Value</p>
+          <p className="text-xs text-gray-400 mt-0.5">When from subscriptions: estimated revenue (monthly equivalent × tenure)</p>
         </div>
       </div>
 
@@ -624,15 +625,20 @@ export default function CXAnalyticsPage() {
               <div className="space-y-3">
                 {Object.entries(data.clv.byPlan)
                   .sort(([, a], [, b]) => b.avgCLV - a.avgCLV)
-                  .map(([plan, data]) => (
-                    <div key={plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{plan}</p>
-                        <p className="text-xs text-gray-500">{data.count} businesses</p>
+                  .map(([planKey, planData]) => {
+                    const planLabel = planData.billingType
+                      ? `${planKey.replace(/_(monthly|yearly|free|trial)$/i, '')} (${planData.billingType.charAt(0).toUpperCase() + planData.billingType.slice(1)})`
+                      : planKey
+                    return (
+                      <div key={planKey} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{planLabel}</p>
+                          <p className="text-xs text-gray-500">{planData.count} businesses</p>
+                        </div>
+                        <p className="text-lg font-bold text-gray-900">{formatCurrency(planData.avgCLV)}</p>
                       </div>
-                      <p className="text-lg font-bold text-gray-900">{formatCurrency(data.avgCLV)}</p>
-                    </div>
-                  ))}
+                    )
+                  })}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">

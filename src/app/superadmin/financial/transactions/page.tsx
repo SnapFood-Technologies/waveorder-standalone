@@ -248,13 +248,18 @@ export default function TransactionsPage() {
                       </td>
                       <td className="px-4 py-3">
                         {t.plan ? (
-                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
-                            t.plan === 'BUSINESS' ? 'bg-indigo-100 text-indigo-700' :
-                            t.plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {t.plan}
-                          </span>
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`inline-flex w-fit px-2 py-0.5 text-xs font-medium rounded ${
+                              t.plan === 'BUSINESS' ? 'bg-indigo-100 text-indigo-700' :
+                              t.plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {t.plan}
+                            </span>
+                            {t.billingType && (
+                              <span className="text-xs text-gray-500 capitalize">{t.billingType}</span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
                         )}

@@ -321,7 +321,7 @@ export function SuperAdminAnalytics() {
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-gray-900">{formatCurrency(plan.revenue)}</p>
-                  <p className="text-xs text-gray-500">Total revenue</p>
+                  <p className="text-xs text-gray-500">MRR (monthly recurring)</p>
                 </div>
               </div>
             )
@@ -478,8 +478,8 @@ export function SuperAdminAnalytics() {
                 <p className="text-xs text-gray-600">Number of <strong>active</strong> businesses on each subscription plan</p>
               </div>
               <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
-                <p className="text-sm font-medium text-gray-900 mb-1">Revenue</p>
-                <p className="text-xs text-gray-600">Platform subscription revenue from each plan.</p>
+                <p className="text-sm font-medium text-gray-900 mb-1">MRR (Revenue)</p>
+                <p className="text-xs text-gray-600">Monthly recurring revenue from each plan. Yearly plans shown as /month equivalent.</p>
               </div>
               <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <div className="flex items-start gap-2">

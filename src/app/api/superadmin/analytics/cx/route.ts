@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { stripe, mapStripePlanToDb, fetchAllStripeRecords, isWaveOrderSubscription } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, getBillingTypeFromPriceId, fetchAllStripeRecords, isWaveOrderSubscription } from '@/lib/stripe'
 import Stripe from 'stripe'
 
 export async function GET(request: NextRequest) {
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
     // === ENHANCED CLV (Stripe-based) ===
     // Try to use actual transaction data first, fall back to subscription-based estimate
     let avgCLV: number | null = null
-    const clvByPlan: Record<string, { avgCLV: number; count: number }> = {}
+    const clvByPlan: Record<string, { avgCLV: number; count: number; billingType?: string }> = {}
 
     if (dbTransactions.length > 0) {
       // Group transactions by business/customer
@@ -309,10 +309,10 @@ export async function GET(request: NextRequest) {
         }
       })
     } else {
-      // Fallback: estimate CLV from Stripe subscriptions
+      // Fallback: estimate CLV from Stripe subscriptions (group by plan + billing type for clarity)
       const activeSubs = stripeSubscriptions.filter(s => s.status === 'active')
       const clvValues: number[] = []
-      const planCLVGroups: Record<string, number[]> = {}
+      const planBillingCLVGroups: Record<string, { values: number[]; billingType: string }> = {}
 
       activeSubs.forEach(s => {
         const price = s.items.data[0]?.price
@@ -328,18 +328,24 @@ export async function GET(request: NextRequest) {
         clvValues.push(clv)
 
         const plan = mapStripePlanToDb(price.id)
-        if (!planCLVGroups[plan]) planCLVGroups[plan] = []
-        planCLVGroups[plan].push(clv)
+        const billingType = getBillingTypeFromPriceId(price.id) || 'monthly'
+        const key = `${plan}_${billingType}`
+        if (!planBillingCLVGroups[key]) {
+          planBillingCLVGroups[key] = { values: [], billingType }
+        }
+        planBillingCLVGroups[key].values.push(clv)
       })
 
       avgCLV = clvValues.length > 0
         ? Math.round((clvValues.reduce((a, b) => a + b, 0) / clvValues.length) * 100) / 100
         : null
 
-      Object.entries(planCLVGroups).forEach(([plan, values]) => {
-        clvByPlan[plan] = {
+      Object.entries(planBillingCLVGroups).forEach(([key, { values, billingType }]) => {
+        const plan = key.replace(/_(monthly|yearly|free|trial)$/, '')
+        clvByPlan[key] = {
           avgCLV: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100,
-          count: values.length
+          count: values.length,
+          billingType
         }
       })
     }

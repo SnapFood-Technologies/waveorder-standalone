@@ -30,7 +30,7 @@ interface DashboardData {
     free: number
     total: number
   }
-  revenueByPlan: Record<string, { subscribers: number; mrr: number }>
+  revenueByPlan: Record<string, { subscribers: number; mrr: number; billingType: string }>
   trialFunnel: {
     activeTrials: number
     endedTrials: number
@@ -48,6 +48,8 @@ interface DashboardData {
     currency: string
     status: string
     date: string
+    plan: string | null
+    billingType: string | null
   }>
   currency: string
   meta?: {
@@ -461,21 +463,26 @@ export default function FinancialDashboardPage() {
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Revenue by Plan</h2>
+            <p className="text-xs text-gray-500 mb-3">MRR = monthly recurring revenue (yearly plans shown as /mo equivalent)</p>
             {Object.keys(data.revenueByPlan).length > 0 ? (
               <div className="space-y-3">
-                {Object.entries(data.revenueByPlan).map(([plan, info]) => (
-                  <div key={plan} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded ${
-                        plan === 'BUSINESS' ? 'bg-indigo-100 text-indigo-700' :
-                        plan === 'PRO' ? 'bg-purple-100 text-purple-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>{plan}</span>
-                      <span className="text-xs text-gray-500 ml-2">{info.subscribers} subscribers</span>
+                {Object.entries(data.revenueByPlan).map(([planKey, info]) => {
+                  const planLabel = planKey.replace(/_(monthly|yearly|free|trial)$/i, '')
+                  const billingLabel = info.billingType ? ` (${info.billingType.charAt(0).toUpperCase() + info.billingType.slice(1)})` : ''
+                  return (
+                    <div key={planKey} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded ${
+                          planLabel === 'BUSINESS' ? 'bg-indigo-100 text-indigo-700' :
+                          planLabel === 'PRO' ? 'bg-purple-100 text-purple-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>{planLabel}{billingLabel}</span>
+                        <span className="text-xs text-gray-500 ml-2">{info.subscribers} subscribers</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{fmt(info.mrr)} MRR</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">{fmt(info.mrr)}/mo</span>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-gray-500">No paid subscriptions yet</p>
@@ -524,38 +531,45 @@ export default function FinancialDashboardPage() {
                 <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                   <th className="pb-3 pr-4">Customer</th>
                   <th className="pb-3 pr-4">Description</th>
+                  <th className="pb-3 pr-4">Plan</th>
                   <th className="pb-3 pr-4 text-right">Amount</th>
                   <th className="pb-3 pr-4">Status</th>
                   <th className="pb-3">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {data.recentTransactions.map((t) => (
-                  <tr key={t.id} className="text-sm hover:bg-gray-50">
-                    <td className="py-3 pr-4">
-                      <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
-                      <p className="text-xs text-gray-500">{t.customerEmail}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-gray-600">{t.description}</td>
-                    <td className="py-3 pr-4 text-right font-medium text-gray-900">
-                      {t.currency.toUpperCase()} {t.amount < 0 ? `-$${Math.abs(t.amount).toFixed(2)}` : `$${t.amount.toFixed(2)}`}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        t.status === 'succeeded' || t.status === 'paid'
-                          ? 'bg-green-100 text-green-700'
-                          : t.status === 'failed'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {t.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-gray-500 text-xs">
-                      {new Date(t.date).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                    </td>
-                  </tr>
-                ))}
+                {data.recentTransactions.map((t) => {
+                  const planLabel = t.plan && t.billingType
+                    ? `${t.plan} (${t.billingType.charAt(0).toUpperCase() + t.billingType.slice(1)})`
+                    : t.plan || '—'
+                  return (
+                    <tr key={t.id} className="text-sm hover:bg-gray-50">
+                      <td className="py-3 pr-4">
+                        <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{t.customerEmail}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-600">{t.description}</td>
+                      <td className="py-3 pr-4 text-gray-600 text-xs">{planLabel}</td>
+                      <td className="py-3 pr-4 text-right font-medium text-gray-900">
+                        {t.currency.toUpperCase()} {t.amount < 0 ? `-$${Math.abs(t.amount).toFixed(2)}` : `$${t.amount.toFixed(2)}`}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                          t.status === 'succeeded' || t.status === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : t.status === 'failed'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-gray-500 text-xs">
+                        {new Date(t.date).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>

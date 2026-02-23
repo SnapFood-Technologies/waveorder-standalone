@@ -231,15 +231,24 @@ export async function GET(request: NextRequest) {
         return trialStart <= monthEnd && trialEnd >= monthStart
       }).length
 
-      // Count paid from Stripe (subscriptions active before monthEnd)
-      const paidThisMonth = activePaid.filter(s =>
+      // Subscriptions that existed (were created) by end of this month — used for paid count and MRR at that time
+      const paidSubsAsOfMonthEnd = activePaid.filter(s =>
         new Date(s.created * 1000) <= monthEnd
-      ).length
+      )
+      const paidThisMonth = paidSubsAsOfMonthEnd.length
 
-      // MRR for this month from Stripe (all active paid at that time point)
-      const mrrThisMonth = totalMRR // Simplified: current MRR for the latest month
+      // MRR as of end of this month (only from subs that existed by then), not current MRR
+      let mrrThisMonth = 0
+      for (const sub of paidSubsAsOfMonthEnd) {
+        const price = sub.items.data[0]?.price
+        if (!price) continue
+        const monthlyAmount = price.recurring?.interval === 'year'
+          ? (price.unit_amount || 0) / 100 / 12
+          : (price.unit_amount || 0) / 100
+        mrrThisMonth += monthlyAmount
+      }
 
-      // Actual revenue from DB transactions or estimate
+      // Actual revenue from DB transactions in this month
       const monthRevenue = dbTransactions
         .filter(t => {
           const d = new Date(t.stripeCreatedAt)
@@ -252,8 +261,8 @@ export async function GET(request: NextRequest) {
         monthLabel: monthStart.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
         newBusinesses: monthBusinesses.length,
         trials: trialsThisMonth,
-        paid: i === 0 ? paidThisMonth : paidThisMonth, // Approximation for past months
-        mrr: i === 0 ? totalMRR : mrrThisMonth,
+        paid: paidThisMonth,
+        mrr: mrrThisMonth,
         actualRevenue: monthRevenue,
       })
     }
