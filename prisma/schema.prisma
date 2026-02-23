@@ -177,29 +177,29 @@ model Subscription {
 }
 
 model StripeTransaction {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  stripeId  String   @unique
-  type      String              // "charge", "invoice", "refund"
-  status    String              // "succeeded", "paid", "failed", "refunded"
+  stripeId String @unique
+  type     String // "charge", "invoice", "refund"
+  status   String // "succeeded", "paid", "failed", "refunded"
 
-  amount    Int                 // Amount in cents
-  currency  String              // "usd", "eur", "bhd"
+  amount   Int // Amount in cents
+  currency String // "usd", "eur", "bhd"
 
   customerId     String?
   subscriptionId String?
 
-  customerEmail  String?
-  customerName   String?
+  customerEmail String?
+  customerName  String?
 
-  description    String?
-  plan           String?        // STARTER, PRO, BUSINESS
-  billingType    String?        // monthly, yearly, trial, free
+  description String?
+  plan        String? // STARTER, PRO, BUSINESS
+  billingType String? // monthly, yearly, trial, free
 
   refundedAmount Int?
 
-  businessId     String?  @db.ObjectId
-  userId         String?  @db.ObjectId
+  businessId String? @db.ObjectId
+  userId     String? @db.ObjectId
 
   stripeCreatedAt DateTime
   createdAt       DateTime @default(now())
@@ -264,7 +264,7 @@ model Business {
 
   // Stripe sync tracking
   lastStripeSync   DateTime?
-  stripeSyncStatus String?    // "in_sync", "issues_found", "never_synced"
+  stripeSyncStatus String? // "in_sync", "issues_found", "never_synced"
 
   // Happy Hour / Daily Discounts
   happyHourEnabled         Boolean  @default(false) // SuperAdmin toggle to enable feature for this business
@@ -298,11 +298,11 @@ model Business {
   logoObjectFit String? // 'cover' or 'contain', default 'cover'
 
   // Storefront Banner
-  bannerEnabled   Boolean @default(false)
-  bannerTitle     String? // Banner title text
-  bannerSubtitle  String? // Banner subtitle text
-  bannerIcon      String? // Lucide icon name (e.g., "Sparkles", "Star", "Gift")
-  bannerFontSize  String  @default("md") // "sm", "md", "lg"
+  bannerEnabled  Boolean @default(false)
+  bannerTitle    String? // Banner title text
+  bannerSubtitle String? // Banner subtitle text
+  bannerIcon     String? // Lucide icon name (e.g., "Sparkles", "Star", "Gift")
+  bannerFontSize String  @default("md") // "sm", "md", "lg"
 
   deliveryZones      DeliveryZone[]
   postals            Postal[]
@@ -2802,8 +2802,8 @@ model RoadmapItem {
 }
 
 model RoadmapVote {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
-  roadmapItemId String @db.ObjectId
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapItemId String  @db.ObjectId
   fingerprint   String
   email         String?
 
