@@ -186,7 +186,8 @@ export async function GET(request: NextRequest) {
       userRegisteredCount, userLoginCount, subscriptionChangedCount, integrationApiCallCount,
       passwordResetRequestedCount, passwordResetCompletedCount, passwordResetErrorCount,
       orderStatusChangedCount, appointmentStatusChangedCount,
-      twilioMessageSentCount, twilioMessageErrorCount
+      twilioMessageSentCount, twilioMessageErrorCount,
+      productCreatedCount, productUpdatedCount
     ] = await Promise.all([
       prisma.systemLog.count({ where: { logType: 'user_registered' } }),
       prisma.systemLog.count({ where: { logType: 'user_login' } }),
@@ -198,7 +199,9 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where: { logType: 'order_status_changed' } }),
       prisma.systemLog.count({ where: { logType: 'appointment_status_changed' } }),
       prisma.systemLog.count({ where: { logType: 'twilio_message_sent' } }),
-      prisma.systemLog.count({ where: { logType: 'twilio_message_error' } })
+      prisma.systemLog.count({ where: { logType: 'twilio_message_error' } }),
+      prisma.systemLog.count({ where: { logType: 'product_created' } }),
+      prisma.systemLog.count({ where: { logType: 'product_updated' } })
     ])
 
     // Get order-related stats
@@ -402,6 +405,11 @@ export async function GET(request: NextRequest) {
         integrationStats: {
           apiCalls: integrationApiCallCount,
           total: integrationApiCallCount
+        },
+        productStats: {
+          created: productCreatedCount,
+          updated: productUpdatedCount,
+          total: productCreatedCount + productUpdatedCount
         },
         topSlugsByLogs: topSlugsByLogs.map(item => ({
           slug: item.slug,

@@ -86,6 +86,7 @@ interface LogsResponse {
     twilioStats: { sent: number; errors: number; total: number }
     subscriptionStats: { changed: number; total: number }
     integrationStats: { apiCalls: number; total: number }
+    productStats: { created: number; updated: number; total: number }
     topSlugsByLogs: Array<{ slug: string; count: number }>
     logsByDay: Array<{ date: string; count: number }>
     onboardingStats: {
@@ -229,6 +230,8 @@ export default function SystemLogsPage() {
       integration_api_call: 'Integration API Call',
       user_registered: 'User Registered',
       user_login: 'User Login',
+      product_created: 'Product Created',
+      product_updated: 'Product Updated',
       subscription_changed: 'Subscription Changed',
       password_reset_requested: 'Password Reset Requested',
       password_reset_completed: 'Password Reset Completed',
@@ -399,6 +402,10 @@ export default function SystemLogsPage() {
                   <option value="password_reset_requested">Password Reset Requested</option>
                   <option value="password_reset_completed">Password Reset Completed</option>
                   <option value="password_reset_error">Password Reset Error</option>
+                </optgroup>
+                <optgroup label="Admin / Products">
+                  <option value="product_created">Product Created</option>
+                  <option value="product_updated">Product Updated</option>
                 </optgroup>
                 <optgroup label="Notifications">
                   <option value="twilio_message_sent">Twilio Message Sent</option>
@@ -893,6 +900,27 @@ export default function SystemLogsPage() {
                 <p className="text-xs text-gray-400">External integration API activity</p>
               </div>
             </div>
+
+            {/* Product (admin) created/updated */}
+            {analytics.productStats && analytics.productStats.total > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Admin products</h3>
+                  <span className="text-2xl font-bold text-gray-900">{analytics.productStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Created</span>
+                    <span className="text-sm font-medium text-gray-900">{analytics.productStats.created.toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Updated</span>
+                    <span className="text-sm font-medium text-gray-900">{analytics.productStats.updated.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-400">Product create/update in admin</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Password Reset, Order/Appointment Status Changes & Twilio */}

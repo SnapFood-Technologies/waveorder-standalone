@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 const prisma = globalForPrisma.prisma || new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'order_validation_error' | 'appointment_created' | 'appointment_error' | 'appointment_validation_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed' | 'password_reset_requested' | 'password_reset_completed' | 'password_reset_error' | 'order_status_changed' | 'appointment_status_changed' | 'twilio_message_sent' | 'twilio_message_error'
+export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'order_validation_error' | 'appointment_created' | 'appointment_error' | 'appointment_validation_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'product_created' | 'product_updated' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed' | 'password_reset_requested' | 'password_reset_completed' | 'password_reset_error' | 'order_status_changed' | 'appointment_status_changed' | 'twilio_message_sent' | 'twilio_message_error'
 export type LogSeverity = 'error' | 'warning' | 'info'
 
 interface SystemLogData {
