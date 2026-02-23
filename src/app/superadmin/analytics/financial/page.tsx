@@ -15,7 +15,8 @@ import {
   RefreshCw,
   PieChart,
   BarChart3,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -347,6 +348,18 @@ export default function FinancialPage() {
                   <p className="text-xl font-bold text-gray-900">{formatCurrency(data.revenue.mrrFromYearly)} <span className="text-xs font-normal text-gray-500">MRR</span></p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* MRR explanation — after Revenue by Plan & Revenue by Billing */}
+          <div className="md:col-span-2 flex gap-3 p-4 bg-sky-50 border border-sky-100 rounded-lg">
+            <Info className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-sky-800">
+              <p className="font-medium text-sky-900 mb-1">What is MRR?</p>
+              <p className="text-sky-700">
+                <strong>MRR (Monthly Recurring Revenue)</strong> is the predictable subscription revenue you get each month. 
+                Customers on <strong>yearly plans</strong> are charged once per year (e.g. $384), but we show that as a monthly equivalent ($32/mo) so all revenue is in the same unit and easy to compare.
+              </p>
             </div>
           </div>
         </div>

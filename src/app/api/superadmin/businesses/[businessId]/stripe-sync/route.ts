@@ -7,7 +7,7 @@ import { stripe, mapStripePlanToDb, PLANS, PlanId } from '@/lib/stripe'
 import { logSystemEvent } from '@/lib/systemLog'
 
 interface SyncIssue {
-  type: 'missing_subscription' | 'plan_mismatch' | 'status_mismatch' | 'duplicate_subs' | 'no_stripe_customer' | 'orphaned_db_record'
+  type: 'missing_subscription' | 'plan_mismatch' | 'status_mismatch' | 'price_id_mismatch' | 'duplicate_subs' | 'no_stripe_customer' | 'orphaned_db_record'
   severity: 'critical' | 'warning' | 'info'
   description: string
   stripeData?: any
@@ -158,6 +158,30 @@ export async function POST(
               }
 
               fixResults.push(`Created Subscription record for ${activeSub.id}`)
+              fixesApplied++
+            }
+            break
+          }
+
+          case 'price_id_mismatch': {
+            // Update only the Subscription record so priceId/billing (monthly/yearly) matches Stripe
+            const primarySub = analysis.stripeSubscriptions
+              .filter(s => ['active', 'trialing'].includes(s.status))
+              .sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime())[0]
+            if (primarySub && analysis.dbSubscription) {
+              const plan = mapStripePlanToDb(primarySub.priceId)
+              await prisma.subscription.update({
+                where: { id: analysis.dbSubscription.id },
+                data: {
+                  stripeId: primarySub.id,
+                  status: primarySub.status,
+                  priceId: primarySub.priceId,
+                  plan: plan as any,
+                  currentPeriodEnd: new Date(primarySub.currentPeriodEnd),
+                  cancelAtPeriodEnd: primarySub.cancelAtPeriodEnd,
+                }
+              })
+              fixResults.push(`Updated Subscription priceId/period from Stripe (e.g. monthly/yearly)`)
               fixesApplied++
             }
             break
@@ -512,6 +536,25 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
       type: 'status_mismatch',
       severity: 'warning',
       description: `No active Stripe subscriptions, but DB shows ${business.subscriptionPlan}. May be a free override.`,
+    })
+  }
+
+  // Issue: DB Subscription priceId differs from Stripe (e.g. switched to monthly/yearly in Stripe)
+  const stripePriceId = primaryStripeSub?.items?.data?.[0]?.price?.id ?? null
+  if (
+    primaryStripeSub &&
+    dbSubscription &&
+    stripePriceId &&
+    ['active', 'trialing'].includes(primaryStripeSub.status) &&
+    dbSubscription.priceId !== stripePriceId
+  ) {
+    issues.push({
+      type: 'price_id_mismatch',
+      severity: 'warning',
+      description: 'Stripe subscription price (e.g. monthly/yearly) changed; DB Subscription still has old priceId',
+      stripeData: { priceId: stripePriceId },
+      dbData: { priceId: dbSubscription.priceId },
+      fix: 'Update DB Subscription priceId and period from Stripe'
     })
   }
 
