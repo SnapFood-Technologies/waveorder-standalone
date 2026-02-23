@@ -143,7 +143,7 @@ export default function BusinessOrdersStatsPage() {
         if (response.ok) {
           const result = await response.json()
           setBusinessType(result.business?.businessType)
-          if (result.business?.businessType === 'SALON') {
+          if (result.business?.businessType === 'SALON' || result.business?.businessType === 'SERVICES') {
             router.replace(`/superadmin/businesses/${businessId}/appointments`)
           }
         }
@@ -173,7 +173,7 @@ export default function BusinessOrdersStatsPage() {
 
   useEffect(() => {
     // Only fetch data if business is not a salon (salons are redirected to appointments page)
-    if (businessType && businessType !== 'SALON') {
+    if (businessType && businessType !== 'SALON' && businessType !== 'SERVICES') {
       fetchData()
     }
   }, [businessType, businessId, selectedPeriod, currentPage, debouncedSearchQuery, filterStatus, filterType])

@@ -274,6 +274,11 @@ model Business {
   happyHourDiscountPercent Float? // Discount percentage (e.g., 20 for 20% off)
   happyHourProductIds      String[] // Product IDs that get the discount
 
+  // SERVICES business type: which request options are enabled (only used when businessType === SERVICES)
+  serviceAllowAppointmentBooking Boolean? @default(true)
+  serviceAllowRequestByEmail     Boolean? @default(false)
+  serviceAllowRequestByWhatsApp  Boolean? @default(false)
+
   createdByAdmin Boolean @default(false)
 
   // Branding
@@ -527,6 +532,7 @@ model Business {
   products           Product[]
   orders             Order[]
   appointments       Appointment[]
+  serviceRequests    ServiceRequest[] // SERVICES only: form-based requests (email/WhatsApp)
   customers          Customer[]
   analytics          Analytics[]
   visitorSessions    VisitorSession[]
@@ -1308,6 +1314,35 @@ model Appointment {
   @@map("appointments")
 }
 
+// SERVICES business type: form-based service requests (Request by email / Request by WhatsApp)
+model ServiceRequest {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId    String  @db.ObjectId
+  requestType   String // EMAIL_REQUEST | WHATSAPP_REQUEST (preferred contact)
+  requesterType String // PERSON | COMPANY
+  contactName   String
+  companyName   String?
+  email         String
+  phone         String?
+  serviceIds    Json? // Array of product IDs or null
+  message       String?
+  status        String  @default("NEW") // NEW, CONTACTED, QUOTED, CONFIRMED, COMPLETED, CANCELLED
+  paymentStatus String?
+  paymentMethod String?
+  amount        Int? // Amount in cents, optional
+  adminNotes    String?
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, status])
+  @@index([businessId, createdAt])
+  @@map("service_requests")
+}
+
 model TeamInvitation {
   id         String           @id @default(auto()) @map("_id") @db.ObjectId
   email      String
@@ -1521,6 +1556,7 @@ enum BusinessType {
   RETAIL
   GROCERY
   SALON
+  SERVICES // Professional Services (appointments + form-based requests)
   OTHER
 }
 

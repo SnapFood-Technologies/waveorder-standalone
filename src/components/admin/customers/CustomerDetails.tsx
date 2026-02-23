@@ -90,7 +90,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'details' | 'orders'>('details')
-  const isSalon = business.businessType === 'SALON'
+  const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteSuccess, setDeleteSuccess] = useState(false)

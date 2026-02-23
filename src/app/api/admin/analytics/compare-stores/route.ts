@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const storeStats = await Promise.all(
       businessUsers.map(async (bu) => {
         const businessId = bu.business.id
-        const isSalon = bu.business.businessType === 'SALON'
+        const isSalon = bu.business.businessType === 'SALON' || bu.business.businessType === 'SERVICES'
 
         // Get orders/appointments in period
         const orders = await prisma.order.findMany({

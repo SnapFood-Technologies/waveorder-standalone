@@ -39,7 +39,7 @@ export default function BusinessConnectionsPage() {
         if (response.ok) {
           const data = await response.json()
           setBusiness(data.business)
-          if (data.business?.businessType === 'SALON') {
+          if (data.business?.businessType === 'SALON' || data.business?.businessType === 'SERVICES') {
             router.replace(`/superadmin/businesses/${businessId}`)
           }
         }
@@ -51,7 +51,7 @@ export default function BusinessConnectionsPage() {
   }, [businessId, router])
 
   useEffect(() => {
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       fetchConnectedBusinesses()
     }
   }, [business, businessId])
@@ -168,7 +168,7 @@ export default function BusinessConnectionsPage() {
                 Connected Businesses {business?.name && `- ${business.name}`}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Manage business connections for marketplace and shared {business?.businessType === 'SALON' ? 'services' : 'products'}
+                Manage business connections for marketplace and shared {(business?.businessType === 'SALON' || business?.businessType === 'SERVICES') ? 'services' : 'products'}
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function BusinessConnectionsPage() {
           <div>
             <h3 className="font-semibold text-blue-900 mb-1">About Business Connections</h3>
             <p className="text-sm text-blue-800">
-              Connected businesses can share {business?.businessType === 'SALON' ? 'services' : 'products'}, categories, collections, and groups with the same pricing{business?.businessType === 'SALON' ? '' : ' and inventory'}. This feature is perfect for marketplaces, franchises, or multi-store operations. Connections are bidirectional - when you connect Business A with Business B, both businesses can access each other's shared resources.
+              Connected businesses can share {(business?.businessType === 'SALON' || business?.businessType === 'SERVICES') ? 'services' : 'products'}, categories, collections, and groups with the same pricing{(business?.businessType === 'SALON' || business?.businessType === 'SERVICES') ? '' : ' and inventory'}. This feature is perfect for marketplaces, franchises, or multi-store operations. Connections are bidirectional - when you connect Business A with Business B, both businesses can access each other's shared resources.
             </p>
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function BusinessConnectionsPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <Link2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No connected businesses yet</h3>
-          <p className="text-gray-600 mb-4">Connect businesses to enable {business?.businessType === 'SALON' ? 'service' : 'product'} sharing and marketplace features.</p>
+          <p className="text-gray-600 mb-4">Connect businesses to enable {(business?.businessType === 'SALON' || business?.businessType === 'SERVICES') ? 'service' : 'product'} sharing and marketplace features.</p>
           <button
             onClick={() => setShowConnectModal(true)}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
@@ -356,7 +356,7 @@ export default function BusinessConnectionsPage() {
                     Disconnect Business
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Are you sure you want to disconnect from "{disconnectModalBusiness.name}"? They will no longer be able to share {business?.businessType === 'SALON' ? 'services' : 'products'}, categories, collections, and groups.
+                    Are you sure you want to disconnect from "{disconnectModalBusiness.name}"? They will no longer be able to share {(business?.businessType === 'SALON' || business?.businessType === 'SERVICES') ? 'services' : 'products'}, categories, collections, and groups.
                   </p>
                 </div>
               </div>

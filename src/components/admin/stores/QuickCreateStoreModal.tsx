@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   Apple,
   Scissors,
+  Briefcase,
   Gem,
   Flower2,
   MoreHorizontal,
@@ -70,6 +71,7 @@ const businessTypes = [
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
   { value: 'SALON', label: 'Salon & Beauty', icon: Scissors },
+  { value: 'SERVICES', label: 'Professional Services', icon: Briefcase },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 
@@ -239,7 +241,7 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
 
   // Update delivery/pickup defaults when business type changes
   useEffect(() => {
-    if (formData.businessType === 'SALON') {
+    if (formData.businessType === 'SALON' || formData.businessType === 'SERVICES') {
       setFormData(prev => ({
         ...prev,
         deliveryEnabled: false,
@@ -771,15 +773,17 @@ export function QuickCreateStoreModal({ isOpen, onClose }: QuickCreateStoreModal
           {/* Step 4: Delivery Options */}
           {currentStep === 4 && (
             <div className="space-y-4">
-              {formData.businessType === 'SALON' ? (
+              {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') ? (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Calendar className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-1">Appointment-Based Business</h4>
                       <p className="text-gray-700 text-sm">
-                        Salons use appointments instead of delivery or pickup. Your customers will book appointments through your storefront. 
-                        You can skip this step and configure appointment settings later.
+                        {formData.businessType === 'SERVICES'
+                          ? 'Professional services use appointments and/or request forms. Your customers will book or request through your storefront. '
+                          : 'Salons use appointments instead of delivery or pickup. Your customers will book appointments through your storefront. '}
+                        You can skip this step and configure settings later.
                       </p>
                     </div>
                   </div>

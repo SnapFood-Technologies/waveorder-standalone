@@ -236,7 +236,7 @@ export default function BusinessDetailsPage() {
 
   const fetchMarketplaceInfo = async (businessData: BusinessDetails) => {
     // Skip marketplace info for salons - marketplace is product-focused
-    if (businessData.businessType === 'SALON') {
+    if ((businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES')) {
       return
     }
     
@@ -557,7 +557,7 @@ export default function BusinessDetailsPage() {
           <StripeSyncSection businessId={businessId} businessName={business.name} />
 
           {/* Marketplace Card - Hide for salons */}
-          {business.businessType !== 'SALON' && marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && marketplaceInfo && (marketplaceInfo.isOriginator === true || marketplaceInfo.isSupplier === true) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -581,7 +581,7 @@ export default function BusinessDetailsPage() {
                 <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm font-medium text-blue-900 mb-1">Originator</p>
                   <p className="text-sm text-blue-700">{marketplaceInfo.originator.name}</p>
-                  <p className="text-xs text-blue-600 mt-1">This business's {business.businessType === 'SALON' ? 'services' : 'products'} are visible to the originator</p>
+                  <p className="text-xs text-blue-600 mt-1">This business's {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'services' : 'products'} are visible to the originator</p>
                 </div>
               )}
               
@@ -593,7 +593,7 @@ export default function BusinessDetailsPage() {
                       <div key={supplier.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex-1">
                           <span className="text-sm text-gray-900">{supplier.name}</span>
-                          <span className="text-sm text-gray-600 ml-2">{supplier.productCount} {business.businessType === 'SALON' ? 'services' : 'products'}</span>
+                          <span className="text-sm text-gray-600 ml-2">{supplier.productCount} {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'services' : 'products'}</span>
                         </div>
                       </div>
                     ))}
@@ -687,11 +687,11 @@ export default function BusinessDetailsPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Business Statistics</h2>
               <Link
-                href={`/superadmin/businesses/${businessId}/${business.businessType === 'SALON' ? 'appointments' : 'orders'}`}
+                href={`/superadmin/businesses/${businessId}/${(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointments' : 'orders'}`}
                 className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
               >
                 <ShoppingBag className="w-4 h-4 mr-1" />
-                {business.businessType === 'SALON' ? 'Appointment Stats' : 'Order Stats'}
+                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Stats' : 'Order Stats'}
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -699,7 +699,7 @@ export default function BusinessDetailsPage() {
                 <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
                 <p className="text-xs text-gray-500">
-                  {business.businessType === 'SALON' ? 'Total Appointments' : 'Total Orders'}
+                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Total Appointments' : 'Total Orders'}
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -711,7 +711,7 @@ export default function BusinessDetailsPage() {
                 <ShoppingBag className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
                 <p className="text-xs text-gray-500">
-                  {business.businessType === 'SALON' ? 'Services' : 'Products'}
+                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Services' : 'Products'}
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4 text-center">
@@ -818,7 +818,7 @@ export default function BusinessDetailsPage() {
               {/* Product/Service Filtering Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Products Without Photos Count Card - Non-salons only */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsWithoutPhotos === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsWithoutPhotos === 'number' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
@@ -837,7 +837,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Services Without Photos Count Card - Salons only */}
-                {business.businessType === 'SALON' && typeof business.stats.servicesWithoutPhotos === 'number' && (
+                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && typeof business.stats.servicesWithoutPhotos === 'number' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
@@ -856,7 +856,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Services With Zero Price Count Card - Salons only */}
-                {business.businessType === 'SALON' && typeof business.stats.servicesWithZeroPrice === 'number' && (
+                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && typeof business.stats.servicesWithZeroPrice === 'number' && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -875,7 +875,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Zero Price Count Card - Non-salons only */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsWithZeroPrice === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsWithZeroPrice === 'number' && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <DollarSign className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -894,7 +894,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products Out Of Stock (No Variants) Count Card - Hide for salons */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsOutOfStock === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsOutOfStock === 'number' && (
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-orange-600 flex-shrink-0" />
@@ -913,7 +913,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - All Zero Stock Count Card - Hide for salons */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsAllZeroStock === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsWithVariantsAllZeroStock === 'number' && (
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-purple-600 flex-shrink-0" />
@@ -932,7 +932,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - Some Zero Stock Count Card - Hide for salons */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsWithVariantsSomeZeroStock === 'number' && (
                   <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Package className="w-5 h-5 text-indigo-600 flex-shrink-0" />
@@ -951,7 +951,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Products With Variants - All Non-Zero Stock Count Card - Hide for salons */}
-                {business.businessType !== 'SALON' && typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.productsWithVariantsAllNonZeroStock === 'number' && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -970,7 +970,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Inactive Products Count Card - Non-salons only */}
-                {business.businessType !== 'SALON' && typeof business.stats.inactiveProducts === 'number' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && typeof business.stats.inactiveProducts === 'number' && (
                   <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <PowerOff className="w-5 h-5 text-gray-600 flex-shrink-0" />
@@ -989,7 +989,7 @@ export default function BusinessDetailsPage() {
                 )}
 
                 {/* Inactive Services Count Card - Salons only */}
-                {business.businessType === 'SALON' && typeof business.stats.inactiveServices === 'number' && (
+                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && typeof business.stats.inactiveServices === 'number' && (
                   <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <PowerOff className="w-5 h-5 text-gray-600 flex-shrink-0" />
@@ -1012,10 +1012,10 @@ export default function BusinessDetailsPage() {
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex-1">
                   <h3 className="text-sm font-medium text-gray-900 mb-1">
-                    Hide {business.businessType === 'SALON' ? 'Services' : 'Products'} Without Photos
+                    Hide {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Services' : 'Products'} Without Photos
                   </h3>
                   <p className="text-xs text-gray-500">
-                    {business.businessType === 'SALON' 
+                    {(business.businessType === 'SALON' || business.businessType === 'SERVICES') 
                       ? 'Services without images will be excluded from storefront listings' 
                       : 'Products without images will be excluded from storefront listings and filters'}
                   </p>
@@ -1037,7 +1037,7 @@ export default function BusinessDetailsPage() {
           </div>
 
           {/* Delivery Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (business.deliveryEnabled || business.pickupEnabled || business.dineInEnabled) && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Delivery Settings</h2>
               
@@ -1393,7 +1393,7 @@ export default function BusinessDetailsPage() {
               <h3 className="text-lg font-semibold text-gray-900">External Syncs</h3>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Manage {business.businessType === 'SALON' ? 'service' : 'product'} synchronization with external systems
+              Manage {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'service' : 'product'} synchronization with external systems
             </p>
             <Link
               href={`/superadmin/businesses/${business.id}/external-syncs`}
@@ -1428,7 +1428,7 @@ export default function BusinessDetailsPage() {
           )}
 
           {/* Custom Features CTA - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Sparkles className="w-6 h-6 text-purple-600" />
@@ -1449,7 +1449,7 @@ export default function BusinessDetailsPage() {
           )}
 
           {/* Connected Businesses CTA - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Link2 className="w-6 h-6 text-blue-600" />
@@ -1479,7 +1479,7 @@ export default function BusinessDetailsPage() {
           <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Happy Hour Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
@@ -1487,12 +1487,12 @@ export default function BusinessDetailsPage() {
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Cost & Margins Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <CostPriceSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
           {/* Production Planning Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <ProductionPlanningSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
@@ -1500,17 +1500,17 @@ export default function BusinessDetailsPage() {
           <ManualTeamCreationSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Delivery Management Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <DeliveryManagementSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
           {/* Invoice/Receipt Selection Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <InvoiceReceiptSelectionSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
           {/* Packaging Tracking Settings - Hide for salons */}
-          {business.businessType !== 'SALON' && (
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
@@ -1940,9 +1940,9 @@ function WhatsAppSettingsSection({
       
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Direct {business.businessType === 'SALON' ? 'Appointment' : 'Order'} Notifications (Twilio)</p>
+          <p className="text-sm font-medium text-gray-900">Direct {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment' : 'Order'} Notifications (Twilio)</p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, {business.businessType === 'SALON' ? 'appointments' : 'orders'} are sent directly to the business via Twilio WhatsApp API. 
+            When enabled, {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointments' : 'orders'} are sent directly to the business via Twilio WhatsApp API. 
             When disabled, customers use the traditional wa.me link.
           </p>
         </div>
@@ -1964,7 +1964,7 @@ function WhatsAppSettingsSection({
       {directNotifications && (
         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700">
-            <span className="font-medium">Active:</span> {business.businessType === 'SALON' ? 'Appointments' : 'Orders'} will be sent automatically to {business.whatsappNumber} via Twilio.
+            <span className="font-medium">Active:</span> {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointments' : 'Orders'} will be sent automatically to {business.whatsappNumber} via Twilio.
           </p>
         </div>
       )}
@@ -3070,7 +3070,7 @@ function AffiliateSystemSettingsSection({
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">Enable Affiliate System</p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, business admins can create affiliates, generate tracking links, track commissions, and manage affiliate payments. {business.businessType === 'SALON'
+            When enabled, business admins can create affiliates, generate tracking links, track commissions, and manage affiliate payments. {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
               ? 'Appointments from affiliate links are automatically attributed and commissions are calculated when appointments are completed.'
               : 'Orders from affiliate links are automatically attributed and commissions are calculated when orders are completed.'}
           </p>
@@ -3096,7 +3096,7 @@ function AffiliateSystemSettingsSection({
             <span className="font-medium">Enabled:</span> Business admins can now manage affiliates, track commissions, and process payments from the admin panel.
           </p>
           <p className="text-xs text-teal-600">
-            Affiliates receive unique tracking links with UTM parameters. Commissions are automatically calculated when {business.businessType === 'SALON'
+            Affiliates receive unique tracking links with UTM parameters. Commissions are automatically calculated when {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
               ? 'appointments are completed (PAID + COMPLETED).'
               : 'orders are completed (PAID + DELIVERED/PICKED_UP).'}
           </p>

@@ -104,7 +104,7 @@ export async function PUT(
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if ((business?.businessType === 'SALON' || business?.businessType === 'SERVICES')) {
       return NextResponse.json(
         { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
         { status: 403 }
@@ -200,7 +200,7 @@ export async function DELETE(
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if ((business?.businessType === 'SALON' || business?.businessType === 'SERVICES')) {
       return NextResponse.json(
         { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
         { status: 403 }

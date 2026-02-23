@@ -22,7 +22,7 @@ export async function GET(
       select: { businessType: true }
     })
 
-    const isSalon = business?.businessType === 'SALON'
+    const isSalon = business?.businessType === 'SALON' || business?.businessType === 'SERVICES'
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')

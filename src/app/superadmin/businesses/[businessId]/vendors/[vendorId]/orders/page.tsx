@@ -135,7 +135,7 @@ export default function VendorOrdersStatsPage() {
         if (response.ok) {
           const result = await response.json()
           setBusiness(result.business)
-          if (result.business?.businessType === 'SALON') {
+          if (result.business?.businessType === 'SALON' || result.business?.businessType === 'SERVICES') {
             router.replace(`/superadmin/businesses/${businessId}`)
           }
         }

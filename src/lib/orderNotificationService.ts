@@ -170,7 +170,7 @@ export async function sendOrderNotification(
 
 // Helper function to get email labels in the specified language, customized for business type
 function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   const labels: Record<string, Record<string, string>> = {
     en: {
@@ -389,7 +389,7 @@ function createOrderNotificationEmail({
   const statusColor = getStatusColorBox(orderData.status)
   const statusLabel = formatStatus(orderData.status, normalizedLang)
   const statusIcon = getStatusIcon(orderData.status)
-  const isSalon = businessData.businessType === 'SALON'
+  const isSalon = (businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES')
   const locale = normalizedLang === 'es' ? 'es-ES' : normalizedLang === 'sq' ? 'sq-AL' : normalizedLang === 'el' ? 'el-GR' : 'en-US'
   
   return `

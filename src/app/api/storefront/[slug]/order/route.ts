@@ -465,6 +465,26 @@ const messageTerms = {
       pickup_type: 'Walk-in',
       dineIn_type: 'In-Salon'
     },
+    SERVICES: {
+      order: 'Booking Request',
+      subtotal: 'Subtotal',
+      delivery: 'Appointment',
+      total: 'Total',
+      customer: 'Client',
+      phone: 'Phone',
+      deliveryAddress: 'Address',
+      pickupLocation: 'Location',
+      deliveryTime: 'Appointment Date & Time',
+      pickupTime: 'Appointment Time',
+      arrivalTime: 'Appointment Time',
+      payment: 'Payment',
+      notes: 'Notes',
+      asap: 'ASAP',
+      orderType: 'Booking Type',
+      delivery_type: 'Appointment',
+      pickup_type: 'Walk-in',
+      dineIn_type: 'In-Person'
+    },
     OTHER: {
       order: 'Order',
       subtotal: 'Subtotal',
@@ -586,6 +606,26 @@ const messageTerms = {
       delivery_type: 'Takim',
       pickup_type: 'Pa Rezervim',
       dineIn_type: 'Në Salon'
+    },
+    SERVICES: {
+      order: 'Kërkesë për Rezervim',
+      subtotal: 'Nëntotali',
+      delivery: 'Takim',
+      total: 'Totali',
+      customer: 'Klienti',
+      phone: 'Telefoni',
+      deliveryAddress: 'Adresa',
+      pickupLocation: 'Vendndodhja',
+      deliveryTime: 'Data dhe Koha e Takimit',
+      pickupTime: 'Koha e Takimit',
+      arrivalTime: 'Koha e Takimit',
+      payment: 'Pagesa',
+      notes: 'Shënime',
+      asap: 'SA MË SHPEJT',
+      orderType: 'Lloji i Rezervimit',
+      delivery_type: 'Takim',
+      pickup_type: 'Pa Rezervim',
+      dineIn_type: 'Në Person'
     },
     OTHER: {
       order: 'Porosia',
@@ -709,6 +749,26 @@ const messageTerms = {
       pickup_type: 'Sin Cita',
       dineIn_type: 'En el Salón'
     },
+    SERVICES: {
+      order: 'Solicitud de Reserva',
+      subtotal: 'Subtotal',
+      delivery: 'Cita',
+      total: 'Total',
+      customer: 'Cliente',
+      phone: 'Teléfono',
+      deliveryAddress: 'Dirección',
+      pickupLocation: 'Ubicación',
+      deliveryTime: 'Fecha y Hora de la Cita',
+      pickupTime: 'Hora de la Cita',
+      arrivalTime: 'Hora de la Cita',
+      payment: 'Pago',
+      notes: 'Notas',
+      asap: 'LO ANTES POSIBLE',
+      orderType: 'Tipo de Reserva',
+      delivery_type: 'Cita',
+      pickup_type: 'Sin Cita',
+      dineIn_type: 'En Persona'
+    },
     OTHER: {
       order: 'Pedido',
       subtotal: 'Subtotal',
@@ -831,6 +891,26 @@ const messageTerms = {
       pickup_type: 'Χωρίς Κράτηση',
       dineIn_type: 'Στο Σαλόνι'
     },
+    SERVICES: {
+      order: 'Αίτημα Κράτησης',
+      subtotal: 'Υποσύνολο',
+      delivery: 'Ραντεβού',
+      total: 'Σύνολο',
+      customer: 'Πελάτης',
+      phone: 'Τηλέφωνο',
+      deliveryAddress: 'Διεύθυνση',
+      pickupLocation: 'Τοποθεσία',
+      deliveryTime: 'Ημερομηνία και Ώρα Ραντεβού',
+      pickupTime: 'Ώρα Ραντεβού',
+      arrivalTime: 'Ώρα Ραντεβού',
+      payment: 'Πληρωμή',
+      notes: 'Σημειώσεις',
+      asap: 'ΌΣΟ ΠΙΟ ΓΡΗΓΟΡΑ',
+      orderType: 'Τύπος Κράτησης',
+      delivery_type: 'Ραντεβού',
+      pickup_type: 'Χωρίς Κράτηση',
+      dineIn_type: 'Προσωπικά'
+    },
     OTHER: {
       order: 'Παραγγελία',
       subtotal: 'Υποσύνολο',
@@ -926,7 +1006,7 @@ export async function POST(
     // Set business context for Sentry
     Sentry.setTag('business_id', business.id)
     Sentry.setTag('business_type', business.businessType)
-    isSalon = business.businessType === 'SALON'
+    isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
 
     // Check if store is temporarily closed
     if (business.isTemporarilyClosed) {
@@ -1675,9 +1755,9 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
       })
     }
 
-    // Create appointment for SALON businesses if deliveryTime is provided
+    // Create appointment for SALON/SERVICES businesses if deliveryTime is provided
     let appointment: any = null
-    if (business.businessType === 'SALON' && deliveryTime) {
+    if ((business.businessType === 'SALON' || business.businessType === 'SERVICES') && deliveryTime) {
       try {
         // Calculate total duration from services
         const orderItemsWithDuration = await prisma.orderItem.findMany({
@@ -2450,13 +2530,14 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   const deliveryTypeLabel = terms[`${orderData.deliveryType}_type`] || orderData.deliveryType
   message += `${terms.orderType}: *${deliveryTypeLabel}*\n\n`
   
-  // Items (Services for salons)
-  const itemsLabel = businessType === 'SALON' ? 'Services' : 'Items'
+  // Items (Services for salons/services)
+  const isServiceBusiness = businessType === 'SALON' || businessType === 'SERVICES'
+  const itemsLabel = isServiceBusiness ? 'Services' : 'Items'
   items.forEach((item: any) => {
     message += `${item.quantity}x ${item.name}`
     if (item.variant) message += ` (${item.variant})`
-    // For salons, show duration if available
-    if (businessType === 'SALON' && item.duration) {
+    // For salons/services, show duration if available
+    if (isServiceBusiness && item.duration) {
       const hours = Math.floor(item.duration / 60)
       const minutes = item.duration % 60
       const durationText = hours > 0 
@@ -2472,8 +2553,8 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
     }
   })
   
-  // For salons, show total duration
-  if (businessType === 'SALON') {
+  // For salons/services, show total duration
+  if (isServiceBusiness) {
     const totalDuration = items.reduce((sum: number, item: any) => {
       return sum + ((item.duration || 0) * item.quantity)
     }, 0)

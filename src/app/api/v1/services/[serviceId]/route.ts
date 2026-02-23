@@ -30,7 +30,7 @@ export async function GET(
       select: { businessType: true }
     })
 
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       return NextResponse.json(
         { error: 'Services endpoint is only available for SALON businesses. Use /products endpoint for other business types.' },
         { status: 403 }
@@ -110,7 +110,7 @@ export async function PUT(
       select: { businessType: true }
     })
 
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       return NextResponse.json(
         { error: 'Services endpoint is only available for SALON businesses. Use /products endpoint for other business types.' },
         { status: 403 }
@@ -193,7 +193,7 @@ export async function DELETE(
       select: { businessType: true }
     })
 
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       return NextResponse.json(
         { error: 'Services endpoint is only available for SALON businesses. Use /products endpoint for other business types.' },
         { status: 403 }

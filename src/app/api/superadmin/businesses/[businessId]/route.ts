@@ -72,7 +72,7 @@ export async function GET(
     // Calculate total revenue (only paid orders that are completed/fulfilled)
     let totalRevenue = 0
     
-    if (business.businessType === 'SALON') {
+    if (business.businessType === 'SALON' || business.businessType === 'SERVICES') {
       // For salons: revenue from completed appointments with paid orders
       const paidCompletedAppointments = await prisma.appointment.findMany({
         where: {
@@ -135,7 +135,7 @@ export async function GET(
       domainError: business.domainError
     }
 
-    const isSalon = business.businessType === 'SALON'
+    const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
 
     // Count products/services by various filter criteria
     // For salons: query services (isService: true) for relevant stats

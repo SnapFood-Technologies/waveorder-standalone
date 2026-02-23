@@ -132,7 +132,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           language: data.business.language || 'en'
         })
         // Set default active section based on business type
-        if (businessType === 'SALON') {
+        if ((businessType === 'SALON' || businessType === 'SERVICES')) {
           setActiveSection('payment')
         }
       }
@@ -268,7 +268,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       {
         id: 'CASH',
         name: 'Cash',
-        description: business.businessType === 'SALON'
+        description: (business.businessType === 'SALON' || business.businessType === 'SERVICES')
           ? `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when appointment is completed`
           : `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
         available: true
@@ -344,7 +344,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
   // For SALON businesses, only show payment, WhatsApp, and hours (no delivery methods/zones)
   // For RETAIL businesses, hide delivery zones (they use postal services instead)
-  const sections = business.businessType === 'SALON'
+  const sections = (business.businessType === 'SALON' || business.businessType === 'SERVICES')
     ? [
         { id: 'payment', name: 'Payment Methods', icon: CreditCard },
         { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
@@ -415,7 +415,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
             Business Configuration
           </h2>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
-            {business.businessType === 'SALON' 
+            {(business.businessType === 'SALON' || business.businessType === 'SERVICES') 
               ? 'Manage your payment options, WhatsApp settings, and business hours'
               : 'Manage your delivery methods, payment options, and communication settings'}
           </p>
@@ -455,7 +455,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       {/* Content Sections */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-        {activeSection === 'delivery' && business.businessType !== 'SALON' && (
+        {activeSection === 'delivery' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Truck className="w-5 h-5 text-teal-600 mr-2" />
@@ -759,7 +759,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {business.businessType === 'SALON' ? 'Appointment Number Format' : 'Order Number Format'}
+                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Number Format' : 'Order Number Format'}
                 </label>
                 <select
                   value={config.whatsappSettings.orderNumberFormat}
@@ -824,7 +824,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
-        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
+        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && business.businessType !== 'SERVICES' && (
           <DeliveryZonesManagement businessId={businessId} />
         )}
 

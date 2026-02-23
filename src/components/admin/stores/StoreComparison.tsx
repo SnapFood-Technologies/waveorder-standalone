@@ -148,7 +148,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
   // Determine if we should show salon metrics (if all or majority are salons)
   const shouldShowSalonMetrics = () => {
     if (stores.length === 0) return false
-    const salonCount = stores.filter(s => s.businessType === 'SALON').length
+    const salonCount = stores.filter(s => s.businessType === 'SALON' || s.businessType === 'SERVICES').length
     return salonCount > stores.length / 2 // Majority are salons
   }
 
@@ -201,8 +201,8 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
     : null
 
   // Determine if we have mixed business types
-  const hasSalons = stores.some(s => s.businessType === 'SALON')
-  const hasNonSalons = stores.some(s => s.businessType !== 'SALON')
+  const hasSalons = stores.some(s => s.businessType === 'SALON' || s.businessType === 'SERVICES')
+  const hasNonSalons = stores.some(s => s.businessType !== 'SALON' && s.businessType !== 'SERVICES')
   const isMixedTypes = hasSalons && hasNonSalons
 
   // Get metrics based on business type
@@ -325,7 +325,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
 
       {/* Quick Actions - CTAs to Cross-Store Features */}
       {showQuickActions && businessId && (
-        <div className={`grid grid-cols-2 ${currentBusinessType === 'SALON' ? 'md:grid-cols-3' : 'md:grid-cols-4'} gap-4`}>
+        <div className={`grid grid-cols-2 ${(currentBusinessType === 'SALON' || currentBusinessType === 'SERVICES') ? 'md:grid-cols-3' : 'md:grid-cols-4'} gap-4`}>
           <Link
             href={`/admin/stores/${businessId}/unified/dashboard`}
             className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-lg border border-teal-200 p-4 hover:shadow-md transition-shadow group"
@@ -350,7 +350,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
             <p className="text-xs text-gray-600 mt-1">Combined insights</p>
           </Link>
           
-          {currentBusinessType === 'SALON' ? (
+          {(currentBusinessType === 'SALON' || currentBusinessType === 'SERVICES') ? (
             <Link
               href={`/admin/stores/${businessId}/appointments`}
               className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-4 hover:shadow-md transition-shadow group"
@@ -456,7 +456,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {stores.filter(s => s.businessType === 'SALON').map((store) => (
+                      {stores.filter(s => (s.businessType === 'SALON' || s.businessType === 'SERVICES')).map((store) => (
                         <tr key={store.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
@@ -482,7 +482,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                             </div>
                           </td>
                           {metrics.filter(m => m.key === 'appointments' || m.key === 'revenue' || m.key === 'customers' || m.key === 'views' || m.key === 'services').map((metric) => {
-                            const salonStores = stores.filter(s => s.businessType === 'SALON')
+                            const salonStores = stores.filter(s => (s.businessType === 'SALON' || s.businessType === 'SERVICES'))
                             // Compare best within salon stores only
                             const bestSalonStore = salonStores.length > 1 
                               ? salonStores.reduce((prev, curr) => {
@@ -536,7 +536,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                           </div>
                         </td>
                         {metrics.filter(m => m.key === 'appointments' || m.key === 'revenue' || m.key === 'customers' || m.key === 'views' || m.key === 'services').map((metric) => {
-                          const salonStores = stores.filter(s => s.businessType === 'SALON')
+                          const salonStores = stores.filter(s => (s.businessType === 'SALON' || s.businessType === 'SERVICES'))
                           const salonTotals = salonStores.reduce((acc, s) => ({
                             ...acc,
                             [metric.key]: (acc[metric.key as keyof StoreStats] || 0) + (s.stats[metric.key as keyof StoreStats] || 0)
@@ -604,7 +604,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {stores.filter(s => s.businessType !== 'SALON').map((store) => (
+                      {stores.filter(s => (s.businessType !== 'SALON' && s.businessType !== 'SERVICES')).map((store) => (
                         <tr key={store.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
@@ -630,7 +630,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                             </div>
                           </td>
                           {metrics.filter(m => m.key === 'orders' || m.key === 'revenue' || m.key === 'customers' || m.key === 'views' || m.key === 'products').map((metric) => {
-                            const nonSalonStores = stores.filter(s => s.businessType !== 'SALON')
+                            const nonSalonStores = stores.filter(s => (s.businessType !== 'SALON' && s.businessType !== 'SERVICES'))
                             // Compare best within non-salon stores only
                             const bestNonSalonStore = nonSalonStores.length > 1
                               ? nonSalonStores.reduce((prev, curr) => {
@@ -684,7 +684,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                           </div>
                         </td>
                         {metrics.filter(m => m.key === 'orders' || m.key === 'revenue' || m.key === 'customers' || m.key === 'views' || m.key === 'products').map((metric) => {
-                          const nonSalonStores = stores.filter(s => s.businessType !== 'SALON')
+                          const nonSalonStores = stores.filter(s => (s.businessType !== 'SALON' && s.businessType !== 'SERVICES'))
                           const nonSalonTotals = nonSalonStores.reduce((acc, s) => ({
                             ...acc,
                             [metric.key]: (acc[metric.key as keyof StoreStats] || 0) + (s.stats[metric.key as keyof StoreStats] || 0)

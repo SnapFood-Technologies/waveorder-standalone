@@ -192,7 +192,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   
   // Check if user can access products (STAFF cannot)
   const canAccessProducts = userRole !== 'STAFF'
-  const isSalon = businessType === 'SALON'
+  const isServiceBusiness = businessType === 'SALON' || businessType === 'SERVICES'
 
   const baseUrl = `/admin/stores/${businessId}`
 
@@ -203,9 +203,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: LayoutDashboard, 
       requiredPlan: 'STARTER'
     },
-    // SALON: Appointments (replaces Orders)
+    // SALON / SERVICES: Appointments (replaces Orders)
     // @ts-ignore
-    ...(isSalon ? [
+    ...(isServiceBusiness ? [
       {
         name: 'Appointments',
         icon: Calendar,
@@ -227,7 +227,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         ]
       }
     ] : [
-      // NON-SALON: Orders - with optional Production Queue submenu
+      // NON-SALON/SERVICES: Orders - with optional Production Queue submenu
       // @ts-ignore
       ...(showProductionPlanningEnabled ? [{
         name: 'Orders',
@@ -254,9 +254,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         requiredPlan: 'STARTER' as Plan
       }])
     ]),
-    // SALON: Services (replaces Products)
+    // SALON / SERVICES: Services (replaces Products)
     // @ts-ignore
-    ...(isSalon ? [
+    ...(isServiceBusiness ? [
       {
         name: 'Services',
         icon: Scissors,
@@ -277,7 +277,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         ]
       }
     ] : [
-      // NON-SALON: Products menu - hidden for STAFF role
+      // NON-SALON/SERVICES: Products menu - hidden for STAFF role
       // @ts-ignore
       ...(canAccessProducts ? [{ 
         name: 'Products', 
@@ -327,6 +327,14 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         ]
       }] : [])
     ]),
+    // SERVICE REQUESTS: SERVICES only (form submissions + appointment links)
+    // @ts-ignore
+    ...(businessType === 'SERVICES' ? [{
+      name: 'Service requests',
+      href: `${baseUrl}/service-requests`,
+      icon: MessageSquare,
+      requiredPlan: 'STARTER' as Plan
+    }] : []),
     { 
       name: 'Customers', 
       href: `${baseUrl}/customers`, 
@@ -384,7 +392,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     ...((subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') ? [
       // Inventory - only for non-salon businesses
       // @ts-ignore
-      ...(!isSalon ? [{
+      ...(!isServiceBusiness ? [{
         name: 'Inventory', 
         icon: Boxes,
         requiredPlan: 'PRO' as Plan,
@@ -435,7 +443,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       },
       // Staff Availability - SALON only
       // @ts-ignore
-      ...(isSalon ? [{
+      ...(isServiceBusiness ? [{
         name: 'Staff Availability',
         href: `${baseUrl}/staff/availability`,
         icon: Clock,
@@ -568,7 +576,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
         { 
-          name: isSalon ? 'Appointment Notifications' : 'Order Notifications', 
+          name: isServiceBusiness ? 'Appointment Notifications' : 'Order Notifications', 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 
           requiredPlan: 'STARTER'

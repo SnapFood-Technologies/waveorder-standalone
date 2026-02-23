@@ -745,7 +745,7 @@ export const openApiSpec = {
             whatsappNumber: { type: 'string', example: '+1234567890' },
             businessType: {
               type: 'string',
-              enum: ['RESTAURANT', 'CAFE', 'RETAIL', 'GROCERY', 'SALON', 'OTHER']
+              enum: ['RESTAURANT', 'CAFE', 'RETAIL', 'GROCERY', 'SALON', 'SERVICES', 'OTHER']
             },
             subscriptionPlan: {
               type: 'string',

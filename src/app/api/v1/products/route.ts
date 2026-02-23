@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if ((business?.businessType === 'SALON' || business?.businessType === 'SERVICES')) {
       return NextResponse.json(
         { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
         { status: 403 }
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       select: { businessType: true }
     })
 
-    if (business?.businessType === 'SALON') {
+    if ((business?.businessType === 'SALON' || business?.businessType === 'SERVICES')) {
       return NextResponse.json(
         { error: 'Products endpoint is not available for SALON businesses. Use /services endpoint instead.' },
         { status: 403 }

@@ -63,7 +63,7 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
     fetchRecentCustomers()
   }, [businessId])
   
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return isSalon ? 'No appointments' : 'No orders'

@@ -279,7 +279,7 @@ function getStatusMessage(status: string, orderType: string, language: string = 
  * Get email labels in the specified language, customized for business type
  */
 function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   const labels: Record<string, Record<string, string>> = {
     en: {
@@ -766,7 +766,7 @@ function createCustomerOrderPlacedEmail({
       </div>
       ` : ''}
 
-      ${orderData.type === 'DINE_IN' && orderData.deliveryTime && orderData.businessType === 'SALON' ? `
+      ${orderData.type === 'DINE_IN' && orderData.deliveryTime && (orderData.businessType === 'SALON' || orderData.businessType === 'SERVICES') ? `
       <!-- Appointment Date & Time -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.expectedDelivery}</h3>

@@ -267,7 +267,7 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     )
   }
 
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   const PLANS = getPlans(isSalon)
   const currentPlan = PLANS[subscription.plan]
   const isFreePlan = subscription.billingType === 'free'

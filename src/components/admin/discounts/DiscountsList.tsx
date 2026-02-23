@@ -148,7 +148,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <h1 className="text-xl font-semibold">Discounts</h1>
           </div>
           <p className="text-gray-600 mt-1">
-            {business.businessType === 'SALON' 
+            {(business.businessType === 'SALON' || business.businessType === 'SERVICES') 
               ? 'Manage your service discounts and their statuses'
               : 'Manage your product discounts and their statuses'}
           </p>
@@ -163,7 +163,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={business.businessType === 'SALON' ? 'Search by name...' : 'Search by name or SKU...'}
+              placeholder={(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Search by name...' : 'Search by name or SKU...'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
@@ -196,7 +196,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
 
             {/* Count */}
             <div className="text-sm text-gray-600">
-              {pagination.total} discounted {business.businessType === 'SALON' ? 'services' : 'products'}
+              {pagination.total} discounted {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'services' : 'products'}
             </div>
           </div>
         </div>
@@ -209,7 +209,7 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                {business.businessType !== 'SALON' && (
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
                 )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current</th>
@@ -223,19 +223,19 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
             <tbody className="bg-white divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={business.businessType === 'SALON' ? 7 : 8} className="px-4 py-8 text-center text-gray-500">Loading...</td>
+                  <td colSpan={(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 7 : 8} className="px-4 py-8 text-center text-gray-500">Loading...</td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={business.businessType === 'SALON' ? 7 : 8} className="px-4 py-8 text-center text-gray-500">
-                    No discounted {business.businessType === 'SALON' ? 'services' : 'products'} found
+                  <td colSpan={(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 7 : 8} className="px-4 py-8 text-center text-gray-500">
+                    No discounted {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'services' : 'products'} found
                   </td>
                 </tr>
               ) : (
                 products.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{p.name}</td>
-                    {business.businessType !== 'SALON' && (
+                    {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
                       <td className="px-4 py-3 text-sm text-gray-600">{p.sku || '-'}</td>
                     )}
                     <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(p.price)}</td>
@@ -249,12 +249,12 @@ export default function DiscountsList({ businessId }: DiscountsListProps) {
                     </td>
                     <td className="px-4 py-3 text-right text-sm">
                       <Link
-                        href={addParams(business.businessType === 'SALON' 
+                        href={addParams((business.businessType === 'SALON' || business.businessType === 'SERVICES') 
                           ? `/admin/stores/${businessId}/services/${p.id}`
                           : `/admin/stores/${businessId}/products/${p.id}`
                         )}
                         className="inline-flex items-center px-2 py-1 text-teal-700 hover:text-teal-900"
-                        title={business.businessType === 'SALON' ? 'View service' : 'View product'}
+                        title={(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'View service' : 'View product'}
                       >
                         <Eye className="w-4 h-4" />
                       </Link>

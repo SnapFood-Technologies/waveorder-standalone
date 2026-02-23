@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       select: { businessType: true }
     })
 
-    if (businessCheck?.businessType === 'SALON') {
+    if ((businessCheck?.businessType === 'SALON' || businessCheck?.businessType === 'SERVICES')) {
       return NextResponse.json(
         { error: 'Orders endpoint is not available for SALON businesses. Use /appointments endpoint instead.' },
         { status: 403 }

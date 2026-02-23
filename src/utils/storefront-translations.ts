@@ -352,6 +352,16 @@ close: string
     companyName: string
     taxOffice: string
     enterValidTaxId: string
+
+    // Service request form (SERVICES business type)
+    requestQuote: string
+    requestReceived: string
+    submitRequest: string
+    somethingWentWrong: string
+    requestFormIAm: string
+    requestFormPerson: string
+    requestFormCompany: string
+    requestFormPreferredContact: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -707,7 +717,17 @@ canBeAdded: "more can be added to cart",
     taxIdDigitsCount: "9 digits ({count}/9)",
     companyName: "Company Name",
     taxOffice: "Tax Office (ΔΟΥ)",
-    enterValidTaxId: "Please enter a valid Tax ID (9 digits)"
+    enterValidTaxId: "Please enter a valid Tax ID (9 digits)",
+
+    // Service request form (SERVICES)
+    requestQuote: "Request a quote",
+    requestReceived: "We've received your request and will contact you soon.",
+    submitRequest: "Submit request",
+    somethingWentWrong: "Something went wrong",
+    requestFormIAm: "I am",
+    requestFormPerson: "Person",
+    requestFormCompany: "Company",
+    requestFormPreferredContact: "Preferred contact",
 
   }
   
@@ -1059,7 +1079,17 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     taxIdDigitsCount: "9 shifra ({count}/9)",
     companyName: "Emri i Kompanisë",
     taxOffice: "Zyra e Taksave (ΔΟΥ)",
-    enterValidTaxId: "Ju lutem shkruani një numër taksë të vlefshëm (9 shifra)"
+    enterValidTaxId: "Ju lutem shkruani një numër taksë të vlefshëm (9 shifra)",
+
+    // Service request form (SERVICES)
+    requestQuote: "Kërko një ofertë",
+    requestReceived: "Kemi marrë kërkesën tuaj dhe do të ju kontaktojmë së shpejti.",
+    submitRequest: "Dërgo kërkesën",
+    somethingWentWrong: "Diçka shkoi keq",
+    requestFormIAm: "Unë jam",
+    requestFormPerson: "Person",
+    requestFormCompany: "Kompani",
+    requestFormPreferredContact: "Kontakt i preferuar",
 
   }
 
@@ -1411,7 +1441,17 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     taxIdDigitsCount: "9 dígitos ({count}/9)",
     companyName: "Nombre de la Empresa",
     taxOffice: "Oficina Fiscal (ΔΟΥ)",
-    enterValidTaxId: "Por favor ingrese un ID fiscal válido (9 dígitos)"
+    enterValidTaxId: "Por favor ingrese un ID fiscal válido (9 dígitos)",
+
+    // Service request form (SERVICES)
+    requestQuote: "Solicitar presupuesto",
+    requestReceived: "Hemos recibido su solicitud y nos pondremos en contacto pronto.",
+    submitRequest: "Enviar solicitud",
+    somethingWentWrong: "Algo salió mal",
+    requestFormIAm: "Soy",
+    requestFormPerson: "Persona",
+    requestFormCompany: "Empresa",
+    requestFormPreferredContact: "Contacto preferido",
 
   }
 
@@ -1765,7 +1805,17 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     taxIdDigitsCount: "9 ψηφία ({count}/9)",
     companyName: "Επωνυμία Εταιρείας",
     taxOffice: "ΔΟΥ (Δημόσια Οικονομική Υπηρεσία)",
-    enterValidTaxId: "Παρακαλώ εισάγετε έγκυρο ΑΦΜ (9 ψηφία)"
+    enterValidTaxId: "Παρακαλώ εισάγετε έγκυρο ΑΦΜ (9 ψηφία)",
+
+    // Service request form (SERVICES)
+    requestQuote: "Ζητήστε προσφορά",
+    requestReceived: "Λάβαμε το αίτημά σας και θα επικοινωνήσουμε σύντομα.",
+    submitRequest: "Υποβολή αιτήματος",
+    somethingWentWrong: "Κάτι πήγε στραβά",
+    requestFormIAm: "Είμαι",
+    requestFormPerson: "Πρόσωπο",
+    requestFormCompany: "Εταιρεία",
+    requestFormPreferredContact: "Προτιμώμενη επικοινωνία",
 
   }
 

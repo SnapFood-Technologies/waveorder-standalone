@@ -62,7 +62,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     pages: 0
   })
   const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
-  const isSalon = business.businessType === 'SALON'
+  const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
 
   // Fetch business data for currency
   useEffect(() => {

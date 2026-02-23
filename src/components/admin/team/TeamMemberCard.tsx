@@ -198,7 +198,7 @@ export function TeamMemberCard({
                         {getRoleDisplayName(role)}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {businessType === 'SALON' 
+                        {(businessType === 'SALON' || businessType === 'SERVICES') 
                           ? role === 'MANAGER' 
                             ? 'Can manage services, appointments, and invite staff'
                             : 'Can view and manage appointments and services'
@@ -246,7 +246,7 @@ export function TeamMemberCard({
               </p>
               <ul className="text-sm text-red-700 mt-2 list-disc list-inside">
                 <li>Business dashboard</li>
-                <li>{businessType === 'SALON' ? 'Appointments and services' : 'Orders and products'}</li>
+                <li>{(businessType === 'SALON' || businessType === 'SERVICES') ? 'Appointments and services' : 'Orders and products'}</li>
                 <li>All business data</li>
               </ul>
             </div>

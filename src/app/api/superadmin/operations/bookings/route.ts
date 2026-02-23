@@ -67,9 +67,9 @@ export async function GET(request: NextRequest) {
 
     // Build business type filter - only SALON businesses have appointments
     const businessFilter: any = {
-      businessType: 'SALON'
+      businessType: { in: ['SALON', 'SERVICES'] }
     }
-    if (businessType !== 'all' && businessType !== 'SALON') {
+    if (businessType !== 'all' && businessType !== 'SALON' && businessType !== 'SERVICES') {
       // If filtering for non-salon, return empty results
       return NextResponse.json({
         overview: {

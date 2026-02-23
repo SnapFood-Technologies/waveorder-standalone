@@ -22,7 +22,7 @@ export async function GET(
       select: { businessType: true, staffAvailability: true }
     })
 
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       return NextResponse.json({ message: 'This endpoint is only for salon businesses' }, { status: 403 })
     }
 
@@ -56,7 +56,7 @@ export async function PUT(
       select: { businessType: true, staffAvailability: true }
     })
 
-    if (business?.businessType !== 'SALON') {
+    if (business?.businessType !== 'SALON' && business?.businessType !== 'SERVICES') {
       return NextResponse.json({ message: 'This endpoint is only for salon businesses' }, { status: 403 })
     }
 

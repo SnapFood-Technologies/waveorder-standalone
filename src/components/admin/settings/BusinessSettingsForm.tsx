@@ -643,6 +643,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     { value: 'RETAIL', label: 'Retail Store' },
     { value: 'GROCERY', label: 'Grocery Store' },
     { value: 'SALON', label: 'Salon & Beauty' },
+    { value: 'SERVICES', label: 'Professional Services' },
     { value: 'OTHER', label: 'Other' }
   ]
 
@@ -1086,7 +1087,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     </optgroup>
   </select>
   <p className="text-xs text-gray-500 mt-1">
-    This timezone will be used for business hours and {settings.businessType === 'SALON' ? 'appointment' : 'order'} timestamps
+    This timezone will be used for business hours and {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') ? 'appointment' : 'order'} timestamps
   </p>
 </div>
 
@@ -1105,7 +1106,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   <option value="12">12-hour format (2:30 PM)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {settings.businessType === 'SALON' 
+                  {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
                     ? 'This format will be used for appointment time selection on your storefront'
                     : 'This format will be used for pickup and delivery time selection on your storefront'}
                 </p>
@@ -1163,7 +1164,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     businessData={settings}
   />
   <p className="text-xs text-gray-500 mt-1">
-    {settings.businessType === 'SALON' 
+    {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
       ? 'Required for customer directions and location display'
       : 'Required for delivery zones and customer directions'}
   </p>
@@ -1356,7 +1357,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
           </div>
 
           {/* Uncategorized Category Name Override - Only show for non-salon businesses */}
-          {settings.businessType !== 'SALON' && (
+          {settings.businessType !== 'SALON' && settings.businessType !== 'SERVICES' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
                 <Tag className="w-5 h-5 text-teal-600 mr-2" />
@@ -1409,7 +1410,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               Store Status & Closure
             </h2>
             <p className="text-sm text-gray-600 mb-3">
-              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new {settings.businessType === 'SALON' ? 'appointments' : 'orders'}.
+              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') ? 'appointments' : 'orders'}.
             </p>
 
             <div className="space-y-6">
@@ -1555,7 +1556,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   value={settings.seoKeywords || ''}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                  placeholder={settings.businessType === 'SALON' 
+                  placeholder={(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
                     ? "salon, beauty, appointments, local business (comma-separated)"
                     : settings.businessType === 'RETAIL'
                     ? "retail, shop, products, local business (comma-separated)"
@@ -1614,7 +1615,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.seoKeywordsAl || ''}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                      placeholder={settings.businessType === 'SALON' 
+                      placeholder={(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
                         ? 'sallon, bukuri, takime, biznes lokal (të ndara me presje)'
                         : settings.businessType === 'RETAIL'
                         ? 'shitje, dyqan, produkte, biznes lokal (të ndara me presje)'
@@ -1675,7 +1676,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       value={settings.seoKeywordsEl || ''}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                      placeholder={settings.businessType === 'SALON' 
+                      placeholder={(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
                         ? "κομμωτήριο, ομορφιά, ραντεβού, τοπική επιχείρηση (χωρισμένα με κόμμα)"
                         : settings.businessType === 'RETAIL'
                         ? "καταστήματα, προϊόντα, τοπική επιχείρηση (χωρισμένα με κόμμα)"
@@ -1788,7 +1789,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                       }}
                       rows={4}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm font-mono"
-                      placeholder={settings.businessType === 'SALON' 
+                      placeholder={(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
                         ? '{"additionalType": "BeautySalon", "service": "Haircut"}'
                         : settings.businessType === 'RETAIL'
                         ? '{"additionalType": "Store", "product": "Clothing"}'
