@@ -24,6 +24,7 @@ interface SyncAnalysis {
   issues: SyncIssue[]
   stripeSubscriptions: Array<{
     id: string
+    subscriptionItemId: string | null
     status: string
     plan: string
     priceId: string
@@ -378,15 +379,17 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
     throw err
   }
 
-  // Map Stripe subs for the response (always use mapStripePlanToDb for consistency)
+  // Map Stripe subs for the response (include subscription + item IDs for comparison with DB)
   result.stripeSubscriptions = stripeSubs.map(s => {
-    const priceId = s.items.data[0]?.price?.id
+    const firstItem = s.items.data[0]
+    const priceId = firstItem?.price?.id
     const plan = mapStripePlanToDb(priceId)
-    const unitAmount = s.items.data[0]?.price?.unit_amount || 0
+    const unitAmount = firstItem?.price?.unit_amount || 0
     const billingLabel = unitAmount === 0 ? `${plan} (Free)` : plan
 
     return {
       id: s.id,
+      subscriptionItemId: firstItem?.id || null,
       status: s.status,
       plan,
       displayPlan: billingLabel,

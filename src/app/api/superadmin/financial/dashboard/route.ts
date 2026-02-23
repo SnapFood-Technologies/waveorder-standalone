@@ -18,18 +18,26 @@ export async function GET() {
 
     const errors: string[] = []
 
-    // Build set of known WaveOrder customer IDs from DB (all non-test businesses, including deactivated)
-    // Revenue must include past payments from businesses that were later deactivated
+    // Build set of known WaveOrder customer IDs and map to name/email for display (e.g. invoice payments often have no billing_details)
     const waveOrderUsers = await prisma.user.findMany({
       where: {
         stripeCustomerId: { not: null },
         businesses: { some: { business: { testMode: { not: true } } } },
       },
-      select: { stripeCustomerId: true },
+      select: { stripeCustomerId: true, name: true, email: true },
     })
     const knownCustomerIds = new Set(
       waveOrderUsers.map(u => u.stripeCustomerId).filter(Boolean) as string[]
     )
+    const customerIdToInfo = new Map<string, { name: string | null; email: string }>()
+    waveOrderUsers.forEach(u => {
+      if (u.stripeCustomerId) {
+        customerIdToInfo.set(u.stripeCustomerId, {
+          name: u.name || null,
+          email: u.email,
+        })
+      }
+    })
 
     // Fetch Stripe data with auto-pagination + DB data in parallel
     const [
@@ -170,14 +178,18 @@ export async function GET() {
           currency: t.currency, status: t.status,
           date: t.stripeCreatedAt.toISOString(),
         }))
-      : succeededCharges.slice(0, 5).map(c => ({
-          id: c.id, type: 'charge',
-          customerEmail: c.billing_details?.email || null,
-          customerName: c.billing_details?.name || null,
-          description: c.description || 'Payment',
-          amount: c.amount / 100, currency: c.currency, status: c.status,
-          date: new Date(c.created * 1000).toISOString(),
-        }))
+      : succeededCharges.slice(0, 5).map(c => {
+          const custId = typeof c.customer === 'string' ? c.customer : null
+          const dbInfo = custId ? customerIdToInfo.get(custId) : null
+          return {
+            id: c.id, type: 'charge',
+            customerEmail: c.billing_details?.email || dbInfo?.email || null,
+            customerName: c.billing_details?.name || dbInfo?.name || null,
+            description: c.description || 'Payment',
+            amount: c.amount / 100, currency: c.currency, status: c.status,
+            date: new Date(c.created * 1000).toISOString(),
+          }
+        })
 
     return NextResponse.json({
       revenue: {

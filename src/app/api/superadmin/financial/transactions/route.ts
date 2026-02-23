@@ -125,12 +125,17 @@ async function getTransactionsFromStripe(
     },
   })
 
-  // Map customer ID → plan for enriching transactions
+  // Map customer ID → plan and customer ID → name/email (for when Stripe charge has no billing_details, e.g. invoice payments)
   const customerPlanMap = new Map<string, string>()
+  const customerInfoMap = new Map<string, { name: string | null; email: string }>()
   for (const u of waveOrderUsers) {
     if (u.stripeCustomerId) {
       const plan = u.businesses[0]?.business?.subscriptionPlan || null
       if (plan) customerPlanMap.set(u.stripeCustomerId, plan)
+      customerInfoMap.set(u.stripeCustomerId, {
+        name: u.name || null,
+        email: u.email,
+      })
     }
   }
 
@@ -178,6 +183,9 @@ async function getTransactionsFromStripe(
     const isRefunded = charge.refunded || (charge.amount_refunded && charge.amount_refunded > 0)
     const custId = typeof charge.customer === 'string' ? charge.customer : null
     const plan = custId ? (customerPlanMap.get(custId) || null) : null
+    const dbInfo = custId ? customerInfoMap.get(custId) : null
+    const customerEmail = charge.billing_details?.email || dbInfo?.email || null
+    const customerName = charge.billing_details?.name || dbInfo?.name || null
 
     transactions.push({
       id: charge.id,
@@ -185,8 +193,8 @@ async function getTransactionsFromStripe(
       status: isRefunded ? 'refunded' : charge.status,
       amount: charge.amount / 100,
       currency: charge.currency,
-      customerEmail: charge.billing_details?.email || null,
-      customerName: charge.billing_details?.name || null,
+      customerEmail,
+      customerName,
       description: charge.description || 'Subscription payment',
       plan,
       billingType: null,
@@ -201,8 +209,8 @@ async function getTransactionsFromStripe(
         status: 'succeeded',
         amount: -(charge.amount_refunded / 100),
         currency: charge.currency,
-        customerEmail: charge.billing_details?.email || null,
-        customerName: charge.billing_details?.name || null,
+        customerEmail,
+        customerName,
         description: `Refund for ${charge.id}`,
         plan,
         billingType: null,

@@ -4554,6 +4554,38 @@ function StripeSyncSection({ businessId, businessName }: { businessId: string; b
             </div>
           </div>
 
+          {/* Subscription IDs — verify DB stripeId matches Stripe */}
+          {(analysis.stripeSubscriptions?.length > 0 || analysis.dbSubscription) && (
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <p className="text-xs text-blue-600 font-medium mb-2">DB subscription record</p>
+                {analysis.dbSubscription ? (
+                  <>
+                    <p className="text-xs text-gray-500 font-mono break-all">Record ID: {analysis.dbSubscription.id}</p>
+                    <p className="text-xs text-gray-500 font-mono break-all mt-1">stripeId: {analysis.dbSubscription.stripeId}</p>
+                    <p className="text-xs text-gray-500 font-mono break-all mt-1">priceId: {analysis.dbSubscription.priceId}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">No subscription record in DB</p>
+                )}
+              </div>
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
+                <p className="text-xs text-purple-600 font-medium mb-2">Stripe subscription</p>
+                {analysis.stripeSubscriptions?.length > 0 ? (
+                  <>
+                    <p className="text-xs text-gray-500 font-mono break-all">Subscription ID: {analysis.stripeSubscriptions[0].id}</p>
+                    {analysis.stripeSubscriptions[0].subscriptionItemId && (
+                      <p className="text-xs text-gray-500 font-mono break-all mt-1">Item ID: {analysis.stripeSubscriptions[0].subscriptionItemId}</p>
+                    )}
+                    <p className="text-xs text-gray-500 font-mono break-all mt-1">priceId: {analysis.stripeSubscriptions[0].priceId}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">No subscriptions in Stripe</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Issues List */}
           {analysis.issues?.length > 0 && (
             <div className="border border-red-200 rounded-lg overflow-hidden">
