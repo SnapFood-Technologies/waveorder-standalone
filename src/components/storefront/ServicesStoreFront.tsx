@@ -343,7 +343,7 @@ function BookingSuccessMessage({
   )
 }
 
-export default function SalonStoreFront({ storeData }: { storeData: StoreData }) {
+export default function ServicesStoreFront({ storeData }: { storeData: StoreData }) {
   const searchParams = useSearchParams()
   
   // Track service event (view or add_to_booking) - defined inside component to access storeData
