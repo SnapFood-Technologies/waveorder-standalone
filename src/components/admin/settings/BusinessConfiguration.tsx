@@ -824,7 +824,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
-        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && business.businessType !== 'SERVICES' && (
+        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
           <DeliveryZonesManagement businessId={businessId} />
         )}
 
