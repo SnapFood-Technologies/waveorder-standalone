@@ -155,6 +155,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
     const wasOnTrial = !!(user as any).trialEndsAt
     const isTrialing = sub.status === 'trialing'
     const isReplacingExistingSub = !!user.subscription && user.subscription.stripeId !== sub.id
+    const oldStripeSubId = isReplacingExistingSub ? user.subscription!.stripeId : null
 
     await prisma.$transaction(async (tx) => {
       // Create or update subscription record
@@ -227,6 +228,17 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       }
     })
 
+    // When switching to a new plan (e.g. downgrade to Starter), cancel the old Stripe subscription so we don't have two active
+    if (oldStripeSubId) {
+      try {
+        await cancelSubscriptionImmediately(oldStripeSubId)
+        console.log(`✅ Canceled previous Stripe subscription ${oldStripeSubId} (replaced by ${sub.id})`)
+      } catch (cancelErr) {
+        console.error('❌ Failed to cancel previous Stripe subscription:', cancelErr)
+        // Don't throw - DB is already updated; Stripe may still show old sub until manual cleanup
+      }
+    }
+
     // 📧 SEND EMAIL
     const planData = PLANS[plan]
     const oldPlanLevel = PLAN_HIERARCHY[oldPlan as PlanId] || 1
@@ -250,6 +262,23 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       } catch (emailError) {
         console.error('❌ Failed to send upgrade email:', emailError)
         // Don't fail the webhook if email fails
+      }
+    } else if (newPlanLevel < oldPlanLevel) {
+      try {
+        const isAnnual = priceId === planData.annualPriceId
+        await sendSubscriptionChangeEmail({
+          to: user.email,
+          name: user.name || 'there',
+          changeType: 'downgraded',
+          oldPlan: oldPlan as 'STARTER' | 'PRO' | 'BUSINESS',
+          newPlan: plan as 'STARTER' | 'PRO' | 'BUSINESS',
+          billingInterval: isAnnual ? 'annual' : 'monthly',
+          // @ts-ignore
+          nextBillingDate: new Date(sub.current_period_end * 1000)
+        })
+        console.log('✅ Sent downgrade email to:', user.email)
+      } catch (emailError) {
+        console.error('❌ Failed to send downgrade email:', emailError)
       }
     }
 
