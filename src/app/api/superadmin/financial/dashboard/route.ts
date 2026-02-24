@@ -169,6 +169,39 @@ export async function GET() {
 
     const monthlyRevenue = buildMonthlyRevenue(succeededCharges, 6)
 
+    // Inactive former paying: known customers with past charges but no active paid subscription
+    const activePaidCustomerIds = new Set(
+      activePaid.map(s => (typeof s.customer === 'string' ? s.customer : null)).filter(Boolean) as string[]
+    )
+    const inactiveFormerPaying: Array<{
+      customerId: string
+      customerName: string | null
+      customerEmail: string
+      lastPaymentDate: string
+      lastPaymentAmount: number
+      totalPaidLast12Months: number
+    }> = []
+    for (const custId of knownCustomerIds) {
+      if (activePaidCustomerIds.has(custId)) continue
+      const custCharges = succeededCharges.filter(
+        c => (typeof c.customer === 'string' ? c.customer : null) === custId
+      )
+      if (custCharges.length === 0) continue
+      const sorted = [...custCharges].sort((a, b) => b.created - a.created)
+      const last = sorted[0]
+      const totalPaid = custCharges.reduce((sum, c) => sum + (c.amount - (c.amount_refunded || 0)), 0) / 100
+      const info = customerIdToInfo.get(custId)
+      inactiveFormerPaying.push({
+        customerId: custId,
+        customerName: info?.name ?? null,
+        customerEmail: info?.email ?? (last.billing_details?.email as string) ?? '',
+        lastPaymentDate: new Date(last.created * 1000).toISOString(),
+        lastPaymentAmount: (last.amount - (last.amount_refunded || 0)) / 100,
+        totalPaidLast12Months: Math.round(totalPaid * 100) / 100,
+      })
+    }
+    inactiveFormerPaying.sort((a, b) => new Date(b.lastPaymentDate).getTime() - new Date(a.lastPaymentDate).getTime())
+
     // DB-based customer breakdown (single source of truth so numbers add up)
     const activeBusinesses = dbBusinesses.filter(b => b.isActive)
     const dbTrialing = activeBusinesses.filter(b =>
@@ -219,6 +252,16 @@ export async function GET() {
           }
         })
 
+    // Payment count breakdown: active vs inactive businesses (last 12 months)
+    const paymentsFromActive = succeededCharges.filter(c => {
+      const id = typeof c.customer === 'string' ? c.customer : null
+      return id != null && activePaidCustomerIds.has(id)
+    }).length
+    const paymentsFromInactive = succeededCharges.filter(c => {
+      const id = typeof c.customer === 'string' ? c.customer : null
+      return id != null && knownCustomerIds.has(id) && !activePaidCustomerIds.has(id)
+    }).length
+
     return NextResponse.json({
       revenue: {
         total: netRevenue,
@@ -227,6 +270,9 @@ export async function GET() {
         thisMonth: thisMonthRevenue,
         lastMonth: lastMonthRevenue,
         monthOverMonthChange: Math.round(monthOverMonthChange * 10) / 10,
+        paymentsLast12Months: succeededCharges.length,
+        paymentsFromActive,
+        paymentsFromInactive,
       },
       mrr: Math.round(mrr * 100) / 100,
       arr: Math.round(arr * 100) / 100,
@@ -249,6 +295,7 @@ export async function GET() {
       },
       monthlyRevenue,
       recentTransactions,
+      inactiveFormerPaying,
       currency: 'usd',
       meta: {
         totalStripeSubscriptions: rawSubscriptions.length,

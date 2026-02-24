@@ -194,6 +194,7 @@ export default function WavemindFinancialPage() {
               <p className="text-2xl font-bold text-purple-600">{formatCurrency(data.metrics.arr)}</p>
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">Paying customers and MRR/ARR match the Financial Dashboard (Stripe).</p>
 
           {/* Alerts */}
           {data.alerts.length > 0 && (

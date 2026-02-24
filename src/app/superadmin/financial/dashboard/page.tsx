@@ -17,6 +17,9 @@ interface DashboardData {
     thisMonth: number
     lastMonth: number
     monthOverMonthChange: number
+    paymentsLast12Months?: number
+    paymentsFromActive?: number
+    paymentsFromInactive?: number
   }
   mrr: number
   arr: number
@@ -50,6 +53,14 @@ interface DashboardData {
     date: string
     plan: string | null
     billingType: string | null
+  }>
+  inactiveFormerPaying?: Array<{
+    customerId: string
+    customerName: string | null
+    customerEmail: string
+    lastPaymentDate: string
+    lastPaymentAmount: number
+    totalPaidLast12Months: number
   }>
   currency: string
   meta?: {
@@ -369,7 +380,11 @@ export default function FinancialDashboardPage() {
         <KPICard
           title="Total Revenue"
           value={fmt(data.revenue.totalCharges)}
-          subtitle={`${data.monthlyRevenue.reduce((s, m) => s + m.charges, 0)} payments (last 12 months)`}
+          subtitle={
+            data.revenue.paymentsLast12Months != null && data.revenue.paymentsFromInactive != null && data.revenue.paymentsFromInactive > 0
+              ? `${data.revenue.paymentsLast12Months} payments (last 12 months) — ${data.revenue.paymentsFromInactive} from inactive businesses`
+              : `${data.revenue.paymentsLast12Months ?? data.monthlyRevenue.reduce((s, m) => s + m.charges, 0)} payments (last 12 months)`
+          }
           icon={DollarSign}
           color="green"
         />
@@ -577,6 +592,45 @@ export default function FinancialDashboardPage() {
           <p className="text-sm text-gray-500 text-center py-8">No transactions recorded yet</p>
         )}
       </div>
+
+      {/* Inactive / Former Paying Customers */}
+      {data.inactiveFormerPaying && data.inactiveFormerPaying.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Former Paying Customers (Inactive)</h3>
+          <p className="text-sm text-gray-500 mb-4">Customers who paid in the last 12 months but no longer have an active paid subscription</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                  <th className="pb-3 pr-4">Customer</th>
+                  <th className="pb-3 pr-4 text-right">Last payment</th>
+                  <th className="pb-3 pr-4 text-right">Last amount</th>
+                  <th className="pb-3 text-right">Total paid (12 mo)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {data.inactiveFormerPaying.map((row) => (
+                  <tr key={row.customerId} className="hover:bg-gray-50">
+                    <td className="py-3 pr-4">
+                      <p className="font-medium text-gray-900">{row.customerName || 'Unknown'}</p>
+                      <p className="text-xs text-gray-500">{row.customerEmail}</p>
+                    </td>
+                    <td className="py-3 pr-4 text-right text-gray-600">
+                      {new Date(row.lastPaymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-medium text-gray-900">
+                      ${row.lastPaymentAmount.toFixed(2)}
+                    </td>
+                    <td className="py-3 text-right font-medium text-gray-900">
+                      ${row.totalPaidLast12Months.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Global Sync Modal */}
       {showSyncModal && (

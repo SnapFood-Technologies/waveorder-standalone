@@ -1,6 +1,6 @@
 // src/app/api/superadmin/wavemind/insights/route.ts
-// Wavemind AI Engine - Financial Insights
-import { NextResponse } from 'next/server'
+// Wavemind AI Engine - Financial Insights (uses Financial Dashboard as source of truth for MRR/paying count)
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -19,7 +19,7 @@ const PLAN_PRICES = {
   BUSINESS: { monthly: 79, yearly: 66 }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -36,7 +36,28 @@ export async function GET() {
 
     const now = new Date()
 
-    // Gather financial data for AI analysis
+    // Use Financial Dashboard as single source of truth for MRR and paying customer count (Stripe-based)
+    const origin = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    const dashboardUrl = `${origin.replace(/\/$/, '')}/api/superadmin/financial/dashboard`
+    let dashboardMetrics: { payingCustomers: number; mrr: number; arr: number } | null = null
+    try {
+      const dashboardRes = await fetch(dashboardUrl, {
+        headers: { cookie: request.headers.get('cookie') || '' },
+        cache: 'no-store'
+      })
+      if (dashboardRes.ok) {
+        const dashboardData = await dashboardRes.json()
+        dashboardMetrics = {
+          payingCustomers: dashboardData.subscriptions?.paidActive ?? 0,
+          mrr: dashboardData.mrr ?? 0,
+          arr: dashboardData.arr ?? 0
+        }
+      }
+    } catch (_) {
+      // ignore; will fall back to DB-based metrics
+    }
+
+    // Gather financial data for AI analysis (trials, free, activity — dashboard supplies paying/MRR)
     const businesses = await prisma.business.findMany({
       where: {
         isActive: true,
@@ -125,27 +146,30 @@ export async function GET() {
       }
     })
 
-    // Calculate summary metrics
+    // Calculate summary metrics (paying/MRR/ARR from dashboard when available so numbers match Financial Dashboard)
     const totalBusinesses = processedData.length
     const activeTrials = processedData.filter(b => b.billingType === 'trial')
     const freeBusinesses = processedData.filter(b => b.billingType === 'free')
-    const payingBusinesses = processedData.filter(b => b.billingType === 'monthly' || b.billingType === 'yearly')
-    
-    const mrr = payingBusinesses.reduce((sum, b) => sum + b.monthlyRevenue, 0)
-    
-    const trialsExpiringSoon = activeTrials.filter(b => 
+    const payingFromDb = processedData.filter(b => b.billingType === 'monthly' || b.billingType === 'yearly')
+    const mrrFromDb = payingFromDb.reduce((sum, b) => sum + b.monthlyRevenue, 0)
+
+    const payingCustomers = dashboardMetrics ? dashboardMetrics.payingCustomers : payingFromDb.length
+    const mrr = dashboardMetrics ? dashboardMetrics.mrr : mrrFromDb
+    const arr = dashboardMetrics ? dashboardMetrics.arr : mrrFromDb * 12
+
+    const trialsExpiringSoon = activeTrials.filter(b =>
       b.trialDaysRemaining !== null && b.trialDaysRemaining <= 7
     )
 
-    // Build context for AI
+    // Build context for AI (use Stripe-based paying/MRR/ARR so insights match dashboard)
     const dataContext = {
       overview: {
         totalBusinesses,
         activeTrials: activeTrials.length,
         freeBusinesses: freeBusinesses.length,
-        payingCustomers: payingBusinesses.length,
+        payingCustomers,
         mrr,
-        arr: mrr * 12
+        arr
       },
       trials: {
         active: activeTrials.length,
@@ -204,7 +228,7 @@ WaveOrder earns subscription revenue from businesses:
 - Trials: 14-day free trial of paid plans
 
 ## Important Data Notes
-- MRR/ARR = WaveOrder's subscription revenue (in USD)
+- payingCustomers, MRR, and ARR are from the Financial Dashboard (Stripe): they count only active paid subscriptions. Use these numbers as the source of truth.
 - "completedOrderRevenue" = Revenue earned BY our customers' businesses (NOT WaveOrder's revenue)
 - Each business may use different currencies (USD, ALL, EUR, etc.) - don't sum revenues across businesses
 - Completed orders = DELIVERED or PICKED_UP orders that are PAID
@@ -260,10 +284,10 @@ Today's date: ${now.toISOString().split('T')[0]}`
       })
     }
 
-    if (payingBusinesses.length > 0) {
+    if (payingCustomers > 0) {
       alerts.push({
         type: 'success',
-        message: `${payingBusinesses.length} paying customer${payingBusinesses.length > 1 ? 's' : ''} generating $${mrr}/month`
+        message: `${payingCustomers} paying customer${payingCustomers > 1 ? 's' : ''} generating $${Math.round(mrr)}/month`
       })
     }
 
