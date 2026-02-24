@@ -117,6 +117,7 @@ interface BusinessDetails {
     totalRevenue: number
     totalCustomers: number
     totalProducts: number
+    totalServiceRequests?: number // SERVICES only
     productsWithoutPhotos?: number
     productsWithZeroPrice?: number
     productsOutOfStock?: number
@@ -684,24 +685,62 @@ export default function BusinessDetailsPage() {
 
           {/* Business Statistics */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Business Statistics</h2>
-              <Link
-                href={`/superadmin/businesses/${businessId}/${(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointments' : 'orders'}`}
-                className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
-              >
-                <ShoppingBag className="w-4 h-4 mr-1" />
-                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Stats' : 'Order Stats'}
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-                <p className="text-xs text-gray-500">
-                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Total Appointments' : 'Total Orders'}
-                </p>
+              <div className="flex flex-wrap gap-2">
+                {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && (
+                  <Link
+                    href={`/superadmin/businesses/${businessId}/appointments`}
+                    className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+                  >
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {business.businessType === 'SERVICES' ? 'Scheduled session stats' : 'Appointment Stats'}
+                  </Link>
+                )}
+                {business.businessType === 'SERVICES' && (
+                  <Link
+                    href={`/superadmin/businesses/${businessId}/service-requests`}
+                    className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1" />
+                    Service request stats
+                  </Link>
+                )}
+                {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
+                  <Link
+                    href={`/superadmin/businesses/${businessId}/orders`}
+                    className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+                  >
+                    <ShoppingBag className="w-4 h-4 mr-1" />
+                    Order Stats
+                  </Link>
+                )}
               </div>
+            </div>
+            <div className={`grid grid-cols-2 gap-4 ${business.businessType === 'SERVICES' ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
+              {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <Calendar className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
+                  <p className="text-xs text-gray-500">
+                    {business.businessType === 'SERVICES' ? 'Scheduled sessions' : 'Total Appointments'}
+                  </p>
+                </div>
+              )}
+              {business.businessType === 'SERVICES' && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <MessageSquare className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-900">{business.stats.totalServiceRequests ?? 0}</p>
+                  <p className="text-xs text-gray-500">Service requests</p>
+                </div>
+              )}
+              {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <Package className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-2xl font-bold text-gray-900">{business.stats.totalOrders}</p>
+                  <p className="text-xs text-gray-500">Total Orders</p>
+                </div>
+              )}
               <div className="bg-gray-50 rounded-lg p-4 text-center">
                 <Users className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-gray-900">{business.stats.totalCustomers || 0}</p>
@@ -1523,11 +1562,15 @@ export default function BusinessDetailsPage() {
           {/* Remember Customer Settings */}
           <RememberCustomerSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* Mobile Stacked Orders Settings */}
-          <MobileStackedOrdersSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Mobile Stacked Orders Settings - hidden for SALON and SERVICES (orders UI not used) */}
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
+            <MobileStackedOrdersSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
-          {/* Completed Orders Page Settings */}
-          <CompletedOrdersPageSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          {/* Completed Orders Page Settings - hidden for SALON and SERVICES (orders UI not used) */}
+          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
+            <CompletedOrdersPageSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
 
           {/* Custom Domain Section - Only show for BUSINESS plan */}
           {business.subscriptionPlan === 'BUSINESS' && (
@@ -1940,9 +1983,11 @@ function WhatsAppSettingsSection({
       
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">Direct {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment' : 'Order'} Notifications (Twilio)</p>
+          <p className="text-sm font-medium text-gray-900">
+            Direct {business.businessType === 'SERVICES' ? 'Service request & appointment' : (business.businessType === 'SALON' ? 'Appointment' : 'Order')} Notifications (Twilio)
+          </p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'appointments' : 'orders'} are sent directly to the business via Twilio WhatsApp API. 
+            When enabled, {business.businessType === 'SERVICES' ? 'service requests and appointments' : (business.businessType === 'SALON' ? 'appointments' : 'orders')} are sent directly to the business via Twilio WhatsApp API.
             When disabled, customers use the traditional wa.me link.
           </p>
         </div>
@@ -1964,7 +2009,7 @@ function WhatsAppSettingsSection({
       {directNotifications && (
         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700">
-            <span className="font-medium">Active:</span> {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointments' : 'Orders'} will be sent automatically to {business.whatsappNumber} via Twilio.
+            <span className="font-medium">Active:</span> {business.businessType === 'SERVICES' ? 'Service requests and appointments' : (business.businessType === 'SALON' ? 'Appointments' : 'Orders')} will be sent automatically to {business.whatsappNumber} via Twilio.
           </p>
         </div>
       )}

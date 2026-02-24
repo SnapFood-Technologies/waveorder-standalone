@@ -13,7 +13,7 @@ export default async function StaffAvailabilityPage({ params }: StaffAvailabilit
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['SALON']}
+      allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/dashboard`}
     >
       <SubscriptionGuard requiredPlan="BUSINESS">

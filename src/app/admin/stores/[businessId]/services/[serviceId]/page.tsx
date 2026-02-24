@@ -11,7 +11,7 @@ export default async function ServiceFormPage({ params }: ServiceFormPageProps) 
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['SALON']}
+      allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/products`}
     >
       <ServiceForm businessId={businessId} serviceId={serviceId} />

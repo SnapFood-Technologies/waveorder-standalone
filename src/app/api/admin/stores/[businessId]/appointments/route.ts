@@ -137,7 +137,8 @@ export async function GET(
         total,
         pages: Math.ceil(total / limit)
       },
-      currency: business?.currency || 'USD'
+      currency: business?.currency || 'USD',
+      businessType: business?.businessType || 'SALON'
     })
 
   } catch (error) {

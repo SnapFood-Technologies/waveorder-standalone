@@ -13,7 +13,7 @@ export default async function AppointmentsCalendarPage({ params }: AppointmentsC
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['SALON']}
+      allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/orders`}
     >
       <SubscriptionGuard requiredPlan="PRO">

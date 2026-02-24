@@ -272,7 +272,7 @@ export function SuperAdminAnalytics() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-white">Operations Analytics</h3>
-              <p className="text-sm text-teal-100">View orders/appointments, reservations, bookings, and search analytics across all businesses</p>
+              <p className="text-sm text-teal-100">View orders, appointments, service requests, reservations, bookings, and search analytics across all businesses</p>
             </div>
           </div>
           <ArrowRight className="w-6 h-6 text-white" />
@@ -404,7 +404,7 @@ export function SuperAdminAnalytics() {
                 <BarChart3 className="w-4 h-4 text-pink-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">Conversion Rate</p>
-                  <p className="text-xs text-gray-600 mt-1">Percentage of storefront visits that result in orders/appointments</p>
+                  <p className="text-xs text-gray-600 mt-1">Percentage of storefront visits that result in orders, appointments, or service requests</p>
                 </div>
               </div>
             </div>
@@ -424,14 +424,14 @@ export function SuperAdminAnalytics() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <p className="text-sm font-semibold text-gray-900">Active</p>
                 </div>
-                <p className="text-xs text-gray-700">Business is live and visible to customers. Can receive orders/appointments and operate normally.</p>
+                <p className="text-xs text-gray-700">Business is live and visible to customers. Can receive orders, appointments, and service requests and operate normally.</p>
               </div>
               <div className="p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <XCircle className="w-5 h-5 text-red-600" />
                   <p className="text-sm font-semibold text-gray-900">Inactive</p>
                 </div>
-                <p className="text-xs text-gray-700">Business has been deactivated. Not visible to customers and cannot receive orders/appointments. Data is preserved and can be reactivated.</p>
+                <p className="text-xs text-gray-700">Business has been deactivated. Not visible to customers and cannot receive orders, appointments, or service requests. Data is preserved and can be reactivated.</p>
               </div>
               <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-r-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -504,7 +504,7 @@ export function SuperAdminAnalytics() {
                   <Calendar className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Affected Metrics</p>
                 </div>
-                <p className="text-xs text-gray-700">Business Growth, User Growth, Orders/Appointments, and Conversion Rate calculations</p>
+                <p className="text-xs text-gray-700">Business Growth, User Growth, Orders/Appointments/Service Requests, and Conversion Rate calculations</p>
               </div>
               <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
                 <div className="flex items-center gap-2 mb-1">
@@ -518,7 +518,7 @@ export function SuperAdminAnalytics() {
                   <ShoppingCart className="w-4 h-4 text-indigo-600" />
                   <p className="text-sm font-medium text-gray-900">Operations Analytics</p>
                 </div>
-                <p className="text-xs text-gray-700">Order/appointment counts, trends, and detailed analytics are available in the Operations Analytics section</p>
+                <p className="text-xs text-gray-700">Order, appointment, and service request counts, trends, and detailed analytics are available in the Operations Analytics section</p>
               </div>
             </div>
           </div>

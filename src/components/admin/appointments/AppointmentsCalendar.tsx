@@ -46,11 +46,14 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
   const [currentDate, setCurrentDate] = useState(new Date())
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [businessType, setBusinessType] = useState<string>('SALON')
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'day'>('month')
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [showFilters, setShowFilters] = useState(false)
+
+  const isScheduledSessions = businessType === 'SERVICES'
 
   useEffect(() => {
     fetchTeamMembers()
@@ -111,6 +114,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
       if (response.ok) {
         const data = await response.json()
         setAppointments(data.appointments || [])
+        if (data.businessType) setBusinessType(data.businessType)
       }
     } catch (error) {
       console.error('Error fetching appointments:', error)
@@ -173,9 +177,13 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Appointments Calendar</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isScheduledSessions ? 'Scheduled sessions calendar' : 'Appointments Calendar'}
+          </h1>
           <p className="text-gray-600 mt-1">
-            View and manage your appointments in calendar format
+            {isScheduledSessions
+              ? 'View consultations and in-person meetings in calendar format'
+              : 'View and manage your appointments in calendar format'}
           </p>
         </div>
         
@@ -201,7 +209,7 @@ export default function AppointmentsCalendar({ businessId }: AppointmentsCalenda
             href={addParams(`/admin/stores/${businessId}/appointments`)}
             className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            List View
+            {isScheduledSessions ? 'All sessions' : 'List View'}
           </Link>
         </div>
       </div>

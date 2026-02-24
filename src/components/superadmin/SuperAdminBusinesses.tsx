@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   Apple,
   Scissors,
+  Briefcase,
   Gem,
   Flower2,
   MoreHorizontal,
@@ -34,6 +35,7 @@ import {
   Loader2,
   Check,
   Store,
+  MessageSquare,
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import Link from 'next/link'
@@ -82,6 +84,7 @@ interface Business {
     totalCustomers: number;
     totalProducts: number;
     supplierProductCount?: number; // For originators: total products from suppliers
+    totalServiceRequests?: number; // SERVICES only
   };
 }
 
@@ -131,6 +134,7 @@ const businessTypeIcons = {
   RETAIL: ShoppingBag,
   GROCERY: Apple,
   SALON: Scissors,
+  SERVICES: Briefcase,
   OTHER: MoreHorizontal
 };
 
@@ -140,8 +144,12 @@ const businessTypeLabels: Record<string, string> = {
   RETAIL: 'Retail',
   GROCERY: 'Grocery',
   SALON: 'Salon',
+  SERVICES: 'Services',
   OTHER: 'Other'
 };
+
+const isSalonOrServices = (businessType: string | undefined) =>
+  businessType?.toUpperCase() === 'SALON' || businessType?.toUpperCase() === 'SERVICES';
 
 export function SuperAdminBusinesses() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -263,7 +271,7 @@ export function SuperAdminBusinesses() {
     if (!hasWhatsApp) {
       missingFields.push('WhatsApp Number');
       suggestions.push('Reach out to the business owner to help them set up their WhatsApp Business number');
-      suggestions.push('Explain that WhatsApp is essential for receiving customer orders directly');
+      suggestions.push(`Explain that WhatsApp is essential for receiving customer ${(business.businessType?.toUpperCase() === 'SALON' || business.businessType?.toUpperCase() === 'SERVICES') ? 'appointments and requests' : 'orders'} directly`);
       suggestions.push('Offer support to guide them through the setup process if needed');
     }
 
@@ -271,7 +279,9 @@ export function SuperAdminBusinesses() {
       missingFields.push('Business Address');
       suggestions.push('Contact the business to collect their physical address or service area');
       suggestions.push('Explain that the address helps customers understand delivery/pickup locations');
-      suggestions.push('Mention that it also improves local SEO and helps with order fulfillment');
+      suggestions.push((business.businessType?.toUpperCase() === 'SALON' || business.businessType?.toUpperCase() === 'SERVICES')
+        ? 'Mention that it also improves local SEO and helps with service request handling or order fulfillment'
+        : 'Mention that it also improves local SEO and helps with order fulfillment');
     }
 
     return { missingFields, suggestions };
@@ -483,7 +493,7 @@ export function SuperAdminBusinesses() {
       );
     }
     
-    const IconComponent = businessTypeIcons[business.businessType as keyof typeof businessTypeIcons] || Building2;
+    const IconComponent = businessTypeIcons[(business.businessType?.toUpperCase() ?? '') as keyof typeof businessTypeIcons] || Building2;
     return <IconComponent className="w-5 h-5 text-gray-600" />;
   };
 
@@ -745,8 +755,8 @@ export function SuperAdminBusinesses() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-500 capitalize">
-                              {business.businessType.toLowerCase().replace('_', ' ')}
+                            <div className="text-sm text-gray-500">
+                              {businessTypeLabels[business.businessType?.toUpperCase()] || (business.businessType ?? '').toLowerCase().replace('_', ' ')}
                             </div>
                           </div>
                         </div>
@@ -1045,7 +1055,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
       );
     }
     
-    const IconComponent = businessTypeIcons[business.businessType as keyof typeof businessTypeIcons] || Building2;
+    const IconComponent = businessTypeIcons[(business.businessType?.toUpperCase() ?? '') as keyof typeof businessTypeIcons] || Building2;
     return <IconComponent className="w-8 h-8 text-gray-600" />;
   };
 
@@ -1076,7 +1086,7 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             <div>
               <h2 className="text-xl font-semibold text-gray-900">{business.name}</h2>
               <p className="text-sm text-gray-600">
-                {businessTypeLabels[business.businessType] || business.businessType.toLowerCase().replace('_', ' ')}
+                {businessTypeLabels[business.businessType?.toUpperCase()] || (business.businessType ?? '').toLowerCase().replace('_', ' ')}
                 {business.industry && (
                   <span className="text-gray-400"> • {business.industry}</span>
                 )}
@@ -1217,35 +1227,44 @@ function QuickViewModal({ isOpen, business, onClose }: QuickViewModalProps) {
             </div>
           </div>
 
-          {/* Business Stats */}
-          <div>
+{/* Business Stats */}
+            <div>
             <h3 className="text-lg font-medium text-gray-900 mb-3">Business Statistics</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className={`grid grid-cols-2 gap-3 ${business.businessType === 'SERVICES' ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <Package className="w-5 h-5 text-gray-400 mx-auto mb-1" />
                 <p className="text-xl font-bold text-gray-900">{business.stats.totalOrders}</p>
-                <p className="text-xs text-gray-500">{business.businessType === 'SALON' ? 'Appointments' : 'Orders'}</p>
+                <p className="text-xs text-gray-500">
+                  {business.businessType === 'SERVICES' ? 'Scheduled sessions' : isSalonOrServices(business.businessType) ? 'Appointments' : 'Orders'}
+                </p>
               </div>
+              {business.businessType === 'SERVICES' && typeof business.stats.totalServiceRequests === 'number' && (
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <MessageSquare className="w-5 h-5 text-gray-400 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-gray-900">{business.stats.totalServiceRequests}</p>
+                  <p className="text-xs text-gray-500">Service requests</p>
+                </div>
+              )}
               <div className="bg-gray-50 rounded-lg p-3 text-center">
                 <UserCheck className="w-5 h-5 text-gray-400 mx-auto mb-1" />
                 <p className="text-xl font-bold text-gray-900">{business.stats.totalCustomers || 0}</p>
                 <p className="text-xs text-gray-500">Customers</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3 text-center">
-                {business.businessType === 'SALON' ? (
+                {isSalonOrServices(business.businessType) ? (
                   <Scissors className="w-5 h-5 text-gray-400 mx-auto mb-1" />
                 ) : (
                   <ShoppingBag className="w-5 h-5 text-gray-400 mx-auto mb-1" />
                 )}
                 <p className="text-xl font-bold text-gray-900">{business.stats.totalProducts || 0}</p>
                 <p className="text-xs text-gray-500">
-                  {business.businessType === 'SALON' 
+                  {isSalonOrServices(business.businessType)
                     ? 'Services'
                     : business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined
                       ? `Own Products`
                       : 'Products'}
                 </p>
-                {business.businessType !== 'SALON' && business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined && business.stats.supplierProductCount > 0 && (
+                {!isSalonOrServices(business.businessType) && business.marketplaceRole === 'originator' && business.stats.supplierProductCount !== undefined && business.stats.supplierProductCount > 0 && (
                   <p className="text-xs text-teal-600 mt-0.5">
                     +{business.stats.supplierProductCount} from suppliers
                   </p>

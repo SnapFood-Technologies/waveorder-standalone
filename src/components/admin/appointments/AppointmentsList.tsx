@@ -58,8 +58,15 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
     pages: 0
   })
   const [currency, setCurrency] = useState('USD')
+  const [businessType, setBusinessType] = useState<string>('SALON')
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<'newest' | 'upcoming'>('newest')
+
+  const isScheduledSessions = businessType === 'SERVICES'
+  const sessionLabel = isScheduledSessions ? 'session' : 'appointment'
+  const sessionsLabel = isScheduledSessions ? 'sessions' : 'appointments'
+  const SessionLabel = isScheduledSessions ? 'Session' : 'Appointment'
+  const SessionsLabel = isScheduledSessions ? 'Sessions' : 'Appointments'
 
   // Debounce search query
   useEffect(() => {
@@ -90,6 +97,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
         setAppointments(data.appointments || [])
         setPagination(data.pagination)
         setCurrency(data.currency || 'USD')
+        if (data.businessType) setBusinessType(data.businessType)
       }
     } catch (error) {
       console.error('Error fetching appointments:', error)
@@ -218,9 +226,13 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isScheduledSessions ? 'Scheduled sessions' : 'Appointments'}
+          </h1>
           <p className="text-gray-600 mt-1">
-            Manage customer appointments and bookings
+            {isScheduledSessions
+              ? 'Consultations, in-person meetings, and other scheduled sessions'
+              : 'Manage customer appointments and bookings'}
           </p>
         </div>
         <Link
@@ -228,7 +240,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
           className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Create Appointment
+          {isScheduledSessions ? 'Schedule session' : 'Create Appointment'}
         </Link>
       </div>
 
@@ -240,7 +252,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by appointment number, customer name, or phone..."
+              placeholder={isScheduledSessions ? 'Search by session number, customer name, or phone...' : 'Search by appointment number, customer name, or phone...'}
               value={searchQuery}
               onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 placeholder:text-gray-500"
@@ -283,7 +295,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
             </button>
 
             <div className="text-sm text-gray-600">
-              {pagination.total} appointment{pagination.total !== 1 ? 's' : ''}
+              {pagination.total} {pagination.total !== 1 ? sessionsLabel : sessionLabel}
             </div>
           </div>
         </div>
@@ -340,11 +352,11 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {pagination.total === 0 ? 'No appointments yet' : 'No appointments found'}
+            {pagination.total === 0 ? `No ${sessionsLabel} yet` : `No ${sessionsLabel} found`}
           </h3>
           <p className="text-gray-600">
             {pagination.total === 0 
-              ? 'Appointments will appear here when customers book services.'
+              ? (isScheduledSessions ? 'Sessions will appear here when customers schedule consultations or meetings.' : 'Appointments will appear here when customers book services.')
               : 'Try adjusting your search or filter criteria.'
             }
           </p>
@@ -424,7 +436,7 @@ export default function AppointmentsList({ businessId }: AppointmentsListProps) 
                 <div className="flex items-center text-sm text-gray-700">
                   Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
                   {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                  {pagination.total} appointments
+                  {pagination.total} {sessionsLabel}
                 </div>
                 
                 <div className="flex items-center space-x-2">

@@ -420,9 +420,9 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                           <span>•</span>
                           <span>Role: {business.role}</span>
                           <span>•</span>
-                          <span>{business.ordersCount} {business.businessType === 'SALON' ? 'appointments' : 'orders'}</span>
+                          <span>{business.ordersCount} {business.businessType === 'SERVICES' ? 'scheduled sessions' : business.businessType === 'SALON' ? 'appointments' : 'orders'}</span>
                           <span>•</span>
-                          <span>{business.productsCount} {business.businessType === 'SALON' ? 'services' : 'products'}</span>
+                          <span>{business.productsCount} {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'services' : 'products'}</span>
                         </div>
                         <p className="mt-1 text-xs text-gray-400">
                           Created {formatShortDate(business.createdAt)}
@@ -574,7 +574,7 @@ export function SuperAdminUserDetails({ userId }: SuperAdminUserDetailsProps) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-gray-600">
                     <CalendarCheck className="w-4 h-4" />
-                    <span className="text-sm">Total Appointments</span>
+                    <span className="text-sm">Total Appointments / Scheduled sessions</span>
                   </div>
                   <span className="text-lg font-semibold text-gray-900">{user.stats.totalAppointments}</span>
                 </div>

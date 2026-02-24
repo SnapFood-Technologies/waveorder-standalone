@@ -29,7 +29,8 @@ import {
   LogIn,
   CreditCard,
   Puzzle,
-  ShieldAlert
+  ShieldAlert,
+  MessageSquare
 } from 'lucide-react'
 
 interface SystemLog {
@@ -78,6 +79,7 @@ interface LogsResponse {
     logTypeDistribution: Array<{ logType: string; count: number }>
     orderStats: { created: number; errors: number; total: number }
     appointmentStats?: { created: number; errors: number; total: number }
+    serviceRequestStats?: { created: number; errors: number; total: number }
     storefrontStats: { success: number; errors: number; notFound: number; total: number }
     userStats: { registered: number; logins: number; total: number }
     passwordResetStats: { requested: number; completed: number; errors: number; total: number }
@@ -239,7 +241,9 @@ export default function SystemLogsPage() {
       order_status_changed: 'Order Status Changed',
       appointment_status_changed: 'Appointment Status Changed',
       twilio_message_sent: 'Twilio Message Sent',
-      twilio_message_error: 'Twilio Message Error'
+      twilio_message_error: 'Twilio Message Error',
+      service_request_created: 'Service Request Created',
+      service_request_error: 'Service Request Error'
     }
     return labels[logType] || logType
   }
@@ -828,6 +832,54 @@ export default function SystemLogsPage() {
                     <div className="text-sm text-gray-600">
                       Success Rate: <span className="font-semibold text-purple-600">
                         {((analytics.appointmentStats.created / analytics.appointmentStats.total) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Service Request Activity (SERVICES form submissions) */}
+            {analytics.serviceRequestStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-indigo-600" />
+                    Service Request Activity
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">{analytics.serviceRequestStats.total.toLocaleString()}</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Service Requests Created</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${analytics.serviceRequestStats.total > 0 ? (analytics.serviceRequestStats.created / analytics.serviceRequestStats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.serviceRequestStats.created.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Service Request Errors</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-red-500 rounded-full"
+                          style={{ width: `${analytics.serviceRequestStats.total > 0 ? (analytics.serviceRequestStats.errors / analytics.serviceRequestStats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 w-16 text-right">{analytics.serviceRequestStats.errors.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                {analytics.serviceRequestStats.total > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="text-sm text-gray-600">
+                      Success Rate: <span className="font-semibold text-indigo-600">
+                        {((analytics.serviceRequestStats.created / analytics.serviceRequestStats.total) * 100).toFixed(1)}%
                       </span>
                     </div>
                   </div>

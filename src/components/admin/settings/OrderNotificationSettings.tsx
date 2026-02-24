@@ -354,12 +354,12 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           <h1 className="text-2xl font-semibold text-gray-900 flex items-center">
             <Bell className="w-6 h-6 text-teal-600 mr-3" />
             {business.businessType === 'SERVICES'
-              ? 'Appointments & service request notifications'
+              ? 'Service request & appointment notifications'
               : (business.businessType === 'SALON' ? 'Appointment Notifications' : 'Order Notifications')}
           </h1>
           <p className="text-gray-600 mt-1">
             {business.businessType === 'SERVICES'
-              ? 'Get notified when customers book appointments or submit service requests (Request by email / WhatsApp).'
+              ? 'Get notified when customers submit service requests (email / WhatsApp) or book appointments. Configure which emails you and your customers receive.'
               : (business.businessType === 'SALON'
                 ? 'Get notified when customers book appointments'
                 : 'Get notified when customers place orders')}
@@ -606,9 +606,11 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           Customer Email Notifications
         </h2>
         <p className="text-sm text-gray-600 mb-6">
-          {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
-            ? 'Choose which appointment status updates should trigger email notifications to your customers.'
-            : 'Choose which order status updates should trigger email notifications to your customers.'}
+          {business.businessType === 'SERVICES'
+            ? 'Choose which service request and scheduled session status updates trigger email notifications to your customers. Service request notifications are sent when you update a request; scheduled session notifications apply if you offer consultations or in-person meetings.'
+            : (business.businessType === 'SALON'
+              ? 'Choose which appointment status updates should trigger email notifications to your customers.'
+              : 'Choose which order status updates should trigger email notifications to your customers.')}
           {' '}Customers will only receive emails if they have an email address on file.
         </p>
 
@@ -629,11 +631,13 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           {settings.customerNotificationEnabled && (
             <div className="pl-7 space-y-6 border-l-2 border-teal-200">
               <p className="text-sm text-gray-600 mb-4">
-                {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
-                  ? 'Configure notifications for appointment status updates. Appointments use in-salon service fulfillment.'
-                  : business.businessType === 'RETAIL' 
-                  ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY.'
-                  : 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.'
+                {business.businessType === 'SERVICES'
+                  ? 'Configure when customers receive emails: when you update their service request status, and (if you offer scheduled sessions) when session status changes.'
+                  : business.businessType === 'SALON'
+                    ? 'Configure notifications for appointment status updates. Appointments use in-salon service fulfillment.'
+                    : business.businessType === 'RETAIL'
+                      ? 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY.'
+                      : 'Configure notifications per order type. Settings are applied based on whether an order is DELIVERY, PICKUP, or DINE_IN.'
                 }
               </p>
 
@@ -666,12 +670,21 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               </div>
               )}
 
-              {/* Salon Appointments - Only for SALON */}
+              {/* SALON: Appointments (scissors icon). SERVICES: Service requests & appointments (mail icon, no scissors). */}
               {(business.businessType === 'SALON' || business.businessType === 'SERVICES') && (
                 <div className="space-y-3 border border-teal-200 rounded-lg p-4 bg-teal-50">
                   <h3 className="text-sm font-semibold text-teal-900 mb-3 flex items-center">
-                    ✂️ Appointments
+                    {business.businessType === 'SERVICES' ? (
+                      <>📧 Service requests & scheduled sessions</>
+                    ) : (
+                      <>✂️ Appointments</>
+                    )}
                   </h3>
+                  <p className="text-xs text-teal-700 mb-2">
+                    {business.businessType === 'SERVICES'
+                      ? 'When you offer scheduled sessions, these control customer emails for session status. Service request status emails are configured above.'
+                      : 'Customer emails for appointment status updates.'}
+                  </p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between p-2 bg-white rounded">
                       <label className="text-sm text-gray-700">Confirmed</label>
@@ -742,7 +755,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               {/* Global Settings */}
               <div className="space-y-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'All Appointments' : 'All Order Types'}
+                  {business.businessType === 'SERVICES' ? 'All scheduled sessions' : (business.businessType === 'SALON' ? 'All Appointments' : 'All Order Types')}
                 </h3>
                 <div className="flex items-center justify-between p-2 bg-white rounded">
                   <label className="text-sm text-gray-700">Cancelled</label>
@@ -753,9 +766,11 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-700">
                   <strong>Note:</strong> Customers will only receive email notifications if they have an email address on file. 
-                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
+                  {business.businessType === 'SERVICES'
+                    ? ' Notifications are sent automatically when you update session status in the session details page.'
+                    : (business.businessType === 'SALON'
                     ? ' Notifications are sent automatically when you update appointment status in the appointment details page.'
-                    : ' Notifications are sent automatically when you update order status in the order details page.'}
+                    : ' Notifications are sent automatically when you update order status in the order details page.')}
                   {(business.businessType === 'SALON' || business.businessType === 'SERVICES')
                     ? ''
                     : business.businessType === 'RETAIL' 

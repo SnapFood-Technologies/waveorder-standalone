@@ -46,6 +46,7 @@ import {
   Key,
   Truck,
   Scissors,
+  Briefcase,
   Calendar,
   CalendarClock,
   Shield
@@ -203,23 +204,23 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       icon: LayoutDashboard, 
       requiredPlan: 'STARTER'
     },
-    // SALON / SERVICES: Appointments (replaces Orders)
+    // SALON: Appointments. SERVICES: Scheduled sessions (consultations, in-person meetings, etc.)
     // @ts-ignore
     ...(isServiceBusiness ? [
       {
-        name: 'Appointments',
+        name: businessType === 'SERVICES' ? 'Scheduled sessions' : 'Appointments',
         icon: Calendar,
         requiredPlan: 'STARTER' as Plan,
         children: [
           {
-            name: 'All Appointments',
+            name: businessType === 'SERVICES' ? 'All sessions' : 'All Appointments',
             href: `${baseUrl}/appointments`,
             icon: Calendar,
             requiredPlan: 'STARTER' as Plan
           },
           // @ts-ignore
           ...((subscription.plan === 'PRO' || subscription.plan === 'BUSINESS') ? [{
-            name: 'Calendar View',
+            name: businessType === 'SERVICES' ? 'Calendar view' : 'Calendar View',
             href: `${baseUrl}/appointments/calendar`,
             icon: CalendarClock,
             requiredPlan: 'PRO' as Plan
@@ -254,12 +255,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         requiredPlan: 'STARTER' as Plan
       }])
     ]),
-    // SALON / SERVICES: Services (replaces Products)
+    // SALON / SERVICES: Services (replaces Products). Scissors = salon only; Briefcase = professional services.
     // @ts-ignore
     ...(isServiceBusiness ? [
       {
         name: 'Services',
-        icon: Scissors,
+        icon: businessType === 'SERVICES' ? Briefcase : Scissors,
         requiredPlan: 'STARTER' as Plan,
         children: [
           {
@@ -576,7 +577,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           requiredPlan: 'STARTER'
         },
         { 
-          name: isServiceBusiness ? 'Appointment Notifications' : 'Order Notifications', 
+          name: businessType === 'SERVICES' ? 'Notifications' : (isServiceBusiness ? 'Appointment Notifications' : 'Order Notifications'), 
           href: `${baseUrl}/settings/notifications`, 
           icon: Bell, 
           requiredPlan: 'STARTER'

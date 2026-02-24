@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Apple,
   Scissors,
+  Briefcase,
   Gem,
   Flower2,
   MoreHorizontal,
@@ -83,6 +84,7 @@ const businessTypeIcons = {
   RETAIL: ShoppingBag,
   GROCERY: Apple,
   SALON: Scissors,
+  SERVICES: Briefcase,
   OTHER: MoreHorizontal
 };
 
@@ -92,6 +94,7 @@ const businessTypeLabels: Record<string, string> = {
   RETAIL: 'Retail',
   GROCERY: 'Grocery',
   SALON: 'Salon',
+  SERVICES: 'Services',
   OTHER: 'Other'
 };
 
@@ -193,7 +196,7 @@ export function SuperAdminDashboard() {
     if (!hasWhatsApp) {
       missingFields.push('WhatsApp Number');
       suggestions.push('Reach out to the business owner to help them set up their WhatsApp Business number');
-      suggestions.push(`Explain that WhatsApp is essential for receiving customer ${business.businessType === 'SALON' ? 'appointments' : 'orders'} directly`);
+      suggestions.push(`Explain that WhatsApp is essential for receiving customer ${(business.businessType?.toUpperCase() === 'SALON' || business.businessType?.toUpperCase() === 'SERVICES') ? 'appointments and requests' : 'orders'} directly`);
       suggestions.push('Offer support to guide them through the setup process if needed');
     }
 
@@ -201,7 +204,9 @@ export function SuperAdminDashboard() {
       missingFields.push('Business Address');
       suggestions.push('Contact the business to collect their physical address or service area');
       suggestions.push('Explain that the address helps customers understand delivery/pickup locations');
-      suggestions.push('Mention that it also improves local SEO and helps with order fulfillment');
+      suggestions.push((business.businessType?.toUpperCase() === 'SALON' || business.businessType?.toUpperCase() === 'SERVICES')
+        ? 'Mention that it also improves local SEO and helps with service request handling or order fulfillment'
+        : 'Mention that it also improves local SEO and helps with order fulfillment');
     }
 
     return { missingFields, suggestions };
@@ -278,7 +283,7 @@ export function SuperAdminDashboard() {
       );
     }
     
-    const IconComponent = businessTypeIcons[business.businessType as keyof typeof businessTypeIcons] || Building2;
+    const IconComponent = businessTypeIcons[(business.businessType?.toUpperCase() ?? '') as keyof typeof businessTypeIcons] || Building2;
     return <IconComponent className="w-5 h-5 text-gray-600" />;
   };
 
@@ -533,7 +538,7 @@ export function SuperAdminDashboard() {
                     </td>
                     <td className="py-3 px-3">
                       <p className="text-sm text-gray-600">
-                        {businessTypeLabels[business.businessType] || business.businessType.toLowerCase().replace('_', ' ')}
+                        {businessTypeLabels[business.businessType?.toUpperCase()] || (business.businessType ?? '').toLowerCase().replace('_', ' ')}
                       </p>
                     </td>
                     <td className="py-3 px-3 text-center">

@@ -550,7 +550,7 @@ export default function CXAnalyticsPage() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Time to First Order</span>
+                    <span className="text-gray-600">Time to First Order/Session</span>
                     <span className="font-medium text-gray-900">
                       {data.ces.avgTimeToFirstOrderDays !== null 
                         ? `${data.ces.avgTimeToFirstOrderDays.toFixed(1)} days`
@@ -693,7 +693,7 @@ export default function CXAnalyticsPage() {
                   </div>
                   <div className="flex gap-4 mt-2 text-xs text-gray-500">
                     {business.lastOrderDate && (
-                      <span>Last order: {new Date(business.lastOrderDate).toLocaleDateString()}</span>
+                      <span>Last order/session: {new Date(business.lastOrderDate).toLocaleDateString()}</span>
                     )}
                     {business.supportTicketsCount > 0 && (
                       <span>{business.supportTicketsCount} support tickets</span>

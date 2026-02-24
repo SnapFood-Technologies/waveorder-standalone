@@ -51,7 +51,8 @@ export async function GET(
             orders: true,
             products: true,
             customers: true,
-            appointments: true
+            appointments: true,
+            serviceRequests: true
           }
         },
         orders: {
@@ -402,7 +403,9 @@ export async function GET(
           // Salon-specific stats
           servicesWithoutPhotos: isSalon ? servicesWithoutPhotosCount : 0,
           servicesWithZeroPrice: isSalon ? servicesWithZeroPriceCount : 0,
-          inactiveServices: isSalon ? inactiveServicesCount : 0
+          inactiveServices: isSalon ? inactiveServicesCount : 0,
+          // SERVICES only: form-based service requests
+          totalServiceRequests: business.businessType === 'SERVICES' ? (business as any)._count.serviceRequests : undefined
         },
         apiKeys: apiKeys.map(key => ({
           id: key.id,

@@ -3006,7 +3006,7 @@ function EmptyState({
         return {
           icon: Scissors,
           title: translations.comingSoon || 'Coming Soon',
-          description: translations.checkBackLater || 'Check back later for amazing services!',
+          description: translations.checkBackLaterServices || 'Check back later for amazing services!',
           showActions: false
         }
       case 'category-empty':
@@ -3033,7 +3033,7 @@ function EmptyState({
         return {
           icon: Scissors,
           title: translations.comingSoon || 'Coming Soon',
-          description: translations.checkBackLater || 'Check back later for amazing services!',
+          description: translations.checkBackLaterServices || 'Check back later for amazing services!',
           showActions: false
         }
     }

@@ -145,6 +145,8 @@ onlyStockAvailable: string
     browseAllProducts: string
     comingSoon: string
     checkBackLater: string
+    /** For SERVICES/SALON empty state: avoid "products" copy. */
+    checkBackLaterServices: string
 
     now: string
     schedule: string
@@ -536,6 +538,7 @@ onlyStockAvailable: "Only {stock} available",
     browseAllProducts: "Browse all products",
     comingSoon: "Coming soon!",
     checkBackLater: "We're working on adding products to this section. Please check back later.",
+    checkBackLaterServices: "We're working on adding services to this section. Please check back later.",
     freeDelivery: "Free Delivery",
     free: "Free",
     addMoreForFreeDelivery: "Add {amount} more for free delivery!",
@@ -905,6 +908,7 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     browseAllProducts: "Shfleto të gjitha produktet",
     comingSoon: "Së shpejti!",
     checkBackLater: "Po punojmë për të shtuar produkte në këtë seksion. Të lutem kontrollo më vonë.",
+    checkBackLaterServices: "Po punojmë për të shtuar shërbime në këtë seksion. Të lutem kontrollo më vonë.",
     freeDelivery: "Transport Falas",
     free: "Falas",
     addMoreForFreeDelivery: "Shto {amount} më shumë për transport falas!",
@@ -1263,6 +1267,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     browseAllProducts: "Explorar todos los productos",
     comingSoon: "¡Próximamente!",
     checkBackLater: "Estamos trabajando en añadir productos a esta sección. Por favor, vuelve más tarde.",
+    checkBackLaterServices: "Estamos trabajando en añadir servicios a esta sección. Por favor, vuelve más tarde.",
     freeDelivery: "Entrega Gratis",
     free: "Gratis",
     addMoreForFreeDelivery: "¡Añade {amount} más para entrega gratis!",
@@ -1631,6 +1636,7 @@ addDeliveryAddress: "Shto adresën e dërgesës",
     browseAllProducts: "Περιηγηθείτε σε όλα τα προϊόντα",
     comingSoon: "Σύντομα!",
     checkBackLater: "Εργαζόμαστε για να προσθέσουμε προϊόντα σε αυτή την ενότητα. Παρακαλώ ελέγξτε αργότερα.",
+    checkBackLaterServices: "Εργαζόμαστε για να προσθέσουμε υπηρεσίες σε αυτή την ενότητα. Παρακαλώ ελέγξτε αργότερα.",
     freeDelivery: "Δωρεάν Παράδοση",
     free: "Δωρεάν",
     addMoreForFreeDelivery: "Προσθέστε {amount} ακόμα για δωρεάν παράδοση!",

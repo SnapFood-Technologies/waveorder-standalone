@@ -146,14 +146,14 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           icon: ShoppingCart
         },
         { 
-          name: 'Reservations', 
-          href: '/superadmin/operations/reservations', 
-          icon: CalendarCheck
-        },
-        { 
           name: 'Bookings', 
           href: '/superadmin/operations/bookings', 
           icon: Scissors
+        },
+        { 
+          name: 'Service Requests', 
+          href: '/superadmin/operations/service-requests', 
+          icon: Inbox
         },
         { 
           name: 'General', 

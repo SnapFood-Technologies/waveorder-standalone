@@ -11,7 +11,7 @@ export default async function AppointmentDetailsPage({ params }: AppointmentDeta
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['SALON']}
+      allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/orders`}
     >
       <AppointmentDetails businessId={businessId} appointmentId={appointmentId} />

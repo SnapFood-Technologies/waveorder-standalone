@@ -155,7 +155,9 @@ export async function GET(request: NextRequest) {
             select: { 
               orders: true,
               customers: true,
-              products: true
+              products: true,
+              appointments: true,
+              serviceRequests: true
             }
           }
         },
@@ -216,17 +218,19 @@ export async function GET(request: NextRequest) {
                 type: true
               }
             },
-            _count: {
-              select: { 
-                orders: true,
-                customers: true,
-                products: true
-              }
+_count: {
+            select: { 
+              orders: true,
+              customers: true,
+              products: true,
+              appointments: true,
+              serviceRequests: true
             }
-          },
-          orderBy: { createdAt: 'desc' },
-          skip: offset,
-          take: limit
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: offset,
+        take: limit
         }),
         prisma.business.count({ where: whereConditions })
       ])
@@ -367,7 +371,10 @@ export async function GET(request: NextRequest) {
         isMultiStore,
         storeCount,
         stats: {
-          totalOrders: business._count.orders,
+          totalOrders: (business.businessType === 'SALON' || business.businessType === 'SERVICES')
+            ? (business._count?.appointments ?? 0)
+            : business._count.orders,
+          totalServiceRequests: business.businessType === 'SERVICES' ? (business._count?.serviceRequests ?? 0) : undefined,
           // Revenue: Paid orders that are completed/fulfilled
           // - DELIVERY orders: DELIVERED + PAID
           // - PICKUP orders: PICKED_UP + PAID (only when actually picked up)

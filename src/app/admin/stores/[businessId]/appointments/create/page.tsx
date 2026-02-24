@@ -28,7 +28,7 @@ export default function CreateAppointmentPage({ params }: CreateAppointmentPageP
   return (
     <BusinessTypeGuard 
       businessId={businessId} 
-      allowedTypes={['SALON']}
+      allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/orders`}
     >
       <AdminAppointmentForm
