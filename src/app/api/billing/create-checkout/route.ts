@@ -26,10 +26,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate plan - PRO and BUSINESS are allowed for upgrades
-    if (!planId || !['PRO', 'BUSINESS'].includes(planId)) {
+    // Validate plan - STARTER (downgrade), PRO, and BUSINESS are allowed
+    if (!planId || !['STARTER', 'PRO', 'BUSINESS'].includes(planId)) {
       return NextResponse.json(
-        { message: 'Invalid plan selected. PRO or BUSINESS plan upgrades are available.' },
+        { message: 'Invalid plan selected.' },
         { status: 400 }
       )
     }
@@ -93,14 +93,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check if already on the same or higher plan
+    // Allow upgrade (higher plan) or downgrade to paid Starter only
     const planHierarchy: Record<string, number> = { 'STARTER': 0, 'PRO': 1, 'BUSINESS': 2 }
     const currentPlanLevel = planHierarchy[user.plan || 'STARTER'] || 0
     const targetPlanLevel = planHierarchy[planId] || 0
-    
-    if (targetPlanLevel <= currentPlanLevel) {
+    const isDowngradeToStarter = planId === 'STARTER' && currentPlanLevel >= 1
+
+    if (targetPlanLevel > currentPlanLevel) {
+      // Upgrade: allowed
+    } else if (isDowngradeToStarter) {
+      // Downgrade to paid Starter: allowed (will create checkout for Starter price)
+    } else {
       return NextResponse.json(
-        { message: `You are already on the ${user.plan} plan or higher. Downgrades are not supported through this checkout.` },
+        { message: `You are already on the ${user.plan} plan or higher. Use "Downgrade to Starter" to switch to paid Starter.` },
         { status: 400 }
       )
     }

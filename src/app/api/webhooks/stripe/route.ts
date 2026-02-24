@@ -1,7 +1,7 @@
 // src/app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId, cancelSubscriptionImmediately } from '@/lib/stripe'
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { logSystemEvent } from '@/lib/systemLog'
 import { prisma } from '@/lib/prisma'
@@ -154,6 +154,7 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
     const oldPlan = user.plan || 'STARTER'
     const wasOnTrial = !!(user as any).trialEndsAt
     const isTrialing = sub.status === 'trialing'
+    const isReplacingExistingSub = !!user.subscription && user.subscription.stripeId !== sub.id
 
     await prisma.$transaction(async (tx) => {
       // Create or update subscription record

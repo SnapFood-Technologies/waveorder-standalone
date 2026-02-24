@@ -196,19 +196,29 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     setShowDowngradeModal(false)
     
     try {
-      const response = await fetch('/api/billing/cancel-subscription', {
+      // Switch to paid Starter via Stripe Checkout (not cancel)
+      const response = await fetch('/api/billing/create-checkout', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: 'STARTER',
+          isAnnual: billingInterval === 'annual',
+          businessId: businessId,
+        }),
       })
 
       if (response.ok) {
-        await fetchSubscription()
-        setShowSuccessModal(true)
-      } else {
-        throw new Error('Failed to cancel subscription')
+        const { checkoutUrl } = await response.json()
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl
+          return
+        }
       }
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to start checkout for Starter plan.')
     } catch (error) {
-      console.error('Error canceling subscription:', error)
-      setError(error instanceof Error ? error.message : 'Failed to cancel subscription. Please try again.')
+      console.error('Error starting downgrade checkout:', error)
+      setError(error instanceof Error ? error.message : 'Failed to switch to Starter. Please try again.')
     } finally {
       setIsUpgrading(null)
     }
@@ -581,13 +591,13 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Downgrade to Starter Plan?
+                Switch to Starter Plan?
               </h3>
             </div>
             
             <p className="text-gray-600 mb-6">
-              You will lose access to PRO features at the end of your billing period 
-              ({subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}):
+              You will be taken to checkout to subscribe to the Starter plan ({billingInterval === 'annual' ? 'annual' : '$19/month'}). 
+              Your current plan will be replaced once payment succeeds. You will lose access to PRO features:
             </p>
             
             <ul className="space-y-2 mb-6">
@@ -615,9 +625,9 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
               <button
                 onClick={confirmDowngrade}
                 disabled={isUpgrading === 'STARTER'}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
               >
-                {isUpgrading === 'STARTER' ? 'Processing...' : 'Confirm Downgrade'}
+                {isUpgrading === 'STARTER' ? 'Redirecting to checkout...' : 'Continue to checkout'}
               </button>
             </div>
           </div>
