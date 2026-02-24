@@ -449,7 +449,7 @@ model Business {
 
   // SERVICE REQUEST NOTIFICATIONS (SERVICES business type only)
   notifyAdminOnServiceRequestStatusUpdates Boolean @default(false) // Business receives email when service request status is updated
-  notifyCustomerOnServiceRequestStatus      Boolean @default(true)  // Requester receives email when their service request status is updated
+  notifyCustomerOnServiceRequestStatus     Boolean @default(true) // Requester receives email when their service request status is updated
 
   // Customer Notification Settings (per status and order type)
   customerNotificationEnabled Boolean @default(false)

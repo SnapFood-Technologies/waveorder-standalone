@@ -216,6 +216,12 @@ export async function GET(request: NextRequest) {
       prisma.systemLog.count({ where: { logType: 'appointment_error' } })
     ])
 
+    // Get service request-related stats (SERVICES form submissions)
+    const [serviceRequestCreatedCount, serviceRequestErrorCount] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'service_request_created' } }),
+      prisma.systemLog.count({ where: { logType: 'service_request_error' } })
+    ])
+
     // Get storefront-related stats
     const [storefrontSuccessCount, storefrontErrorCount] = await Promise.all([
       prisma.systemLog.count({ where: { logType: 'storefront_success' } }),
@@ -367,6 +373,11 @@ export async function GET(request: NextRequest) {
           created: appointmentCreatedCount,
           errors: appointmentErrorCount,
           total: appointmentCreatedCount + appointmentErrorCount
+        },
+        serviceRequestStats: {
+          created: serviceRequestCreatedCount,
+          errors: serviceRequestErrorCount,
+          total: serviceRequestCreatedCount + serviceRequestErrorCount
         },
         storefrontStats: {
           success: storefrontSuccessCount,

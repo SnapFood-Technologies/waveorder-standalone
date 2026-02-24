@@ -8,6 +8,7 @@ import {
   getTwilioConfig,
   isTwilioConfigured,
 } from '@/lib/twilio'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 const VALID_REQUEST_TYPES = ['EMAIL_REQUEST', 'WHATSAPP_REQUEST']
 const VALID_REQUESTER_TYPES = ['PERSON', 'COMPANY']
@@ -169,12 +170,31 @@ export async function POST(
               messageSnippet,
               adminLink
             }
-          } catch (twilioErr) {
+          )
+        } catch (twilioErr) {
             console.error('Service request Twilio notification failed:', twilioErr)
           }
         }
       }
-    }
+
+    logSystemEvent({
+      logType: 'service_request_created',
+      severity: 'info',
+      slug,
+      businessId: business.id,
+      endpoint: '/api/storefront/[slug]/service-request',
+      method: 'POST',
+      statusCode: 201,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      referrer: request.headers.get('referer') || undefined,
+      url: request.url,
+      metadata: {
+        serviceRequestId: serviceRequest.id,
+        requestType: preferredContact,
+        requesterType,
+      }
+    })
 
     return NextResponse.json(
       { id: serviceRequest.id, message: 'Request received' },
@@ -182,6 +202,20 @@ export async function POST(
     )
   } catch (e) {
     console.error('Service request create error:', e)
+    const slugForLog = (await context.params).slug
+    logSystemEvent({
+      logType: 'service_request_error',
+      severity: 'error',
+      slug: slugForLog || undefined,
+      endpoint: '/api/storefront/[slug]/service-request',
+      method: 'POST',
+      statusCode: 500,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      url: request.url,
+      errorMessage: e instanceof Error ? e.message : 'Failed to submit request',
+      metadata: { error: String(e) }
+    }).catch(() => {})
     return NextResponse.json(
       { error: 'Failed to submit request' },
       { status: 500 }
