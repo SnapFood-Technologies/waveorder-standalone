@@ -159,13 +159,13 @@ export default function Analytics({ businessId }: AnalyticsProps) {
         ['Metric', 'Value'],
         ['Total Views', data.overview.totalViews],
         ['Unique Visitors', data.overview.uniqueVisitors],
-        [`Total ${isSalon ? 'Appointments' : 'Orders'}`, data.overview.totalOrders],
+        [`Total ${sessionLabel}`, data.overview.totalOrders],
         ['Revenue', formatCurrency(data.overview.revenue)],
         ['Conversion Rate', `${data.overview.conversionRate}%`],
-        [`Avg ${isSalon ? 'Appointment' : 'Order'} Value`, formatCurrency(data.overview.avgOrderValue)],
+        [`Avg ${sessionSingular} Value`, formatCurrency(data.overview.avgOrderValue)],
         [''],
         [`Top ${isSalon ? 'Services' : 'Products'}`],
-        [`${isSalon ? 'Service' : 'Product'} Name`, isSalon ? 'Appointments' : 'Orders', 'Quantity', 'Revenue'],
+        [`${isSalon ? 'Service' : 'Product'} Name`, sessionLabel, 'Quantity', 'Revenue'],
         ...data.products.topProducts.map((p: any) => [
           p.name,
           p.orders,
@@ -173,7 +173,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           formatCurrency(p.revenue)
         ]),
         [''],
-        [`${isSalon ? 'Appointment' : 'Order'} Status Breakdown`],
+        [`${sessionSingular} Status Breakdown`],
         ['Status', 'Count', 'Percentage'],
         ...data.ordersByStatus.map((s: any) => [
           s.status,
@@ -218,7 +218,11 @@ export default function Analytics({ businessId }: AnalyticsProps) {
     return num.toLocaleString()
   }
 
-  const isSalon = business.businessType === 'SALON'
+  const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
+  const isServices = business.businessType === 'SERVICES'
+  const sessionLabel = isServices ? 'Scheduled sessions' : (isSalon ? 'Appointments' : 'Orders')
+  const sessionLabelLower = isServices ? 'sessions' : (isSalon ? 'appointments' : 'orders')
+  const sessionSingular = isServices ? 'Session' : (isSalon ? 'Appointment' : 'Order')
   
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -291,7 +295,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Analytics Information</p>
             <p>
-              This dashboard uses data from your {isSalon ? 'appointments' : 'orders'} and existing analytics.
+              This dashboard uses data from your {sessionLabelLower} and existing analytics.
             </p>
           </div>
         </div>
@@ -349,7 +353,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <ShoppingBag className="w-5 h-5 text-green-600" />
               </div>
               <p className="text-2xl font-bold text-gray-900">{data.overview.totalOrders}</p>
-              <p className="text-sm text-gray-600">{isSalon ? 'Total Appointments' : 'Total Orders'}</p>
+              <p className="text-sm text-gray-600">Total {sessionLabel}</p>
             </div>
 
             <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -382,7 +386,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">{isSalon ? 'Avg Appointment Value' : 'Avg Order Value'}</p>
+                  <p className="text-sm text-gray-600">Avg {sessionSingular} Value</p>
                   <p className="text-xl font-bold text-gray-900">{formatCurrency(data.overview.avgOrderValue)}</p>
                 </div>
                 <BarChart3 className="w-5 h-5 text-blue-600" />
@@ -434,7 +438,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                   <p className="font-medium text-gray-900">Revenue Performance</p>
                   <p className="text-sm text-gray-600">
                     Revenue is {data.overview.revenueGrowth >= 0 ? 'up' : 'down'} {Math.abs(data.overview.revenueGrowth)}% 
-                    with an average {isSalon ? 'appointment' : 'order'} value of {formatCurrency(data.overview.avgOrderValue)}
+                    with an average {sessionLabelLower.slice(0, -1)} value of {formatCurrency(data.overview.avgOrderValue)}
                   </p>
                 </div>
               </div>
@@ -485,7 +489,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               </div>
 
               <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{isSalon ? 'Appointments Over Time' : 'Orders Over Time'}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{sessionLabel} Over Time</h3>
                 <div className="overflow-x-auto -mx-6 px-6">
                   <div className="h-64 flex items-end justify-between gap-2 min-w-max">
                     {(() => {
@@ -503,7 +507,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                         return (
                           <div key={index} className="flex flex-col items-center group min-w-[40px]">
                             <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap z-10">
-                              {orderCount} {isSalon ? 'appointments' : 'orders'}
+                              {orderCount} {sessionLabelLower}
                             </div>
                             <div
                               className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
@@ -565,7 +569,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                     <tr>
                       <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Rank</th>
                       <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Service' : 'Product'}</th>
-                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Appointments' : 'Orders'}</th>
+                      <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">{sessionLabel}</th>
                       <th className="text-center py-3 px-6 text-sm font-medium text-gray-600">{isSalon ? 'Quantity Booked' : 'Quantity Sold'}</th>
                       <th className="text-right py-3 px-6 text-sm font-medium text-gray-600">Revenue</th>
                     </tr>
@@ -614,7 +618,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               </p>
               <p className="text-sm text-gray-500">
                 {isSalon 
-                  ? 'Once you have appointments, your top services will appear here.'
+                  ? `Once you have ${sessionLabelLower}, your top services will appear here.`
                   : 'Once you have orders, your top-selling products will appear here.'
                 }
               </p>
@@ -628,9 +632,9 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               <div className="text-sm text-blue-800">
                 <p className="font-medium mb-1">About This Data</p>
                 <p className="text-blue-700">
-                  This shows <strong>actual sales data</strong> from completed {isSalon ? 'appointments' : 'orders'}. For detailed tracking including 
-                  views, {isSalon ? 'booking' : 'add-to-cart'} rates, conversion rates, and the difference between <strong>{isSalon ? 'Appointments' : 'Orders'} Placed</strong> vs 
-                  <strong> {isSalon ? 'Appointments' : 'Orders'} Completed</strong>, visit the{' '}
+                  This shows <strong>actual sales data</strong> from completed {sessionLabelLower}. For detailed tracking including 
+                  views, {isSalon ? 'booking' : 'add-to-cart'} rates, conversion rates, and the difference between <strong>{sessionLabel} Placed</strong> vs 
+                  <strong> {sessionLabel} Completed</strong>, visit the{' '}
                   <Link href={isSalon 
                     ? `/admin/stores/${businessId}/analytics/services`
                     : `/admin/stores/${businessId}/analytics/products`
@@ -651,7 +655,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {data.timeAnalysis.peakHours.length > 0 && (
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Peak Hours</h3>
-              <p className="text-sm text-gray-600 mb-4">Times when your store receives the most {isSalon ? 'appointments' : 'orders'}</p>
+              <p className="text-sm text-gray-600 mb-4">Times when your store receives the most {sessionLabelLower}</p>
               <div className="flex flex-wrap gap-3">
                 {data.timeAnalysis.peakHours.map((hour: string, index: number) => (
                   <div key={hour} className="flex items-center gap-2 px-4 py-3 bg-teal-100 text-teal-700 rounded-lg font-semibold">
@@ -666,7 +670,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {/* Hourly Activity */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Hourly Activity</h3>
-            <p className="text-sm text-gray-600 mb-4">{isSalon ? 'Appointment' : 'Order'} distribution throughout the day</p>
+            <p className="text-sm text-gray-600 mb-4">{sessionSingular} distribution throughout the day</p>
             <div className="h-64 flex items-end justify-between gap-1">
               {data.timeAnalysis.hourly.map((hour: any) => {
                 const maxOrders = Math.max(...data.timeAnalysis.hourly.map((h: any) => h.orders))
@@ -675,7 +679,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 return (
                   <div key={hour.hour} className="flex-1 flex flex-col items-center group">
                     <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap">
-                      {hour.orders} {isSalon ? 'appointments' : 'orders'}
+                      {hour.orders} {sessionLabelLower}
                     </div>
                     <div
                       className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
@@ -691,7 +695,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {/* Daily Activity */}
           <div className="bg-white p-6 rounded-lg border border-gray-200">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Daily Activity</h3>
-            <p className="text-sm text-gray-600 mb-4">{isSalon ? 'Appointment' : 'Order'} distribution by day of the week</p>
+            <p className="text-sm text-gray-600 mb-4">{sessionSingular} distribution by day of the week</p>
             <div className="h-64 flex items-end justify-between gap-4">
               {data.timeAnalysis.daily.map((day: any) => {
                 const maxOrders = Math.max(...data.timeAnalysis.daily.map((d: any) => d.orders))
@@ -700,7 +704,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 return (
                   <div key={day.day} className="flex-1 flex flex-col items-center group">
                     <div className="text-xs text-gray-600 mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white px-2 py-1 rounded whitespace-nowrap">
-                      {day.orders} {isSalon ? 'appointments' : 'orders'}
+                      {day.orders} {sessionLabelLower}
                     </div>
                     <div
                       className="w-full bg-purple-500 rounded-t hover:bg-purple-600 transition-colors cursor-pointer"
@@ -724,7 +728,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                     .sort((a: any, b: any) => b.orders - a.orders)
                     .slice(0, 2)
                     .map((d: any) => d.day)
-                    .join(' and ')} have the highest {isSalon ? 'appointment' : 'order'} volume
+                    .join(' and ')} have the highest {sessionLabelLower.slice(0, -1)} volume
                 </p>
               </div>
               <div className="flex items-start gap-2">
@@ -790,7 +794,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <div>
                   <p className="font-medium text-gray-900">Growth Potential</p>
                   <p className="text-sm text-gray-600">
-                    You have {data.customers.total - data.customers.repeat} customers who have {isSalon ? 'booked once' : 'ordered once'}. 
+                    You have {data.customers.total - data.customers.repeat} customers who have {isServices ? 'scheduled once' : isSalon ? 'booked once' : 'ordered once'}. 
                     Focus on retention strategies to convert them into repeat {isSalon ? 'clients' : 'buyers'}
                   </p>
                 </div>
@@ -801,8 +805,8 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {/* Order Status Breakdown */}
           {data.ordersByStatus.length > 0 ? (
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{isSalon ? 'Appointments by Status' : 'Orders by Status'}</h3>
-              <p className="text-sm text-gray-600 mb-4">Distribution of {isSalon ? 'appointments' : 'orders'} across different statuses</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{sessionLabel} by Status</h3>
+              <p className="text-sm text-gray-600 mb-4">Distribution of {sessionLabelLower} across different statuses</p>
               
               {/* Pie Chart Visualization */}
               <div className="mb-8">
@@ -844,7 +848,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                       })}
                     </Pie>
                     <Tooltip 
-                      formatter={(value: number, name: string) => [`${value} ${isSalon ? 'appointments' : 'orders'}`, name]}
+                      formatter={(value: number, name: string) => [`${value} ${sessionLabelLower}`, name]}
                       contentStyle={{ 
                         backgroundColor: 'white', 
                         border: '1px solid #e5e7eb',
@@ -894,7 +898,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-2xl font-bold text-gray-900">{status.count}</p>
-                        <p className="text-sm text-gray-600">{isSalon ? 'appointments' : 'orders'}</p>
+                        <p className="text-sm text-gray-600">{sessionLabelLower}</p>
                       </div>
                     </div>
                   )
@@ -904,9 +908,9 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           ) : (
             <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
               <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{isSalon ? 'No Appointments Yet' : 'No Orders Yet'}</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No {sessionLabel} Yet</h3>
               <p className="text-gray-600">
-                {isSalon ? 'Appointment' : 'Order'} status distribution will appear here once you start receiving {isSalon ? 'appointments' : 'orders'}.
+                {sessionSingular} status distribution will appear here once you start receiving {sessionLabelLower}.
               </p>
             </div>
           )}

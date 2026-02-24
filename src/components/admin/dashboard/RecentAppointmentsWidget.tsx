@@ -23,13 +23,14 @@ interface Appointment {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
 export function RecentAppointmentsWidget({ businessId }: RecentAppointmentsWidgetProps) {
   const { addParams } = useImpersonation(businessId)
   
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: undefined })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -38,7 +39,7 @@ export function RecentAppointmentsWidget({ businessId }: RecentAppointmentsWidge
         const response = await fetch(`/api/admin/stores/${businessId}`)
         if (response.ok) {
           const data = await response.json()
-          setBusiness({ currency: data.business.currency })
+          setBusiness({ currency: data.business.currency, businessType: data.business.businessType })
         }
       } catch (error) {
         console.error('Error fetching business data:', error)
@@ -150,7 +151,7 @@ export function RecentAppointmentsWidget({ businessId }: RecentAppointmentsWidge
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200">
       <div className="flex sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Appointments</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{business.businessType === 'SERVICES' ? 'Recent scheduled sessions' : 'Recent Appointments'}</h3>
         <div className="flex space-y-2 sm:space-y-0 sm:space-x-2">
           {appointments.length > 0 && (
             <div className="flex items-center space-x-2">

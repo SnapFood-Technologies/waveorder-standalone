@@ -77,11 +77,16 @@ const getDemoProducts = (businessType: string) => {
         { id: 3, name: 'Dairy Bundle', description: 'Fresh milk, eggs, and cheese from local farms', price: 12.99, featured: false }
       ]
     case 'SALON':
-    case 'SERVICES':
       return [
         { id: 1, name: 'Haircut & Style', description: 'Professional haircut with styling and consultation', price: 35.00, featured: true, duration: 60 },
         { id: 2, name: 'Hair Color', description: 'Full hair coloring service with premium products', price: 85.00, featured: false, duration: 120 },
         { id: 3, name: 'Manicure', description: 'Classic manicure with nail shaping and polish', price: 25.00, featured: false, duration: 45 }
+      ]
+    case 'SERVICES':
+      return [
+        { id: 1, name: 'Consultation', description: 'One-on-one consultation to discuss your needs and goals', price: 0, featured: true, duration: 30 },
+        { id: 2, name: 'Strategy Session', description: 'Dedicated session to plan and align on next steps', price: 150.00, featured: false, duration: 60 },
+        { id: 3, name: 'In-person Review', description: 'Face-to-face review and follow-up session', price: 75.00, featured: false, duration: 45 }
       ]
     default:
       return [

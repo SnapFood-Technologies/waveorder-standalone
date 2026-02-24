@@ -30,6 +30,7 @@ export function QuickActionsWidget({ businessId }: QuickActionsWidgetProps) {
   }, [businessId])
   
   const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
+  const isServices = businessType === 'SERVICES'
   
   return (
     <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">
@@ -40,8 +41,8 @@ export function QuickActionsWidget({ businessId }: QuickActionsWidgetProps) {
         className="flex items-center justify-center px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
       >
         <Plus className="w-4 h-4 sm:mr-2" />
-        <span className="hidden sm:inline ml-2 sm:ml-0">{isSalon ? 'New Appointment' : 'New Order'}</span>
-        <span className="sm:hidden ml-1">{isSalon ? 'Appt' : 'Order'}</span>
+        <span className="hidden sm:inline ml-2 sm:ml-0">{isServices ? 'Schedule session' : isSalon ? 'New Appointment' : 'New Order'}</span>
+        <span className="sm:hidden ml-1">{isServices ? 'Session' : isSalon ? 'Appt' : 'Order'}</span>
       </Link>
       
       <Link

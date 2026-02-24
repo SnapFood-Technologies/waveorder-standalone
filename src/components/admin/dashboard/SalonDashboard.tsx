@@ -1,6 +1,7 @@
 // src/components/admin/dashboard/SalonDashboard.tsx
 'use client'
 
+import { useState, useEffect } from 'react'
 import { SalonDashboardMetrics } from '@/components/admin/dashboard/SalonDashboardMetrics'
 import { BusinessStatusWidget } from '@/components/admin/dashboard/BusinessStatusWidget'
 import { RecentAppointmentsWidget } from '@/components/admin/dashboard/RecentAppointmentsWidget'
@@ -13,8 +14,30 @@ interface SalonDashboardProps {
   businessId: string
 }
 
+function dashboardSubtitle(businessType: string) {
+  if (businessType === 'SERVICES') return "Welcome back! Here's what's happening with your services."
+  if (businessType === 'SALON') return "Welcome back! Here's what's happening with your salon."
+  return "Welcome back! Here's what's happening with your business."
+}
+
 export function SalonDashboard({ businessId }: SalonDashboardProps) {
   const { isPro, loading: subscriptionLoading } = useSubscription()
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
+
+  useEffect(() => {
+    const fetchBusiness = async () => {
+      try {
+        const res = await fetch(`/api/admin/stores/${businessId}`)
+        if (res.ok) {
+          const data = await res.json()
+          setBusinessType(data.business?.businessType || 'RESTAURANT')
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchBusiness()
+  }, [businessId])
 
   return (
     <div className="space-y-6">
@@ -22,7 +45,7 @@ export function SalonDashboard({ businessId }: SalonDashboardProps) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">
-            Welcome back! Here's what's happening with your salon.
+            {dashboardSubtitle(businessType)}
           </p>
         </div>
         <div className="mt-4 lg:mt-0">

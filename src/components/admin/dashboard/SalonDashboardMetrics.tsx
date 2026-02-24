@@ -22,6 +22,7 @@ interface Metrics {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
 export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps) {
@@ -32,7 +33,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
     growth: 0,
     appointmentsByStatus: []
   })
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: undefined })
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState(() => {
     const now = new Date()
@@ -49,7 +50,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
         const response = await fetch(`/api/admin/stores/${businessId}`)
         if (response.ok) {
           const data = await response.json()
-          setBusiness({ currency: data.business.currency })
+          setBusiness({ currency: data.business.currency, businessType: data.business.businessType })
         }
       } catch (error) {
         console.error('Error fetching business data:', error)
@@ -125,7 +126,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
       hasTooltip: false
     },
     {
-      name: 'Appointments',
+      name: business.businessType === 'SERVICES' ? 'Scheduled sessions' : 'Appointments',
       value: metrics.appointments.toLocaleString(),
       icon: Calendar,
       color: 'text-green-600',

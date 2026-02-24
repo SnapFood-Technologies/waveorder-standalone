@@ -80,7 +80,9 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
   })
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
 
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
+  const isServices = businessType === 'SERVICES'
+  const sessionLabel = isServices ? 'sessions' : (isSalon ? 'appointments' : 'orders')
 
   useEffect(() => {
     fetchBusinessData()
@@ -255,7 +257,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                               </span>
                               <span className="flex items-center gap-1">
                                 <ShoppingBag className="w-3 h-3" />
-                                {country.orders} {isSalon ? 'appointments' : 'orders'}
+                                {country.orders} {sessionLabel}
                               </span>
                             </div>
                           </div>
@@ -308,7 +310,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                               </span>
                               <span className="flex items-center gap-1">
                                 <ShoppingBag className="w-3 h-3" />
-                                {city.orders} {isSalon ? 'appointments' : 'orders'}
+                                {city.orders} {sessionLabel}
                               </span>
                             </div>
                           </div>
@@ -387,7 +389,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {source.orders} {isSalon ? 'appointments' : 'orders'}
+                            {source.orders} {sessionLabel}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -445,7 +447,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {campaign.orders} {isSalon ? 'appointments' : 'orders'}
+                            {campaign.orders} {sessionLabel}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -503,7 +505,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {placement.orders} {isSalon ? 'appointments' : 'orders'}
+                            {placement.orders} {sessionLabel}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
@@ -560,7 +562,7 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                           </span>
                           <span className="flex items-center gap-1">
                             <ShoppingBag className="w-3 h-3" />
-                            {medium.orders} {isSalon ? 'appointments' : 'orders'}
+                            {medium.orders} {sessionLabel}
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-3 h-3" />
