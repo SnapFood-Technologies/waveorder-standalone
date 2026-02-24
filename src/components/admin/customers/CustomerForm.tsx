@@ -1337,7 +1337,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     </div>
                     <div className="flex items-center">
                       <CheckCircle className="w-3 h-3 mr-2 text-blue-500" />
-                      <span className="text-xs">allergies, dietary-restrictions</span>
+                      <span className="text-xs">{isServices ? 'preferences, goals' : isSalon ? 'preferences, notes' : 'allergies, dietary-restrictions'}</span>
                     </div>
                     <div className="flex items-center">
                       <CheckCircle className="w-3 h-3 mr-2 text-purple-500" />

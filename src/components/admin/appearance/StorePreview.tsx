@@ -105,6 +105,7 @@ const isMobileDevice = () => {
 
 export function StorePreview({ businessData, settings, device }: StorePreviewProps) {
   const isSalon = businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES'
+  const isServices = businessData.businessType === 'SERVICES'
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [cartCount, setCartCount] = useState(2)
   const [searchTerm, setSearchTerm] = useState('')
@@ -156,7 +157,13 @@ export function StorePreview({ businessData, settings, device }: StorePreviewPro
   const currencySymbol = getCurrencySymbol(businessData.currency)
   const demoProducts = getDemoProducts(businessData.businessType)
 
-  const categories = isSalon 
+  const categories = isServices
+    ? [
+        { id: 'all', name: 'All' },
+        { id: 'popular', name: 'Popular' },
+        { id: 'consultations', name: 'Consultations' }
+      ]
+    : isSalon
     ? [
         { id: 'all', name: 'All' },
         { id: 'popular', name: 'Popular' },
@@ -748,7 +755,7 @@ if (isMobile && device === 'mobile') {
               </div>
               
               <div className="text-xs text-gray-600 mb-2">
-                {businessData.description || (isSalon ? 'Professional beauty services, book online' : 'Fresh food delivered to your door')}
+                {businessData.description || (isServices ? 'Professional services, book sessions online' : isSalon ? 'Professional beauty services, book online' : 'Fresh food delivered to your door')}
               </div>
               
               <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">

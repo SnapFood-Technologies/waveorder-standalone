@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Phone, Mail, Calendar, Clock, Scissors, Plus, X, Search, Save, ArrowLeft, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { User, Phone, Mail, Calendar, Clock, Scissors, Briefcase, Plus, X, Search, Save, ArrowLeft, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface AdminAppointmentFormProps {
@@ -781,7 +781,7 @@ export default function AdminAppointmentForm({
               {/* Services Selection */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <Scissors className="w-5 h-5 mr-2 text-teal-600" />
+                  {isServices ? <Briefcase className="w-5 h-5 mr-2 text-teal-600" /> : <Scissors className="w-5 h-5 mr-2 text-teal-600" />}
                   Services
                 </h2>
 
@@ -1026,7 +1026,7 @@ export default function AdminAppointmentForm({
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  {isServices ? <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" /> : <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-3" />}
                   <p className="text-gray-500 text-sm">No services added yet</p>
                   <p className="text-gray-400 text-xs">Search and add services above</p>
                 </div>

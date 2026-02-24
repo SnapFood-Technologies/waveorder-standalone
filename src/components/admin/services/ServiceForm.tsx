@@ -11,6 +11,7 @@ import {
   Plus, 
   Trash2, 
   Scissors,
+  Briefcase,
   Star,
   Eye,
   EyeOff,
@@ -200,10 +201,12 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
     currency: string
     language: string
     storefrontLanguage: string
+    businessType?: string
   }>({ 
     currency: 'USD', 
     language: 'en', 
-    storefrontLanguage: 'en'
+    storefrontLanguage: 'en',
+    businessType: 'SALON'
   })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
@@ -235,7 +238,8 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
         setBusiness({ 
           currency: data.business.currency,
           language: data.business.language || 'en',
-          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en'
+          storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en',
+          businessType: data.business.businessType || 'SALON'
         })
         if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq' || 
             data.business.language === 'el' || data.business.storefrontLanguage === 'el') {
@@ -435,8 +439,9 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
     }
   }
 
+  const isServices = business.businessType === 'SERVICES'
   const tabs = [
-    { id: 'basic', name: 'Basic Info', icon: Scissors },
+    { id: 'basic', name: 'Basic Info', icon: isServices ? Briefcase : Scissors },
     { id: 'modifiers', name: 'Add-ons', icon: Plus },
     { id: 'seo', name: 'SEO', icon: Hash }
   ]
@@ -860,9 +865,9 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
-                    <h4 className="font-medium text-gray-900">Requires Appointment</h4>
+                    <h4 className="font-medium text-gray-900">{isServices ? 'Requires session booking' : 'Requires Appointment'}</h4>
                     <p className="text-sm text-gray-600">
-                      Enable if customers need to book this service in advance
+                      Enable if customers need to book this {isServices ? 'session' : 'service'} in advance
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -949,7 +954,7 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900">Service Add-ons</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Add optional extras or upgrades (e.g., "Deep Conditioning +{getCurrencySymbol()}20")
+                      Add optional extras or upgrades (e.g., {isServices ? `"Extra time +${getCurrencySymbol()}20"` : `"Deep Conditioning +${getCurrencySymbol()}20"`})
                     </p>
                   </div>
                   <button
@@ -993,7 +998,7 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                               value={modifier.name}
                               onChange={(e) => updateModifier(index, 'name', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                              placeholder="e.g., Deep Conditioning"
+                              placeholder={isServices ? 'e.g., Extra time' : 'e.g., Deep Conditioning'}
                             />
                           </div>
 
@@ -1125,7 +1130,7 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                       <h4 className="font-medium text-green-900 mb-2">Duration & Staff</h4>
                       <ul className="text-sm text-green-800 space-y-1">
                         <li>• Set accurate duration for scheduling</li>
-                        <li>• Assign staff to control who can perform services</li>
+                        <li>• Assign staff to control who can {isServices ? 'deliver sessions' : 'perform services'}</li>
                         <li>• Leave staff unassigned for any staff member</li>
                       </ul>
                     </div>
@@ -1142,8 +1147,8 @@ export function ServiceForm({ businessId, serviceId }: ServiceFormProps) {
                     <h4 className="font-medium text-emerald-900 mb-2">Service Add-ons</h4>
                     <ul className="text-sm text-emerald-800 space-y-1">
                       <li>• Add optional extras or upgrades</li>
-                      <li>• Examples: Deep Conditioning, Hair Treatment</li>
-                      <li>• Can be free or add to service cost</li>
+                      <li>• Examples: {isServices ? 'Extra time, Prep materials' : 'Deep Conditioning, Hair Treatment'}</li>
+                      <li>• Can be free or add to {isServices ? 'session' : 'service'} cost</li>
                       <li>• Mark as required if mandatory</li>
                     </ul>
                   </div>

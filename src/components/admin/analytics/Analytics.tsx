@@ -1140,10 +1140,10 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {/* Product Analytics & Campaign Analytics - 2 column grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <Link
-              href={isSalon 
+              href={addParams(isSalon 
                 ? `/admin/stores/${businessId}/analytics/services`
                 : `/admin/stores/${businessId}/analytics/products`
-              }
+              )}
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
             >
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
@@ -1179,7 +1179,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
           {/* Geographic & Product/Service Shares - 2 column grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
-              href={`/admin/stores/${businessId}/advanced-analytics`}
+              href={addParams(`/admin/stores/${businessId}/advanced-analytics`)}
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-teal-300 transition-all duration-200 group"
             >
               <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-teal-200 transition-colors">
@@ -1192,7 +1192,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </Link>
             
             <Link
-              href={isSalon ? `/admin/stores/${businessId}/service-shares` : `/admin/stores/${businessId}/product-shares`}
+              href={addParams(isSalon ? `/admin/stores/${businessId}/service-shares` : `/admin/stores/${businessId}/product-shares`)}
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-all duration-200 group"
             >
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-purple-200 transition-colors">

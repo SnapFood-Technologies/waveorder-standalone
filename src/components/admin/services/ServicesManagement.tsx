@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Scissors, 
+  Briefcase,
   Plus, 
   Search, 
   Filter, 
@@ -67,6 +68,7 @@ interface Category {
 
 interface Business {
   currency: string
+  businessType?: string
 }
 
 interface ServicesPageProps {
@@ -85,7 +87,7 @@ export default function ServicesManagement({ businessId }: ServicesPageProps) {
   
   const [services, setServices] = useState<Service[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [business, setBusiness] = useState<Business>({ currency: 'USD' })
+  const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'SALON' })
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
@@ -135,7 +137,7 @@ export default function ServicesManagement({ businessId }: ServicesPageProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({ currency: data.business.currency, businessType: data.business.businessType })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -332,7 +334,7 @@ export default function ServicesManagement({ businessId }: ServicesPageProps) {
               <p className="text-sm text-gray-600">Total Services</p>
               <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
             </div>
-            <Scissors className="w-8 h-8 text-teal-600" />
+            {business.businessType === 'SERVICES' ? <Briefcase className="w-8 h-8 text-teal-600" /> : <Scissors className="w-8 h-8 text-teal-600" />}
           </div>
         </div>
         
@@ -450,7 +452,7 @@ export default function ServicesManagement({ businessId }: ServicesPageProps) {
       {services.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Scissors className="w-10 h-10 text-gray-400" />
+            {business.businessType === 'SERVICES' ? <Briefcase className="w-10 h-10 text-gray-400" /> : <Scissors className="w-10 h-10 text-gray-400" />}
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {pagination.total === 0 ? 'No services yet' : 'No services found'}
@@ -486,7 +488,7 @@ export default function ServicesManagement({ businessId }: ServicesPageProps) {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Scissors className="w-12 h-12 text-gray-300" />
+                      {business.businessType === 'SERVICES' ? <Briefcase className="w-12 h-12 text-gray-300" /> : <Scissors className="w-12 h-12 text-gray-300" />}
                     </div>
                   )}
                   
