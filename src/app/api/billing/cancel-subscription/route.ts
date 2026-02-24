@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { cancelUserSubscription } from '@/lib/subscription'
 import { sendSubscriptionChangeEmail } from '@/lib/email'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +33,36 @@ export async function POST(req: NextRequest) {
 
     // Cancel the subscription
     await cancelUserSubscription(session.user.id)
-    
+
+    // Resolve first business for logging (billing panel is per-business context)
+    const firstBusiness = await prisma.businessUser.findFirst({
+      where: { userId: session.user.id },
+      select: { businessId: true },
+    })
+    const businessIdForLog = firstBusiness?.businessId ?? undefined
+
+    const oldPlan = user.plan || user.subscription?.plan || 'PRO'
+
+    // Log billing panel action for superadmin
+    await logSystemEvent({
+      logType: 'billing_panel_action',
+      severity: 'info',
+      endpoint: '/api/billing/cancel-subscription',
+      method: 'POST',
+      statusCode: 200,
+      url: req.url || '/api/billing/cancel-subscription',
+      businessId: businessIdForLog,
+      errorMessage: `Subscription cancel requested (${oldPlan})`,
+      ipAddress: extractIPAddress(req),
+      userAgent: req.headers.get('user-agent') || undefined,
+      metadata: {
+        userId: user.id,
+        userEmail: user.email,
+        oldPlan,
+        action: 'cancel_requested',
+        currentPeriodEnd: user.subscription?.currentPeriodEnd?.toISOString() ?? undefined,
+      },
+    })
 
     // 📧 SEND CANCELLATION CONFIRMATION EMAIL
     if (user.subscription) {

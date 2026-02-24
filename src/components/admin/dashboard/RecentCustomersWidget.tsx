@@ -63,10 +63,14 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
     fetchRecentCustomers()
   }, [businessId])
   
-  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
+  const isSalon = businessType === 'SALON'
+  const isServices = businessType === 'SERVICES'
+  const sessionOrOrderLabel = isServices ? 'sessions' : isSalon ? 'appointments' : 'orders'
+  const lastActivityLabel = isServices ? 'Last session' : isSalon ? 'Last Appointment' : 'Last Order'
+  const activityCountLabel = isServices ? 'Sessions' : isSalon ? 'Appointments' : 'Orders'
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return isSalon ? 'No appointments' : 'No orders'
+    if (!dateString) return isServices ? 'No sessions' : isSalon ? 'No appointments' : 'No orders'
     const date = new Date(dateString)
     const now = new Date()
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
@@ -134,7 +138,11 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h4 className="text-lg font-medium text-gray-900 mb-2">No customers yet</h4>
           <p className="text-gray-600 mb-6">
-            When customers place orders, they'll appear here. You can also add customers manually to build your customer base.
+            {isServices
+              ? "When customers book sessions, they'll appear here. You can also add customers manually to build your customer base."
+              : isSalon
+                ? "When customers book appointments, they'll appear here. You can also add customers manually to build your customer base."
+                : "When customers place orders, they'll appear here. You can also add customers manually to build your customer base."}
           </p>
           <Link
             href={addParams(`/admin/stores/${businessId}/customers/create`)}
@@ -151,9 +159,9 @@ export function RecentCustomersWidget({ businessId }: RecentCustomersWidgetProps
               <tr className="border-b border-gray-200">
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Customer</th>
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Contact</th>
-                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">{isSalon ? 'Appointments' : 'Orders'}</th>
+                <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">{activityCountLabel}</th>
                 <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Type</th>
-                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">{isSalon ? 'Last Appointment' : 'Last Order'}</th>
+                <th className="text-right py-2 px-3 text-sm font-medium text-gray-500">{lastActivityLabel}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

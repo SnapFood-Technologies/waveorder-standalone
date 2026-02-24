@@ -9,6 +9,7 @@ import {
   RefreshCw,
   TrendingUp,
   Scissors,
+  Briefcase,
   Eye
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
@@ -32,6 +33,7 @@ interface SharesData {
 export default function ServiceSharesAnalytics({ businessId }: ServiceSharesAnalyticsProps) {
   const [data, setData] = useState<SharesData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [businessType, setBusinessType] = useState<string>('RESTAURANT')
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     end: new Date()
@@ -39,9 +41,23 @@ export default function ServiceSharesAnalytics({ businessId }: ServiceSharesAnal
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
 
   useEffect(() => {
+    fetchBusiness()
+  }, [businessId])
+  useEffect(() => {
     fetchSharesData()
   }, [businessId, dateRange])
 
+  const fetchBusiness = async () => {
+    try {
+      const response = await fetch(`/api/admin/stores/${businessId}`)
+      if (response.ok) {
+        const result = await response.json()
+        setBusinessType(result.business?.businessType || 'RESTAURANT')
+      }
+    } catch (e) {
+      console.error('Error fetching business:', e)
+    }
+  }
   const fetchSharesData = async () => {
     try {
       setLoading(true)
@@ -162,7 +178,7 @@ export default function ServiceSharesAnalytics({ businessId }: ServiceSharesAnal
                       />
                     ) : (
                       <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <Scissors className="w-6 h-6 text-gray-400" />
+                        {businessType === 'SERVICES' ? <Briefcase className="w-6 h-6 text-gray-400" /> : <Scissors className="w-6 h-6 text-gray-400" />}
                       </div>
                     )}
                     

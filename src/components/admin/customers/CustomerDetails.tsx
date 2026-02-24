@@ -90,7 +90,12 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'details' | 'orders'>('details')
-  const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
+  const isSalon = business.businessType === 'SALON'
+  const isServices = business.businessType === 'SERVICES'
+  const activityLabel = isSalon ? 'Appointment' : isServices ? 'Session' : 'Order'
+  const activityLabelPlural = isSalon ? 'Appointments' : isServices ? 'Sessions' : 'Orders'
+  const activityNoun = isSalon ? 'appointment' : isServices ? 'session' : 'order'
+  const activityNounPlural = isSalon ? 'appointments' : isServices ? 'sessions' : 'orders'
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteSuccess, setDeleteSuccess] = useState(false)
@@ -354,7 +359,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               </span>
             </div>
             <p className="text-sm sm:text-base text-gray-600 mt-1">
-              {isSalon ? 'Customer details and appointment history' : 'Customer details and order history'}
+              {isSalon ? 'Customer details and appointment history' : isServices ? 'Customer details and session history' : 'Customer details and order history'}
             </p>
           </div>
         </div>
@@ -376,15 +381,15 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
             Delete
           </button>
           <Link
-            href={addParams(isSalon 
+            href={addParams((isSalon || isServices)
               ? `/admin/stores/${businessId}/appointments/create?customerId=${customerId}`
               : `/admin/stores/${businessId}/orders/create?customerId=${customerId}`
             )}
             className="inline-flex items-center px-3 sm:px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm sm:text-base"
           >
             <ShoppingBag className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">{isSalon ? 'Create Appointment' : 'Create Order'}</span>
-            <span className="sm:hidden">{isSalon ? 'Appt' : 'Order'}</span>
+            <span className="hidden sm:inline">{isSalon ? 'Create Appointment' : isServices ? 'Create Session' : 'Create Order'}</span>
+            <span className="sm:hidden">{isSalon ? 'Appt' : isServices ? 'Session' : 'Order'}</span>
           </Link>
         </div>
       </div>
@@ -397,7 +402,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <ShoppingBag className="w-5 h-5 text-blue-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Total Appointments' : 'Total Orders'}</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Total Appointments' : isServices ? 'Total Sessions' : 'Total Orders'}</p>
               <p className="text-xl font-bold text-gray-900">{stats.totalOrders}</p>
             </div>
           </div>
@@ -421,7 +426,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <Wallet className="w-5 h-5 text-purple-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Avg Appointment' : 'Avg Order'}</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Avg Appointment' : isServices ? 'Avg Session' : 'Avg Order'}</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(stats.averageOrderValue)}</p>
             </div>
           </div>
@@ -433,7 +438,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <Calendar className="w-5 h-5 text-teal-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">{isSalon ? 'First Appointment' : 'First Order'}</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'First Appointment' : isServices ? 'First Session' : 'First Order'}</p>
               <p className="text-sm font-bold text-gray-900">
                 {stats.firstOrderDate 
                   ? formatDateShort(stats.firstOrderDate)
@@ -450,7 +455,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               <Calendar className="w-5 h-5 text-orange-600" />
             </div>
             <div className="ml-3">
-              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Last Appointment' : 'Last Order'}</p>
+              <p className="text-xs font-medium text-gray-500">{isSalon ? 'Last Appointment' : isServices ? 'Last Session' : 'Last Order'}</p>
               <p className="text-sm font-bold text-gray-900">
                 {stats.lastOrderDate 
                   ? formatDateShort(stats.lastOrderDate)
@@ -504,7 +509,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {isSalon ? 'Appointment History' : 'Order History'} ({orders.length})
+              {isSalon ? 'Appointment History' : isServices ? 'Session History' : 'Order History'} ({orders.length})
             </button>
           </nav>
         </div>
@@ -659,7 +664,7 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   
                   <div className="space-y-3">
                     <Link
-                      href={addParams(isSalon 
+                      href={addParams((isSalon || isServices)
                         ? `/admin/stores/${businessId}/appointments/create?customerId=${customerId}`
                         : `/admin/stores/${businessId}/orders/create?customerId=${customerId}`
                       )}
@@ -668,10 +673,10 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       <ShoppingBag className="w-5 h-5 mr-3 text-teal-600" />
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {isSalon ? 'Create New Appointment' : 'Create New Order'}
+                          {isSalon ? 'Create New Appointment' : isServices ? 'Create New Session' : 'Create New Order'}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {isSalon ? 'Create an appointment for this customer' : 'Place an order for this customer'}
+                          {isSalon ? 'Create an appointment for this customer' : isServices ? 'Schedule a session for this customer' : 'Place an order for this customer'}
                         </div>
                       </div>
                     </Link>
@@ -709,22 +714,24 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
               {orders.length === 0 ? (
                 <div className="text-center py-12">
                   <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{isSalon ? 'No appointments yet' : 'No orders yet'}</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">{isSalon ? 'No appointments yet' : isServices ? 'No sessions yet' : 'No orders yet'}</h3>
                   <p className="text-gray-600 mb-6">
                     {isSalon 
                       ? "This customer hasn't booked any appointments yet."
+                      : isServices
+                      ? "This customer hasn't had any sessions yet."
                       : "This customer hasn't placed any orders yet."
                     }
                   </p>
                   <Link
-                    href={addParams(isSalon 
+                    href={addParams((isSalon || isServices)
                       ? `/admin/stores/${businessId}/appointments/create?customerId=${customerId}`
                       : `/admin/stores/${businessId}/orders/create?customerId=${customerId}`
                     )}
                     className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
                   >
                     <ShoppingBag className="w-4 h-4 mr-2" />
-                    {isSalon ? 'Create First Appointment' : 'Create First Order'}
+                    {isSalon ? 'Create First Appointment' : isServices ? 'Create First Session' : 'Create First Order'}
                   </Link>
                 </div>
               ) : (
@@ -794,13 +801,13 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                       
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <Link
-                          href={addParams(isSalon 
+                          href={addParams((isSalon || isServices)
                             ? `/admin/stores/${businessId}/appointments/${order.appointmentId || order.id}`
                             : `/admin/stores/${businessId}/orders/${order.id}`
                           )}
                           className="text-teal-600 hover:text-teal-700 text-sm font-medium inline-flex items-center"
                         >
-                          {isSalon ? 'View Appointment Details' : 'View Order Details'}
+                          {isSalon ? 'View Appointment Details' : isServices ? 'View Session Details' : 'View Order Details'}
                           <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -812,16 +819,16 @@ export default function CustomerDetails({ businessId, customerId }: CustomerDeta
                   {orders.length > 10 && (
                     <div className="text-center py-4">
                       <p className="text-sm text-gray-600">
-                        Showing recent {Math.min(orders.length, 10)} {isSalon ? 'appointments' : 'orders'}
+                        Showing recent {Math.min(orders.length, 10)} {isSalon ? 'appointments' : isServices ? 'sessions' : 'orders'}
                       </p>
                       <Link
-                        href={addParams(isSalon 
+                        href={addParams((isSalon || isServices)
                           ? `/admin/stores/${businessId}/appointments?customer=${customerId}`
                           : `/admin/stores/${businessId}/orders?customer=${customerId}`
                         )}
                         className="text-teal-600 hover:text-teal-700 text-sm font-medium"
                       >
-                        {isSalon ? 'View All Appointments' : 'View All Orders'} →
+                        {isSalon ? 'View All Appointments' : isServices ? 'View All Sessions' : 'View All Orders'} →
                       </Link>
                     </div>
                   )}

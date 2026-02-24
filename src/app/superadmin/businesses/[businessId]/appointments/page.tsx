@@ -20,7 +20,8 @@ import {
   LineChart as LineChartIcon,
   RefreshCw,
   Info,
-  User
+  User,
+  ExternalLink
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -233,6 +234,11 @@ export default function BusinessAppointmentsStatsPage() {
     return STATUS_COLORS[status] || '#6b7280'
   }
 
+  const isServices = data?.business?.businessType === 'SERVICES'
+  const sessionSingular = isServices ? 'session' : 'appointment'
+  const sessionPlural = isServices ? 'sessions' : 'appointments'
+  const sessionLabel = isServices ? 'Scheduled session' : 'Appointment'
+
   // Format X-axis labels (must be defined before processedChartData uses it)
   const formatXAxisLabel = (dateStr: string, grouping: 'day' | 'week' | 'month'): string => {
     const date = new Date(dateStr)
@@ -323,7 +329,7 @@ export default function BusinessAppointmentsStatsPage() {
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="text-gray-600 text-sm mb-1">{label}</p>
           <p className="text-gray-900 font-semibold">
-            {payload[0].value} {payload[0].value === 1 ? 'appointment' : 'appointments'}
+            {payload[0].value} {payload[0].value === 1 ? sessionSingular : sessionPlural}
           </p>
         </div>
       )
@@ -332,24 +338,33 @@ export default function BusinessAppointmentsStatsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <Link
-          href={`/superadmin/businesses/${businessId}`}
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Business Details
-        </Link>
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Appointment Statistics</h1>
-            <p className="text-gray-600 mt-1">
-              Appointments for <span className="font-medium">{data.business.name}</span>
+    <div className="space-y-6 px-2 sm:px-0">
+      {/* Header: back + title left, View in Admin end right */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <Link
+            href={`/superadmin/businesses/${businessId}`}
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-2 sm:mb-0"
+          >
+            <ChevronLeft className="w-4 h-4 flex-shrink-0" />
+            Back to Business Details
+          </Link>
+          <div className="mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+              {isServices ? 'Scheduled session Statistics' : 'Appointment Statistics'}
+            </h1>
+            <p className="text-gray-600 mt-1 text-sm">
+              {sessionPlural} for <span className="font-medium">{data.business.name}</span>
             </p>
           </div>
         </div>
+        <Link
+          href={addParams(`/admin/stores/${businessId}/appointments`)}
+          className="inline-flex items-center justify-center sm:justify-end px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 flex-shrink-0 self-start sm:self-center"
+        >
+          <ExternalLink className="w-4 h-4 mr-1 flex-shrink-0" />
+          View in Admin
+        </Link>
       </div>
 
       {/* Summary Cards */}
@@ -357,7 +372,7 @@ export default function BusinessAppointmentsStatsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Appointments</p>
+              <p className="text-sm font-medium text-gray-600">Total {isServices ? 'Sessions' : 'Appointments'}</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">{data.stats.totalAppointments}</p>
             </div>
             <Calendar className="w-10 h-10 text-blue-500" />
@@ -377,7 +392,7 @@ export default function BusinessAppointmentsStatsPage() {
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Avg Appointment Value</p>
+              <p className="text-sm font-medium text-gray-600">Avg {sessionLabel} Value</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
                 {formatCurrency(data.stats.averageAppointmentValue)}
               </p>
@@ -406,8 +421,8 @@ export default function BusinessAppointmentsStatsPage() {
               <BarChart3 className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Appointments Over Time</h3>
-              <p className="text-sm text-gray-600">All appointments for this business</p>
+              <h3 className="text-lg font-semibold text-gray-900">{sessionPlural.charAt(0).toUpperCase() + sessionPlural.slice(1)} Over Time</h3>
+              <p className="text-sm text-gray-600">All {sessionPlural} for this business</p>
             </div>
           </div>
 
@@ -491,7 +506,7 @@ export default function BusinessAppointmentsStatsPage() {
           <div className="h-64 flex items-center justify-center text-gray-500">
             <div className="text-center">
               <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p>No appointment data available for this period</p>
+              <p>No {sessionSingular} data available for this period</p>
             </div>
           </div>
         )}
@@ -500,7 +515,7 @@ export default function BusinessAppointmentsStatsPage() {
       {/* Status Breakdown */}
       {statusChartData.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Appointment Status Breakdown</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">{sessionLabel} Status Breakdown</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -563,7 +578,7 @@ export default function BusinessAppointmentsStatsPage() {
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by appointment number, customer name, or phone..."
+                placeholder={`Search by ${sessionSingular} number, customer name, or phone...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
@@ -589,7 +604,7 @@ export default function BusinessAppointmentsStatsPage() {
               </button>
 
               <div className="text-sm text-gray-600">
-                {data.pagination.total} appointments
+                {data.pagination.total} {sessionPlural}
               </div>
             </div>
           </div>
@@ -635,12 +650,12 @@ export default function BusinessAppointmentsStatsPage() {
               <Calendar className="w-10 h-10 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {debouncedSearchQuery || activeFiltersCount > 0 ? 'No appointments found' : 'No appointments yet'}
+              {debouncedSearchQuery || activeFiltersCount > 0 ? `No ${sessionPlural} found` : `No ${sessionPlural} yet`}
             </h3>
             <p className="text-gray-600">
               {debouncedSearchQuery || activeFiltersCount > 0
                 ? 'Try adjusting your search terms or filters.'
-                : 'This business has not received any appointments yet.'}
+                : `This business has not received any ${sessionPlural} yet.`}
             </p>
           </div>
         ) : (
@@ -650,7 +665,7 @@ export default function BusinessAppointmentsStatsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Appointment
+                      {sessionLabel}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Customer
@@ -778,7 +793,7 @@ export default function BusinessAppointmentsStatsPage() {
                   <div className="text-sm text-gray-700">
                     Showing {((data.pagination.page - 1) * data.pagination.limit) + 1} to{' '}
                     {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
-                    {data.pagination.total} appointments
+                    {data.pagination.total} {sessionPlural}
                   </div>
                   
                   <div className="flex items-center space-x-2">

@@ -63,7 +63,12 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 })
 
 export function SchedulingConfiguration({ businessId, businessType }: SchedulingConfigurationProps) {
-  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
+  const isSalon = businessType === 'SALON'
+  const isServices = businessType === 'SERVICES'
+  const isSalonOrServices = isSalon || isServices
+  const schedulingNoun = isSalon ? 'appointment' : isServices ? 'session' : 'order'
+  const schedulingNounPlural = isSalon ? 'appointments' : isServices ? 'sessions' : 'orders'
+  const schedulingLabel = isSalon ? 'Appointment' : isServices ? 'Session' : 'Order'
   const [config, setConfig] = useState<SchedulingConfig>({
     schedulingEnabled: true,
     slotDuration: 30,
@@ -209,8 +214,8 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
             Scheduling Configuration
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            {isSalon 
-              ? 'Configure appointment time slots, capacity limits, and special hours'
+            {isSalonOrServices 
+              ? `Configure ${schedulingNoun} time slots, capacity limits, and special hours`
               : 'Configure time slots, capacity limits, and special hours'}
           </p>
         </div>
@@ -245,11 +250,13 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div>
             <label className="block text-sm font-medium text-gray-900">
-              {isSalon ? 'Enable Appointment Scheduling' : 'Enable Order Scheduling'}
+              {isSalon ? 'Enable Appointment Scheduling' : isServices ? 'Enable Session Scheduling' : 'Enable Order Scheduling'}
             </label>
             <p className="text-xs text-gray-500 mt-1">
-              {isSalon 
+              {isSalon
                 ? 'Allow customers to book appointments for specific time slots based on your business hours.'
+                : isServices
+                ? 'Allow customers to book sessions for specific time slots based on your business hours.'
                 : 'Allow customers to schedule orders for specific times. When disabled, only instant orders are accepted.'}
             </p>
           </div>
@@ -284,14 +291,14 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            {isSalon ? 'How long each appointment time slot should be' : 'How long each booking time slot should be'}
+            {isSalon ? 'How long each appointment time slot should be' : isServices ? 'How long each session time slot should be' : 'How long each booking time slot should be'}
           </p>
         </div>
 
         {/* Slot Capacity */}
         <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {isSalon ? 'Appointments per Time Slot' : 'Orders per Time Slot'}
+            {isSalon ? 'Appointments per Time Slot' : isServices ? 'Sessions per Time Slot' : 'Orders per Time Slot'}
           </label>
           <div className="flex items-center space-x-4">
             <input
@@ -309,20 +316,20 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
             />
             <span className="text-sm text-gray-500">
               {config.slotCapacity 
-                ? `Max ${config.slotCapacity} ${isSalon ? 'appointments' : 'orders'} per slot` 
+                ? `Max ${config.slotCapacity} ${schedulingNounPlural} per slot` 
                 : 'No limit'}
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            {isSalon ? 'Leave empty for unlimited appointments per slot' : 'Leave empty for unlimited orders per slot'}
+            {isSalon ? 'Leave empty for unlimited appointments per slot' : isServices ? 'Leave empty for unlimited sessions per slot' : 'Leave empty for unlimited orders per slot'}
           </p>
         </div>
 
         {/* Buffer Times */}
-        {isSalon ? (
+        {isSalonOrServices ? (
           <div className={config.schedulingEnabled ? '' : 'opacity-50 pointer-events-none'}>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Appointment Buffer Time
+              {schedulingLabel} Buffer Time
             </label>
             <select
               value={config.pickupBufferMinutes}
@@ -338,7 +345,7 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              Minimum time before an appointment slot can be booked. This prevents last-minute bookings.
+              Minimum time before a {schedulingNoun} slot can be booked. This prevents last-minute bookings.
             </p>
           </div>
         ) : (
@@ -399,7 +406,7 @@ export function SchedulingConfiguration({ businessId, businessType }: Scheduling
             ))}
           </select>
           <p className="text-xs text-gray-500 mt-1">
-            {isSalon ? 'How far in advance customers can book appointments' : 'How far in advance customers can schedule their orders'}
+            {isSalon ? 'How far in advance customers can book appointments' : isServices ? 'How far in advance customers can book sessions' : 'How far in advance customers can schedule their orders'}
           </p>
         </div>
 

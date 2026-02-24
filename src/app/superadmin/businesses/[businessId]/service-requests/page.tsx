@@ -192,30 +192,31 @@ export default function BusinessServiceRequestsPage() {
   if (!data) return null
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href={`/superadmin/businesses/${businessId}`}
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Business Details
-        </Link>
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Service Request Statistics</h1>
-            <p className="text-gray-600 mt-1">
+    <div className="space-y-6 px-2 sm:px-0">
+      {/* Header: back + title left, View in Admin end right */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <Link
+            href={`/superadmin/businesses/${businessId}`}
+            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-2 sm:mb-0"
+          >
+            <ChevronLeft className="w-4 h-4 flex-shrink-0" />
+            Back to Business Details
+          </Link>
+          <div className="mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Service Request Statistics</h1>
+            <p className="text-gray-600 mt-1 text-sm">
               Service requests for <span className="font-medium">{data.business.name}</span>
             </p>
           </div>
-          <Link
-            href={addParams(`/admin/stores/${businessId}/service-requests`)}
-            className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50"
-          >
-            <ExternalLink className="w-4 h-4 mr-1" />
-            View in Admin
-          </Link>
         </div>
+        <Link
+          href={addParams(`/admin/stores/${businessId}/service-requests`)}
+          className="inline-flex items-center justify-center sm:justify-end px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 flex-shrink-0 self-start sm:self-center"
+        >
+          <ExternalLink className="w-4 h-4 mr-1 flex-shrink-0" />
+          View in Admin
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -371,8 +372,8 @@ export default function BusinessServiceRequestsPage() {
             </select>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-2 sm:mx-0">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>

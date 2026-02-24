@@ -36,7 +36,13 @@ interface UserSubscription {
   isGracePeriod?: boolean
 }
 
-const getPlans = (isSalon: boolean) => ({
+/** Terminology: SALON = appointments, SERVICES = sessions, others = orders/delivery/products */
+const getPlans = (businessType: string) => {
+  const isSalon = businessType === 'SALON'
+  const isServices = businessType === 'SERVICES'
+  const isServicesOrSalon = isSalon || isServices
+  const schedulingFeature = isSalon ? 'Appointment scheduling' : isServices ? 'Session scheduling' : 'Delivery scheduling'
+  return {
   STARTER: {
     name: 'Starter',
     price: 19,
@@ -44,11 +50,11 @@ const getPlans = (isSalon: boolean) => ({
     description: 'Perfect for getting started',
     icon: Package,
     features: [
-      isSalon ? 'Up to 50 services' : 'Up to 50 products',
+      isServicesOrSalon ? 'Up to 50 services' : 'Up to 50 products',
       '1 store/catalog',
       'Basic analytics',
-      isSalon ? 'WhatsApp booking' : 'WhatsApp ordering',
-      ...(isSalon ? [] : ['CSV import']), // CSV import only for products, not services
+      isServicesOrSalon ? 'WhatsApp booking' : 'WhatsApp ordering',
+      ...(isServicesOrSalon ? [] : ['CSV import']), // CSV import only for products, not services
       'Email support',
     ]
   },
@@ -59,10 +65,10 @@ const getPlans = (isSalon: boolean) => ({
     description: 'For growing businesses',
     icon: Crown,
     features: [
-      isSalon ? 'Unlimited services' : 'Unlimited products',
+      isServicesOrSalon ? 'Unlimited services' : 'Unlimited products',
       'Up to 5 stores/catalogs',
       'Full analytics & insights',
-      isSalon ? 'Appointment scheduling' : 'Delivery scheduling',
+      schedulingFeature,
       'Customer insights',
       'Priority support',
     ]
@@ -82,7 +88,8 @@ const getPlans = (isSalon: boolean) => ({
       'Dedicated support',
     ]
   }
-})
+  }
+}
 
 interface BillingPanelProps {
   businessId: string
@@ -104,6 +111,9 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
 
   // Modal states
   const [showDowngradeModal, setShowDowngradeModal] = useState(false)
+  const [downgradeTargetPlan, setDowngradeTargetPlan] = useState<Plan | null>(null)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   useEffect(() => {
@@ -153,7 +163,8 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     const targetLevel = PLAN_HIERARCHY[planId]
 
     if (targetLevel < currentLevel) {
-      // Show downgrade confirmation modal
+      // Show downgrade confirmation modal (to this plan)
+      setDowngradeTargetPlan(planId)
       setShowDowngradeModal(true)
       return
     }
@@ -191,17 +202,19 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
   }
 
   const confirmDowngrade = async () => {
-    setIsUpgrading('STARTER')
+    const targetPlan = downgradeTargetPlan || 'STARTER'
+    setIsUpgrading(targetPlan)
     setError(null)
     setShowDowngradeModal(false)
+    setDowngradeTargetPlan(null)
     
     try {
-      // Switch to paid Starter via Stripe Checkout (not cancel)
+      // Switch to selected plan via Stripe Checkout (STARTER or PRO)
       const response = await fetch('/api/billing/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planId: 'STARTER',
+          planId: targetPlan,
           isAnnual: billingInterval === 'annual',
           businessId: businessId,
         }),
@@ -215,10 +228,10 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
         }
       }
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || 'Failed to start checkout for Starter plan.')
+      throw new Error(errorData.message || `Failed to start checkout for ${targetPlan} plan.`)
     } catch (error) {
       console.error('Error starting downgrade checkout:', error)
-      setError(error instanceof Error ? error.message : 'Failed to switch to Starter. Please try again.')
+      setError(error instanceof Error ? error.message : `Failed to switch to ${targetPlan}. Please try again.`)
     } finally {
       setIsUpgrading(null)
     }
@@ -243,6 +256,28 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     } catch (error) {
       console.error('Error creating portal session:', error)
       setError('Error opening billing portal. Please try again.')
+    }
+  }
+
+  /** Cancel subscription at period end (no checkout). User keeps access until period end, then drops to Starter limits. */
+  const handleCancelSubscription = async () => {
+    setError(null)
+    setIsCancelling(true)
+    try {
+      const response = await fetch('/api/billing/cancel-subscription', { method: 'POST' })
+      if (response.ok) {
+        setShowCancelModal(false)
+        await fetchSubscription()
+        setShowSuccessModal(true)
+      } else {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.message || 'Failed to cancel subscription')
+      }
+    } catch (err) {
+      console.error('Error cancelling subscription:', err)
+      setError(err instanceof Error ? err.message : 'Failed to cancel. Please try again.')
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -277,8 +312,11 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     )
   }
 
-  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
-  const PLANS = getPlans(isSalon)
+  const isServicesOrSalon = businessType === 'SALON' || businessType === 'SERVICES'
+  const PLANS = getPlans(businessType)
+  const whatsAppFeatureName = businessType === 'SALON' ? 'WhatsApp Appointments' : businessType === 'SERVICES' ? 'WhatsApp Sessions' : 'WhatsApp Orders'
+  const schedulingFeatureName = businessType === 'SALON' ? 'Appointment Scheduling' : businessType === 'SERVICES' ? 'Session Scheduling' : 'Delivery Scheduling'
+  const servicesOrProducts = isServicesOrSalon ? 'services' : 'products'
   const currentPlan = PLANS[subscription.plan]
   const isFreePlan = subscription.billingType === 'free'
   const isTrialActive = subscription.isTrialActive || subscription.trialStatus === 'TRIAL_ACTIVE'
@@ -372,13 +410,23 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
             )}
           </div>
           {!isFreePlan && !isTrialActive && !isGracePeriod && (
-            <button
-              onClick={handleManageBilling}
-              className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
-            >
-              <CreditCard className="w-4 h-4" />
-              Manage Billing
-            </button>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <button
+                onClick={handleManageBilling}
+                className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Manage Billing
+              </button>
+              {subscription.plan !== 'STARTER' && !subscription.cancelAtPeriodEnd && (
+                <button
+                  onClick={() => setShowCancelModal(true)}
+                  className="text-white/90 hover:text-white text-sm underline transition-colors"
+                >
+                  Cancel subscription
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -553,17 +601,14 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {[
-                { feature: isSalon ? 'Services' : 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
+                { feature: isServicesOrSalon ? 'Services' : 'Products', starter: '50', pro: 'Unlimited', business: 'Unlimited' },
                 { feature: 'Stores/Catalogs', starter: '1', pro: '5', business: 'Unlimited' },
-                { feature: isSalon ? 'WhatsApp Appointments' : 'WhatsApp Orders', starter: '✅', pro: '✅', business: '✅' },
-                ...(isSalon ? [] : [{ feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' }]), // CSV import only for products, not services
+                { feature: whatsAppFeatureName, starter: '✅', pro: '✅', business: '✅' },
+                ...(isServicesOrSalon ? [] : [{ feature: 'CSV Import', starter: '✅', pro: '✅', business: '✅' }]), // CSV import only for products, not services
                 { feature: 'Basic Analytics', starter: '✅', pro: '✅', business: '✅' },
                 { feature: 'Full Analytics', starter: '❌', pro: '✅', business: '✅' },
                 { feature: 'Customer Insights', starter: '❌', pro: '✅', business: '✅' },
-                ...(isSalon 
-                  ? [{ feature: 'Appointment Scheduling', starter: '❌', pro: '✅', business: '✅' }]
-                  : [{ feature: 'Delivery Scheduling', starter: '❌', pro: '✅', business: '✅' }]
-                ),
+                ...([{ feature: schedulingFeatureName, starter: '❌', pro: '✅', business: '✅' }]),
                 { feature: 'Team Access', starter: '❌', pro: '❌', business: '5 users' },
                 { feature: 'Custom Domain', starter: '❌', pro: '❌', business: '✅' },
                 { feature: 'API Access', starter: '❌', pro: '❌', business: '✅' },
@@ -591,50 +636,104 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Switch to Starter Plan?
+                Switch to {downgradeTargetPlan ? PLANS[downgradeTargetPlan].name : 'Starter'} Plan?
               </h3>
             </div>
             
             <p className="text-gray-600 mb-6">
-              You will be taken to checkout to subscribe to the Starter plan ({billingInterval === 'annual' ? 'annual' : '$19/month'}). 
-              Your current plan will be replaced once payment succeeds. You will lose access to PRO features:
+              You will be taken to checkout to subscribe to the {downgradeTargetPlan ? PLANS[downgradeTargetPlan].name : 'Starter'} plan
+              ({billingInterval === 'annual' ? 'annual' : downgradeTargetPlan === 'STARTER' ? '$19/month' : downgradeTargetPlan === 'PRO' ? '$39/month' : 'monthly'}).
+              Your current plan will be replaced once payment succeeds.
+              {subscription.plan === 'BUSINESS' && downgradeTargetPlan === 'PRO' ? ' You will lose Business-only features:' : ' You will lose access to:'}
             </p>
             
             <ul className="space-y-2 mb-6">
-              {[
-                isSalon ? 'Unlimited services' : 'Unlimited products',
-                'Advanced analytics',
-                ...(isSalon ? [] : ['Inventory management']),
-                'Custom domains',
-                'Priority support'
-              ].map((feature, index) => (
-                <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
-                  <X className="w-4 h-4 text-red-500 flex-shrink-0" />
-                  {feature}
-                </li>
-              ))}
+              {(subscription.plan === 'BUSINESS' && downgradeTargetPlan === 'PRO')
+                ? ['Team access (5 users)', 'Custom domain', 'API access', 'Dedicated support'].map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                      <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))
+                : [
+                    isServicesOrSalon ? 'Unlimited services' : 'Unlimited products',
+                    'Advanced analytics',
+                    ...(isServicesOrSalon ? [] : ['Inventory management']),
+                    'Custom domains',
+                    'Priority support'
+                  ].map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                      <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
             </ul>
             
             <div className="flex gap-3">
               <button
-                onClick={() => setShowDowngradeModal(false)}
+                onClick={() => { setShowDowngradeModal(false); setDowngradeTargetPlan(null) }}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDowngrade}
-                disabled={isUpgrading === 'STARTER'}
+                disabled={!!downgradeTargetPlan && isUpgrading === downgradeTargetPlan}
                 className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50"
               >
-                {isUpgrading === 'STARTER' ? 'Redirecting to checkout...' : 'Continue to checkout'}
+                {(downgradeTargetPlan && isUpgrading === downgradeTargetPlan) ? 'Redirecting to checkout...' : 'Continue to checkout'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Success Modal */}
+      {/* Cancel subscription confirmation modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Cancel subscription?
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-4">
+              Your subscription will stop at the end of your current billing period ({subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'N/A'}). Until then, you keep full access to your current plan.
+            </p>
+            <p className="text-gray-600 mb-6">
+              After that date you will be on Starter limits (e.g. up to 50 {servicesOrProducts}, 1 store, basic analytics). You can subscribe again anytime from this page.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+              >
+                Keep subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={isCancelling}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isCancelling ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  'Cancel subscription'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal (after cancel or other success) */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
@@ -643,14 +742,12 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
                 <Check className="w-6 h-6 text-green-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Subscription Canceled
+                Subscription will cancel at period end
               </h3>
             </div>
-            
             <p className="text-gray-600 mb-6">
-              Your subscription has been canceled. You will keep access to PRO features until {subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'the end of your billing period'}.
+              You will keep full access until {subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : 'the end of your billing period'}. After that, you will have Starter limits. You can resubscribe anytime from this page.
             </p>
-            
             <button
               onClick={() => setShowSuccessModal(false)}
               className="w-full px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"

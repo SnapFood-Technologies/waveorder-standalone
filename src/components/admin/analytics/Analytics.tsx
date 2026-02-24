@@ -26,7 +26,8 @@ import {
   Search,
   Lock,
   Loader2,
-  Scissors
+  Scissors,
+  Briefcase
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
@@ -227,7 +228,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'trends', label: 'Trends', icon: TrendingUp },
-    { id: 'products', label: isSalon ? 'Services' : 'Products', icon: isSalon ? Scissors : Package },
+    { id: 'products', label: isSalon ? 'Services' : 'Products', icon: business.businessType === 'SALON' ? Scissors : business.businessType === 'SERVICES' ? Briefcase : Package },
     { id: 'time', label: 'Time Analysis', icon: Clock },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'search', label: 'Search', icon: Search },
@@ -602,8 +603,10 @@ export default function Analytics({ businessId }: AnalyticsProps) {
             </div>
           ) : (
             <div className="bg-white p-12 rounded-lg border border-gray-200 text-center">
-              {isSalon ? (
+              {business.businessType === 'SALON' ? (
                 <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              ) : business.businessType === 'SERVICES' ? (
+                <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               ) : (
                 <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
               )}
@@ -611,7 +614,9 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 {isSalon ? 'No Service Data' : 'No Product Data'}
               </h3>
               <p className="text-gray-600 mb-4">
-                {isSalon 
+                {isServices
+                  ? 'No sessions have been scheduled during the selected period.'
+                  : isSalon 
                   ? 'No services have been booked during the selected period.'
                   : 'No products have been sold during the selected period.'
                 }
@@ -633,7 +638,7 @@ export default function Analytics({ businessId }: AnalyticsProps) {
                 <p className="font-medium mb-1">About This Data</p>
                 <p className="text-blue-700">
                   This shows <strong>actual sales data</strong> from completed {sessionLabelLower}. For detailed tracking including 
-                  views, {isSalon ? 'booking' : 'add-to-cart'} rates, conversion rates, and the difference between <strong>{sessionLabel} Placed</strong> vs 
+                  views, {isServices ? 'session booking' : isSalon ? 'booking' : 'add-to-cart'} rates, conversion rates, and the difference between <strong>{sessionLabel} Placed</strong> vs 
                   <strong> {sessionLabel} Completed</strong>, visit the{' '}
                   <Link href={isSalon 
                     ? `/admin/stores/${businessId}/analytics/services`
@@ -1142,12 +1147,14 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 group"
             >
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
-                {isSalon ? <Scissors className="w-6 h-6 text-blue-600" /> : <Package className="w-6 h-6 text-blue-600" />}
+                {business.businessType === 'SALON' ? <Scissors className="w-6 h-6 text-blue-600" /> : business.businessType === 'SERVICES' ? <Briefcase className="w-6 h-6 text-blue-600" /> : <Package className="w-6 h-6 text-blue-600" />}
               </div>
               <div>
                 <h4 className="font-medium text-gray-900">{isSalon ? 'Service Analytics' : 'Product Analytics'}</h4>
                 <p className="text-sm text-gray-600">
-                  {isSalon 
+                  {isServices
+                    ? 'View service views, session booking rates, and conversion metrics'
+                    : isSalon 
                     ? 'View service views, booking rates, and conversion metrics'
                     : 'View product views, add-to-cart rates, and conversion metrics'
                   }

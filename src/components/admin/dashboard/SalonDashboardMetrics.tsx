@@ -140,7 +140,9 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-100',
       hasTooltip: true,
-      tooltip: 'Total revenue from completed appointments with paid status in the selected period. Only appointments with COMPLETED status and PAID payment status are included. This represents actual money received and includes the final order total after discounts, taxes, and other adjustments.'
+      tooltip: business.businessType === 'SERVICES'
+      ? 'Total revenue from completed sessions with paid status in the selected period. Only sessions with COMPLETED status and PAID payment status are included. This represents actual money received and includes the final total after discounts, taxes, and other adjustments.'
+      : 'Total revenue from completed appointments with paid status in the selected period. Only appointments with COMPLETED status and PAID payment status are included. This represents actual money received and includes the final order total after discounts, taxes, and other adjustments.'
     },
     {
       name: 'Growth',
@@ -235,10 +237,10 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
         ))}
       </div>
 
-      {/* Appointments by Status Chart */}
+      {/* Appointments / Scheduled sessions by Status Chart */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Appointments by Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{business.businessType === 'SERVICES' ? 'Scheduled sessions by Status' : 'Appointments by Status'}</h3>
         </div>
         
         {metrics.appointmentsByStatus.length > 0 ? (
@@ -281,7 +283,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
           </>
         ) : (
           <div className="text-center py-12 text-gray-500">
-            No appointment data available for this period
+            {business.businessType === 'SERVICES' ? 'No session data available for this period' : 'No appointment data available for this period'}
           </div>
         )}
       </div>
@@ -295,7 +297,7 @@ export function SalonDashboardMetrics({ businessId }: SalonDashboardMetricsProps
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
-                Total revenue from completed appointments with paid status in the selected period. Only appointments with COMPLETED status and PAID payment status are included.
+                Total revenue from completed {business.businessType === 'SERVICES' ? 'sessions' : 'appointments'} with paid status in the selected period. Only {business.businessType === 'SERVICES' ? 'sessions' : 'appointments'} with COMPLETED status and PAID payment status are included.
               </p>
               <button
                 onClick={() => setShowRevenueModal(false)}

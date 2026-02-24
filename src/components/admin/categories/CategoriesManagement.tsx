@@ -1067,10 +1067,10 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
               placeholder={
                 activeLanguage === 'en' 
-                  ? (businessType === 'SALON' ? "e.g., Hair Services" : "e.g., Main Courses")
+                  ? (businessType === 'SALON' ? "e.g., Hair Services" : businessType === 'SERVICES' ? "e.g., Consultations" : "e.g., Main Courses")
                   : activeLanguage === 'el' 
-                    ? (businessType === 'SALON' ? "π.χ., Υπηρεσίες Μαλλιών" : "π.χ., Κυρίως Πιάτα")
-                    : (businessType === 'SALON' ? "e.g., Shërbime Flokësh" : "e.g., Kryesor")
+                    ? (businessType === 'SALON' ? "π.χ., Υπηρεσίες Μαλλιών" : businessType === 'SERVICES' ? "π.χ., Συνεδρίες" : "π.χ., Κυρίως Πιάτα")
+                    : (businessType === 'SALON' ? "e.g., Shërbime Flokësh" : businessType === 'SERVICES' ? "e.g., Konsultime" : "e.g., Kryesor")
               }
             />
           </div>
@@ -1089,7 +1089,7 @@ function CategoryForm({ businessId, category, onSave, onCancel, onLimitError }: 
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
               placeholder={
-                businessType === 'SALON' 
+                (businessType === 'SALON' || businessType === 'SERVICES')
                   ? (activeLanguage === 'en' ? "Optional description of this service category" : activeLanguage === 'el' ? "Προαιρετική περιγραφή αυτής της κατηγορίας υπηρεσιών" : "Përshkrim opsional i kësaj kategorie shërbimi")
                   : (activeLanguage === 'en' ? "Optional description" : activeLanguage === 'el' ? "Προαιρετική περιγραφή" : "Përshkrim opsional")
               }

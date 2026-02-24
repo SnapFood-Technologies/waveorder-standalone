@@ -365,7 +365,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 WhatsApp Button Color
                 <span className="text-gray-500 text-xs ml-1">
-                  ({(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'booking' : 'order'} button color)
+                  ({businessData.businessType === 'SALON' ? 'appointment' : businessData.businessType === 'SERVICES' ? 'session' : 'order'} button color)
                 </span>
               </label>
               <div className="flex items-center space-x-3">
@@ -404,9 +404,9 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             {/* NEW: Cart Badge Color */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'Booking Badge Color' : 'Cart Badge Color'}
+                {businessData.businessType === 'SALON' ? 'Appointment Badge Color' : businessData.businessType === 'SERVICES' ? 'Session Badge Color' : 'Cart Badge Color'}
                 <span className="text-gray-500 text-xs ml-1">
-                  ({(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'booking' : 'cart'} item count badge)
+                  ({businessData.businessType === 'SALON' ? 'appointment' : businessData.businessType === 'SERVICES' ? 'session' : 'cart'} item count badge)
                 </span>
               </label>
               <div className="grid grid-cols-4 gap-3 mb-3">
@@ -531,7 +531,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'Booking Style' : 'Cart Style'}
+                {businessData.businessType === 'SALON' ? 'Appointment Style' : businessData.businessType === 'SERVICES' ? 'Session Style' : 'Cart Style'}
               </label>
               <div className="space-y-3">
                 <label className="flex items-center">
@@ -546,7 +546,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     <ShoppingCart className="w-4 h-4 mr-2 text-gray-700" />
                     Bottom Bar (Recommended)
                     <span className="text-gray-500 text-xs ml-2">
-                      - Full-width {(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'booking' : 'cart'} button at bottom
+                      - Full-width {businessData.businessType === 'SALON' ? 'appointment' : businessData.businessType === 'SERVICES' ? 'session' : 'cart'} button at bottom
                     </span>
                   </span>
                 </label>
@@ -567,7 +567,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
                     </div>
                     Floating Badge
                     <span className="text-gray-500 text-xs ml-2">
-                      - Small floating {(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'booking' : 'cart'} badge
+                      - Small floating {businessData.businessType === 'SALON' ? 'appointment' : businessData.businessType === 'SERVICES' ? 'session' : 'cart'} badge
                     </span>
                   </span>
                 </label>
@@ -585,7 +585,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm font-medium text-gray-700">
-                  {(businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES') ? 'Booking Badge' : 'Cart Badge'}
+                  {businessData.businessType === 'SALON' ? 'Appointment Badge' : businessData.businessType === 'SERVICES' ? 'Session Badge' : 'Cart Badge'}
                 </span>
                 <div 
                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"

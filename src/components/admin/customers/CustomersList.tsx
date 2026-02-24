@@ -37,9 +37,9 @@ interface Business {
   businessType?: string
 }
 
-const SORT_OPTIONS = (isSalon: boolean) => [
+const SORT_OPTIONS = (businessType: string) => [
   { value: 'recent', label: 'Most Recent' },
-  { value: 'orders', label: isSalon ? 'Most Appointments' : 'Most Orders' },
+  { value: 'orders', label: businessType === 'SALON' ? 'Most Appointments' : businessType === 'SERVICES' ? 'Most Sessions' : 'Most Orders' },
   { value: 'spent', label: 'Highest Spent' },
   { value: 'name', label: 'Name (A-Z)' }
 ]
@@ -62,7 +62,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
     pages: 0
   })
   const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
-  const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
+  const activityPlural = business.businessType === 'SALON' ? 'appointments' : business.businessType === 'SERVICES' ? 'sessions' : 'orders'
 
   // Fetch business data for currency
   useEffect(() => {
@@ -229,7 +229,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                 }}
                 className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-gray-900 bg-white"
               >
-                {SORT_OPTIONS(isSalon).map(option => (
+                {SORT_OPTIONS(business.businessType || 'RESTAURANT').map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -285,7 +285,7 @@ export default function CustomersList({ businessId }: CustomersListProps) {
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               {debouncedSearchQuery 
                 ? 'Try adjusting your search terms or filters to find the customers you\'re looking for.'
-                : 'Start building your customer base by adding your first customer. You can manually add customers or they can register through orders.'
+                : `Start building your customer base by adding your first customer. You can manually add customers or they can register through ${activityPlural}.`
               }
             </p>
             {!debouncedSearchQuery && (
@@ -311,13 +311,13 @@ export default function CustomersList({ businessId }: CustomersListProps) {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {isSalon ? 'Appointments' : 'Orders'}
+                      {business.businessType === 'SALON' ? 'Appointments' : business.businessType === 'SERVICES' ? 'Sessions' : 'Orders'}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Total Spent
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {isSalon ? 'Last Appointment' : 'Last Order'}
+                      {business.businessType === 'SALON' ? 'Last Appointment' : business.businessType === 'SERVICES' ? 'Last Session' : 'Last Order'}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions

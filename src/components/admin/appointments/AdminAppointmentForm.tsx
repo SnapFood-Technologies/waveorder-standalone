@@ -67,11 +67,13 @@ interface AppointmentFormData {
 function CustomerSearch({ 
   businessId, 
   onCustomerSelect, 
-  selectedCustomer 
+  selectedCustomer,
+  sessionPlural = 'appointments'
 }: {
   businessId: string
   onCustomerSelect: (customer: Customer | null) => void
   selectedCustomer?: Customer | null
+  sessionPlural?: string
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -153,7 +155,7 @@ function CustomerSearch({
                 <div className="font-medium text-gray-900">{customer.name}</div>
                 <div className="text-sm text-gray-600">{customer.phone}</div>
                 <div className="text-xs text-gray-500">
-                  {customer.tier} • {customer.totalOrders} appointments
+                  {customer.tier} • {customer.totalOrders} {sessionPlural}
                 </div>
               </button>
             ))
@@ -369,12 +371,22 @@ export default function AdminAppointmentForm({
   })
 
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [business, setBusiness] = useState<{ currency: string }>({ currency: 'USD' })
+  const [business, setBusiness] = useState<{ currency: string; businessType?: string }>({ currency: 'USD' })
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [userPlan, setUserPlan] = useState<'STARTER' | 'PRO' | 'BUSINESS'>('STARTER')
   const [errors, setErrors] = useState<any>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+  const isServices = business.businessType === 'SERVICES'
+  const isSalon = business.businessType === 'SALON'
+  const sessionNoun = isServices ? 'session' : 'appointment'
+  const sessionNounCap = isServices ? 'Session' : 'Appointment'
+  const sessionPlural = isServices ? 'sessions' : 'appointments'
+  const sessionPluralCap = isServices ? 'Sessions' : 'Appointments'
+  const createTitle = isServices ? 'Schedule session' : 'Create New Appointment'
+  const createSubtitle = isServices ? 'Create a new session for a customer' : 'Create a new appointment for a customer'
+  const createButtonLabel = isServices ? 'Schedule session' : 'Create Appointment'
 
   // Format currency function
   const formatCurrency = (amount: number) => {
@@ -401,7 +413,7 @@ export default function AdminAppointmentForm({
         const response = await fetch(`/api/admin/stores/${businessId}`)
         if (response.ok) {
           const data = await response.json()
-          setBusiness({ currency: data.business.currency || 'USD' })
+          setBusiness({ currency: data.business.currency || 'USD', businessType: data.business.businessType })
           
           // Get user plan
           const businessOwner = await fetch(`/api/admin/stores/${businessId}/team/members`)
@@ -512,11 +524,11 @@ export default function AdminAppointmentForm({
     }
 
     if (!formData.appointmentDate) {
-      newErrors.appointmentDate = 'Appointment date is required'
+      newErrors.appointmentDate = isServices ? 'Session date is required' : 'Appointment date is required'
     }
 
     if (!formData.appointmentTime) {
-      newErrors.appointmentTime = 'Appointment time is required'
+      newErrors.appointmentTime = isServices ? 'Session time is required' : 'Appointment time is required'
     }
 
     setErrors(newErrors)
@@ -563,7 +575,7 @@ export default function AdminAppointmentForm({
 
       if (response.ok) {
         const data = await response.json()
-        setSuccessMessage(`Appointment created successfully!`)
+        setSuccessMessage(isServices ? 'Session scheduled successfully!' : 'Appointment created successfully!')
         
         setTimeout(() => {
           setSuccessMessage(null)
@@ -571,7 +583,7 @@ export default function AdminAppointmentForm({
         }, 3000)
       } else {
         const data = await response.json()
-        setErrors({ submit: data.message || 'Failed to create appointment' })
+        setErrors({ submit: data.message || (isServices ? 'Failed to schedule session' : 'Failed to create appointment') })
       }
     } catch (error) {
       setErrors({ submit: 'Network error. Please try again.' })
@@ -611,9 +623,9 @@ export default function AdminAppointmentForm({
                   </button>
                 )}
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Create New Appointment</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">{createTitle}</h1>
                   <p className="text-sm text-gray-600 mt-1">
-                    Create a new appointment for a customer
+                    {createSubtitle}
                   </p>
                 </div>
               </div>
@@ -674,6 +686,7 @@ export default function AdminAppointmentForm({
                           setFormData(prev => ({ ...prev, customerId: customer?.id }))
                         }}
                         selectedCustomer={selectedCustomer}
+                        sessionPlural={sessionPlural}
                       />
                       {errors.customer && (
                         <p className="text-red-600 text-sm mt-1">{errors.customer}</p>
@@ -687,7 +700,7 @@ export default function AdminAppointmentForm({
                               <h3 className="font-medium">{selectedCustomer.name}</h3>
                               <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
                               <p className="text-xs text-gray-500">
-                                {selectedCustomer.tier} Customer • {selectedCustomer.totalOrders} Previous Appointments
+                                {selectedCustomer.tier} Customer • {selectedCustomer.totalOrders} Previous {sessionPluralCap}
                               </p>
                             </div>
                           </div>
@@ -824,11 +837,11 @@ export default function AdminAppointmentForm({
           )}
         </div>
 
-              {/* Appointment Details */}
+              {/* Session / Appointment Details */}
               <div>
                 <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                   <Calendar className="w-5 h-5 mr-2 text-teal-600" />
-                  Appointment Details
+                  {sessionNounCap} Details
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -971,7 +984,7 @@ export default function AdminAppointmentForm({
                   className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSubmitting ? 'Creating...' : 'Create Appointment'}
+                  {isSubmitting ? (isServices ? 'Scheduling...' : 'Creating...') : createButtonLabel}
                 </button>
               </div>
             </form>
@@ -981,9 +994,9 @@ export default function AdminAppointmentForm({
         {/* Sidebar - 1/3 width */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-            {/* Appointment Summary */}
+            {/* Session / Appointment Summary */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Appointment Summary</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">{sessionNounCap} Summary</h3>
               
               {formData.services.length > 0 ? (
                 <div>
@@ -1019,9 +1032,9 @@ export default function AdminAppointmentForm({
                 </div>
               )}
 
-              {/* Appointment Info */}
+              {/* Session / Appointment Info */}
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h4 className="text-sm font-medium text-gray-900 mb-3">Appointment Details</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">{sessionNounCap} Details</h4>
                 
                 <div className="space-y-2 text-xs text-gray-600">
                   {formData.appointmentDate && (
@@ -1072,7 +1085,7 @@ export default function AdminAppointmentForm({
                   Quick Tips
                 </h4>
                 <ul className="space-y-1 text-xs text-gray-600">
-                  <li>• Appointments are set to {formData.status} status</li>
+                  <li>• {sessionPluralCap} are set to {formData.status} status</li>
                   <li>• Total duration is calculated automatically</li>
                   <li>• Staff assignment is optional</li>
                   <li>• Customer will receive confirmation notification</li>

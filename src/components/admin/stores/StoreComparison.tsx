@@ -18,7 +18,8 @@ import {
   ArrowRight,
   AlertCircle,
   Calendar,
-  Scissors
+  Scissors,
+  Briefcase
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -204,6 +205,10 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
   const hasSalons = stores.some(s => s.businessType === 'SALON' || s.businessType === 'SERVICES')
   const hasNonSalons = stores.some(s => s.businessType !== 'SALON' && s.businessType !== 'SERVICES')
   const isMixedTypes = hasSalons && hasNonSalons
+  const salonAndServicesStores = stores.filter(s => s.businessType === 'SALON' || s.businessType === 'SERVICES')
+  const hasOnlySalons = hasSalons && !hasNonSalons && salonAndServicesStores.every(s => s.businessType === 'SALON')
+  const hasOnlyServices = hasSalons && !hasNonSalons && salonAndServicesStores.every(s => s.businessType === 'SERVICES')
+  const hasSalonAndServicesMixed = hasSalons && !hasNonSalons && !hasOnlySalons && !hasOnlyServices
 
   // Get metrics based on business type
   const getMetrics = () => {
@@ -219,13 +224,15 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
         { key: 'services', label: 'Services', icon: Scissors, format: formatNumber },
       ] as const
     } else if (hasSalons) {
-      // All salons: use salon-specific labels and fields
+      // Salon and/or Services: use appointments/sessions labels and fields
+      const appointmentsLabel = hasOnlyServices ? 'Sessions' : hasOnlySalons ? 'Appointments' : 'Appts/Sessions'
+      const servicesIcon = hasOnlyServices ? Briefcase : Scissors
       return [
-        { key: 'appointments', label: 'Appointments', icon: Calendar, format: formatNumber },
+        { key: 'appointments', label: appointmentsLabel, icon: Calendar, format: formatNumber },
         { key: 'revenue', label: 'Revenue', icon: DollarSign, format: (v: number, store: StoreData) => formatCurrency(v, store.currency) },
         { key: 'customers', label: 'Customers', icon: Users, format: formatNumber },
         { key: 'views', label: 'Page Views', icon: Eye, format: formatNumber },
-        { key: 'services', label: 'Services', icon: Scissors, format: formatNumber },
+        { key: 'services', label: 'Services', icon: servicesIcon, format: formatNumber },
       ] as const
     } else {
       // All non-salons: use standard labels
@@ -279,7 +286,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
             {hasSalons && !hasNonSalons ? <Calendar className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
-            {hasSalons && !hasNonSalons ? 'Total Appointments' : hasSalons && hasNonSalons ? 'Total Orders/Appts' : 'Total Orders'}
+            {hasOnlyServices ? 'Total Sessions' : hasSalons && !hasNonSalons ? 'Total Appointments' : hasSalons && hasNonSalons ? 'Total Orders/Appts' : 'Total Orders'}
           </div>
           <p className="text-2xl font-bold text-gray-900">
             {formatNumber(
@@ -303,7 +310,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 text-gray-500 text-sm mb-1">
             <TrendingUp className="w-4 h-4" />
-            {hasSalons && !hasNonSalons ? 'Avg Appointment Value' : hasSalons && hasNonSalons ? 'Avg Order/Appt Value' : 'Avg Order Value'}
+            {hasOnlyServices ? 'Avg Session Value' : hasSalons && !hasNonSalons ? 'Avg Appointment Value' : hasSalons && hasNonSalons ? 'Avg Order/Appt Value' : 'Avg Order Value'}
           </div>
           {mixedCurrencies ? (
             <p className="text-lg font-medium text-gray-500">Per store</p>
@@ -359,8 +366,8 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                 <Calendar className="w-5 h-5 text-blue-600" />
                 <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
               </div>
-              <h4 className="font-semibold text-gray-900">All Appointments</h4>
-              <p className="text-xs text-gray-600 mt-1">Appointments from all stores</p>
+              <h4 className="font-semibold text-gray-900">{currentBusinessType === 'SERVICES' ? 'All Sessions' : 'All Appointments'}</h4>
+              <p className="text-xs text-gray-600 mt-1">{currentBusinessType === 'SERVICES' ? 'Sessions from all stores' : 'Appointments from all stores'}</p>
             </Link>
           ) : (
             <>
@@ -428,8 +435,8 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-6">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                    <Scissors className="w-4 h-4 text-teal-600" />
-                    Salon Stores Performance
+                    {hasOnlyServices ? <Briefcase className="w-4 h-4 text-teal-600" /> : hasOnlySalons ? <Scissors className="w-4 h-4 text-teal-600" /> : <Calendar className="w-4 h-4 text-teal-600" />}
+                    {hasOnlyServices ? 'Services Stores Performance' : hasOnlySalons ? 'Salon Stores Performance' : 'Salon & Services Stores Performance'}
                   </h4>
                 </div>
                 <div className="overflow-x-auto">
@@ -532,7 +539,7 @@ export function StoreComparison({ className = '', showQuickActions = true, busin
                             <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
                               <BarChart3 className="w-4 h-4 text-gray-600" />
                             </div>
-                            <span className="text-gray-900">Total (Salon Stores)</span>
+                            <span className="text-gray-900">{hasOnlyServices ? 'Total (Services Stores)' : hasOnlySalons ? 'Total (Salon Stores)' : 'Total (Salon & Services Stores)'}</span>
                           </div>
                         </td>
                         {metrics.filter(m => m.key === 'appointments' || m.key === 'revenue' || m.key === 'customers' || m.key === 'views' || m.key === 'services').map((metric) => {

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -129,6 +130,25 @@ export async function POST(req: NextRequest) {
       })
 
       console.log('✅ [BILLING PORTAL] Portal session created:', portalSession.id)
+
+      // Log billing panel action for superadmin
+      await logSystemEvent({
+        logType: 'billing_panel_action',
+        severity: 'info',
+        endpoint: '/api/billing/create-portal',
+        method: 'POST',
+        statusCode: 200,
+        url: req.url || '/api/billing/create-portal',
+        businessId: businessId,
+        errorMessage: 'Billing portal opened',
+        ipAddress: extractIPAddress(req),
+        userAgent: req.headers.get('user-agent') || undefined,
+        metadata: {
+          userId: user.id,
+          userEmail: user.email,
+          action: 'portal_opened',
+        },
+      })
 
       return NextResponse.json({ 
         portalUrl: portalSession.url 

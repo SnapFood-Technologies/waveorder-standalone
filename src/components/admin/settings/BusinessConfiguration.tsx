@@ -305,8 +305,10 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       {
         id: 'CASH',
         name: 'Cash',
-        description: (business.businessType === 'SALON' || business.businessType === 'SERVICES')
+        description: business.businessType === 'SALON'
           ? `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when appointment is completed`
+          : business.businessType === 'SERVICES'
+          ? `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when session is completed`
           : `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
         available: true
       }
@@ -720,7 +722,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
                   onChange={(e) => updateServiceRequestOptions({ serviceAllowAppointmentBooking: e.target.checked })}
                   className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5"
                 />
-                <span className="text-sm font-medium text-gray-900">Allow appointment booking</span>
+                <span className="text-sm font-medium text-gray-900">{business.businessType === 'SERVICES' ? 'Allow session booking' : 'Allow appointment booking'}</span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -850,7 +852,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Number Format' : 'Order Number Format'}
+                  {business.businessType === 'SALON' ? 'Appointment Number Format' : business.businessType === 'SERVICES' ? 'Session Number Format' : 'Order Number Format'}
                 </label>
                 <select
                   value={config.whatsappSettings.orderNumberFormat}

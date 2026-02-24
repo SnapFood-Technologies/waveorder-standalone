@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { stripe, PLANS, type PlanId, createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -93,19 +94,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Allow upgrade (higher plan) or downgrade to paid Starter only
+    // Allow upgrade (higher plan) or downgrade to paid Starter or Pro
     const planHierarchy: Record<string, number> = { 'STARTER': 0, 'PRO': 1, 'BUSINESS': 2 }
     const currentPlanLevel = planHierarchy[user.plan || 'STARTER'] || 0
     const targetPlanLevel = planHierarchy[planId] || 0
-    const isDowngradeToStarter = planId === 'STARTER' && currentPlanLevel >= 1
+    const isUpgrade = targetPlanLevel > currentPlanLevel
+    const isDowngrade = targetPlanLevel < currentPlanLevel && ['STARTER', 'PRO'].includes(planId)
 
-    if (targetPlanLevel > currentPlanLevel) {
+    if (isUpgrade) {
       // Upgrade: allowed
-    } else if (isDowngradeToStarter) {
-      // Downgrade to paid Starter: allowed (will create checkout for Starter price)
+    } else if (isDowngrade) {
+      // Downgrade to paid Starter or Pro: allowed (checkout for that plan)
     } else {
       return NextResponse.json(
-        { message: `You are already on the ${user.plan} plan or higher. Use "Downgrade to Starter" to switch to paid Starter.` },
+        { message: `You are already on the ${user.plan} plan or higher. Use the billing panel to downgrade.` },
         { status: 400 }
       )
     }
@@ -145,6 +147,28 @@ export async function POST(req: NextRequest) {
       },
       success_url: successUrl,
       cancel_url: cancelUrl,
+    })
+
+    // Log billing panel action for superadmin
+    await logSystemEvent({
+      logType: 'billing_panel_action',
+      severity: 'info',
+      endpoint: '/api/billing/create-checkout',
+      method: 'POST',
+      statusCode: 200,
+      url: req.url || '/api/billing/create-checkout',
+      businessId: businessId,
+      errorMessage: `Checkout started: ${planId} (${isAnnual ? 'annual' : 'monthly'})`,
+      ipAddress: extractIPAddress(req),
+      userAgent: req.headers.get('user-agent') || undefined,
+      metadata: {
+        userId: user.id,
+        userEmail: user.email,
+        planId,
+        isAnnual,
+        action: 'checkout_started',
+        sessionId: checkoutSession.id,
+      },
     })
 
     return NextResponse.json({ 

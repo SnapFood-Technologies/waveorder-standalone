@@ -521,7 +521,7 @@ function PhoneInput({ value, onChange, storeData, error, onErrorChange }: {
       )}
       
       <p className="text-gray-500 text-xs mt-1">
-        Include country code. Used for order notifications via WhatsApp.
+        Include country code. Used for {storeData?.businessType === 'SERVICES' ? 'session reminders' : storeData?.businessType === 'SALON' ? 'appointment reminders' : 'order notifications'} via WhatsApp.
       </p>
     </div>
   )
@@ -781,6 +781,12 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
     
     fetchStoreData()
   }, [businessId])
+
+  const businessType = storeData?.businessType || 'RESTAURANT'
+  const isSalon = businessType === 'SALON'
+  const isServices = businessType === 'SERVICES'
+  const activityNoun = isServices ? 'session' : isSalon ? 'appointment' : 'order'
+  const activityPlural = isServices ? 'sessions' : isSalon ? 'appointments' : 'orders'
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
@@ -1058,7 +1064,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     </div>
                     {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                     <p className="text-xs text-gray-500 mt-1">
-                      Optional - for order confirmations and marketing
+                      Optional - for {activityPlural === 'orders' ? 'order confirmations' : activityPlural === 'sessions' ? 'session confirmations' : 'appointment confirmations'} and marketing
                     </p>
                   </div>
 
@@ -1090,7 +1096,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                   <div className="ml-2 group relative">
                     <Info className="w-4 h-4 text-gray-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                      Address is optional but helps with delivery orders
+                      Address is optional but {isServices || isSalon ? 'can help with in-person ' + activityPlural : 'helps with delivery orders'}
                     </div>
                   </div>
                 </h2>
@@ -1335,7 +1341,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                     </div>
                     <div className="flex items-center">
                       <CheckCircle className="w-3 h-3 mr-2 text-purple-500" />
-                      <span className="text-xs">event-planner, bulk-orders</span>
+                      <span className="text-xs">{isServices ? 'consultation, follow-up' : isSalon ? 'frequent, loyalty' : 'event-planner, bulk-orders'}</span>
                     </div>
                   </div>
                 </div>
@@ -1351,11 +1357,11 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Regular customers:</span>
-                      <span className="font-medium">2-3x orders/month</span>
+                      <span className="font-medium">2-3x {activityPlural}/month</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">VIP customers:</span>
-                      <span className="font-medium">5-8x orders/month</span>
+                      <span className="font-medium">5-8x {activityPlural}/month</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Repeat rate:</span>
@@ -1372,9 +1378,9 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                   Communication
                 </h4>
                 <ul className="space-y-1 text-xs text-gray-600">
-                  <li>• WhatsApp preferred for order updates</li>
+                  <li>• WhatsApp preferred for {activityNoun} updates</li>
                   <li>• Email for receipts and promotions</li>
-                  <li>• Address enables delivery fee calculation</li>
+                  <li>• {isServices || isSalon ? 'Address can help with in-person visits' : 'Address enables delivery fee calculation'}</li>
                   <li>• Notes help staff provide better service</li>
                 </ul>
               </div>
@@ -1388,15 +1394,15 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                 <div className="space-y-2 text-xs text-gray-600">
                   <div className="border-l-2 border-gray-200 pl-3">
                     <div className="font-medium text-gray-700">New Customer</div>
-                    <div>First order - focus on experience</div>
+                    <div>First {activityNoun} - focus on experience</div>
                   </div>
                   <div className="border-l-2 border-blue-200 pl-3">
                     <div className="font-medium text-blue-700">Regular Customer</div>
-                    <div>2-5 orders - build relationship</div>
+                    <div>2-5 {activityPlural} - build relationship</div>
                   </div>
                   <div className="border-l-2 border-purple-200 pl-3">
                     <div className="font-medium text-purple-700">VIP Customer</div>
-                    <div>5+ orders - special treatment</div>
+                    <div>5+ {activityPlural} - special treatment</div>
                   </div>
                 </div>
               </div>
@@ -1409,7 +1415,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                 </h4>
                 <p className="text-xs text-gray-600">
                   All customer information is encrypted and stored securely. 
-                  Phone numbers are used only for order communication via WhatsApp.
+                  Phone numbers are used only for {activityNoun} communication via WhatsApp.
                 </p>
               </div>
 
@@ -1420,7 +1426,7 @@ export default function CustomerForm({ businessId, customerId, onSuccess, onCanc
                 </h4>
                 <ul className="space-y-1 text-xs text-teal-700">
                   <li>• {isEditMode ? 'Notify team of changes' : 'Send welcome message via WhatsApp'}</li>
-                  <li>• {isEditMode ? 'Update any pending orders' : 'Create their first order if needed'}</li>
+                  <li>• {isEditMode ? (isServices || isSalon ? 'Update any pending ' + activityPlural : 'Update any pending orders') : (isServices ? 'Schedule their first session if needed' : isSalon ? 'Schedule their first appointment if needed' : 'Create their first order if needed')}</li>
                   <li>• Add relevant tags based on preferences</li>
                   <li>• Set up any special pricing if VIP</li>
                 </ul>

@@ -393,18 +393,27 @@ export default function BusinessDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-4 mb-4">
+    <div className="space-y-6 px-2 sm:px-0">
+      {/* Header: back + title left, View in Admin end right */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4 min-w-0">
           <Link
             href="/superadmin/businesses"
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 flex-shrink-0"
           >
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{business.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{business.name}</h1>
         </div>
+        <Link
+          href={`/admin/stores/${business.id}/dashboard?impersonate=true&businessId=${business.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center sm:justify-end px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 flex-shrink-0 self-start sm:self-center"
+        >
+          <ExternalLink className="w-4 h-4 mr-1 flex-shrink-0" />
+          View in Admin
+        </Link>
       </div>
 
       {/* Content */}

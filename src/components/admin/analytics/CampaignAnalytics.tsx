@@ -259,7 +259,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
             </div>
             <p className="text-2xl font-bold text-gray-900">{data.summary.totalOrders.toLocaleString()}</p>
             <p className="text-sm text-gray-600">
-              {business.businessType === 'SALON' ? 'Appointments from Campaigns' : 'Orders from Campaigns'}
+              {business.businessType === 'SALON' ? 'Appointments from Campaigns' : business.businessType === 'SERVICES' ? 'Sessions from Campaigns' : 'Orders from Campaigns'}
             </p>
           </div>
 
@@ -289,7 +289,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
               <BarChart3 className="w-5 h-5 text-blue-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">{data.summary.overallViewToCartRate}%</p>
-            <p className="text-sm text-gray-600">{business.businessType === 'SALON' ? 'View to Booking Rate' : 'View to Cart Rate'}</p>
+            <p className="text-sm text-gray-600">{business.businessType === 'SALON' ? 'View to Booking Rate' : business.businessType === 'SERVICES' ? 'View to Session Rate' : 'View to Cart Rate'}</p>
           </div>
 
           <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -298,7 +298,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
             </div>
             <p className="text-2xl font-bold text-gray-900">{data.summary.overallCartToOrderRate}%</p>
             <p className="text-sm text-gray-600">
-              {business.businessType === 'SALON' ? 'Cart to Appointment Rate' : 'Cart to Order Rate'}
+              {business.businessType === 'SALON' ? 'Cart to Appointment Rate' : business.businessType === 'SERVICES' ? 'Cart to Session Rate' : 'Cart to Order Rate'}
             </p>
           </div>
         </div>
@@ -331,10 +331,10 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medium</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {business.businessType === 'SALON' ? 'Add to Booking' : 'Add to Cart'}
+                    {business.businessType === 'SALON' ? 'Add to Booking' : business.businessType === 'SERVICES' ? 'Add to Session' : 'Add to Cart'}
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {business.businessType === 'SALON' ? 'Appointments' : 'Orders'}
+                    {business.businessType === 'SALON' ? 'Appointments' : business.businessType === 'SERVICES' ? 'Sessions' : 'Orders'}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Conversion</th>
@@ -370,12 +370,12 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
                       <div className="flex flex-col items-center">
                         <span className="text-sm font-semibold text-gray-900">{campaign.conversionRate}%</span>
                         <div className="flex items-center gap-1 mt-1">
-                          <span className="text-xs text-gray-500">{business.businessType === 'SALON' ? 'View→Book:' : 'View→Cart:'}</span>
+                          <span className="text-xs text-gray-500">{business.businessType === 'SALON' ? 'View→Book:' : business.businessType === 'SERVICES' ? 'View→Session:' : 'View→Cart:'}</span>
                           <span className="text-xs text-gray-700">{campaign.viewToCartRate}%</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-gray-500">
-                            {business.businessType === 'SALON' ? 'Cart→Appt:' : 'Cart→Order:'}
+                            {business.businessType === 'SALON' ? 'Cart→Appt:' : business.businessType === 'SERVICES' ? 'Cart→Session:' : 'Cart→Order:'}
                           </span>
                           <span className="text-xs text-gray-700">{campaign.cartToOrderRate}%</span>
                         </div>
@@ -397,7 +397,7 @@ export function CampaignAnalytics({ businessId }: CampaignAnalyticsProps) {
             <p className="font-medium mb-2">How Campaign Analytics Works</p>
             <ul className="list-disc list-inside space-y-1 text-blue-700">
               <li>Campaigns are tracked via UTM parameters in your storefront URLs</li>
-              <li>Views and add-to-cart events are linked to {business.businessType === 'SALON' ? 'appointments' : 'orders'} via sessionId for accurate conversion tracking</li>
+              <li>Views and add-to-cart events are linked to {business.businessType === 'SALON' ? 'appointments' : business.businessType === 'SERVICES' ? 'sessions' : 'orders'} via sessionId for accurate conversion tracking</li>
               <li>Only campaigns with UTM parameters (utm_campaign, utm_source, or utm_medium) are shown</li>
               <li>Share links like: <code className="bg-blue-100 px-1 py-0.5 rounded text-xs">yoursite.com/store?utm_campaign=summer_sale&utm_source=instagram</code></li>
             </ul>

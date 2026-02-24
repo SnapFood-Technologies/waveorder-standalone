@@ -169,9 +169,9 @@ export function RecentAppointmentsWidget({ businessId }: RecentAppointmentsWidge
       {appointments.length === 0 ? (
         <div className="text-center py-12">
           <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-gray-900 mb-2">No appointments yet</h4>
+          <h4 className="text-lg font-medium text-gray-900 mb-2">{business.businessType === 'SERVICES' ? 'No sessions yet' : 'No appointments yet'}</h4>
           <p className="text-gray-600 mb-6">
-            When customers book appointments, they'll appear here.
+            {business.businessType === 'SERVICES' ? "When customers book sessions, they'll appear here." : "When customers book appointments, they'll appear here."}
           </p>
         </div>
       ) : (
@@ -179,7 +179,7 @@ export function RecentAppointmentsWidget({ businessId }: RecentAppointmentsWidge
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Appointment</th>
+                <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">{business.businessType === 'SERVICES' ? 'Session' : 'Appointment'}</th>
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Customer</th>
                 <th className="text-left py-2 px-3 text-sm font-medium text-gray-500">Date & Time</th>
                 <th className="text-center py-2 px-3 text-sm font-medium text-gray-500">Status</th>

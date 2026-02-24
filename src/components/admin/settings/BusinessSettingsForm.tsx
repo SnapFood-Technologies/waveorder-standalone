@@ -1087,7 +1087,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
     </optgroup>
   </select>
   <p className="text-xs text-gray-500 mt-1">
-    This timezone will be used for business hours and {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') ? 'appointment' : 'order'} timestamps
+    This timezone will be used for business hours and {settings.businessType === 'SERVICES' ? 'session' : settings.businessType === 'SALON' ? 'appointment' : 'order'} timestamps
   </p>
 </div>
 
@@ -1106,7 +1106,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   <option value="12">12-hour format (2:30 PM)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
+                  {settings.businessType === 'SERVICES'
+                    ? 'This format will be used for session time selection on your storefront'
+                    : settings.businessType === 'SALON'
                     ? 'This format will be used for appointment time selection on your storefront'
                     : 'This format will be used for pickup and delivery time selection on your storefront'}
                 </p>
@@ -1410,7 +1412,7 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
               Store Status & Closure
             </h2>
             <p className="text-sm text-gray-600 mb-3">
-              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new {(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') ? 'appointments' : 'orders'}.
+              Use these settings to temporarily close your store during holidays, maintenance, or other situations. Your store will display a closure message to customers and prevent new {settings.businessType === 'SERVICES' ? 'sessions' : settings.businessType === 'SALON' ? 'appointments' : 'orders'}.
             </p>
 
             <div className="space-y-6">
@@ -1556,7 +1558,9 @@ export function BusinessSettingsForm({ businessId }: BusinessSettingsProps) {
                   value={settings.seoKeywords || ''}
                   onChange={handleInputChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
-                  placeholder={(settings.businessType === 'SALON' || settings.businessType === 'SERVICES') 
+                  placeholder={settings.businessType === 'SERVICES'
+                    ? "professional services, sessions, local business (comma-separated)"
+                    : settings.businessType === 'SALON'
                     ? "salon, beauty, appointments, local business (comma-separated)"
                     : settings.businessType === 'RETAIL'
                     ? "retail, shop, products, local business (comma-separated)"

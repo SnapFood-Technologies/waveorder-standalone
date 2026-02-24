@@ -18,6 +18,7 @@ import {
   AlertCircle,
   ExternalLink,
   Scissors,
+  Briefcase,
   HelpCircle,
   X
 } from 'lucide-react'
@@ -86,8 +87,11 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
   const [error, setError] = useState<string | null>(null)
   const [selectedPeriod, setSelectedPeriod] = useState('month')
   const [activeTab, setActiveTab] = useState<'best-sellers' | 'most-viewed' | 'opportunity' | 'low-performing'>('best-sellers')
-  const [business, setBusiness] = useState<{ currency: string }>({ currency: 'USD' })
+  const [business, setBusiness] = useState<{ currency: string; businessType?: string }>({ currency: 'USD', businessType: 'RESTAURANT' })
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const isServices = business.businessType === 'SERVICES'
+  const sessionLabel = isServices ? 'Session' : 'Appointment'
+  const sessionLabelPlural = isServices ? 'Sessions' : 'Appointments'
 
   useEffect(() => {
     fetchBusinessData()
@@ -99,7 +103,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const result = await response.json()
-        setBusiness({ currency: result.business.currency })
+        setBusiness({ currency: result.business.currency, businessType: result.business.businessType || 'RESTAURANT' })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -164,10 +168,10 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
   }
 
   const tabs = [
-    { id: 'best-sellers' as const, label: 'Best Sellers', icon: Calendar, description: 'Services with most appointments booked' },
+    { id: 'best-sellers' as const, label: 'Best Sellers', icon: Calendar, description: `Services with most ${sessionLabelPlural.toLowerCase()} booked` },
     { id: 'most-viewed' as const, label: 'Most Viewed', icon: Eye, description: 'Services with most views' },
     { id: 'opportunity' as const, label: 'Opportunity', icon: TrendingUp, description: 'High views, low conversions' },
-    { id: 'low-performing' as const, label: 'Needs Attention', icon: AlertCircle, description: 'Add to carts but no appointments booked' }
+    { id: 'low-performing' as const, label: 'Needs Attention', icon: AlertCircle, description: `Add to carts but no ${sessionLabelPlural.toLowerCase()} booked` }
   ]
 
   if (loading) {
@@ -279,15 +283,15 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
             <Calendar className="w-5 h-5 text-teal-600" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatNumber(data.summary.totalAppointmentsBooked)}</p>
-          <p className="text-sm text-gray-600">Appointments Booked</p>
+          <p className="text-sm text-gray-600">{sessionLabelPlural} Booked</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <Scissors className="w-5 h-5 text-green-600" />
+            {isServices ? <Briefcase className="w-5 h-5 text-green-600" /> : <Scissors className="w-5 h-5 text-green-600" />}
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatNumber(data.summary.totalAppointmentsCompleted)}</p>
-          <p className="text-sm text-gray-600">Appointments Completed</p>
+          <p className="text-sm text-gray-600">{sessionLabelPlural} Completed</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -319,9 +323,9 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
               <ShoppingCart className="w-5 h-5 text-purple-600" />
               <span className="text-2xl font-bold text-purple-700">{data.summary.overallCartToAppointmentRate}%</span>
             </div>
-            <p className="text-sm text-purple-600">Cart to Appointment Rate</p>
+            <p className="text-sm text-purple-600">Cart to {sessionLabel} Rate</p>
             <p className="text-xs text-purple-500 mt-1">
-              {formatNumber(data.summary.totalAddToCarts)} carts → {formatNumber(data.summary.totalAppointmentsBooked)} appointments booked
+              {formatNumber(data.summary.totalAddToCarts)} carts → {formatNumber(data.summary.totalAppointmentsBooked)} {sessionLabelPlural.toLowerCase()} booked
             </p>
           </div>
           
@@ -332,7 +336,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
             </div>
             <p className="text-sm text-green-600">Overall Conversion</p>
             <p className="text-xs text-green-500 mt-1">
-              {formatNumber(data.summary.totalViews)} views → {formatNumber(data.summary.totalAppointmentsBooked)} appointments booked
+              {formatNumber(data.summary.totalViews)} views → {formatNumber(data.summary.totalAppointmentsBooked)} {sessionLabelPlural.toLowerCase()} booked
             </p>
           </div>
         </div>
@@ -379,7 +383,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
           
           <p className="text-xs text-gray-500 mt-4">
             Based on {formatNumber(data.summary.totalCartSessions)} unique sessions with add-to-cart events. 
-            A cart is considered abandoned if no appointment containing those services is booked within 24 hours.
+            A cart is considered abandoned if no {sessionLabel.toLowerCase()} containing those services is booked within 24 hours.
           </p>
         </div>
       )}
@@ -416,7 +420,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
         {/* Services List */}
         {services.length === 0 ? (
           <div className="text-center py-12">
-            <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            {isServices ? <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" /> : <Scissors className="w-12 h-12 text-gray-300 mx-auto mb-4" />}
             <h3 className="text-lg font-medium text-gray-900 mb-2">No data yet</h3>
             <p className="text-gray-600">
               Service analytics will appear here as customers view and interact with your services.
@@ -437,10 +441,10 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                     Add to Cart
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <span title="All appointments booked by customers">Booked</span>
+                    <span title={isServices ? 'All sessions booked by customers' : 'All appointments booked by customers'}>Booked</span>
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <span title="Appointments that have been completed and paid">Completed</span>
+                    <span title={isServices ? 'Sessions that have been completed and paid' : 'Appointments that have been completed and paid'}>Completed</span>
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Revenue
@@ -471,7 +475,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                           />
                         ) : (
                           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <Scissors className="w-5 h-5 text-gray-400" />
+                            {isServices ? <Briefcase className="w-5 h-5 text-gray-400" /> : <Scissors className="w-5 h-5 text-gray-400" />}
                           </div>
                         )}
                         <div>
@@ -555,25 +559,25 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
               </div>
               
               <div>
-                <p className="font-medium text-blue-900 mb-1">📅 Appointment Metrics</p>
+                <p className="font-medium text-blue-900 mb-1">📅 {sessionLabel} Metrics</p>
                 <ul className="text-xs space-y-1 text-blue-700">
-                  <li><strong className="text-teal-700">Appointments Booked:</strong> All appointments submitted by customers (shows demand)</li>
-                  <li><strong className="text-green-700">Appointments Completed:</strong> Completed appointments that are paid (actual fulfillment)</li>
+                  <li><strong className="text-teal-700">{sessionLabelPlural} Booked:</strong> All {sessionLabelPlural.toLowerCase()} submitted by customers (shows demand)</li>
+                  <li><strong className="text-green-700">{sessionLabelPlural} Completed:</strong> Completed {sessionLabelPlural.toLowerCase()} that are paid (actual fulfillment)</li>
                 </ul>
               </div>
               
               <div>
                 <p className="font-medium text-blue-900 mb-1">💰 Revenue & Conversion</p>
                 <ul className="text-xs space-y-1 text-blue-700">
-                  <li><strong>Revenue:</strong> Calculated from completed appointments only</li>
-                  <li><strong>Conversion Rate:</strong> Based on appointments booked (customer action)</li>
+                  <li><strong>Revenue:</strong> Calculated from completed {sessionLabelPlural.toLowerCase()} only</li>
+                  <li><strong>Conversion Rate:</strong> Based on {sessionLabelPlural.toLowerCase()} booked (customer action)</li>
                 </ul>
               </div>
               
               <div>
                 <p className="font-medium text-blue-900 mb-1">🛒 Cart Abandonment</p>
                 <ul className="text-xs space-y-1 text-blue-700">
-                  <li>A cart is abandoned if no appointment is booked within 24 hours</li>
+                  <li>A cart is abandoned if no {sessionLabel.toLowerCase()} is booked within 24 hours</li>
                   <li>Helps identify checkout friction points</li>
                 </ul>
               </div>
@@ -644,15 +648,15 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                     <div className="flex gap-3">
                       <Calendar className="w-4 h-4 text-teal-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="font-medium text-gray-800">Appointments Booked</p>
-                        <p className="text-gray-600">Total unique appointments submitted by customers (any status). Represents customer demand.</p>
+                        <p className="font-medium text-gray-800">{sessionLabelPlural} Booked</p>
+                        <p className="text-gray-600">Total unique {sessionLabelPlural.toLowerCase()} submitted by customers (any status). Represents customer demand.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
-                      <Scissors className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      {isServices ? <Briefcase className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" /> : <Scissors className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />}
                       <div>
-                        <p className="font-medium text-gray-800">Appointments Completed</p>
-                        <p className="text-gray-600">Appointments that are completed AND paid. Represents actual fulfillment.</p>
+                        <p className="font-medium text-gray-800">{sessionLabelPlural} Completed</p>
+                        <p className="text-gray-600">{sessionLabelPlural} that are completed AND paid. Represents actual fulfillment.</p>
                       </div>
                     </div>
                     <div className="flex gap-3">
@@ -679,12 +683,12 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Cart to Appointment Rate</p>
-                      <p className="text-gray-600">Percentage of cart additions that became appointments. Formula: (Appointments Booked ÷ Add to Carts) × 100</p>
+                      <p className="text-gray-600">Percentage of cart additions that became {sessionLabelPlural.toLowerCase()}. Formula: ({sessionLabelPlural} Booked ÷ Add to Carts) × 100</p>
                       <p className="text-xs text-purple-600 mt-1">Lower rate may indicate checkout issues or price concerns</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Overall Conversion</p>
-                      <p className="text-gray-600">Percentage of views that resulted in appointments. Formula: (Appointments Booked ÷ Views) × 100</p>
+                      <p className="text-gray-600">Percentage of views that resulted in {sessionLabelPlural.toLowerCase()}. Formula: ({sessionLabelPlural} Booked ÷ Views) × 100</p>
                       <p className="text-xs text-purple-600 mt-1">Your overall booking effectiveness metric</p>
                     </div>
                   </div>
@@ -708,16 +712,16 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Booked (with bookings)</p>
-                      <p className="text-gray-600">Number of appointments containing this service. "X bookings" shows total quantity booked.</p>
-                      <p className="text-xs text-teal-600 mt-1">Example: "1 (2 bookings)" = 1 appointment with 2 units of this service</p>
+                      <p className="text-gray-600">Number of {sessionLabelPlural.toLowerCase()} containing this service. "X bookings" shows total quantity booked.</p>
+                      <p className="text-xs text-teal-600 mt-1">Example: "1 (2 bookings)" = 1 {sessionLabel.toLowerCase()} with 2 units of this service</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Completed (with bookings)</p>
-                      <p className="text-gray-600">Number of fulfilled appointments containing this service. Only counts completed & paid appointments.</p>
+                      <p className="text-gray-600">Number of fulfilled {sessionLabelPlural.toLowerCase()} containing this service. Only counts completed & paid {sessionLabelPlural.toLowerCase()}.</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Revenue</p>
-                      <p className="text-gray-600">Total revenue from completed appointments for this service only.</p>
+                      <p className="text-gray-600">Total revenue from completed {sessionLabelPlural.toLowerCase()} for this service only.</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Conversion %</p>
@@ -735,7 +739,7 @@ export default function ServiceAnalytics({ businessId }: ServiceAnalyticsProps) 
                   <div className="space-y-3 text-sm">
                     <div>
                       <p className="font-medium text-gray-800">Cart Abandonment Rate</p>
-                      <p className="text-gray-600">Percentage of shopping sessions where items were added to cart but no appointment was booked within 24 hours.</p>
+                      <p className="text-gray-600">Percentage of shopping sessions where items were added to cart but no {sessionLabel.toLowerCase()} was booked within 24 hours.</p>
                     </div>
                     <div>
                       <p className="font-medium text-gray-800">Abandoned Carts</p>

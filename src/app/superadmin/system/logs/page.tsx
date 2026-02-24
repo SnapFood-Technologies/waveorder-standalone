@@ -235,6 +235,7 @@ export default function SystemLogsPage() {
       product_created: 'Product Created',
       product_updated: 'Product Updated',
       subscription_changed: 'Subscription Changed',
+      billing_panel_action: 'Billing Panel Action',
       password_reset_requested: 'Password Reset Requested',
       password_reset_completed: 'Password Reset Completed',
       password_reset_error: 'Password Reset Error',
@@ -425,6 +426,7 @@ export default function SystemLogsPage() {
                 </optgroup>
                 <optgroup label="Subscriptions">
                   <option value="subscription_changed">Subscription Changed</option>
+                  <option value="billing_panel_action">Billing Panel Action</option>
                   <option value="subscription_error">Subscription Error</option>
                   <option value="checkout_error">Checkout Error</option>
                 </optgroup>

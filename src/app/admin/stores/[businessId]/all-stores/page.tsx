@@ -292,7 +292,7 @@ export default function AllStoresPage() {
             <p className="text-sm text-gray-500 mt-0.5">Manage all your stores from one place</p>
           </div>
           <div className="p-4 sm:p-6">
-            <div className={`grid grid-cols-2 ${currentBusinessType === 'SALON' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
+            <div className={`grid grid-cols-2 ${(currentBusinessType === 'SALON' || currentBusinessType === 'SERVICES') ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-3 sm:gap-4`}>
               <Link
                 href={`/admin/stores/${currentBusinessId}/unified/dashboard`}
                 className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-teal-300 hover:bg-teal-50/50 transition-all group"
@@ -313,7 +313,7 @@ export default function AllStoresPage() {
                 <span className="text-sm font-medium text-gray-900 text-center">Analytics</span>
               </Link>
               
-              {currentBusinessType === 'SALON' ? (
+              {(currentBusinessType === 'SALON' || currentBusinessType === 'SERVICES') ? (
                 <Link
                   href={`/admin/stores/${currentBusinessId}/appointments`}
                   className="flex flex-col items-center p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
@@ -321,7 +321,7 @@ export default function AllStoresPage() {
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900 text-center">All Appointments</span>
+                  <span className="text-sm font-medium text-gray-900 text-center">{currentBusinessType === 'SERVICES' ? 'All Sessions' : 'All Appointments'}</span>
                 </Link>
               ) : (
                 <>
