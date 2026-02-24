@@ -35,7 +35,7 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    if (business.businessType !== 'SALON') {
+    if (business.businessType !== 'SALON' && business.businessType !== 'SERVICES') {
       return NextResponse.json({ message: 'This endpoint is only for salon businesses' }, { status: 403 })
     }
 

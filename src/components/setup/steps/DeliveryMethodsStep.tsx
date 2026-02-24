@@ -117,6 +117,11 @@ const businessTypeConfig = {
     subtitle: 'Salons use appointments instead of delivery or pickup',
     methods: [] // No delivery/pickup for salons
   },
+  SERVICES: {
+    title: 'Service Request Setup',
+    subtitle: 'Professional services use appointments and/or request forms (no delivery or pickup)',
+    methods: [] // No delivery/pickup for services
+  },
   OTHER: {
     title: 'How do customers receive orders?',
     subtitle: 'Choose the fulfillment methods for your business',
@@ -185,10 +190,10 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
   // Initialize state with existing data or sensible defaults
   const [methods, setMethods] = useState(() => {
     const existingMethods = data.deliveryMethods
-    const isSalon = data.businessType === 'SALON'
+    const isServiceBusiness = data.businessType === 'SALON' || data.businessType === 'SERVICES'
     
     return {
-      delivery: existingMethods?.delivery ?? (isSalon ? false : true),
+      delivery: existingMethods?.delivery ?? (isServiceBusiness ? false : true),
       pickup: existingMethods?.pickup ?? false,
       deliveryFee: existingMethods?.deliveryFee ?? 0,
       deliveryRadius: existingMethods?.deliveryRadius ?? 10,
@@ -201,7 +206,7 @@ export default function DeliveryMethodsStep({ data, onComplete, onBack }: Delive
 
   const config = businessTypeConfig[data.businessType as keyof typeof businessTypeConfig] || businessTypeConfig.OTHER
   const currencySymbol = getCurrencySymbol(data.currency || 'USD')
-  const isSalon = data.businessType === 'SALON'
+  const isSalon = data.businessType === 'SALON' || data.businessType === 'SERVICES'
 
   const toggleMethod = (method: keyof typeof methods) => {
     if (typeof methods[method] === 'boolean') {

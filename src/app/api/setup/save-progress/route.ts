@@ -82,10 +82,10 @@ export async function POST(request: NextRequest) {
           subscriptionPlan: data.subscriptionPlan || 'STARTER',
           subscriptionStatus: 'ACTIVE',
           onboardingStep: step === 'complete' ? 99 : (typeof step === 'number' ? step : parseInt(step) || 0),
-          // Set delivery defaults based on business type
-          deliveryEnabled: businessType === 'SALON' ? false : true,
+          // Set delivery defaults based on business type (SERVICES same as SALON)
+          deliveryEnabled: (businessType === 'SALON' || businessType === 'SERVICES') ? false : true,
           pickupEnabled: false,
-          dineInEnabled: businessType === 'SALON' ? true : false,
+          dineInEnabled: (businessType === 'SALON' || businessType === 'SERVICES') ? true : false,
           users: {
             create: {
               userId: user.id,
@@ -157,8 +157,8 @@ export async function POST(request: NextRequest) {
 
       // Handle delivery methods
       if (data.deliveryMethods) {
-        // For salons, always set delivery/pickup to false and dineIn to true
-        if (data.businessType === 'SALON') {
+        // For SALON and SERVICES, always set delivery/pickup to false and dineIn to true
+        if (data.businessType === 'SALON' || data.businessType === 'SERVICES') {
           updateData.deliveryEnabled = false
           updateData.pickupEnabled = false
           updateData.dineInEnabled = true
@@ -177,8 +177,8 @@ export async function POST(request: NextRequest) {
             updateData.estimatedPickupTime = data.deliveryMethods.estimatedPickupTime || '15-20 minutes'
           }
         }
-      } else if (data.businessType === 'SALON') {
-        // If deliveryMethods not provided but it's a salon, set defaults
+      } else if (data.businessType === 'SALON' || data.businessType === 'SERVICES') {
+        // If deliveryMethods not provided but it's salon/services, set defaults
         updateData.deliveryEnabled = false
         updateData.pickupEnabled = false
         updateData.dineInEnabled = true

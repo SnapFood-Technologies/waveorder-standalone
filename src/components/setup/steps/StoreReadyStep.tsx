@@ -145,9 +145,11 @@ const storeContent = {
 const businessTypeTranslations = {
   en: {
     RESTAURANT: "Restaurant",
-    CAFE: "Cafe", 
+    CAFE: "Cafe",
     RETAIL: "Retail Store",
     GROCERY: "Grocery Store",
+    SALON: "Salon & Beauty",
+    SERVICES: "Professional Services",
     OTHER: "Business"
   },
   sq: {
@@ -155,6 +157,8 @@ const businessTypeTranslations = {
     CAFE: "Kafene",
     RETAIL: "Dyqan",
     GROCERY: "Ushqimore",
+    SALON: "Sallon & Bukuri",
+    SERVICES: "Shërbime Profesionale",
     OTHER: "Biznes"
   }
 }

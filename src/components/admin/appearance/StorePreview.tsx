@@ -77,6 +77,7 @@ const getDemoProducts = (businessType: string) => {
         { id: 3, name: 'Dairy Bundle', description: 'Fresh milk, eggs, and cheese from local farms', price: 12.99, featured: false }
       ]
     case 'SALON':
+    case 'SERVICES':
       return [
         { id: 1, name: 'Haircut & Style', description: 'Professional haircut with styling and consultation', price: 35.00, featured: true, duration: 60 },
         { id: 2, name: 'Hair Color', description: 'Full hair coloring service with premium products', price: 85.00, featured: false, duration: 120 },
@@ -98,7 +99,7 @@ const isMobileDevice = () => {
 }
 
 export function StorePreview({ businessData, settings, device }: StorePreviewProps) {
-  const isSalon = businessData.businessType === 'SALON'
+  const isSalon = businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES'
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [cartCount, setCartCount] = useState(2)
   const [searchTerm, setSearchTerm] = useState('')

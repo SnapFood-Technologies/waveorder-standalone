@@ -57,6 +57,153 @@ interface BusinessData {
   timezone?: string // Business timezone for formatting appointment date/time
 }
 
+/** Data for sending a service request notification email to the business (SERVICES form submissions) */
+export interface ServiceRequestEmailData {
+  id: string
+  contactName: string
+  companyName: string | null
+  email: string
+  phone: string | null
+  requestType: string // EMAIL_REQUEST | WHATSAPP_REQUEST
+  message: string | null
+  adminLink: string
+}
+
+/**
+ * Send email to business when a new service request (form submission) is received.
+ * Same notification settings as orders: orderNotificationsEnabled, orderNotificationEmail.
+ * Optionally include whatsappUrl for wa.me (when not using direct Twilio).
+ */
+export async function sendServiceRequestEmailNotification(
+  serviceRequestData: ServiceRequestEmailData,
+  businessData: BusinessData,
+  options: { whatsappUrl?: string } = {}
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!businessData.orderNotificationsEnabled) {
+      return { success: true }
+    }
+    const notificationEmail = businessData.orderNotificationEmail || businessData.email
+    if (!notificationEmail) {
+      return { success: false, error: 'No notification email configured' }
+    }
+
+    const html = createServiceRequestNotificationEmail(serviceRequestData, businessData.name, options.whatsappUrl)
+
+    const subject = `New service request from ${serviceRequestData.contactName} - ${businessData.name}`
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [notificationEmail],
+      subject,
+      html,
+      // @ts-ignore
+      reply_to: 'hello@waveorder.app',
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('Service request email notification error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send notification'
+    }
+  }
+}
+
+function createServiceRequestNotificationEmail(
+  data: ServiceRequestEmailData,
+  businessName: string,
+  whatsappUrl?: string
+): string {
+  const preferredContact = data.requestType === 'WHATSAPP_REQUEST' ? 'WhatsApp' : 'Email'
+  const viewLink = data.adminLink
+  const messageText = data.message || '—'
+  const phoneText = data.phone?.trim() || '—'
+  const companyLine = data.companyName ? `<p style="margin: 0 0 8px;"><strong>Company:</strong> ${escapeHtml(data.companyName)}</p>` : ''
+
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 24px 20px; text-align: center;">
+      <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 700;">New service request</h1>
+      <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 15px;">${escapeHtml(businessName)}</p>
+    </div>
+    <div style="padding: 24px;">
+      <p style="color: #374151; margin: 0 0 16px;">Someone submitted a request via your storefront.</p>
+      <div style="padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+        <p style="margin: 0 0 8px;"><strong>Name:</strong> ${escapeHtml(data.contactName)}</p>
+        ${companyLine}
+        <p style="margin: 0 0 8px;"><strong>Email:</strong> ${escapeHtml(data.email)}</p>
+        <p style="margin: 0 0 8px;"><strong>Phone:</strong> ${escapeHtml(phoneText)}</p>
+        <p style="margin: 0 0 8px;"><strong>Preferred contact:</strong> ${escapeHtml(preferredContact)}</p>
+        <p style="margin: 0 0 0;"><strong>Message:</strong><br/>${escapeHtml(messageText)}</p>
+      </div>
+      <p style="margin: 0 0 16px;"><a href="${escapeHtml(viewLink)}" style="display: inline-block; padding: 12px 24px; background: #0d9488; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">View in dashboard</a></p>
+      ${whatsappUrl ? `<p style="margin: 0; font-size: 14px; color: #6b7280;"><a href="${escapeHtml(whatsappUrl)}" style="color: #0d9488;">Reply via WhatsApp</a></p>` : ''}
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/**
+ * Send email to business when a service request's status is updated (SERVICES only).
+ * Used when notifyAdminOnServiceRequestStatusUpdates is true.
+ */
+export async function sendServiceRequestStatusUpdateToBusiness(
+  notificationEmail: string,
+  serviceRequestData: { contactName: string; status: string; id: string; adminLink: string },
+  businessName: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const statusLabel = serviceRequestData.status.charAt(0) + serviceRequestData.status.slice(1).toLowerCase()
+    const subject = `Service request status updated to ${statusLabel} – ${serviceRequestData.contactName} – ${businessName}`
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 24px 20px; text-align: center;">
+      <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 700;">Service request status updated</h1>
+      <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 15px;">${escapeHtml(businessName)}</p>
+    </div>
+    <div style="padding: 24px;">
+      <p style="color: #374151; margin: 0 0 16px;">The status of a service request was updated.</p>
+      <div style="padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 8px;"><strong>Requester:</strong> ${escapeHtml(serviceRequestData.contactName)}</p>
+        <p style="margin: 0 0 0;"><strong>New status:</strong> ${escapeHtml(statusLabel)}</p>
+      </div>
+      <p style="margin: 16px 0 0;"><a href="${escapeHtml(serviceRequestData.adminLink)}" style="display: inline-block; padding: 12px 24px; background: #0d9488; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">View in dashboard</a></p>
+    </div>
+  </div>
+</body>
+</html>`
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: [notificationEmail],
+      subject,
+      html,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error('Service request status update (to business) email error:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to send' }
+  }
+}
+
 export async function sendOrderNotification(
   orderData: OrderData, 
   businessData: BusinessData,
@@ -170,7 +317,7 @@ export async function sendOrderNotification(
 
 // Helper function to get email labels in the specified language, customized for business type
 function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   const labels: Record<string, Record<string, string>> = {
     en: {
@@ -389,7 +536,7 @@ function createOrderNotificationEmail({
   const statusColor = getStatusColorBox(orderData.status)
   const statusLabel = formatStatus(orderData.status, normalizedLang)
   const statusIcon = getStatusIcon(orderData.status)
-  const isSalon = businessData.businessType === 'SALON'
+  const isSalon = (businessData.businessType === 'SALON' || businessData.businessType === 'SERVICES')
   const locale = normalizedLang === 'es' ? 'es-ES' : normalizedLang === 'sq' ? 'sq-AL' : normalizedLang === 'el' ? 'el-GR' : 'en-US'
   
   return `

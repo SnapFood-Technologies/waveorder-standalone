@@ -8,6 +8,7 @@ import {
   ShoppingBag, 
   Apple, 
   Scissors, 
+  Briefcase,
   Gem, 
   Flower2, 
   MoreHorizontal,
@@ -28,6 +29,7 @@ const businessTypes = [
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
   { value: 'SALON', label: 'Salon & Beauty', icon: Scissors },
+  { value: 'SERVICES', label: 'Professional Services', icon: Briefcase },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 

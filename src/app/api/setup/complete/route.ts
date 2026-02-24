@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { sendTeamInvitationEmail } from '@/lib/email'
 import { authOptions } from '@/lib/auth'
+import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 
 export async function POST(request: NextRequest) {
@@ -67,6 +68,31 @@ export async function POST(request: NextRequest) {
         onboardingCompleted: true,
         onboardingStep: 999, // Completed
         isActive: true
+      }
+    })
+
+    // Log onboarding_completed for funnel (Store Ready = step 11). The client never
+    // calls onComplete on Store Ready — it hits this API and redirects — so we log here.
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
+    const protocol = request.headers.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+    const actualUrl = host ? `${protocol}://${host}${new URL(request.url).pathname}` : request.url
+    logSystemEvent({
+      logType: 'onboarding_completed',
+      severity: 'info',
+      endpoint: '/api/setup/complete',
+      method: 'POST',
+      statusCode: 200,
+      url: actualUrl,
+      businessId: business.id,
+      ipAddress: extractIPAddress(request),
+      userAgent: request.headers.get('user-agent') || undefined,
+      errorMessage: `Onboarding completed: ${business.name}`,
+      metadata: {
+        step: 11,
+        stepName: 'Store Ready',
+        userId: user.id,
+        userEmail: user.email,
+        businessName: business.name
       }
     })
 

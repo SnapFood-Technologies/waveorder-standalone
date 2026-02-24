@@ -308,7 +308,7 @@ const faqData: Record<string, FAQ[]> = {
 
 export function FAQSection({ sectionId, searchQuery, businessType = 'RESTAURANT' }: FAQSectionProps) {
   const [expandedFAQs, setExpandedFAQs] = useState<string[]>([])
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
 
   const toggleFAQ = (faqId: string) => {
     setExpandedFAQs(prev => 

@@ -29,7 +29,7 @@ export function QuickActionsWidget({ businessId }: QuickActionsWidgetProps) {
     fetchBusinessType()
   }, [businessId])
   
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   return (
     <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full sm:w-auto">

@@ -33,7 +33,7 @@ interface PricingStepProps {
 type PlanId = 'STARTER' | 'PRO' | 'BUSINESS'
 
 const getPlans = (businessType?: string) => {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   return [
     {
@@ -127,7 +127,7 @@ export default function PricingStep({ data, onComplete, onBack }: PricingStepPro
   const [salonModalBillingCycle, setSalonModalBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
   
   const plans = getPlans(data.businessType)
-  const isSalon = data.businessType === 'SALON'
+  const isSalon = data.businessType === 'SALON' || data.businessType === 'SERVICES'
 
   // Check if user already has an active trial on mount
   useEffect(() => {

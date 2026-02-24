@@ -44,7 +44,7 @@ export async function GET(
       where: { id: businessId },
       select: { businessType: true }
     })
-    const isSalon = business?.businessType === 'SALON'
+    const isSalon = business?.businessType === 'SALON' || business?.businessType === 'SERVICES'
 
     // Get orders count and revenue (only delivered orders with paid status for revenue)
     const allOrders = await prisma.order.findMany({

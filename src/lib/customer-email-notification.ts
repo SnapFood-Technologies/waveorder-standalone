@@ -279,7 +279,7 @@ function getStatusMessage(status: string, orderType: string, language: string = 
  * Get email labels in the specified language, customized for business type
  */
 function getEmailLabels(language: string = 'en', businessType?: string): Record<string, string> {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   
   const labels: Record<string, Record<string, string>> = {
     en: {
@@ -766,7 +766,7 @@ function createCustomerOrderPlacedEmail({
       </div>
       ` : ''}
 
-      ${orderData.type === 'DINE_IN' && orderData.deliveryTime && orderData.businessType === 'SALON' ? `
+      ${orderData.type === 'DINE_IN' && orderData.deliveryTime && (orderData.businessType === 'SALON' || orderData.businessType === 'SERVICES') ? `
       <!-- Appointment Date & Time -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f0fdf4; border-radius: 8px; border: 1px solid #10b981;">
         <h3 style="color: #065f46; margin: 0 0 10px; font-size: 16px; font-weight: 600;">📅 ${labels.expectedDelivery}</h3>
@@ -995,6 +995,120 @@ export async function sendAppointmentStatusEmail(
     return { success: true, emailId: emailResult.data?.id }
   } catch (error) {
     console.error('Error sending appointment status email:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to send email' }
+  }
+}
+
+/**
+ * Get service request status message for customer email (SERVICES form-based requests)
+ */
+function getServiceRequestStatusMessage(status: string, language: string = 'en'): string {
+  const messages: Record<string, Record<string, string>> = {
+    en: {
+      NEW: 'We have received your request and will get back to you soon.',
+      CONTACTED: 'We have reviewed your request and will be in touch.',
+      QUOTED: 'We have sent you a quote. Please review and contact us with any questions.',
+      CONFIRMED: 'Your request has been confirmed. We look forward to working with you.',
+      COMPLETED: 'Your request is complete. Thank you for choosing us!',
+      CANCELLED: 'Your request has been cancelled. If you have questions, please contact us.'
+    },
+    es: {
+      NEW: 'Hemos recibido su solicitud y nos pondremos en contacto pronto.',
+      CONTACTED: 'Hemos revisado su solicitud y nos pondremos en contacto.',
+      QUOTED: 'Le hemos enviado un presupuesto. Revíselo y contáctenos si tiene preguntas.',
+      CONFIRMED: 'Su solicitud ha sido confirmada. ¡Esperamos trabajar con usted!',
+      COMPLETED: 'Su solicitud está completa. ¡Gracias por elegirnos!',
+      CANCELLED: 'Su solicitud ha sido cancelada. Si tiene preguntas, contáctenos.'
+    },
+    sq: {
+      NEW: 'Kemi marrë kërkesën tuaj dhe do t\'ju përgjigjemi së shpejti.',
+      CONTACTED: 'Kemi shqyrtuar kërkesën tuaj dhe do të lidhemi me ju.',
+      QUOTED: 'Ju kemi dërguar një ofertë. Ju lutemi shqyrtoni dhe na kontaktoni për çdo pyetje.',
+      CONFIRMED: 'Kërkesa juaj është konfirmuar. Presim të punojmë me ju.',
+      COMPLETED: 'Kërkesa juaj është përfunduar. Faleminderit që na zgjidhët!',
+      CANCELLED: 'Kërkesa juaj është anuluar. Nëse keni pyetje, ju lutemi na kontaktoni.'
+    },
+    el: {
+      NEW: 'Λάβαμε το αίτημά σας και θα επικοινωνήσουμε σύντομα.',
+      CONTACTED: 'Εξετάσαμε το αίτημά σας και θα επικοινωνήσουμε μαζί σας.',
+      QUOTED: 'Σας στείλαμε μια προσφορά. Παρακαλώ ελέγξτε την και επικοινωνήστε μαζί μας για ερωτήσεις.',
+      CONFIRMED: 'Το αίτημά σας έχει επιβεβαιωθεί. Ανυπομονούμε να συνεργαστούμε μαζί σας.',
+      COMPLETED: 'Το αίτημά σας ολοκληρώθηκε. Ευχαριστούμε που μας επιλέξατε!',
+      CANCELLED: 'Το αίτημά σας έχει ακυρωθεί. Εάν έχετε ερωτήσεις, παρακαλώ επικοινωνήστε μαζί μας.'
+    }
+  }
+  const normalizedLang = language === 'gr' ? 'el' : language === 'al' ? 'sq' : language
+  const langMessages = messages[normalizedLang] || messages.en
+  return langMessages[status.toUpperCase()] || messages.en[status.toUpperCase()] || messages.en.NEW
+}
+
+function getServiceRequestStatusStyle(status: string): { background: string; border: string; text: string; icon: string } {
+  switch (status.toUpperCase()) {
+    case 'NEW': return { background: '#f3f4f6', border: '#6b7280', text: '#374151', icon: '📥' }
+    case 'CONTACTED': return { background: '#dbeafe', border: '#3b82f6', text: '#1e40af', icon: '👋' }
+    case 'QUOTED': return { background: '#fef3c7', border: '#f59e0b', text: '#92400e', icon: '📋' }
+    case 'CONFIRMED': return { background: '#d1fae5', border: '#059669', text: '#065f46', icon: '✅' }
+    case 'COMPLETED': return { background: '#d1fae5', border: '#059669', text: '#065f46', icon: '🎉' }
+    case 'CANCELLED': return { background: '#fee2e2', border: '#ef4444', text: '#991b1b', icon: '❌' }
+    default: return { background: '#f3f4f6', border: '#6b7280', text: '#374151', icon: '📋' }
+  }
+}
+
+/**
+ * Send service request status change email to the requester (customer)
+ * Used when admin updates a SERVICE form-based request status (CONTACTED, QUOTED, CONFIRMED, COMPLETED, CANCELLED)
+ */
+export async function sendServiceRequestStatusEmail(
+  customer: { name: string; email: string },
+  serviceRequestData: { contactName: string; status: string; businessName: string; adminLink?: string },
+  businessData: { language?: string; businessPhone?: string | null }
+): Promise<{ success: boolean; error?: string; emailId?: string }> {
+  try {
+    if (!customer.email?.trim()) {
+      return { success: false, error: 'Customer email not available' }
+    }
+    const language = businessData.language === 'gr' ? 'el' : businessData.language === 'al' ? 'sq' : (businessData.language || 'en')
+    const statusMessage = getServiceRequestStatusMessage(serviceRequestData.status, language)
+    const style = getServiceRequestStatusStyle(serviceRequestData.status)
+    const statusLabel = serviceRequestData.status.charAt(0) + serviceRequestData.status.slice(1).toLowerCase()
+
+    const subject = `Your service request – ${statusLabel} – ${serviceRequestData.businessName}`
+
+    const emailContent = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f8fafc;">
+  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); padding: 24px 20px; text-align: center;">
+      <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 700;">Service request update</h1>
+      <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 15px;">${serviceRequestData.businessName}</p>
+    </div>
+    <div style="padding: 24px;">
+      <p style="color: #374151; margin: 0 0 16px;">Hi ${customer.name || 'there'},</p>
+      <div style="margin-bottom: 24px; padding: 20px; background-color: ${style.background}; border-radius: 8px; border: 2px solid ${style.border}; text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 10px;">${style.icon}</div>
+        <h3 style="color: ${style.text}; margin: 0 0 10px; font-size: 18px; font-weight: 600;">${statusLabel}</h3>
+        <p style="color: ${style.text}; margin: 0; font-size: 14px; opacity: 0.9;">${statusMessage}</p>
+      </div>
+      ${businessData.businessPhone ? `<p style="color: #6b7280; font-size: 14px;">Questions? Contact us: ${businessData.businessPhone}</p>` : ''}
+    </div>
+    <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="color: #6b7280; margin: 0; font-size: 12px;">This is an automated message from ${serviceRequestData.businessName}.</p>
+    </div>
+  </div>
+</body>
+</html>`
+
+    const emailResult = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: customer.email,
+      subject,
+      html: emailContent,
+    })
+    return { success: true, emailId: emailResult.data?.id }
+  } catch (error) {
+    console.error('Error sending service request status email:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Failed to send email' }
   }
 }

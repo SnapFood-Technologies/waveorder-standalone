@@ -13,7 +13,8 @@ import {
   MapPin,
   Phone,
   Calendar,
-  X
+  X,
+  ClipboardList
 } from 'lucide-react'
 import { DeliveryZonesManagement } from '../delivery/DeliveryZonesManagement'
 import { BusinessHoursManagement } from './BusinessHoursManagement'
@@ -55,12 +56,21 @@ interface WhatsAppSettings {
   autoReplyMessage: string
 }
 
+/** Service request toggles for SERVICES stores (at least one must be true). */
+interface ServiceRequestOptions {
+  serviceAllowAppointmentBooking: boolean
+  serviceAllowRequestByEmail: boolean
+  serviceAllowRequestByWhatsApp: boolean
+}
+
 interface BusinessConfig {
   deliveryMethods: DeliveryMethod
   paymentMethods: string[]
   paymentInstructions: string
   whatsappSettings: WhatsAppSettings
   whatsappNumber: string
+  /** Present when business is SERVICES; used for the three toggles. */
+  serviceRequestOptions?: ServiceRequestOptions
 }
 
 interface Business {
@@ -120,6 +130,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       if (configResponse.ok) {
         const data = await configResponse.json()
+        // API includes serviceRequestOptions when business is SERVICES
         setConfig(data.configuration)
       }
 
@@ -132,7 +143,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           language: data.business.language || 'en'
         })
         // Set default active section based on business type
-        if (businessType === 'SALON') {
+        if ((businessType === 'SALON' || businessType === 'SERVICES')) {
           setActiveSection('payment')
         }
       }
@@ -233,6 +244,32 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
     }
   }
 
+  const serviceRequestOptions = config.serviceRequestOptions ?? {
+    serviceAllowAppointmentBooking: true,
+    serviceAllowRequestByEmail: false,
+    serviceAllowRequestByWhatsApp: false
+  }
+
+  const updateServiceRequestOptions = (updates: Partial<ServiceRequestOptions>) => {
+    setConfig(prev => ({
+      ...prev,
+      serviceRequestOptions: {
+        ...(prev.serviceRequestOptions ?? {
+          serviceAllowAppointmentBooking: true,
+          serviceAllowRequestByEmail: false,
+          serviceAllowRequestByWhatsApp: false
+        }),
+        ...updates
+      }
+    }))
+  }
+
+  const isServiceRequestOptionsInvalid =
+    business.businessType === 'SERVICES' &&
+    !serviceRequestOptions.serviceAllowAppointmentBooking &&
+    !serviceRequestOptions.serviceAllowRequestByEmail &&
+    !serviceRequestOptions.serviceAllowRequestByWhatsApp
+
   const updateDeliveryMethods = (updates: Partial<DeliveryMethod>) => {
     setConfig(prev => ({
       ...prev,
@@ -268,7 +305,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
       {
         id: 'CASH',
         name: 'Cash',
-        description: business.businessType === 'SALON'
+        description: (business.businessType === 'SALON' || business.businessType === 'SERVICES')
           ? `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when appointment is completed`
           : `Customer pays with cash in ${currencyNames[business.currency as keyof typeof currencyNames] || 'local currency'} when order is delivered/picked up`,
         available: true
@@ -343,8 +380,16 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
   const { availablePaymentMethods, comingSoonPaymentMethods } = getCurrencyPaymentMethods()
 
   // For SALON businesses, only show payment, WhatsApp, and hours (no delivery methods/zones)
+  // For SERVICES, add Service Request Options as first section
   // For RETAIL businesses, hide delivery zones (they use postal services instead)
-  const sections = business.businessType === 'SALON'
+  const sections = business.businessType === 'SERVICES'
+    ? [
+        { id: 'serviceRequest', name: 'Service Request Options', icon: ClipboardList },
+        { id: 'payment', name: 'Payment Methods', icon: CreditCard },
+        { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
+        { id: 'hours', name: 'Business Hours', icon: Calendar }
+      ]
+    : business.businessType === 'SALON'
     ? [
         { id: 'payment', name: 'Payment Methods', icon: CreditCard },
         { id: 'whatsapp', name: 'WhatsApp Settings', icon: MessageSquare },
@@ -415,14 +460,14 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
             Business Configuration
           </h2>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
-            {business.businessType === 'SALON' 
+            {(business.businessType === 'SALON' || business.businessType === 'SERVICES') 
               ? 'Manage your payment options, WhatsApp settings, and business hours'
               : 'Manage your delivery methods, payment options, and communication settings'}
           </p>
         </div>
         <button
           onClick={saveConfiguration}
-          disabled={saving}
+          disabled={saving || isServiceRequestOptionsInvalid}
           className="flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 text-sm font-medium whitespace-nowrap"
         >
           <Save className="w-4 h-4 mr-2" />
@@ -455,7 +500,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
       {/* Content Sections */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-        {activeSection === 'delivery' && business.businessType !== 'SALON' && (
+        {activeSection === 'delivery' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
               <Truck className="w-5 h-5 text-teal-600 mr-2" />
@@ -658,6 +703,52 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
+        {activeSection === 'serviceRequest' && business.businessType === 'SERVICES' && (
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <ClipboardList className="w-5 h-5 text-teal-600 mr-2" />
+              Service Request Options
+            </h3>
+            <p className="text-sm text-gray-600">
+              Choose how customers can request your services. At least one option must be enabled.
+            </p>
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={serviceRequestOptions.serviceAllowAppointmentBooking}
+                  onChange={(e) => updateServiceRequestOptions({ serviceAllowAppointmentBooking: e.target.checked })}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5"
+                />
+                <span className="text-sm font-medium text-gray-900">Allow appointment booking</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={serviceRequestOptions.serviceAllowRequestByEmail}
+                  onChange={(e) => updateServiceRequestOptions({ serviceAllowRequestByEmail: e.target.checked })}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5"
+                />
+                <span className="text-sm font-medium text-gray-900">Allow request by email</span>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={serviceRequestOptions.serviceAllowRequestByWhatsApp}
+                  onChange={(e) => updateServiceRequestOptions({ serviceAllowRequestByWhatsApp: e.target.checked })}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5"
+                />
+                <span className="text-sm font-medium text-gray-900">Allow request by WhatsApp</span>
+              </label>
+            </div>
+            {isServiceRequestOptionsInvalid && (
+              <p className="text-sm text-amber-600">
+                At least one option must be enabled so customers can request your services.
+              </p>
+            )}
+          </div>
+        )}
+
         {activeSection === 'payment' && (
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -759,7 +850,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {business.businessType === 'SALON' ? 'Appointment Number Format' : 'Order Number Format'}
+                  {(business.businessType === 'SALON' || business.businessType === 'SERVICES') ? 'Appointment Number Format' : 'Order Number Format'}
                 </label>
                 <select
                   value={config.whatsappSettings.orderNumberFormat}
@@ -824,7 +915,7 @@ export function BusinessConfiguration({ businessId }: BusinessConfigurationProps
           </div>
         )}
 
-        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && (
+        {activeSection === 'zones' && business.businessType !== 'RETAIL' && business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
           <DeliveryZonesManagement businessId={businessId} />
         )}
 

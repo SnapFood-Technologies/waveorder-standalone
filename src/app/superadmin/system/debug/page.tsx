@@ -168,8 +168,8 @@ export default function DebugToolsPage() {
             setDebugLoading(false)
             return
           }
-          if (selectedBusinessType === 'SALON') {
-            setDebugError('Stock debug is not available for salon businesses - services do not have stock')
+          if (selectedBusinessType === 'SALON' || selectedBusinessType === 'SERVICES') {
+            setDebugError('Stock debug is not available for salon/service businesses - services do not have stock')
             setDebugLoading(false)
             return
           }
@@ -325,7 +325,7 @@ export default function DebugToolsPage() {
     }
   ].filter(tool => {
     // Hide stock debug for salons
-    if (selectedBusinessType === 'SALON' && tool.hideForSalons) {
+    if ((selectedBusinessType === 'SALON' || selectedBusinessType === 'SERVICES') && tool.hideForSalons) {
       return false
     }
     return true
@@ -1082,7 +1082,7 @@ function SyncDebugResults({ data }: { data: any }) {
 
 // Connections Debug Results
 function ConnectionsDebugResults({ data }: { data: any }) {
-  const isSalon = data.business?.businessType === 'SALON'
+  const isSalon = data.business?.businessType === 'SALON' || data.business?.businessType === 'SERVICES'
   const itemLabel = isSalon ? 'services' : 'products'
   
   const getRoleBadge = (role: string) => {

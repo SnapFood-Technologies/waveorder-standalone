@@ -705,6 +705,12 @@ export async function GET(
       website: business.website,
       whatsappNumber: business.whatsappNumber || business.configuration?.whatsappNumber || business.configuration?.whatsappSettings?.whatsappNumber,
       businessType: business.businessType,
+      // SERVICES only: which request options are enabled
+      ...(business.businessType === 'SERVICES' && {
+        serviceAllowAppointmentBooking: business.serviceAllowAppointmentBooking ?? true,
+        serviceAllowRequestByEmail: business.serviceAllowRequestByEmail ?? false,
+        serviceAllowRequestByWhatsApp: business.serviceAllowRequestByWhatsApp ?? false
+      }),
       
       // Branding
       primaryColor: business.primaryColor,

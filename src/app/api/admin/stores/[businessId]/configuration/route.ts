@@ -21,6 +21,7 @@ export async function GET(
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       select: {
+        businessType: true,
         deliveryEnabled: true,
         pickupEnabled: true,
         dineInEnabled: true,
@@ -39,7 +40,10 @@ export async function GET(
         greetingMessage: true,
         messageTemplate: true,
         autoReply: true,
-        autoReplyMessage: true
+        autoReplyMessage: true,
+        serviceAllowAppointmentBooking: true,
+        serviceAllowRequestByEmail: true,
+        serviceAllowRequestByWhatsApp: true
       }
     })
 
@@ -47,7 +51,7 @@ export async function GET(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    const configuration = {
+    const configuration: Record<string, unknown> = {
       deliveryMethods: {
         delivery: business.deliveryEnabled,
         pickup: business.pickupEnabled,
@@ -73,6 +77,14 @@ export async function GET(
       whatsappNumber: business.whatsappNumber || ''
     }
 
+    if (business.businessType === 'SERVICES') {
+      configuration.serviceRequestOptions = {
+        serviceAllowAppointmentBooking: business.serviceAllowAppointmentBooking ?? true,
+        serviceAllowRequestByEmail: business.serviceAllowRequestByEmail ?? false,
+        serviceAllowRequestByWhatsApp: business.serviceAllowRequestByWhatsApp ?? false
+      }
+    }
+
     return NextResponse.json({ configuration })
 
   } catch (error) {
@@ -96,7 +108,28 @@ export async function PUT(
 
     const config = await request.json()
 
+    const existingBusiness = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { businessType: true }
+    })
+
     const updateData: any = {}
+
+    if (existingBusiness?.businessType === 'SERVICES' && config.serviceRequestOptions) {
+      const opts = config.serviceRequestOptions
+      const allowAppointment = opts.serviceAllowAppointmentBooking !== false
+      const allowEmail = Boolean(opts.serviceAllowRequestByEmail)
+      const allowWhatsApp = Boolean(opts.serviceAllowRequestByWhatsApp)
+      if (!allowAppointment && !allowEmail && !allowWhatsApp) {
+        return NextResponse.json(
+          { message: 'At least one option must be enabled: Allow appointment booking, Allow request by email, or Allow request by WhatsApp.' },
+          { status: 400 }
+        )
+      }
+      updateData.serviceAllowAppointmentBooking = allowAppointment
+      updateData.serviceAllowRequestByEmail = allowEmail
+      updateData.serviceAllowRequestByWhatsApp = allowWhatsApp
+    }
 
     if (config.deliveryMethods) {
       updateData.deliveryEnabled = Boolean(config.deliveryMethods.delivery)

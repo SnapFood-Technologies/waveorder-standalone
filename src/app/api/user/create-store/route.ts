@@ -119,9 +119,9 @@ export async function POST(request: NextRequest) {
         createdByAdmin: false, // Created by user, not admin
         
         // Delivery settings
-        deliveryEnabled: data.deliveryEnabled ?? (data.businessType === 'SALON' ? false : true),
+        deliveryEnabled: data.deliveryEnabled ?? (data.businessType === 'SALON' || data.businessType === 'SERVICES' ? false : true),
         pickupEnabled: data.pickupEnabled ?? false,
-        dineInEnabled: data.businessType === 'SALON' ? true : false,
+        dineInEnabled: data.businessType === 'SALON' || data.businessType === 'SERVICES' ? true : false,
         deliveryFee: data.deliveryFee ?? 0,
         deliveryRadius: data.deliveryRadius ?? 10,
         estimatedDeliveryTime: defaults.estimatedDeliveryTime,

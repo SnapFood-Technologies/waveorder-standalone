@@ -7,6 +7,17 @@ interface TwilioConfig {
   whatsappNumber: string // Twilio WhatsApp sender number (e.g., +14155238886)
   contentSid?: string // WhatsApp template Content SID (for order notifications)
   appointmentContentSid?: string // WhatsApp template Content SID (for appointment notifications)
+  serviceRequestContentSid?: string // WhatsApp template Content SID (for SERVICE form-based request notifications)
+}
+
+/** Data for sending a service request notification to the business via Twilio template */
+export interface ServiceRequestNotificationData {
+  contactName: string
+  email: string
+  phone: string | null
+  preferredContact: 'EMAIL_REQUEST' | 'WHATSAPP_REQUEST'
+  messageSnippet: string // Short snippet for template (e.g. first 80 chars)
+  adminLink: string
 }
 
 interface OrderNotificationData {
@@ -51,6 +62,7 @@ export function getTwilioConfig(): TwilioConfig | null {
   const whatsappNumber = process.env.TWILIO_WHATSAPP_NUMBER
   const contentSid = process.env.TWILIO_CONTENT_SID // Optional: WhatsApp template SID for orders
   const appointmentContentSid = process.env.TWILIO_APPOINTMENT_CONTENT_SID // Optional: WhatsApp template SID for appointments
+  const serviceRequestContentSid = process.env.TWILIO_SERVICE_REQUEST_CONTENT_SID // Optional: WhatsApp template SID for service requests (SERVICES form)
 
   if (!accountSid || !authToken || !whatsappNumber) {
     return null
@@ -61,7 +73,8 @@ export function getTwilioConfig(): TwilioConfig | null {
     authToken,
     whatsappNumber,
     contentSid,
-    appointmentContentSid
+    appointmentContentSid,
+    serviceRequestContentSid
   }
 }
 
@@ -421,6 +434,35 @@ export async function sendOrderNotification(
   console.warn('TWILIO_CONTENT_SID not configured - using freeform message (may fail for business-initiated)')
   const message = formatOrderNotificationMessage(orderData)
   return sendWhatsAppMessage(businessWhatsAppNumber, message)
+}
+
+/**
+ * Send service request notification to business via WhatsApp (SERVICES form-based requests).
+ * Uses template TWILIO_SERVICE_REQUEST_CONTENT_SID. Template variables: {{1}}=contactName, {{2}}=email,
+ * {{3}}=phone or "—", {{4}}=preferredContact (Email/WhatsApp), {{5}}=messageSnippet, {{6}}=adminLink.
+ */
+export async function sendServiceRequestNotification(
+  businessWhatsAppNumber: string,
+  data: ServiceRequestNotificationData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const config = getTwilioConfig()
+  if (!config?.serviceRequestContentSid) {
+    return {
+      success: false,
+      error: 'Twilio service request template not configured (TWILIO_SERVICE_REQUEST_CONTENT_SID)'
+    }
+  }
+  const preferredLabel = data.preferredContact === 'WHATSAPP_REQUEST' ? 'WhatsApp' : 'Email'
+  const contentVariables: Record<string, string> = {
+    '1': data.contactName,
+    '2': data.email,
+    '3': data.phone?.trim() || '—',
+    '4': preferredLabel,
+    '5': data.messageSnippet.slice(0, 100),
+    '6': data.adminLink
+  }
+  console.log('Sending WhatsApp service request notification via template:', config.serviceRequestContentSid)
+  return sendWhatsAppTemplateMessage(businessWhatsAppNumber, config.serviceRequestContentSid, contentVariables)
 }
 
 /**

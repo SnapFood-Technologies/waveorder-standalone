@@ -25,7 +25,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
     select: { businessType: true }
   })
 
-  if (business?.businessType === 'SALON') {
+  if (business?.businessType === 'SALON' || business?.businessType === 'SERVICES') {
     return <SalonDashboard businessId={businessId} />
   }
 

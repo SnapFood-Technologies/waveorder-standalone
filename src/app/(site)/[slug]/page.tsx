@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
 import SalonStoreFront from '@/components/storefront/SalonStoreFront'
+import ServicesStoreFront from '@/components/storefront/ServicesStoreFront'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -222,6 +223,38 @@ function getBusinessTypeDefaults(businessType: string, language = 'en') {
         titleSuffix: 'Κράτηση Ραντεβού Online',
         description: 'Κρατήστε τις υπηρεσίες ομορφιάς και ευεξίας σας online',
         keywords: 'σαλόνι, ομορφιά, ραντεβού, κράτηση, μαλλιά, νύχια, σπα'
+      }
+    },
+    SERVICES: {
+      en: {
+        titleSuffix: 'Professional Services',
+        description: 'Request a quote or book a consultation for professional services',
+        keywords: 'professional services, consultation, quote, booking, services'
+      },
+      sq: {
+        titleSuffix: 'Shërbime Profesionale',
+        description: 'Kërkoj një ofertë ose rezervoni një konsultim për shërbime profesionale',
+        keywords: 'shërbime profesionale, konsultim, ofertë, rezervim, shërbime'
+      },
+      al: {
+        titleSuffix: 'Shërbime Profesionale',
+        description: 'Kërkoj një ofertë ose rezervoni një konsultim për shërbime profesionale',
+        keywords: 'shërbime profesionale, konsultim, ofertë, rezervim, shërbime'
+      },
+      es: {
+        titleSuffix: 'Servicios Profesionales',
+        description: 'Solicite un presupuesto o reserve una consulta para servicios profesionales',
+        keywords: 'servicios profesionales, consulta, presupuesto, reserva, servicios'
+      },
+      el: {
+        titleSuffix: 'Επαγγελματικές Υπηρεσίες',
+        description: 'Ζητήστε προσφορά ή κάντε κράτηση για επαγγελματικές υπηρεσίες',
+        keywords: 'επαγγελματικές υπηρεσίες, συμβουλευτική, προσφορά, κράτηση, υπηρεσίες'
+      },
+      gr: {
+        titleSuffix: 'Επαγγελματικές Υπηρεσίες',
+        description: 'Ζητήστε προσφορά ή κάντε κράτηση για επαγγελματικές υπηρεσίες',
+        keywords: 'επαγγελματικές υπηρεσίες, συμβουλευτική, προσφορά, κράτηση, υπηρεσίες'
       }
     }
   }
@@ -485,6 +518,8 @@ export default async function StorePage({ params, searchParams }: PageProps) {
     
       {storeData.businessType === 'SALON' ? (
         <SalonStoreFront storeData={storeData} />
+      ) : storeData.businessType === 'SERVICES' ? (
+        <ServicesStoreFront storeData={storeData} />
       ) : (
         <StoreFront storeData={storeData} />
       )}

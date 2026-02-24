@@ -30,7 +30,7 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
     fetchBusinessType()
   }, [businessId])
 
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => 

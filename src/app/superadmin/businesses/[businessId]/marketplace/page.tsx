@@ -36,7 +36,7 @@ export default function MarketplacePage() {
 
   // Redirect salons - marketplace is product-focused
   useEffect(() => {
-    if (business?.businessType === 'SALON') {
+    if (business?.businessType === 'SALON' || business?.businessType === 'SERVICES') {
       router.replace(`/superadmin/businesses/${businessId}`)
     }
   }, [business, businessId, router])

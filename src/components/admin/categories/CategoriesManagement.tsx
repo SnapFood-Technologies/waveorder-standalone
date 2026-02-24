@@ -83,7 +83,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setIsSalon(data.business?.businessType === 'SALON')
+        setIsSalon(data.business?.businessType === 'SALON' || data.business?.businessType === 'SERVICES')
       }
     } catch (error) {
       console.error('Error fetching business type:', error)

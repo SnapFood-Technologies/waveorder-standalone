@@ -25,6 +25,7 @@ import {
   ShoppingBag,
   Apple,
   Scissors,
+  Briefcase,
   Gem,
   Flower2,
   MoreHorizontal,
@@ -82,6 +83,7 @@ const businessTypes = [
   { value: 'RETAIL', label: 'Retail & Shopping', icon: ShoppingBag },
   { value: 'GROCERY', label: 'Grocery & Supermarket', icon: Apple },
   { value: 'SALON', label: 'Salon & Beauty', icon: Scissors },
+  { value: 'SERVICES', label: 'Professional Services', icon: Briefcase },
   { value: 'OTHER', label: 'Other', icon: MoreHorizontal }
 ]
 
@@ -278,14 +280,14 @@ export function CreateBusinessForm() {
 
   // Update defaults when business type changes
   useEffect(() => {
-    if (formData.businessType === 'SALON') {
+    if ((formData.businessType === 'SALON' || formData.businessType === 'SERVICES')) {
       setFormData(prev => ({
         ...prev,
         deliveryEnabled: false,
         pickupEnabled: false,
         dineInEnabled: true
       }))
-    } else if (formData.businessType !== 'SALON' && formData.dineInEnabled) {
+    } else if (formData.businessType !== 'SALON' && formData.businessType !== 'SERVICES' && formData.dineInEnabled) {
       // Reset dineInEnabled when switching away from SALON
       setFormData(prev => ({
         ...prev,
@@ -798,7 +800,7 @@ export function CreateBusinessForm() {
                               </div>
                               <div className="text-xs text-gray-600">$19/mo or $16/mo yearly</div>
                               <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
-                                <li>• {formData.businessType === 'SALON' ? '50 services' : '50 products'}</li>
+                                <li>• {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') ? '50 services' : '50 products'}</li>
                                 <li>• 1 store</li>
                               </ul>
                             </button>
@@ -820,7 +822,7 @@ export function CreateBusinessForm() {
                               </div>
                               <div className="text-xs text-gray-600">$39/mo or $32/mo yearly</div>
                               <ul className="text-xs text-gray-500 mt-2 space-y-0.5">
-                                <li>• {formData.businessType === 'SALON' ? 'Unlimited services' : 'Unlimited products'}</li>
+                                <li>• {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') ? 'Unlimited services' : 'Unlimited products'}</li>
                                 <li>• 5 stores</li>
                               </ul>
                             </button>
@@ -891,7 +893,7 @@ export function CreateBusinessForm() {
                         </div>
 
                         {/* Terminology Glossary */}
-                        {formData.businessType !== 'SALON' && (
+                        {formData.businessType !== 'SALON' && formData.businessType !== 'SERVICES' && (
                           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <div className="flex items-start gap-3">
                               <HelpCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -1244,17 +1246,17 @@ export function CreateBusinessForm() {
                 <div className="space-y-6">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      {formData.businessType === 'SALON' ? 'Appointment Settings' : 'Delivery Settings'}
+                      {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') ? 'Appointment Settings' : 'Delivery Settings'}
                     </h2>
                     <p className="text-gray-600 text-sm mb-4">
-                      {formData.businessType === 'SALON' 
+                      {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') 
                         ? 'Optional - Configure appointment options' 
                         : 'Optional - Configure delivery options'}
                     </p>
                     
                     <div className="space-y-4">
-                      <div className={`grid gap-4 ${formData.businessType === 'SALON' ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                        {formData.businessType !== 'SALON' && (
+                      <div className={`grid gap-4 ${(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {formData.businessType !== 'SALON' && formData.businessType !== 'SERVICES' && (
                           <>
                             <div className="border border-gray-200 rounded-lg p-4">
                               <div className="flex items-center justify-between mb-2">
@@ -1284,7 +1286,7 @@ export function CreateBusinessForm() {
                           </>
                         )}
 
-                        {formData.businessType === 'SALON' && (
+                        {(formData.businessType === 'SALON' || formData.businessType === 'SERVICES') && (
                           <div className="border border-gray-200 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                               <span className="font-medium">In-Salon Appointments</span>

@@ -63,7 +63,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 })
 
 export function SchedulingConfiguration({ businessId, businessType }: SchedulingConfigurationProps) {
-  const isSalon = businessType === 'SALON'
+  const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   const [config, setConfig] = useState<SchedulingConfig>({
     schedulingEnabled: true,
     slotDuration: 30,

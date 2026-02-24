@@ -574,6 +574,7 @@ export async function POST(request: NextRequest) {
             estimatedPickupTime: data.estimatedPickupTime || '30 minutes'
           }
         case 'SALON':
+        case 'SERVICES':
           return {
             estimatedDeliveryTime: data.estimatedDeliveryTime || 'N/A',
             estimatedPickupTime: data.estimatedPickupTime || 'N/A'
@@ -612,9 +613,9 @@ export async function POST(request: NextRequest) {
         isActive: true,
         createdByAdmin: true,
         
-        deliveryEnabled: data.deliveryEnabled ?? (data.businessType === 'SALON' ? false : true),
+        deliveryEnabled: data.deliveryEnabled ?? (data.businessType === 'SALON' || data.businessType === 'SERVICES' ? false : true),
         pickupEnabled: data.pickupEnabled ?? false,
-        dineInEnabled: data.dineInEnabled ?? (data.businessType === 'SALON' ? true : false),
+        dineInEnabled: data.dineInEnabled ?? (data.businessType === 'SALON' || data.businessType === 'SERVICES' ? true : false),
         deliveryFee: data.deliveryFee ?? 0,
         deliveryRadius: data.deliveryRadius ?? 10,
         estimatedDeliveryTime: defaults.estimatedDeliveryTime,
