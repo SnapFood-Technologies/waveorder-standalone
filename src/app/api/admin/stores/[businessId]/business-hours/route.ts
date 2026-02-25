@@ -112,9 +112,7 @@ export async function PUT(
           return NextResponse.json({ message: `${day}: Invalid closing time format` }, { status: 400 })
         }
 
-        if (dayHours.open >= dayHours.close) {
-          return NextResponse.json({ message: `${day}: Closing time must be after opening time` }, { status: 400 })
-        }
+        // Allow overnight hours (e.g. 4 PM–2 AM): when close < open, business runs until close the next day
       }
     }
 

@@ -81,8 +81,13 @@ function calculateIsOpen(businessHours: any, timezone: string): boolean {
   
   if (!todaysHours || todaysHours.closed) return false
   
-  // FIX: Use business time, not server time
+  // Use business time, not server time
   const currentTime = `${businessTime.getHours().toString().padStart(2, '0')}:${businessTime.getMinutes().toString().padStart(2, '0')}`
+  const isOvernight = todaysHours.close < todaysHours.open
+  if (isOvernight) {
+    // e.g. 4 PM–2 AM: open if currentTime >= 16:00 OR currentTime < 02:00
+    return currentTime >= todaysHours.open || currentTime < todaysHours.close
+  }
   return currentTime >= todaysHours.open && currentTime <= todaysHours.close
 }
 

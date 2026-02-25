@@ -158,10 +158,7 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
           setError(`${day.label}: Please set both opening and closing times`)
           return false
         }
-        if (hours.open >= hours.close) {
-          setError(`${day.label}: Closing time must be after opening time`)
-          return false
-        }
+        // Overnight hours (e.g. 4 PM–2 AM) are allowed: close < open means closes next day
       }
     }
     setError(null)
@@ -219,19 +216,25 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
     }
 
     const currentTime = `${businessTime.getHours().toString().padStart(2, '0')}:${businessTime.getMinutes().toString().padStart(2, '0')}`
-    
-    if (currentTime >= todayHours.open && currentTime < todayHours.close) {
+    const isOvernight = todayHours.close < todayHours.open
+
+    let isOpen: boolean
+    if (isOvernight) {
+      // e.g. 4 PM–2 AM: open if currentTime >= 16:00 OR currentTime < 02:00
+      isOpen = currentTime >= todayHours.open || currentTime < todayHours.close
+    } else {
+      isOpen = currentTime >= todayHours.open && currentTime < todayHours.close
+    }
+
+    if (isOpen) {
       return { 
         status: 'open', 
         message: `Open until ${TIME_OPTIONS.find(t => t.value === todayHours.close)?.label} (${businessTimezone})`
       }
-    } else if (currentTime < todayHours.open) {
-      return { 
-        status: 'closed', 
-        message: `Opens at ${TIME_OPTIONS.find(t => t.value === todayHours.open)?.label} (${businessTimezone})`
-      }
-    } else {
-      return { status: 'closed', message: 'Closed for today' }
+    }
+    return { 
+      status: 'closed', 
+      message: `Opens at ${TIME_OPTIONS.find(t => t.value === todayHours.open)?.label} (${businessTimezone})`
     }
   }
 
@@ -512,6 +515,7 @@ export function BusinessHoursManagement({ businessId }: BusinessHoursManagementP
         <ul className="text-sm text-blue-700 space-y-1">
           <li>• Hours are displayed in your business timezone ({businessTimezone})</li>
           <li>• Use "Copy to All" to quickly apply the same hours to every day</li>
+          <li>• Overnight hours (e.g. 4:00 PM–2:00 AM) are supported — closing time can be after midnight</li>
           <li>• Customers will see if you're currently open or closed on your storefront</li>
           <li>• Consider your actual operating capacity when setting hours</li>
         </ul>
