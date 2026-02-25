@@ -43,18 +43,34 @@ export async function GET(
       }
     })
 
-    // Calculate unpaid balance for each affiliate
+    // Calculate balance and analytics for each affiliate
     const affiliatesWithBalance = await Promise.all(
       affiliates.map(async (affiliate) => {
-        const pendingEarnings = await prisma.affiliateEarning.aggregate({
-          where: {
-            affiliateId: affiliate.id,
-            status: 'PENDING'
-          },
-          _sum: {
-            amount: true
-          }
-        })
+        const [pendingEarnings, totalEarningsResult, viewsCount] = await Promise.all([
+          prisma.affiliateEarning.aggregate({
+            where: {
+              affiliateId: affiliate.id,
+              status: 'PENDING'
+            },
+            _sum: { amount: true }
+          }),
+          prisma.affiliateEarning.aggregate({
+            where: { affiliateId: affiliate.id },
+            _sum: { amount: true }
+          }),
+          prisma.visitorSession.count({
+            where: {
+              businessId,
+              campaign: affiliate.trackingCode
+            }
+          })
+        ])
+
+        const totalOrders = affiliate._count.orders
+        const views = viewsCount
+        const conversionRate = views > 0 && totalOrders > 0
+          ? Math.round((totalOrders / views) * 1000) / 10
+          : 0
 
         return {
           id: affiliate.id,
@@ -68,9 +84,11 @@ export async function GET(
           isActive: affiliate.isActive,
           createdAt: affiliate.createdAt,
           updatedAt: affiliate.updatedAt,
-          totalEarnings: pendingEarnings._sum.amount || 0,
-          totalOrders: affiliate._count.orders,
-          pendingBalance: pendingEarnings._sum.amount || 0
+          totalEarnings: totalEarningsResult._sum.amount || 0,
+          totalOrders,
+          pendingBalance: pendingEarnings._sum.amount || 0,
+          views,
+          conversionRate
         }
       })
     )

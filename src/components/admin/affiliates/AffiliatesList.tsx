@@ -16,9 +16,24 @@ import {
   Check,
   TrendingUp,
   DollarSign,
-  ShoppingBag
+  ShoppingBag,
+  Eye,
+  X
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+
+interface AffiliateAnalyticsData {
+  affiliate: { id: string; name: string; trackingCode: string }
+  summary: { views: number; orders: number; conversionRate: number; revenue: number }
+  bySource: Array<{ name: string; count: number }>
+  byMedium: Array<{ name: string; count: number }>
+  byCountry: Array<{ name: string; count: number }>
+  byCity: Array<{ city: string; country: string; count: number }>
+  byDevice: Array<{ name: string; count: number }>
+  byReferrer: Array<{ referrer: string; referrerHost: string | null; count: number }>
+  recentSessions: Array<{ source: string | null; medium: string | null; country: string | null; city: string | null; deviceType: string | null; visitedAt: string }>
+  orders: Array<{ id: string; total: number; status: string; paymentStatus: string; createdAt: string; customerName: string | null }>
+}
 
 interface AffiliatesListProps {
   businessId: string
@@ -39,6 +54,8 @@ interface Affiliate {
   totalEarnings: number
   totalOrders: number
   pendingBalance: number
+  views?: number
+  conversionRate?: number
 }
 
 export function AffiliatesList({ businessId }: AffiliatesListProps) {
@@ -49,7 +66,9 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
-  const router = useRouter()
+  const [analyticsModalAffiliate, setAnalyticsModalAffiliate] = useState<Affiliate | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<AffiliateAnalyticsData | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   useEffect(() => {
     fetchAffiliates()
@@ -131,6 +150,23 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount)
+  }
+
+  const openAnalyticsModal = async (affiliate: Affiliate) => {
+    setAnalyticsModalAffiliate(affiliate)
+    setAnalyticsData(null)
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/affiliates/${affiliate.id}/analytics`)
+      if (res.ok) {
+        const data = await res.json()
+        setAnalyticsData(data)
+      }
+    } catch {
+      toast.error('Failed to load analytics')
+    } finally {
+      setAnalyticsLoading(false)
+    }
   }
 
   const filteredAffiliates = affiliates.filter(affiliate => {
@@ -221,6 +257,8 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking Code</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conv. Rate</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Orders</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -272,6 +310,12 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{affiliate.views ?? 0}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{affiliate.conversionRate ?? 0}%</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900">{formatCurrency(affiliate.totalEarnings)}</div>
                       {affiliate.pendingBalance > 0 && (
                         <div className="text-xs text-yellow-600">Pending: {formatCurrency(affiliate.pendingBalance)}</div>
@@ -282,6 +326,13 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openAnalyticsModal(affiliate)}
+                          className="text-gray-500 hover:text-teal-600"
+                          title="View link analytics"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <Link
                           href={`/admin/stores/${businessId}/affiliates/${affiliate.id}/edit`}
                           className="text-teal-600 hover:text-teal-900"
@@ -308,6 +359,162 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
           </div>
         )}
       </div>
+
+      {/* Analytics Modal */}
+      {analyticsModalAffiliate && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setAnalyticsModalAffiliate(null)}
+        >
+          <div
+            className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Link Analytics — {analyticsModalAffiliate.name}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Tracking code: <code className="font-mono bg-gray-100 px-1 rounded">{analyticsModalAffiliate.trackingCode}</code>
+                </p>
+              </div>
+              <button
+                onClick={() => setAnalyticsModalAffiliate(null)}
+                className="p-2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {analyticsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                </div>
+              ) : analyticsData ? (
+                <>
+                  {/* Summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase">Views</p>
+                      <p className="text-xl font-semibold text-gray-900">{analyticsData.summary.views}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase">Orders</p>
+                      <p className="text-xl font-semibold text-gray-900">{analyticsData.summary.orders}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase">Conversion Rate</p>
+                      <p className="text-xl font-semibold text-gray-900">{analyticsData.summary.conversionRate}%</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase">Revenue</p>
+                      <p className="text-xl font-semibold text-gray-900">{formatCurrency(analyticsData.summary.revenue)}</p>
+                    </div>
+                  </div>
+
+                  {/* By Source / Medium */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">By Source</h3>
+                      <div className="space-y-1.5">
+                        {analyticsData.bySource.map(s => (
+                          <div key={s.name} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{s.name}</span>
+                            <span className="font-medium">{s.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.bySource.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">By Medium</h3>
+                      <div className="space-y-1.5">
+                        {analyticsData.byMedium.map(m => (
+                          <div key={m.name} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{m.name}</span>
+                            <span className="font-medium">{m.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.byMedium.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Geolocation */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">By Country</h3>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {analyticsData.byCountry.map(c => (
+                          <div key={c.name} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{c.name}</span>
+                            <span className="font-medium">{c.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.byCountry.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">By City</h3>
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {analyticsData.byCity.map((c, i) => (
+                          <div key={`${c.city}-${c.country}-${i}`} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{c.city}, {c.country}</span>
+                            <span className="font-medium">{c.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.byCity.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Device & Referrers */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">By Device</h3>
+                      <div className="space-y-1.5">
+                        {analyticsData.byDevice.map(d => (
+                          <div key={d.name} className="flex justify-between text-sm">
+                            <span className="text-gray-600 capitalize">{d.name}</span>
+                            <span className="font-medium">{d.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.byDevice.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">Top Referrers</h3>
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {analyticsData.byReferrer.map((r, i) => (
+                          <div key={i} className="flex justify-between text-sm">
+                            <span className="text-gray-600 truncate max-w-[180px]" title={r.referrer}>
+                              {r.referrerHost || r.referrer || 'direct'}
+                            </span>
+                            <span className="font-medium">{r.count}</span>
+                          </div>
+                        ))}
+                        {analyticsData.byReferrer.length === 0 && <p className="text-sm text-gray-400">No data</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample Link */}
+                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-teal-900 mb-1">Sample tracking link</h3>
+                    <code className="text-xs text-teal-800 break-all">
+                      {(typeof window !== 'undefined' ? window.location.origin : '')}/[store-slug]?utm_source=affiliate&utm_campaign={analyticsModalAffiliate.trackingCode}&utm_medium=referral
+                    </code>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">Failed to load analytics</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

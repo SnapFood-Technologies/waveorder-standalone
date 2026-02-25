@@ -85,6 +85,16 @@ async function getTransactionsFromDB(
     })
   ])
 
+  // Map businessId -> isActive for deactivated badge
+  const businessIds = [...new Set(transactions.map(t => t.businessId).filter(Boolean))] as string[]
+  const businesses = businessIds.length > 0
+    ? await prisma.business.findMany({
+        where: { id: { in: businessIds } },
+        select: { id: true, isActive: true },
+      })
+    : []
+  const businessIdToActive = new Map(businesses.map(b => [b.id, b.isActive]))
+
   const allTransactions = await prisma.stripeTransaction.findMany({
     select: { type: true, status: true, amount: true, refundedAmount: true }
   })
@@ -97,20 +107,24 @@ async function getTransactionsFromDB(
     .reduce((s, t) => s + Math.abs(t.amount), 0) / 100
 
   return NextResponse.json({
-    transactions: transactions.map(t => ({
-      id: t.stripeId,
-      type: t.type,
-      status: t.status,
-      amount: t.amount / 100,
-      currency: t.currency,
-      customerEmail: t.customerEmail,
-      customerName: t.customerName,
-      description: t.description,
-      plan: t.plan,
-      billingType: t.billingType,
-      refundedAmount: t.refundedAmount ? t.refundedAmount / 100 : null,
-      date: t.stripeCreatedAt.toISOString(),
-    })),
+    transactions: transactions.map(t => {
+      const isDeactivated = t.businessId ? !(businessIdToActive.get(t.businessId) ?? true) : false
+      return {
+        id: t.stripeId,
+        type: t.type,
+        status: t.status,
+        amount: t.amount / 100,
+        currency: t.currency,
+        customerEmail: t.customerEmail,
+        customerName: t.customerName,
+        description: t.description,
+        plan: t.plan,
+        billingType: t.billingType,
+        refundedAmount: t.refundedAmount ? t.refundedAmount / 100 : null,
+        date: t.stripeCreatedAt.toISOString(),
+        isDeactivated,
+      }
+    }),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     stats: {
       totalTransactions: allTransactions.length,

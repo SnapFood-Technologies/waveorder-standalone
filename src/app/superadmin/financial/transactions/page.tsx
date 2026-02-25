@@ -21,6 +21,7 @@ interface Transaction {
   billingType: string | null
   refundedAmount: number | null
   date: string
+  isDeactivated?: boolean
 }
 
 interface Stats {
@@ -108,7 +109,7 @@ export default function TransactionsPage() {
     }
   }
 
-  const TransactionRow = ({ t }: { t: Transaction }) => (
+  const TransactionRow = ({ t, showDeactivatedBadge = false }: { t: Transaction; showDeactivatedBadge?: boolean }) => (
     <tr key={t.id} className="hover:bg-gray-50">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
@@ -120,8 +121,15 @@ export default function TransactionsPage() {
         </div>
       </td>
       <td className="px-4 py-3">
-        <p className="text-sm text-gray-900">{t.customerName || 'Unknown'}</p>
-        <p className="text-xs text-gray-500">{t.customerEmail}</p>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-gray-900">{t.customerName || 'Unknown'}</p>
+          <p className="text-xs text-gray-500">{t.customerEmail}</p>
+          {showDeactivatedBadge && t.isDeactivated && (
+            <span className="inline-flex w-fit mt-0.5 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+              Deactivated
+            </span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3">
         {t.plan ? (
@@ -283,7 +291,9 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {data.transactions.map((t) => <TransactionRow key={t.id} t={t} />)}
+                {data.transactions.map((t) => (
+                  <TransactionRow key={t.id} t={t} showDeactivatedBadge={title === 'From Our Platform'} />
+                ))}
               </tbody>
             </table>
           </div>

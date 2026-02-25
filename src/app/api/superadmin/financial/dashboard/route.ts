@@ -239,9 +239,11 @@ export async function GET() {
     })
 
     // Recent 5 from our DB (always) — only transactions captured by our webhooks
+    const businessIdToActive = new Map(dbBusinesses.map(b => [b.id, b.isActive]))
     const recentTransactionsFromDb = dbTransactions.slice(0, 5).map(t => {
       const plan = t.plan || (t.customerId ? customerPlanMap.get(t.customerId) || null : null)
       const billingType = t.billingType || (t.customerId ? customerBillingMap.get(t.customerId) || null : null)
+      const isDeactivated = t.businessId ? !(businessIdToActive.get(t.businessId) ?? true) : false
       return {
         id: t.stripeId, type: t.type,
         customerEmail: t.customerEmail, customerName: t.customerName,
@@ -250,6 +252,7 @@ export async function GET() {
         date: t.stripeCreatedAt.toISOString(),
         plan: plan ?? null,
         billingType: billingType ?? null,
+        isDeactivated,
       }
     })
 

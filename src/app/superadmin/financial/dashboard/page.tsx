@@ -66,6 +66,7 @@ interface DashboardData {
     date: string
     plan: string | null
     billingType: string | null
+    isDeactivated?: boolean
   }>
   inactiveFormerPaying?: Array<{
     customerId: string
@@ -644,8 +645,15 @@ export default function FinancialDashboardPage() {
                   return (
                     <tr key={t.id} className="text-sm hover:bg-gray-50">
                       <td className="py-3 pr-4">
-                        <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
-                        <p className="text-xs text-gray-500">{t.customerEmail}</p>
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
+                          <p className="text-xs text-gray-500">{t.customerEmail}</p>
+                          {t.isDeactivated && (
+                            <span className="inline-flex w-fit mt-0.5 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                              Deactivated
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 pr-4 text-gray-600">{t.description}</td>
                       <td className="py-3 pr-4 text-gray-600 text-xs">{planLabel}</td>
