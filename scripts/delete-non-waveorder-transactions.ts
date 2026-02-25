@@ -1,71 +1,53 @@
 /**
- * One-off script: Delete StripeTransaction records that belong to non-WaveOrder
- * subscriptions (e.g. lighthouseartscentre, other products on same Stripe account).
+ * One-off script: Delete StripeTransaction records that don't belong to WaveOrder.
+ * Uses a static list of stripeIds (invoice IDs) to delete.
  *
  * Run: npx tsx scripts/delete-non-waveorder-transactions.ts
  */
 import { PrismaClient } from '@prisma/client'
-import { stripe, isWaveOrderSubscription } from '../src/lib/stripe'
 
 const prisma = new PrismaClient()
 
-async function main() {
-  console.log('🔍 Finding non-WaveOrder StripeTransaction records...\n')
+// Static list of invoice IDs to delete (non-WaveOrder or test/dev)
+const STRIPE_IDS_TO_DELETE = [
+  'in_1T4SAQK9QDeYHZl0C8azG8LW', // Rob Power - lighthouseartscentre
+  'in_1T4U6YK9QDeYHZl0CSqMo1jq', // Griseld anothertest
+  'in_1T48P7K9QDeYHZl0h6LKzuYA', // Griseld testwork1
+  'in_1T48F6K9QDeYHZl0PwAaaT29',
+  'in_1T485OK9QDeYHZl0ZEsGnIRf',
+  'in_1T482WK9QDeYHZl0qLgechfP',
+  'in_1T481hK9QDeYHZl0eWJCIdD4',
+  'in_1T4813K9QDeYHZl0DSw2rYrZ',
+  'in_1T47poK9QDeYHZl0vzwfwa8c',
+  'in_1T47icK9QDeYHZl0gGpwvOIO',
+  'in_1T47b5K9QDeYHZl0q9oSFOVw',
+  'in_1T47ZSK9QDeYHZl0uixQwPn2',
+  'in_1T46gbK9QDeYHZl0Jq4aC25n', // Redi Frasheri - development
+]
 
-  const transactions = await prisma.stripeTransaction.findMany({
-    where: { subscriptionId: { not: null } },
-    select: {
-      id: true,
-      stripeId: true,
-      customerEmail: true,
-      customerName: true,
-      amount: true,
-      subscriptionId: true,
-    },
+async function main() {
+  console.log('🔍 Deleting static list of non-WaveOrder StripeTransaction records...\n')
+
+  const found = await prisma.stripeTransaction.findMany({
+    where: { stripeId: { in: STRIPE_IDS_TO_DELETE } },
+    select: { stripeId: true, customerEmail: true, customerName: true },
   })
 
-  console.log(`Found ${transactions.length} transactions with subscriptionId\n`)
+  console.log(`Found ${found.length} of ${STRIPE_IDS_TO_DELETE.length} records to delete:`)
+  found.forEach((t) =>
+    console.log(`  - ${t.stripeId} (${t.customerName || t.customerEmail || 'unknown'})`)
+  )
 
-  const toDelete: { id: string; stripeId: string; customerEmail: string | null }[] = []
-
-  for (const t of transactions) {
-    if (!t.subscriptionId) continue
-    try {
-      const sub = await stripe.subscriptions.retrieve(t.subscriptionId)
-      if (!isWaveOrderSubscription(sub)) {
-        toDelete.push({
-          id: t.id,
-          stripeId: t.stripeId,
-          customerEmail: t.customerEmail,
-        })
-      }
-    } catch (err) {
-      // Subscription may no longer exist; treat as non-WaveOrder and delete
-      toDelete.push({
-        id: t.id,
-        stripeId: t.stripeId,
-        customerEmail: t.customerEmail,
-      })
-    }
-  }
-
-  if (toDelete.length === 0) {
-    console.log('✅ No non-WaveOrder transactions found.')
+  if (found.length === 0) {
+    console.log('\n✅ Nothing to delete.')
     return
   }
 
-  console.log(`Will delete ${toDelete.length} non-WaveOrder transaction(s):`)
-  toDelete.forEach((t) =>
-    console.log(`  - ${t.stripeId} (${t.customerEmail || 'unknown'})`)
-  )
-  console.log('')
-
-  const ids = toDelete.map((t) => t.id)
   const result = await prisma.stripeTransaction.deleteMany({
-    where: { id: { in: ids } },
+    where: { stripeId: { in: STRIPE_IDS_TO_DELETE } },
   })
 
-  console.log(`✅ Deleted ${result.count} record(s).`)
+  console.log(`\n✅ Deleted ${result.count} record(s).`)
 }
 
 main()
