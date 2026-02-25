@@ -233,7 +233,8 @@ async function getTransactionsFromStripe(
     const dbInfo = custId ? customerInfoMap.get(custId) : null
     const customerEmail = charge.billing_details?.email || dbInfo?.email || null
     // For shehutools@gmail.com, prefer DB name over Stripe billing_details
-    const preferDbName = customerEmail?.toLowerCase() === 'shehutools@gmail.com' && dbInfo?.name
+    // for pantazos.alexandros.orestis@gmail.com, prefer DB name over Stripe billing_details
+    const preferDbName = (customerEmail?.toLowerCase() === 'shehutools@gmail.com' || customerEmail?.toLowerCase() === 'pantazos.alexandros.orestis@gmail.com') && dbInfo?.name
     const customerName = preferDbName ? dbInfo.name : (charge.billing_details?.name || dbInfo?.name || null)
 
     transactions.push({

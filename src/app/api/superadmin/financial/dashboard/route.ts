@@ -228,7 +228,8 @@ export async function GET() {
       const billingType = custId ? customerBillingMap.get(custId) || null : null
       const customerEmail = c.billing_details?.email || dbInfo?.email || null
       // For shehutools@gmail.com, prefer DB name over Stripe billing_details
-      const preferDbName = customerEmail?.toLowerCase() === 'shehutools@gmail.com' && dbInfo?.name
+      // for pantazos.alexandros.orestis@gmail.com, prefer DB name over Stripe billing_details
+      const preferDbName = (customerEmail?.toLowerCase() === 'shehutools@gmail.com' || customerEmail?.toLowerCase() === 'pantazos.alexandros.orestis@gmail.com') && dbInfo?.name
       const customerName = preferDbName ? dbInfo.name : (c.billing_details?.name || dbInfo?.name || null)
       return {
         id: c.id, type: 'charge',
