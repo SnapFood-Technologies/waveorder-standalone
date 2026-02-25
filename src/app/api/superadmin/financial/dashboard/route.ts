@@ -226,10 +226,14 @@ export async function GET() {
       const dbInfo = custId ? customerIdToInfo.get(custId) : null
       const plan = custId ? customerPlanMap.get(custId) || null : null
       const billingType = custId ? customerBillingMap.get(custId) || null : null
+      const customerEmail = c.billing_details?.email || dbInfo?.email || null
+      // For shehutools@gmail.com, prefer DB name over Stripe billing_details
+      const preferDbName = customerEmail?.toLowerCase() === 'shehutools@gmail.com' && dbInfo?.name
+      const customerName = preferDbName ? dbInfo.name : (c.billing_details?.name || dbInfo?.name || null)
       return {
         id: c.id, type: 'charge',
-        customerEmail: c.billing_details?.email || dbInfo?.email || null,
-        customerName: c.billing_details?.name || dbInfo?.name || null,
+        customerEmail,
+        customerName,
         description: c.description || 'Payment',
         amount: c.amount / 100, currency: c.currency, status: c.status,
         date: new Date(c.created * 1000).toISOString(),

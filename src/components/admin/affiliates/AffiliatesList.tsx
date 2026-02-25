@@ -446,7 +446,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">By Country</h3>
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
                         {analyticsData.byCountry.map(c => (
                           <div key={c.name} className="flex justify-between text-sm">
                             <span className="text-gray-600">{c.name}</span>
@@ -458,7 +458,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">By City</h3>
-                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-hide">
                         {analyticsData.byCity.map((c, i) => (
                           <div key={`${c.city}-${c.country}-${i}`} className="flex justify-between text-sm">
                             <span className="text-gray-600">{c.city}, {c.country}</span>
@@ -486,7 +486,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900 mb-2">Top Referrers</h3>
-                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-hide">
                         {analyticsData.byReferrer.map((r, i) => (
                           <div key={i} className="flex justify-between text-sm">
                             <span className="text-gray-600 truncate max-w-[180px]" title={r.referrer}>
