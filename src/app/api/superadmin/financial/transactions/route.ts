@@ -75,6 +75,38 @@ async function getTransactionsFromDB(
     ]
   }
 
+  // Build customer → plan/billing maps (same as dashboard) to enrich transactions with null plan
+  const waveOrderUsers = await prisma.user.findMany({
+    where: {
+      stripeCustomerId: { not: null },
+      businesses: { some: { business: { testMode: { not: true } } } },
+    },
+    select: {
+      stripeCustomerId: true,
+      subscription: { select: { priceId: true } },
+      businesses: {
+        where: { role: 'OWNER' },
+        select: { business: { select: { subscriptionPlan: true, trialEndsAt: true } } },
+        take: 1,
+      },
+    },
+  })
+  const customerPlanMap = new Map<string, string>()
+  const customerBillingMap = new Map<string, string>()
+  const now = new Date()
+  waveOrderUsers.forEach((u) => {
+    if (u.stripeCustomerId) {
+      const plan = u.businesses[0]?.business?.subscriptionPlan
+      if (plan) customerPlanMap.set(u.stripeCustomerId, plan)
+      const trialEndsAt = u.businesses[0]?.business?.trialEndsAt
+      const onTrial = trialEndsAt && new Date(trialEndsAt) > now
+      const billing = onTrial
+        ? 'trial'
+        : (u.subscription?.priceId ? getBillingTypeFromPriceId(u.subscription.priceId) : null)
+      customerBillingMap.set(u.stripeCustomerId, billing || 'free')
+    }
+  })
+
   const [total, transactions] = await Promise.all([
     prisma.stripeTransaction.count({ where }),
     prisma.stripeTransaction.findMany({
@@ -107,7 +139,10 @@ async function getTransactionsFromDB(
     .reduce((s, t) => s + Math.abs(t.amount), 0) / 100
 
   return NextResponse.json({
-    transactions: transactions.map(t => {
+    transactions: transactions.map((t) => {
+      const plan = t.plan || (t.customerId ? customerPlanMap.get(t.customerId) || null : null)
+      const billingType =
+        t.billingType || (t.customerId ? customerBillingMap.get(t.customerId) || null : null)
       const isDeactivated = t.businessId ? !(businessIdToActive.get(t.businessId) ?? true) : false
       return {
         id: t.stripeId,
@@ -118,8 +153,8 @@ async function getTransactionsFromDB(
         customerEmail: t.customerEmail,
         customerName: t.customerName,
         description: t.description,
-        plan: t.plan,
-        billingType: t.billingType,
+        plan: plan ?? null,
+        billingType: billingType ?? null,
         refundedAmount: t.refundedAmount ? t.refundedAmount / 100 : null,
         date: t.stripeCreatedAt.toISOString(),
         isDeactivated,
