@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
 async function getTransactionsFromDB(
   search: string, type: string, status: string, page: number, limit: number
 ) {
-  const where: any = {}
+  const where: any = {
+    plan: { in: ['STARTER', 'PRO', 'BUSINESS'] }, // Only WaveOrder plans; excludes other products sharing Stripe
+  }
 
   if (type !== 'all') where.type = type
   if (status !== 'all') where.status = status
@@ -96,6 +98,7 @@ async function getTransactionsFromDB(
   const businessIdToActive = new Map(businesses.map(b => [b.id, b.isActive]))
 
   const allTransactions = await prisma.stripeTransaction.findMany({
+    where: { plan: { in: ['STARTER', 'PRO', 'BUSINESS'] } },
     select: { type: true, status: true, amount: true, refundedAmount: true }
   })
 

@@ -1,7 +1,7 @@
 // src/app/api/webhooks/stripe/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId, cancelSubscriptionImmediately } from '@/lib/stripe'
+import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId, cancelSubscriptionImmediately, isWaveOrderSubscription } from '@/lib/stripe'
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { logSystemEvent } from '@/lib/systemLog'
 import { prisma } from '@/lib/prisma'
@@ -652,6 +652,8 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
 /**
  * Records a Stripe invoice event as a StripeTransaction in the DB.
+ * Only records WaveOrder product subscriptions — skips invoices for other
+ * products (e.g. lighthouseartscentre) that may share the same Stripe account.
  * Deduplicates by stripeId so the same event isn't recorded twice.
  */
 async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) {
@@ -660,6 +662,18 @@ async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) 
     const stripeId = invoice.id
     const amount = invoice.amount_paid || invoice.amount_due || 0
     const currency = invoice.currency || 'usd'
+
+    // Only record WaveOrder subscriptions — skip invoices for other products
+    const subscriptionId = invoice.subscription as string | null
+    if (!subscriptionId) return null // No subscription = one-off invoice, likely from another product
+
+    let sub: Stripe.Subscription
+    try {
+      sub = await stripe.subscriptions.retrieve(subscriptionId)
+      if (!isWaveOrderSubscription(sub)) return null // Skip non-WaveOrder product invoices
+    } catch {
+      return null // Subscription may not exist; skip to avoid recording unknown products
+    }
 
     // Avoid duplicates
     const existing = await prisma.stripeTransaction.findUnique({
@@ -679,21 +693,10 @@ async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) 
     })
 
     // Determine plan from subscription metadata or price
-    let plan: string | null = null
-    let billingType: string | null = null
-    // @ts-ignore
-    if (invoice.subscription) {
-      try {
-        // @ts-ignore
-        const sub = await stripe.subscriptions.retrieve(invoice.subscription as string)
-        plan = (sub.metadata?.plan as string) || null
-        billingType = (sub.metadata?.billingType as string) || null
-        if (!plan && sub.items.data[0]?.price?.id) {
-          plan = mapStripePlanToDb(sub.items.data[0].price.id)
-        }
-      } catch {
-        // Subscription may not exist anymore
-      }
+    let plan: string | null = (sub.metadata?.plan as string) || null
+    let billingType: string | null = (sub.metadata?.billingType as string) || null
+    if (!plan && sub.items.data[0]?.price?.id) {
+      plan = mapStripePlanToDb(sub.items.data[0].price.id)
     }
 
     return await prisma.stripeTransaction.create({

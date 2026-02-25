@@ -266,8 +266,10 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
 
   const handleInviteSuccess = () => {
     setShowInviteModal(false)
+    setShowCreateModal(false)
+    fetchMembers()
     fetchInvitations()
-    showSuccess('Team member invited successfully!')
+    showSuccess('Team member added successfully!')
   }
 
   const handleResendInvitation = async (invitationId: string) => {

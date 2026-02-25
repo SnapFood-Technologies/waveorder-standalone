@@ -323,9 +323,18 @@ export async function GET(request: NextRequest) {
       funnel: onboardingFunnel
     }
 
-    // Get logs by day (last 7 days)
+    // Get logs by day (last 7 days) — exclude scanner/bot traffic same as main list
+    const logsByDayWhere = {
+      createdAt: { gte: sevenDaysAgo },
+      NOT: {
+        AND: [
+          { logType: 'storefront_404' },
+          { slug: { in: allSpamSlugs } }
+        ]
+      }
+    }
     const recentLogs = await prisma.systemLog.findMany({
-      where: { createdAt: { gte: sevenDaysAgo } },
+      where: logsByDayWhere,
       select: { createdAt: true },
       orderBy: { createdAt: 'desc' }
     })
