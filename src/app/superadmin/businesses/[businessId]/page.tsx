@@ -80,6 +80,7 @@ interface BusinessDetails {
   invoiceReceiptSelectionEnabled?: boolean
   packagingTrackingEnabled?: boolean
   enableAffiliateSystem?: boolean
+  enableTeamPaymentTracking?: boolean
   legalPagesEnabled?: boolean
   address?: string
   email?: string
@@ -1567,6 +1568,7 @@ export default function BusinessDetailsPage() {
 
           {/* Affiliate System Settings */}
           <AffiliateSystemSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          <TeamPaymentTrackingSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Remember Customer Settings */}
           <RememberCustomerSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -3161,6 +3163,83 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Team Payment Tracking Settings Section (SuperAdmin toggle only)
+function TeamPaymentTrackingSettingsSection({ 
+  business, 
+  onUpdate 
+}: { 
+  business: BusinessDetails
+  onUpdate: () => void 
+}) {
+  const [saving, setSaving] = useState(false)
+  const [enabled, setEnabled] = useState(business.enableTeamPaymentTracking || false)
+
+  const handleToggle = async () => {
+    const newValue = !enabled
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enableTeamPaymentTracking: newValue })
+      })
+      if (res.ok) {
+        setEnabled(newValue)
+        toast.success(newValue ? 'Team Payment Tracking enabled' : 'Team Payment Tracking disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling team payment tracking:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <DollarSign className="w-5 h-5 mr-2 text-teal-600" />
+        Team Payment Tracking
+      </h3>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable Team Payment Tracking</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, business admins can record internal payments to team members. Simple tracking: paid from, paid at, notes, payment method (cash, bank, etc.). Includes history per member and a dashboard for all members.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            enabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
+      </div>
+      {enabled && (
+        <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700">
+            <span className="font-medium">Enabled:</span> Admins can record payments to team members from Team → Team Payments in the admin panel.
+          </p>
+        </div>
+      )}
+      {!enabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Team payment tracking not available to this business.
           </p>
         </div>
       )}

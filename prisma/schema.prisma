@@ -118,6 +118,10 @@ model User {
   // SuperAdmin notes created by this user
   superAdminNotes SuperAdminNote[] @relation("SuperAdminNotes")
 
+  // Team payment tracking (internal payments)
+  teamMemberPaymentsReceived TeamMemberPayment[] @relation("TeamMemberPaymentsReceived")
+  teamMemberPaymentsRecorded TeamMemberPayment[] @relation("TeamMemberPaymentsRecorded")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -504,6 +508,7 @@ model Business {
   enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
   enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
   enableAffiliateSystem    Boolean @default(false) // When enabled, business admin can manage affiliates, track commissions, and payments
+  enableTeamPaymentTracking Boolean @default(false) // When enabled, business admin can record internal payments to team members
 
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
@@ -573,6 +578,9 @@ model Business {
   affiliates        Affiliate[]
   affiliateEarnings AffiliateEarning[]
   affiliatePayments AffiliatePayment[]
+
+  // Team Payment Tracking (internal payments to team members)
+  teamMemberPayments TeamMemberPayment[]
 
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
@@ -2752,6 +2760,34 @@ model AffiliatePayment {
   @@index([businessId, affiliateId])
   @@index([businessId, paidAt])
   @@index([affiliateId])
+}
+
+model TeamMemberPayment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  userId String @db.ObjectId // Team member who received the payment
+  user   User   @relation("TeamMemberPaymentsReceived", fields: [userId], references: [id], onDelete: Cascade)
+
+  amount   Float  // Amount paid
+  currency String @default("EUR")
+
+  paidFrom String? // e.g. "Main account", "Petty cash"
+  paidAt   DateTime @default(now()) // When payment was made
+  notes    String?  // Optional notes
+
+  paymentMethod String // CASH, BANK, PAYPAL, OTHER
+
+  recordedById String? @db.ObjectId // Admin who recorded (optional)
+  recordedBy   User?   @relation("TeamMemberPaymentsRecorded", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
+  @@index([businessId, userId])
+  @@index([businessId, paidAt])
+  @@index([userId])
 }
 
 // SuperAdmin Notes - internal/external notes with due dates and categories

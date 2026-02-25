@@ -101,6 +101,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
   const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
+  const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
@@ -142,6 +143,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
           setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
           setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
+          setEnableTeamPaymentTracking(data.business?.enableTeamPaymentTracking || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
@@ -435,13 +437,22 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     // BUSINESS plan features
     // @ts-ignore
     ...(subscription.plan === 'BUSINESS' ? [
-      // Team Management - BUSINESS plan only (all business types)
-      {
-        name: 'Team Management', 
-        href: `${baseUrl}/team`, 
-        icon: UserPlus, 
+      // Team - when payment tracking enabled, show as parent with children; otherwise single link
+      // @ts-ignore
+      ...(enableTeamPaymentTracking ? [{
+        name: 'Team',
+        icon: UserPlus,
+        requiredPlan: 'BUSINESS' as Plan,
+        children: [
+          { name: 'Team Management', href: `${baseUrl}/team`, icon: Users, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Team Payments', href: `${baseUrl}/team-payments`, icon: CreditCard, requiredPlan: 'BUSINESS' as Plan }
+        ]
+      }] : [{
+        name: 'Team Management',
+        href: `${baseUrl}/team`,
+        icon: UserPlus,
         requiredPlan: 'BUSINESS' as Plan
-      },
+      }]),
       // Staff Availability - SALON only
       // @ts-ignore
       ...(isServiceBusiness ? [{

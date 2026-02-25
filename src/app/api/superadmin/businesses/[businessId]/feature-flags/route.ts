@@ -39,6 +39,7 @@ export async function GET(
         invoiceReceiptSelectionEnabled: true,
         packagingTrackingEnabled: true,
         enableAffiliateSystem: true,
+        enableTeamPaymentTracking: true,
         legalPagesEnabled: true,
         currency: true,
         storefrontLanguage: true,
@@ -124,6 +125,7 @@ export async function GET(
         invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: business.packagingTrackingEnabled,
         enableAffiliateSystem: business.enableAffiliateSystem,
+        enableTeamPaymentTracking: business.enableTeamPaymentTracking,
         legalPagesEnabled: business.legalPagesEnabled
       },
       summary: {
@@ -164,7 +166,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, enableAffiliateSystem, legalPagesEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, enableAffiliateSystem, enableTeamPaymentTracking, legalPagesEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -192,6 +194,9 @@ export async function PATCH(
     if (enableAffiliateSystem !== undefined) {
       updateData.enableAffiliateSystem = enableAffiliateSystem === true
     }
+    if (enableTeamPaymentTracking !== undefined) {
+      updateData.enableTeamPaymentTracking = enableTeamPaymentTracking === true
+    }
     if (legalPagesEnabled !== undefined) {
       updateData.legalPagesEnabled = legalPagesEnabled === true
     }
@@ -208,6 +213,7 @@ export async function PATCH(
         invoiceReceiptSelectionEnabled: true,
         packagingTrackingEnabled: true,
         enableAffiliateSystem: true,
+        enableTeamPaymentTracking: true,
         legalPagesEnabled: true
       }
     })
@@ -228,6 +234,9 @@ export async function PATCH(
     if (enableAffiliateSystem !== undefined) {
       messages.push(`Affiliate System ${updatedBusiness.enableAffiliateSystem ? 'enabled' : 'disabled'}`)
     }
+    if (enableTeamPaymentTracking !== undefined) {
+      messages.push(`Team Payment Tracking ${updatedBusiness.enableTeamPaymentTracking ? 'enabled' : 'disabled'}`)
+    }
     if (legalPagesEnabled !== undefined) {
       messages.push(`Legal Pages ${updatedBusiness.legalPagesEnabled ? 'enabled' : 'disabled'}`)
     }
@@ -241,6 +250,7 @@ export async function PATCH(
         invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: updatedBusiness.packagingTrackingEnabled,
         enableAffiliateSystem: updatedBusiness.enableAffiliateSystem,
+        enableTeamPaymentTracking: updatedBusiness.enableTeamPaymentTracking,
         legalPagesEnabled: updatedBusiness.legalPagesEnabled
       }
     })

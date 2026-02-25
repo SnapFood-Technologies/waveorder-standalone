@@ -135,6 +135,7 @@ export async function GET(
         enableDeliveryManagement: true, // For Delivery Management feature
         packagingTrackingEnabled: true, // For Packaging Tracking feature
         enableAffiliateSystem: true, // For Affiliate System feature
+        enableTeamPaymentTracking: true, // For Team Payment Tracking feature
         legalPagesEnabled: true, // For Legal Pages feature
         
         // Inventory display
