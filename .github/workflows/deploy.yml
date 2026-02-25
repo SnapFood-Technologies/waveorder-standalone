@@ -62,6 +62,27 @@ jobs:
           echo "Generating Prisma client..."
           npx prisma generate
           echo "✅ Prisma client generated successfully"
+
+      # 🧹 CLEANUP NON-WAVEORDER TRANSACTIONS (runs once per deploy)
+      - name: 🧹 Delete Non-WaveOrder Stripe Transactions
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_STARTER_PRICE_ID: ${{ secrets.STRIPE_STARTER_PRICE_ID }}
+          STRIPE_STARTER_ANNUAL_PRICE_ID: ${{ secrets.STRIPE_STARTER_ANNUAL_PRICE_ID }}
+          STRIPE_STARTER_FREE_PRICE_ID: ${{ secrets.STRIPE_STARTER_FREE_PRICE_ID }}
+          STRIPE_PRO_PRICE_ID: ${{ secrets.STRIPE_PRO_PRICE_ID }}
+          STRIPE_PRO_ANNUAL_PRICE_ID: ${{ secrets.STRIPE_PRO_ANNUAL_PRICE_ID }}
+          STRIPE_PRO_FREE_PRICE_ID: ${{ secrets.STRIPE_PRO_FREE_PRICE_ID }}
+          STRIPE_BUSINESS_PRICE_ID: ${{ secrets.STRIPE_BUSINESS_PRICE_ID }}
+          STRIPE_BUSINESS_ANNUAL_PRICE_ID: ${{ secrets.STRIPE_BUSINESS_ANNUAL_PRICE_ID }}
+          STRIPE_BUSINESS_FREE_PRICE_ID: ${{ secrets.STRIPE_BUSINESS_FREE_PRICE_ID }}
+        run: |
+          echo "Cleaning non-WaveOrder StripeTransaction records..."
+          npx tsx scripts/delete-non-waveorder-transactions.ts || true
+          echo "✅ Cleanup completed (or skipped if none found)"
+        continue-on-error: true
+
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
