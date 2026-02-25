@@ -18,11 +18,33 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '25')
+    const source = searchParams.get('source') || 'both' // 'stripe' | 'db' | 'both'
+    const pageStripe = parseInt(searchParams.get('page_stripe') || '1')
+    const pageDb = parseInt(searchParams.get('page_db') || '1')
 
-    // Use DB transactions if available, otherwise fetch from Stripe per-customer
-    const dbCount = await prisma.stripeTransaction.count()
+    // When source=both, return both stripe and db with independent pagination
+    if (source === 'both') {
+      const [dbResult, stripeResult] = await Promise.all([
+        getTransactionsFromDB(search, type, status, pageDb, limit),
+        getTransactionsFromStripe(search, type, status, pageStripe, limit),
+      ])
+      const dbData = await dbResult.json()
+      const stripeData = await stripeResult.json()
+      return NextResponse.json({
+        stripe: {
+          transactions: stripeData.transactions,
+          pagination: stripeData.pagination,
+          stats: stripeData.stats,
+        },
+        db: {
+          transactions: dbData.transactions,
+          pagination: dbData.pagination,
+          stats: dbData.stats,
+        },
+      })
+    }
 
-    if (dbCount > 0) {
+    if (source === 'db') {
       return await getTransactionsFromDB(search, type, status, page, limit)
     }
 

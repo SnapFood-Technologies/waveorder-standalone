@@ -220,37 +220,38 @@ export async function GET() {
       ? (convertedTrials / (endedTrials + convertedTrials)) * 100
       : 0
 
-    // Recent transactions (DB first, fallback to Stripe charges) — include plan/billing for display
-    const recentTransactions = dbTransactions.length > 0
-      ? dbTransactions.map(t => {
-          const plan = t.plan || (t.customerId ? customerPlanMap.get(t.customerId) || null : null)
-          const billingType = t.billingType || (t.customerId ? customerBillingMap.get(t.customerId) || null : null)
-          return {
-            id: t.stripeId, type: t.type,
-            customerEmail: t.customerEmail, customerName: t.customerName,
-            description: t.description, amount: t.amount / 100,
-            currency: t.currency, status: t.status,
-            date: t.stripeCreatedAt.toISOString(),
-            plan: plan ?? null,
-            billingType: billingType ?? null,
-          }
-        })
-      : succeededCharges.slice(0, 5).map(c => {
-          const custId = typeof c.customer === 'string' ? c.customer : null
-          const dbInfo = custId ? customerIdToInfo.get(custId) : null
-          const plan = custId ? customerPlanMap.get(custId) || null : null
-          const billingType = custId ? customerBillingMap.get(custId) || null : null
-          return {
-            id: c.id, type: 'charge',
-            customerEmail: c.billing_details?.email || dbInfo?.email || null,
-            customerName: c.billing_details?.name || dbInfo?.name || null,
-            description: c.description || 'Payment',
-            amount: c.amount / 100, currency: c.currency, status: c.status,
-            date: new Date(c.created * 1000).toISOString(),
-            plan: plan ?? null,
-            billingType: billingType ?? null,
-          }
-        })
+    // Recent 5 from Stripe (always) — includes invoices/subscriptions from Stripe, including manual/payment links
+    const recentTransactionsFromStripe = succeededCharges.slice(0, 5).map(c => {
+      const custId = typeof c.customer === 'string' ? c.customer : null
+      const dbInfo = custId ? customerIdToInfo.get(custId) : null
+      const plan = custId ? customerPlanMap.get(custId) || null : null
+      const billingType = custId ? customerBillingMap.get(custId) || null : null
+      return {
+        id: c.id, type: 'charge',
+        customerEmail: c.billing_details?.email || dbInfo?.email || null,
+        customerName: c.billing_details?.name || dbInfo?.name || null,
+        description: c.description || 'Payment',
+        amount: c.amount / 100, currency: c.currency, status: c.status,
+        date: new Date(c.created * 1000).toISOString(),
+        plan: plan ?? null,
+        billingType: billingType ?? null,
+      }
+    })
+
+    // Recent 5 from our DB (always) — only transactions captured by our webhooks
+    const recentTransactionsFromDb = dbTransactions.slice(0, 5).map(t => {
+      const plan = t.plan || (t.customerId ? customerPlanMap.get(t.customerId) || null : null)
+      const billingType = t.billingType || (t.customerId ? customerBillingMap.get(t.customerId) || null : null)
+      return {
+        id: t.stripeId, type: t.type,
+        customerEmail: t.customerEmail, customerName: t.customerName,
+        description: t.description, amount: t.amount / 100,
+        currency: t.currency, status: t.status,
+        date: t.stripeCreatedAt.toISOString(),
+        plan: plan ?? null,
+        billingType: billingType ?? null,
+      }
+    })
 
     // Payment count breakdown: active vs inactive businesses (last 12 months)
     const paymentsFromActive = succeededCharges.filter(c => {
@@ -294,7 +295,8 @@ export async function GET() {
         conversionRate: Math.round(conversionRate * 10) / 10,
       },
       monthlyRevenue,
-      recentTransactions,
+      recentTransactionsFromStripe,
+      recentTransactionsFromDb,
       inactiveFormerPaying,
       currency: 'usd',
       meta: {

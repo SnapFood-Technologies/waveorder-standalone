@@ -41,7 +41,20 @@ interface DashboardData {
     conversionRate: number
   }
   monthlyRevenue: Array<{ month: string; revenue: number; charges: number; refunds: number }>
-  recentTransactions: Array<{
+  recentTransactionsFromStripe: Array<{
+    id: string
+    type: string
+    customerEmail: string | null
+    customerName: string | null
+    description: string | null
+    amount: number
+    currency: string
+    status: string
+    date: string
+    plan: string | null
+    billingType: string | null
+  }>
+  recentTransactionsFromDb: Array<{
     id: string
     type: string
     customerEmail: string | null
@@ -528,10 +541,10 @@ export default function FinancialDashboardPage() {
         </div>
       </div>
 
-      {/* Recent Transactions */}
+      {/* Recent Transactions — From Stripe */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Transactions</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Transactions — From Stripe</h2>
           <Link
             href="/superadmin/financial/transactions"
             className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
@@ -539,7 +552,10 @@ export default function FinancialDashboardPage() {
             View All <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-        {data.recentTransactions.length > 0 ? (
+        <p className="text-sm text-gray-500 mb-4">
+          These are from Stripe only. Includes all invoices and subscriptions — including those triggered manually or via payment links directly in Stripe.
+        </p>
+        {data.recentTransactionsFromStripe?.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -553,7 +569,7 @@ export default function FinancialDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {data.recentTransactions.map((t) => {
+                {data.recentTransactionsFromStripe.map((t) => {
                   const planLabel = t.plan && t.billingType
                     ? `${t.plan} (${t.billingType.charAt(0).toUpperCase() + t.billingType.slice(1)})`
                     : t.plan || '—'
@@ -589,7 +605,75 @@ export default function FinancialDashboardPage() {
             </table>
           </div>
         ) : (
-          <p className="text-sm text-gray-500 text-center py-8">No transactions recorded yet</p>
+          <p className="text-sm text-gray-500 text-center py-8">No Stripe charges for WaveOrder customers</p>
+        )}
+      </div>
+
+      {/* Recent Transactions — From Our Platform */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Transactions — From Our Platform</h2>
+          <Link
+            href="/superadmin/financial/transactions"
+            className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+          >
+            View All <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Transactions captured by our webhooks when users subscribe through WaveOrder. If you see fewer records here, it means some subscriptions happened outside our platform (e.g. manual invoices or payment links created directly in Stripe).
+        </p>
+        {data.recentTransactionsFromDb?.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                  <th className="pb-3 pr-4">Customer</th>
+                  <th className="pb-3 pr-4">Description</th>
+                  <th className="pb-3 pr-4">Plan</th>
+                  <th className="pb-3 pr-4 text-right">Amount</th>
+                  <th className="pb-3 pr-4">Status</th>
+                  <th className="pb-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {data.recentTransactionsFromDb.map((t) => {
+                  const planLabel = t.plan && t.billingType
+                    ? `${t.plan} (${t.billingType.charAt(0).toUpperCase() + t.billingType.slice(1)})`
+                    : t.plan || '—'
+                  return (
+                    <tr key={t.id} className="text-sm hover:bg-gray-50">
+                      <td className="py-3 pr-4">
+                        <p className="font-medium text-gray-900">{t.customerName || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{t.customerEmail}</p>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-600">{t.description}</td>
+                      <td className="py-3 pr-4 text-gray-600 text-xs">{planLabel}</td>
+                      <td className="py-3 pr-4 text-right font-medium text-gray-900">
+                        {t.currency.toUpperCase()} {t.amount < 0 ? `-$${Math.abs(t.amount).toFixed(2)}` : `$${t.amount.toFixed(2)}`}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                          t.status === 'succeeded' || t.status === 'paid'
+                            ? 'bg-green-100 text-green-700'
+                            : t.status === 'failed'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {t.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-gray-500 text-xs">
+                        {new Date(t.date).toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 text-center py-8">No transactions captured by our webhooks yet</p>
         )}
       </div>
 
