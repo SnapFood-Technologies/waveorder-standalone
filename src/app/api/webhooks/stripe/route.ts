@@ -663,9 +663,13 @@ async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) 
     const amount = invoice.amount_paid || invoice.amount_due || 0
     const currency = invoice.currency || 'usd'
 
-    // Only record WaveOrder subscriptions — skip invoices for other products
-    const subscriptionId = (invoice as any).subscription as string | null
-    if (!subscriptionId) return null // No subscription = one-off invoice, likely from another product
+    // Resolve subscription ID — Stripe API structure varies (top-level or parent.subscription_details)
+    const inv = invoice as any
+    const subscriptionId =
+      (typeof inv.subscription === 'string' ? inv.subscription : null) ||
+      inv.parent?.subscription_details?.subscription ||
+      null
+    if (!subscriptionId) return null // No subscription = one-off invoice, skip
 
     let sub: Stripe.Subscription
     try {
@@ -707,7 +711,7 @@ async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) 
         amount,
         currency,
         customerId,
-        subscriptionId: (invoice as any).subscription as string || null,
+        subscriptionId,
         customerEmail: (invoice as any).customer_email || user?.email || null,
         customerName: (invoice as any).customer_name || user?.name || null,
         description: invoice.billing_reason || 'Subscription payment',
