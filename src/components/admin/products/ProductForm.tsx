@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { 
   Save, 
   ArrowLeft, 
@@ -231,6 +231,7 @@ function SearchableCategorySelect({
 export function ProductForm({ businessId, productId }: ProductFormProps) {
   const { addParams } = useImpersonation(businessId)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const isEditing = productId !== 'new'
   const { isPro } = useSubscription()
   
@@ -617,7 +618,10 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
         })
   
         setTimeout(() => {
-          router.push(addParams(`/admin/stores/${businessId}/products`))
+          const base = addParams(`/admin/stores/${businessId}/products`)
+          const page = searchParams.get('page')
+          const url = page ? `${base}${base.includes('?') ? '&' : '?'}page=${page}` : base
+          router.push(url)
         }, 2000)
       } else {
         const errorData = await response.json()

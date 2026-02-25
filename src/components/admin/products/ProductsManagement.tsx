@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { 
   Package, 
   Plus, 
@@ -97,6 +98,7 @@ interface Pagination {
 
 export default function ProductsManagement({ businessId }: ProductsPageProps) {
   const { addParams } = useImpersonation(businessId)
+  const searchParams = useSearchParams()
   
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -110,7 +112,9 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
   const [deleteModalProduct, setDeleteModalProduct] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
+  const pageFromUrl = searchParams.get('page')
+  const initialPage = pageFromUrl ? Math.max(1, parseInt(pageFromUrl, 10) || 1) : 1
+  const [currentPage, setCurrentPage] = useState(initialPage)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
     limit: 12,
@@ -148,14 +152,22 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
     return () => clearTimeout(timer)
   }, [searchTerm])
 
+  // Sync page from URL when it changes (e.g. browser back/forward)
+  useEffect(() => {
+    const page = searchParams.get('page')
+    if (page) {
+      const p = parseInt(page, 10)
+      if (p >= 1) setCurrentPage(p)
+    }
+  }, [searchParams])
+
   // Check for low-stock filter from URL
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const filter = urlParams.get('filter')
+    const filter = searchParams.get('filter')
     if (filter === 'low-stock') {
       setFilterStatus('low-stock')
     }
-  }, [])
+  }, [searchParams])
 
   const fetchBusinessData = async () => {
     try {
@@ -748,7 +760,10 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <Link
-                        href={addParams(`/admin/stores/${businessId}/products/${product.id}`)}
+                        href={(() => {
+                          const base = addParams(`/admin/stores/${businessId}/products/${product.id}`)
+                          return currentPage > 1 ? `${base}${base.includes('?') ? '&' : '?'}page=${currentPage}` : base
+                        })()}
                         className="flex-1 px-3 py-2 bg-teal-600 text-white text-sm rounded hover:bg-teal-700 transition-colors text-center"
                       >
                         <Edit className="w-3 h-3 inline mr-1" />
