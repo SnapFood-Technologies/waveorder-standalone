@@ -664,7 +664,7 @@ async function recordStripeTransaction(invoice: Stripe.Invoice, status: string) 
     const currency = invoice.currency || 'usd'
 
     // Only record WaveOrder subscriptions — skip invoices for other products
-    const subscriptionId = invoice.subscription as string | null
+    const subscriptionId = (invoice as any).subscription as string | null
     if (!subscriptionId) return null // No subscription = one-off invoice, likely from another product
 
     let sub: Stripe.Subscription

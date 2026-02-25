@@ -505,9 +505,9 @@ model Business {
   showProductionPlanning Boolean @default(false) // When enabled, business admin can see production queue
 
   // Manual Team Creation & Delivery Management (SuperAdmin enables)
-  enableManualTeamCreation Boolean @default(false) // When enabled, business admin can create team members manually with credentials
-  enableDeliveryManagement Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
-  enableAffiliateSystem    Boolean @default(false) // When enabled, business admin can manage affiliates, track commissions, and payments
+  enableManualTeamCreation  Boolean @default(false) // When enabled, business admin can create team members manually with credentials
+  enableDeliveryManagement  Boolean @default(false) // When enabled, business admin can track delivery assignments, earnings, and payments
+  enableAffiliateSystem     Boolean @default(false) // When enabled, business admin can manage affiliates, track commissions, and payments
   enableTeamPaymentTracking Boolean @default(false) // When enabled, business admin can record internal payments to team members
 
   // Legal Pages / Store Policies (SuperAdmin enables)
@@ -2770,12 +2770,12 @@ model TeamMemberPayment {
   userId String @db.ObjectId // Team member who received the payment
   user   User   @relation("TeamMemberPaymentsReceived", fields: [userId], references: [id], onDelete: Cascade)
 
-  amount   Float  // Amount paid
+  amount   Float // Amount paid
   currency String @default("EUR")
 
   paidFrom String? // e.g. "Main account", "Petty cash"
   paidAt   DateTime @default(now()) // When payment was made
-  notes    String?  // Optional notes
+  notes    String? // Optional notes
 
   paymentMethod String // CASH, BANK, PAYPAL, OTHER
 
