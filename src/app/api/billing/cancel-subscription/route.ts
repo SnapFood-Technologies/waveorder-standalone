@@ -18,9 +18,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const body = await req.json().catch(() => ({}))
+    const { businessId } = body
+
+    // When SuperAdmin impersonates, use business owner's user (not SuperAdmin's)
+    let targetUserId = session.user.id
+    if (businessId && (session.user as { role?: string })?.role === 'SUPER_ADMIN') {
+      const owner = await prisma.businessUser.findFirst({
+        where: { businessId, role: 'OWNER' },
+        select: { userId: true }
+      })
+      if (owner) targetUserId = owner.userId
+    }
+
     // Get user with subscription details before canceling
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: targetUserId },
       include: { subscription: true }
     })
 
@@ -32,11 +45,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Cancel the subscription
-    await cancelUserSubscription(session.user.id)
+    await cancelUserSubscription(targetUserId)
 
     // Resolve first business for logging (billing panel is per-business context)
     const firstBusiness = await prisma.businessUser.findFirst({
-      where: { userId: session.user.id },
+      where: { userId: targetUserId },
       select: { businessId: true },
     })
     const businessIdForLog = firstBusiness?.businessId ?? undefined

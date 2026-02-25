@@ -264,7 +264,11 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     setError(null)
     setIsCancelling(true)
     try {
-      const response = await fetch('/api/billing/cancel-subscription', { method: 'POST' })
+      const response = await fetch('/api/billing/cancel-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId: isImpersonating ? businessId : undefined })
+      })
       if (response.ok) {
         setShowCancelModal(false)
         await fetchSubscription()

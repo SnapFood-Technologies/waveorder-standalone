@@ -57,9 +57,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // When SuperAdmin impersonates, use business owner's user (not SuperAdmin's)
+    let targetUserId = session.user.id
+    if ((session.user as { role?: string })?.role === 'SUPER_ADMIN') {
+      const owner = await prisma.businessUser.findFirst({
+        where: { businessId, role: 'OWNER' },
+        select: { userId: true }
+      })
+      if (owner) targetUserId = owner.userId
+    }
+
     // 4. Database user lookup
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: targetUserId },
       select: {
         id: true,
         email: true,
