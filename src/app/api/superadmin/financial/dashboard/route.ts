@@ -85,7 +85,6 @@ export async function GET() {
         }
       }),
       prisma.stripeTransaction.findMany({
-        where: { plan: { in: ['STARTER', 'PRO', 'BUSINESS'] } },
         orderBy: { stripeCreatedAt: 'desc' },
         take: 10
       }).catch(() => [])
