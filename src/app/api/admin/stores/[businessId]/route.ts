@@ -53,6 +53,11 @@ export async function GET(
         coverHeightDesktop: true,
         logoPadding: true,
         logoObjectFit: true,
+        bannerEnabled: true,
+        bannerTitle: true,
+        bannerSubtitle: true,
+        bannerIcon: true,
+        bannerFontSize: true,
         
         // Business settings
         currency: true,
