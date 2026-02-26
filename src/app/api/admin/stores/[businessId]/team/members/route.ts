@@ -99,9 +99,9 @@ export async function POST(
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
     }
 
-    // Get business (for manual team creation exception) and owner's plan
+    // Get business (for manual team creation exception + name for email) and owner's plan
     const [business, businessOwner] = await Promise.all([
-      prisma.business.findUnique({ where: { id: businessId }, select: { enableManualTeamCreation: true } }),
+      prisma.business.findUnique({ where: { id: businessId }, select: { enableManualTeamCreation: true, name: true } }),
       prisma.businessUser.findFirst({
         where: { businessId, role: 'OWNER' },
         include: { user: { select: { plan: true } } }
@@ -233,12 +233,6 @@ export async function POST(
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         status: 'PENDING'
       }
-    })
-
-    // Get business name for email
-    const business = await prisma.business.findUnique({
-      where: { id: businessId },
-      select: { name: true }
     })
 
     // Get inviter name
