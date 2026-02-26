@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock)$/i
+const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock|dist|swp|save|gradle|secret|axd)$/i
 
 const spamStructuralPatterns = [
   /^\d+$/,
@@ -17,6 +17,9 @@ const spamStructuralPatterns = [
   /^(package-updates|update|updates|upgrade)$/i,
   /^(alfa|alfanew|alfa-rex|shell|r57|c99|b374k)/i,
   /^(stripe\.yaml|stripe\.json|config\.|\.config)/i,
+  /~$/,
+  /\.php-/i,
+  /-bak/i,
 ]
 
 const spamExactSlugs = new Set([
@@ -35,6 +38,8 @@ const spamExactSlugs = new Set([
   'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
   'version', 'license', 'changelog', 'readme', 'graphql',
   'jenkinsfile', 'access_log', 'error_log', 'pipfile',
+  'aws_credentials', 'credentials', 'artisan', 'makefile', 'dockerfile', 'gemfile',
+  'server-info', 'wp-config', 'enhancecp',
 ])
 
 const isSpamSlug = (s: string | null | undefined): boolean => {
@@ -99,7 +104,7 @@ export async function GET(request: NextRequest) {
       let cat = 'other'
       if (/^(wp-|wordpress|xmlrpc)/i.test(slug)) cat = 'wordpress'
       else if (/\.(php\d?|asp|aspx|jsp|cgi)$/i.test(slug) || /^(alfa|alfanew|alfa-rex|r57|c99|b374k)/i.test(slug)) cat = 'server_probe'
-      else if (/\.(env|git|aws|yaml|yml|cfg|ini|conf|toml|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock)/i.test(slug) || slug.startsWith('.') || /^(config\.|stripe\.)/i.test(slug) || ['version', 'license', 'changelog', 'readme', 'graphql', 'jenkinsfile', 'access_log', 'error_log', 'pipfile'].includes(slug)) cat = 'config_file'
+      else if (/\.(env|git|aws|yaml|yml|cfg|ini|conf|toml|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock|dist|swp|save|gradle|secret|axd)/i.test(slug) || slug.startsWith('.') || /^(config\.|stripe\.)/i.test(slug) || slug.endsWith('~') || /\.php-|-bak/.test(slug) || ['version', 'license', 'changelog', 'readme', 'graphql', 'jenkinsfile', 'access_log', 'error_log', 'pipfile', 'aws_credentials', 'credentials', 'artisan', 'makefile', 'dockerfile', 'gemfile', 'server-info', 'wp-config', 'enhancecp'].includes(slug)) cat = 'config_file'
       else if (/\.(png|ico|jpg|jpeg|gif|webp|svg)$/i.test(slug) || slug.includes('apple-touch-icon') || slug === 'favicon' || slug === 'browserconfig') cat = 'asset_probe'
       else if (['phpmyadmin', 'cpanel', 'admin', 'admin_', 'administrator', 'dashboard', 'login', 'superadmin', 'management', 'controlpanel', 'webmail', 'plesk', 'directadmin'].includes(slug)) cat = 'admin_panel'
       else if (['passwd', 'etc', 'proc', 'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'shell', 'cmd', 'eval', 'exec', 'system'].includes(slug) || /\.\./.test(slug)) cat = 'path_traversal'

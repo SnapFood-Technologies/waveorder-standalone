@@ -136,6 +136,15 @@ jobs:
           yarn build
           echo "✅ Build completed successfully"
 
+      # 📮 POPULATE NAIA STUDIO POSTAL PRICING (Dafni, Athens areas = 1 day)
+      - name: 📮 Populate Naia Studio Postal Pricing
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Running Naia Studio postal pricing (Athens 1 day, Mainland 2-4 days, Islands 3-5 days)..."
+          yarn populate:naia-postal || echo "⚠️ Postal pricing script failed (deploy continues)"
+          echo "✅ Postal pricing step completed"
+
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |

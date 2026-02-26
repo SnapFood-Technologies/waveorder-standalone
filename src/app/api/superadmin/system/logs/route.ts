@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 //   3. Known exact slugs for common attack paths
 //   4. Prefix rules (., _, :, [ etc.)
 
-const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock)$/i
+const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock|dist|swp|save|gradle|secret|axd)$/i
 
 const spamStructuralPatterns = [
   /^\d+$/,                    // pure numbers: "1", "8080", etc.
@@ -25,6 +25,9 @@ const spamStructuralPatterns = [
   /^(package-updates|update|updates|upgrade)$/i,
   /^(alfa|alfanew|alfa-rex|shell|r57|c99|b374k)/i, // web shells
   /^(stripe\.yaml|stripe\.json|config\.|\.config)/i,
+  /~$/,                       // backup files: config.php~, wp-config.php~
+  /\.php-/i,                  // php backups: getcpuutil.php-bakworking
+  /-bak/i,                    // backup variants
 ]
 
 const spamExactSlugs = new Set([
@@ -43,6 +46,8 @@ const spamExactSlugs = new Set([
   'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
   'version', 'license', 'changelog', 'readme', 'graphql',
   'jenkinsfile', 'access_log', 'error_log', 'pipfile',
+  'aws_credentials', 'credentials', 'artisan', 'makefile', 'dockerfile', 'gemfile',
+  'server-info', 'wp-config', 'enhancecp',
 ])
 
 const isSpamSlug = (s: string | null | undefined): boolean => {
