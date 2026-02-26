@@ -55,7 +55,7 @@ export async function logTeamAudit(params: AuditLogParams) {
         businessId: params.businessId,
         errorMessage: params.action.replace(/_/g, ' ').toLowerCase(),
         ipAddress: params.ipAddress ?? extractIPAddress(params.request),
-        userAgent: params.userAgent ?? (params.request as any).headers?.get?.('user-agent') || undefined,
+        userAgent: params.userAgent ?? ((params.request as any).headers?.get?.('user-agent') || undefined),
         metadata: {
           actorId: params.actorId,
           actorEmail: params.actorEmail,
