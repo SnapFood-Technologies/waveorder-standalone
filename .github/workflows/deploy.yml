@@ -136,15 +136,6 @@ jobs:
           yarn build
           echo "✅ Build completed successfully"
 
-      # 📮 POPULATE NAIA STUDIO POSTAL PRICING
-      - name: 📮 Populate Naia Studio Postal Pricing
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "Running Naia Studio postal pricing population..."
-          yarn populate:naia-postal || echo "⚠️ Postal pricing script failed (non-blocking)"
-          echo "✅ Postal pricing step completed"
-
       # 🧹 CLEANUP DEPENDENCIES
       - name: 🧹 Remove Development Dependencies
         run: |

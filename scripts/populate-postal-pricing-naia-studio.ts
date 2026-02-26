@@ -25,158 +25,6 @@ const BUSINESS_ID = '697b831ab3893369d3a6c9c2' // Naia Studio business ID
 const POSTAL_SERVICE_ID = '698ccfba30496f9ac138f889' // "Standard Delivery" postal service ID
 
 /**
- * Full list of Greek cities (from cities database)
- * Flat €1 delivery for all Greece
- */
-const GREECE_CITIES = [
-  'Acharnes',
-  'Agia Paraskevi',
-  'Agios Dimitrios',
-  'Agios Efstratios',
-  'Agios Nikolaos',
-  'Agrinio',
-  'Aidipsos',
-  'Aigio',
-  'Alexandroupoli',
-  'Almyros',
-  'Amaliada',
-  'Amfissa',
-  'Ampelokipoi',
-  'Amyntaio',
-  'Archanes',
-  'Argos',
-  'Argostoli',
-  'Arta',
-  'Atalanti',
-  'Athens',
-  'Chalandri',
-  'Chalkida',
-  'Chania',
-  'Chios',
-  'Corfu',
-  'Corinth',
-  'Dafni',
-  'Deskati',
-  'Didymoteicho',
-  'Drama',
-  'Edessa',
-  'Egaleo',
-  'Elassona',
-  'Elounda',
-  'Evosmos',
-  'Farsala',
-  'Ferres',
-  'Filiates',
-  'Florina',
-  'Fournoi',
-  'Galatsi',
-  'Giannitsa',
-  'Glyfada',
-  'Grevena',
-  'Gythio',
-  'Heraklion',
-  'Hersonissos',
-  'Ierapetra',
-  'Igoumenitsa',
-  'Ikaria',
-  'Ilio',
-  'Ilioupoli',
-  'Ioannina',
-  'Ios',
-  'Irakleio',
-  'Ithaca',
-  'Kalamaria',
-  'Kalamata',
-  'Kallithea',
-  'Karditsa',
-  'Karpenisi',
-  'Karystos',
-  'Kastoria',
-  'Katerini',
-  'Kavala',
-  'Kefalonia',
-  'Keratsini',
-  'Kifisia',
-  'Komotini',
-  'Konitsa',
-  'Kos',
-  'Kozani',
-  'Kythira',
-  'Lamia',
-  'Larissa',
-  'Lefkada',
-  'Lemnos',
-  'Lesvos',
-  'Livadeia',
-  'Lixouri',
-  'Malia',
-  'Marousi',
-  'Menemeni',
-  'Messolonghi',
-  'Metsovo',
-  'Milos',
-  'Monemvasia',
-  'Mykonos',
-  'Mytilene',
-  'Nafpaktos',
-  'Nafplio',
-  'Naousa',
-  'Naxos',
-  'Nea Ionia',
-  'Nea Smyrni',
-  'Neapoli',
-  'Nikaia',
-  'Oinousses',
-  'Orestiada',
-  'Palaio Faliro',
-  'Paramythia',
-  'Parga',
-  'Paros',
-  'Patras',
-  'Paxi',
-  'Peristeri',
-  'Petroupoli',
-  'Piraeus',
-  'Polichni',
-  'Preveza',
-  'Psara',
-  'Ptolemaida',
-  'Pylaia',
-  'Pyrgos',
-  'Rethymno',
-  'Rhodes',
-  'Sami',
-  'Samos',
-  'Santorini',
-  'Serres',
-  'Servia',
-  'Siatista',
-  'Sitia',
-  'Skiathos',
-  'Skopelos',
-  'Soufli',
-  'Sparta',
-  'Stavroupoli',
-  'Stylida',
-  'Sykies',
-  'Syros',
-  'Thasos',
-  'Thebes',
-  'Thessaloniki',
-  'Tinos',
-  'Trikala',
-  'Tripoli',
-  'Tyrnavos',
-  'Veria',
-  'Volos',
-  'Vyronas',
-  'Xanthi',
-  'Zagori',
-  'Zakynthos',
-  'Zografou',
-]
-
-/**
  * Pricing configuration
  * Flat rate: €1.00 for all Greece
  * Minimum order: €10.00
@@ -189,11 +37,39 @@ const PRICING_CONFIG = {
 
 /**
  * Delivery time labels (English + Greek)
+ * 2-4 business days for all Greece
  */
 const DELIVERY_TIMES = {
   en: '2-4 business days',
   el: '2-4 εργάσιμες ημέρες',
 }
+
+/**
+ * Full list of Greek cities (from cities database)
+ */
+const GREECE_CITIES = [
+  'Acharnes', 'Agia Paraskevi', 'Agios Dimitrios', 'Agios Efstratios', 'Agios Nikolaos',
+  'Agrinio', 'Aidipsos', 'Aigio', 'Alexandroupoli', 'Almyros', 'Amaliada', 'Amfissa',
+  'Ampelokipoi', 'Amyntaio', 'Archanes', 'Argos', 'Argostoli', 'Arta', 'Atalanti',
+  'Athens', 'Chalandri', 'Chalkida', 'Chania', 'Chios', 'Corfu', 'Corinth', 'Dafni',
+  'Deskati', 'Didymoteicho', 'Drama', 'Edessa', 'Egaleo', 'Elassona', 'Elounda',
+  'Evosmos', 'Farsala', 'Ferres', 'Filiates', 'Florina', 'Fournoi', 'Galatsi',
+  'Giannitsa', 'Glyfada', 'Grevena', 'Gythio', 'Heraklion', 'Hersonissos', 'Ierapetra',
+  'Igoumenitsa', 'Ikaria', 'Ilio', 'Ilioupoli', 'Ioannina', 'Ios', 'Irakleio', 'Ithaca',
+  'Kalamaria', 'Kalamata', 'Kallithea', 'Karditsa', 'Karpenisi', 'Karystos', 'Kastoria',
+  'Katerini', 'Kavala', 'Kefalonia', 'Keratsini', 'Kifisia', 'Komotini', 'Konitsa',
+  'Kos', 'Kozani', 'Kythira', 'Lamia', 'Larissa', 'Lefkada', 'Lemnos', 'Lesvos',
+  'Livadeia', 'Lixouri', 'Malia', 'Marousi', 'Menemeni', 'Messolonghi', 'Metsovo',
+  'Milos', 'Monemvasia', 'Mykonos', 'Mytilene', 'Nafpaktos', 'Nafplio', 'Naousa',
+  'Naxos', 'Nea Ionia', 'Nea Smyrni', 'Neapoli', 'Nikaia', 'Oinousses', 'Orestiada',
+  'Palaio Faliro', 'Paramythia', 'Parga', 'Paros', 'Patras', 'Paxi', 'Peristeri',
+  'Petroupoli', 'Piraeus', 'Polichni', 'Preveza', 'Psara', 'Ptolemaida', 'Pylaia',
+  'Pyrgos', 'Rethymno', 'Rhodes', 'Sami', 'Samos', 'Santorini', 'Serres', 'Servia',
+  'Siatista', 'Sitia', 'Skiathos', 'Skopelos', 'Soufli', 'Sparta', 'Stavroupoli',
+  'Stylida', 'Sykies', 'Syros', 'Thasos', 'Thebes', 'Thessaloniki', 'Tinos', 'Trikala',
+  'Tripoli', 'Tyrnavos', 'Veria', 'Volos', 'Vyronas', 'Xanthi', 'Zagori', 'Zakynthos',
+  'Zografou',
+]
 
 /**
  * Find city by name in Greece (country code GR)
@@ -415,8 +291,8 @@ async function main() {
     let totalNotFound = 0
     const allErrors: Array<{ city: string; error: string }> = []
 
-    // All Greece - flat €1
-    console.log(`📦 Processing Greece (${GREECE_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)}...`)
+    // All Greece - flat €1, 2-4 business days
+    console.log(`📦 Processing Greece (${GREECE_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)} - 2-4 days...`)
     const batch = await processPricingBatch(
       GREECE_CITIES,
       PRICING_CONFIG.price,
@@ -425,10 +301,9 @@ async function main() {
       DELIVERY_TIMES.en,
       DELIVERY_TIMES.el,
     )
-    console.log(`   ✅ Created: ${batch.created}, Updated: ${batch.updated}, Not Found: ${batch.notFound}, Errors: ${batch.errors.length}\n`)
+    console.log(`   ✅ Created: ${batch.created}, Updated: ${batch.updated}, Errors: ${batch.errors.length}\n`)
     totalCreated += batch.created
     totalUpdated += batch.updated
-    totalNotFound += batch.notFound
     allErrors.push(...batch.errors)
 
     // Final summary
@@ -455,9 +330,8 @@ async function main() {
     console.log(`   - Greece: ${GREECE_CITIES.length} cities\n`)
 
     console.log(`📋 Pricing Configuration:`)
-    console.log(`   Greece (all cities):`)
-    console.log(`     - Price: €${PRICING_CONFIG.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.priceWithoutTax.toFixed(2)})`)
-    console.log(`     - Delivery: ${DELIVERY_TIMES.en} / ${DELIVERY_TIMES.el}`)
+    console.log(`   All Greece: €${PRICING_CONFIG.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.priceWithoutTax.toFixed(2)})`)
+    console.log(`   Delivery: ${DELIVERY_TIMES.en} / ${DELIVERY_TIMES.el}`)
     console.log(`   Min Order: €${PRICING_CONFIG.minOrderValue.toFixed(2)}\n`)
 
     console.log(`💡 Reminder: Set "Free Delivery Above" to €20.00 in Admin > Configurations > Delivery Methods\n`)
