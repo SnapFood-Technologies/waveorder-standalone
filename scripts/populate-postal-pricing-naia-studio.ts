@@ -4,16 +4,16 @@ const prisma = new PrismaClient()
 
 /**
  * Naia Studio - Postal Pricing Population Script
- * 
+ *
  * Business: Naia Studio (Jewelry store based in Athens, Greece)
  * Currency: EUR
  * Language: Greek (el)
- * 
+ *
  * Pricing Strategy:
- * - Standard Delivery: €3.50 flat rate for all Greece
+ * - Standard Delivery: €1.00 flat rate for all Greece
  * - Minimum order: €10.00
- * - Free shipping over €25.00 (configured in business delivery settings, not here)
- * 
+ * - Free shipping over €20.00 (configured in business delivery settings, not here)
+ *
  * NOTE: Before running this script:
  * 1. Find the Naia Studio business ID from the database or SuperAdmin
  * 2. Create a "Standard Delivery" postal service in Admin > Configurations > Postal Services
@@ -25,187 +25,174 @@ const BUSINESS_ID = '697b831ab3893369d3a6c9c2' // Naia Studio business ID
 const POSTAL_SERVICE_ID = '698ccfba30496f9ac138f889' // "Standard Delivery" postal service ID
 
 /**
- * Greek cities/regions organized by area
- * Using the city name as it appears in the cities database
+ * Full list of Greek cities (from cities database)
+ * Flat €1 delivery for all Greece
  */
-
-// Athens & Attica region
-const ATHENS_ATTICA_CITIES = [
-  'Athens',
-  'Piraeus',
-  'Peristeri',
-  'Kallithea',
+const GREECE_CITIES = [
   'Acharnes',
-  'Nikaia',
-  'Glyfada',
-  'Voula',
-  'Ilioupoli',
-  'Argyroupoli',
   'Agia Paraskevi',
-  'Chalandri',
-  'Marousi',
-  'Kifissia',
-  'Palaio Faliro',
-  'Nea Smyrni',
-  'Nea Ionia',
-  'Metamorfosi',
-  'Agia Varvara',
-  'Zografou',
-  'Vyronas',
-  'Kaisariani',
-  'Galatsi',
-  'Dafni',
-  'Petroupoli',
-  'Ilion',
-  'Egaleo',
-  'Korydallos',
-  'Moschato',
-  'Tavros',
-  'Keratsini',
-  'Drapetsona',
-  'Eleusis',
-  'Megara',
-  'Lavrio',
-  'Rafina',
-  'Marathon',
-  'Nea Makri',
-  'Spata',
-  'Koropi',
-  'Markopoulo',
-  'Vari',
-  'Vouliagmeni',
-  'Ekali',
-  'Dionysos',
-  'Drosia',
-  'Nea Erythraia',
-  'Lykovrysi',
-  'Pefki',
-  'Irakleio',
-  'Nea Filadelfia',
-  'Nea Chalkidona',
-  'Psychiko',
-  'Filothei',
-  'Cholargos',
-  'Papagou',
-  'Vrilissia',
-  'Gerakas',
-  'Pallini',
-  'Anthousa',
-  'Penteli',
-  'Melissia',
-  'Nea Penteli',
-]
-
-// Mainland Greece (outside Attica)
-const MAINLAND_GREECE_CITIES = [
-  'Thessaloniki',
-  'Patras',
-  'Larissa',
-  'Volos',
-  'Ioannina',
-  'Kavala',
-  'Kalamata',
-  'Serres',
-  'Alexandroupoli',
-  'Xanthi',
-  'Komotini',
-  'Drama',
-  'Veria',
-  'Kozani',
-  'Trikala',
-  'Karditsa',
-  'Lamia',
-  'Chalkida',
-  'Agrinio',
-  'Tripoli',
-  'Sparti',
-  'Corinth',
-  'Argos',
-  'Nafplio',
-  'Katerini',
-  'Ptolemaida',
-  'Florina',
-  'Kastoria',
-  'Grevena',
-  'Edessa',
-  'Naousa',
-  'Kilkis',
-  'Polygyros',
-  'Preveza',
-  'Arta',
-  'Lefkada',
-  'Messolonghi',
-  'Livadia',
-  'Thebes',
-  'Amfissa',
-  'Pyrgos',
-  'Zakynthos',
-  'Corfu',
-]
-
-// Greek Islands
-const ISLAND_CITIES = [
-  'Heraklion',
-  'Chania',
-  'Rethymno',
+  'Agios Dimitrios',
+  'Agios Efstratios',
   'Agios Nikolaos',
-  'Sitia',
-  'Ierapetra',
-  'Rhodes',
-  'Kos',
-  'Kalymnos',
-  'Mytilene',
+  'Agrinio',
+  'Aidipsos',
+  'Aigio',
+  'Alexandroupoli',
+  'Almyros',
+  'Amaliada',
+  'Amfissa',
+  'Ampelokipoi',
+  'Amyntaio',
+  'Archanes',
+  'Argos',
+  'Argostoli',
+  'Arta',
+  'Atalanti',
+  'Athens',
+  'Chalandri',
+  'Chalkida',
+  'Chania',
   'Chios',
-  'Samos',
-  'Ermoupoli',
+  'Corfu',
+  'Corinth',
+  'Dafni',
+  'Deskati',
+  'Didymoteicho',
+  'Drama',
+  'Edessa',
+  'Egaleo',
+  'Elassona',
+  'Elounda',
+  'Evosmos',
+  'Farsala',
+  'Ferres',
+  'Filiates',
+  'Florina',
+  'Fournoi',
+  'Galatsi',
+  'Giannitsa',
+  'Glyfada',
+  'Grevena',
+  'Gythio',
+  'Heraklion',
+  'Hersonissos',
+  'Ierapetra',
+  'Igoumenitsa',
+  'Ikaria',
+  'Ilio',
+  'Ilioupoli',
+  'Ioannina',
+  'Ios',
+  'Irakleio',
+  'Ithaca',
+  'Kalamaria',
+  'Kalamata',
+  'Kallithea',
+  'Karditsa',
+  'Karpenisi',
+  'Karystos',
+  'Kastoria',
+  'Katerini',
+  'Kavala',
+  'Kefalonia',
+  'Keratsini',
+  'Kifisia',
+  'Komotini',
+  'Konitsa',
+  'Kos',
+  'Kozani',
+  'Kythira',
+  'Lamia',
+  'Larissa',
+  'Lefkada',
+  'Lemnos',
+  'Lesvos',
+  'Livadeia',
+  'Lixouri',
+  'Malia',
+  'Marousi',
+  'Menemeni',
+  'Messolonghi',
+  'Metsovo',
+  'Milos',
+  'Monemvasia',
   'Mykonos',
+  'Mytilene',
+  'Nafpaktos',
+  'Nafplio',
+  'Naousa',
   'Naxos',
+  'Nea Ionia',
+  'Nea Smyrni',
+  'Neapoli',
+  'Nikaia',
+  'Oinousses',
+  'Orestiada',
+  'Palaio Faliro',
+  'Paramythia',
+  'Parga',
   'Paros',
-  'Thira',
-  'Tinos',
-  'Andros',
+  'Patras',
+  'Paxi',
+  'Peristeri',
+  'Petroupoli',
+  'Piraeus',
+  'Polichni',
+  'Preveza',
+  'Psara',
+  'Ptolemaida',
+  'Pylaia',
+  'Pyrgos',
+  'Rethymno',
+  'Rhodes',
+  'Sami',
+  'Samos',
+  'Santorini',
+  'Serres',
+  'Servia',
+  'Siatista',
+  'Sitia',
   'Skiathos',
+  'Skopelos',
+  'Soufli',
+  'Sparta',
+  'Stavroupoli',
+  'Stylida',
+  'Sykies',
+  'Syros',
+  'Thasos',
+  'Thebes',
+  'Thessaloniki',
+  'Tinos',
+  'Trikala',
+  'Tripoli',
+  'Tyrnavos',
+  'Veria',
+  'Volos',
+  'Vyronas',
+  'Xanthi',
+  'Zagori',
+  'Zakynthos',
+  'Zografou',
 ]
 
 /**
  * Pricing configuration
- * Flat rate: €3.50 for all Greece
+ * Flat rate: €1.00 for all Greece
  * Minimum order: €10.00
  */
 const PRICING_CONFIG = {
-  athensAttica: {
-    price: 3.50,
-    priceWithoutTax: 2.82, // 24% VAT in Greece → 3.50 / 1.24 = 2.82
-    minOrderValue: 10.00,
-  },
-  mainlandGreece: {
-    price: 4.00,
-    priceWithoutTax: 3.23, // 24% VAT → 4.00 / 1.24 = 3.23
-    minOrderValue: 10.00,
-  },
-  islands: {
-    price: 5.00,
-    priceWithoutTax: 4.03, // 24% VAT → 5.00 / 1.24 = 4.03
-    minOrderValue: 10.00,
-  }
+  price: 1.00,
+  priceWithoutTax: 0.81, // 24% VAT in Greece → 1.00 / 1.24 = 0.81
+  minOrderValue: 10.00,
 }
 
 /**
  * Delivery time labels (English + Greek)
  */
 const DELIVERY_TIMES = {
-  athensAttica: {
-    en: '1 business day',
-    el: '1 εργάσιμη ημέρα',
-  },
-  mainlandGreece: {
-    en: '2-4 business days',
-    el: '2-4 εργάσιμες ημέρες',
-  },
-  islands: {
-    en: '3-5 business days',
-    el: '3-5 εργάσιμες ημέρες',
-  }
+  en: '2-4 business days',
+  el: '2-4 εργάσιμες ημέρες',
 }
 
 /**
@@ -408,8 +395,8 @@ async function main() {
     console.log(`Business ID: ${BUSINESS_ID}`)
     console.log(`Postal Service ID: ${POSTAL_SERVICE_ID}`)
     console.log(`Currency: EUR`)
-    console.log(`Pricing: Athens €${PRICING_CONFIG.athensAttica.price.toFixed(2)} | Mainland €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)} | Islands €${PRICING_CONFIG.islands.price.toFixed(2)}`)
-    console.log(`Min Order: €${PRICING_CONFIG.athensAttica.minOrderValue.toFixed(2)}\n`)
+    console.log(`Pricing: €${PRICING_CONFIG.price.toFixed(2)} flat rate for all Greece`)
+    console.log(`Min Order: €${PRICING_CONFIG.minOrderValue.toFixed(2)}\n`)
 
     // Verify postal service exists and belongs to this business
     const postalService = await prisma.postal.findUnique({
@@ -428,53 +415,21 @@ async function main() {
     let totalNotFound = 0
     const allErrors: Array<{ city: string; error: string }> = []
 
-    // Athens & Attica
-    console.log(`📦 Processing Athens & Attica (${ATHENS_ATTICA_CITIES.length} cities) - €${PRICING_CONFIG.athensAttica.price.toFixed(2)}...`)
-    const batch1 = await processPricingBatch(
-      ATHENS_ATTICA_CITIES,
-      PRICING_CONFIG.athensAttica.price,
-      PRICING_CONFIG.athensAttica.priceWithoutTax,
-      PRICING_CONFIG.athensAttica.minOrderValue,
-      DELIVERY_TIMES.athensAttica.en,
-      DELIVERY_TIMES.athensAttica.el,
+    // All Greece - flat €1
+    console.log(`📦 Processing Greece (${GREECE_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)}...`)
+    const batch = await processPricingBatch(
+      GREECE_CITIES,
+      PRICING_CONFIG.price,
+      PRICING_CONFIG.priceWithoutTax,
+      PRICING_CONFIG.minOrderValue,
+      DELIVERY_TIMES.en,
+      DELIVERY_TIMES.el,
     )
-    console.log(`   ✅ Created: ${batch1.created}, Updated: ${batch1.updated}, Not Found: ${batch1.notFound}, Errors: ${batch1.errors.length}\n`)
-    totalCreated += batch1.created
-    totalUpdated += batch1.updated
-    totalNotFound += batch1.notFound
-    allErrors.push(...batch1.errors)
-
-    // Mainland Greece
-    console.log(`📦 Processing Mainland Greece (${MAINLAND_GREECE_CITIES.length} cities) - €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)}...`)
-    const batch2 = await processPricingBatch(
-      MAINLAND_GREECE_CITIES,
-      PRICING_CONFIG.mainlandGreece.price,
-      PRICING_CONFIG.mainlandGreece.priceWithoutTax,
-      PRICING_CONFIG.mainlandGreece.minOrderValue,
-      DELIVERY_TIMES.mainlandGreece.en,
-      DELIVERY_TIMES.mainlandGreece.el,
-    )
-    console.log(`   ✅ Created: ${batch2.created}, Updated: ${batch2.updated}, Not Found: ${batch2.notFound}, Errors: ${batch2.errors.length}\n`)
-    totalCreated += batch2.created
-    totalUpdated += batch2.updated
-    totalNotFound += batch2.notFound
-    allErrors.push(...batch2.errors)
-
-    // Greek Islands
-    console.log(`📦 Processing Greek Islands (${ISLAND_CITIES.length} cities) - €${PRICING_CONFIG.islands.price.toFixed(2)}...`)
-    const batch3 = await processPricingBatch(
-      ISLAND_CITIES,
-      PRICING_CONFIG.islands.price,
-      PRICING_CONFIG.islands.priceWithoutTax,
-      PRICING_CONFIG.islands.minOrderValue,
-      DELIVERY_TIMES.islands.en,
-      DELIVERY_TIMES.islands.el,
-    )
-    console.log(`   ✅ Created: ${batch3.created}, Updated: ${batch3.updated}, Not Found: ${batch3.notFound}, Errors: ${batch3.errors.length}\n`)
-    totalCreated += batch3.created
-    totalUpdated += batch3.updated
-    totalNotFound += batch3.notFound
-    allErrors.push(...batch3.errors)
+    console.log(`   ✅ Created: ${batch.created}, Updated: ${batch.updated}, Not Found: ${batch.notFound}, Errors: ${batch.errors.length}\n`)
+    totalCreated += batch.created
+    totalUpdated += batch.updated
+    totalNotFound += batch.notFound
+    allErrors.push(...batch.errors)
 
     // Final summary
     console.log('='.repeat(60))
@@ -494,26 +449,18 @@ async function main() {
     }
 
     // Expected totals
-    const expectedTotal = ATHENS_ATTICA_CITIES.length + MAINLAND_GREECE_CITIES.length + ISLAND_CITIES.length
-    
+    const expectedTotal = GREECE_CITIES.length
+
     console.log(`📈 Expected total records: ${expectedTotal}`)
-    console.log(`   - Athens & Attica: ${ATHENS_ATTICA_CITIES.length} cities`)
-    console.log(`   - Mainland Greece: ${MAINLAND_GREECE_CITIES.length} cities`)
-    console.log(`   - Greek Islands: ${ISLAND_CITIES.length} cities\n`)
+    console.log(`   - Greece: ${GREECE_CITIES.length} cities\n`)
 
     console.log(`📋 Pricing Configuration:`)
-    console.log(`   Athens & Attica:`)
-    console.log(`     - Price: €${PRICING_CONFIG.athensAttica.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.athensAttica.priceWithoutTax.toFixed(2)})`)
-    console.log(`     - Delivery: ${DELIVERY_TIMES.athensAttica.en} / ${DELIVERY_TIMES.athensAttica.el}`)
-    console.log(`   Mainland Greece:`)
-    console.log(`     - Price: €${PRICING_CONFIG.mainlandGreece.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.mainlandGreece.priceWithoutTax.toFixed(2)})`)
-    console.log(`     - Delivery: ${DELIVERY_TIMES.mainlandGreece.en} / ${DELIVERY_TIMES.mainlandGreece.el}`)
-    console.log(`   Greek Islands:`)
-    console.log(`     - Price: €${PRICING_CONFIG.islands.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.islands.priceWithoutTax.toFixed(2)})`)
-    console.log(`     - Delivery: ${DELIVERY_TIMES.islands.en} / ${DELIVERY_TIMES.islands.el}`)
-    console.log(`   Min Order: €${PRICING_CONFIG.athensAttica.minOrderValue.toFixed(2)} (all regions)\n`)
+    console.log(`   Greece (all cities):`)
+    console.log(`     - Price: €${PRICING_CONFIG.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.priceWithoutTax.toFixed(2)})`)
+    console.log(`     - Delivery: ${DELIVERY_TIMES.en} / ${DELIVERY_TIMES.el}`)
+    console.log(`   Min Order: €${PRICING_CONFIG.minOrderValue.toFixed(2)}\n`)
 
-    console.log(`💡 Reminder: Set "Free Delivery Threshold" to €25.00 in Admin > Configurations > Delivery Methods\n`)
+    console.log(`💡 Reminder: Set "Free Delivery Above" to €20.00 in Admin > Configurations > Delivery Methods\n`)
 
   } catch (error: any) {
     console.error('❌ Error:', error.message)

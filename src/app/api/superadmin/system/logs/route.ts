@@ -11,7 +11,7 @@ import { prisma } from '@/lib/prisma'
 //   3. Known exact slugs for common attack paths
 //   4. Prefix rules (., _, :, [ etc.)
 
-const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war)$/i
+const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md)$/i
 
 const spamStructuralPatterns = [
   /^\d+$/,                    // pure numbers: "1", "8080", etc.
@@ -41,6 +41,7 @@ const spamExactSlugs = new Set([
   'install', 'superadmin', 'management', 'secure',
   'getcmd', '_next', '1', 'feed', 'cookie',
   'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
+  'version', 'license', 'changelog', 'readme', 'graphql',
 ])
 
 const isSpamSlug = (s: string | null | undefined): boolean => {

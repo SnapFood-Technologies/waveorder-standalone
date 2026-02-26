@@ -187,7 +187,7 @@ export function StoreAppearance({ businessId }: StoreAppearanceProps) {
           secondaryColor: data.business.secondaryColor,
           fontFamily: data.business.fontFamily,
           whatsappButtonColor: data.business.whatsappButtonColor || data.business.primaryColor,
-          mobileCartStyle: data.business.mobileCartStyle,
+          mobileCartStyle: data.business.mobileCartStyle || 'bar',
           cartBadgeColor: data.business.cartBadgeColor || '#EF4444',
           featuredBadgeColor: data.business.featuredBadgeColor || '#EF4444',
           coverBackgroundSize: data.business.coverBackgroundSize || 'cover',
