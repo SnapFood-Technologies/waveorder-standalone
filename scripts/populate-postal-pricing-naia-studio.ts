@@ -36,39 +36,47 @@ const PRICING_CONFIG = {
 }
 
 /**
- * Delivery time labels (English + Greek)
- * 2-4 business days for all Greece
+ * Delivery time labels by region (from user's cities JSON)
+ * Athens/Attica: 1 day | Mainland: 2-4 days | Islands: 3-5 days
  */
 const DELIVERY_TIMES = {
-  en: '2-4 business days',
-  el: '2-4 εργάσιμες ημέρες',
+  athensAttica: { en: '1 business day', el: '1 εργάσιμη ημέρα' },
+  mainland: { en: '2-4 business days', el: '2-4 εργάσιμες ημέρες' },
+  islands: { en: '3-5 business days', el: '3-5 εργάσιμες ημέρες' },
 }
 
-/**
- * Full list of Greek cities (from cities database)
- */
-const GREECE_CITIES = [
-  'Acharnes', 'Agia Paraskevi', 'Agios Dimitrios', 'Agios Efstratios', 'Agios Nikolaos',
-  'Agrinio', 'Aidipsos', 'Aigio', 'Alexandroupoli', 'Almyros', 'Amaliada', 'Amfissa',
-  'Ampelokipoi', 'Amyntaio', 'Archanes', 'Argos', 'Argostoli', 'Arta', 'Atalanti',
-  'Athens', 'Chalandri', 'Chalkida', 'Chania', 'Chios', 'Corfu', 'Corinth', 'Dafni',
-  'Deskati', 'Didymoteicho', 'Drama', 'Edessa', 'Egaleo', 'Elassona', 'Elounda',
-  'Evosmos', 'Farsala', 'Ferres', 'Filiates', 'Florina', 'Fournoi', 'Galatsi',
-  'Giannitsa', 'Glyfada', 'Grevena', 'Gythio', 'Heraklion', 'Hersonissos', 'Ierapetra',
-  'Igoumenitsa', 'Ikaria', 'Ilio', 'Ilioupoli', 'Ioannina', 'Ios', 'Irakleio', 'Ithaca',
-  'Kalamaria', 'Kalamata', 'Kallithea', 'Karditsa', 'Karpenisi', 'Karystos', 'Kastoria',
-  'Katerini', 'Kavala', 'Kefalonia', 'Keratsini', 'Kifisia', 'Komotini', 'Konitsa',
-  'Kos', 'Kozani', 'Kythira', 'Lamia', 'Larissa', 'Lefkada', 'Lemnos', 'Lesvos',
-  'Livadeia', 'Lixouri', 'Malia', 'Marousi', 'Menemeni', 'Messolonghi', 'Metsovo',
-  'Milos', 'Monemvasia', 'Mykonos', 'Mytilene', 'Nafpaktos', 'Nafplio', 'Naousa',
-  'Naxos', 'Nea Ionia', 'Nea Smyrni', 'Neapoli', 'Nikaia', 'Oinousses', 'Orestiada',
-  'Palaio Faliro', 'Paramythia', 'Parga', 'Paros', 'Patras', 'Paxi', 'Peristeri',
-  'Petroupoli', 'Piraeus', 'Polichni', 'Preveza', 'Psara', 'Ptolemaida', 'Pylaia',
-  'Pyrgos', 'Rethymno', 'Rhodes', 'Sami', 'Samos', 'Santorini', 'Serres', 'Servia',
-  'Siatista', 'Sitia', 'Skiathos', 'Skopelos', 'Soufli', 'Sparta', 'Stavroupoli',
-  'Stylida', 'Sykies', 'Syros', 'Thasos', 'Thebes', 'Thessaloniki', 'Tinos', 'Trikala',
-  'Tripoli', 'Tyrnavos', 'Veria', 'Volos', 'Vyronas', 'Xanthi', 'Zagori', 'Zakynthos',
-  'Zografou',
+// Attica region (from JSON state.name === "Attica") - 1 day
+const ATHENS_ATTICA_CITIES = [
+  'Acharnes', 'Agia Paraskevi', 'Agios Dimitrios', 'Athens', 'Chalandri', 'Dafni',
+  'Egaleo', 'Evosmos', 'Galatsi', 'Glyfada', 'Ilio', 'Ilioupoli', 'Irakleio',
+  'Kallithea', 'Keratsini', 'Kifisia', 'Marousi', 'Nea Ionia', 'Nea Smyrni',
+  'Nikaia', 'Palaio Faliro', 'Peristeri', 'Petroupoli', 'Piraeus', 'Vyronas', 'Zografou',
+]
+
+// Crete, North Aegean, South Aegean, Ionian Islands - 3-5 days
+const ISLAND_CITIES = [
+  'Agios Efstratios', 'Agios Nikolaos', 'Archanes', 'Argostoli', 'Chania', 'Chios',
+  'Corfu', 'Elounda', 'Fournoi', 'Heraklion', 'Hersonissos', 'Ierapetra', 'Ikaria',
+  'Ios', 'Ithaca', 'Kefalonia', 'Kos', 'Kythira', 'Lemnos', 'Lesvos', 'Lixouri',
+  'Malia', 'Milos', 'Monemvasia', 'Mykonos', 'Mytilene', 'Naxos', 'Oinousses',
+  'Paros', 'Paxi', 'Psara', 'Rethymno', 'Rhodes', 'Sami', 'Samos', 'Santorini',
+  'Sitia', 'Skiathos', 'Skopelos', 'Syros', 'Thasos', 'Tinos',
+]
+
+// Central Greece, Eastern Macedonia and Thrace, Epirus, Peloponnese, Thessaly, Western Greece, Western Macedonia, Central Macedonia - 2-4 days
+const MAINLAND_CITIES = [
+  'Aidipsos', 'Aigio', 'Agrinio', 'Alexandroupoli', 'Almyros', 'Amaliada', 'Amfissa',
+  'Ampelokipoi', 'Amyntaio', 'Argos', 'Arta', 'Atalanti', 'Chalkida', 'Corinth',
+  'Deskati', 'Didymoteicho',
+  'Drama', 'Edessa', 'Elassona', 'Farsala', 'Ferres', 'Filiates', 'Florina', 'Giannitsa',
+  'Grevena', 'Gythio', 'Igoumenitsa', 'Ioannina', 'Kalamaria', 'Kalamata', 'Karditsa',
+  'Karpenisi', 'Karystos', 'Kastoria', 'Katerini', 'Kavala', 'Komotini', 'Konitsa',
+  'Kozani', 'Lamia', 'Larissa', 'Lefkada', 'Livadeia', 'Menemeni', 'Messolonghi',
+  'Metsovo', 'Nafpaktos', 'Nafplio', 'Naousa', 'Neapoli', 'Orestiada', 'Paramythia',
+  'Parga', 'Patras', 'Polichni', 'Preveza', 'Ptolemaida', 'Pylaia', 'Pyrgos',
+  'Serres', 'Servia', 'Siatista', 'Soufli', 'Sparta', 'Stavroupoli', 'Stylida',
+  'Sykies', 'Thebes', 'Thessaloniki', 'Trikala', 'Tripoli', 'Tyrnavos', 'Veria',
+  'Volos', 'Xanthi', 'Zagori', 'Zakynthos',
 ]
 
 /**
@@ -291,20 +299,26 @@ async function main() {
     let totalNotFound = 0
     const allErrors: Array<{ city: string; error: string }> = []
 
-    // All Greece - flat €1, 2-4 business days
-    console.log(`📦 Processing Greece (${GREECE_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)} - 2-4 days...`)
-    const batch = await processPricingBatch(
-      GREECE_CITIES,
-      PRICING_CONFIG.price,
-      PRICING_CONFIG.priceWithoutTax,
-      PRICING_CONFIG.minOrderValue,
-      DELIVERY_TIMES.en,
-      DELIVERY_TIMES.el,
-    )
-    console.log(`   ✅ Created: ${batch.created}, Updated: ${batch.updated}, Errors: ${batch.errors.length}\n`)
-    totalCreated += batch.created
-    totalUpdated += batch.updated
-    allErrors.push(...batch.errors)
+    // Athens & Attica - 1 day
+    console.log(`📦 Athens & Attica (${ATHENS_ATTICA_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)} - 1 day`)
+    const b1 = await processPricingBatch(ATHENS_ATTICA_CITIES, PRICING_CONFIG.price, PRICING_CONFIG.priceWithoutTax, PRICING_CONFIG.minOrderValue, DELIVERY_TIMES.athensAttica.en, DELIVERY_TIMES.athensAttica.el)
+    totalCreated += b1.created
+    totalUpdated += b1.updated
+    allErrors.push(...b1.errors)
+
+    // Mainland - 2-4 days
+    console.log(`📦 Mainland Greece (${MAINLAND_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)} - 2-4 days`)
+    const b2 = await processPricingBatch(MAINLAND_CITIES, PRICING_CONFIG.price, PRICING_CONFIG.priceWithoutTax, PRICING_CONFIG.minOrderValue, DELIVERY_TIMES.mainland.en, DELIVERY_TIMES.mainland.el)
+    totalCreated += b2.created
+    totalUpdated += b2.updated
+    allErrors.push(...b2.errors)
+
+    // Islands - 3-5 days
+    console.log(`📦 Greek Islands (${ISLAND_CITIES.length} cities) - €${PRICING_CONFIG.price.toFixed(2)} - 3-5 days`)
+    const b3 = await processPricingBatch(ISLAND_CITIES, PRICING_CONFIG.price, PRICING_CONFIG.priceWithoutTax, PRICING_CONFIG.minOrderValue, DELIVERY_TIMES.islands.en, DELIVERY_TIMES.islands.el)
+    totalCreated += b3.created
+    totalUpdated += b3.updated
+    allErrors.push(...b3.errors)
 
     // Final summary
     console.log('='.repeat(60))
@@ -323,16 +337,12 @@ async function main() {
       console.log('')
     }
 
-    // Expected totals
-    const expectedTotal = GREECE_CITIES.length
+    const expectedTotal = ATHENS_ATTICA_CITIES.length + MAINLAND_CITIES.length + ISLAND_CITIES.length
 
     console.log(`📈 Expected total records: ${expectedTotal}`)
-    console.log(`   - Greece: ${GREECE_CITIES.length} cities\n`)
+    console.log(`   Athens & Attica: ${ATHENS_ATTICA_CITIES.length} (1 day) | Mainland: ${MAINLAND_CITIES.length} (2-4 days) | Islands: ${ISLAND_CITIES.length} (3-5 days)\n`)
 
-    console.log(`📋 Pricing Configuration:`)
-    console.log(`   All Greece: €${PRICING_CONFIG.price.toFixed(2)} (excl. tax: €${PRICING_CONFIG.priceWithoutTax.toFixed(2)})`)
-    console.log(`   Delivery: ${DELIVERY_TIMES.en} / ${DELIVERY_TIMES.el}`)
-    console.log(`   Min Order: €${PRICING_CONFIG.minOrderValue.toFixed(2)}\n`)
+    console.log(`📋 Pricing: €${PRICING_CONFIG.price.toFixed(2)} all Greece | Min Order: €${PRICING_CONFIG.minOrderValue.toFixed(2)}\n`)
 
     console.log(`💡 Reminder: Set "Free Delivery Above" to €20.00 in Admin > Configurations > Delivery Methods\n`)
 
