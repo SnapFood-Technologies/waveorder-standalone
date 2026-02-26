@@ -15,6 +15,7 @@ export async function GET(
     
     // Query parameters for lightweight mode and pagination
     const lightweight = searchParams.get('lightweight') === 'true'
+    const forServices = searchParams.get('forServices') === 'true' // For SALON/SERVICES: count services only
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '500')
 
@@ -131,6 +132,7 @@ export async function GET(
         ...businessFilter,
         categoryId: { not: null }
       }
+      if (forServices) productCountWhere.isService = true
       
       const productCounts = await prisma.product.groupBy({
         by: ['categoryId'],
@@ -148,9 +150,9 @@ export async function GET(
       // Fallback: If groupBy fails, get counts individually (slower but safer)
       console.error('groupBy failed, using fallback:', groupByError)
       for (const category of categories) {
-        const count = await prisma.product.count({
-          where: { ...businessFilter, categoryId: category.id }
-        })
+        const countWhere: any = { ...businessFilter, categoryId: category.id }
+        if (forServices) countWhere.isService = true
+        const count = await prisma.product.count({ where: countWhere })
         categoryProductCounts.set(category.id, count)
       }
     }
@@ -188,8 +190,10 @@ export async function GET(
     })
 
     // Get total unique products count (to avoid double counting from summing categories)
+    const totalCountWhere: any = { ...businessFilter }
+    if (forServices) totalCountWhere.isService = true
     const totalProducts = await prisma.product.count({
-      where: businessFilter
+      where: totalCountWhere
     })
 
     return NextResponse.json({ 

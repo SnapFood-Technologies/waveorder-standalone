@@ -1,5 +1,6 @@
 // src/lib/team-audit.ts
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, extractIPAddress, getActualRequestUrl } from '@/lib/systemLog'
 
 type TeamAuditAction = 
   | 'MEMBER_INVITED'
@@ -19,6 +20,8 @@ interface AuditLogParams {
   details?: Record<string, unknown>
   ipAddress?: string
   userAgent?: string
+  /** When provided, also logs to systemLog for SuperAdmin visibility */
+  request?: Request
 }
 
 /**
@@ -39,6 +42,30 @@ export async function logTeamAudit(params: AuditLogParams) {
         userAgent: params.userAgent
       }
     })
+
+    // Also log to systemLog for SuperAdmin visibility
+    if (params.request) {
+      logSystemEvent({
+        logType: 'team_action',
+        severity: 'info',
+        endpoint: '/api/admin/stores/[businessId]/team',
+        method: 'POST',
+        statusCode: 200,
+        url: getActualRequestUrl(params.request),
+        businessId: params.businessId,
+        errorMessage: params.action.replace(/_/g, ' ').toLowerCase(),
+        ipAddress: params.ipAddress ?? extractIPAddress(params.request),
+        userAgent: params.userAgent ?? (params.request as any).headers?.get?.('user-agent') || undefined,
+        metadata: {
+          actorId: params.actorId,
+          actorEmail: params.actorEmail,
+          action: params.action,
+          targetId: params.targetId,
+          targetEmail: params.targetEmail,
+          details: params.details,
+        },
+      }).catch(() => {})
+    }
   } catch (error) {
     // Log error but don't throw - audit logging should not break the main operation
     console.error('Failed to create audit log:', error)

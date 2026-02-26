@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { stripe, PLANS, type PlanId, createStripeCustomer, createFreeSubscription } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
-import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { logSystemEvent, extractIPAddress, getActualRequestUrl } from '@/lib/systemLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       endpoint: '/api/billing/create-checkout',
       method: 'POST',
       statusCode: 200,
-      url: req.url || '/api/billing/create-checkout',
+      url: getActualRequestUrl(req),
       businessId: businessId,
       errorMessage: `Checkout started: ${planId} (${isAnnual ? 'annual' : 'monthly'})`,
       ipAddress: extractIPAddress(req),

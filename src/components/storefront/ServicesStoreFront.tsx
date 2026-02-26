@@ -20,6 +20,7 @@ import {
   ChevronUp,
   ChevronDown,
   Scissors,
+  Briefcase,
   User,
   CheckCircle,
   Share2,
@@ -1626,6 +1627,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
             type={debouncedSearchTerm && debouncedSearchTerm.trim().length >= 3 ? 'search-empty' : selectedCategory !== 'all' ? 'category-empty' : 'no-services'}
             primaryColor={primaryColor}
             translations={translations}
+            businessType={storeData.businessType}
             onClearSearch={() => {
               setSearchTerm('')
               setDebouncedSearchTerm('')
@@ -1753,7 +1755,11 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
                     
                     {!service.images?.[0] && (
                       <div className="w-20 h-20 ml-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center text-gray-400 flex-shrink-0">
-                        <Scissors className="w-7 h-7" />
+                        {storeData.businessType === 'SERVICES' ? (
+                          <Briefcase className="w-7 h-7" />
+                        ) : (
+                          <Scissors className="w-7 h-7" />
+                        )}
                       </div>
                     )}
                   </div>
@@ -2989,6 +2995,7 @@ function EmptyState({
   type, 
   primaryColor, 
   translations,
+  businessType = 'SALON',
   onClearSearch,
   onShowAll,
   searchTerm
@@ -2996,22 +3003,24 @@ function EmptyState({
   type: 'no-services' | 'category-empty' | 'search-empty'
   primaryColor: string
   translations: any
+  businessType?: string
   onClearSearch?: () => void
   onShowAll?: () => void
   searchTerm?: string
 }) {
+  const ServicesIcon = businessType === 'SERVICES' ? Briefcase : Scissors
   const getEmptyStateContent = () => {
     switch (type) {
       case 'no-services':
         return {
-          icon: Scissors,
+          icon: ServicesIcon,
           title: translations.comingSoon || 'Coming Soon',
           description: translations.checkBackLaterServices || 'Check back later for amazing services!',
           showActions: false
         }
       case 'category-empty':
         return {
-          icon: Scissors,
+          icon: ServicesIcon,
           title: translations.noServicesInCategory || 'No services in this category',
           description: translations.noServicesInCategoryDescription || 'This category is currently empty. Browse other categories or check back later.',
           showActions: true,
@@ -3031,7 +3040,7 @@ function EmptyState({
         }
       default:
         return {
-          icon: Scissors,
+          icon: ServicesIcon,
           title: translations.comingSoon || 'Coming Soon',
           description: translations.checkBackLaterServices || 'Check back later for amazing services!',
           showActions: false

@@ -254,11 +254,12 @@ export async function POST(
     // Log audit event
     await logTeamAudit({
       businessId,
-      actorId: session.user.id,
-      actorEmail: session.user.email || '',
+      actorId: session!.user!.id,
+      actorEmail: session!.user!.email || '',
       action: 'MEMBER_INVITED',
       targetEmail: email,
-      details: { role, invitationId: invitation.id }
+      details: { role, invitationId: invitation.id },
+      request,
     })
 
     return NextResponse.json({

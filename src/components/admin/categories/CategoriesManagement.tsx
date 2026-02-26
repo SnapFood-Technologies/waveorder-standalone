@@ -55,9 +55,11 @@ interface Category {
 
 interface CategoriesPageProps {
     businessId: string
+    /** When true (service-categories page), count services (isService: true) instead of all products */
+    forServiceCategories?: boolean
 }
 
-export default function CategoriesPage({ businessId }: CategoriesPageProps) {
+export default function CategoriesPage({ businessId, forServiceCategories = false }: CategoriesPageProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [totalProducts, setTotalProducts] = useState<number>(0)
   const [loading, setLoading] = useState(true)
@@ -76,7 +78,7 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   useEffect(() => {
     fetchBusinessType()
     fetchCategories()
-  }, [businessId, currentPage])
+  }, [businessId, currentPage, forServiceCategories])
 
   const fetchBusinessType = async () => {
     try {
@@ -93,7 +95,9 @@ export default function CategoriesPage({ businessId }: CategoriesPageProps) {
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/admin/stores/${businessId}/categories?page=${currentPage}&limit=${ITEMS_PER_PAGE}`)
+      const params = new URLSearchParams({ page: String(currentPage), limit: String(ITEMS_PER_PAGE) })
+      if (forServiceCategories) params.set('forServices', 'true')
+      const response = await fetch(`/api/admin/stores/${businessId}/categories?${params}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data.categories)

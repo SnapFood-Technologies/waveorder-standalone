@@ -14,7 +14,7 @@ export default async function ServiceCategoriesPage({ params }: ServiceCategorie
       allowedTypes={['SALON', 'SERVICES']}
       redirectTo={`/admin/stores/${businessId}/product-categories`}
     >
-      <CategoriesManagement businessId={businessId} />
+      <CategoriesManagement businessId={businessId} forServiceCategories />
     </BusinessTypeGuard>
   )
 }

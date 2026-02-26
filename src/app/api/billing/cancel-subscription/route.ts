@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { cancelUserSubscription } from '@/lib/subscription'
 import { sendSubscriptionChangeEmail } from '@/lib/email'
 import { prisma } from '@/lib/prisma'
-import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { logSystemEvent, extractIPAddress, getActualRequestUrl } from '@/lib/systemLog'
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
       endpoint: '/api/billing/cancel-subscription',
       method: 'POST',
       statusCode: 200,
-      url: req.url || '/api/billing/cancel-subscription',
+      url: getActualRequestUrl(req),
       businessId: businessIdForLog,
       errorMessage: `Subscription cancel requested (${oldPlan})`,
       ipAddress: extractIPAddress(req),
