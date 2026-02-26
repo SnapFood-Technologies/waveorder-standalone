@@ -63,9 +63,11 @@ export async function POST(
     
     const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
     const planLimits = getPlanLimits(userPlan)
+    // When manual team creation is enabled, allow team access (5 members) even for PRO
+    const teamMemberLimit = 5
     
-    // Check if plan allows team members
-    if (planLimits.teamMembers === 0) {
+    // Check if plan allows team members (0 for STARTER/PRO unless manual creation enabled)
+    if (planLimits.teamMembers === 0 && !business.enableManualTeamCreation) {
       return NextResponse.json({ 
         message: `Team access is not available on the ${userPlan} plan. Please upgrade to the Business plan to add team members.`,
         code: 'TEAM_ACCESS_NOT_AVAILABLE',
@@ -92,13 +94,13 @@ export async function POST(
     const totalTeamSize = currentTeamCount + pendingInvitations
     
     // Check if user can add more team members
-    if (totalTeamSize >= planLimits.teamMembers) {
+    if (totalTeamSize >= teamMemberLimit) {
       return NextResponse.json({ 
-        message: `Team member limit reached. Your ${userPlan} plan allows up to ${planLimits.teamMembers} team members. You currently have ${currentTeamCount} members and ${pendingInvitations} pending invitations.`,
+        message: `Team member limit reached. Your plan allows up to ${teamMemberLimit} team members. You currently have ${currentTeamCount} members and ${pendingInvitations} pending invitations.`,
         code: 'TEAM_LIMIT_REACHED',
         currentCount: currentTeamCount,
         pendingCount: pendingInvitations,
-        limit: planLimits.teamMembers,
+        limit: teamMemberLimit,
         plan: userPlan
       }, { status: 403 })
     }

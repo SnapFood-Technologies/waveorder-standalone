@@ -102,6 +102,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
   const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
   const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
+  const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
@@ -144,6 +145,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
           setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
           setEnableTeamPaymentTracking(data.business?.enableTeamPaymentTracking || false)
+          setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
@@ -434,9 +436,9 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       },
     ] : []),
     
-    // BUSINESS plan features
+    // BUSINESS plan features (or PRO with manual team creation exception)
     // @ts-ignore
-    ...(subscription.plan === 'BUSINESS' ? [
+    ...((subscription.plan === 'BUSINESS' || enableManualTeamCreation) ? [
       // Team - when payment tracking enabled, show as parent with children; otherwise single link
       // @ts-ignore
       ...(enableTeamPaymentTracking ? [{

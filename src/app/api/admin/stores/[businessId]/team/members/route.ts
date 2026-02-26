@@ -99,17 +99,22 @@ export async function POST(
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
     }
 
-    // Get business owner's plan to check team member limit
-    const businessOwner = await prisma.businessUser.findFirst({
-      where: { businessId, role: 'OWNER' },
-      include: { user: { select: { plan: true } } }
-    })
+    // Get business (for manual team creation exception) and owner's plan
+    const [business, businessOwner] = await Promise.all([
+      prisma.business.findUnique({ where: { id: businessId }, select: { enableManualTeamCreation: true } }),
+      prisma.businessUser.findFirst({
+        where: { businessId, role: 'OWNER' },
+        include: { user: { select: { plan: true } } }
+      })
+    ])
     
     const userPlan = (businessOwner?.user?.plan as 'STARTER' | 'PRO' | 'BUSINESS') || 'STARTER'
     const planLimits = getPlanLimits(userPlan)
+    // When SuperAdmin enables manual team creation, allow PRO businesses team access (5 members)
+    const teamMemberLimit = business?.enableManualTeamCreation ? 5 : planLimits.teamMembers
     
     // Check if plan allows team members
-    if (planLimits.teamMembers === 0) {
+    if (teamMemberLimit === 0) {
       return NextResponse.json({ 
         message: `Team access is not available on the ${userPlan} plan. Please upgrade to the Business plan to add team members.`,
         code: 'TEAM_ACCESS_NOT_AVAILABLE',
@@ -136,13 +141,13 @@ export async function POST(
     const totalTeamSize = currentTeamCount + pendingInvitations
     
     // Check if user can add more team members
-    if (totalTeamSize >= planLimits.teamMembers) {
+    if (totalTeamSize >= teamMemberLimit) {
       return NextResponse.json({ 
-        message: `Team member limit reached. Your ${userPlan} plan allows up to ${planLimits.teamMembers} team members. You currently have ${currentTeamCount} members and ${pendingInvitations} pending invitations.`,
+        message: `Team member limit reached. Your ${userPlan} plan allows up to ${teamMemberLimit} team members. You currently have ${currentTeamCount} members and ${pendingInvitations} pending invitations.`,
         code: 'TEAM_LIMIT_REACHED',
         currentCount: currentTeamCount,
         pendingCount: pendingInvitations,
-        limit: planLimits.teamMembers,
+        limit: teamMemberLimit,
         plan: userPlan
       }, { status: 403 })
     }
