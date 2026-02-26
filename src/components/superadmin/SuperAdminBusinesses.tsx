@@ -176,9 +176,10 @@ export function SuperAdminBusinesses() {
   const [successMessage, setSuccessMessage] = useState<SuccessMessage | null>(null);
   const [impersonateError, setImpersonateError] = useState<string | null>(null);
   const [updatingSubscription, setUpdatingSubscription] = useState(false);
+  const [perPage, setPerPage] = useState(15);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
-    limit: 10,
+    limit: 15,
     total: 0,
     pages: 0
   });
@@ -198,7 +199,7 @@ export function SuperAdminBusinesses() {
   // Fetch businesses
   useEffect(() => {
     fetchBusinesses();
-  }, [debouncedSearchQuery, statusFilter, planFilter, countryFilter, includeTestBusinesses, currentPage]);
+  }, [debouncedSearchQuery, statusFilter, planFilter, countryFilter, includeTestBusinesses, currentPage, perPage]);
 
   const fetchBusinesses = async () => {
     try {
@@ -212,7 +213,7 @@ export function SuperAdminBusinesses() {
         country: countryFilter,
         includeTest: includeTestBusinesses.toString(),
         page: currentPage.toString(),
-        limit: pagination.limit.toString()
+        limit: perPage.toString()
       });
 
       const response = await fetch(`/api/superadmin/businesses?${params}`);
@@ -940,13 +941,29 @@ export function SuperAdminBusinesses() {
             </div>
 
             {/* Pagination */}
-            {pagination.pages > 1 && (
+            {(pagination.pages > 1 || pagination.total > 0) && (
               <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-sm text-gray-700">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
-                    {pagination.total} businesses
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="text-sm text-gray-700">
+                      Showing {((pagination.page - 1) * perPage) + 1} to{' '}
+                      {Math.min(pagination.page * perPage, pagination.total)} of{' '}
+                      {pagination.total} businesses
+                    </div>
+                    <select
+                      value={perPage}
+                      onChange={(e) => {
+                        setPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-gray-500">per page</span>
                   </div>
                   
                   <div className="flex items-center space-x-2">

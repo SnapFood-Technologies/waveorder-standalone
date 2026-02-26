@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const country = searchParams.get('country') || 'all'
     const includeTest = searchParams.get('includeTest') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = parseInt(searchParams.get('limit') || '15')
     const offset = (page - 1) * limit
 
     // Build where conditions
