@@ -60,12 +60,11 @@ export async function GET(
         break
     }
 
-    const [messages, totalCount] = await Promise.all([
+    const wherePeriod = { businessId, createdAt: { gte: startDate, lte: endDate } }
+
+    const [messages, totalCount, tokenAgg] = await Promise.all([
       prisma.aiChatMessage.findMany({
-        where: {
-          businessId,
-          createdAt: { gte: startDate, lte: endDate }
-        },
+        where: wherePeriod,
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: (page - 1) * limit,
@@ -75,14 +74,14 @@ export async function GET(
           content: true,
           sessionId: true,
           feedback: true,
+          tokensUsed: true,
           createdAt: true
         }
       }),
-      prisma.aiChatMessage.count({
-        where: {
-          businessId,
-          createdAt: { gte: startDate, lte: endDate }
-        }
+      prisma.aiChatMessage.count({ where: wherePeriod }),
+      prisma.aiChatMessage.aggregate({
+        where: { ...wherePeriod, role: 'assistant', tokensUsed: { not: null } },
+        _sum: { tokensUsed: true }
       })
     ])
 
@@ -101,6 +100,7 @@ export async function GET(
     const totalConversations = new Set(messages.map((m) => m.sessionId).filter(Boolean)).size
     const thumbsUp = messages.filter((m) => m.feedback === 'thumbs_up').length
     const thumbsDown = messages.filter((m) => m.feedback === 'thumbs_down').length
+    const totalTokensUsed = tokenAgg._sum.tokensUsed ?? 0
 
     return NextResponse.json({
       enabled: true,
@@ -116,7 +116,8 @@ export async function GET(
           totalConversations: totalConversations || Math.ceil(userMessages.length / 2),
           topQuestions: topQuestionsList,
           thumbsUp,
-          thumbsDown
+          thumbsDown,
+          totalTokensUsed
         },
         dateRange: {
           start: startDate.toISOString(),

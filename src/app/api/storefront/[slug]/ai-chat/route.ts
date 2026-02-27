@@ -700,6 +700,7 @@ export async function POST(
           role: 'assistant',
           content: reply,
           sessionId: sessionId || undefined,
+          tokensUsed,
           ipAddress: ipAddress || undefined,
           userAgent
         }

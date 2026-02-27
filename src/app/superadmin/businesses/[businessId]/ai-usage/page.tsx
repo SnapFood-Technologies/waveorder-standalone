@@ -17,7 +17,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Coins
 } from 'lucide-react'
 
 interface Message {
@@ -29,7 +30,7 @@ interface Message {
   createdAt: string
 }
 
-// Group messages by session. Conversations sorted by oldest first (Conversation 1 = first conversation).
+// Group messages by session. Conversations sorted by LATEST first (Conversation 1 = most recent).
 // Messages within each conversation sorted chronologically (user question before AI response).
 function groupMessagesBySession(messages: Message[]): { sessionId: string; messages: Message[] }[] {
   const bySession = new Map<string, Message[]>()
@@ -45,14 +46,13 @@ function groupMessagesBySession(messages: Message[]): { sessionId: string; messa
         const ta = new Date(a.createdAt).getTime()
         const tb = new Date(b.createdAt).getTime()
         if (ta !== tb) return ta - tb
-        // Same timestamp: user before assistant (question before response)
         return a.role === 'user' ? -1 : b.role === 'user' ? 1 : 0
       })
     }))
     .sort((a, b) => {
-      const aFirst = a.messages[0]?.createdAt || ''
-      const bFirst = b.messages[0]?.createdAt || ''
-      return new Date(aFirst).getTime() - new Date(bFirst).getTime()
+      const aLast = a.messages[a.messages.length - 1]?.createdAt || ''
+      const bLast = b.messages[b.messages.length - 1]?.createdAt || ''
+      return new Date(bLast).getTime() - new Date(aLast).getTime()
     })
 }
 
@@ -74,6 +74,7 @@ interface AiChatData {
     topQuestions: TopQuestion[]
     thumbsUp?: number
     thumbsDown?: number
+    totalTokensUsed?: number
   }
   dateRange: { start: string; end: string }
 }
@@ -214,7 +215,7 @@ export default function SuperAdminAiUsagePage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-teal-100 rounded-lg">
@@ -267,6 +268,20 @@ export default function SuperAdminAiUsagePage() {
             <div>
               <p className="text-sm text-gray-600">Thumbs down</p>
               <p className="text-2xl font-bold text-gray-900">{data?.summary.thumbsDown ?? 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Coins className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Tokens used</p>
+              <p className="text-2xl font-bold text-gray-900">{(data?.summary.totalTokensUsed ?? 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                ~${((data?.summary.totalTokensUsed ?? 0) * 0.0000003).toFixed(4)} est.
+              </p>
             </div>
           </div>
         </div>
