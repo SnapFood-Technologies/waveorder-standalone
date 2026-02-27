@@ -157,17 +157,25 @@ export function AiChatBubble({
     scrollToBottom()
   }, [messages])
 
-  // Lock body scroll when modal is open. Use overflow-only (no position:fixed) to avoid
-  // keyboard-induced viewport shift when input is focused on mobile.
+  // Lock body scroll when modal is open (prevents mobile screen shift)
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY
       document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
     } else {
+      const scrollY = document.body.style.top ? parseInt(document.body.style.top, 10) : 0
       document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      if (scrollY) window.scrollTo(0, Math.abs(scrollY))
     }
   }, [isOpen])
-
-  // No auto-focus: prevents mobile keyboard/scroll shift when modal opens
 
   const ChatIcon = aiChatIcon === 'help' ? HelpCircle : aiChatIcon === 'robot' ? Bot : MessageSquare
 
@@ -261,12 +269,12 @@ export function AiChatBubble({
       {/* Chat modal - same pattern as product modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-start justify-center overflow-y-auto pt-4 pb-4"
+          className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-center justify-center p-4"
           onClick={() => setIsOpen(false)}
           aria-label={`${aiChatName} chat modal backdrop`}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-md h-[500px] max-h-[85dvh] flex flex-col overflow-hidden shadow-xl border border-gray-200 shrink-0"
+            className="bg-white rounded-2xl w-full max-w-md h-[500px] max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-200"
             onClick={e => e.stopPropagation()}
             aria-label={`${aiChatName} chat panel`}
           >
