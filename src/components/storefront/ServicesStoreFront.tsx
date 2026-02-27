@@ -112,6 +112,7 @@ interface StoreData {
   serviceAllowAppointmentBooking?: boolean
   serviceAllowRequestByEmail?: boolean
   serviceAllowRequestByWhatsApp?: boolean
+  aiAssistantEnabled?: boolean
 }
 
 interface Service {

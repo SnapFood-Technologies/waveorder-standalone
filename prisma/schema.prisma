@@ -494,7 +494,7 @@ model Business {
   groupsFeatureEnabled      Boolean @default(false)
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
-  aiAssistantEnabled       Boolean @default(false) // AI Store Assistant - Pro/Business or SuperAdmin override
+  aiAssistantEnabled        Boolean @default(false) // AI Store Assistant - Pro/Business or SuperAdmin override
 
   // Search Analytics (SuperAdmin enables, Business Admin views)
   showSearchAnalytics Boolean @default(false) // When enabled, business admin can see search analytics
@@ -636,19 +636,19 @@ model OrderNotification {
 
 // AI Store Assistant - Tracks storefront AI chat messages for admin analytics
 model AiChatMessage {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  businessId  String   @db.ObjectId
-  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  role        String   // "user" | "assistant"
-  content     String   @db.String
-  sessionId   String?  // Anonymous session ID for grouping messages in a conversation
+  role      String // "user" | "assistant"
+  content   String  @db.String
+  sessionId String? // Anonymous session ID for grouping messages in a conversation
 
   // Optional tracking
-  ipAddress   String?
-  userAgent  String?
+  ipAddress String?
+  userAgent String?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([businessId])
   @@index([businessId, createdAt])

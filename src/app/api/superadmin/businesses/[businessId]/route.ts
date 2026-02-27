@@ -291,6 +291,28 @@ export async function GET(
       }) : 0
     ])
 
+    // AI Assistant usage stats
+    const [aiTotalMessages, aiLastMessage, aiUniqueSessions] = await Promise.all([
+      prisma.aiChatMessage.count({ where: { businessId } }),
+      prisma.aiChatMessage.findFirst({
+        where: { businessId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true }
+      }),
+      prisma.aiChatMessage.groupBy({
+        by: ['sessionId'],
+        where: {
+          businessId,
+          sessionId: { not: null }
+        }
+      })
+    ])
+    const aiUsage = {
+      totalMessages: aiTotalMessages,
+      totalConversations: aiUniqueSessions.length,
+      lastUsedAt: aiLastMessage?.createdAt?.toISOString() ?? null
+    }
+
     // Get owner info
     const ownerRelation = (business as any).users.find((u: any) => u.role === 'OWNER')
     const owner = ownerRelation?.user
@@ -429,7 +451,9 @@ export async function GET(
           provisionedAt: domainInfo.domainProvisionedAt?.toISOString() || null,
           lastChecked: domainInfo.domainLastChecked?.toISOString() || null,
           error: domainInfo.domainError
-        }
+        },
+        aiAssistantEnabled: business.aiAssistantEnabled ?? false,
+        aiUsage
       }
     })
   } catch (error) {
