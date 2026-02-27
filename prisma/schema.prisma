@@ -495,6 +495,10 @@ model Business {
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
   aiAssistantEnabled        Boolean @default(false) // AI Store Assistant - Pro/Business or SuperAdmin override
+  aiChatIcon                String? @default("message") // "message" | "help" | "robot"
+  aiChatIconSize            String? @default("medium") // "xs" | "sm" | "medium" | "lg" | "xl"
+  aiChatName                String? @default("AI Assistant")
+  aiChatPosition            String? @default("left") // "left" | "right" - bottom corner
 
   // Search Analytics (SuperAdmin enables, Business Admin views)
   showSearchAnalytics Boolean @default(false) // When enabled, business admin can see search analytics

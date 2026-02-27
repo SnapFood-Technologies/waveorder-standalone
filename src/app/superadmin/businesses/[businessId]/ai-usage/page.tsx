@@ -10,7 +10,10 @@ import {
   AlertCircle,
   BarChart3,
   HelpCircle,
-  Calendar
+  Calendar,
+  Settings,
+  Bot,
+  Zap
 } from 'lucide-react'
 
 interface Message {
@@ -46,6 +49,12 @@ export default function SuperAdminAiUsagePage() {
   const businessId = params.businessId as string
   const [data, setData] = useState<AiChatData | null>(null)
   const [businessName, setBusinessName] = useState<string>('')
+  const [chatConfig, setChatConfig] = useState<{
+    aiChatIcon: string
+    aiChatIconSize: string
+    aiChatName: string
+    aiChatPosition: string
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [enabled, setEnabled] = useState(true)
@@ -72,6 +81,7 @@ export default function SuperAdminAiUsagePage() {
         }
 
         setBusinessName(json.business?.name || '')
+        setChatConfig(json.business?.chatConfig || null)
         setData(json.data)
       } catch (err: any) {
         setError(err.message || 'Failed to load AI chat data')
@@ -195,6 +205,72 @@ export default function SuperAdminAiUsagePage() {
           </div>
         </div>
       </div>
+
+      {/* Chat widget configuration */}
+      {chatConfig && (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Settings className="w-5 h-5 text-teal-600" />
+              Chat Widget Configuration
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">Settings the store has chosen for their AI assistant</p>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <MessageSquare className="w-4 h-4 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Chat name</p>
+                  <p className="text-sm font-medium text-gray-900">{chatConfig.aiChatName}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  {chatConfig.aiChatIcon === 'robot' ? (
+                    <Bot className="w-4 h-4 text-blue-600" />
+                  ) : chatConfig.aiChatIcon === 'help' ? (
+                    <HelpCircle className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4 text-blue-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Icon</p>
+                  <p className="text-sm font-medium text-gray-900 capitalize">{chatConfig.aiChatIcon}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Zap className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Icon size</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {chatConfig.aiChatIconSize === 'xs' ? 'Extra small' :
+                     chatConfig.aiChatIconSize === 'sm' ? 'Small' :
+                     chatConfig.aiChatIconSize === 'medium' ? 'Medium' :
+                     chatConfig.aiChatIconSize === 'lg' ? 'Large' : 'Extra large'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Settings className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Position</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {chatConfig.aiChatPosition === 'left' ? 'Bottom left' : 'Bottom right'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top questions */}
       {data?.summary.topQuestions && data.summary.topQuestions.length > 0 && (

@@ -818,6 +818,10 @@ export async function GET(
       
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
+      aiChatIcon: business.aiChatIcon || 'message',
+      aiChatIconSize: business.aiChatIconSize || 'medium',
+      aiChatName: business.aiChatName || 'AI Assistant',
+      aiChatPosition: business.aiChatPosition || 'left',
       customMenuEnabled: business.customMenuEnabled,
       customMenuItems: business.customMenuItems || [],
       customFilteringEnabled: business.customFilteringEnabled,

@@ -10,8 +10,12 @@ import {
   AlertCircle,
   BarChart3,
   HelpCircle,
-  Calendar
+  Calendar,
+  Settings,
+  X,
+  Bot
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface Message {
   id: string
@@ -41,6 +45,17 @@ interface AiChatData {
   dateRange: { start: string; end: string }
 }
 
+type AiChatIcon = 'message' | 'help' | 'robot'
+type AiChatIconSize = 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
+type AiChatPosition = 'left' | 'right'
+
+interface AiChatSettings {
+  aiChatIcon: AiChatIcon
+  aiChatIconSize: AiChatIconSize
+  aiChatName: string
+  aiChatPosition: AiChatPosition
+}
+
 export default function AiChatPage() {
   const params = useParams()
   const businessId = params.businessId as string
@@ -49,6 +64,31 @@ export default function AiChatPage() {
   const [error, setError] = useState<string | null>(null)
   const [enabled, setEnabled] = useState(true)
   const [period, setPeriod] = useState('month')
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false)
+  const [settings, setSettings] = useState<AiChatSettings>({
+    aiChatIcon: 'message',
+    aiChatIconSize: 'medium',
+    aiChatName: 'AI Assistant',
+    aiChatPosition: 'left'
+  })
+  const [savingSettings, setSavingSettings] = useState(false)
+
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/ai-chat-settings`)
+      if (res.ok) {
+        const json = await res.json()
+        setSettings({
+          aiChatIcon: json.aiChatIcon || 'message',
+          aiChatIconSize: json.aiChatIconSize || 'medium',
+          aiChatName: json.aiChatName || 'AI Assistant',
+          aiChatPosition: json.aiChatPosition || 'left'
+        })
+      }
+    } catch {
+      // Ignore - use defaults
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -70,6 +110,7 @@ export default function AiChatPage() {
         }
 
         setData(json.data)
+        if (json.enabled) fetchSettings()
       } catch (err: any) {
         setError(err.message || 'Failed to load AI chat data')
         setData(null)
@@ -80,6 +121,25 @@ export default function AiChatPage() {
 
     fetchData()
   }, [businessId, period])
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/ai-chat-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to save')
+      toast.success('Chat settings saved')
+      setShowCustomizeModal(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save settings')
+    } finally {
+      setSavingSettings(false)
+    }
+  }
 
   const formatDate = (d: string) => {
     const date = new Date(d)
@@ -136,17 +196,119 @@ export default function AiChatPage() {
             <p className="text-sm text-gray-600 mt-1">Questions customers ask and AI responses</p>
           </div>
         </div>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-        >
-          <option value="today">Today</option>
-          <option value="week">Last 7 days</option>
-          <option value="month">This month</option>
-          <option value="all">All time</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { fetchSettings(); setShowCustomizeModal(true) }}
+            className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-teal-500"
+          >
+            <Settings className="w-4 h-4" />
+            Customize Chat
+          </button>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          >
+            <option value="today">Today</option>
+            <option value="week">Last 7 days</option>
+            <option value="month">This month</option>
+            <option value="all">All time</option>
+          </select>
+        </div>
       </div>
+
+      {/* Customize Chat Modal */}
+      {showCustomizeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCustomizeModal(false)}>
+          <div className="bg-white rounded-xl max-w-md w-full shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Customize Chat Widget</h2>
+              <button onClick={() => setShowCustomizeModal(false)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Chat name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Chat name</label>
+                <input
+                  type="text"
+                  value={settings.aiChatName}
+                  onChange={e => setSettings(s => ({ ...s, aiChatName: e.target.value }))}
+                  placeholder="AI Assistant"
+                  maxLength={50}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              {/* Icon type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                <div className="flex gap-2">
+                  {(['message', 'help', 'robot'] as const).map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setSettings(s => ({ ...s, aiChatIcon: icon }))}
+                      className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-colors ${
+                        settings.aiChatIcon === icon ? 'border-teal-600 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      {icon === 'message' && <MessageSquare className="w-6 h-6 text-gray-600" />}
+                      {icon === 'help' && <HelpCircle className="w-6 h-6 text-gray-600" />}
+                      {icon === 'robot' && <Bot className="w-6 h-6 text-gray-600" />}
+                      <span className="text-xs font-medium capitalize">{icon}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Icon size */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon size</label>
+                <select
+                  value={settings.aiChatIconSize}
+                  onChange={e => setSettings(s => ({ ...s, aiChatIconSize: e.target.value as AiChatIconSize }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="xs">Extra small</option>
+                  <option value="sm">Small</option>
+                  <option value="medium">Medium (default, same as scroll-to-top)</option>
+                  <option value="lg">Large</option>
+                  <option value="xl">Extra large</option>
+                </select>
+              </div>
+
+              {/* Position */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                <select
+                  value={settings.aiChatPosition}
+                  onChange={e => setSettings(s => ({ ...s, aiChatPosition: e.target.value as AiChatPosition }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="left">Bottom left</option>
+                  <option value="right">Bottom right</option>
+                </select>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCustomizeModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={savingSettings}
+                className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50"
+              >
+                {savingSettings ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

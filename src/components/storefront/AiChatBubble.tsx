@@ -1,7 +1,11 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MessageSquare, X, Minus, Send, Loader2 } from 'lucide-react'
+import { MessageSquare, HelpCircle, Bot, X, Send, Loader2 } from 'lucide-react'
+
+export type AiChatIconType = 'message' | 'help' | 'robot'
+export type AiChatIconSizeType = 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
+export type AiChatPositionType = 'left' | 'right'
 
 interface AiChatBubbleProps {
   storeSlug: string
@@ -9,9 +13,14 @@ interface AiChatBubbleProps {
   primaryColor: string
   storefrontLanguage?: string
   businessType?: string
+  aiChatIcon?: AiChatIconType
+  aiChatIconSize?: AiChatIconSizeType
+  aiChatName?: string
+  aiChatPosition?: AiChatPositionType
 }
 
-const SUGGESTED_QUESTIONS: Record<string, string[]> = {
+// Suggested questions by business type and language
+const SUGGESTED_QUESTIONS_EN: Record<string, string[]> = {
   RESTAURANT: ["What's on the menu?", 'Are you open now?', 'How do I order?', 'Do you deliver?'],
   CAFE: ["What's on the menu?", 'Are you open now?', 'How do I order?', 'Do you deliver?'],
   RETAIL: ['What products do you have?', 'Are you open now?', 'How do I order?', 'Do you deliver?'],
@@ -21,14 +30,90 @@ const SUGGESTED_QUESTIONS: Record<string, string[]> = {
   OTHER: ['What do you offer?', 'Are you open now?', 'How do I order?', 'Do you deliver?']
 }
 
-export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLanguage = 'en', businessType = 'OTHER' }: AiChatBubbleProps) {
+const SUGGESTED_QUESTIONS_EL: Record<string, string[]> = {
+  RESTAURANT: ['Τι έχετε στο μενού;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να παραγγείλω;', 'Κάνετε διανομή;'],
+  CAFE: ['Τι έχετε στο μενού;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να παραγγείλω;', 'Κάνετε διανομή;'],
+  RETAIL: ['Τι προϊόντα έχετε;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να παραγγείλω;', 'Κάνετε διανομή;'],
+  GROCERY: ['Τι προϊόντα έχετε;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να παραγγείλω;', 'Κάνετε διανομή;'],
+  SALON: ['Τι υπηρεσίες προσφέρετε;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να κάνω κράτηση;', 'Ποιες είναι οι τιμές σας;'],
+  SERVICES: ['Τι υπηρεσίες προσφέρετε;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να κάνω κράτηση;', 'Ποιες είναι οι τιμές σας;'],
+  OTHER: ['Τι προσφέρετε;', 'Είστε ανοιχτά τώρα;', 'Πώς μπορώ να παραγγείλω;', 'Κάνετε διανομή;']
+}
+
+const SUGGESTED_QUESTIONS_SQ: Record<string, string[]> = {
+  RESTAURANT: ['Çfarë keni në menü?', 'Jeni të hapur tani?', 'Si mund të porosis?', 'A bëni dërgesë?'],
+  CAFE: ['Çfarë keni në menü?', 'Jeni të hapur tani?', 'Si mund të porosis?', 'A bëni dërgesë?'],
+  RETAIL: ['Çfarë produkte keni?', 'Jeni të hapur tani?', 'Si mund të porosis?', 'A bëni dërgesë?'],
+  GROCERY: ['Çfarë produkte keni?', 'Jeni të hapur tani?', 'Si mund të porosis?', 'A bëni dërgesë?'],
+  SALON: ['Çfarë shërbimesh ofroni?', 'Jeni të hapur tani?', 'Si mund të rezervoj?', 'Cilat janë çmimet?'],
+  SERVICES: ['Çfarë shërbimesh ofroni?', 'Jeni të hapur tani?', 'Si mund të rezervoj?', 'Cilat janë çmimet?'],
+  OTHER: ['Çfarë ofroni?', 'Jeni të hapur tani?', 'Si mund të porosis?', 'A bëni dërgesë?']
+}
+
+const SUGGESTED_QUESTIONS_ES: Record<string, string[]> = {
+  RESTAURANT: ['¿Qué tienen en el menú?', '¿Están abiertos ahora?', '¿Cómo puedo pedir?', '¿Hacen entregas?'],
+  CAFE: ['¿Qué tienen en el menú?', '¿Están abiertos ahora?', '¿Cómo puedo pedir?', '¿Hacen entregas?'],
+  RETAIL: ['¿Qué productos tienen?', '¿Están abiertos ahora?', '¿Cómo puedo pedir?', '¿Hacen entregas?'],
+  GROCERY: ['¿Qué productos tienen?', '¿Están abiertos ahora?', '¿Cómo puedo pedir?', '¿Hacen entregas?'],
+  SALON: ['¿Qué servicios ofrecen?', '¿Están abiertos ahora?', '¿Cómo puedo reservar?', '¿Cuáles son los precios?'],
+  SERVICES: ['¿Qué servicios ofrecen?', '¿Están abiertos ahora?', '¿Cómo puedo reservar?', '¿Cuáles son los precios?'],
+  OTHER: ['¿Qué ofrecen?', '¿Están abiertos ahora?', '¿Cómo puedo pedir?', '¿Hacen entregas?']
+}
+
+function getSuggestedQuestions(businessType: string, storefrontLanguage?: string): string[] {
+  const lang = storefrontLanguage || 'en'
+  const isGreek = lang === 'el' || lang === 'gr'
+  const isAlbanian = lang === 'sq' || lang === 'al'
+  const isSpanish = lang === 'es'
+  const base = SUGGESTED_QUESTIONS_EN[businessType] || SUGGESTED_QUESTIONS_EN.OTHER
+  if (isGreek) return SUGGESTED_QUESTIONS_EL[businessType] || SUGGESTED_QUESTIONS_EL.OTHER
+  if (isAlbanian) return SUGGESTED_QUESTIONS_SQ[businessType] || SUGGESTED_QUESTIONS_SQ.OTHER
+  if (isSpanish) return SUGGESTED_QUESTIONS_ES[businessType] || SUGGESTED_QUESTIONS_ES.OTHER
+  return base
+}
+
+const SCROLL_THRESHOLD = 800 // Same as scroll-to-top button
+
+const SIZE_CLASSES: Record<AiChatIconSizeType, { button: string; icon: string }> = {
+  xs: { button: 'w-9 h-9', icon: 'w-4 h-4' },
+  sm: { button: 'w-10 h-10', icon: 'w-5 h-5' },
+  medium: { button: 'w-12 h-12', icon: 'w-5 h-5' },
+  lg: { button: 'w-14 h-14', icon: 'w-6 h-6' },
+  xl: { button: 'w-16 h-16', icon: 'w-7 h-7' }
+}
+
+export function AiChatBubble({
+  storeSlug,
+  storeName,
+  primaryColor,
+  storefrontLanguage = 'en',
+  businessType = 'OTHER',
+  aiChatIcon = 'message',
+  aiChatIconSize = 'medium',
+  aiChatName = 'AI Assistant',
+  aiChatPosition = 'left'
+}: AiChatBubbleProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showBubble, setShowBubble] = useState(false)
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [sessionId] = useState(() => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const sizeClasses = SIZE_CLASSES[aiChatIconSize]
+  const positionClass = aiChatPosition === 'left' ? 'left-5' : 'right-5'
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0
+      setShowBubble(scrollY > SCROLL_THRESHOLD)
+    }
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
 
@@ -40,7 +125,9 @@ export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLan
     if (isOpen) inputRef.current?.focus()
   }, [isOpen])
 
-  const suggestedQuestions = SUGGESTED_QUESTIONS[businessType] || SUGGESTED_QUESTIONS.OTHER
+  const ChatIcon = aiChatIcon === 'help' ? HelpCircle : aiChatIcon === 'robot' ? Bot : MessageSquare
+
+  const suggestedQuestions = getSuggestedQuestions(businessType, storefrontLanguage)
 
   const handleSend = async (text?: string) => {
     const content = (text || input).trim()
@@ -86,33 +173,33 @@ export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLan
 
   return (
     <>
-      {/* Chat bubble button */}
+      {/* Chat bubble button - only visible after scroll (same threshold as scroll-to-top) */}
+      {showBubble && (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-5 z-[45] w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 md:w-14 md:h-14"
+        className={`fixed bottom-6 ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
         style={{ backgroundColor: primaryColor }}
-        aria-label="Chat with store assistant"
+        aria-label={`Chat with ${aiChatName}`}
       >
-        <MessageSquare className="w-6 h-6 text-white" />
+        <ChatIcon className={`${sizeClasses.icon} text-white`} />
       </button>
+      )}
 
-      {/* Chat panel */}
+      {/* Chat modal - same pattern as product modal */}
       {isOpen && (
         <div
-          className="fixed bottom-24 left-5 z-[50] w-[380px] max-w-[calc(100vw-2.5rem)] h-[500px] max-h-[70vh] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-200"
-          aria-label="AI Assistant chat panel"
+          className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-center justify-center p-4"
+          onClick={() => setIsOpen(false)}
+          aria-label={`${aiChatName} chat modal backdrop`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 rounded-t-2xl">
-            <h3 className="font-semibold text-gray-900">AI Assistant</h3>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
-                aria-label="Minimize"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
+          <div
+            className="bg-white rounded-2xl w-full max-w-md h-[500px] max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-200"
+            onClick={e => e.stopPropagation()}
+            aria-label={`${aiChatName} chat panel`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 rounded-t-2xl flex-shrink-0">
+              <h3 className="font-semibold text-gray-900">{aiChatName}</h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-lg hover:bg-gray-100 text-gray-500"
@@ -121,10 +208,9 @@ export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLan
                 <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             <div className="text-sm text-gray-600 bg-gray-100 rounded-lg px-3 py-2 max-w-[85%]">
               {welcomeText}
             </div>
@@ -170,12 +256,12 @@ export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLan
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
+              <div ref={messagesEndRef} />
+            </div>
 
-          {/* Input */}
-          <div className="p-4 border-t border-gray-200 rounded-b-2xl">
-            <div className="flex gap-2">
+            {/* Input */}
+            <div className="p-4 border-t border-gray-200 rounded-b-2xl flex-shrink-0">
+              <div className="flex gap-2">
               <input
                 ref={inputRef}
                 type="text"
@@ -195,8 +281,9 @@ export function AiChatBubble({ storeSlug, storeName, primaryColor, storefrontLan
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Powered by WaveOrder</p>
             </div>
-            <p className="text-xs text-gray-400 mt-2">Powered by WaveOrder</p>
           </div>
         </div>
       )}

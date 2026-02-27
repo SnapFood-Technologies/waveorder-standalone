@@ -113,6 +113,10 @@ interface StoreData {
   serviceAllowRequestByEmail?: boolean
   serviceAllowRequestByWhatsApp?: boolean
   aiAssistantEnabled?: boolean
+  aiChatIcon?: 'message' | 'help' | 'robot'
+  aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
+  aiChatName?: string
+  aiChatPosition?: 'left' | 'right'
 }
 
 interface Service {
@@ -1195,6 +1199,10 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
           primaryColor={primaryColor}
           storefrontLanguage={storeData.storefrontLanguage || storeData.language}
           businessType={storeData.businessType}
+          aiChatIcon={storeData.aiChatIcon}
+          aiChatIconSize={storeData.aiChatIconSize}
+          aiChatName={storeData.aiChatName}
+          aiChatPosition={storeData.aiChatPosition}
         />
       )}
       {/* Error Message */}

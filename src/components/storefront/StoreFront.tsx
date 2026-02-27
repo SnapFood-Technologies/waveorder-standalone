@@ -1842,6 +1842,10 @@ interface StoreData {
   rememberCustomerEnabled?: boolean
   timezone?: string
   aiAssistantEnabled?: boolean
+  aiChatIcon?: 'message' | 'help' | 'robot'
+  aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
+  aiChatName?: string
+  aiChatPosition?: 'left' | 'right'
 }
 
 interface Category {
@@ -3789,6 +3793,10 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           primaryColor={primaryColor}
           storefrontLanguage={storeData.storefrontLanguage || storeData.language}
           businessType={storeData.businessType}
+          aiChatIcon={storeData.aiChatIcon}
+          aiChatIconSize={storeData.aiChatIconSize}
+          aiChatName={storeData.aiChatName}
+          aiChatPosition={storeData.aiChatPosition}
         />
       )}
 
