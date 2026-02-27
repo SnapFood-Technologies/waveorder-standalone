@@ -24,6 +24,26 @@ interface Message {
   createdAt: string
 }
 
+// Group messages by session, sorted by most recent conversation first
+function groupMessagesBySession(messages: Message[]): { sessionId: string; messages: Message[] }[] {
+  const bySession = new Map<string, Message[]>()
+  for (const m of messages) {
+    const key = m.sessionId || `anon-${m.id}`
+    if (!bySession.has(key)) bySession.set(key, [])
+    bySession.get(key)!.push(m)
+  }
+  return Array.from(bySession.entries())
+    .map(([sessionId, msgs]) => ({
+      sessionId,
+      messages: msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    }))
+    .sort((a, b) => {
+      const aLast = a.messages[a.messages.length - 1]?.createdAt || ''
+      const bLast = b.messages[b.messages.length - 1]?.createdAt || ''
+      return new Date(bLast).getTime() - new Date(aLast).getTime()
+    })
+}
+
 interface TopQuestion {
   question: string
   count: number
@@ -292,35 +312,42 @@ export default function SuperAdminAiUsagePage() {
         </div>
       )}
 
-      {/* Message history */}
+      {/* Message history - grouped by session */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Recent Chat History</h2>
-          <p className="text-sm text-gray-600 mt-1">Latest questions and AI responses</p>
+          <p className="text-sm text-gray-600 mt-1">Conversations grouped by session</p>
         </div>
         <div className="divide-y divide-gray-200 max-h-[500px] overflow-y-auto">
           {data?.messages && data.messages.length > 0 ? (
-            data.messages.map((m) => (
-              <div
-                key={m.id}
-                className={`px-6 py-3 ${m.role === 'user' ? 'bg-gray-50' : 'bg-white'}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded ${
-                      m.role === 'user' ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {m.role === 'user' ? 'Customer' : 'AI'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</p>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(m.createdAt)}
-                    </p>
-                  </div>
+            groupMessagesBySession(data.messages).map((session, idx) => (
+              <div key={session.sessionId} className="border-b border-gray-100 last:border-b-0">
+                <div className="px-4 py-2 bg-gray-50 text-xs font-medium text-gray-500">
+                  Conversation {idx + 1} • Started {session.messages[0] ? formatDate(session.messages[0].createdAt) : '—'}
                 </div>
+                {session.messages.map((m) => (
+                  <div
+                    key={m.id}
+                    className={`px-6 py-3 ${m.role === 'user' ? 'bg-gray-50' : 'bg-white'}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded ${
+                          m.role === 'user' ? 'bg-teal-100 text-teal-700' : 'bg-gray-200 text-gray-700'
+                        }`}
+                      >
+                        {m.role === 'user' ? 'Customer' : 'AI'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</p>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(m.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))
           ) : (

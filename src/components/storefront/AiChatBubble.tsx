@@ -121,6 +121,26 @@ export function AiChatBubble({
     scrollToBottom()
   }, [messages])
 
+  // Lock body scroll when modal is open (prevents mobile screen shift)
+  useEffect(() => {
+    if (isOpen) {
+      const scrollY = window.scrollY
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.left = '0'
+      document.body.style.right = '0'
+    } else {
+      const scrollY = document.body.style.top ? parseInt(document.body.style.top, 10) : 0
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.left = ''
+      document.body.style.right = ''
+      if (scrollY) window.scrollTo(0, Math.abs(scrollY))
+    }
+  }, [isOpen])
+
   useEffect(() => {
     if (isOpen) inputRef.current?.focus()
   }, [isOpen])
@@ -171,13 +191,21 @@ export function AiChatBubble({
         ? `¡Hola! Soy el asistente de IA de ${storeName}. Pregúntame sobre productos, horarios o cómo pedir.`
         : `Hi! I'm the AI assistant for ${storeName}. Ask me about our products, hours, or how to order.`
 
+  const poweredByText = storefrontLanguage === 'el'
+    ? 'Με την υποστήριξη της WaveOrder'
+    : storefrontLanguage === 'sq' || storefrontLanguage === 'al'
+      ? 'Mundësuar nga WaveOrder'
+      : storefrontLanguage === 'es'
+        ? 'Desarrollado por WaveOrder'
+        : 'Powered by WaveOrder'
+
   return (
     <>
       {/* Chat bubble button - only visible after scroll (same threshold as scroll-to-top) */}
       {showBubble && (
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
+        className={`fixed bottom-10 ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
         style={{ backgroundColor: primaryColor }}
         aria-label={`Chat with ${aiChatName}`}
       >
@@ -282,7 +310,7 @@ export function AiChatBubble({
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
               </button>
               </div>
-              <p className="text-xs text-gray-400 mt-2">Powered by WaveOrder</p>
+              <p className="text-xs text-gray-400 mt-2">{poweredByText}</p>
             </div>
           </div>
         </div>
