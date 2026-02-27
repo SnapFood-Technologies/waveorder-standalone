@@ -52,9 +52,21 @@ function formatBusinessHours(businessHours: any): string {
     : 'Not specified'
 }
 
+type ProductContext = {
+  name: string
+  price: number
+  category?: string
+  description?: string
+  isService?: boolean
+  serviceDuration?: number
+  variants?: Array<{ name: string; price: number }>
+  modifiers?: Array<{ name: string; price: number }>
+}
+
 function buildSystemPrompt(storeData: {
   name: string
   description?: string
+  address?: string
   businessType: string
   currency: string
   storefrontLanguage: string
@@ -63,13 +75,18 @@ function buildSystemPrompt(storeData: {
   nextOpenTime: string | null
   deliveryEnabled: boolean
   pickupEnabled: boolean
+  dineInEnabled?: boolean
   deliveryFee?: number
   minimumOrder?: number
   freeDeliveryThreshold?: number
   estimatedDeliveryTime?: string
   estimatedPickupTime?: string
   paymentMethods?: string[]
-  products: Array<{ name: string; price: number; category?: string; description?: string }>
+  allowOnlineBooking?: boolean
+  serviceAllowAppointmentBooking?: boolean
+  serviceAllowRequestByEmail?: boolean
+  serviceAllowRequestByWhatsApp?: boolean
+  products: ProductContext[]
 }): string {
   const lang = storeData.storefrontLanguage || 'en'
   const hoursStr = formatBusinessHours(storeData.businessHours)
@@ -77,9 +94,12 @@ function buildSystemPrompt(storeData: {
     ? `Currently OPEN`
     : `Currently CLOSED. Next open: ${storeData.nextOpenTime || 'Unknown'}`
 
+  const isSalonOrServices = storeData.businessType === 'SALON' || storeData.businessType === 'SERVICES'
+
   const deliveryInfo = [
     storeData.deliveryEnabled ? `Delivery: Yes, Fee: ${storeData.currency} ${storeData.deliveryFee ?? 0}` : 'Delivery: No',
     storeData.pickupEnabled ? `Pickup: Yes` : 'Pickup: No',
+    storeData.dineInEnabled ? 'Dine-in: Yes' : '',
     storeData.minimumOrder ? `Minimum order: ${storeData.currency} ${storeData.minimumOrder}` : '',
     storeData.freeDeliveryThreshold ? `Free delivery above: ${storeData.currency} ${storeData.freeDeliveryThreshold}` : '',
     storeData.estimatedDeliveryTime ? `Estimated delivery: ${storeData.estimatedDeliveryTime}` : '',
@@ -92,7 +112,37 @@ function buildSystemPrompt(storeData: {
     ? storeData.paymentMethods.join(', ')
     : 'Cash, Card'
 
-  // Limit products for token budget - summarize by category if many
+  // Ordering instructions per business type
+  let orderingInstructions = 'Order via WhatsApp: message the business on WhatsApp to place an order.'
+  if (isSalonOrServices) {
+    const parts: string[] = []
+    if (storeData.allowOnlineBooking !== false && storeData.serviceAllowAppointmentBooking !== false) {
+      parts.push('Book appointments via WhatsApp or the storefront.')
+    }
+    if (storeData.serviceAllowRequestByEmail || storeData.serviceAllowRequestByWhatsApp) {
+      parts.push('Request a quote by email or WhatsApp via the storefront form.')
+    }
+    orderingInstructions = parts.length > 0 ? parts.join(' ') : 'Book or request services via WhatsApp or the storefront.'
+  }
+
+  // Format product/service for prompt
+  const formatItem = (p: ProductContext): string => {
+    const base = `${p.name}: ${storeData.currency} ${p.price}`
+    const extras: string[] = []
+    if (p.category) extras.push(`(${p.category})`)
+    if (p.isService && p.serviceDuration) extras.push(`${p.serviceDuration} min`)
+    if (p.variants && p.variants.length > 0) {
+      const variantStr = p.variants.map((v) => `${v.name} ${storeData.currency} ${v.price}`).join(', ')
+      extras.push(`Sizes/options: ${variantStr}`)
+    }
+    if (p.modifiers && p.modifiers.length > 0) {
+      const modStr = p.modifiers.map((m) => `${m.name} ${storeData.currency} ${m.price}`).join(', ')
+      extras.push(`Add-ons: ${modStr}`)
+    }
+    if (p.description) extras.push(p.description.slice(0, 60) + (p.description.length > 60 ? '...' : ''))
+    return `- ${base}${extras.length ? ' ' + extras.join(' | ') : ''}`
+  }
+
   let productList: string
   if (storeData.products.length > 100) {
     const byCategory = storeData.products.reduce((acc: Record<string, number>, p) => {
@@ -101,14 +151,16 @@ function buildSystemPrompt(storeData: {
       return acc
     }, {})
     productList = Object.entries(byCategory)
-      .map(([cat, count]) => `- ${cat}: ${count} products`)
+      .map(([cat, count]) => `- ${cat}: ${count} items`)
       .join('\n')
   } else {
     productList = storeData.products
       .slice(0, 80)
-      .map((p) => `- ${p.name}: ${storeData.currency} ${p.price}${p.category ? ` (${p.category})` : ''}${p.description ? ` - ${p.description.slice(0, 80)}...` : ''}`)
+      .map(formatItem)
       .join('\n')
   }
+
+  const sectionTitle = isSalonOrServices ? 'PRODUCTS & SERVICES' : 'PRODUCTS'
 
   return `You are a helpful assistant for ${storeData.name}, a ${storeData.businessType} business on WaveOrder.
 You answer customer questions about the store's products, services, hours, delivery options, and ordering process.
@@ -116,6 +168,7 @@ You answer customer questions about the store's products, services, hours, deliv
 STORE INFORMATION:
 - Name: ${storeData.name}
 - Description: ${storeData.description || 'N/A'}
+- Address: ${storeData.address || 'Not specified'}
 - Type: ${storeData.businessType}
 - Currency: ${storeData.currency}
 - Language: ${lang}
@@ -128,14 +181,16 @@ DELIVERY & ORDERING:
 ${deliveryInfo}
 Payment methods: ${paymentInfo}
 
-PRODUCTS:
-${productList || 'No products listed yet.'}
+HOW TO ORDER: ${orderingInstructions}
+
+${sectionTitle}:
+${productList || 'No items listed yet.'}
 
 RULES:
 - Only answer questions about this store. Politely decline unrelated questions.
-- If asked about a product that doesn't exist, say so honestly.
-- When mentioning products, include the price.
-- If asked how to order, explain the WhatsApp ordering flow (message the business on WhatsApp to place an order).
+- If asked about a product/service that doesn't exist, say so honestly.
+- When mentioning products or services, include the price and duration (for services).
+- If asked how to order or book, explain: ${orderingInstructions}
 - Keep answers concise (2-3 sentences unless more detail is requested).
 - Respond in ${lang === 'el' ? 'Greek' : lang === 'sq' || lang === 'al' ? 'Albanian' : lang === 'es' ? 'Spanish' : 'English'}.
 - Never make up information not provided in the store data.
@@ -190,6 +245,7 @@ export async function POST(
         id: true,
         name: true,
         description: true,
+        address: true,
         businessType: true,
         currency: true,
         storefrontLanguage: true,
@@ -199,6 +255,7 @@ export async function POST(
         aiAssistantEnabled: true,
         deliveryEnabled: true,
         pickupEnabled: true,
+        dineInEnabled: true,
         deliveryFee: true,
         minimumOrder: true,
         freeDeliveryThreshold: true,
@@ -206,7 +263,11 @@ export async function POST(
         estimatedPickupTime: true,
         paymentMethods: true,
         subscriptionPlan: true,
-        isTemporarilyClosed: true
+        isTemporarilyClosed: true,
+        allowOnlineBooking: true,
+        serviceAllowAppointmentBooking: true,
+        serviceAllowRequestByEmail: true,
+        serviceAllowRequestByWhatsApp: true
       }
     })
 
@@ -233,7 +294,11 @@ export async function POST(
         descriptionAl: true,
         descriptionEl: true,
         categoryId: true,
-        category: { select: { name: true } }
+        isService: true,
+        serviceDuration: true,
+        category: { select: { name: true } },
+        variants: { select: { name: true, price: true } },
+        modifiers: { select: { name: true, price: true } }
       },
       take: 200
     })
@@ -242,11 +307,15 @@ export async function POST(
     const useAlbanian = storefrontLang === 'sq' || storefrontLang === 'al'
     const useGreek = storefrontLang === 'el'
 
-    const productList = products.map((p) => ({
+    const productList: ProductContext[] = products.map((p) => ({
       name: useAlbanian && p.nameAl ? p.nameAl : useGreek && p.nameEl ? p.nameEl : p.name,
       price: p.price,
       category: (p.category as { name?: string })?.name,
-      description: useAlbanian && p.descriptionAl ? p.descriptionAl : useGreek && p.descriptionEl ? p.descriptionEl : p.description
+      description: useAlbanian && p.descriptionAl ? p.descriptionAl : useGreek && p.descriptionEl ? p.descriptionEl : p.description,
+      isService: p.isService,
+      serviceDuration: p.serviceDuration ?? undefined,
+      variants: p.variants?.length ? p.variants.map((v) => ({ name: v.name, price: v.price })) : undefined,
+      modifiers: p.modifiers?.length ? p.modifiers.map((m) => ({ name: m.name, price: m.price })) : undefined
     }))
 
     const now = new Date()
@@ -270,6 +339,7 @@ export async function POST(
     const systemPrompt = buildSystemPrompt({
       name: business.name,
       description: business.description || undefined,
+      address: business.address || undefined,
       businessType: business.businessType,
       currency: business.currency,
       storefrontLanguage: storefrontLang,
@@ -278,12 +348,17 @@ export async function POST(
       nextOpenTime,
       deliveryEnabled: business.deliveryEnabled ?? false,
       pickupEnabled: business.pickupEnabled ?? false,
+      dineInEnabled: business.dineInEnabled ?? false,
       deliveryFee: business.deliveryFee ?? undefined,
       minimumOrder: business.minimumOrder ?? undefined,
       freeDeliveryThreshold: business.freeDeliveryThreshold ?? undefined,
       estimatedDeliveryTime: business.estimatedDeliveryTime ?? undefined,
       estimatedPickupTime: business.estimatedPickupTime ?? undefined,
       paymentMethods: business.paymentMethods as string[] | undefined,
+      allowOnlineBooking: business.allowOnlineBooking ?? true,
+      serviceAllowAppointmentBooking: business.serviceAllowAppointmentBooking ?? true,
+      serviceAllowRequestByEmail: business.serviceAllowRequestByEmail ?? false,
+      serviceAllowRequestByWhatsApp: business.serviceAllowRequestByWhatsApp ?? false,
       products: productList
     })
 
