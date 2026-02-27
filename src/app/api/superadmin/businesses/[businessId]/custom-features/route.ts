@@ -37,7 +37,8 @@ export async function GET(
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true,
-        aiAssistantEnabled: true
+        aiAssistantEnabled: true,
+        aiChatModel: true
       }
     })
 
@@ -57,7 +58,8 @@ export async function GET(
         groupsFeatureEnabled: business.groupsFeatureEnabled,
         customMenuEnabled: business.customMenuEnabled,
         customFilteringEnabled: business.customFilteringEnabled,
-        aiAssistantEnabled: business.aiAssistantEnabled
+        aiAssistantEnabled: business.aiAssistantEnabled,
+        aiChatModel: business.aiChatModel
       }
     })
   } catch (error) {
@@ -99,7 +101,8 @@ export async function PATCH(
       groupsFeatureEnabled,
       customMenuEnabled, 
       customFilteringEnabled,
-      aiAssistantEnabled 
+      aiAssistantEnabled,
+      aiChatModel
     } = body
 
     // Validate business exists
@@ -119,6 +122,7 @@ export async function PATCH(
     if (customMenuEnabled !== undefined) updateData.customMenuEnabled = customMenuEnabled
     if (customFilteringEnabled !== undefined) updateData.customFilteringEnabled = customFilteringEnabled
     if (aiAssistantEnabled !== undefined) updateData.aiAssistantEnabled = aiAssistantEnabled
+    if (aiChatModel !== undefined) updateData.aiChatModel = aiChatModel || null
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -132,7 +136,8 @@ export async function PATCH(
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true,
-        aiAssistantEnabled: true
+        aiAssistantEnabled: true,
+        aiChatModel: true
       }
     })
 
@@ -145,7 +150,8 @@ export async function PATCH(
         groupsFeatureEnabled: updatedBusiness.groupsFeatureEnabled,
         customMenuEnabled: updatedBusiness.customMenuEnabled,
         customFilteringEnabled: updatedBusiness.customFilteringEnabled,
-        aiAssistantEnabled: updatedBusiness.aiAssistantEnabled
+        aiAssistantEnabled: updatedBusiness.aiAssistantEnabled,
+        aiChatModel: updatedBusiness.aiChatModel
       }
     })
   } catch (error) {

@@ -495,6 +495,7 @@ model Business {
   customMenuEnabled         Boolean @default(false)
   customFilteringEnabled    Boolean @default(false)
   aiAssistantEnabled        Boolean @default(false) // AI Store Assistant - Pro/Business or SuperAdmin override
+  aiChatModel               String? // "gpt-4o-mini" | "gpt-4o" - SuperAdmin override; null = use AI_CHAT_MODEL env or default
   aiChatIcon                String? @default("message") // "message" | "help" | "robot"
   aiChatIconSize            String? @default("medium") // "xs" | "sm" | "medium" | "lg" | "xl"
   aiChatName                String? @default("AI Assistant")
