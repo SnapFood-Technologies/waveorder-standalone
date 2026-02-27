@@ -3786,7 +3786,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {storeData.aiAssistantEnabled && (
+      {storeData.aiAssistantEnabled && !showCartModal && !showProductModal && !showBusinessInfoModal && !showShareModal && !showSchedulingModal && !showFilterModal && (
         <AiChatBubble
           storeSlug={storeData.slug}
           storeName={storeData.name}
@@ -3797,6 +3797,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           aiChatIconSize={storeData.aiChatIconSize}
           aiChatName={storeData.aiChatName}
           aiChatPosition={storeData.aiChatPosition}
+          bottomOffset={cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'}
         />
       )}
 

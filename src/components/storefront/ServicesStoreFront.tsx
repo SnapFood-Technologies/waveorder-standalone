@@ -1192,7 +1192,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
-      {storeData.aiAssistantEnabled && (
+      {storeData.aiAssistantEnabled && !showBookingModal && !showServiceModal && !showBusinessInfoModal && !showShareModal && !showFilterModal && (
         <AiChatBubble
           storeSlug={storeData.slug}
           storeName={storeData.name}
@@ -1203,6 +1203,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
           aiChatIconSize={storeData.aiChatIconSize}
           aiChatName={storeData.aiChatName}
           aiChatPosition={storeData.aiChatPosition}
+          bottomOffset={bookingItems.length > 0 ? 'bottom-24' : 'bottom-10'}
         />
       )}
       {/* Error Message */}

@@ -17,6 +17,8 @@ interface AiChatBubbleProps {
   aiChatIconSize?: AiChatIconSizeType
   aiChatName?: string
   aiChatPosition?: AiChatPositionType
+  /** Matches scroll-to-top: bottom-24 when cart/booking bar visible, bottom-10 otherwise */
+  bottomOffset?: 'bottom-10' | 'bottom-24'
 }
 
 // Suggested questions by business type and language
@@ -91,16 +93,50 @@ export function AiChatBubble({
   aiChatIcon = 'message',
   aiChatIconSize = 'medium',
   aiChatName = 'AI Assistant',
-  aiChatPosition = 'left'
+  aiChatPosition = 'left',
+  bottomOffset = 'bottom-10'
 }: AiChatBubbleProps) {
+  const storageKey = `ai-chat-${storeSlug}`
+
+  // Persist chat across refresh (same tab). New tab = fresh session (sessionStorage is per-tab).
+  const [sessionId, setSessionId] = useState(() => {
+    if (typeof window === 'undefined') return `sess-${Date.now()}`
+    try {
+      const saved = sessionStorage.getItem(storageKey)
+      if (saved) {
+        const data = JSON.parse(saved)
+        if (data.sessionId) return data.sessionId
+      }
+    } catch {}
+    return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`
+  })
+
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const saved = sessionStorage.getItem(storageKey)
+      if (saved) {
+        const data = JSON.parse(saved)
+        if (data.messages && Array.isArray(data.messages)) return data.messages
+      }
+    } catch {}
+    return []
+  })
+
   const [isOpen, setIsOpen] = useState(false)
   const [showBubble, setShowBubble] = useState(false)
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sessionId] = useState(() => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Save to sessionStorage when messages change (persists across refresh)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ sessionId, messages }))
+    } catch {}
+  }, [sessionId, messages, storageKey])
 
   const sizeClasses = SIZE_CLASSES[aiChatIconSize]
   const positionClass = aiChatPosition === 'left' ? 'left-5' : 'right-5'
@@ -141,9 +177,7 @@ export function AiChatBubble({
     }
   }, [isOpen])
 
-  useEffect(() => {
-    if (isOpen) inputRef.current?.focus()
-  }, [isOpen])
+  // No auto-focus: prevents mobile keyboard/scroll shift when modal opens
 
   const ChatIcon = aiChatIcon === 'help' ? HelpCircle : aiChatIcon === 'robot' ? Bot : MessageSquare
 
@@ -205,7 +239,7 @@ export function AiChatBubble({
       {showBubble && (
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-10 ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
+        className={`fixed ${bottomOffset} ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
         style={{ backgroundColor: primaryColor }}
         aria-label={`Chat with ${aiChatName}`}
       >
