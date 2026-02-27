@@ -362,6 +362,7 @@ export async function GET(
         enableDeliveryManagement: business.enableDeliveryManagement,
         invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: business.packagingTrackingEnabled,
+        internalInvoiceEnabled: business.internalInvoiceEnabled ?? false,
         enableAffiliateSystem: business.enableAffiliateSystem,
         legalPagesEnabled: business.legalPagesEnabled,
         address: business.address,

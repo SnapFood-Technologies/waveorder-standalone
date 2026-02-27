@@ -118,6 +118,7 @@ interface Order {
   invoiceAfm?: string | null  // Tax ID (AFM) - 9 digits
   invoiceCompanyName?: string | null  // Company name
   invoiceTaxOffice?: string | null  // Tax office (ΔΟΥ)
+  invoice?: { id: string; invoiceNumber: string; generatedAt: string } | null  // Internal invoice
   createdAt: string
   updatedAt: string
 }
@@ -199,6 +200,12 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   const [newPackagingNotes, setNewPackagingNotes] = useState('')
   const [addingPackaging, setAddingPackaging] = useState(false)
 
+  // Internal invoice
+  const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(false)
+  const [showGenerateInvoiceModal, setShowGenerateInvoiceModal] = useState(false)
+  const [invoiceNote, setInvoiceNote] = useState('Thank you for your order. This is an internal document for your records.')
+  const [generatingInvoice, setGeneratingInvoice] = useState(false)
+
   useEffect(() => {
     fetchOrder()
     fetchBusinessSettings()
@@ -228,6 +235,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         const data = await response.json()
         setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
         setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
+        setInternalInvoiceEnabled(data.business?.internalInvoiceEnabled || false)
       }
     } catch (error) {
       console.error('Error fetching business settings:', error)
@@ -2161,6 +2169,47 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             </div>
           )}
 
+          {/* Internal Invoice - Generate or View */}
+          {internalInvoiceEnabled && (order.invoice || (
+            (order.status === 'DELIVERED' ||
+              (order.status === 'PICKED_UP' && (order.type === 'PICKUP' || order.type === 'DINE_IN'))) &&
+            order.paymentStatus === 'PAID'
+          )) && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-teal-600" />
+                Internal Invoice
+              </h3>
+              {order.invoice ? (
+                <div className="space-y-2">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-gray-900">Invoice #{order.invoice.invoiceNumber}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Generated {formatDate(order.invoice.generatedAt)}
+                    </p>
+                  </div>
+                  <Link
+                    href={addParams(`/admin/stores/${businessId}/settings/invoices`)}
+                    className="block w-full text-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+                  >
+                    View Invoices
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowGenerateInvoiceModal(true)}
+                  className="w-full flex items-center px-4 py-3 border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors text-teal-700"
+                >
+                  <FileText className="w-5 h-5 mr-3 text-teal-600 flex-shrink-0" />
+                  <div className="text-left">
+                    <div className="text-sm font-medium">Generate Invoice</div>
+                    <div className="text-xs text-gray-600">Create internal invoice for this order</div>
+                  </div>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
@@ -2313,6 +2362,84 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   <Save className="w-4 h-4 mr-2" />
                 )}
                 {updating ? 'Saving...' : 'Save Notes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generate Invoice Modal */}
+      {showGenerateInvoiceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <FileText className="w-5 h-5 text-teal-500 mr-2" />
+                Generate Internal Invoice
+              </h3>
+              <button
+                onClick={() => !generatingInvoice && setShowGenerateInvoiceModal(false)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                disabled={generatingInvoice}
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Create an internal invoice for order #{order.orderNumber}. This document is for your records only and is not a tax invoice.
+            </p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Note (optional)</label>
+              <textarea
+                value={invoiceNote}
+                onChange={(e) => setInvoiceNote(e.target.value)}
+                placeholder="Thank you for your order. This is an internal document for your records."
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                rows={3}
+                disabled={generatingInvoice}
+              />
+            </div>
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowGenerateInvoiceModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={generatingInvoice}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setGeneratingInvoice(true)
+                  try {
+                    const response = await fetch(`/api/admin/stores/${businessId}/orders/${orderId}/invoice`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ note: invoiceNote || undefined })
+                    })
+                    const data = await response.json()
+                    if (response.ok) {
+                      toast.success('Invoice generated successfully')
+                      setShowGenerateInvoiceModal(false)
+                      fetchOrder()
+                    } else {
+                      toast.error(data.error || 'Failed to generate invoice')
+                    }
+                  } catch (error) {
+                    console.error('Error generating invoice:', error)
+                    toast.error('Failed to generate invoice')
+                  } finally {
+                    setGeneratingInvoice(false)
+                  }
+                }}
+                disabled={generatingInvoice}
+                className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {generatingInvoice ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <FileText className="w-4 h-4 mr-2" />
+                )}
+                {generatingInvoice ? 'Generating...' : 'Generate Invoice'}
               </button>
             </div>
           </div>

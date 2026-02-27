@@ -49,7 +49,8 @@ import {
   Briefcase,
   Calendar,
   CalendarClock,
-  Shield
+  Shield,
+  FileText
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -100,6 +101,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showProductionPlanningEnabled, setShowProductionPlanningEnabled] = useState(false)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
+  const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(false)
   const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
   const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
@@ -144,6 +146,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setBusinessType(data.business?.businessType || null)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
           setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
+          setInternalInvoiceEnabled(data.business?.internalInvoiceEnabled || false)
           setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
           setEnableTeamPaymentTracking(data.business?.enableTeamPaymentTracking || false)
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
@@ -637,6 +640,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Legal Pages', 
           href: `${baseUrl}/pages`, 
           icon: Shield, 
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(internalInvoiceEnabled ? [{
+          name: 'Invoices',
+          href: `${baseUrl}/settings/invoices`,
+          icon: FileText,
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

@@ -531,6 +531,9 @@ model Business {
   // Packaging Tracking (SuperAdmin enables)
   packagingTrackingEnabled Boolean @default(false) // When enabled, business admin can track packaging materials, purchases, and usage
 
+  // Internal Invoice System (SuperAdmin enables on Business Details)
+  internalInvoiceEnabled Boolean @default(false) // When enabled, business admin can generate invoices for completed, paid orders
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -575,6 +578,9 @@ model Business {
 
   // AI Store Assistant - chat history for admin analytics
   aiChatMessages AiChatMessage[]
+
+  // Internal Invoice System
+  orderInvoices OrderInvoice[]
 
   // Supplier Payments (for Cost & Margins feature)
   supplierPayments SupplierPayment[]
@@ -1255,6 +1261,7 @@ model Order {
   appointments     Appointment[]
   deliveryEarning  DeliveryEarning?
   affiliateEarning AffiliateEarning?
+  invoice          OrderInvoice?
 
   customerLatitude  Float?
   customerLongitude Float?
@@ -1314,6 +1321,23 @@ model Order {
   @@index([affiliateId])
   @@index([utmSource, utmCampaign])
   @@index([sessionId])
+}
+
+// Internal Invoice - generated for completed, paid orders (internal use only, not tax-related)
+model OrderInvoice {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId    String   @unique @db.ObjectId
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  invoiceNumber String // e.g. INV-2026-0001 (business-scoped, sequential)
+  note          String? // Optional note (footer)
+  generatedAt   DateTime @default(now())
+  generatedById String?  @db.ObjectId
+
+  @@unique([businessId, invoiceNumber])
+  @@index([businessId])
 }
 
 model OrderItem {

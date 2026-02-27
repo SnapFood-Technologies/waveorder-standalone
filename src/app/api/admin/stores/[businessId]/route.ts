@@ -143,6 +143,7 @@ export async function GET(
         enableAffiliateSystem: true, // For Affiliate System feature
         enableTeamPaymentTracking: true, // For Team Payment Tracking feature
         legalPagesEnabled: true, // For Legal Pages feature
+        internalInvoiceEnabled: true, // For Internal Invoice System
         
         // Inventory display
         showStockBadge: true,

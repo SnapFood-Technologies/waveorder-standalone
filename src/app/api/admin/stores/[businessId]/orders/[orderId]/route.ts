@@ -143,6 +143,13 @@ export async function GET(
         deliveryPersonId: true,
         createdAt: true,
         updatedAt: true,
+        invoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+            generatedAt: true
+          }
+        },
         deliveryPerson: {
           select: {
             id: true,
@@ -337,6 +344,7 @@ export async function GET(
         whatsappMessageId: order.whatsappMessageId,
         postalPricingId: order.postalPricingId,
         postalPricing: postalPricing,
+        invoice: (order as any).invoice || null,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt
       },
