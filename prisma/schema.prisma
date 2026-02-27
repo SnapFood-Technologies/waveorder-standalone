@@ -652,6 +652,9 @@ model AiChatMessage {
   // User feedback on assistant responses
   feedback String? // "thumbs_up" | "thumbs_down"
 
+  // Token usage (assistant messages only) - for cost monitoring
+  tokensUsed Int?
+
   // Optional tracking
   ipAddress String?
   userAgent String?

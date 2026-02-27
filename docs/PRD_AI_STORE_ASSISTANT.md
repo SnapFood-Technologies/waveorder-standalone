@@ -1,9 +1,11 @@
 # AI Store Assistant — Product Requirements Document
 
 **Version:** 1.0
-**Date:** February 18, 2026
-**Status:** Draft
+**Date:** February 27, 2026
+**Status:** Implemented ✓
 **Author:** WaveOrder Engineering
+
+> **Implementation note:** All Phase 1 and Phase 2 items are complete. Additional features implemented: conversation storage for analytics, thumbs up/down feedback, Admin AI Chat Analytics page, SuperAdmin AI Usage page, token usage and cost monitoring, chat widget customization (icon, name, position, size).
 
 ---
 
@@ -29,7 +31,7 @@ Many visitors leave without ordering because they can't find what they need fast
 
 - **Conversion lift:** Visitors who engage with the assistant are more likely to place an order
 - **Reduced WhatsApp load:** Common questions (hours, delivery, product availability) are answered automatically
-- **Premium feature:** Drives Business plan upgrades as a high-value differentiator
+- **Premium feature:** Drives Pro and Business plan upgrades as a high-value differentiator
 - **Platform stickiness:** Businesses with AI assistant enabled have a reason to stay on WaveOrder over simpler alternatives
 
 ---
@@ -38,13 +40,13 @@ Many visitors leave without ordering because they can't find what they need fast
 
 ### Goals
 
-- End users see a chat bubble (bottom-left) on storefronts where the feature is enabled
-- End users can ask natural language questions and get instant, accurate answers based on the store's data
-- The AI has full context: products, categories, prices, variants, business hours, delivery options, payment methods, and store policies
-- SuperAdmin can enable/disable the feature per business
-- The assistant uses OpenAI API (GPT) for response generation
-- Conversations are ephemeral (not stored in database) — this is an FAQ tool, not a messaging system
-- The UI matches the storefront's design (uses business primary color, clean bubble style)
+- ✓ End users see a chat bubble (bottom-left) on storefronts where the feature is enabled
+- ✓ End users can ask natural language questions and get instant, accurate answers based on the store's data
+- ✓ The AI has full context: products, categories, prices, variants, business hours, delivery options, payment methods, and store policies
+- ✓ SuperAdmin can enable/disable the feature per business
+- ✓ The assistant uses OpenAI API (GPT) for response generation
+- ✓ Conversations stored for analytics (AiChatMessage model); Admin/SuperAdmin dashboards for usage, feedback, token cost
+- ✓ The UI matches the storefront's design (uses business primary color, clean bubble style)
 
 ### Non-Goals
 
@@ -188,7 +190,7 @@ Using `gpt-4o-mini` pricing:
 
 ## 6. Data Model Changes
 
-### Business Model — New Field
+### Business Model — New Field ✓
 
 ```prisma
 model Business {
@@ -199,17 +201,20 @@ model Business {
 
 Single boolean field, consistent with existing feature flag pattern (`brandsFeatureEnabled`, `legalPagesEnabled`, etc.).
 
-No new models needed. Conversations are ephemeral (client-side only).
+### AiChatMessage Model ✓ (added for analytics)
+
+- Stores user/assistant messages, sessionId, feedback (thumbs up/down), tokensUsed, ipAddress, userAgent
 
 ---
 
 ## 7. API Endpoints
 
-### New Endpoint
+### New Endpoint ✓
 
 | Method | Path | Description | Access |
 |---|---|---|---|
 | POST | `/api/storefront/[slug]/ai-chat` | Send message, get AI response | Public (rate-limited) |
+| POST | `/api/storefront/[slug]/ai-chat-feedback` | Submit thumbs up/down on assistant message | Public |
 
 **Request body:**
 ```json
@@ -236,7 +241,7 @@ No new models needed. Conversations are ephemeral (client-side only).
 - Max 10 messages in conversation context
 - Max 500 characters per user message
 
-### Modified Endpoint
+### Modified Endpoint ✓
 
 | Method | Path | Change |
 |---|---|---|
@@ -347,9 +352,9 @@ Follows the exact same pattern as existing feature toggles (Brands, Collections,
 
 | Feature | Starter | Pro | Business |
 |---|---|---|---|
-| AI Store Assistant | No | No | Yes |
+| AI Store Assistant | No | Yes | Yes |
 
-Business plan exclusive — consistent with the premium positioning of AI features.
+Available on Pro and Business plans — SuperAdmin can enable for eligible businesses.
 
 ---
 
@@ -357,23 +362,23 @@ Business plan exclusive — consistent with the premium positioning of AI featur
 
 ### Phase 1 — Core
 
-- Add `aiAssistantEnabled` field to Business model in Prisma
-- Add toggle to SuperAdmin custom features page
-- Include `aiAssistantEnabled` in storefront API response
-- Build `POST /api/storefront/[slug]/ai-chat` endpoint with OpenAI integration
-- Build system prompt generator that compiles store data into context
-- Build `AiChatBubble` component (bubble + panel + messages)
-- Add to StoreFront.tsx and SalonStoreFront.tsx (conditionally rendered)
-- Rate limiting on the chat endpoint
+- ✓ Add `aiAssistantEnabled` field to Business model in Prisma
+- ✓ Add toggle to SuperAdmin custom features page
+- ✓ Include `aiAssistantEnabled` in storefront API response
+- ✓ Build `POST /api/storefront/[slug]/ai-chat` endpoint with OpenAI integration
+- ✓ Build system prompt generator that compiles store data into context
+- ✓ Build `AiChatBubble` component (bubble + panel + messages)
+- ✓ Add to StoreFront.tsx, SalonStoreFront.tsx, ServicesStoreFront.tsx (conditionally rendered)
+- ✓ Rate limiting on the chat endpoint
 
 ### Phase 2 — Polish
 
-- Suggested question chips based on business type
-- Typing indicator animation
-- Mobile-responsive panel (full-width sheet)
-- Token usage tracking per business (for cost monitoring)
-- Graceful fallback if OpenAI API is down
-- "Powered by WaveOrder" footer branding in chat panel
+- ✓ Suggested question chips based on business type
+- ✓ Typing indicator animation
+- ✓ Mobile-responsive panel (full-width sheet)
+- ✓ Token usage tracking per business (for cost monitoring) — `tokensUsed` stored on `AiChatMessage`, aggregated in Admin/SuperAdmin AI usage pages with estimated cost
+- ✓ Graceful fallback if OpenAI API is down — API returns 500 with user-friendly error; chat displays "Sorry, something went wrong." or "Sorry, I could not connect. Please try again."
+- ✓ "Powered by WaveOrder" footer branding in chat panel
 
 ---
 
@@ -394,9 +399,9 @@ All configuration via environment variables, no hardcoded keys.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| OpenAI API costs scaling with usage | Medium | Use gpt-4o-mini (cheapest); rate limit per IP; Business-plan-only gating limits exposure |
+| OpenAI API costs scaling with usage | Medium | Use gpt-4o-mini (cheapest); rate limit per IP; Pro/Business plan gating limits exposure |
 | AI hallucinating product info | Medium | System prompt explicitly says "never make up information"; only store data is provided as context |
-| OpenAI API downtime | Low | Graceful fallback — hide bubble or show "Assistant temporarily unavailable" |
+| OpenAI API downtime | Low | Graceful fallback — API returns 500; chat displays user-friendly error message |
 | Large catalogs exceeding token limits | Medium | Summarize by category for stores with 500+ products; truncate descriptions |
 | Abuse / spam of the endpoint | Medium | Rate limiting (20 req/min per IP); max message length (500 chars); max conversation length (10 messages) |
 | User asks inappropriate questions | Low | System prompt restricts to store-related topics; OpenAI content filtering handles the rest |
@@ -409,7 +414,7 @@ All configuration via environment variables, no hardcoded keys.
 - **Engagement:** Percentage of storefront visitors who interact with the assistant
 - **Usefulness:** Conversations that lead to an order within the same session
 - **Deflection:** Reduction in basic FAQ-type WhatsApp messages for businesses with assistant enabled
-- **Adoption:** Number of Business plan customers with AI assistant enabled
+- **Adoption:** Number of Pro and Business plan customers with AI assistant enabled
 
 ---
 
@@ -419,7 +424,7 @@ Out of scope for this release, but potential additions:
 
 - **Custom FAQ pairs:** Business owner adds Q&A pairs that the AI prioritizes over generated answers
 - **Multi-language responses:** AI detects user language and responds accordingly
-- **Conversation analytics:** Dashboard showing common questions and AI accuracy
+- ✓ **Conversation analytics:** Admin AI Chat Analytics and SuperAdmin AI Usage pages with messages, feedback, token usage, and cost estimates
 - **Product deep links:** AI responses include clickable links to specific products in the catalog
 - **Voice input:** Microphone button for voice-to-text questions
 - **Integration with WaveOrder Flows:** Hand off complex conversations to the Flows inbox
