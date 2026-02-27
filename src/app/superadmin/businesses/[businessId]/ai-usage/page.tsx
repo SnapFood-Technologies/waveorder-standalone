@@ -29,7 +29,7 @@ interface Message {
   createdAt: string
 }
 
-// Group messages by session. Conversations sorted by oldest first (Conversation 1 = first conversation).
+// Group messages by session. Conversations sorted by LATEST first (Conversation 1 = most recent).
 // Messages within each conversation sorted chronologically (user question before AI response).
 function groupMessagesBySession(messages: Message[]): { sessionId: string; messages: Message[] }[] {
   const bySession = new Map<string, Message[]>()
@@ -45,14 +45,13 @@ function groupMessagesBySession(messages: Message[]): { sessionId: string; messa
         const ta = new Date(a.createdAt).getTime()
         const tb = new Date(b.createdAt).getTime()
         if (ta !== tb) return ta - tb
-        // Same timestamp: user before assistant (question before response)
         return a.role === 'user' ? -1 : b.role === 'user' ? 1 : 0
       })
     }))
     .sort((a, b) => {
-      const aFirst = a.messages[0]?.createdAt || ''
-      const bFirst = b.messages[0]?.createdAt || ''
-      return new Date(aFirst).getTime() - new Date(bFirst).getTime()
+      const aLast = a.messages[a.messages.length - 1]?.createdAt || ''
+      const bLast = b.messages[b.messages.length - 1]?.createdAt || ''
+      return new Date(bLast).getTime() - new Date(aLast).getTime()
     })
 }
 
