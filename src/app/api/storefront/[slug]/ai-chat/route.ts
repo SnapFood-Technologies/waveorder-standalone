@@ -358,6 +358,7 @@ RULES:
 - Only answer questions about this store. Politely decline unrelated questions.
 - If asked about a product/service that doesn't exist, say so honestly.
 - When mentioning products or services, include the price and duration (for services).
+- FORMATTING: When listing products or services, use clear bullet points. Format each item on its own line with a dash, e.g. "- Product Name: EUR 10" or "- Service Name: EUR 20 (30 min)". Put a blank line before the list if it follows introductory text. Do not run multiple items together on one line.
 - If asked how to order or book, explain: ${orderingInstructions}
 - Keep answers concise (2-3 sentences unless more detail is requested).
 - Never make up information not provided in the store data.
@@ -682,7 +683,7 @@ export async function POST(
 
     // Store messages for admin analytics
     const userAgent = request.headers.get('user-agent') || undefined
-    await prisma.$transaction([
+    const [, assistantMsg] = await prisma.$transaction([
       prisma.aiChatMessage.create({
         data: {
           businessId: business.id,
@@ -707,7 +708,8 @@ export async function POST(
 
     return NextResponse.json({
       reply,
-      tokensUsed
+      tokensUsed,
+      messageId: assistantMsg.id
     })
   } catch (error) {
     console.error('AI chat error:', error)

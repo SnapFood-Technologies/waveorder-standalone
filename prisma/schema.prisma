@@ -649,6 +649,9 @@ model AiChatMessage {
   content   String  @db.String
   sessionId String? // Anonymous session ID for grouping messages in a conversation
 
+  // User feedback on assistant responses
+  feedback String? // "thumbs_up" | "thumbs_down"
+
   // Optional tracking
   ipAddress String?
   userAgent String?

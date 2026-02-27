@@ -74,6 +74,7 @@ export async function GET(
           role: true,
           content: true,
           sessionId: true,
+          feedback: true,
           createdAt: true
         }
       }),
@@ -98,6 +99,8 @@ export async function GET(
       .slice(0, 20)
 
     const totalConversations = new Set(messages.map((m) => m.sessionId).filter(Boolean)).size
+    const thumbsUp = messages.filter((m) => m.feedback === 'thumbs_up').length
+    const thumbsDown = messages.filter((m) => m.feedback === 'thumbs_down').length
 
     return NextResponse.json({
       enabled: true,
@@ -111,7 +114,9 @@ export async function GET(
           totalMessages: totalCount,
           totalUserMessages: userMessages.length,
           totalConversations: totalConversations || Math.ceil(userMessages.length / 2),
-          topQuestions: topQuestionsList
+          topQuestions: topQuestionsList,
+          thumbsUp,
+          thumbsDown
         },
         dateRange: {
           start: startDate.toISOString(),

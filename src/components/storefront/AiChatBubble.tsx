@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { MessageSquare, HelpCircle, Bot, X, Send, Loader2 } from 'lucide-react'
+import { MessageSquare, HelpCircle, Bot, X, Send, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react'
 
 export type AiChatIconType = 'message' | 'help' | 'robot'
 export type AiChatIconSizeType = 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
@@ -111,7 +111,7 @@ export function AiChatBubble({
     return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `sess-${Date.now()}`
   })
 
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>(() => {
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; messageId?: string; feedback?: 'thumbs_up' | 'thumbs_down' }>>(() => {
     if (typeof window === 'undefined') return []
     try {
       const saved = sessionStorage.getItem(storageKey)
@@ -157,23 +157,13 @@ export function AiChatBubble({
     scrollToBottom()
   }, [messages])
 
-  // Lock body scroll when modal is open (prevents mobile screen shift)
+  // Lock body scroll when modal is open. Use overflow-only (no position:fixed) to avoid
+  // keyboard-induced viewport shift when input is focused on mobile.
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY
       document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.left = '0'
-      document.body.style.right = '0'
     } else {
-      const scrollY = document.body.style.top ? parseInt(document.body.style.top, 10) : 0
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
-      if (scrollY) window.scrollTo(0, Math.abs(scrollY))
     }
   }, [isOpen])
 
@@ -182,6 +172,21 @@ export function AiChatBubble({
   const ChatIcon = aiChatIcon === 'help' ? HelpCircle : aiChatIcon === 'robot' ? Bot : MessageSquare
 
   const suggestedQuestions = getSuggestedQuestions(businessType, storefrontLanguage)
+
+  const handleFeedback = async (messageIndex: number, feedback: 'thumbs_up' | 'thumbs_down') => {
+    const msg = messages[messageIndex]
+    if (msg.role !== 'assistant' || !msg.messageId || msg.feedback) return
+    setMessages(prev => prev.map((m, i) => i === messageIndex ? { ...m, feedback } : m))
+    try {
+      await fetch(`/api/storefront/${storeSlug}/ai-chat-feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: msg.messageId, feedback })
+      })
+    } catch {
+      setMessages(prev => prev.map((m, i) => i === messageIndex ? { ...m, feedback: undefined } : m))
+    }
+  }
 
   const handleSend = async (text?: string) => {
     const content = (text || input).trim()
@@ -209,9 +214,9 @@ export function AiChatBubble({
         return
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      setMessages(prev => [...prev, { role: 'assistant', content: data.reply, messageId: data.messageId }])
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not connect. Please try again.' }])
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not connect. Please try again.' }] as any)
     } finally {
       setLoading(false)
     }
@@ -256,12 +261,12 @@ export function AiChatBubble({
       {/* Chat modal - same pattern as product modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 z-[50] flex items-start justify-center overflow-y-auto pt-4 pb-4"
           onClick={() => setIsOpen(false)}
           aria-label={`${aiChatName} chat modal backdrop`}
         >
           <div
-            className="bg-white rounded-2xl w-full max-w-md h-[500px] max-h-[85vh] flex flex-col overflow-hidden shadow-xl border border-gray-200"
+            className="bg-white rounded-2xl w-full max-w-md h-[500px] max-h-[85dvh] flex flex-col overflow-hidden shadow-xl border border-gray-200 shrink-0"
             onClick={e => e.stopPropagation()}
             aria-label={`${aiChatName} chat panel`}
           >
@@ -300,10 +305,10 @@ export function AiChatBubble({
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
                     m.role === 'user'
                       ? 'text-white'
                       : 'bg-gray-100 text-gray-900'
@@ -312,6 +317,30 @@ export function AiChatBubble({
                 >
                   {m.content}
                 </div>
+                {m.role === 'assistant' && m.messageId && (
+                  <div className="flex gap-1 mt-1">
+                    <button
+                      onClick={() => handleFeedback(i, 'thumbs_up')}
+                      disabled={!!m.feedback}
+                      className={`p-1 rounded transition-colors ${
+                        m.feedback === 'thumbs_up' ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'
+                      } disabled:opacity-70`}
+                      aria-label="Helpful"
+                    >
+                      <ThumbsUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleFeedback(i, 'thumbs_down')}
+                      disabled={!!m.feedback}
+                      className={`p-1 rounded transition-colors ${
+                        m.feedback === 'thumbs_down' ? 'text-red-600' : 'text-gray-400 hover:text-gray-600'
+                      } disabled:opacity-70`}
+                      aria-label="Not helpful"
+                    >
+                      <ThumbsDown className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
 
