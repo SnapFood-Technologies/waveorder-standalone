@@ -817,6 +817,7 @@ export async function GET(
       showStockBadge: business.showStockBadge ?? false,
       
       // Custom Features
+      aiAssistantEnabled: business.aiAssistantEnabled || false,
       customMenuEnabled: business.customMenuEnabled,
       customMenuItems: business.customMenuItems || [],
       customFilteringEnabled: business.customFilteringEnabled,
