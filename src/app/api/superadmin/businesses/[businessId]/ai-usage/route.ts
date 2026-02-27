@@ -18,7 +18,15 @@ export async function GET(
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { id: true, name: true, aiAssistantEnabled: true }
+      select: {
+        id: true,
+        name: true,
+        aiAssistantEnabled: true,
+        aiChatIcon: true,
+        aiChatIconSize: true,
+        aiChatName: true,
+        aiChatPosition: true
+      }
     })
 
     if (!business) {
@@ -92,7 +100,16 @@ export async function GET(
 
     return NextResponse.json({
       enabled: business.aiAssistantEnabled,
-      business: { id: business.id, name: business.name },
+      business: {
+        id: business.id,
+        name: business.name,
+        chatConfig: {
+          aiChatIcon: business.aiChatIcon || 'message',
+          aiChatIconSize: business.aiChatIconSize || 'medium',
+          aiChatName: business.aiChatName || 'AI Assistant',
+          aiChatPosition: business.aiChatPosition || 'left'
+        }
+      },
       data: {
         messages,
         totalCount,
