@@ -192,9 +192,14 @@ RULES:
 - When mentioning products or services, include the price and duration (for services).
 - If asked how to order or book, explain: ${orderingInstructions}
 - Keep answers concise (2-3 sentences unless more detail is requested).
-- Respond in ${lang === 'el' ? 'Greek' : lang === 'sq' || lang === 'al' ? 'Albanian' : lang === 'es' ? 'Spanish' : 'English'}.
 - Never make up information not provided in the store data.
-- Do not discuss competitor stores or other businesses.`
+- Do not discuss competitor stores or other businesses.
+
+LANGUAGE HANDLING:
+- Store language: ${lang === 'el' ? 'Greek' : lang === 'sq' || lang === 'al' ? 'Albanian' : lang === 'es' ? 'Spanish' : 'English'} (code: ${lang}).
+- If the customer writes in a DIFFERENT language than the store (e.g., English when store is Albanian, or Albanian when store is English), FIRST respond with a short, friendly question in their language: "This store's language is [store language name]. Would you prefer answers in your language or the store language?" Wait for their reply. If they say "my language", "yours", "English", etc., use their language. If they say "store language", "Albanian", etc., use the store language. If unclear, default to their language.
+- If the customer writes in the SAME language as the store, respond directly in that language.
+- If the customer has already chosen a language in a previous message in this conversation, use that choice for all subsequent replies.`
 }
 
 export async function POST(
@@ -311,7 +316,7 @@ export async function POST(
       name: useAlbanian && p.nameAl ? p.nameAl : useGreek && p.nameEl ? p.nameEl : p.name,
       price: p.price,
       category: (p.category as { name?: string })?.name,
-      description: useAlbanian && p.descriptionAl ? p.descriptionAl : useGreek && p.descriptionEl ? p.descriptionEl : p.description,
+      description: (useAlbanian && p.descriptionAl ? p.descriptionAl : useGreek && p.descriptionEl ? p.descriptionEl : p.description) ?? undefined,
       isService: p.isService,
       serviceDuration: p.serviceDuration ?? undefined,
       variants: p.variants?.length ? p.variants.map((v) => ({ name: v.name, price: v.price })) : undefined,

@@ -1841,6 +1841,7 @@ interface StoreData {
   bannerFontSize?: string
   rememberCustomerEnabled?: boolean
   timezone?: string
+  aiAssistantEnabled?: boolean
 }
 
 interface Category {

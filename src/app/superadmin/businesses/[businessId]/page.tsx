@@ -160,6 +160,12 @@ interface BusinessDetails {
   externalSystemEndpoints?: any
   externalBrandIds?: any
   connectedBusinesses?: string[]
+  aiAssistantEnabled?: boolean
+  aiUsage?: {
+    totalMessages: number
+    totalConversations: number
+    lastUsedAt: string | null
+  }
 }
 
 // Helper to check if business is on trial
@@ -853,6 +859,51 @@ export default function BusinessDetailsPage() {
                   </p>
                   <p className="text-xs text-gray-500">Setup Wizard</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Assistant Usage */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-teal-600" />
+                AI Assistant Usage
+              </h2>
+              <Link
+                href={`/superadmin/businesses/${businessId}/ai-usage`}
+                className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 mr-1" />
+                View AI Chat Stats
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <MessageSquare className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{business.aiUsage?.totalMessages ?? 0}</p>
+                <p className="text-xs text-gray-500">Total Messages</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Users className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{business.aiUsage?.totalConversations ?? 0}</p>
+                <p className="text-xs text-gray-500">Conversations</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Clock className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.aiUsage?.lastUsedAt
+                    ? formatDate(business.aiUsage.lastUsedAt)
+                    : 'Never'}
+                </p>
+                <p className="text-xs text-gray-500">Last Used</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.aiAssistantEnabled ? 'Enabled' : 'Disabled'}
+                </p>
+                <p className="text-xs text-gray-500">AI Assistant</p>
               </div>
             </div>
           </div>
