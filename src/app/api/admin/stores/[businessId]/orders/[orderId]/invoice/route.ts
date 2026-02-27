@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 
-const DEFAULT_NOTE = 'Thank you for your order. This is an internal document for your records.'
+const DEFAULT_NOTE = 'This document is for internal record-keeping only. It is not a tax invoice.'
 
 export async function POST(
   request: NextRequest,

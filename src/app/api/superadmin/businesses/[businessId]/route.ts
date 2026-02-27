@@ -364,6 +364,7 @@ export async function GET(
         packagingTrackingEnabled: business.packagingTrackingEnabled,
         internalInvoiceEnabled: business.internalInvoiceEnabled ?? false,
         enableAffiliateSystem: business.enableAffiliateSystem,
+        enableTeamPaymentTracking: business.enableTeamPaymentTracking ?? false,
         legalPagesEnabled: business.legalPagesEnabled,
         address: business.address,
         email: business.email,

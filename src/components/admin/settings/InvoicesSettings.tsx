@@ -3,8 +3,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { FileText, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { FileText, ChevronLeft, ChevronRight, ExternalLink, Eye, Download, Trash2, AlertTriangle } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
+import toast from 'react-hot-toast'
 
 interface Invoice {
   id: string
@@ -44,32 +45,60 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [deleteModalInvoice, setDeleteModalInvoice] = useState<Invoice | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const fetchInvoices = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/invoices?page=${page}&limit=20`
+      )
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to load invoices')
+      }
+      const data = await res.json()
+      setInvoices(data.invoices || [])
+      setTotalPages(data.pagination?.totalPages || 1)
+      setTotal(data.pagination?.total || 0)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load invoices')
+      setInvoices([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await fetch(
-          `/api/admin/stores/${businessId}/invoices?page=${page}&limit=20`
-        )
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          throw new Error(data.error || 'Failed to load invoices')
-        }
-        const data = await res.json()
-        setInvoices(data.invoices || [])
-        setTotalPages(data.pagination?.totalPages || 1)
-        setTotal(data.pagination?.total || 0)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load invoices')
-        setInvoices([])
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchInvoices()
   }, [businessId, page])
+
+  const handleDeleteInvoice = async () => {
+    if (!deleteModalInvoice) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/invoices/${deleteModalInvoice.id}`, {
+        method: 'DELETE'
+      })
+      if (res.ok) {
+        toast.success('Invoice deleted')
+        setDeleteModalInvoice(null)
+        fetchInvoices()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || 'Failed to delete invoice')
+      }
+    } catch {
+      toast.error('Failed to delete invoice')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const invoiceViewUrl = (inv: Invoice, print = false) =>
+    addParams(`/admin/stores/${businessId}/invoices/${inv.id}${print ? '?print=1' : ''}`)
 
   return (
     <div className="space-y-6">
@@ -152,13 +181,41 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(inv.total)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Link
-                        href={addParams(`/admin/stores/${businessId}/orders/${inv.orderId}`)}
-                        className="text-teal-600 hover:text-teal-700 font-medium"
-                      >
-                        View Order
-                      </Link>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={invoiceViewUrl(inv)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                          title="View invoice"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={invoiceViewUrl(inv, true)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="Download (Print/Save as PDF)"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={addParams(`/admin/stores/${businessId}/orders/${inv.orderId}`)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="View order"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => setDeleteModalInvoice(inv)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete invoice"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -191,6 +248,41 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Invoice</h3>
+                <p className="text-gray-600">
+                  Are you sure you want to delete invoice <strong>{deleteModalInvoice.invoiceNumber}</strong>? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteModalInvoice(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteInvoice}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Invoice'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

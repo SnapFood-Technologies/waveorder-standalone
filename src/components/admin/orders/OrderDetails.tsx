@@ -26,7 +26,10 @@ import {
   UtensilsCrossed,
   Trash2,
   Receipt,
-  FastForward
+  FastForward,
+  Eye,
+  Download,
+  List
 } from 'lucide-react'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
@@ -203,7 +206,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   // Internal invoice
   const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(false)
   const [showGenerateInvoiceModal, setShowGenerateInvoiceModal] = useState(false)
-  const [invoiceNote, setInvoiceNote] = useState('Thank you for your order. This is an internal document for your records.')
+  const [invoiceNote, setInvoiceNote] = useState('This document is for internal record-keeping only. It is not a tax invoice.')
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
   useEffect(() => {
@@ -2181,19 +2184,40 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 Internal Invoice
               </h3>
               {order.invoice ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <p className="text-sm font-medium text-gray-900">Invoice #{order.invoice.invoiceNumber}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       Generated {formatDate(order.invoice.generatedAt)}
                     </p>
                   </div>
-                  <Link
-                    href={addParams(`/admin/stores/${businessId}/settings/invoices`)}
-                    className="block w-full text-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
-                  >
-                    View Invoices
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={addParams(`/admin/stores/${businessId}/invoices/${order.invoice.id}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
+                    </Link>
+                    <Link
+                      href={addParams(`/admin/stores/${businessId}/invoices/${order.invoice.id}?print=1`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </Link>
+                    <Link
+                      href={addParams(`/admin/stores/${businessId}/settings/invoices`)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      <List className="w-4 h-4 mr-2" />
+                      View all invoices
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -2393,7 +2417,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               <textarea
                 value={invoiceNote}
                 onChange={(e) => setInvoiceNote(e.target.value)}
-                placeholder="Thank you for your order. This is an internal document for your records."
+                placeholder="This document is for internal record-keeping only. It is not a tax invoice."
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
                 rows={3}
                 disabled={generatingInvoice}
