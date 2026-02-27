@@ -203,7 +203,7 @@ export async function POST(
 ) {
   try {
     const { slug } = await context.params
-    const ipAddress = extractIPAddress(request)
+    const ipAddress = extractIPAddress(request) ?? 'unknown'
 
     if (!checkRateLimit(ipAddress)) {
       return NextResponse.json(
