@@ -46,6 +46,7 @@ import {
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import LegalPagesModal from './LegalPagesModal'
+import { AiChatBubble } from './AiChatBubble'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { PhoneInput } from '../site/PhoneInput'
 import { encodeBase62, decodeBase62, isValidBase62 } from '@/utils/base62'
@@ -106,6 +107,7 @@ interface StoreData {
   bannerIcon?: string | null
   bannerFontSize?: string
   rememberCustomerEnabled?: boolean
+  aiAssistantEnabled?: boolean
 }
 
 interface Service {
@@ -1118,6 +1120,15 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
+      {storeData.aiAssistantEnabled && (
+        <AiChatBubble
+          storeSlug={storeData.slug}
+          storeName={storeData.name}
+          primaryColor={primaryColor}
+          storefrontLanguage={storeData.storefrontLanguage || storeData.language}
+          businessType={storeData.businessType}
+        />
+      )}
       {/* Error Message */}
       {errorMessage && (
         <ErrorMessage

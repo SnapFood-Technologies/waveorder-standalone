@@ -104,6 +104,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
+  const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -147,6 +148,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setEnableTeamPaymentTracking(data.business?.enableTeamPaymentTracking || false)
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
+          setAiAssistantEnabled(data.business?.aiAssistantEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -434,6 +436,14 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: BarChart3, 
         requiredPlan: 'PRO' as Plan
       },
+      // AI Chat - only when AI Store Assistant is enabled
+      // @ts-ignore
+      ...(aiAssistantEnabled ? [{
+        name: 'AI Chat',
+        href: `${baseUrl}/ai-chat`,
+        icon: MessageSquare,
+        requiredPlan: 'PRO' as Plan
+      }] : []),
     ] : []),
     
     // BUSINESS plan features (or PRO with manual team creation exception)

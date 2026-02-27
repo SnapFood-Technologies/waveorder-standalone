@@ -133,6 +133,7 @@ export async function GET(
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
         customFilteringEnabled: true,
+        aiAssistantEnabled: true,
         happyHourEnabled: true,
         showCostPrice: true, // For Cost & Margins feature
         showProductionPlanning: true, // For Production Queue feature

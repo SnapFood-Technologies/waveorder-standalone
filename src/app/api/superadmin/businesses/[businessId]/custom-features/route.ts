@@ -36,7 +36,8 @@ export async function GET(
         collectionsFeatureEnabled: true,
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
-        customFilteringEnabled: true
+        customFilteringEnabled: true,
+        aiAssistantEnabled: true
       }
     })
 
@@ -51,11 +52,12 @@ export async function GET(
         name: business.name
       },
       features: {
-      brandsFeatureEnabled: business.brandsFeatureEnabled,
-      collectionsFeatureEnabled: business.collectionsFeatureEnabled,
-      groupsFeatureEnabled: business.groupsFeatureEnabled,
-      customMenuEnabled: business.customMenuEnabled,
-      customFilteringEnabled: business.customFilteringEnabled
+        brandsFeatureEnabled: business.brandsFeatureEnabled,
+        collectionsFeatureEnabled: business.collectionsFeatureEnabled,
+        groupsFeatureEnabled: business.groupsFeatureEnabled,
+        customMenuEnabled: business.customMenuEnabled,
+        customFilteringEnabled: business.customFilteringEnabled,
+        aiAssistantEnabled: business.aiAssistantEnabled
       }
     })
   } catch (error) {
@@ -96,7 +98,8 @@ export async function PATCH(
       collectionsFeatureEnabled, 
       groupsFeatureEnabled,
       customMenuEnabled, 
-      customFilteringEnabled 
+      customFilteringEnabled,
+      aiAssistantEnabled 
     } = body
 
     // Validate business exists
@@ -115,6 +118,7 @@ export async function PATCH(
     if (groupsFeatureEnabled !== undefined) updateData.groupsFeatureEnabled = groupsFeatureEnabled
     if (customMenuEnabled !== undefined) updateData.customMenuEnabled = customMenuEnabled
     if (customFilteringEnabled !== undefined) updateData.customFilteringEnabled = customFilteringEnabled
+    if (aiAssistantEnabled !== undefined) updateData.aiAssistantEnabled = aiAssistantEnabled
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -127,7 +131,8 @@ export async function PATCH(
         collectionsFeatureEnabled: true,
         groupsFeatureEnabled: true,
         customMenuEnabled: true,
-        customFilteringEnabled: true
+        customFilteringEnabled: true,
+        aiAssistantEnabled: true
       }
     })
 
@@ -139,7 +144,8 @@ export async function PATCH(
         collectionsFeatureEnabled: updatedBusiness.collectionsFeatureEnabled,
         groupsFeatureEnabled: updatedBusiness.groupsFeatureEnabled,
         customMenuEnabled: updatedBusiness.customMenuEnabled,
-        customFilteringEnabled: updatedBusiness.customFilteringEnabled
+        customFilteringEnabled: updatedBusiness.customFilteringEnabled,
+        aiAssistantEnabled: updatedBusiness.aiAssistantEnabled
       }
     })
   } catch (error) {

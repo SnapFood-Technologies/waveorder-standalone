@@ -51,6 +51,7 @@ import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import { PhoneInput } from '../site/PhoneInput'
 import LegalPagesModal from './LegalPagesModal'
+import { AiChatBubble } from './AiChatBubble'
 
 // Google Places API hook
 const useGooglePlaces = () => {
@@ -3780,6 +3781,15 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
+      {storeData.aiAssistantEnabled && (
+        <AiChatBubble
+          storeSlug={storeData.slug}
+          storeName={storeData.name}
+          primaryColor={primaryColor}
+          storefrontLanguage={storeData.storefrontLanguage || storeData.language}
+          businessType={storeData.businessType}
+        />
+      )}
 
       {/* Header Section - FIXED COVER IMAGE */}
       <div className="bg-white">
