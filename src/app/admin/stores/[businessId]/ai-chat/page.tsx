@@ -472,9 +472,9 @@ export default function AiChatPage() {
                             {m.role === 'assistant' && m.feedback && (
                               <span className="text-xs flex items-center gap-1">
                                 {m.feedback === 'thumbs_up' ? (
-                                  <ThumbsUp className="w-3.5 h-3.5 text-green-600" title="Thumbs up" />
+                                  <ThumbsUp className="w-3.5 h-3.5 text-green-600" />
                                 ) : (
-                                  <ThumbsDown className="w-3.5 h-3.5 text-red-600" title="Thumbs down" />
+                                  <ThumbsDown className="w-3.5 h-3.5 text-red-600" />
                                 )}
                                 <span className="text-gray-500">{m.feedback === 'thumbs_up' ? 'Helpful' : 'Not helpful'}</span>
                               </span>
