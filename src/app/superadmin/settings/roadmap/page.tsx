@@ -282,8 +282,8 @@ export default function RoadmapPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {(['IN_PROGRESS', 'PLANNED', 'THINKING', 'IDEA'] as const).map(status => {
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {(['IN_PROGRESS', 'PLANNED', 'THINKING', 'IDEA', 'COMPLETED'] as const).map(status => {
           const count = items.filter(i => i.status === status).length
           const config = statusConfig[status]
           return (
