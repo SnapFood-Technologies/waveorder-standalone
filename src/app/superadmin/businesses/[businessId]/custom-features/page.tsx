@@ -16,6 +16,27 @@ import {
   MessageSquare
 } from 'lucide-react'
 
+const AI_CHAT_MODELS = [
+  {
+    id: '',
+    label: 'Default (from env)',
+    cost: 'Uses AI_CHAT_MODEL env or gpt-4o-mini',
+    benefits: 'Platform default'
+  },
+  {
+    id: 'gpt-4o-mini',
+    label: 'GPT-4o Mini',
+    cost: '~$0.15/1M input, ~$0.60/1M output tokens',
+    benefits: 'Fast, low cost, good for simple FAQs'
+  },
+  {
+    id: 'gpt-4o',
+    label: 'GPT-4o',
+    cost: '~10x higher than mini',
+    benefits: 'Better reasoning, nuance, complex questions'
+  }
+] as const
+
 interface CustomFeatures {
   brandsFeatureEnabled: boolean
   collectionsFeatureEnabled: boolean
@@ -23,6 +44,7 @@ interface CustomFeatures {
   customMenuEnabled: boolean
   customFilteringEnabled: boolean
   aiAssistantEnabled: boolean
+  aiChatModel: string | null
 }
 
 interface Business {
@@ -42,7 +64,8 @@ export default function ManageCustomFeaturesPage() {
     groupsFeatureEnabled: false,
     customMenuEnabled: false,
     customFilteringEnabled: false,
-    aiAssistantEnabled: false
+    aiAssistantEnabled: false,
+    aiChatModel: null
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -331,6 +354,34 @@ export default function ManageCustomFeaturesPage() {
                     <span className="px-2 py-1 bg-gray-100 rounded">Pro+</span>
                     <span className="px-2 py-1 bg-gray-100 rounded">Storefront Chat</span>
                   </div>
+                  {features.aiAssistantEnabled && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">AI Model (override)</label>
+                      <p className="text-xs text-gray-500 mb-2">
+                        If no model is chosen, gpt-4o-mini is used as default.
+                      </p>
+                      <select
+                        value={features.aiChatModel ?? ''}
+                        onChange={(e) => setFeatures((prev) => ({ ...prev, aiChatModel: e.target.value || null }))}
+                        className="block w-full max-w-xs rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:ring-teal-500"
+                      >
+                        {AI_CHAT_MODELS.map((m) => (
+                          <option key={m.id || 'default'} value={m.id}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                      {(() => {
+                        const selected = AI_CHAT_MODELS.find((m) => m.id === (features.aiChatModel || ''))
+                        return selected ? (
+                          <div className="mt-2 space-y-1 text-xs text-gray-500">
+                            <p><span className="font-medium">Cost:</span> {selected.cost}</p>
+                            <p><span className="font-medium">Benefits:</span> {selected.benefits}</p>
+                          </div>
+                        ) : null
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -474,6 +525,19 @@ export default function ManageCustomFeaturesPage() {
                   {features.aiAssistantEnabled ? 'ON' : 'OFF'}
                 </span>
               </div>
+              {features.aiAssistantEnabled && (
+                <div className="flex items-center justify-between text-sm pl-4 border-l-2 border-gray-100">
+                  <span className="text-gray-500 text-xs">Model</span>
+                  <span className="text-xs text-gray-600">
+                    {AI_CHAT_MODELS.find((m) => m.id === (features.aiChatModel || ''))?.label ?? 'Default'}
+                  </span>
+                </div>
+              )}
+              {features.aiAssistantEnabled && features.aiChatModel && (
+                <div className="flex items-center justify-between text-sm pl-2 border-l-2 border-indigo-200">
+                  <span className="text-gray-500 text-xs">Model: {AI_CHAT_MODELS.find((m) => m.id === features.aiChatModel)?.label || features.aiChatModel}</span>
+                </div>
+              )}
             </div>
           </div>
 

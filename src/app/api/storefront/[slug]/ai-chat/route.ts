@@ -73,6 +73,11 @@ function buildSystemPrompt(storeData: {
   businessHours: any
   isOpen: boolean
   nextOpenTime: string | null
+  isTemporarilyClosed?: boolean
+  closureReason?: string | null
+  closureMessage?: string | null
+  closureStartDate?: Date | null
+  closureEndDate?: Date | null
   deliveryEnabled: boolean
   pickupEnabled: boolean
   dineInEnabled?: boolean
@@ -81,7 +86,10 @@ function buildSystemPrompt(storeData: {
   freeDeliveryThreshold?: number
   estimatedDeliveryTime?: string
   estimatedPickupTime?: string
+  deliveryRadius?: number
+  shippingCountries?: string[]
   paymentMethods?: string[]
+  paymentInstructions?: string | null
   allowOnlineBooking?: boolean
   serviceAllowAppointmentBooking?: boolean
   serviceAllowRequestByEmail?: boolean
@@ -90,9 +98,19 @@ function buildSystemPrompt(storeData: {
 }): string {
   const lang = storeData.storefrontLanguage || 'en'
   const hoursStr = formatBusinessHours(storeData.businessHours)
-  const openStatus = storeData.isOpen
+  let openStatus = storeData.isOpen
     ? `Currently OPEN`
     : `Currently CLOSED. Next open: ${storeData.nextOpenTime || 'Unknown'}`
+  if (storeData.isTemporarilyClosed && (storeData.closureReason || storeData.closureMessage || storeData.closureEndDate)) {
+    const parts: string[] = []
+    if (storeData.closureReason) parts.push(`Reason: ${storeData.closureReason}`)
+    if (storeData.closureMessage) parts.push(storeData.closureMessage)
+    if (storeData.closureEndDate) {
+      const endStr = storeData.closureEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      parts.push(`Reopening: ${endStr}`)
+    }
+    openStatus += `\nTemporary closure: ${parts.join('. ')}`
+  }
 
   const isSalonOrServices = storeData.businessType === 'SALON' || storeData.businessType === 'SERVICES'
 
@@ -103,30 +121,27 @@ function buildSystemPrompt(storeData: {
     storeData.minimumOrder ? `Minimum order: ${storeData.currency} ${storeData.minimumOrder}` : '',
     storeData.freeDeliveryThreshold ? `Free delivery above: ${storeData.currency} ${storeData.freeDeliveryThreshold}` : '',
     storeData.estimatedDeliveryTime ? `Estimated delivery: ${storeData.estimatedDeliveryTime}` : '',
-    storeData.estimatedPickupTime ? `Estimated pickup: ${storeData.estimatedPickupTime}` : ''
+    storeData.estimatedPickupTime ? `Estimated pickup: ${storeData.estimatedPickupTime}` : '',
+    storeData.deliveryRadius != null && storeData.deliveryRadius > 0 ? `Delivery radius: ${storeData.deliveryRadius} km` : '',
+    storeData.shippingCountries?.length ? `Ships to: ${storeData.shippingCountries.join(', ')}` : ''
   ]
     .filter(Boolean)
     .join('\n')
 
-  const paymentInfo = storeData.paymentMethods?.length
-    ? storeData.paymentMethods.join(', ')
-    : 'Cash, Card'
+  const paymentMethodsStr = storeData.paymentMethods?.length ? storeData.paymentMethods.join(', ') : 'Cash, Card'
+  const paymentInfo = storeData.paymentInstructions
+    ? `${paymentMethodsStr}. ${storeData.paymentInstructions}`
+    : paymentMethodsStr
 
-  // Ordering instructions per business type
-  let orderingInstructions = 'Order via WhatsApp: message the business on WhatsApp to place an order.'
-  if (isSalonOrServices) {
-    const parts: string[] = []
-    if (storeData.allowOnlineBooking !== false && storeData.serviceAllowAppointmentBooking !== false) {
-      parts.push('Book appointments via WhatsApp or the storefront.')
-    }
-    if (storeData.serviceAllowRequestByEmail || storeData.serviceAllowRequestByWhatsApp) {
-      parts.push('Request a quote by email or WhatsApp via the storefront form.')
-    }
-    orderingInstructions = parts.length > 0 ? parts.join(' ') : 'Book or request services via WhatsApp or the storefront.'
-  }
+  // Ordering/booking instructions - actual storefront flow
+  const orderFlowSteps =
+    '1) Browse and pick a product or service. 2) Tap it to open the detail modal. 3) Add to cart (or Add to booking for services). 4) Fill in the required information (delivery address, time, contact, etc.). 5) Submit - your order/booking will be sent to the business via WhatsApp. 6) You can follow up on your order through WhatsApp or by email.'
+  const bookingFlowSteps =
+    '1) Browse and pick a service. 2) Tap it to open the detail modal. 3) Add to booking. 4) Fill in the required information (date, time, contact, etc.). 5) Submit - your booking or service request will be sent to the business via WhatsApp. 6) You can follow up through WhatsApp or by email.'
+  const orderingInstructions = isSalonOrServices ? bookingFlowSteps : orderFlowSteps
 
-  // Format product/service for prompt
-  const formatItem = (p: ProductContext): string => {
+  // Format product/service for prompt - full format with variants/modifiers/description
+  const formatItemFull = (p: ProductContext): string => {
     const base = `${p.name}: ${storeData.currency} ${p.price}`
     const extras: string[] = []
     if (p.category) extras.push(`(${p.category})`)
@@ -143,22 +158,20 @@ function buildSystemPrompt(storeData: {
     return `- ${base}${extras.length ? ' ' + extras.join(' | ') : ''}`
   }
 
-  let productList: string
-  if (storeData.products.length > 100) {
-    const byCategory = storeData.products.reduce((acc: Record<string, number>, p) => {
-      const cat = p.category || 'Other'
-      acc[cat] = (acc[cat] || 0) + 1
-      return acc
-    }, {})
-    productList = Object.entries(byCategory)
-      .map(([cat, count]) => `- ${cat}: ${count} items`)
-      .join('\n')
-  } else {
-    productList = storeData.products
-      .slice(0, 80)
-      .map(formatItem)
-      .join('\n')
+  // Compact format for products 81+ (name, price, category only) to fit all 200 in context
+  const formatItemCompact = (p: ProductContext): string => {
+    const cat = p.category ? ` (${p.category})` : ''
+    const dur = p.isService && p.serviceDuration ? ` ${p.serviceDuration}min` : ''
+    return `- ${p.name}: ${storeData.currency} ${p.price}${cat}${dur}`
   }
+
+  const MAX_FULL_PRODUCTS = 80
+  const productList: string =
+    storeData.products.length <= MAX_FULL_PRODUCTS
+      ? storeData.products.map(formatItemFull).join('\n')
+      : storeData.products
+          .map((p, i) => (i < MAX_FULL_PRODUCTS ? formatItemFull(p) : formatItemCompact(p)))
+          .join('\n')
 
   const sectionTitle = isSalonOrServices ? 'PRODUCTS & SERVICES' : 'PRODUCTS'
 
@@ -200,7 +213,12 @@ RULES:
 - If asked how to order or book, explain: ${orderingInstructions}
 - Keep answers concise (2-3 sentences unless more detail is requested).
 - Never make up information not provided in the store data.
-- Do not discuss competitor stores or other businesses.`
+- Do not discuss competitor stores or other businesses.
+
+SAFETY - STRICTLY ENFORCED:
+- Never use hateful, harassing, discriminatory, or offensive language.
+- Never respond to inappropriate requests; politely redirect to store-related questions.
+- Stay professional and helpful at all times.`
 }
 
 export async function POST(
@@ -245,6 +263,24 @@ export async function POST(
       return NextResponse.json({ error: 'Message too long' }, { status: 400 })
     }
 
+    // Content moderation: reject hateful, harassing, or inappropriate user input
+    try {
+      const moderation = await openai.moderations.create({
+        input: lastUserMsg.content,
+        model: 'text-moderation-latest'
+      })
+      const result = moderation.results?.[0]
+      if (result?.flagged) {
+        return NextResponse.json(
+          { error: "Your message could not be processed. Please ask about the store's products, services, or hours." },
+          { status: 400 }
+        )
+      }
+    } catch (modErr) {
+      console.error('Moderation check failed:', modErr)
+      // Continue without blocking - don't fail the whole request if moderation API errors
+    }
+
     const business = await prisma.business.findUnique({
       where: { slug, isActive: true, setupWizardCompleted: true },
       select: {
@@ -259,6 +295,7 @@ export async function POST(
         businessHours: true,
         timezone: true,
         aiAssistantEnabled: true,
+        aiChatModel: true,
         deliveryEnabled: true,
         pickupEnabled: true,
         dineInEnabled: true,
@@ -270,6 +307,13 @@ export async function POST(
         paymentMethods: true,
         subscriptionPlan: true,
         isTemporarilyClosed: true,
+        closureReason: true,
+        closureMessage: true,
+        closureStartDate: true,
+        closureEndDate: true,
+        paymentInstructions: true,
+        deliveryRadius: true,
+        shippingCountries: true,
         allowOnlineBooking: true,
         serviceAllowAppointmentBooking: true,
         serviceAllowRequestByEmail: true,
@@ -352,6 +396,11 @@ export async function POST(
       businessHours: business.businessHours,
       isOpen: isWithinHours && !business.isTemporarilyClosed,
       nextOpenTime,
+      isTemporarilyClosed: business.isTemporarilyClosed ?? false,
+      closureReason: business.closureReason ?? null,
+      closureMessage: business.closureMessage ?? null,
+      closureStartDate: business.closureStartDate ?? null,
+      closureEndDate: business.closureEndDate ?? null,
       deliveryEnabled: business.deliveryEnabled ?? false,
       pickupEnabled: business.pickupEnabled ?? false,
       dineInEnabled: business.dineInEnabled ?? false,
@@ -360,7 +409,10 @@ export async function POST(
       freeDeliveryThreshold: business.freeDeliveryThreshold ?? undefined,
       estimatedDeliveryTime: business.estimatedDeliveryTime ?? undefined,
       estimatedPickupTime: business.estimatedPickupTime ?? undefined,
+      deliveryRadius: business.deliveryRadius ?? undefined,
+      shippingCountries: business.shippingCountries ?? undefined,
       paymentMethods: business.paymentMethods as string[] | undefined,
+      paymentInstructions: business.paymentInstructions ?? null,
       allowOnlineBooking: business.allowOnlineBooking ?? true,
       serviceAllowAppointmentBooking: business.serviceAllowAppointmentBooking ?? true,
       serviceAllowRequestByEmail: business.serviceAllowRequestByEmail ?? false,
@@ -376,8 +428,11 @@ export async function POST(
       }))
     ]
 
+    // Model: business override > env AI_CHAT_MODEL > default gpt-4o-mini
+    const model = business.aiChatModel || process.env.AI_CHAT_MODEL || 'gpt-4o-mini'
+
     const completion = await openai.chat.completions.create({
-      model: process.env.AI_CHAT_MODEL || 'gpt-4o-mini',
+      model,
       messages: apiMessages,
       max_tokens: MAX_RESPONSE_TOKENS,
       temperature: 0.5

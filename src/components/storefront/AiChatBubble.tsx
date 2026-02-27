@@ -239,11 +239,17 @@ export function AiChatBubble({
       {showBubble && (
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed ${bottomOffset} ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105`}
+        className={`fixed ${bottomOffset} ${positionClass} z-[45] ${sizeClasses.button} rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105 relative`}
         style={{ backgroundColor: primaryColor }}
         aria-label={`Chat with ${aiChatName}`}
       >
         <ChatIcon className={`${sizeClasses.icon} text-white`} />
+        {messages.length > 0 && (
+          <span
+            className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"
+            aria-hidden
+          />
+        )}
       </button>
       )}
 
