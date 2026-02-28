@@ -1659,10 +1659,8 @@ export default function BusinessDetailsPage() {
             <PackagingTrackingSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
-          {/* Internal Invoice System - Hide for salons */}
-          {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
-            <InternalInvoiceSection business={business} onUpdate={fetchBusinessDetails} />
-          )}
+          {/* Internal Invoice System */}
+          <InternalInvoiceSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Legal Pages Settings */}
           <LegalPagesSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -3099,8 +3097,10 @@ function InternalInvoiceSection({
 }) {
   const [saving, setSaving] = useState(false)
   const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(business.internalInvoiceEnabled || false)
+  const isServicesOrSalon = business.businessType === 'SERVICES' || business.businessType === 'SALON'
 
   const handleToggle = async () => {
+    if (isServicesOrSalon) return
     const newValue = !internalInvoiceEnabled
     setSaving(true)
     try {
@@ -3140,10 +3140,10 @@ function InternalInvoiceSection({
         </div>
         <button
           onClick={handleToggle}
-          disabled={saving}
+          disabled={saving || isServicesOrSalon}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
             internalInvoiceEnabled ? 'bg-teal-600' : 'bg-gray-200'
-          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+          } ${saving || isServicesOrSalon ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           <span
             className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -3159,12 +3159,17 @@ function InternalInvoiceSection({
           </p>
         </div>
       )}
-      {!internalInvoiceEnabled && (
+      {!internalInvoiceEnabled && !isServicesOrSalon && (
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Invoice generation not available to this business.
           </p>
         </div>
+      )}
+      {isServicesOrSalon && (
+        <p className="mt-3 text-xs text-amber-600">
+          This is not supported yet for SERVICES and SALON business types.
+        </p>
       )}
     </div>
   )

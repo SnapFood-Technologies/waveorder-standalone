@@ -2204,6 +2204,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     </Link>
                     <button
                       onClick={async () => {
+                        if (!order.invoice) return
                         try {
                           await fetchAndDownloadInvoicePdf(businessId, order.invoice.id)
                         } catch {
