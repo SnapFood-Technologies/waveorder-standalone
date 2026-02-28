@@ -7,11 +7,10 @@ import {
   ChevronLeft,
   FileText,
   ChevronRight,
-  ExternalLink,
-  Eye,
   Download,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react'
 import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 
@@ -74,8 +73,13 @@ export default function SuperAdminInvoicesPage() {
     fetchData()
   }, [businessId, page])
 
-  const invoiceViewUrl = (inv: Invoice) =>
-    `/admin/stores/${businessId}/invoices/${inv.id}`
+  const handleDownload = async (inv: Invoice) => {
+    try {
+      await fetchAndDownloadInvoicePdf(businessId, inv.id, { asSuperAdmin: true })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to download')
+    }
+  }
 
   if (loading && invoices.length === 0) {
     return (
@@ -125,6 +129,18 @@ export default function SuperAdminInvoicesPage() {
         </div>
       </div>
 
+      {invoices.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium">Stats & usage only</p>
+            <p className="mt-1 text-blue-700">
+              This list is for internal stats. Business invoices are managed by the business owner in their admin. PDFs are downloaded at your care when you use the download button.
+            </p>
+          </div>
+        </div>
+      )}
+
       {invoices.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -144,7 +160,7 @@ export default function SuperAdminInvoicesPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Download</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -156,29 +172,13 @@ export default function SuperAdminInvoicesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(inv.generatedAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(inv.total)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={invoiceViewUrl(inv)}
-                          className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => fetchAndDownloadInvoicePdf(businessId, inv.id)}
-                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                          title="Save as PDF"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <Link
-                          href={`/admin/stores/${businessId}/orders/${inv.orderId}`}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                          title="View order"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Link>
-                      </div>
+                      <button
+                        onClick={() => handleDownload(inv)}
+                        className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg"
+                        title="Save as PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
