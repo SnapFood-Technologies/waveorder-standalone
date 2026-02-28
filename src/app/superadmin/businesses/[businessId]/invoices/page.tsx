@@ -13,6 +13,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
+import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 
 interface Invoice {
   id: string
@@ -73,10 +74,8 @@ export default function SuperAdminInvoicesPage() {
     fetchData()
   }, [businessId, page])
 
-  const invoiceViewUrl = (inv: Invoice, print = false) =>
-    print
-      ? `/print/invoice/${businessId}/${inv.id}?print=1`
-      : `/admin/stores/${businessId}/invoices/${inv.id}`
+  const invoiceViewUrl = (inv: Invoice) =>
+    `/admin/stores/${businessId}/invoices/${inv.id}`
 
   if (loading && invoices.length === 0) {
     return (
@@ -167,15 +166,13 @@ export default function SuperAdminInvoicesPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </a>
-                        <a
-                          href={invoiceViewUrl(inv, true)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => fetchAndDownloadInvoicePdf(businessId, inv.id)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                          title="Download"
+                          title="Save as PDF"
                         >
                           <Download className="w-4 h-4" />
-                        </a>
+                        </button>
                         <Link
                           href={`/admin/stores/${businessId}/orders/${inv.orderId}`}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"

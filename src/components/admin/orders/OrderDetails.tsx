@@ -34,6 +34,7 @@ import {
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
+import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 
 interface OrderDetailsProps {
   businessId: string
@@ -2201,15 +2202,19 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       <Eye className="w-4 h-4 mr-2" />
                       View
                     </Link>
-                    <Link
-                      href={addParams(`/print/invoice/${businessId}/${order.invoice.id}?print=1`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={async () => {
+                        try {
+                          await fetchAndDownloadInvoicePdf(businessId, order.invoice.id)
+                        } catch {
+                          toast.error('Failed to download PDF')
+                        }
+                      }}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </Link>
+                      Save as PDF
+                    </button>
                     <Link
                       href={addParams(`/admin/stores/${businessId}/settings/invoices`)}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"

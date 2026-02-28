@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FileText, ChevronLeft, ChevronRight, ExternalLink, Eye, Download, Trash2, AlertTriangle, Clock } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
+import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 
 interface Invoice {
   id: string
@@ -115,10 +116,16 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
     }
   }
 
-  const invoiceViewUrl = (inv: Invoice, print = false) =>
-    print
-      ? addParams(`/print/invoice/${businessId}/${inv.id}?print=1`)
-      : addParams(`/admin/stores/${businessId}/invoices/${inv.id}`)
+  const invoiceViewUrl = (inv: Invoice) =>
+    addParams(`/admin/stores/${businessId}/invoices/${inv.id}`)
+
+  const handleDownloadPdf = async (inv: Invoice) => {
+    try {
+      await fetchAndDownloadInvoicePdf(businessId, inv.id)
+    } catch {
+      toast.error('Failed to download PDF')
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -242,15 +249,13 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <Link
-                          href={invoiceViewUrl(inv, true)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => handleDownloadPdf(inv)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Download (Print/Save as PDF)"
+                          title="Save as PDF"
                         >
                           <Download className="w-4 h-4" />
-                        </Link>
+                        </button>
                         <Link
                           href={addParams(`/admin/stores/${businessId}/orders/${inv.orderId}`)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

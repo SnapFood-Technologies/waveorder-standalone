@@ -1,12 +1,12 @@
 // src/components/admin/invoices/InvoiceView.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer, FileText } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
 import { InvoiceDocument } from './InvoiceDocument'
+import { generateInvoicePdf } from '@/lib/generateInvoicePdf'
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -29,8 +29,6 @@ export function InvoiceView({ businessId, invoiceId }: InvoiceViewProps) {
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const searchParams = useSearchParams()
-  const hasAutoPrinted = useRef(false)
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -50,21 +48,6 @@ export function InvoiceView({ businessId, invoiceId }: InvoiceViewProps) {
     }
     fetchInvoice()
   }, [businessId, invoiceId])
-
-  // Auto-print when ?print=1
-  useEffect(() => {
-    if (!data || loading || hasAutoPrinted.current) return
-    if (searchParams.get('print') === '1') {
-      hasAutoPrinted.current = true
-      setTimeout(() => window.print(), 500)
-    }
-  }, [data, loading, searchParams])
-
-  const handlePrint = () => {
-    // Open print-only page (no admin layout) for clean PDF
-    const printUrl = addParams(`/print/invoice/${businessId}/${invoiceId}?print=1`)
-    window.open(printUrl, '_blank', 'noopener,noreferrer,width=800,height=600')
-  }
 
   if (loading) {
     return (
@@ -94,6 +77,8 @@ export function InvoiceView({ businessId, invoiceId }: InvoiceViewProps) {
   const { invoice, business } = data
   const order = invoice.order
 
+  const handleDownloadPdf = () => generateInvoicePdf(invoice, business)
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Invoice document - 3/4 width */}
@@ -114,11 +99,11 @@ export function InvoiceView({ businessId, invoiceId }: InvoiceViewProps) {
             View Order
           </Link>
           <button
-            onClick={handlePrint}
+            onClick={handleDownloadPdf}
             className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
           >
             <Printer className="w-4 h-4 mr-2" />
-            Print / Save as PDF
+            Save as PDF
           </button>
         </div>
 
@@ -149,11 +134,11 @@ export function InvoiceView({ businessId, invoiceId }: InvoiceViewProps) {
               View Order
             </Link>
             <button
-              onClick={handlePrint}
+              onClick={handleDownloadPdf}
               className="block w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium"
             >
               <Printer className="w-4 h-4 inline mr-2" />
-              Print / Save as PDF
+              Save as PDF
             </button>
           </div>
 
