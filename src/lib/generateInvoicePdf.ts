@@ -135,16 +135,16 @@ export async function generateInvoicePdf(invoice: any, business: any): Promise<v
     theme: 'plain',
     tableWidth,
     margin: { left: pad, right: pad },
-    cellPadding: 2,
     headStyles: {
       fillColor: [255, 255, 255],
       textColor: [55, 65, 81],
       fontStyle: 'normal',
       font: fontName,
       lineWidth: 0.1,
-      lineColor: [229, 231, 235]
+      lineColor: [229, 231, 235],
+      cellPadding: 2
     },
-    styles: { fontSize: 9, textColor: [17, 24, 39], font: fontName },
+    styles: { fontSize: 9, textColor: [17, 24, 39], font: fontName, cellPadding: 2 },
     columnStyles: {
       0: { cellWidth: 85 },
       1: { cellWidth: 18, halign: 'right' },
