@@ -20,7 +20,7 @@ function formatDate(dateStr: string): string {
 export function generateInvoicePdf(invoice: any, business: any): void {
   const doc = new jsPDF()
   const order = invoice.order
-  const primary = [13, 148, 136] // teal-600
+  const primary: [number, number, number] = [13, 148, 136] // teal-600
 
   let y = 20
 
