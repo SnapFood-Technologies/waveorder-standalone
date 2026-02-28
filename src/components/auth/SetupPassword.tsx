@@ -185,7 +185,7 @@ export default function SetupPasswordComponent() {
               {error || 'This setup link is invalid or has expired. Please contact your administrator for a new setup link.'}
             </p>
             <a
-              href="mailto:hello@waveorder.app"
+              href="mailto:contact@waveorder.app"
               className="inline-flex items-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
             >
               Contact Support

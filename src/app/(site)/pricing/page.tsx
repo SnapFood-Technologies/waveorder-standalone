@@ -246,7 +246,7 @@ export default function PricingPage() {
             "contactPoint": {
               "@type": "ContactPoint",
               "contactType": "customer service",
-              "email": "hello@waveorder.app",
+              "email": "contact@waveorder.app",
               "availableLanguage": "English"
             },
             "sameAs": [

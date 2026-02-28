@@ -14,7 +14,9 @@ import {
   User,
   Package,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  X
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -73,6 +75,23 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
   const [totalPages, setTotalPages] = useState(1)
   const [affiliates, setAffiliates] = useState<Array<{ id: string; name: string }>>([])
 
+  // Manual earning modal
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [eligibleOrders, setEligibleOrders] = useState<Array<{
+    id: string
+    orderNumber: string
+    total: number
+    status: string
+    createdAt: string
+    customerName: string | null
+  }>>([])
+  const [manualAffiliateId, setManualAffiliateId] = useState('')
+  const [manualOrderId, setManualOrderId] = useState('')
+  const [manualCommissionType, setManualCommissionType] = useState<'PERCENTAGE' | 'FIXED'>('PERCENTAGE')
+  const [manualCommissionValue, setManualCommissionValue] = useState('')
+  const [manualSubmitting, setManualSubmitting] = useState(false)
+  const [loadingEligible, setLoadingEligible] = useState(false)
+
   useEffect(() => {
     fetchEarnings()
     fetchAffiliates()
@@ -87,6 +106,73 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
       }
     } catch (error) {
       console.error('Error fetching affiliates:', error)
+    }
+  }
+
+  const fetchEligibleOrders = async () => {
+    setLoadingEligible(true)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/affiliates/earnings/eligible-orders`)
+      const data = await res.json()
+      if (data.enabled && data.data?.orders) {
+        setEligibleOrders(data.data.orders)
+      } else {
+        setEligibleOrders([])
+      }
+    } catch (error) {
+      console.error('Error fetching eligible orders:', error)
+      setEligibleOrders([])
+    } finally {
+      setLoadingEligible(false)
+    }
+  }
+
+  const openManualModal = () => {
+    setShowManualModal(true)
+    setManualAffiliateId('')
+    setManualOrderId('')
+    setManualCommissionType('PERCENTAGE')
+    setManualCommissionValue('')
+    fetchEligibleOrders()
+  }
+
+  const handleManualEarningSubmit = async () => {
+    if (!manualAffiliateId || !manualOrderId || !manualCommissionValue.trim()) {
+      toast.error('Please select affiliate, order, and enter commission value')
+      return
+    }
+    const val = parseFloat(manualCommissionValue)
+    if (isNaN(val) || val < 0) {
+      toast.error('Please enter a valid commission value')
+      return
+    }
+    if (manualCommissionType === 'PERCENTAGE' && (val > 100 || val < 0)) {
+      toast.error('Percentage must be between 0 and 100')
+      return
+    }
+    setManualSubmitting(true)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/affiliates/earnings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          affiliateId: manualAffiliateId,
+          orderId: manualOrderId,
+          commissionType: manualCommissionType,
+          commissionValue: val
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to create earning')
+      }
+      toast.success('Manual earning created')
+      setShowManualModal(false)
+      fetchEarnings()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create earning')
+    } finally {
+      setManualSubmitting(false)
     }
   }
 
@@ -235,13 +321,23 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Affiliate Earnings</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Track commissions earned by affiliates</p>
         </div>
-        <button
-          onClick={fetchEarnings}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openManualModal}
+            disabled={affiliates.length === 0}
+            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Manual Earning
+          </button>
+          <button
+            onClick={fetchEarnings}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -464,6 +560,117 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
           </>
         )}
       </div>
+
+      {/* Manual Earning Modal */}
+      {showManualModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setShowManualModal(false)} />
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Add Manual Earning</h2>
+                <button
+                  onClick={() => setShowManualModal(false)}
+                  className="p-1 rounded hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                Assign an affiliate commission to a delivered and paid order that has no earning yet.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Affiliate</label>
+                  <select
+                    value={manualAffiliateId}
+                    onChange={(e) => setManualAffiliateId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="">Select affiliate</option>
+                    {affiliates.map((a) => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+                  <select
+                    value={manualOrderId}
+                    onChange={(e) => setManualOrderId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    disabled={loadingEligible}
+                  >
+                    <option value="">
+                      {loadingEligible ? 'Loading...' : eligibleOrders.length === 0 ? 'No eligible orders' : 'Select order'}
+                    </option>
+                    {eligibleOrders.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.orderNumber} {o.customerName ? `(${o.customerName})` : ''} — {formatCurrency(o.total)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Commission type</label>
+                  <select
+                    value={manualCommissionType}
+                    onChange={(e) => setManualCommissionType(e.target.value as 'PERCENTAGE' | 'FIXED')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="PERCENTAGE">Percentage of order total</option>
+                    <option value="FIXED">Fixed amount</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {manualCommissionType === 'PERCENTAGE' ? 'Percentage (%)' : 'Amount'}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={manualCommissionType === 'PERCENTAGE' ? 100 : undefined}
+                    step={manualCommissionType === 'PERCENTAGE' ? 0.5 : 0.01}
+                    value={manualCommissionValue}
+                    onChange={(e) => setManualCommissionValue(e.target.value)}
+                    placeholder={manualCommissionType === 'PERCENTAGE' ? 'e.g. 10' : 'e.g. 5.00'}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  {manualOrderId && manualCommissionValue && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Commission: {formatCurrency(
+                        manualCommissionType === 'PERCENTAGE'
+                          ? (eligibleOrders.find((o) => o.id === manualOrderId)?.total ?? 0) * (parseFloat(manualCommissionValue) || 0) / 100
+                          : parseFloat(manualCommissionValue) || 0
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowManualModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleManualEarningSubmit}
+                  disabled={manualSubmitting || !manualAffiliateId || !manualOrderId || !manualCommissionValue.trim()}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {manualSubmitting ? 'Adding...' : 'Add Earning'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

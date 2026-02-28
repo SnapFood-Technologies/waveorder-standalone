@@ -49,7 +49,7 @@ export default function AboutPage() {
               "contactPoint": {
                 "@type": "ContactPoint",
                 "contactType": "customer service",
-                "email": "hello@waveorder.app"
+                "email": "contact@waveorder.app"
               }
             }
           })

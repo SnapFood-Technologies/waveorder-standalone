@@ -47,7 +47,7 @@ export default function ContactPage() {
                 {
                   "@type": "ContactPoint",
                   "contactType": "customer service",
-                  "email": "hello@waveorder.app",
+                  "email": "contact@waveorder.app",
                   "availableLanguage": ["English"],
                   "areaServed": "Worldwide"
                 },
