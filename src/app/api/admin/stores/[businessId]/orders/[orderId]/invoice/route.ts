@@ -5,8 +5,6 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 
-const DEFAULT_NOTE = 'This document is for internal record-keeping only. It is not a tax invoice.'
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ businessId: string; orderId: string }> }
@@ -99,7 +97,7 @@ export async function POST(
         orderId,
         businessId,
         invoiceNumber,
-        note: note || DEFAULT_NOTE,
+        note: note || null,
         generatedById: user?.id
       },
       select: {

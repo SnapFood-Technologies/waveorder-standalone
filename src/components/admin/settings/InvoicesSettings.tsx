@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { FileText, ChevronLeft, ChevronRight, ExternalLink, Eye, Download, Trash2, AlertTriangle } from 'lucide-react'
+import { FileText, ChevronLeft, ChevronRight, ExternalLink, Eye, Download, Trash2, AlertTriangle, Clock } from 'lucide-react'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
 
@@ -47,6 +47,19 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
   const [total, setTotal] = useState(0)
   const [deleteModalInvoice, setDeleteModalInvoice] = useState<Invoice | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [stats, setStats] = useState<{ total: number; lastGeneratedAt: string | null } | null>(null)
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/invoices/stats`)
+      if (res.ok) {
+        const data = await res.json()
+        setStats({ total: data.total ?? 0, lastGeneratedAt: data.lastGeneratedAt ?? null })
+      }
+    } catch {
+      setStats(null)
+    }
+  }
 
   const fetchInvoices = async () => {
     setLoading(true)
@@ -75,6 +88,10 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
     fetchInvoices()
   }, [businessId, page])
 
+  useEffect(() => {
+    fetchStats()
+  }, [businessId])
+
   const handleDeleteInvoice = async () => {
     if (!deleteModalInvoice) return
     setIsDeleting(true)
@@ -86,6 +103,7 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
         toast.success('Invoice deleted')
         setDeleteModalInvoice(null)
         fetchInvoices()
+        fetchStats()
       } else {
         const data = await res.json().catch(() => ({}))
         toast.error(data.error || 'Failed to delete invoice')
@@ -98,7 +116,9 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
   }
 
   const invoiceViewUrl = (inv: Invoice, print = false) =>
-    addParams(`/admin/stores/${businessId}/invoices/${inv.id}${print ? '?print=1' : ''}`)
+    print
+      ? addParams(`/print/invoice/${businessId}/${inv.id}?print=1`)
+      : addParams(`/admin/stores/${businessId}/invoices/${inv.id}`)
 
   return (
     <div className="space-y-6">
@@ -112,6 +132,36 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
           {error}
+        </div>
+      )}
+
+      {/* Usage summary - above table */}
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-100 rounded-lg">
+                <FileText className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-sm text-gray-500">Total Invoices</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Clock className="w-5 h-5 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  {stats.lastGeneratedAt ? formatDate(stats.lastGeneratedAt) : 'Never'}
+                </p>
+                <p className="text-sm text-gray-500">Last Generated</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

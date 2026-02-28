@@ -206,7 +206,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
   // Internal invoice
   const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(false)
   const [showGenerateInvoiceModal, setShowGenerateInvoiceModal] = useState(false)
-  const [invoiceNote, setInvoiceNote] = useState('This document is for internal record-keeping only. It is not a tax invoice.')
+  const [invoiceNote, setInvoiceNote] = useState('')
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
   useEffect(() => {
@@ -2202,7 +2202,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       View
                     </Link>
                     <Link
-                      href={addParams(`/admin/stores/${businessId}/invoices/${order.invoice.id}?print=1`)}
+                      href={addParams(`/print/invoice/${businessId}/${order.invoice.id}?print=1`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
@@ -2417,7 +2417,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
               <textarea
                 value={invoiceNote}
                 onChange={(e) => setInvoiceNote(e.target.value)}
-                placeholder="This document is for internal record-keeping only. It is not a tax invoice."
+                placeholder="Add optional note (e.g. thank you message, special terms...)"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
                 rows={3}
                 disabled={generatingInvoice}

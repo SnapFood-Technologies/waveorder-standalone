@@ -313,6 +313,23 @@ export async function GET(
       lastUsedAt: aiLastMessage?.createdAt?.toISOString() ?? null
     }
 
+    // Internal Invoice usage stats (when feature enabled)
+    let invoiceUsage: { total: number; lastGeneratedAt: string | null } | undefined
+    if (business.internalInvoiceEnabled) {
+      const [invTotal, invLast] = await Promise.all([
+        prisma.orderInvoice.count({ where: { businessId } }),
+        prisma.orderInvoice.findFirst({
+          where: { businessId },
+          orderBy: { generatedAt: 'desc' },
+          select: { generatedAt: true }
+        })
+      ])
+      invoiceUsage = {
+        total: invTotal,
+        lastGeneratedAt: invLast?.generatedAt?.toISOString() ?? null
+      }
+    }
+
     // Get owner info
     const ownerRelation = (business as any).users.find((u: any) => u.role === 'OWNER')
     const owner = ownerRelation?.user
@@ -455,7 +472,8 @@ export async function GET(
           error: domainInfo.domainError
         },
         aiAssistantEnabled: business.aiAssistantEnabled ?? false,
-        aiUsage
+        aiUsage,
+        invoiceUsage
       }
     })
   } catch (error) {
