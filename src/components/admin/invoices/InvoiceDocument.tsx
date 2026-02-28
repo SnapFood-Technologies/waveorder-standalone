@@ -3,7 +3,6 @@
 
 'use client'
 
-import Image from 'next/image'
 import { Fragment } from 'react'
 
 function formatCurrency(amount: number, currency = 'EUR'): string {
@@ -38,18 +37,7 @@ export function InvoiceDocument({ invoice, business }: InvoiceDocumentProps) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6 mb-8 pb-6 border-b-2" style={{ borderColor: primaryColor }}>
         <div>
-          {business.logo ? (
-            <div className="relative w-24 h-9 mb-2">
-              <Image
-                src={business.logo}
-                alt={business.name}
-                width={96}
-                height={36}
-                className="object-contain object-left"
-              />
-            </div>
-          ) : null}
-          <h1 className={`font-bold ${business.logo ? 'text-xl' : 'text-2xl'}`} style={{ color: primaryColor }}>{business.name}</h1>
+          <h1 className="text-2xl font-bold" style={{ color: primaryColor }}>{business.name}</h1>
           {business.address && <p className="text-sm text-gray-600 mt-1">{business.address}</p>}
           {business.phone && <p className="text-sm text-gray-600">{business.phone}</p>}
           {business.email && <p className="text-sm text-gray-600">{business.email}</p>}

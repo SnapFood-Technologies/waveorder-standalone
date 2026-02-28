@@ -2195,8 +2195,6 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   <div className="flex flex-wrap gap-2">
                     <Link
                       href={addParams(`/admin/stores/${businessId}/invoices/${order.invoice.id}`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium"
                     >
                       <Eye className="w-4 h-4 mr-2" />

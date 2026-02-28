@@ -157,15 +157,13 @@ export default function SuperAdminInvoicesPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrency(inv.total)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <a
+                        <Link
                           href={invoiceViewUrl(inv)}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg"
                           title="View"
                         >
                           <Eye className="w-4 h-4" />
-                        </a>
+                        </Link>
                         <button
                           onClick={() => fetchAndDownloadInvoicePdf(businessId, inv.id)}
                           className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"

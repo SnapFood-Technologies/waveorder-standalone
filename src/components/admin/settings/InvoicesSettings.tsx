@@ -242,8 +242,6 @@ export function InvoicesSettings({ businessId }: InvoicesSettingsProps) {
                       <div className="flex items-center gap-2">
                         <Link
                           href={invoiceViewUrl(inv)}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                           title="View invoice"
                         >
