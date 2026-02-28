@@ -181,3 +181,139 @@ export async function GET(
     )
   }
 }
+
+/** Create manual affiliate earning for a delivered+paid order */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ businessId: string }> }
+) {
+  try {
+    const { businessId } = await params
+
+    const access = await checkBusinessAccess(businessId)
+    if (!access.authorized) {
+      return NextResponse.json({ message: access.error }, { status: access.status })
+    }
+
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { enableAffiliateSystem: true, currency: true }
+    })
+
+    if (!business?.enableAffiliateSystem) {
+      return NextResponse.json({
+        enabled: false,
+        message: 'Affiliate system is not enabled for this business.'
+      })
+    }
+
+    const body = await request.json()
+    const { affiliateId, orderId, commissionType, commissionValue } = body
+
+    if (!affiliateId || !orderId || !commissionType || commissionValue == null) {
+      return NextResponse.json(
+        { message: 'Missing required fields: affiliateId, orderId, commissionType, commissionValue' },
+        { status: 400 }
+      )
+    }
+
+    if (!['PERCENTAGE', 'FIXED'].includes(commissionType)) {
+      return NextResponse.json(
+        { message: 'commissionType must be PERCENTAGE or FIXED' },
+        { status: 400 }
+      )
+    }
+
+    const affiliate = await prisma.affiliate.findFirst({
+      where: { id: affiliateId, businessId }
+    })
+    if (!affiliate) {
+      return NextResponse.json({ message: 'Affiliate not found' }, { status: 404 })
+    }
+
+    const order = await prisma.order.findFirst({
+      where: {
+        id: orderId,
+        businessId,
+        status: { in: ['DELIVERED', 'PICKED_UP'] },
+        paymentStatus: 'PAID'
+      }
+    })
+    if (!order) {
+      return NextResponse.json(
+        { message: 'Order not found or not eligible (must be delivered/picked up and paid)' },
+        { status: 404 }
+      )
+    }
+
+    const existingEarning = await prisma.affiliateEarning.findUnique({
+      where: { orderId }
+    })
+    if (existingEarning) {
+      return NextResponse.json(
+        { message: 'This order already has an affiliate earning' },
+        { status: 400 }
+      )
+    }
+
+    let amount: number
+    if (commissionType === 'PERCENTAGE') {
+      const pct = Number(commissionValue)
+      if (pct < 0 || pct > 100) {
+        return NextResponse.json(
+          { message: 'Percentage must be between 0 and 100' },
+          { status: 400 }
+        )
+      }
+      amount = order.total * (pct / 100)
+    } else {
+      amount = Number(commissionValue)
+      if (amount < 0) {
+        return NextResponse.json(
+          { message: 'Fixed amount must be non-negative' },
+          { status: 400 }
+        )
+      }
+    }
+
+    const [earning] = await prisma.$transaction([
+      prisma.affiliateEarning.create({
+        data: {
+          businessId,
+          orderId: order.id,
+          affiliateId: affiliate.id,
+          orderTotal: order.total,
+          commissionType,
+          commissionValue: Number(commissionValue),
+          amount,
+          currency: business.currency || 'EUR',
+          status: 'PENDING',
+          orderCompletedAt: new Date()
+        },
+        include: {
+          affiliate: {
+            select: { id: true, name: true, trackingCode: true }
+          },
+          order: {
+            select: { orderNumber: true, total: true, status: true }
+          }
+        }
+      }),
+      prisma.order.update({
+        where: { id: order.id },
+        data: { affiliateId: affiliate.id }
+      })
+    ])
+
+    return NextResponse.json({
+      message: 'Manual earning created',
+      data: { earning }
+    })
+  } catch (error) {
+    console.error('Error creating manual affiliate earning:', error)
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

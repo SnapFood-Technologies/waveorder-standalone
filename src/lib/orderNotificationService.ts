@@ -98,7 +98,7 @@ export async function sendServiceRequestEmailNotification(
       subject,
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
     })
 
     return { success: true }
@@ -271,7 +271,7 @@ export async function sendOrderNotification(
       subject,
       html: emailContent,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
     })
 
     // Update notification record with email status

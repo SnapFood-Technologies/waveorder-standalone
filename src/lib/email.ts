@@ -216,7 +216,7 @@ const createEmailTemplate = (content: string, title: string) => `
     <div style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
       <p style="color: #6b7280; margin: 0; font-size: 14px;">
         Questions? Contact us at 
-        <a href="mailto:hello@waveorder.app" style="color: #0d9488; text-decoration: none;">hello@waveorder.app</a>
+        <a href="mailto:contact@waveorder.app" style="color: #0d9488; text-decoration: none;">contact@waveorder.app</a>
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
         © 2026 WaveOrder. All rights reserved.
@@ -317,7 +317,7 @@ const createBusinessCreatedEmailContent = (
     <h3 style="color: #1f2937; margin: 0 0 12px; font-size: 16px;">Need Help?</h3>
     <p style="color: #6b7280; margin: 0; font-size: 14px;">
       Our support team is here to help! If you have any questions about setting up your business or using WaveOrder, don't hesitate to reach out to us at 
-      <a href="mailto:hello@waveorder.app" style="color: #0d9488; text-decoration: none;">hello@waveorder.app</a>
+      <a href="mailto:contact@waveorder.app" style="color: #0d9488; text-decoration: none;">contact@waveorder.app</a>
     </p>
   </div>
 </div>
@@ -844,7 +844,7 @@ export async function sendEmailChangeVerification({
       subject: 'Verify Your New Email Address - WaveOrder',
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Email-Change': 'true',
       },
@@ -904,7 +904,7 @@ export async function sendSubscriptionChangeEmail({
       subject: subjectMap[changeType],
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Change-Type': changeType,
         'X-New-Plan': newPlan,
@@ -935,7 +935,7 @@ export async function sendPaymentFailedEmail({
       subject: '⚠️ Payment Failed - Action Required for WaveOrder PRO',
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Payment-Failed': 'true',
       },
@@ -967,7 +967,7 @@ export async function sendBusinessCreatedEmail({
       subject: `Welcome to WaveOrder ${subscriptionPlan === 'PRO' ? '👑' : ''} - Your business "${businessName}" is ready!`,
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Business-Name': businessName,
         'X-Setup-Email': 'true',
@@ -999,7 +999,7 @@ export async function sendLowStockAlertEmail({
       subject: `⚠️ Low Stock Alert - ${products.length} Product${products.length > 1 ? 's' : ''} Running Low`,
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Business-Name': businessName,
         'X-Alert-Type': 'low-stock',
@@ -1025,7 +1025,7 @@ export async function sendTeamInvitationEmail({ to, name = 'there', businessName
       subject: `You're invited to join ${businessName} on WaveOrder`,
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Business-Name': businessName,
         'X-Role': role,
@@ -1363,7 +1363,7 @@ const createContactConfirmationContent = (name: string, subject: string, message
       </div>
       <div style="display: flex; align-items: start;">
         <div style="width: 6px; height: 6px; background: #0d9488; border-radius: 50%; margin-top: 6px; margin-right: 12px; flex-shrink: 0;"></div>
-        <span>For urgent matters, you can also reach us directly at hello@waveorder.app</span>
+        <span>For urgent matters, you can also reach us directly at contact@waveorder.app</span>
       </div>
     </div>
   </div>
@@ -1395,7 +1395,7 @@ export async function sendContactNotificationEmail(params: ContactNotificationPa
   try {
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
-      to: ['hello@waveorder.app'], // Admin email
+      to: ['contact@waveorder.app'], // Admin email
       subject: subjectLine,
       html,
       // @ts-ignore
@@ -1427,7 +1427,7 @@ export async function sendContactConfirmationEmail({ to, name, subject, messageI
       subject: `Thank you for contacting WaveOrder, ${name}!`,
       html,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Message-ID': messageId,
         'X-Contact-Confirmation': 'true',
@@ -1448,7 +1448,7 @@ export async function sendUserCreatedNotification(params: UserCreatedNotificatio
   try {
     const result = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
-      to: ['hello@waveorder.app'], // Admin email
+      to: ['contact@waveorder.app'], // Admin email
       subject: `🎉 New User Registration: ${params.name}`,
       html,
       // @ts-ignore
@@ -1506,7 +1506,7 @@ export async function sendTeamMemberRemovedEmail({ to, name, businessName, remov
         </p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="mailto:hello@waveorder.app" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+          <a href="mailto:contact@waveorder.app" style="display: inline-block; background: #0d9488; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
             Contact Support
           </a>
         </div>
@@ -1528,7 +1528,7 @@ export async function sendTeamMemberRemovedEmail({ to, name, businessName, remov
       subject: `Access removed from ${businessName}`,
       html: content,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Team-Removal': 'true',
         'X-Business': businessName,
@@ -1646,7 +1646,7 @@ export async function sendRoleChangedEmail({ to, name, businessName, oldRole, ne
       subject: `Role updated in ${businessName} - You are now ${newRole}`,
       html: content,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Role-Change': 'true',
         'X-Business': businessName,
@@ -1729,7 +1729,7 @@ export async function sendSupportTicketCreatedEmail({
       subject: `New Support Ticket #${ticketNumber} - ${subject}`,
       html: content,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Support-Ticket': 'true',
         'X-Ticket-Number': ticketNumber,
@@ -1802,7 +1802,7 @@ export async function sendSupportTicketUpdatedEmail({
       subject: `Ticket #${ticketNumber} Updated - ${status}`,
       html: content,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Support-Ticket': 'true',
         'X-Ticket-Number': ticketNumber,
@@ -1894,7 +1894,7 @@ export async function sendSupportMessageReceivedEmail({
       subject: `New Message: ${subject}`,
       html: content,
       // @ts-ignore
-      reply_to: 'hello@waveorder.app',
+      reply_to: 'contact@waveorder.app',
       headers: {
         'X-Support-Message': 'true',
         'X-Business': businessName,
@@ -2030,7 +2030,7 @@ export async function sendPlanUpgradeEmail({
 
   try {
     await resend.emails.send({
-      from: 'WaveOrder <hello@waveorder.app>',
+      from: 'WaveOrder <contact@waveorder.app>',
       to: [to],
       subject: `${planIcon} Your ${businessName} has been upgraded to ${planName} Plan!`,
       html: `

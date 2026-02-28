@@ -217,7 +217,7 @@ export default function AcceptInvitation({ token }: AcceptInvitationProps) {
               {error || 'This invitation link is invalid or has expired. Please contact the team administrator for a new invitation.'}
             </p>
             <a
-              href="mailto:hello@waveorder.app"
+              href="mailto:contact@waveorder.app"
               className="inline-flex items-center px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors"
             >
               Contact Support

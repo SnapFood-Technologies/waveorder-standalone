@@ -8,7 +8,8 @@ import { extractIPAddress } from '@/lib/systemLog'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 const RATE_LIMIT = 20 // requests per minute per IP
-const MAX_MESSAGES = 10
+const MAX_MESSAGES = 100 // Max messages in conversation (validation)
+const CONTEXT_WINDOW = 100 // Last N messages sent to model
 const MAX_USER_MESSAGE_LENGTH = 500
 const MAX_RESPONSE_TOKENS = 400 // Enough for nuanced answers; avoids truncation that could cause confusion
 
@@ -662,7 +663,7 @@ export async function POST(
 
     const apiMessages = [
       { role: 'system' as const, content: systemPrompt },
-      ...messages.slice(-10).map((m) => ({
+      ...messages.slice(-CONTEXT_WINDOW).map((m) => ({
         role: m.role as 'user' | 'assistant' | 'system',
         content: m.content
       }))
