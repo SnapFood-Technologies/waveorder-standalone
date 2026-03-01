@@ -288,7 +288,7 @@ export async function POST(
           orderId: order.id,
           orderNumber: order.orderNumber,
           phone: business.whatsappNumber,
-          messageType: 'order_notification',
+          messageType: isSalon ? 'appointment_notification' : 'order_notification',
           manualResend: true
         }
       })
@@ -309,7 +309,7 @@ export async function POST(
           orderId: order.id,
           orderNumber: order.orderNumber,
           phone: business.whatsappNumber,
-          messageType: 'order_notification',
+          messageType: isSalon ? 'appointment_notification' : 'order_notification',
           manualResend: true
         }
       })

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           business: {
-            select: { id: true, name: true, slug: true }
+            select: { id: true, name: true, slug: true, businessType: true }
           }
         },
         orderBy: { createdAt: 'desc' },
@@ -48,7 +48,8 @@ export async function GET(request: NextRequest) {
     ])
 
     const activities = logs.map((log) => {
-      const meta = (log.metadata as { orderId?: string; orderNumber?: string; phone?: string; messageType?: string }) || {}
+      const meta = (log.metadata as { orderId?: string; orderNumber?: string; phone?: string; messageType?: string; serviceRequestId?: string }) || {}
+      const messageType = meta.messageType || 'order_notification'
       return {
         id: log.id,
         logType: log.logType,
@@ -58,7 +59,9 @@ export async function GET(request: NextRequest) {
         businessId: log.businessId,
         businessName: log.business?.name || '-',
         businessSlug: log.business?.slug || null,
-        template: meta.messageType || 'order_notification',
+        businessType: log.business?.businessType || null,
+        messageType,
+        template: messageType,
         phone: meta.phone || null,
         errorMessage: log.errorMessage || null,
         createdAt: log.createdAt.toISOString()
