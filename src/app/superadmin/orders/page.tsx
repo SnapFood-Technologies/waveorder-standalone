@@ -79,6 +79,7 @@ export default function AllOrdersPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [resendModalOrder, setResendModalOrder] = useState<OrderItem | null>(null)
   const [resendPreview, setResendPreview] = useState<any>(null)
+  const [resendDebug, setResendDebug] = useState<{ contentSid: string; contentVariables: Record<string, string>; from: string; to: string; templateType: string } | null>(null)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendSending, setResendSending] = useState(false)
 
@@ -179,11 +180,15 @@ export default function AllOrdersPage() {
     if (!order.business) return
     setResendModalOrder(order)
     setResendPreview(null)
+    setResendDebug(null)
     setResendLoading(true)
     try {
       const res = await fetch(`/api/superadmin/businesses/${order.business.id}/orders/${order.id}/resend-twilio`)
       const json = await res.json()
-      if (res.ok) setResendPreview(json.preview)
+      if (res.ok) {
+        setResendPreview(json.preview)
+        setResendDebug(json.debug || null)
+      }
       else {
         toast.error(json.message || 'Failed to load preview')
         setResendModalOrder(null)
@@ -199,6 +204,7 @@ export default function AllOrdersPage() {
   const closeResendModal = () => {
     setResendModalOrder(null)
     setResendPreview(null)
+    setResendDebug(null)
   }
 
   const handleResendTwilio = async () => {
@@ -210,6 +216,7 @@ export default function AllOrdersPage() {
         { method: 'POST' }
       )
       const json = await res.json()
+      if (json.debug) setResendDebug(json.debug)
       if (json.success) {
         toast.success('WhatsApp notification sent')
         closeResendModal()
@@ -552,14 +559,26 @@ export default function AllOrdersPage() {
                   <RefreshCw className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
                 </div>
               ) : resendPreview ? (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg text-sm space-y-2">
-                  <p><strong>Order:</strong> {resendPreview.orderNumber}</p>
-                  <p><strong>Customer:</strong> {resendPreview.customerName}</p>
-                  <p><strong>Phone:</strong> {resendPreview.customerPhone}</p>
-                  <p><strong>Address:</strong> {resendPreview.deliveryAddress || 'N/A'}</p>
-                  <p><strong>Items:</strong> {resendPreview.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}</p>
-                  <p><strong>Total:</strong> {resendPreview.currencySymbol}{resendPreview.total?.toFixed(2)}</p>
-                </div>
+                <>
+                  <div className="mb-4 p-4 bg-gray-50 rounded-lg text-sm space-y-2">
+                    <p><strong>Order:</strong> {resendPreview.orderNumber}</p>
+                    <p><strong>Customer:</strong> {resendPreview.customerName}</p>
+                    <p><strong>Phone:</strong> {resendPreview.customerPhone}</p>
+                    <p><strong>Address:</strong> {resendPreview.deliveryAddress || 'N/A'}</p>
+                    <p><strong>Items:</strong> {resendPreview.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                    <p><strong>Total:</strong> {resendPreview.currencySymbol}{resendPreview.total?.toFixed(2)}</p>
+                  </div>
+                  {resendDebug && (
+                    <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+                      <h4 className="font-semibold text-amber-900 mb-2">Debug: Twilio payload (ContentSid + ContentVariables)</h4>
+                      <p className="mb-1"><strong>ContentSid:</strong> <code className="bg-white px-1 rounded">{resendDebug.contentSid}</code></p>
+                      <p className="mb-1"><strong>From:</strong> <code className="bg-white px-1 rounded">{resendDebug.from}</code></p>
+                      <p className="mb-2"><strong>To:</strong> <code className="bg-white px-1 rounded">{resendDebug.to}</code></p>
+                      <p className="mb-1 font-medium">ContentVariables:</p>
+                      <pre className="bg-white p-2 rounded border border-amber-200 text-xs overflow-x-auto max-h-48 overflow-y-auto">{JSON.stringify(resendDebug.contentVariables, null, 2)}</pre>
+                    </div>
+                  )}
+                </>
               ) : null}
               <div className="flex gap-3 justify-end">
                 <button onClick={closeResendModal} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">

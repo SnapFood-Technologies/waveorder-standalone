@@ -357,6 +357,93 @@ export async function sendWhatsAppMessage(
 }
 
 /**
+ * Build debug payload for order notification (ContentSid + ContentVariables) without sending.
+ * Used for resend modal debug display.
+ */
+export function buildOrderNotificationDebugPayload(
+  businessWhatsAppNumber: string,
+  orderData: OrderNotificationData
+): { contentSid: string; contentVariables: Record<string, string>; from: string; to: string; templateType: string } | null {
+  const config = getTwilioConfig()
+  if (!config) return null
+
+  const from = formatWhatsAppNumber(config.whatsappNumber)
+  const to = formatWhatsAppNumber(businessWhatsAppNumber)
+
+  if (orderData.isSalon && config.appointmentContentSid) {
+    const itemsText = orderData.items.map(item => {
+      let line = `${item.quantity}x ${item.name}`
+      if (item.variant) line += ` (${item.variant})`
+      line += ` - ${orderData.currencySymbol}${item.price.toFixed(2)}`
+      return line
+    }).join(', ')
+    const contentVariables: Record<string, string> = {
+      '1': orderData.orderNumber,
+      '2': transliterateForWhatsApp(orderData.businessName),
+      '3': transliterateForWhatsApp(orderData.customerName),
+      '4': orderData.customerPhone,
+      '5': orderData.appointmentDateTime || 'Not specified',
+      '6': transliterateForWhatsApp(itemsText),
+      '7': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
+      '8': transliterateForWhatsApp(orderData.specialInstructions || 'None')
+    }
+    return {
+      contentSid: config.appointmentContentSid,
+      contentVariables,
+      from,
+      to,
+      templateType: 'appointment'
+    }
+  }
+
+  if (config.contentSid) {
+    const itemsText = orderData.items.map(item => {
+      let line = `${item.quantity}x ${item.name}`
+      if (item.variant) line += ` (${item.variant})`
+      line += ` - ${orderData.currencySymbol}${item.price.toFixed(2)}`
+      return line
+    }).join(', ')
+    const typeLabels: Record<string, string> = {
+      'delivery': '🚚 Delivery',
+      'pickup': '🏪 Pickup',
+      'dineIn': '🍽️ Dine In'
+    }
+    let addressLine = orderData.deliveryAddress || 'N/A'
+    if (orderData.deliveryType === 'delivery' && orderData.postalPricingDetails) {
+      const deliveryMethod = orderData.postalPricingDetails.nameEn || orderData.postalPricingDetails.name
+      const deliveryTime = orderData.postalPricingDetails.deliveryTime
+      if (deliveryTime) {
+        addressLine = `${addressLine}\nDelivery Method: ${deliveryMethod} (${deliveryTime})`
+      } else {
+        addressLine = `${addressLine}\nDelivery Method: ${deliveryMethod}`
+      }
+    }
+    const contentVariables: Record<string, string> = {
+      '1': orderData.orderNumber,
+      '2': transliterateForWhatsApp(orderData.businessName),
+      '3': typeLabels[orderData.deliveryType] || orderData.deliveryType,
+      '4': transliterateForWhatsApp(orderData.customerName),
+      '5': orderData.customerPhone,
+      '6': transliterateForWhatsApp(addressLine),
+      '7': transliterateForWhatsApp(itemsText),
+      '8': `${orderData.currencySymbol}${orderData.subtotal.toFixed(2)}`,
+      '9': orderData.deliveryFee > 0 ? `${orderData.currencySymbol}${orderData.deliveryFee.toFixed(2)}` : 'Free',
+      '10': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
+      '11': transliterateForWhatsApp(orderData.specialInstructions || 'None')
+    }
+    return {
+      contentSid: config.contentSid,
+      contentVariables,
+      from,
+      to,
+      templateType: 'order'
+    }
+  }
+
+  return null
+}
+
+/**
  * Send order notification to business via WhatsApp
  * Uses template if TWILIO_CONTENT_SID is configured (required for business-initiated messages)
  * Falls back to freeform message if no template (only works within 24hr conversation window)

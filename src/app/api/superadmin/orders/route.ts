@@ -43,11 +43,31 @@ export async function GET(request: NextRequest) {
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
     }
 
+    // Same conditions as operations/orders: exclude SALON and SERVICES (bookings/service requests have separate pages)
+    const matchingBusinessIds = await prisma.business.findMany({
+      where: {
+        isActive: true,
+        testMode: { not: true },
+        businessType: { notIn: ['SALON', 'SERVICES'] }
+      },
+      select: { id: true }
+    })
+    const allowedBusinessIds = matchingBusinessIds.map((b) => b.id)
+
     const whereClause: any = {
+      businessId: { in: allowedBusinessIds },
       createdAt: { gte: startDate }
     }
 
     if (businessId) {
+      if (!allowedBusinessIds.includes(businessId)) {
+        // Requested business is excluded (salon/services)
+        return NextResponse.json({
+          orders: [],
+          businesses: [],
+          pagination: { page: 1, limit, total: 0, pages: 0 }
+        })
+      }
       whereClause.businessId = businessId
     }
     if (status && status !== 'all') {
@@ -94,7 +114,10 @@ export async function GET(request: NextRequest) {
       }),
       prisma.order.count({ where: whereClause }),
       prisma.business.findMany({
-        where: { isActive: true },
+        where: {
+          id: { in: allowedBusinessIds },
+          isActive: true
+        },
         select: { id: true, name: true, slug: true, currency: true }
       })
     ])

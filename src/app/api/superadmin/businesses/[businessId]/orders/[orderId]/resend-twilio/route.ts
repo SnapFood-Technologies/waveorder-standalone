@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
-import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
+import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured, buildOrderNotificationDebugPayload } from '@/lib/twilio'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 function getCurrencySymbol(currency: string): string {
@@ -139,7 +139,19 @@ export async function GET(
         : null
     }
 
-    return NextResponse.json({ preview: payload })
+    // Build debug payload: ContentSid + ContentVariables (what we would send to Twilio)
+    const debugPayload = buildOrderNotificationDebugPayload(business.whatsappNumber!, payload)
+
+    return NextResponse.json({
+      preview: payload,
+      debug: debugPayload ? {
+        contentSid: debugPayload.contentSid,
+        contentVariables: debugPayload.contentVariables,
+        from: debugPayload.from,
+        to: debugPayload.to,
+        templateType: debugPayload.templateType
+      } : null
+    })
   } catch (error) {
     console.error('Resend Twilio preview error:', error)
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 })
@@ -234,7 +246,7 @@ export async function POST(
     }
 
     // Use order snapshot so message matches exactly what would have been sent at creation
-    const result = await sendTwilioOrderNotification(business.whatsappNumber!, {
+    const orderPayload = {
       orderNumber: order.orderNumber,
       businessName: business.name,
       businessSlug: business.slug,
@@ -270,55 +282,24 @@ export async function POST(
             timeZone: business.timezone || 'UTC'
           })
         : null
-    })
-
-    if (result.success) {
-      logSystemEvent({
-        logType: 'twilio_message_sent',
-        severity: 'info',
-        slug: business.slug,
-        businessId: business.id,
-        endpoint: '/api/superadmin/businesses/.../orders/.../resend-twilio',
-        method: 'POST',
-        statusCode: 200,
-        ipAddress: extractIPAddress(request),
-        userAgent: request.headers.get('user-agent') || undefined,
-        url: request.url,
-        metadata: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          phone: business.whatsappNumber,
-          messageType: isSalon ? 'appointment_notification' : 'order_notification',
-          manualResend: true
-        }
-      })
-    } else {
-      logSystemEvent({
-        logType: 'twilio_message_error',
-        severity: 'error',
-        slug: business.slug,
-        businessId: business.id,
-        endpoint: '/api/superadmin/businesses/.../orders/.../resend-twilio',
-        method: 'POST',
-        statusCode: 200,
-        ipAddress: extractIPAddress(request),
-        userAgent: request.headers.get('user-agent') || undefined,
-        url: request.url,
-        errorMessage: result.error || 'Twilio message send failed',
-        metadata: {
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          phone: business.whatsappNumber,
-          messageType: isSalon ? 'appointment_notification' : 'order_notification',
-          manualResend: true
-        }
-      })
     }
 
+    const debugPayload = buildOrderNotificationDebugPayload(business.whatsappNumber!, orderPayload)
+
+    // COMMENTED: Actual Twilio send - debug mode to inspect ContentVariables
+    // const result = await sendTwilioOrderNotification(business.whatsappNumber!, orderPayload)
+    // if (result.success) { logSystemEvent({...}) } else { logSystemEvent({...}) }
+
     return NextResponse.json({
-      success: result.success,
-      error: result.error,
-      messageId: result.messageId
+      success: false,
+      error: 'DEBUG MODE: Twilio send is commented out. Check debug payload in modal.',
+      debug: debugPayload ? {
+        contentSid: debugPayload.contentSid,
+        contentVariables: debugPayload.contentVariables,
+        from: debugPayload.from,
+        to: debugPayload.to,
+        templateType: debugPayload.templateType
+      } : null
     })
   } catch (error) {
     console.error('Resend Twilio error:', error)
