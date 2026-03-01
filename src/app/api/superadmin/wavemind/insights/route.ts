@@ -207,9 +207,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Model: WAVEMIND_MODEL env > AI_CHAT_MODEL env > default gpt-4o-mini (same pattern as ai-chat)
+    const model = process.env.WAVEMIND_MODEL || process.env.AI_CHAT_MODEL || 'gpt-4o-mini'
+
     // Generate AI insights using OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model,
       messages: [
         {
           role: 'system',
@@ -304,7 +307,7 @@ Today's date: ${now.toISOString().split('T')[0]}`
       alerts,
       metrics: dataContext.overview,
       generatedAt: now.toISOString(),
-      model: 'gpt-4o-mini'
+      model
     })
 
   } catch (error) {

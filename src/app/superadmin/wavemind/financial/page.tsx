@@ -152,7 +152,7 @@ export default function WavemindFinancialPage() {
           <p className="text-gray-600">Wavemind is processing your business metrics...</p>
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Powered by GPT-4o-mini
+            Analyzing with AI…
           </div>
         </div>
       )}
@@ -234,10 +234,10 @@ export default function WavemindFinancialPage() {
             </div>
           </div>
 
-          {/* Footer Note */}
+          {/* Footer Note - uses actual model from API (WAVEMIND_MODEL or AI_CHAT_MODEL env, else gpt-4o-mini) */}
           <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
             <Brain className="w-3 h-3" />
-            <span>Wavemind uses GPT-4o-mini for cost-effective analysis</span>
+            <span>Wavemind uses {data.model} for analysis</span>
           </div>
         </>
       )}

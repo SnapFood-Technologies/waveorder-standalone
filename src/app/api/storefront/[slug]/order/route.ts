@@ -2363,7 +2363,7 @@ try {
             orderId: order.id,
             orderNumber: order.orderNumber,
             phone: business.whatsappNumber,
-            messageType: 'order_notification'
+            messageType: isSalon ? 'appointment_notification' : 'order_notification'
           }
         })
       } else {
@@ -2383,7 +2383,7 @@ try {
             orderId: order.id,
             orderNumber: order.orderNumber,
             phone: business.whatsappNumber,
-            messageType: 'order_notification'
+            messageType: isSalon ? 'appointment_notification' : 'order_notification'
           }
         })
       }

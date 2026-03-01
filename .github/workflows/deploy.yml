@@ -129,6 +129,7 @@ jobs:
           # 🤖 AI / Wavemind Engine
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           AI_CHAT_MODEL: ${{ secrets.AI_CHAT_MODEL }}
+          WAVEMIND_MODEL: ${{ secrets.WAVEMIND_MODEL }}
           
           # 🏭 Build Environment
           NODE_ENV: production
@@ -215,6 +216,7 @@ jobs:
           # 🤖 AI / Wavemind Engine
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           AI_CHAT_MODEL=${{ secrets.AI_CHAT_MODEL }}
+          WAVEMIND_MODEL=${{ secrets.WAVEMIND_MODEL }}
           EOF
           echo "✅ Production environment file created"
 

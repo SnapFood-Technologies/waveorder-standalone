@@ -24,10 +24,36 @@ interface Activity {
   businessId: string | null
   businessName: string
   businessSlug: string | null
+  businessType: string | null
+  messageType: string
   template: string
   phone: string | null
   errorMessage: string | null
   createdAt: string
+}
+
+/** Human-readable labels for message types (Order / Booking / Service Request) */
+function getReferenceLabel(messageType: string, orderNumber: string): string {
+  const ref = orderNumber && orderNumber !== '-' ? `#${orderNumber}` : ''
+  switch (messageType) {
+    case 'appointment_notification':
+      return ref ? `Booking ${ref}` : 'Booking'
+    case 'service_request_notification':
+      return 'Service Request'
+    default:
+      return ref ? `Order ${ref}` : 'Order'
+  }
+}
+
+function getTemplateLabel(messageType: string): string {
+  switch (messageType) {
+    case 'appointment_notification':
+      return 'Appointment'
+    case 'service_request_notification':
+      return 'Service request'
+    default:
+      return 'Order'
+  }
 }
 
 interface ApiResponse {
@@ -199,10 +225,11 @@ export default function TwilioActivitiesPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Business</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Template</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recipient</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Error</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -225,7 +252,7 @@ export default function TwilioActivitiesPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        #{a.orderNumber}
+                        {getReferenceLabel(a.messageType, a.orderNumber)}
                       </td>
                       <td className="px-4 py-3">
                         {a.businessId ? (
@@ -241,17 +268,22 @@ export default function TwilioActivitiesPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {a.template.replace(/_/g, ' ')}
+                        {getTemplateLabel(a.messageType)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {a.status === 'error' && a.errorMessage ? (
-                          <span className="text-red-600" title={a.errorMessage}>
-                            {a.errorMessage.length > 60 ? `${a.errorMessage.substring(0, 60)}...` : a.errorMessage}
-                          </span>
-                        ) : a.phone ? (
-                          <span className="text-gray-500">{a.phone}</span>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {a.phone ? (
+                          <span className="font-mono text-xs">{a.phone}</span>
                         ) : (
                           '-'
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {a.status === 'error' && a.errorMessage ? (
+                          <span className="text-sm text-red-600" title={a.errorMessage}>
+                            {a.errorMessage.length > 80 ? `${a.errorMessage.substring(0, 80)}…` : a.errorMessage}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
                         )}
                       </td>
                     </tr>
