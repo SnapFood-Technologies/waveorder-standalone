@@ -190,6 +190,13 @@ export default function OperationsOrdersPage() {
           <p className="text-gray-600 mt-1">Platform-wide order activity and business performance</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/superadmin/orders"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors"
+          >
+            <ArrowUpRight className="w-4 h-4" />
+            View All Orders
+          </Link>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

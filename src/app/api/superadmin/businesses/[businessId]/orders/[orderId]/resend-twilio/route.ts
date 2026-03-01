@@ -78,6 +78,8 @@ export async function GET(
               select: {
                 name: true,
                 nameEn: true,
+                nameAl: true,
+                nameEl: true,
                 deliveryTime: true
               }
             }
@@ -87,6 +89,8 @@ export async function GET(
           postalPricingDetailsForWhatsApp = {
             name: postalPricing.postal?.name || 'Postal Service',
             nameEn: postalPricing.postal?.nameEn || postalPricing.postal?.name || 'Postal Service',
+            nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+            nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
             deliveryTime: postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null,
             price: postalPricing.price
           }
@@ -116,6 +120,8 @@ export async function GET(
       deliveryAddress: order.deliveryAddress || undefined,
       deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
       specialInstructions: order.notes || undefined,
+      invoiceType: (order as any).invoiceType || undefined,
+      language: business.language || undefined,
       currencySymbol: getCurrencySymbol(business.currency),
       postalPricingDetails: postalPricingDetailsForWhatsApp,
       isSalon,
@@ -205,6 +211,8 @@ export async function POST(
               select: {
                 name: true,
                 nameEn: true,
+                nameAl: true,
+                nameEl: true,
                 deliveryTime: true
               }
             }
@@ -214,6 +222,8 @@ export async function POST(
           postalPricingDetailsForWhatsApp = {
             name: postalPricing.postal?.name || 'Postal Service',
             nameEn: postalPricing.postal?.nameEn || postalPricing.postal?.name || 'Postal Service',
+            nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+            nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
             deliveryTime: postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null,
             price: postalPricing.price
           }
@@ -243,6 +253,8 @@ export async function POST(
       deliveryAddress: order.deliveryAddress || undefined,
       deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
       specialInstructions: order.notes || undefined,
+      invoiceType: (order as any).invoiceType || undefined,
+      language: business.language || undefined,
       currencySymbol: getCurrencySymbol(business.currency),
       postalPricingDetails: postalPricingDetailsForWhatsApp,
       isSalon,
