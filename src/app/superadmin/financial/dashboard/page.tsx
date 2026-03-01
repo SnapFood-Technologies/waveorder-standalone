@@ -34,6 +34,10 @@ interface DashboardData {
     total: number
   }
   revenueByPlan: Record<string, { subscribers: number; mrr: number; billingType: string }>
+  multiStoreStats?: {
+    multiStoreOwnerCount: number
+    businessesFromMultiStore: number
+  }
   trialFunnel: {
     activeTrials: number
     endedTrials: number
@@ -515,6 +519,13 @@ export default function FinancialDashboardPage() {
               </div>
             ) : (
               <p className="text-sm text-gray-500">No paid subscriptions yet</p>
+            )}
+            {data.multiStoreStats && data.multiStoreStats.multiStoreOwnerCount > 0 && (
+              <div className="mt-4 p-3 bg-sky-50 border border-sky-100 rounded-lg">
+                <p className="text-xs text-sky-800">
+                  <strong>Multi-store:</strong> {data.multiStoreStats.multiStoreOwnerCount} user{data.multiStoreStats.multiStoreOwnerCount !== 1 ? 's have' : ' has'} multiple businesses ({data.multiStoreStats.businessesFromMultiStore} total). One subscription covers all stores — so business count can exceed unique paying accounts.
+                </p>
+              </div>
             )}
           </div>
 

@@ -90,6 +90,24 @@ export async function GET() {
       }).catch(() => [])
     ])
 
+    // Multi-store: users with 2+ businesses (active, non-test)
+    const activeBusinessIds = dbBusinesses.filter(b => b.isActive).map(b => b.id)
+    const ownerLinks = activeBusinessIds.length > 0
+      ? await prisma.businessUser.findMany({
+          where: { role: 'OWNER', businessId: { in: activeBusinessIds } },
+          select: { userId: true }
+        })
+      : []
+    const userIdToCount = ownerLinks.reduce((acc, l) => {
+      acc.set(l.userId, (acc.get(l.userId) || 0) + 1)
+      return acc
+    }, new Map<string, number>())
+    const multiStoreOwners = [...userIdToCount.entries()].filter(([, c]) => c > 1)
+    const multiStoreStats = {
+      multiStoreOwnerCount: multiStoreOwners.length,
+      businessesFromMultiStore: multiStoreOwners.reduce((s, [, c]) => s + c, 0),
+    }
+
     // Filter to WaveOrder-only data
     const allSubscriptions = rawSubscriptions.filter(s => isWaveOrderSubscription(s))
     const allCharges = rawCharges.filter(c => {
@@ -296,6 +314,7 @@ export async function GET() {
         total: activeBusinesses.length,
       },
       revenueByPlan,
+      multiStoreStats,
       trialFunnel: {
         activeTrials,
         endedTrials,

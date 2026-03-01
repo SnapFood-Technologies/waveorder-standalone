@@ -96,10 +96,15 @@ interface CXData {
       name: string
       riskScore: number
       reasons: string[]
-      lastOrderDate: string | null // For salons, this represents last appointment date
+      lastOrderDate: string | null
       supportTicketsCount: number
       lastFeedbackRating: number | null
+      isMultiStore?: boolean
     }>
+  }
+  multiStoreStats?: {
+    multiStoreOwnerCount: number
+    businessesFromMultiStore: number
   }
 }
 
@@ -443,8 +448,9 @@ export default function CXAnalyticsPage() {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Star className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>No NPS data available</p>
-                <p className="text-sm mt-1">NPS surveys will appear here once businesses respond</p>
+                <p className="font-medium">No NPS data available</p>
+                <p className="text-sm mt-1">NPS surveys will appear here once businesses respond to SuperAdmin-requested feedback.</p>
+                <p className="text-xs mt-2 text-gray-400">Tip: Use the Feedback campaign in Marketing to collect NPS responses.</p>
               </div>
             )}
           </div>
@@ -566,7 +572,9 @@ export default function CXAnalyticsPage() {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Clock className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>No CES data available</p>
+                <p className="font-medium">No CES data available</p>
+                <p className="text-sm mt-1">CES is derived from onboarding time and time to first order.</p>
+                <p className="text-xs mt-2 text-gray-400">Data will appear as new businesses complete onboarding and place their first order.</p>
               </div>
             )}
           </div>
@@ -639,11 +647,25 @@ export default function CXAnalyticsPage() {
                       </div>
                     )
                   })}
+                {data.multiStoreStats && data.multiStoreStats.multiStoreOwnerCount > 0 && (
+                  <div className="mt-4 p-3 bg-sky-50 border border-sky-100 rounded-lg">
+                    <p className="text-xs text-sky-800">
+                      <strong>Multi-store:</strong> {data.multiStoreStats.multiStoreOwnerCount} user{data.multiStoreStats.multiStoreOwnerCount !== 1 ? 's have' : ' has'} multiple businesses ({data.multiStoreStats.businessesFromMultiStore} total). Business count can exceed unique paying accounts.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <DollarSign className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                 <p>No CLV data available</p>
+              </div>
+            )}
+            {data.multiStoreStats && data.multiStoreStats.multiStoreOwnerCount > 0 && (
+              <div className="mt-4 p-3 bg-sky-50 border border-sky-100 rounded-lg">
+                <p className="text-xs text-sky-800">
+                  <strong>Multi-store:</strong> {data.multiStoreStats.multiStoreOwnerCount} user{data.multiStoreStats.multiStoreOwnerCount !== 1 ? 's have' : ' has'} multiple businesses ({data.multiStoreStats.businessesFromMultiStore} total). One subscription covers all stores — business count can exceed unique paying accounts.
+                </p>
               </div>
             )}
           </div>
@@ -675,7 +697,12 @@ export default function CXAnalyticsPage() {
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <p className="font-medium text-gray-900">{business.name}</p>
+                    <p className="font-medium text-gray-900">
+                      {business.name}
+                      {business.isMultiStore && (
+                        <span className="ml-2 text-xs font-normal text-sky-600">(multi-store)</span>
+                      )}
+                    </p>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       business.riskScore >= 50 ? 'bg-red-100 text-red-700' :
                       business.riskScore >= 30 ? 'bg-orange-100 text-orange-700' :

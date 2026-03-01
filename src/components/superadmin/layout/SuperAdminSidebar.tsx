@@ -15,6 +15,7 @@ import {
   HeadphonesIcon,
   Ticket,
   MessageSquare,
+  Send,
   ChevronDown,
   ChevronRight,
   MapPin,
@@ -60,7 +61,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/system')) items.push('System')
     if (pathname?.startsWith('/superadmin/financial')) items.push('Financial')
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
-    if (pathname?.startsWith('/superadmin/operations')) items.push('Operations Analytics')
+    if (pathname?.startsWith('/superadmin/operations') || pathname === '/superadmin/orders') items.push('Operations Analytics')
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
     if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
     if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
@@ -141,9 +142,14 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
       icon: ClipboardList,
       children: [
         { 
-          name: 'Orders', 
-          href: '/superadmin/operations/orders', 
+          name: 'All Orders', 
+          href: '/superadmin/orders', 
           icon: ShoppingCart
+        },
+        { 
+          name: 'Orders Analytics', 
+          href: '/superadmin/operations/orders', 
+          icon: BarChart3
         },
         { 
           name: 'Bookings', 
@@ -222,6 +228,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'API Keys', 
           href: '/superadmin/system/api-keys', 
           icon: Key
+        },
+        { 
+          name: 'Twilio Activities', 
+          href: '/superadmin/system/twilio-activities', 
+          icon: Send
         }
       ]
     },
