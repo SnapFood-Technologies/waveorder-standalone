@@ -135,8 +135,20 @@ export async function GET(request: NextRequest) {
         trialDaysRemaining,
         createdAt: business.createdAt,
         ownerEmail: owner?.email,
+        ownerId: owner?.id,
       }
     })
+
+    // Multi-store: users with 2+ businesses — explains why business count can exceed unique billing accounts
+    const ownerIdToCount = processedBusinesses.reduce((acc, b) => {
+      if (b.ownerId) acc.set(b.ownerId, (acc.get(b.ownerId) || 0) + 1)
+      return acc
+    }, new Map<string, number>())
+    const multiStoreOwnerIds = new Set([...ownerIdToCount.entries()].filter(([, c]) => c > 1).map(([id]) => id))
+    const multiStoreStats = {
+      multiStoreOwnerCount: multiStoreOwnerIds.size,
+      businessesFromMultiStore: processedBusinesses.filter(b => b.ownerId && multiStoreOwnerIds.has(b.ownerId)).length,
+    }
 
     // All businesses (active + deactivated) for historical/growth metrics
     const allProcessed = [
@@ -277,6 +289,7 @@ export async function GET(request: NextRequest) {
       totalBusinesses: processedBusinesses.length,
       byPlan,
       byBillingType,
+      multiStoreStats,
 
       trialAnalytics: {
         activeTrials: Math.max(activeTrials.length, trialing.length),

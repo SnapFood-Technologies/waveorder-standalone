@@ -33,6 +33,10 @@ interface FinancialData {
     monthly: number
     yearly: number
   }
+  multiStoreStats?: {
+    multiStoreOwnerCount: number
+    businessesFromMultiStore: number
+  }
   trialAnalytics: {
     activeTrials: number
     trialsExpiringSoon: {
@@ -370,6 +374,9 @@ export default function FinancialPage() {
           {/* Subscription Distribution */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription Distribution</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              <strong>By Plan</strong> = total businesses per plan. <strong>By Billing</strong> = billing status (free, trial, monthly, yearly). One subscription can cover multiple businesses (multi-store) — so these counts may differ.
+            </p>
             
             {/* By Plan */}
             <div className="mb-6">
@@ -412,6 +419,15 @@ export default function FinancialPage() {
                 </div>
               </div>
             </div>
+
+            {/* Multi-store note: clarifies why business count can exceed unique billing accounts */}
+            {data.multiStoreStats && data.multiStoreStats.multiStoreOwnerCount > 0 && (
+              <div className="mt-4 p-3 bg-sky-50 border border-sky-100 rounded-lg">
+                <p className="text-xs text-sky-800">
+                  <strong>Multi-store:</strong> {data.multiStoreStats.multiStoreOwnerCount} user{data.multiStoreStats.multiStoreOwnerCount !== 1 ? 's have' : ' has'} multiple businesses ({data.multiStoreStats.businessesFromMultiStore} total). One subscription covers all stores — so business count can exceed unique paying accounts.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Trial Analytics */}

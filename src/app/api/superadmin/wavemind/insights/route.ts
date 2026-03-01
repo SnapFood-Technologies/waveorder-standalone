@@ -185,6 +185,11 @@ export async function GET(request: NextRequest) {
         PRO: processedData.filter(b => b.plan === 'PRO').length,
         BUSINESS: processedData.filter(b => b.plan === 'BUSINESS').length
       },
+      payingByPlan: {
+        STARTER: processedData.filter(b => (b.plan === 'STARTER' && (b.billingType === 'monthly' || b.billingType === 'yearly'))).length,
+        PRO: processedData.filter(b => (b.plan === 'PRO' && (b.billingType === 'monthly' || b.billingType === 'yearly'))).length,
+        BUSINESS: processedData.filter(b => (b.plan === 'BUSINESS' && (b.billingType === 'monthly' || b.billingType === 'yearly'))).length
+      },
       recentActivity: {
         // Completed orders across all businesses (last 30 days)
         totalCompletedOrders: processedData.reduce((sum, b) => sum + b.completedOrderCount, 0),
@@ -229,6 +234,8 @@ WaveOrder earns subscription revenue from businesses:
 
 ## Important Data Notes
 - payingCustomers, MRR, and ARR are from the Financial Dashboard (Stripe): they count only active paid subscriptions. Use these numbers as the source of truth.
+- byPlan = count of ALL businesses by their plan (includes free, trial, and paying). Do NOT use byPlan as "paying customers by plan".
+- payingByPlan = count of paying customers only, broken down by plan. Use this for upselling insights about paying customers.
 - "completedOrderRevenue" = Revenue earned BY our customers' businesses (NOT WaveOrder's revenue)
 - Each business may use different currencies (USD, ALL, EUR, etc.) - don't sum revenues across businesses
 - Completed orders = DELIVERED or PICKED_UP orders that are PAID

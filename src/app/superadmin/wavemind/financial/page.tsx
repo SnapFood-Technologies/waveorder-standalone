@@ -97,22 +97,22 @@ export default function WavemindFinancialPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - stacked on mobile, row on desktop */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Brain className="w-6 h-6 text-purple-600" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg shrink-0">
+              <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
             Wavemind Engine
           </h1>
-          <p className="text-gray-600 mt-1">AI-powered financial insights and analysis</p>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">AI-powered financial insights and analysis</p>
         </div>
         
         <button
           onClick={fetchInsights}
           disabled={loading}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors shrink-0 w-full sm:w-auto"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

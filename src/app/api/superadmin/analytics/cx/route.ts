@@ -76,10 +76,11 @@ export async function GET(request: NextRequest) {
           comments: { orderBy: { createdAt: 'asc' }, select: { createdAt: true, authorId: true } }
         }
       }),
-      // At-risk businesses
+      // At-risk businesses (include owners for multi-store check)
       prisma.business.findMany({
         where: { isActive: true, testMode: { not: true } },
         include: {
+          users: { where: { role: 'OWNER' }, select: { userId: true } },
           supportTickets: { where: { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } },
           feedbacks: { where: { createdAt: { gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) } }, orderBy: { createdAt: 'desc' }, take: 1 },
           orders: { where: { createdAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } } }
@@ -404,10 +405,36 @@ export async function GET(request: NextRequest) {
       ticketsByType[ticket.type] = (ticketsByType[ticket.type] || 0) + 1
     })
 
+    // === MULTI-STORE: platform-wide (for CLV note) + at-risk owners (for labels) ===
+    const [platformMultiStore, atRiskOwnerCounts] = await Promise.all([
+      prisma.businessUser.groupBy({
+        by: ['userId'],
+        where: { role: 'OWNER', business: { isActive: true, testMode: { not: true } } },
+        _count: { businessId: true }
+      }).then(groups => groups.filter(g => g._count.businessId > 1)),
+      (() => {
+        const ownerIds = [...new Set(atRiskBusinesses.map(b => b.users[0]?.userId).filter(Boolean) as string[])]
+        if (ownerIds.length === 0) return Promise.resolve([] as { userId: string; _count: { businessId: number } }[])
+        return prisma.businessUser.groupBy({
+          by: ['userId'],
+          where: { userId: { in: ownerIds }, role: 'OWNER', business: { isActive: true, testMode: { not: true } } },
+          _count: { businessId: true }
+        })
+      })()
+    ])
+    const multiStoreOwnerIds = new Set(
+      atRiskOwnerCounts.filter(g => g._count.businessId > 1).map(g => g.userId)
+    )
+    const multiStoreStats = {
+      multiStoreOwnerCount: platformMultiStore.length,
+      businessesFromMultiStore: platformMultiStore.reduce((s, g) => s + g._count.businessId, 0),
+    }
+
     // === AT-RISK CUSTOMERS ===
     const atRisk: Array<{
       id: string; name: string; riskScore: number; reasons: string[]
       lastOrderDate: string | null; supportTicketsCount: number; lastFeedbackRating: number | null
+      isMultiStore: boolean
     }> = []
 
     atRiskBusinesses.forEach(business => {
@@ -440,6 +467,8 @@ export async function GET(request: NextRequest) {
       }
 
       if (riskScore > 0) {
+        const ownerId = business.users[0]?.userId
+        const isMultiStore = ownerId ? multiStoreOwnerIds.has(ownerId) : false
         atRisk.push({
           id: business.id,
           name: business.name,
@@ -447,7 +476,8 @@ export async function GET(request: NextRequest) {
           reasons,
           lastOrderDate: business.orders.length > 0 ? business.orders[business.orders.length - 1].createdAt.toISOString() : null,
           supportTicketsCount: business.supportTickets.length,
-          lastFeedbackRating: business.feedbacks.length > 0 ? business.feedbacks[0].rating : null
+          lastFeedbackRating: business.feedbacks.length > 0 ? business.feedbacks[0].rating : null,
+          isMultiStore,
         })
       }
     })
@@ -490,6 +520,7 @@ export async function GET(request: NextRequest) {
         businessesAnalyzed: Object.values(clvByPlan).reduce((s, p) => s + p.count, 0),
         dataSource: dbTransactions.length > 0 ? 'transactions' : 'stripe_estimate',
       },
+      multiStoreStats,
       support: {
         avgFirstResponseTimeHours: avgFRT,
         firstContactResolutionRate: fcr,
