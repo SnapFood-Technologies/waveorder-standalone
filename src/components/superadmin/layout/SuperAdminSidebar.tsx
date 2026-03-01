@@ -32,7 +32,6 @@ import {
   Brain,
   Key,
   ClipboardList,
-  ShoppingCart,
   CalendarCheck,
   Scissors,
   Search,
@@ -61,7 +60,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
     if (pathname?.startsWith('/superadmin/system')) items.push('System')
     if (pathname?.startsWith('/superadmin/financial')) items.push('Financial')
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
-    if (pathname?.startsWith('/superadmin/operations') || pathname === '/superadmin/orders') items.push('Operations Analytics')
+    if (pathname?.startsWith('/superadmin/operations')) items.push('Operations Analytics')
     if (pathname?.startsWith('/superadmin/support')) items.push('Support')
     if (pathname?.startsWith('/superadmin/locations')) items.push('Locations')
     if (pathname?.startsWith('/superadmin/marketing')) items.push('Marketing')
@@ -141,11 +140,6 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
       name: 'Operations Analytics', 
       icon: ClipboardList,
       children: [
-        { 
-          name: 'All Orders', 
-          href: '/superadmin/orders', 
-          icon: ShoppingCart
-        },
         { 
           name: 'Orders Analytics', 
           href: '/superadmin/operations/orders', 
