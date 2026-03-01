@@ -32,28 +32,18 @@ interface Activity {
   createdAt: string
 }
 
-/** Human-readable labels for message types (Order / Booking / Service Request) */
-function getReferenceLabel(messageType: string, orderNumber: string): string {
-  const ref = orderNumber && orderNumber !== '-' ? `#${orderNumber}` : ''
-  switch (messageType) {
-    case 'appointment_notification':
-      return ref ? `Booking ${ref}` : 'Booking'
-    case 'service_request_notification':
-      return 'Service Request'
-    default:
-      return ref ? `Order ${ref}` : 'Order'
-  }
+/** Template = which Twilio template was used. Derived from business type (matches .env: CONTENT_SID / APPOINTMENT / SERVICE_REQUEST) */
+function getTemplateFromBusinessType(businessType: string | null, messageType: string): string {
+  if (businessType === 'SALON') return 'Appointment'
+  if (businessType === 'SERVICES') return messageType === 'service_request_notification' ? 'Service request' : 'Appointment'
+  return 'Order' // RESTAURANT, RETAIL, or null
 }
 
-function getTemplateLabel(messageType: string): string {
-  switch (messageType) {
-    case 'appointment_notification':
-      return 'Appointment'
-    case 'service_request_notification':
-      return 'Service request'
-    default:
-      return 'Order'
-  }
+function getReferenceLabel(businessType: string | null, messageType: string, orderNumber: string): string {
+  const ref = orderNumber && orderNumber !== '-' ? `#${orderNumber}` : ''
+  if (businessType === 'SALON' || (businessType === 'SERVICES' && messageType !== 'service_request_notification')) return ref ? `Booking ${ref}` : 'Booking'
+  if (messageType === 'service_request_notification') return 'Service Request'
+  return ref ? `Order ${ref}` : 'Order'
 }
 
 interface ApiResponse {
@@ -252,7 +242,7 @@ export default function TwilioActivitiesPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {getReferenceLabel(a.messageType, a.orderNumber)}
+                        {getReferenceLabel(a.businessType, a.messageType, a.orderNumber)}
                       </td>
                       <td className="px-4 py-3">
                         {a.businessId ? (
@@ -268,7 +258,7 @@ export default function TwilioActivitiesPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
-                        {getTemplateLabel(a.messageType)}
+                        {getTemplateFromBusinessType(a.businessType, a.messageType)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
                         {a.phone ? (

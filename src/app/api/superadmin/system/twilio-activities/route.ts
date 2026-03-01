@@ -49,7 +49,14 @@ export async function GET(request: NextRequest) {
 
     const activities = logs.map((log) => {
       const meta = (log.metadata as { orderId?: string; orderNumber?: string; phone?: string; messageType?: string; serviceRequestId?: string }) || {}
-      const messageType = meta.messageType || 'order_notification'
+      let messageType = meta.messageType || 'order_notification'
+      const businessType = log.business?.businessType || null
+
+      // Infer template from businessType for historical logs (pre-appointment_notification) and when messageType is generic
+      if (messageType === 'order_notification' && (businessType === 'SALON' || businessType === 'SERVICES')) {
+        messageType = 'appointment_notification'
+      }
+
       return {
         id: log.id,
         logType: log.logType,
@@ -59,7 +66,7 @@ export async function GET(request: NextRequest) {
         businessId: log.businessId,
         businessName: log.business?.name || '-',
         businessSlug: log.business?.slug || null,
-        businessType: log.business?.businessType || null,
+        businessType,
         messageType,
         template: messageType,
         phone: meta.phone || null,
