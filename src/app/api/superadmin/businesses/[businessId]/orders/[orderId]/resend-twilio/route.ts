@@ -285,14 +285,55 @@ export async function POST(
     }
 
     const debugPayload = buildOrderNotificationDebugPayload(business.whatsappNumber!, orderPayload)
+    const result = await sendTwilioOrderNotification(business.whatsappNumber!, orderPayload)
 
-    // COMMENTED: Actual Twilio send - debug mode to inspect ContentVariables
-    // const result = await sendTwilioOrderNotification(business.whatsappNumber!, orderPayload)
-    // if (result.success) { logSystemEvent({...}) } else { logSystemEvent({...}) }
+    if (result.success) {
+      logSystemEvent({
+        logType: 'twilio_message_sent',
+        severity: 'info',
+        slug: business.slug,
+        businessId: business.id,
+        endpoint: '/api/superadmin/businesses/.../orders/.../resend-twilio',
+        method: 'POST',
+        statusCode: 200,
+        ipAddress: extractIPAddress(request),
+        userAgent: request.headers.get('user-agent') || undefined,
+        url: request.url,
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          phone: business.whatsappNumber,
+          messageType: isSalon ? 'appointment_notification' : 'order_notification',
+          manualResend: true
+        }
+      })
+    } else {
+      logSystemEvent({
+        logType: 'twilio_message_error',
+        severity: 'error',
+        slug: business.slug,
+        businessId: business.id,
+        endpoint: '/api/superadmin/businesses/.../orders/.../resend-twilio',
+        method: 'POST',
+        statusCode: 200,
+        ipAddress: extractIPAddress(request),
+        userAgent: request.headers.get('user-agent') || undefined,
+        url: request.url,
+        errorMessage: result.error || 'Twilio message send failed',
+        metadata: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          phone: business.whatsappNumber,
+          messageType: isSalon ? 'appointment_notification' : 'order_notification',
+          manualResend: true
+        }
+      })
+    }
 
     return NextResponse.json({
-      success: false,
-      error: 'DEBUG MODE: Twilio send is commented out. Check debug payload in modal.',
+      success: result.success,
+      error: result.error,
+      messageId: result.messageId,
       debug: debugPayload ? {
         contentSid: debugPayload.contentSid,
         contentVariables: debugPayload.contentVariables,

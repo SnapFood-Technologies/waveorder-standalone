@@ -101,9 +101,9 @@ function formatWhatsAppNumber(phone: string): string {
 }
 
 /**
- * Transliterate accented chars to ASCII for WhatsApp template variables.
- * Fixes "Content Variables parameter is invalid" when template is in English.
- * e.g. Sarandë → Sarande, naïve → naive
+ * Transliterate and sanitize for WhatsApp template variables.
+ * - Accented chars → ASCII (Sarandë → Sarande)
+ * - Newlines → space (template variables may not accept \\n)
  */
 function transliterateForWhatsApp(text: string): string {
   if (!text || typeof text !== 'string') return text
@@ -119,7 +119,8 @@ function transliterateForWhatsApp(text: string): string {
     'ž': 'z', 'ź': 'z', 'ż': 'z', 'đ': 'd', 'ð': 'd',
     'ă': 'a', 'ǎ': 'a', 'ģ': 'g', 'ķ': 'k', 'ļ': 'l', 'ņ': 'n', 'ŗ': 'r', 'ţ': 't'
   }
-  return text.replace(/[^\u0000-\u007F]/g, (ch) => map[ch] || ch)
+  const transliterated = text.replace(/[^\u0000-\u007F]/g, (ch) => map[ch] || ch)
+  return transliterated.replace(/\s+/g, ' ').trim()
 }
 
 /**
