@@ -29,7 +29,7 @@ export async function GET(
     // Verify business exists
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { id: true, name: true, currency: true }
+      select: { id: true, name: true, currency: true, whatsappDirectNotifications: true }
     })
 
     if (!business) {
@@ -224,6 +224,35 @@ export async function GET(
     // Paginate orders for list
     const skip = (page - 1) * limit
     const paginatedOrders = allOrders.slice(skip, skip + limit)
+    const paginatedOrderIds = paginatedOrders.map((o) => o.id)
+
+    // Fetch Twilio message logs for these orders (most recent sent/error per order)
+    const twilioLogs = await prisma.systemLog.findMany({
+      where: {
+        businessId,
+        logType: { in: ['twilio_message_sent', 'twilio_message_error'] },
+        createdAt: { gte: startDate }
+      },
+      select: {
+        logType: true,
+        errorMessage: true,
+        metadata: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    const twilioStatusByOrder = new Map<string, { status: 'sent' | 'error'; error?: string }>()
+    for (const log of twilioLogs) {
+      const meta = log.metadata as { orderId?: string } | null
+      const orderId = meta?.orderId
+      if (!orderId || !paginatedOrderIds.includes(orderId)) continue
+      if (twilioStatusByOrder.has(orderId)) continue
+      twilioStatusByOrder.set(orderId, {
+        status: log.logType === 'twilio_message_sent' ? 'sent' : 'error',
+        error: log.logType === 'twilio_message_error' ? (log.errorMessage || 'Failed to send') : undefined
+      })
+    }
 
     // Format orders for response
     const formattedOrders = paginatedOrders.map(order => {
@@ -264,7 +293,10 @@ export async function GET(
           variant: item.variant ? {
             name: item.variant.name
           } : null
-        }))
+        })),
+        twilioStatus: business.whatsappDirectNotifications
+          ? twilioStatusByOrder.get(order.id) ?? null
+          : null
       }
     })
 
@@ -272,7 +304,8 @@ export async function GET(
       business: {
         id: business.id,
         name: business.name,
-        currency: business.currency
+        currency: business.currency,
+        whatsappDirectNotifications: business.whatsappDirectNotifications ?? false
       },
       stats: {
         totalOrders,

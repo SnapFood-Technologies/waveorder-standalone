@@ -21,7 +21,9 @@ import {
   LineChart as LineChartIcon,
   RefreshCw,
   Info,
-  Star
+  Star,
+  Send,
+  AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import {
@@ -40,12 +42,14 @@ import {
   Legend
 } from 'recharts'
 import { format, parseISO, startOfWeek, startOfMonth } from 'date-fns'
+import toast from 'react-hot-toast'
 
 interface BusinessOrderStats {
   business: {
     id: string
     name: string
     currency: string
+    whatsappDirectNotifications?: boolean
   }
   stats: {
     totalOrders: number
@@ -86,6 +90,7 @@ interface BusinessOrderStats {
       product: { name: string }
       variant: { name: string } | null
     }>
+    twilioStatus: { status: 'sent' | 'error'; error?: string } | null
   }>
   pagination: {
     page: number
@@ -161,6 +166,10 @@ export default function BusinessOrdersStatsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [resendModalOrder, setResendModalOrder] = useState<BusinessOrderStats['orders'][0] | null>(null)
+  const [resendPreview, setResendPreview] = useState<any>(null)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSending, setResendSending] = useState(false)
 
   // Debounce search
   useEffect(() => {
@@ -315,6 +324,55 @@ export default function BusinessOrdersStatsPage() {
     setSearchQuery('')
     setDebouncedSearchQuery('')
     setCurrentPage(1)
+  }
+
+  const openResendModal = async (order: BusinessOrderStats['orders'][0]) => {
+    setResendModalOrder(order)
+    setResendPreview(null)
+    setResendLoading(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/orders/${order.id}/resend-twilio`)
+      const json = await res.json()
+      if (res.ok) {
+        setResendPreview(json.preview)
+      } else {
+        toast.error(json.message || 'Failed to load preview')
+        setResendModalOrder(null)
+      }
+    } catch (e) {
+      console.error(e)
+      toast.error('Failed to load preview')
+      setResendModalOrder(null)
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
+  const closeResendModal = () => {
+    setResendModalOrder(null)
+    setResendPreview(null)
+  }
+
+  const handleResendTwilio = async () => {
+    if (!resendModalOrder) return
+    setResendSending(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/orders/${resendModalOrder.id}/resend-twilio`, {
+        method: 'POST'
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('WhatsApp notification sent')
+        closeResendModal()
+        fetchData()
+      } else {
+        toast.error(json.error || 'Failed to send')
+      }
+    } catch (e) {
+      toast.error('Failed to send')
+    } finally {
+      setResendSending(false)
+    }
   }
 
   const activeFiltersCount = [
@@ -791,15 +849,27 @@ export default function BusinessOrdersStatsPage() {
                       </td>
                       
                       <td className="px-6 py-4 text-center">
-                        <span 
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          style={{ 
-                            backgroundColor: `${getStatusColor(order.status)}20`,
-                            color: getStatusColor(order.status)
-                          }}
-                        >
-                          {formatStatusLabel(order.status)}
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span 
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                            style={{ 
+                              backgroundColor: `${getStatusColor(order.status)}20`,
+                              color: getStatusColor(order.status)
+                            }}
+                          >
+                            {formatStatusLabel(order.status)}
+                          </span>
+                          {data.business.whatsappDirectNotifications &&
+                            order.twilioStatus?.status === 'error' && (
+                              <span
+                                className="inline-flex items-center text-amber-600 text-xs"
+                                title={order.twilioStatus?.error}
+                              >
+                                <AlertCircle className="w-3 h-3 mr-0.5" />
+                                WhatsApp failed
+                              </span>
+                            )}
+                        </div>
                       </td>
                       
                       <td className="px-6 py-4 text-right">
@@ -825,13 +895,26 @@ export default function BusinessOrdersStatsPage() {
                       </td>
                       
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
-                          className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          {data.business.whatsappDirectNotifications &&
+                            order.twilioStatus?.status === 'error' && (
+                              <button
+                                onClick={() => openResendModal(order)}
+                                className="inline-flex items-center px-2 py-1 border border-amber-300 bg-amber-50 text-amber-800 rounded text-xs hover:bg-amber-100 transition-colors"
+                                title={order.twilioStatus?.error}
+                              >
+                                <Send className="w-3 h-3 mr-1" />
+                                Resend WhatsApp
+                              </button>
+                            )}
+                          <Link
+                            href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
+                            className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -876,6 +959,65 @@ export default function BusinessOrdersStatsPage() {
           </>
         )}
       </div>
+
+      {/* Resend WhatsApp Modal */}
+      {resendModalOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Resend WhatsApp Notification</h3>
+                <button onClick={closeResendModal} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                The previous WhatsApp notification for order #{resendModalOrder.orderNumber} failed.
+                This will send the same message again to the business&apos;s WhatsApp number.
+              </p>
+              {resendLoading ? (
+                <div className="py-8 text-center">
+                  <RefreshCw className="w-8 h-8 animate-spin text-teal-600 mx-auto" />
+                </div>
+              ) : resendPreview ? (
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg text-sm space-y-2">
+                  <p><strong>Order:</strong> {resendPreview.orderNumber}</p>
+                  <p><strong>Customer:</strong> {resendPreview.customerName}</p>
+                  <p><strong>Phone:</strong> {resendPreview.customerPhone}</p>
+                  <p><strong>Address:</strong> {resendPreview.deliveryAddress || 'N/A'}</p>
+                  <p><strong>Items:</strong> {resendPreview.items?.map((i: any) => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                  <p><strong>Total:</strong> {resendPreview.currencySymbol}{resendPreview.total?.toFixed(2)}</p>
+                </div>
+              ) : null}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={closeResendModal}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResendTwilio}
+                  disabled={resendSending || resendLoading}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                >
+                  {resendSending ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Yes, Resend
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

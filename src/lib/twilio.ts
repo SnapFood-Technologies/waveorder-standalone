@@ -101,6 +101,28 @@ function formatWhatsAppNumber(phone: string): string {
 }
 
 /**
+ * Transliterate accented chars to ASCII for WhatsApp template variables.
+ * Fixes "Content Variables parameter is invalid" when template is in English.
+ * e.g. Sarandë → Sarande, naïve → naive
+ */
+function transliterateForWhatsApp(text: string): string {
+  if (!text || typeof text !== 'string') return text
+  const map: Record<string, string> = {
+    'ë': 'e', 'ê': 'e', 'è': 'e', 'é': 'e', 'ē': 'e', 'ĕ': 'e',
+    'ñ': 'n', 'ň': 'n', 'ń': 'n',
+    'ü': 'u', 'û': 'u', 'ù': 'u', 'ú': 'u', 'ū': 'u',
+    'ö': 'o', 'ô': 'o', 'ò': 'o', 'ó': 'o', 'ō': 'o',
+    'ä': 'a', 'â': 'a', 'à': 'a', 'á': 'a', 'ā': 'a',
+    'ï': 'i', 'î': 'i', 'ì': 'i', 'í': 'i', 'ī': 'i',
+    'ß': 'ss', 'ç': 'c', 'ć': 'c', 'č': 'c',
+    'ý': 'y', 'ÿ': 'y', 'ř': 'r', 'š': 's', 'ş': 's',
+    'ž': 'z', 'ź': 'z', 'ż': 'z', 'đ': 'd', 'ð': 'd',
+    'ă': 'a', 'ǎ': 'a', 'ģ': 'g', 'ķ': 'k', 'ļ': 'l', 'ņ': 'n', 'ŗ': 'r', 'ţ': 't'
+  }
+  return text.replace(/[^\u0000-\u007F]/g, (ch) => map[ch] || ch)
+}
+
+/**
  * Get currency symbol for display
  */
 function getCurrencySymbol(currency: string): string {
@@ -365,13 +387,13 @@ export async function sendOrderNotification(
     //   {{4}}=phone, {{5}}=appointmentDateTime, {{6}}=services, {{7}}=total, {{8}}=notes
     const contentVariables: Record<string, string> = {
       '1': orderData.orderNumber,
-      '2': orderData.businessName,
-      '3': orderData.customerName,
+      '2': transliterateForWhatsApp(orderData.businessName),
+      '3': transliterateForWhatsApp(orderData.customerName),
       '4': orderData.customerPhone,
       '5': orderData.appointmentDateTime || 'Not specified',
-      '6': itemsText,
+      '6': transliterateForWhatsApp(itemsText),
       '7': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
-      '8': orderData.specialInstructions || 'None'
+      '8': transliterateForWhatsApp(orderData.specialInstructions || 'None')
     }
 
     console.log('Sending WhatsApp appointment notification via template:', config.appointmentContentSid)
@@ -412,18 +434,18 @@ export async function sendOrderNotification(
     
     const contentVariables: Record<string, string> = {
       '1': orderData.orderNumber,
-      '2': orderData.businessName,
+      '2': transliterateForWhatsApp(orderData.businessName),
       '3': typeLabels[orderData.deliveryType] || orderData.deliveryType,
-      '4': orderData.customerName,
+      '4': transliterateForWhatsApp(orderData.customerName),
       '5': orderData.customerPhone,
-      '6': addressLine,
-      '7': itemsText,
+      '6': transliterateForWhatsApp(addressLine),
+      '7': transliterateForWhatsApp(itemsText),
       '8': `${orderData.currencySymbol}${orderData.subtotal.toFixed(2)}`,
       '9': orderData.deliveryFee > 0 
         ? `${orderData.currencySymbol}${orderData.deliveryFee.toFixed(2)}` 
         : 'Free',
       '10': `${orderData.currencySymbol}${orderData.total.toFixed(2)}`,
-      '11': orderData.specialInstructions || 'None'
+      '11': transliterateForWhatsApp(orderData.specialInstructions || 'None')
     }
 
     console.log('Sending WhatsApp order notification via template:', config.contentSid)
