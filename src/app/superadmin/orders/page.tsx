@@ -219,8 +219,8 @@ export default function AllOrdersPage() {
       if (json.debug) setResendDebug(json.debug)
       if (json.success) {
         toast.success('WhatsApp notification sent')
+        await fetchData()
         closeResendModal()
-        fetchData()
       } else {
         toast.error(json.error || 'Failed to send')
       }
