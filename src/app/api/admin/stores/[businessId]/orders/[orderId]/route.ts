@@ -389,6 +389,13 @@ export async function PUT(
         DELIVERED: ['RETURNED', 'REFUNDED'] // Can return product or refund directly
       }
 
+      // Skip steps: allow direct jump to final status (Mark as Delivered / Picked Up button)
+      const inProgressStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY']
+      if (inProgressStatuses.includes(currentStatus)) {
+        if (orderType === 'DELIVERY' && newStatus === 'DELIVERED') return true
+        if ((orderType === 'PICKUP' || orderType === 'DINE_IN') && newStatus === 'PICKED_UP') return true
+      }
+
       // Order-type-specific transitions for READY
       if (currentStatus === 'READY') {
         if (orderType === 'PICKUP' || orderType === 'DINE_IN') {
