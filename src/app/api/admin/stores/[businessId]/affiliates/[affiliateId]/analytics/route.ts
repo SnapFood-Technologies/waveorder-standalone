@@ -152,6 +152,27 @@ export async function GET(
     )
     const revenue = completedOrders.reduce((sum, o) => sum + o.total, 0)
 
+    // Affiliate revenue (commission earned from AffiliateEarning records)
+    const affiliateEarnings = await prisma.affiliateEarning.aggregate({
+      where: {
+        affiliateId,
+        status: { in: ['PENDING', 'PAID'] }
+      },
+      _sum: { amount: true }
+    })
+    const affiliateRevenue = affiliateEarnings._sum.amount ?? 0
+
+    // Views by day for chart (group sessions by date)
+    const viewsByDay: Array<{ date: string; views: number }> = []
+    const dayCount = new Map<string, number>()
+    sessions.forEach(s => {
+      const dateKey = s.visitedAt.toISOString().slice(0, 10)
+      dayCount.set(dateKey, (dayCount.get(dateKey) || 0) + 1)
+    })
+    Array.from(dayCount.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([date, count]) => viewsByDay.push({ date, views: count }))
+
     return NextResponse.json({
       affiliate: {
         id: affiliate.id,
@@ -162,8 +183,10 @@ export async function GET(
         views,
         orders: ordersCount,
         conversionRate,
-        revenue
+        revenue,
+        affiliateRevenue
       },
+      viewsByDay,
       bySource: Object.entries(bySource).map(([name, count]) => ({ name, count })),
       byMedium: Object.entries(byMedium).map(([name, count]) => ({ name, count })),
       byCountry: Object.entries(byCountry).map(([name, count]) => ({ name, count })),
