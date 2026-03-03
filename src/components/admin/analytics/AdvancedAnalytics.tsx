@@ -10,7 +10,9 @@ import {
   Info,
   TrendingUp,
   Users,
-  ShoppingBag
+  ShoppingBag,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 
@@ -79,6 +81,10 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
     end: new Date()
   })
   const [selectedPeriod, setSelectedPeriod] = useState('this_month')
+  const [countriesPage, setCountriesPage] = useState(1)
+  const [citiesPage, setCitiesPage] = useState(1)
+
+  const ITEMS_PER_PAGE = 5
 
   const isSalon = businessType === 'SALON' || businessType === 'SERVICES'
   const isServices = businessType === 'SERVICES'
@@ -87,6 +93,8 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
   useEffect(() => {
     fetchBusinessData()
     fetchAnalyticsData()
+    setCountriesPage(1)
+    setCitiesPage(1)
   }, [businessId, dateRange])
 
   const fetchBusinessData = async () => {
@@ -168,6 +176,10 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
 
   const allCountries = geographicData?.countries || []
   const allCities = geographicData?.cities || []
+  const totalCountriesPages = Math.ceil(allCountries.length / ITEMS_PER_PAGE) || 1
+  const totalCitiesPages = Math.ceil(allCities.length / ITEMS_PER_PAGE) || 1
+  const paginatedCountries = allCountries.slice((countriesPage - 1) * ITEMS_PER_PAGE, countriesPage * ITEMS_PER_PAGE)
+  const paginatedCities = allCities.slice((citiesPage - 1) * ITEMS_PER_PAGE, citiesPage * ITEMS_PER_PAGE)
   const allSources = trafficData?.sources || []
   const allCampaigns = trafficData?.campaigns || []
   const allMediums = trafficData?.mediums || []
@@ -241,12 +253,14 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
               </div>
               {allCountries.length > 0 ? (
                 <div className="space-y-4">
-                  {allCountries.map((country, index) => (
+                  {paginatedCountries.map((country, i) => {
+                    const globalIndex = (countriesPage - 1) * ITEMS_PER_PAGE + i
+                    return (
                     <div key={country.country} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-teal-100 text-teal-700 text-sm font-semibold">
-                            {index + 1}
+                            {globalIndex + 1}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">{country.country}</p>
@@ -271,7 +285,30 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                         ></div>
                       </div>
                     </div>
-                  ))}
+                  )
+                  })}
+                  {/* Countries pagination */}
+                  {totalCountriesPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setCountriesPage(p => Math.max(1, p - 1))}
+                        disabled={countriesPage <= 1}
+                        className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Previous
+                      </button>
+                      <span className="text-sm text-gray-500">
+                        Page {countriesPage} of {totalCountriesPages}
+                      </span>
+                      <button
+                        onClick={() => setCountriesPage(p => Math.min(totalCountriesPages, p + 1))}
+                        disabled={countriesPage >= totalCountriesPages}
+                        className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-sm text-gray-400">
@@ -291,12 +328,14 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
               </div>
               {allCities.length > 0 ? (
                 <div className="space-y-4">
-                  {allCities.map((city, index) => (
+                  {paginatedCities.map((city, i) => {
+                    const globalIndex = (citiesPage - 1) * ITEMS_PER_PAGE + i
+                    return (
                     <div key={`${city.city}-${city.country}`} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
-                            {index + 1}
+                            {globalIndex + 1}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900">
@@ -324,7 +363,30 @@ export default function AdvancedAnalytics({ businessId }: AdvancedAnalyticsProps
                         ></div>
                       </div>
                     </div>
-                  ))}
+                  )
+                  })}
+                  {/* Cities pagination */}
+                  {totalCitiesPages > 1 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setCitiesPage(p => Math.max(1, p - 1))}
+                        disabled={citiesPage <= 1}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft className="w-4 h-4" /> Previous
+                      </button>
+                      <span className="text-sm text-gray-500">
+                        Page {citiesPage} of {totalCitiesPages}
+                      </span>
+                      <button
+                        onClick={() => setCitiesPage(p => Math.min(totalCitiesPages, p + 1))}
+                        disabled={citiesPage >= totalCitiesPages}
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Next <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-sm text-gray-400">

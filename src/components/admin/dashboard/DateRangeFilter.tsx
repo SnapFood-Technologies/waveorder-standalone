@@ -1,7 +1,7 @@
 // src/components/admin/dashboard/DateRangeFilter.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar, ChevronDown } from 'lucide-react'
 
 interface DateRange {
@@ -145,11 +145,8 @@ export function DateRangeFilter({
                 </label>
                 <input
                   type="date"
-                  value={formatDateForInput(dateRange.start)}
-                  onChange={(e) => {
-                    const newStart = new Date(e.target.value)
-                    onDateRangeChange({ ...dateRange, start: newStart })
-                  }}
+                  value={formatDateForInput(localStart)}
+                  onChange={(e) => setLocalStart(new Date(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
@@ -160,11 +157,11 @@ export function DateRangeFilter({
                 </label>
                 <input
                   type="date"
-                  value={formatDateForInput(dateRange.end)}
+                  value={formatDateForInput(localEnd)}
                   onChange={(e) => {
-                    const newEnd = new Date(e.target.value)
-                    newEnd.setHours(23, 59, 59, 999)
-                    onDateRangeChange({ ...dateRange, end: newEnd })
+                    const d = new Date(e.target.value)
+                    d.setHours(23, 59, 59, 999)
+                    setLocalEnd(d)
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
@@ -179,7 +176,7 @@ export function DateRangeFilter({
                 Cancel
               </button>
               <button
-                onClick={handleCustomDateChange}
+                onClick={handleApplyCustomRange}
                 className="px-3 py-1 bg-teal-600 text-white text-sm rounded hover:bg-teal-700"
               >
                 Apply

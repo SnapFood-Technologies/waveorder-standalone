@@ -18,13 +18,25 @@ import {
   DollarSign,
   ShoppingBag,
   Eye,
-  X
+  X,
+  BarChart3
 } from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts'
+import { format, parseISO } from 'date-fns'
 import { toast } from 'react-hot-toast'
 
 interface AffiliateAnalyticsData {
   affiliate: { id: string; name: string; trackingCode: string }
-  summary: { views: number; orders: number; conversionRate: number; revenue: number }
+  summary: { views: number; orders: number; conversionRate: number; revenue: number; affiliateRevenue: number }
+  viewsByDay: Array<{ date: string; views: number }>
   bySource: Array<{ name: string; count: number }>
   byMedium: Array<{ name: string; count: number }>
   byCountry: Array<{ name: string; count: number }>
@@ -69,6 +81,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
   const [analyticsModalAffiliate, setAnalyticsModalAffiliate] = useState<Affiliate | null>(null)
   const [analyticsData, setAnalyticsData] = useState<AffiliateAnalyticsData | null>(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [showViewsChartModal, setShowViewsChartModal] = useState(false)
 
   useEffect(() => {
     fetchAffiliates()
@@ -155,6 +168,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
   const openAnalyticsModal = async (affiliate: Affiliate) => {
     setAnalyticsModalAffiliate(affiliate)
     setAnalyticsData(null)
+    setShowViewsChartModal(false)
     setAnalyticsLoading(true)
     try {
       const res = await fetch(`/api/admin/stores/${businessId}/affiliates/${affiliate.id}/analytics`)
@@ -380,7 +394,7 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                 </p>
               </div>
               <button
-                onClick={() => setAnalyticsModalAffiliate(null)}
+                onClick={() => { setAnalyticsModalAffiliate(null); setShowViewsChartModal(false) }}
                 className="p-2 text-gray-400 hover:text-gray-600"
               >
                 <X className="w-5 h-5" />
@@ -395,10 +409,17 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
               ) : analyticsData ? (
                 <>
                   {/* Summary */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase">Views</p>
                       <p className="text-xl font-semibold text-gray-900">{analyticsData.summary.views}</p>
+                      <button
+                        onClick={() => setShowViewsChartModal(true)}
+                        className="mt-1 text-xs text-teal-600 hover:text-teal-700 inline-flex items-center gap-1"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5" />
+                        View chart
+                      </button>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
                       <p className="text-xs text-gray-500 uppercase">Orders</p>
@@ -409,8 +430,14 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                       <p className="text-xl font-semibold text-gray-900">{analyticsData.summary.conversionRate}%</p>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 uppercase">Revenue</p>
+                      <p className="text-xs text-gray-500 uppercase">Platform Revenue</p>
                       <p className="text-xl font-semibold text-gray-900">{formatCurrency(analyticsData.summary.revenue)}</p>
+                      <p className="text-xs text-gray-500">Order total</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 uppercase">Affiliate Revenue</p>
+                      <p className="text-xl font-semibold text-teal-700">{formatCurrency(analyticsData.summary.affiliateRevenue)}</p>
+                      <p className="text-xs text-gray-500">Commission earned</p>
                     </div>
                   </div>
 
@@ -507,6 +534,62 @@ export function AffiliatesList({ businessId }: AffiliatesListProps) {
                       {(typeof window !== 'undefined' ? window.location.origin : '')}/[store-slug]?utm_source=affiliate&utm_campaign={analyticsModalAffiliate.trackingCode}&utm_medium=referral
                     </code>
                   </div>
+
+                  {/* Views Over Time Chart Modal */}
+                  {showViewsChartModal && analyticsData?.viewsByDay && (
+                    <div
+                      className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+                      onClick={() => setShowViewsChartModal(false)}
+                    >
+                      <div
+                        className="bg-white rounded-xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Views Over Time — {analyticsModalAffiliate?.name}
+                          </h3>
+                          <button
+                            onClick={() => setShowViewsChartModal(false)}
+                            className="p-2 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="p-6">
+                          {analyticsData.viewsByDay.length > 0 ? (
+                            <div className="h-72">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={analyticsData.viewsByDay} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                                  <XAxis
+                                    dataKey="date"
+                                    tickFormatter={(v) => format(parseISO(v), 'MMM d')}
+                                    tick={{ fontSize: 12 }}
+                                  />
+                                  <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                                  <Tooltip
+                                    formatter={(value: number) => [`${value} views`, 'Views']}
+                                    labelFormatter={(label) => format(parseISO(label), 'MMM d, yyyy')}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="views"
+                                    stroke="#0d9488"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#0d9488', r: 3 }}
+                                    activeDot={{ r: 5 }}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 py-8 text-center">No view data yet</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-gray-500">Failed to load analytics</p>
