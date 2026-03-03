@@ -24,6 +24,16 @@ export function DateRangeFilter({
 }: DateRangeFilterProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showCustomPicker, setShowCustomPicker] = useState(false)
+  const [localStart, setLocalStart] = useState(dateRange.start)
+  const [localEnd, setLocalEnd] = useState(dateRange.end)
+
+  // Sync local state when custom picker opens or dateRange changes externally
+  useEffect(() => {
+    if (showCustomPicker) {
+      setLocalStart(dateRange.start)
+      setLocalEnd(dateRange.end)
+    }
+  }, [showCustomPicker, dateRange.start, dateRange.end])
 
   const predefinedPeriods = [
     { id: 'today', label: 'Today' },
@@ -94,7 +104,9 @@ export function DateRangeFilter({
     setShowDropdown(false)
   }
 
-  const handleCustomDateChange = () => {
+  const handleApplyCustomRange = () => {
+    onDateRangeChange({ start: localStart, end: localEnd })
+    onPeriodChange('custom')
     setShowCustomPicker(false)
   }
 
