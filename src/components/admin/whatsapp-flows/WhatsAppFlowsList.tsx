@@ -74,6 +74,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   const [useVisualEditor, setUseVisualEditor] = useState(false)
   const [showGuideModal, setShowGuideModal] = useState(false)
   const [templateInfoModal, setTemplateInfoModal] = useState<FlowTemplate | null>(null)
+  const [showTemplateGuideModal, setShowTemplateGuideModal] = useState(false)
   const [showBusinessUseCasesModal, setShowBusinessUseCasesModal] = useState(false)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
@@ -324,6 +325,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
 
   return (
     <div className="space-y-6">
+      {/* Header: title + primary actions only */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Flows</h1>
@@ -331,55 +333,57 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             Create automated welcome, away, and keyword-triggered flows
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2">
           <button
             onClick={() => openCreate()}
-            className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors w-full sm:w-auto"
+            className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Flow
           </button>
           <button
             onClick={() => openCreate(undefined, true)}
-            className="inline-flex items-center justify-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors w-full sm:w-auto"
+            className="inline-flex items-center justify-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors"
           >
             <Workflow className="w-4 h-4 mr-2" />
             Visual Editor
           </button>
-          {templates.length > 0 && (
-            <div className="flex flex-wrap gap-1 items-center">
-              {templates.map((t) => (
-                <div key={t.id} className="inline-flex items-center gap-0.5">
-                  <button
-                    onClick={() => openCreate(t.id)}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-l-lg hover:bg-gray-50 text-sm"
-                  >
-                    {t.name}
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setTemplateInfoModal(t)
-                    }}
-                    className="inline-flex items-center px-2 py-2 border border-l-0 border-gray-300 rounded-r-lg hover:bg-teal-50 text-gray-500 hover:text-teal-600"
-                    title="Learn more & use cases"
-                  >
-                    <Info className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => setShowBusinessUseCasesModal(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-teal-200 rounded-lg hover:bg-teal-50 text-teal-700 text-sm font-medium"
-                title="Use cases for your business type"
-              >
-                <Lightbulb className="w-4 h-4" />
-                Use cases for your business
-              </button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Templates: dropdown + info + links — single row */}
+      {templates.length > 0 && (
+        <div className="flex items-center gap-3">
+          <select
+            onChange={(e) => {
+              const id = e.target.value
+              if (id) {
+                openCreate(id)
+                e.target.value = ''
+              }
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
+          >
+            <option value="">Start from template…</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id} title={t.description}>{t.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowTemplateGuideModal(true)}
+            className="p-1.5 text-gray-500 hover:text-teal-600 rounded"
+            title="Template descriptions"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setShowBusinessUseCasesModal(true)}
+            className="text-sm text-teal-600 hover:text-teal-700"
+          >
+            Use cases →
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
@@ -790,6 +794,51 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
       ) : null}
 
       {/* Template Info Modal - explains template + use cases for business type */}
+      {/* Template Guide Modal - all templates with descriptions */}
+      {showTemplateGuideModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Info className="w-5 h-5 text-teal-600" />
+                Template guide
+              </h3>
+              <button
+                onClick={() => setShowTemplateGuideModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 space-y-3">
+              {templates.map((t) => (
+                <div key={t.id} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                  <p className="font-medium text-gray-900">{t.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">{t.description}</p>
+                  <button
+                    onClick={() => {
+                      openCreate(t.id)
+                      setShowTemplateGuideModal(false)
+                    }}
+                    className="mt-2 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                  >
+                    Use this template →
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowTemplateGuideModal(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {templateInfoModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
