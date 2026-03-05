@@ -44,7 +44,8 @@ import {
     StickyNote,
     Banknote,
     ArrowRightLeft,
-    Map
+    Map,
+    CreditCard
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -102,6 +103,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Transactions', 
           href: '/superadmin/financial/transactions', 
           icon: ArrowRightLeft
+        },
+        { 
+          name: 'Subscriptions', 
+          href: '/superadmin/financial/subscriptions', 
+          icon: CreditCard
         }
       ]
     },

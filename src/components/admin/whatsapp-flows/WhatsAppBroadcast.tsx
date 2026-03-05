@@ -311,7 +311,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
           {showInfoSection ? <ChevronUp className="w-5 h-5 text-teal-600" /> : <ChevronDown className="w-5 h-5 text-teal-600" />}
         </button>
         {showInfoSection && (
-          <div className="px-4 pb-4 pt-0 space-y-3 text-sm text-gray-700 border-t border-teal-100">
+          <div className="px-4 mt-2 pb-4 pt-0 space-y-3 text-sm text-gray-700 border-t border-teal-100">
             <p>
               <strong>Broadcast</strong> lets you send promotional messages (e.g. Valentine&apos;s Day offers, new menu) to your customers via WhatsApp. 
               You can only message customers who have contacted you first, or who you&apos;ve imported.
@@ -432,14 +432,14 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
           {tab === 'templates' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <p className="text-sm text-gray-600 mb-2">
-                Add Meta-approved WhatsApp templates. Create templates in Meta Business Manager or your WhatsApp provider, then add the Content SID here.
+                Add Meta-approved WhatsApp templates. Create templates in Twilio Content Editor or Meta Business Manager, then add the Content SID here.
               </p>
               <a
                 href={`/admin/stores/${businessId}/support/tickets?create=1&type=WHATSAPP_TEMPLATES`}
                 className="inline-flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium mb-4"
               >
                 <Info className="w-4 h-4" />
-                Not familiar with Meta Business Manager or third-party providers? Contact WaveOrder support for help
+                Not familiar with Twilio or template creation? Contact WaveOrder support for help
               </a>
               <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                 <h3 className="font-medium text-gray-900 mb-2">Add template</h3>
@@ -528,7 +528,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                 ))}
                 {templates.length === 0 && (
                   <div className="p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    No templates yet. Create a template in Meta Business Manager or your WhatsApp provider, then add it above. Need help? Contact WaveOrder support.
+                    No templates yet. Create a template in Twilio Content Editor or Meta Business Manager, then add it above. Need help? Contact WaveOrder support.
                   </div>
                 )}
               </div>
