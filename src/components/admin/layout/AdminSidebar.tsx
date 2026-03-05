@@ -113,6 +113,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
   const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [businessType, setBusinessType] = useState<string | null>(null)
+  const [whatsappUnreadCount, setWhatsappUnreadCount] = useState(0)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -199,7 +200,14 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     fetchFeatureFlags()
     fetchUserRole()
     fetchStores()
-  }, [businessId])
+
+    if (subscription.plan === 'BUSINESS') {
+      fetch(`/api/admin/stores/${businessId}/whatsapp-flows/unread-count`)
+        .then((res) => res.ok ? res.json() : { count: 0 })
+        .then((data) => setWhatsappUnreadCount(data.count || 0))
+        .catch(() => {})
+    }
+  }, [businessId, subscription.plan])
   
   // Check if user can access products (STAFF cannot)
   const canAccessProducts = userRole !== 'STAFF'
@@ -736,21 +744,30 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           {isExpanded && (
             <div className="ml-8 mt-1 space-y-1">
               {/* @ts-ignore */}
-              {item.children.map(child => (
-                <Link
-                  key={child.name}
-                  href={addImpersonationParams(child.href || '#')}
-                  onClick={onClose}
-                  className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                    isActive(child.href!)
-                      ? 'bg-teal-100 text-teal-700 font-medium'
-                      : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700'
-                  }`}
-                >
-                  <child.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                  <span className="truncate">{child.name}</span>
-                </Link>
-              ))}
+              {item.children.map(child => {
+                const isConversations = item.name === 'WaveOrder Flows' && child.name === 'Conversations'
+                const badge = isConversations && whatsappUnreadCount > 0 ? String(whatsappUnreadCount) : undefined
+                return (
+                  <Link
+                    key={child.name}
+                    href={addImpersonationParams(child.href || '#')}
+                    onClick={onClose}
+                    className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      isActive(child.href!)
+                        ? 'bg-teal-100 text-teal-700 font-medium'
+                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700'
+                    }`}
+                  >
+                    <child.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                    <span className="truncate flex-1">{child.name}</span>
+                    {badge && (
+                      <span className="ml-2 min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center bg-red-500 text-white text-xs font-medium rounded-full">
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>

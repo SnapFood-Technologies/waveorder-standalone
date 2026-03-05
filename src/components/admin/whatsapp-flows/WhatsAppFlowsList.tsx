@@ -8,7 +8,8 @@ import {
   Loader2,
   X,
   AlertTriangle,
-  Zap
+  Zap,
+  Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFlowTemplates } from '@/lib/whatsapp-flow-templates'
@@ -21,6 +22,8 @@ interface Flow {
   priority: number
   trigger: Record<string, unknown>
   steps: unknown[]
+  triggerCount: number
+  lastTriggeredAt: string | null
 }
 
 interface WhatsAppFlowsListProps {
@@ -57,6 +60,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
     steps: [] as Array<{ type: string; body?: string; mediaUrl?: string; url?: string; name?: string; address?: string; latitude?: number; longitude?: number; message?: string }>
   })
   const [saving, setSaving] = useState(false)
+  const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(null)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   const storeUrl = business ? `${baseUrl}/${business.slug}` : ''
@@ -199,6 +203,35 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
     }
   }
 
+  const handleImageUpload = async (stepIndex: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file (PNG, JPEG, etc.)')
+      return
+    }
+    try {
+      setUploadingStepIndex(stepIndex)
+      const form = new FormData()
+      form.append('image', file)
+      form.append('folder', 'flows')
+      const res = await fetch(`/api/admin/stores/${businessId}/upload`, {
+        method: 'POST',
+        body: form
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Upload failed')
+      if (data.imageUrl || data.publicUrl) {
+        updateStep(stepIndex, { mediaUrl: data.imageUrl || data.publicUrl })
+        toast.success('Image uploaded')
+      } else {
+        throw new Error('No URL returned')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploadingStepIndex(null)
+    }
+  }
+
   const addStep = (type: string) => {
     const defaultUrl = type === 'send_url' ? storeUrl : undefined
     setFormData((prev) => ({
@@ -281,6 +314,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Triggered</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -298,6 +332,14 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
                     >
                       {flow.isActive ? 'Active' : 'Inactive'}
                     </button>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                    {flow.triggerCount ?? 0}×
+                    {flow.lastTriggeredAt && (
+                      <span className="block text-xs text-gray-400">
+                        Last: {new Date(flow.lastTriggeredAt).toLocaleDateString()}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap text-right">
                     <button
@@ -450,13 +492,34 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
                         />
                       )}
                       {step.type === 'send_image' && (
-                        <input
-                          type="text"
-                          value={step.mediaUrl || ''}
-                          onChange={(e) => updateStep(idx, { mediaUrl: e.target.value })}
-                          placeholder="Image URL"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={step.mediaUrl || ''}
+                            onChange={(e) => updateStep(idx, { mediaUrl: e.target.value })}
+                            placeholder="Image URL or upload"
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                          />
+                          <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 cursor-pointer whitespace-nowrap">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0]
+                                if (f) handleImageUpload(idx, f)
+                                e.target.value = ''
+                              }}
+                              disabled={uploadingStepIndex === idx}
+                            />
+                            {uploadingStepIndex === idx ? (
+                              <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                            ) : (
+                              <Upload className="w-4 h-4 mr-1" />
+                            )}
+                            Upload
+                          </label>
+                        </div>
                       )}
                       {(step.type === 'send_url' || step.type === 'send_location') && (
                         <input

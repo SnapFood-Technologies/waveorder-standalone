@@ -7,8 +7,8 @@ import {
   Send,
   MessageSquare,
   Phone,
-  Calendar,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -154,9 +154,9 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row" style={{ minHeight: '600px' }}>
-        {/* Left panel - conversation list */}
-        <div className="lg:w-80 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row" style={{ minHeight: 'min(600px, 80vh)' }}>
+        {/* Left panel - conversation list (hidden on mobile when thread is shown) */}
+        <div className={`lg:w-80 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col ${selectedConversation ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-200">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -219,18 +219,25 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
         </div>
 
         {/* Right panel - message thread */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 ${selectedConversation ? 'flex' : 'hidden lg:flex'}`}>
           {selectedConversation ? (
             <>
               <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedConversation(null)}
+                  className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-gray-200 text-gray-600"
+                  aria-label="Back to conversations"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
                 <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
                   <Phone className="w-5 h-5 text-teal-600" />
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">
                     {selectedConversation.customerName || selectedConversation.customerPhone}
                   </p>
-                  <p className="text-sm text-gray-500">{selectedConversation.customerPhone}</p>
+                  <p className="text-sm text-gray-500 truncate">{selectedConversation.customerPhone}</p>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -296,7 +303,7 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500 p-8">
+            <div className="hidden lg:flex flex-1 items-center justify-center text-gray-500 p-8">
               <div className="text-center">
                 <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p>Select a conversation to view and reply</p>

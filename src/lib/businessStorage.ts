@@ -14,7 +14,7 @@ export interface BusinessImageUploadResult {
 export async function uploadBusinessImage(
   file: File, 
   businessId: string,
-  folder: 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products',
+  folder: 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products' | 'flows',
   oldImageUrl?: string,
   options?: { crop?: boolean }
 ): Promise<BusinessImageUploadResult> {
@@ -115,6 +115,19 @@ export async function uploadBusinessImage(
           .resize({
             width: 1000,
             height: 1000,
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .jpeg({ quality: 90, progressive: true })
+          .toBuffer();
+        break;
+
+      case 'flows':
+        processedBuffer = await sharp(buffer)
+          .rotate()
+          .resize({
+            width: 800,
+            height: 800,
             fit: 'inside',
             withoutEnlargement: true
           })

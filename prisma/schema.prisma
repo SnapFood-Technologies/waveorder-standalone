@@ -681,6 +681,9 @@ model WhatsAppFlow {
   trigger Json // { type, keywords?, buttonPayload?, businessHoursOnly?, outsideHoursOnly? }
   steps   Json // [{ type, body?, mediaUrl?, caption?, url?, buttons?, ... }]
 
+  triggerCount   Int      @default(0)
+  lastTriggeredAt DateTime?
+
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

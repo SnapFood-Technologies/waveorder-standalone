@@ -313,6 +313,14 @@ export async function runFlowEngine(context: FlowContext): Promise<string | null
       await executeStep(step, customerPhone, flow.id, conversationId, business)
     }
 
+    await prisma.whatsAppFlow.update({
+      where: { id: flow.id },
+      data: {
+        triggerCount: { increment: 1 },
+        lastTriggeredAt: new Date()
+      }
+    })
+
     await prisma.whatsAppConversation.update({
       where: { id: conversationId },
       data: { lastMessageBy: 'flow', lastMessageAt: new Date() }

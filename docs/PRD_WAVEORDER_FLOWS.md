@@ -918,7 +918,7 @@ Admin Sidebar:
 | **Phase 1** | Foundation — webhook, inbox, DB models, connection test | ✅ Complete |
 | **Phase 2** | Welcome & Away messages | ✅ Complete |
 | **Phase 3** | Custom Flows (form editor) | ✅ Complete |
-| **Phase 4** | Polish, analytics, media, templates | Pending |
+| **Phase 4** | Polish, analytics, media, templates | Complete |
 | **Phase 5** | Visual Flow Builder | Pending |
 | **Phase 6** | AI Auto-Replies | Pending |
 | **Phase 7** | Broadcast & Campaigns | Pending |
