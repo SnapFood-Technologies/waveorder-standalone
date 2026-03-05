@@ -505,6 +505,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         children: [
           { name: 'Conversations', href: `${baseUrl}/whatsapp-flows/conversations`, icon: MessageSquare, requiredPlan: 'BUSINESS' as Plan },
           { name: 'Flows', href: `${baseUrl}/whatsapp-flows/flows`, icon: Layers, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Broadcast', href: `${baseUrl}/whatsapp-flows/broadcast`, icon: Megaphone, requiredPlan: 'BUSINESS' as Plan },
           { name: 'Settings', href: `${baseUrl}/whatsapp-flows/settings`, icon: Cog, requiredPlan: 'BUSINESS' as Plan }
         ]
       },

@@ -119,6 +119,41 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Upsert contact for broadcast list (unless opting out)
+    const optOutPattern = /^(stop|unsubscribe|cancel|end|quit|opt.?out)\s*$/i
+    const isOptOut = messageBody && optOutPattern.test(messageBody.trim())
+    if (!isOptOut) {
+      await prisma.whatsAppContact.upsert({
+        where: { businessId_phone: { businessId: resolvedBusiness.id, phone: customerPhone } },
+        create: {
+          businessId: resolvedBusiness.id,
+          phone: customerPhone,
+          name: (profileName as string) || null,
+          source: 'conversation'
+        },
+        update: { name: (profileName as string) || conversation.customerName || undefined }
+      })
+    }
+
+    // Opt-out: customer replies STOP, stop, unsubscribe, etc.
+    const optOutPattern = /^(stop|unsubscribe|cancel|end|quit|opt.?out)\s*$/i
+    if (messageBody && optOutPattern.test(messageBody.trim())) {
+      await prisma.whatsAppContact.upsert({
+        where: {
+          businessId_phone: { businessId: resolvedBusiness.id, phone: customerPhone }
+        },
+        create: {
+          businessId: resolvedBusiness.id,
+          phone: customerPhone,
+          name: (profileName as string) || null,
+          optedOut: true,
+          optedOutAt: new Date(),
+          source: 'conversation'
+        },
+        update: { optedOut: true, optedOutAt: new Date() }
+      })
+    }
+
     const messageCount = await prisma.whatsAppMessage.count({
       where: { conversationId: conversation.id }
     })

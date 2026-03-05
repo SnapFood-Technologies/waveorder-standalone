@@ -604,6 +604,9 @@ model Business {
   whatsappConversations WhatsAppConversation[]
   whatsappSettings       WhatsAppSettings?
   whatsappFlows          WhatsAppFlow[]
+  whatsappContacts       WhatsAppContact[]
+  whatsappTemplates      WhatsAppTemplate[]
+  whatsappCampaigns      WhatsAppCampaign[]
 
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
@@ -747,6 +750,76 @@ model WhatsAppAiUsage {
 
   @@unique([businessId, dateStr])
   @@index([businessId])
+}
+
+model WhatsAppContact {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String     @db.ObjectId
+  phone       String
+  name        String?
+  tags        String[]
+  optedOut    Boolean    @default(false)
+  optedOutAt  DateTime?
+  totalOrders Int        @default(0)
+  lastOrderAt DateTime?
+  source      String     @default("conversation") // "conversation" | "import" | "manual"
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, phone])
+  @@index([businessId, optedOut])
+  @@index([businessId, tags])
+}
+
+model WhatsAppTemplate {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId     String   @db.ObjectId
+  name           String
+  contentSid    String   // Twilio Content SID (Meta-approved template)
+  language       String   @default("en")
+  category       String   @default("MARKETING")
+  status         String   @default("APPROVED") // PENDING | APPROVED | REJECTED
+  bodyPreview    String?  // Human-readable preview for UI
+  variableCount  Int      @default(0) // Number of {{1}}, {{2}}, etc.
+  sampleVariables Json?   // [{ "1": "John" }, { "2": "Store" }] for preview
+
+  business   Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaigns  WhatsAppCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+}
+
+model WhatsAppCampaign {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId       String     @db.ObjectId
+  name             String
+  templateId       String     @db.ObjectId
+  segmentFilter    Json?      // { tags: [], lastOrderDays: number | null }
+  variableValues   Json       // { "1": "VALENTINE20", "2": "Store Name" } - static values
+  status           String     @default("draft")   // draft | scheduled | sending | sent | failed
+  scheduledAt      DateTime?
+  sentAt           DateTime?
+  totalRecipients  Int        @default(0)
+  delivered        Int        @default(0)
+  read             Int        @default(0)
+  replied          Int        @default(0)
+  failed           Int        @default(0)
+  estimatedCost    Float      @default(0)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  template WhatsAppTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+  @@index([status, scheduledAt])
 }
 
 model OrderNotification {

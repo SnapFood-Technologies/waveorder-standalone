@@ -95,11 +95,24 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **Message metadata**: AI messages stored with sender='ai', metadata.{ intent, confidence }
 - **Webhook flow**: Run flows first → if no match and aiEnabled → runWhatsAppAi
 
+## Phase 7 — Broadcast & Campaigns ✅ (March 2026)
+
+- **Schema**: `WhatsAppContact`, `WhatsAppTemplate`, `WhatsAppCampaign`
+- **STOP handling**: Webhook detects opt-out terms (STOP, UNSUBSCRIBE, etc.) and sets `optedOut` on contact
+- **Contact sync**: New conversations auto-upsert contacts; `/contacts/sync-orders` syncs order stats
+- **APIs**:
+  - `/contacts` GET/POST
+  - `/contacts/import` POST (from conversations or CSV)
+  - `/contacts/sync-orders` POST
+  - `/templates` GET/POST
+  - `/campaigns` GET/POST, `/campaigns/[id]/send` POST
+  - `/campaigns/segment-count` POST
+- **Campaign sender** (`whatsapp-campaign-sender.ts`): Twilio template messages, ~5 msg/sec rate limit
+- **Broadcast UI**: Sidebar item under WaveOrder Flows → Contacts, Templates, Campaigns tabs
+- **Add template**: Inline form (name, Content SID, body preview) in Templates tab
+- **Campaign modal**: Name, template, segment (lastOrderDays), variable mapping ({{1}} → contact name/phone/custom)
+- **Variable interpolation**: `{{contact.name}}`, `{{contact.phone}}` replaced per contact
+
 ## TODO Later
 
-- Unit tests for Phase 1–6
-- Template management (view approved templates) — optional
-
-## Next Steps (Phase 7+)
-
-- Broadcast & Campaigns
+- Unit tests for Phase 1–7
