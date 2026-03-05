@@ -374,8 +374,8 @@ export function SuperAdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Link href="/superadmin/businesses" className="block">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group">
+        <Link href="/superadmin/businesses" className="block h-full">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group h-full min-h-[160px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">New Businesses</p>
@@ -394,7 +394,7 @@ export function SuperAdminDashboard() {
           </div>
         </Link>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 h-full min-h-[160px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Businesses</p>
@@ -411,7 +411,7 @@ export function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 h-full min-h-[160px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">New Users</p>
@@ -428,7 +428,7 @@ export function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 h-full min-h-[160px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Page Views</p>
@@ -445,7 +445,7 @@ export function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-white p-6 rounded-lg border border-gray-200 h-full min-h-[160px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">WaveOrder Flows</p>
@@ -455,24 +455,24 @@ export function SuperAdminDashboard() {
               <MessageSquare className="w-6 h-6 text-teal-600" />
             </div>
           </div>
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
             <span className="text-gray-500 text-sm">
-              {stats.flowsConversations ?? 0} conversations · {stats.flowsMessagesInPeriod ?? 0} msgs (period)
+              {stats.flowsConversations ?? 0} convos · {stats.flowsMessagesInPeriod ?? 0} msgs
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Link
                 href="/superadmin/system/flows-usage"
                 className="inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
               >
-                Flows Overview
-                <ArrowUpRight className="w-4 h-4" />
+                Overview
+                <ArrowUpRight className="w-3 h-3" />
               </Link>
               <Link
                 href="/superadmin/system/twilio-activities"
                 className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-700"
               >
-                Twilio Activities
-                <ArrowUpRight className="w-4 h-4" />
+                Twilio
+                <ArrowUpRight className="w-3 h-3" />
               </Link>
             </div>
           </div>

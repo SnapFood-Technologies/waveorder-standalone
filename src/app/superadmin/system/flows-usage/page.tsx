@@ -29,6 +29,7 @@ interface ApiResponse {
     id: string
     name: string
     slug: string
+    logo?: string | null
     subscriptionPlan: string
     conversationsCount: number
   }>
@@ -209,8 +210,23 @@ export default function GlobalFlowsUsagePage() {
                 {data.topBusinesses.map((b) => (
                   <tr key={b.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      <p className="font-medium text-gray-900">{b.name}</p>
-                      <p className="text-xs text-gray-500">{b.slug}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {b.logo ? (
+                            <img
+                              src={b.logo}
+                              alt={`${b.name} logo`}
+                              className="w-full h-full object-contain rounded-lg"
+                            />
+                          ) : (
+                            <Building2 className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{b.name}</p>
+                          <p className="text-xs text-gray-500">{b.slug}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-600">{b.subscriptionPlan}</td>
                     <td className="py-3 px-4 text-right font-medium text-gray-900">

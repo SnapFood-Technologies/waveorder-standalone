@@ -45,7 +45,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  Lightbulb
+  Lightbulb,
+  Send
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -165,7 +166,7 @@ interface BusinessDetails {
   connectedBusinesses?: string[]
   aiAssistantEnabled?: boolean
   whatsappFlowsEnabled?: boolean
-  whatsappFlowsUsage?: { conversations: number }
+  whatsappFlowsUsage?: { conversations: number; messagesThisMonth?: number; lastActivityAt?: string | null }
   aiUsage?: {
     totalMessages: number
     totalConversations: number
@@ -2241,9 +2242,27 @@ function WaveOrderFlowsUsageCard({
           <p className="text-xs text-gray-500">Conversations</p>
         </div>
         <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <Send className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <p className="text-2xl font-bold text-gray-900">{business.whatsappFlowsUsage?.messagesThisMonth ?? 0}</p>
+          <p className="text-xs text-gray-500">Messages (this month)</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
           <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
           <p className="text-sm font-bold text-gray-900">{flowsEnabled ? 'Enabled' : 'Disabled'}</p>
           <p className="text-xs text-gray-500">WaveOrder Flows</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <Clock className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm font-bold text-gray-900">
+            {business.whatsappFlowsUsage?.lastActivityAt
+              ? new Date(business.whatsappFlowsUsage.lastActivityAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })
+              : 'Never'}
+          </p>
+          <p className="text-xs text-gray-500">Last Activity</p>
         </div>
       </div>
       {!flowsEnabled && canEnable && (
