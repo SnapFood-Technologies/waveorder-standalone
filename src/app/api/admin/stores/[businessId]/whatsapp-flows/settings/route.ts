@@ -91,7 +91,9 @@ export async function PUT(
       aiPersonality,
       aiPersonalityPrompt,
       aiConfidenceThreshold,
-      aiDailyLimit
+      aiDailyLimit,
+      autoAssignEnabled,
+      slaWarningMinutes
     } = body
 
     const updateData: Record<string, unknown> = {}
@@ -108,6 +110,8 @@ export async function PUT(
     if (typeof aiPersonalityPrompt === 'string') updateData.aiPersonalityPrompt = aiPersonalityPrompt.trim() || null
     if (typeof aiConfidenceThreshold === 'number' && aiConfidenceThreshold >= 0 && aiConfidenceThreshold <= 1) updateData.aiConfidenceThreshold = aiConfidenceThreshold
     if (typeof aiDailyLimit === 'number' && aiDailyLimit >= 1 && aiDailyLimit <= 500) updateData.aiDailyLimit = aiDailyLimit
+    if (typeof autoAssignEnabled === 'boolean') updateData.autoAssignEnabled = autoAssignEnabled
+    if (typeof slaWarningMinutes === 'number' && slaWarningMinutes >= 1 && slaWarningMinutes <= 120) updateData.slaWarningMinutes = slaWarningMinutes
 
     const settings = await prisma.whatsAppSettings.upsert({
       where: { businessId },

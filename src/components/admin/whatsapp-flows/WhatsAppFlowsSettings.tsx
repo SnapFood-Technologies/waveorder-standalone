@@ -63,7 +63,9 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
     aiPersonality: 'friendly' as string,
     aiPersonalityPrompt: '' as string,
     aiConfidenceThreshold: 0.6,
-    aiDailyLimit: 50
+    aiDailyLimit: 50,
+    autoAssignEnabled: false,
+    slaWarningMinutes: 15
   })
   const [faqs, setFaqs] = useState<Faq[]>([])
   const [faqForm, setFaqForm] = useState({ question: '', answer: '' })
@@ -117,7 +119,9 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             aiPersonality: data.settings.aiPersonality || 'friendly',
             aiPersonalityPrompt: data.settings.aiPersonalityPrompt || '',
             aiConfidenceThreshold: data.settings.aiConfidenceThreshold ?? 0.6,
-            aiDailyLimit: data.settings.aiDailyLimit ?? 50
+            aiDailyLimit: data.settings.aiDailyLimit ?? 50,
+            autoAssignEnabled: data.settings.autoAssignEnabled ?? false,
+            slaWarningMinutes: data.settings.slaWarningMinutes ?? 15
           })
         }
       } catch (err) {
@@ -452,6 +456,32 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             </div>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">Multi-Agent Inbox</h2>
+        <p className="text-sm text-gray-600">Round-robin auto-assignment and SLA alerts</p>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.autoAssignEnabled}
+            onChange={(e) => setFormData((prev) => ({ ...prev, autoAssignEnabled: e.target.checked }))}
+            className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+          />
+          <span className="text-sm font-medium text-gray-700">Auto-assign new conversations (round-robin)</span>
+        </label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">SLA warning (minutes)</label>
+          <input
+            type="number"
+            min={1}
+            max={120}
+            value={formData.slaWarningMinutes}
+            onChange={(e) => setFormData((prev) => ({ ...prev, slaWarningMinutes: Math.min(120, Math.max(1, parseInt(e.target.value, 10) || 15)) }))}
+            className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">Show warning when customer waits longer than this for a reply</p>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">

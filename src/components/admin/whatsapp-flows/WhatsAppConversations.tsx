@@ -11,7 +11,10 @@ import {
   ChevronLeft,
   UserPlus,
   StickyNote,
-  FileText
+  FileText,
+  Users,
+  BarChart3,
+  Zap
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -27,6 +30,8 @@ interface Conversation {
   assignedTo?: string | null
   priority?: string
   assignedToUser?: { id: string; name: string | null; email: string } | null
+  slaWaitingMinutes?: number | null
+  slaBreached?: boolean
   notes?: Array<{ id: string; body: string; authorId: string; createdAt: string }>
   messages: Array<{
     body: string | null
@@ -68,12 +73,17 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
   const [noteInput, setNoteInput] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [updatingMeta, setUpdatingMeta] = useState(false)
+  const [view, setView] = useState<'all' | 'mine' | 'unassigned'>('all')
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set())
+  const [agentMetrics, setAgentMetrics] = useState<Array<{ userId: string; name: string; assigned: number; resolved: number; resolutionRate: number; avgResponseMinutes: number | null }>>([])
+  const [showMetrics, setShowMetrics] = useState(false)
 
   const fetchConversations = useCallback(async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({ page: String(page), limit: '50' })
       if (search.trim()) params.set('search', search.trim())
+      if (view !== 'all') params.set('view', view)
       const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/conversations?${params}`)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -92,7 +102,7 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
     } finally {
       setLoading(false)
     }
-  }, [businessId, page, search, selectedConversation])
+  }, [businessId, page, search, view, selectedConversation])
 
   const fetchMessages = useCallback(async (conversationId: string) => {
     try {
@@ -119,6 +129,23 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
   useEffect(() => {
     fetchConversations()
   }, [fetchConversations])
+
+  useEffect(() => {
+    const heartbeat = () => fetch(`/api/admin/stores/${businessId}/whatsapp-flows/presence`, { method: 'POST' }).catch(() => {})
+    heartbeat()
+    const id = setInterval(heartbeat, 60 * 1000)
+    return () => clearInterval(id)
+  }, [businessId])
+
+  useEffect(() => {
+    const load = () => fetch(`/api/admin/stores/${businessId}/whatsapp-flows/presence`)
+      .then((r) => r.ok ? r.json() : { online: [] })
+      .then((d) => setOnlineUserIds(new Set((d.online || []).map((o: { userId: string }) => o.userId))))
+      .catch(() => {})
+    load()
+    const id = setInterval(load, 30 * 1000)
+    return () => clearInterval(id)
+  }, [businessId])
 
   useEffect(() => {
     if (selectedConversation) {
@@ -205,6 +232,30 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
     setReplyText((t) => t + (t ? '\n' : '') + body)
   }
 
+  const handleAutoAssign = async () => {
+    if (!selectedConversation) return
+    try {
+      setUpdatingMeta(true)
+      const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/conversations/${selectedConversation.id}/auto-assign`, { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed')
+      await fetchConversations()
+      if (data.conversation) setSelectedConversation((p) => (p ? { ...p, assignedTo: data.conversation.assignedTo, assignedToUser: data.conversation.assignedToUser, status: 'assigned' } : p))
+      toast.success(`Assigned to ${data.conversation?.assignedToUser?.name || 'agent'}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed')
+    } finally {
+      setUpdatingMeta(false)
+    }
+  }
+
+  const fetchAgentMetrics = () => {
+    fetch(`/api/admin/stores/${businessId}/whatsapp-flows/agent-metrics`)
+      .then((r) => r.ok ? r.json() : { metrics: [] })
+      .then((d) => setAgentMetrics(d.metrics || []))
+      .catch(() => {})
+  }
+
   const handleSendReply = async () => {
     if (!selectedConversation || !replyText.trim()) return
     try {
@@ -236,7 +287,43 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
             View and reply to WhatsApp messages from customers
           </p>
         </div>
+        <button
+          onClick={() => { setShowMetrics(!showMetrics); if (!showMetrics) fetchAgentMetrics() }}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+        >
+          <BarChart3 className="w-4 h-4" />
+          Agent metrics
+        </button>
       </div>
+
+      {showMetrics && (
+        <div className="bg-white rounded-lg border border-gray-200 p-4 overflow-x-auto">
+          <h3 className="font-semibold text-gray-900 mb-3">Performance by agent</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-2 px-2">Agent</th>
+                <th className="text-right py-2 px-2">Assigned</th>
+                <th className="text-right py-2 px-2">Resolved</th>
+                <th className="text-right py-2 px-2">Resolution %</th>
+                <th className="text-right py-2 px-2">Avg response (min)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentMetrics.map((m) => (
+                <tr key={m.userId} className="border-b border-gray-100">
+                  <td className="py-2 px-2">{m.name}</td>
+                  <td className="text-right py-2 px-2">{m.assigned}</td>
+                  <td className="text-right py-2 px-2">{m.resolved}</td>
+                  <td className="text-right py-2 px-2">{m.resolutionRate}%</td>
+                  <td className="text-right py-2 px-2">{m.avgResponseMinutes ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {agentMetrics.length === 0 && <p className="text-sm text-gray-500 py-4">No agent data yet.</p>}
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
@@ -248,7 +335,18 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col lg:flex-row" style={{ minHeight: 'min(600px, 80vh)' }}>
         {/* Left panel - conversation list (hidden on mobile when thread is shown) */}
         <div className={`lg:w-80 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col ${selectedConversation ? 'hidden lg:flex' : 'flex'}`}>
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 space-y-2">
+            <div className="flex gap-1">
+              {(['all', 'mine', 'unassigned'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg ${view === v ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
+                  {v === 'all' ? 'All' : v === 'mine' ? 'Mine' : 'Unassigned'}
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -260,10 +358,7 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
-            <button
-              onClick={() => fetchConversations()}
-              className="mt-2 text-sm text-teal-600 hover:text-teal-700"
-            >
+            <button onClick={() => fetchConversations()} className="text-sm text-teal-600 hover:text-teal-700">
               Search
             </button>
           </div>
@@ -308,6 +403,11 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
                       {!conv.isRead && (
                         <span className="w-2 h-2 bg-teal-500 rounded-full flex-shrink-0" />
                       )}
+                      {conv.slaBreached && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-0.5">
+                          <AlertCircle className="w-3 h-3" /> SLA
+                        </span>
+                      )}
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${conv.status === 'resolved' ? 'bg-green-100 text-green-700' : conv.status === 'assigned' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                         {conv.status}
                       </span>
@@ -343,6 +443,14 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleAutoAssign}
+                    disabled={updatingMeta}
+                    className="text-xs px-2 py-1 border border-teal-600 text-teal-600 rounded hover:bg-teal-50"
+                  >
+                    <Zap className="w-3.5 h-3.5 inline mr-1" />
+                    Auto-assign
+                  </button>
                   <label className="flex items-center gap-1 text-xs">
                     <UserPlus className="w-3.5 h-3.5 text-gray-500" />
                     Assign:
@@ -354,7 +462,9 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
                     >
                       <option value="">Unassigned</option>
                       {teamMembers.map((m) => (
-                        <option key={m.userId} value={m.userId}>{m.name}</option>
+                        <option key={m.userId} value={m.userId}>
+                          {m.name}{onlineUserIds.has(m.userId) ? ' ●' : ''}
+                        </option>
                       ))}
                     </select>
                   </label>

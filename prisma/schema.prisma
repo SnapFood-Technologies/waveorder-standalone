@@ -699,6 +699,22 @@ model WhatsAppCannedResponse {
   @@index([businessId])
 }
 
+model WhatsAppAgentPresence {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  businessId String   @db.ObjectId
+  lastSeenAt DateTime @default(now())
+
+  @@unique([userId, businessId])
+  @@index([businessId, lastSeenAt])
+}
+
+model WhatsAppAssignmentState {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId        String   @unique @db.ObjectId
+  lastAssignedUserId String? @db.ObjectId
+}
+
 model WhatsAppMessage {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   conversationId String  @db.ObjectId
@@ -767,6 +783,10 @@ model WhatsAppSettings {
   aiPersonalityPrompt   String? // Custom prompt when aiPersonality is "custom"
   aiConfidenceThreshold Float    @default(0.6)
   aiDailyLimit          Int      @default(50)
+
+  // Phase 8 - Multi-agent
+  autoAssignEnabled     Boolean  @default(false)
+  slaWarningMinutes     Int      @default(15)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 

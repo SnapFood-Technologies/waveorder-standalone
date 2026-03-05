@@ -40,6 +40,7 @@ export async function POST(
       where: { id: conversationId, businessId },
       include: { business: { select: { whatsappNumber: true, name: true } } }
     })
+    const isFirstResponse = !conversation?.firstResponseAt
 
     if (!conversation) {
       return NextResponse.json({ message: 'Conversation not found' }, { status: 404 })
@@ -73,7 +74,8 @@ export async function POST(
       data: {
         lastMessageAt: new Date(),
         lastMessageBy: 'business',
-        isRead: true
+        isRead: true,
+        ...(isFirstResponse ? { firstResponseAt: new Date() } : {})
       }
     })
 

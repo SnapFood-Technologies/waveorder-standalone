@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { runFlowEngine } from '@/lib/whatsapp-flow-engine'
 import { runWhatsAppAi } from '@/lib/whatsapp-ai-service'
 import { normalizePhone } from '@/lib/whatsapp-utils'
+import { roundRobinAssign } from '@/lib/whatsapp-auto-assign'
 
 const CONTEXT_MESSAGES = 10
 
@@ -74,6 +75,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (!conversation) {
+      let assignedTo: string | null = null
+      if (resolvedBusiness.whatsappSettings?.autoAssignEnabled) {
+        assignedTo = await roundRobinAssign(resolvedBusiness.id)
+      }
       conversation = await prisma.whatsAppConversation.create({
         data: {
           businessId: resolvedBusiness.id,
@@ -82,7 +87,8 @@ export async function POST(request: NextRequest) {
           lastMessageAt: new Date(),
           lastMessageBy: 'customer',
           isRead: false,
-          status: 'open'
+          status: assignedTo ? 'assigned' : 'open',
+          assignedTo
         }
       })
     } else {

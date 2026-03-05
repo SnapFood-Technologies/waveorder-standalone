@@ -129,6 +129,10 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **APIs**: PATCH conversation (assignedTo, status, priority), GET/POST notes, GET/POST/DELETE canned-responses
 - **Inbox UI**: Assign dropdown, status dropdown, notes (collapsible), canned response buttons
 
-## TODO Later
+## Phase 8 — Extended (Agent presence, SLA, metrics, supervisor) ✅
 
-- Agent presence (online), SLA timers, supervisor view
+- **Agent presence**: POST /presence (heartbeat), GET /presence (who's online). 5-min threshold. Green dot (●) in assign dropdown.
+- **Auto-assign round-robin**: New conversations auto-assign when `autoAssignEnabled` in Settings. Manual "Auto-assign" button. WhatsAppAssignmentState tracks rotation.
+- **SLA timers**: `slaWarningMinutes` in Settings (default 15). Red "SLA" badge when customer wait exceeds threshold.
+- **Per-agent metrics**: GET /agent-metrics — assigned, resolved, resolution %, avg first-response time. "Agent metrics" toggle in inbox.
+- **Supervisor view**: View filter tabs — All | Mine | Unassigned.
