@@ -33,7 +33,7 @@ export async function GET(
     const search = searchParams.get('search') || ''
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100)
-    const status = searchParams.get('status') || 'all' // all | open | closed
+    const status = searchParams.get('status') || 'all' // all | open | assigned | waiting | resolved | closed
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
 
     const where: Record<string, unknown> = { businessId }
@@ -51,6 +51,7 @@ export async function GET(
       prisma.whatsAppConversation.findMany({
         where,
         include: {
+          assignedToUser: { select: { id: true, name: true, email: true } },
           messages: {
             take: 1,
             orderBy: { createdAt: 'desc' },

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Save, Loader2, AlertCircle, Copy, Check, Wifi, Plus, Trash2, Bot } from 'lucide-react'
+import { Save, Loader2, AlertCircle, Copy, Check, Wifi, Plus, Trash2, Bot, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface WhatsAppSettings {
@@ -67,6 +67,20 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
   })
   const [faqs, setFaqs] = useState<Faq[]>([])
   const [faqForm, setFaqForm] = useState({ question: '', answer: '' })
+  const [cannedResponses, setCannedResponses] = useState<Array<{ id: string; title: string; body: string; shortcut?: string }>>([])
+  const [cannedForm, setCannedForm] = useState({ title: '', body: '', shortcut: '' })
+
+  const fetchCannedResponses = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/canned-responses`)
+      if (res.ok) {
+        const data = await res.json()
+        setCannedResponses(data.responses || [])
+      }
+    } catch {
+      // ignore
+    }
+  }, [businessId])
 
   const fetchFaqs = useCallback(async () => {
     try {
@@ -114,7 +128,8 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
     }
     fetchSettings()
     fetchFaqs()
-  }, [businessId, fetchFaqs])
+    fetchCannedResponses()
+  }, [businessId, fetchFaqs, fetchCannedResponses])
 
   const handleSave = async () => {
     try {
@@ -506,6 +521,94 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             </div>
           ))}
           {faqs.length === 0 && <p className="text-sm text-gray-500">No FAQs yet. Add some to improve AI responses.</p>}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <FileText className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Canned Responses</h2>
+            <p className="text-sm text-gray-600">Quick reply snippets for the team inbox</p>
+          </div>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <input
+            type="text"
+            value={cannedForm.title}
+            onChange={(e) => setCannedForm((p) => ({ ...p, title: e.target.value }))}
+            placeholder="Title (e.g. Greeting)"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-32"
+          />
+          <input
+            type="text"
+            value={cannedForm.shortcut}
+            onChange={(e) => setCannedForm((p) => ({ ...p, shortcut: e.target.value }))}
+            placeholder="Shortcut (e.g. /thanks)"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-28"
+          />
+          <input
+            type="text"
+            value={cannedForm.body}
+            onChange={(e) => setCannedForm((p) => ({ ...p, body: e.target.value }))}
+            placeholder="Message body"
+            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!cannedForm.title.trim() || !cannedForm.body.trim()) return
+              try {
+                const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/canned-responses`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    title: cannedForm.title.trim(),
+                    body: cannedForm.body.trim(),
+                    shortcut: cannedForm.shortcut.trim() || undefined
+                  })
+                })
+                if (!res.ok) throw new Error('Failed')
+                setCannedForm({ title: '', body: '', shortcut: '' })
+                fetchCannedResponses()
+                toast.success('Canned response added')
+              } catch {
+                toast.error('Failed to add')
+              }
+            }}
+            disabled={!cannedForm.title.trim() || !cannedForm.body.trim()}
+            className="inline-flex items-center px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {cannedResponses.map((c) => (
+            <div key={c.id} className="flex items-start gap-2 p-3 border border-gray-200 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{c.title}{c.shortcut ? ` (${c.shortcut})` : ''}</p>
+                <p className="text-sm text-gray-600 truncate">{c.body}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!confirm('Delete this canned response?')) return
+                  try {
+                    const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/canned-responses/${c.id}`, { method: 'DELETE' })
+                    if (!res.ok) throw new Error('Failed')
+                    fetchCannedResponses()
+                    toast.success('Deleted')
+                  } catch {
+                    toast.error('Failed')
+                  }
+                }}
+                className="text-red-600 hover:text-red-700 p-1"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {cannedResponses.length === 0 && <p className="text-sm text-gray-500">No canned responses. Add snippets for quick replies in the inbox.</p>}
         </div>
       </div>
 

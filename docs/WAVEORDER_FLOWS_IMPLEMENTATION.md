@@ -119,6 +119,16 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - Tests: `whatsapp-utils` (normalizePhone), `whatsapp-flow-engine` (isWithinBusinessHours), `whatsapp-flow-templates`, webhook validation, TriggerNode component
 - Note: Run `npm install` first; if "Invalid Version" appears, fix dependency conflicts before running tests
 
+## Phase 8 — Multi-Agent Inbox & Team ✅ (March 2026)
+
+- **Schema**: WhatsAppConversation extended with assignedTo, priority, resolvedAt, firstResponseAt; WhatsAppNote; WhatsAppCannedResponse
+- **Assignment**: Assign conversations to team members (from BusinessUser)
+- **Status**: open, assigned, waiting, resolved, closed
+- **Notes**: Internal notes per conversation (visible to team only)
+- **Canned responses**: Pre-written snippets; add in Settings, use in inbox reply area
+- **APIs**: PATCH conversation (assignedTo, status, priority), GET/POST notes, GET/POST/DELETE canned-responses
+- **Inbox UI**: Assign dropdown, status dropdown, notes (collapsible), canned response buttons
+
 ## TODO Later
 
-- Expand test coverage for Phases 2–7
+- Agent presence (online), SLA timers, supervisor view

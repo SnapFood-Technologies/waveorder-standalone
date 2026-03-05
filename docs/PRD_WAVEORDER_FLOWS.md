@@ -921,8 +921,8 @@ Admin Sidebar:
 | **Phase 4** | Polish, analytics, media, templates | Complete |
 | **Phase 5** | Visual Flow Builder | Complete |
 | **Phase 6** | AI Auto-Replies | Complete |
-| **Phase 7** | Broadcast & Campaigns | Pending |
-| **Phase 8** | Multi-Agent Inbox & Team | Pending |
+| **Phase 7** | Broadcast & Campaigns | ✅ Complete |
+| **Phase 8** | Multi-Agent Inbox & Team | ✅ Complete |
 
 **MVP** (Phases 1–4) covers inbox, auto-replies, and custom flows.
 **Full module** (Phases 1–8) delivers a complete WhatsApp automation platform.

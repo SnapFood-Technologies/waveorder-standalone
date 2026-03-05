@@ -115,6 +115,9 @@ model User {
   // Events created by this user
   createdEvents Event[]
 
+  // WaveOrder Flows - Assigned conversations (Phase 8)
+  assignedWhatsAppConversations WhatsAppConversation[] @relation("WhatsAppAssignee")
+
   // SuperAdmin notes created by this user
   superAdminNotes SuperAdminNote[] @relation("SuperAdminNotes")
 
@@ -607,6 +610,7 @@ model Business {
   whatsappContacts       WhatsAppContact[]
   whatsappTemplates      WhatsAppTemplate[]
   whatsappCampaigns      WhatsAppCampaign[]
+  whatsappCannedResponses WhatsAppCannedResponse[]
 
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
@@ -641,10 +645,19 @@ model WhatsAppConversation {
   lastMessageAt DateTime
   lastMessageBy String // "customer" | "business" | "flow"
   isRead        Boolean  @default(false)
-  status        String   @default("open") // "open" | "closed"
+  status        String   @default("open") // "open" | "assigned" | "waiting" | "resolved" | "closed"
+
+  // Phase 8 - Multi-agent inbox
+  assignedTo    String?   @db.ObjectId // User ID of assigned agent
+  priority      String    @default("normal") // "low" | "normal" | "high" | "urgent"
+  resolvedAt    DateTime?
+  firstResponseAt DateTime?
 
   business  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
   messages  WhatsAppMessage[]
+  notes     WhatsAppNote[]
+
+  assignedToUser User? @relation("WhatsAppAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -652,6 +665,38 @@ model WhatsAppConversation {
   @@unique([businessId, customerPhone])
   @@index([businessId, lastMessageAt])
   @@index([businessId, isRead])
+  @@index([businessId, status])
+  @@index([assignedTo])
+}
+
+model WhatsAppNote {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId   String   @db.ObjectId
+  authorId        String   @db.ObjectId
+  body            String
+  isInternal      Boolean  @default(true)
+
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model WhatsAppCannedResponse {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  title     String
+  body      String
+  shortcut  String?
+  category  String? // "greeting" | "support" | "order" | "general"
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
 }
 
 model WhatsAppMessage {
