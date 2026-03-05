@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, BookOpen, MessageSquare, Ticket, ExternalLink, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, BookOpen, MessageSquare, Ticket, ExternalLink, ChevronDown, ChevronRight, Megaphone } from 'lucide-react'
 import { FAQSection } from './FAQSection'
 
 interface HelpCenterProps {
@@ -195,7 +195,7 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
             <p className="text-gray-600 mb-4">
               Can't find what you're looking for? Our support team is here to help you get the most out of WaveOrder.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
               <a
                 href={`/admin/stores/${businessId}/support/tickets`}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
@@ -204,8 +204,15 @@ export function HelpCenter({ businessId }: HelpCenterProps) {
                 Create Support Ticket
               </a>
               <a
-                href={`/admin/stores/${businessId}/support/messages`}
+                href={`/admin/stores/${businessId}/support/tickets?create=1&type=WHATSAPP_TEMPLATES`}
                 className="inline-flex items-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg text-sm font-medium hover:bg-teal-50"
+              >
+                <Megaphone className="w-4 h-4 mr-2" />
+                WhatsApp templates / Broadcast setup
+              </a>
+              <a
+                href={`/admin/stores/${businessId}/support/messages`}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50"
               >
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Send Message

@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Filter, Search, Ticket, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
 import { CreateTicketModal } from './CreateTicketModal'
 import { TicketCard } from './TicketCard'
@@ -13,7 +14,7 @@ interface Ticket {
   description: string
   status: 'OPEN' | 'IN_PROGRESS' | 'WAITING_RESPONSE' | 'RESOLVED' | 'CLOSED'
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
-  type: 'GENERAL' | 'TECHNICAL' | 'BILLING' | 'FEATURE_REQUEST' | 'BUG_REPORT'
+  type: 'GENERAL' | 'TECHNICAL' | 'BILLING' | 'FEATURE_REQUEST' | 'BUG_REPORT' | 'WHATSAPP_TEMPLATES'
   createdAt: string
   updatedAt: string
   commentsCount: number
@@ -24,9 +25,11 @@ interface TicketListProps {
 }
 
 export function TicketList({ businessId }: TicketListProps) {
+  const searchParams = useSearchParams()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const createType = searchParams.get('type')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -199,6 +202,7 @@ export function TicketList({ businessId }: TicketListProps) {
               <option value="BILLING">Billing</option>
               <option value="FEATURE_REQUEST">Feature Request</option>
               <option value="BUG_REPORT">Bug Report</option>
+              <option value="WHATSAPP_TEMPLATES">WhatsApp templates / Broadcast</option>
             </select>
 
             <select
@@ -267,6 +271,7 @@ export function TicketList({ businessId }: TicketListProps) {
           businessId={businessId}
           onClose={() => setShowCreateModal(false)}
           onTicketCreated={handleTicketCreated}
+          initialType={createType === 'WHATSAPP_TEMPLATES' ? 'WHATSAPP_TEMPLATES' : undefined}
         />
       )}
     </div>

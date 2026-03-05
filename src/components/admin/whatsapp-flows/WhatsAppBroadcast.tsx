@@ -11,7 +11,11 @@ import {
   Upload,
   Send,
   RefreshCw,
-  X
+  X,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  Info
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -52,8 +56,19 @@ interface Campaign {
   template: { name: string }
 }
 
+/** Activity label by business type (Orders / Bookings / Requests) */
+function getActivityLabel(businessType?: string | null): string {
+  const t = businessType?.toUpperCase()
+  if (t === 'SALON') return 'Bookings'
+  if (t === 'SERVICES') return 'Requests'
+  return 'Orders'
+}
+
+const CSV_EXAMPLE = 'phone,name\n+1234567890,John Doe\n9876543210,Jane Smith'
+
 export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
   const [tab, setTab] = useState<Tab>('contacts')
+  const [business, setBusiness] = useState<{ businessType?: string | null } | null>(null)
   const [contacts, setContacts] = useState<Contact[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -71,6 +86,19 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
   const [segmentCount, setSegmentCount] = useState<{ count: number; optedOutCount: number; estimatedCost: number } | null>(null)
   const [saving, setSaving] = useState(false)
   const [csvImporting, setCsvImporting] = useState(false)
+  const [showInfoSection, setShowInfoSection] = useState(false)
+
+  const activityLabel = getActivityLabel(business?.businessType)
+
+  const downloadExampleCsv = () => {
+    const blob = new Blob([CSV_EXAMPLE], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'broadcast-contacts-example.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const fetchContacts = useCallback(async () => {
     const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/contacts`)
@@ -109,14 +137,22 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
     }
   }, [businessId, campaignForm.segmentFilter])
 
+  const fetchBusiness = useCallback(async () => {
+    const res = await fetch(`/api/admin/stores/${businessId}`)
+    if (res.ok) {
+      const d = await res.json()
+      setBusiness({ businessType: d.business?.businessType ?? null })
+    }
+  }, [businessId])
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      await Promise.all([fetchContacts(), fetchTemplates(), fetchCampaigns()])
+      await Promise.all([fetchContacts(), fetchTemplates(), fetchCampaigns(), fetchBusiness()])
       setLoading(false)
     }
     load()
-  }, [fetchContacts, fetchTemplates, fetchCampaigns])
+  }, [fetchContacts, fetchTemplates, fetchCampaigns, fetchBusiness])
 
   useEffect(() => {
     if (showNewCampaign) fetchSegmentCount()
@@ -262,6 +298,36 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
         )}
       </div>
 
+      {/* Informative section - How Broadcast works */}
+      <div className="bg-teal-50 border border-teal-200 rounded-lg overflow-hidden">
+        <button
+          onClick={() => setShowInfoSection((p) => !p)}
+          className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-teal-100/50 transition-colors"
+        >
+          <span className="flex items-center gap-2 font-medium text-teal-900">
+            <Info className="w-5 h-5 text-teal-600" />
+            How Broadcast works
+          </span>
+          {showInfoSection ? <ChevronUp className="w-5 h-5 text-teal-600" /> : <ChevronDown className="w-5 h-5 text-teal-600" />}
+        </button>
+        {showInfoSection && (
+          <div className="px-4 pb-4 pt-0 space-y-3 text-sm text-gray-700 border-t border-teal-100">
+            <p>
+              <strong>Broadcast</strong> lets you send promotional messages (e.g. Valentine&apos;s Day offers, new menu) to your customers via WhatsApp. 
+              You can only message customers who have contacted you first, or who you&apos;ve imported.
+            </p>
+            <p>
+              <strong>Contacts:</strong> Import from existing conversations, or upload a CSV with columns <code className="bg-white px-1 rounded">phone</code> and optionally <code className="bg-white px-1 rounded">name</code>. 
+              &quot;Sync {activityLabel} Stats&quot; updates contact counts from your {activityLabel.toLowerCase()}.
+            </p>
+            <p>
+              <strong>Campaigns:</strong> Pick a Meta-approved template, segment by tags or recent {activityLabel.toLowerCase()}, then send. 
+              Contact WaveOrder for pricing details. Opted-out contacts are excluded.
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="border-b border-gray-200">
         <div className="flex gap-4">
           {tabs.map((t) => (
@@ -313,15 +379,22 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Sync Order Stats
+                  Sync {activityLabel} Stats
                 </button>
               </div>
               <div className="p-4 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm text-gray-500">
                   {contacts.length} contacts · {optedOutCount} opted out
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-400 flex items-center gap-2">
                   CSV: columns phone (or Phone), name (optional)
+                  <button
+                    onClick={downloadExampleCsv}
+                    className="inline-flex items-center gap-1 text-teal-600 hover:text-teal-700 font-medium"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download example
+                  </button>
                 </span>
               </div>
               <table className="w-full">
@@ -329,7 +402,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Orders</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{activityLabel}</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   </tr>
                 </thead>
@@ -358,9 +431,16 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
 
           {tab === 'templates' && (
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <p className="text-sm text-gray-600 mb-4">
-                Add Meta-approved WhatsApp templates. Create templates in Meta Business Manager or Twilio Console, then add the Content SID here.
+              <p className="text-sm text-gray-600 mb-2">
+                Add Meta-approved WhatsApp templates. Create templates in Meta Business Manager or your WhatsApp provider, then add the Content SID here.
               </p>
+              <a
+                href={`/admin/stores/${businessId}/support/tickets?create=1&type=WHATSAPP_TEMPLATES`}
+                className="inline-flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium mb-4"
+              >
+                <Info className="w-4 h-4" />
+                Not familiar with Meta Business Manager or third-party providers? Contact WaveOrder support for help
+              </a>
               <div className="mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
                 <h3 className="font-medium text-gray-900 mb-2">Add template</h3>
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -448,7 +528,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                 ))}
                 {templates.length === 0 && (
                   <div className="p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
-                    No templates yet. Create a template in Meta Business Manager or Twilio Console, then add it above.
+                    No templates yet. Create a template in Meta Business Manager or your WhatsApp provider, then add it above. Need help? Contact WaveOrder support.
                   </div>
                 )}
               </div>
@@ -611,7 +691,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Segment: Orders in last N days</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Segment: {activityLabel} in last N days</label>
                 <input
                   type="number"
                   value={campaignForm.segmentFilter.lastOrderDays ?? ''}
@@ -629,7 +709,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
               {segmentCount && (
                 <div className="p-3 bg-gray-50 rounded-lg text-sm">
                   Estimated reach: {segmentCount.count} contacts · Excluded: {segmentCount.optedOutCount} opted out<br />
-                  Estimated cost: ~${segmentCount.estimatedCost.toFixed(2)}
+                  <span className="text-gray-600">Estimated cost: ~${segmentCount.estimatedCost.toFixed(2)}. Contact WaveOrder for pricing details.</span>
                 </div>
               )}
             </div>

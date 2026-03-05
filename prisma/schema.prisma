@@ -2122,6 +2122,7 @@ enum TicketType {
   BILLING
   FEATURE_REQUEST
   BUG_REPORT
+  WHATSAPP_TEMPLATES  // WhatsApp templates / Broadcast setup - contact WaveOrder for help
 }
 
 enum NotificationType {

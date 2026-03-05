@@ -11,10 +11,14 @@ import {
   Zap,
   Upload,
   Workflow,
-  BookOpen
+  BookOpen,
+  Info,
+  Lightbulb
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFlowTemplates } from '@/lib/whatsapp-flow-templates'
+import { getUseCasesForBusinessType } from '@/lib/whatsapp-flows-use-cases'
+import type { FlowTemplate } from '@/lib/whatsapp-flow-templates'
 import type { FlowCanvasNode, FlowCanvasEdge } from '@/lib/whatsapp-flow-canvas-converter'
 import { VisualFlowBuilder } from './VisualFlowBuilder'
 
@@ -58,7 +62,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   const [editingFlow, setEditingFlow] = useState<Flow | null>(null)
   const [flowToDelete, setFlowToDelete] = useState<Flow | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [business, setBusiness] = useState<{ name: string; slug: string } | null>(null)
+  const [business, setBusiness] = useState<{ name: string; slug: string; businessType?: string | null } | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     type: 'keyword' as string,
@@ -69,6 +73,8 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(null)
   const [useVisualEditor, setUseVisualEditor] = useState(false)
   const [showGuideModal, setShowGuideModal] = useState(false)
+  const [templateInfoModal, setTemplateInfoModal] = useState<FlowTemplate | null>(null)
+  const [showBusinessUseCasesModal, setShowBusinessUseCasesModal] = useState(false)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   const storeUrl = business ? `${baseUrl}/${business.slug}` : ''
@@ -86,7 +92,11 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
       }
       if (bizRes.ok) {
         const data = await bizRes.json()
-        setBusiness({ name: data.business?.name || 'Store', slug: data.business?.slug || '' })
+        setBusiness({
+          name: data.business?.name || 'Store',
+          slug: data.business?.slug || '',
+          businessType: data.business?.businessType ?? null
+        })
       }
     } catch {
       toast.error('Failed to load flows')
@@ -102,7 +112,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   const openCreate = (templateId?: string, visual = false) => {
     setUseVisualEditor(visual)
     if (templateId && business && !visual) {
-      const templates = getFlowTemplates(storeUrl, business.name)
+      const templates = getFlowTemplates(storeUrl, business.name, business.businessType)
       const t = templates.find((x) => x.id === templateId)
       if (t) {
         setFormData({
@@ -309,7 +319,8 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
     }))
   }
 
-  const templates = business ? getFlowTemplates(storeUrl, business.name) : []
+  const templates = business ? getFlowTemplates(storeUrl, business.name, business.businessType) : []
+  const useCases = business?.businessType ? getUseCasesForBusinessType(business.businessType) : []
 
   return (
     <div className="space-y-6">
@@ -336,16 +347,35 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             Visual Editor
           </button>
           {templates.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 items-center">
               {templates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => openCreate(t.id)}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
-                >
-                  {t.name}
-                </button>
+                <div key={t.id} className="inline-flex items-center gap-0.5">
+                  <button
+                    onClick={() => openCreate(t.id)}
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-l-lg hover:bg-gray-50 text-sm"
+                  >
+                    {t.name}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setTemplateInfoModal(t)
+                    }}
+                    className="inline-flex items-center px-2 py-2 border border-l-0 border-gray-300 rounded-r-lg hover:bg-teal-50 text-gray-500 hover:text-teal-600"
+                    title="Learn more & use cases"
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
+              <button
+                onClick={() => setShowBusinessUseCasesModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-teal-200 rounded-lg hover:bg-teal-50 text-teal-700 text-sm font-medium"
+                title="Use cases for your business type"
+              >
+                <Lightbulb className="w-4 h-4" />
+                Use cases for your business
+              </button>
             </div>
           )}
         </div>
@@ -361,13 +391,22 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             <Zap className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No flows yet</h3>
             <p className="text-gray-600 mb-4">Create your first flow or use a template</p>
-            <button
-              onClick={() => openCreate()}
-              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Flow
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                onClick={() => openCreate()}
+                className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Flow
+              </button>
+              <button
+                onClick={() => setShowBusinessUseCasesModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 border border-teal-200 rounded-lg hover:bg-teal-50 text-teal-700"
+              >
+                <Lightbulb className="w-4 h-4" />
+                Use cases for your business
+              </button>
+            </div>
           </div>
         ) : (
           <table className="w-full">
@@ -749,6 +788,110 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
           </div>
         </div>
       ) : null}
+
+      {/* Template Info Modal - explains template + use cases for business type */}
+      {templateInfoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Info className="w-5 h-5 text-teal-600" />
+                {templateInfoModal.name}
+              </h3>
+              <button
+                onClick={() => setTemplateInfoModal(null)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">What this template does</h4>
+                <p className="text-gray-600 text-sm">{templateInfoModal.description}</p>
+              </div>
+              {useCases.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                    <Lightbulb className="w-4 h-4 text-teal-600" />
+                    Use cases for your business
+                  </h4>
+                  <ul className="space-y-2">
+                    {useCases.map((uc, i) => (
+                      <li key={i} className="text-sm text-gray-600 pl-4 border-l-2 border-teal-100">
+                        <span className="font-medium text-gray-800">{uc.title}</span>
+                        <span className="block text-gray-500 text-xs mt-0.5">{uc.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                onClick={() => setTemplateInfoModal(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  openCreate(templateInfoModal.id)
+                  setTemplateInfoModal(null)
+                }}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+              >
+                Use this template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Business Use Cases Modal - use cases for current business type */}
+      {showBusinessUseCasesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-teal-600" />
+                Use cases for your business
+              </h3>
+              <button
+                onClick={() => setShowBusinessUseCasesModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <p className="text-sm text-gray-600 mb-4">
+                How WaveOrder Flows can help your {business?.businessType ? business.businessType.toLowerCase() : 'business'} type:
+              </p>
+              {useCases.length > 0 ? (
+                <ul className="space-y-3">
+                  {useCases.map((uc, i) => (
+                    <li key={i} className="p-3 rounded-lg bg-gray-50 border border-gray-100">
+                      <span className="font-medium text-gray-900 block">{uc.title}</span>
+                      <span className="text-sm text-gray-600 mt-1 block">{uc.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">No specific use cases for this business type. Create custom flows with the Visual Editor.</p>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowBusinessUseCasesModal(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {flowToDelete && (
