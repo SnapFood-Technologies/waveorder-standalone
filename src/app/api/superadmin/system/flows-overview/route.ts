@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           slug: true,
+          logo: true,
           subscriptionPlan: true,
           _count: {
             select: {
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
         id: b.id,
         name: b.name,
         slug: b.slug,
+        logo: b.logo ?? null,
         subscriptionPlan: b.subscriptionPlan,
         conversationsCount: b._count.whatsappConversations
       }))

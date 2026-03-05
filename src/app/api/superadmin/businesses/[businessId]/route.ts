@@ -315,12 +315,29 @@ export async function GET(
     }
 
     // WaveOrder Flows usage
-    const whatsappFlowsConversations = await prisma.whatsAppConversation.count({
-      where: { businessId }
-    })
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    const monthEnd = new Date(now)
+    monthEnd.setHours(23, 59, 59, 999)
+    const [whatsappFlowsConversations, whatsappMessagesThisMonth, lastConversation] = await Promise.all([
+      prisma.whatsAppConversation.count({ where: { businessId } }),
+      prisma.whatsAppMessage.count({
+        where: {
+          conversation: { businessId },
+          createdAt: { gte: monthStart, lte: monthEnd }
+        }
+      }),
+      prisma.whatsAppConversation.findFirst({
+        where: { businessId },
+        orderBy: { lastMessageAt: 'desc' },
+        select: { lastMessageAt: true }
+      })
+    ])
     const whatsappFlowsEnabled = (business as any).whatsappSettings?.isEnabled ?? false
     const whatsappFlowsUsage = {
-      conversations: whatsappFlowsConversations
+      conversations: whatsappFlowsConversations,
+      messagesThisMonth: whatsappMessagesThisMonth,
+      lastActivityAt: lastConversation?.lastMessageAt?.toISOString() ?? null
     }
 
     // Internal Invoice usage stats (when feature enabled)

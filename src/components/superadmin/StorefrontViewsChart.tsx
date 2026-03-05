@@ -297,56 +297,6 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Views</p>
-              <p className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
-            </div>
-            <Eye className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Avg per {dateRange.grouping === 'day' ? 'Day' : dateRange.grouping === 'week' ? 'Week' : 'Month'}
-              </p>
-              <p className="text-2xl font-bold text-gray-900">{avgViews.toLocaleString()}</p>
-            </div>
-            <Calendar className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Trend</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl font-bold text-gray-900">
-                  {Math.abs(trendPercentage).toFixed(1)}%
-                </p>
-                {trendPercentage >= 0 ? (
-                  <TrendingUp className="w-5 h-5 text-green-600" />
-                ) : (
-                  <TrendingUp className="w-5 h-5 text-red-600 rotate-180" />
-                )}
-              </div>
-            </div>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-              trendPercentage >= 0 ? 'bg-green-100' : 'bg-red-100'
-            }`}>
-              <TrendingUp className={`w-5 h-5 ${
-                trendPercentage >= 0 ? 'text-green-600' : 'text-red-600 rotate-180'
-              }`} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Chart */}
       {processedData.length > 0 ? (
         <div className="h-64 overflow-hidden">
@@ -395,6 +345,61 @@ export function StorefrontViewsChart({ className = '' }: StorefrontViewsChartPro
           </div>
         </div>
       )}
+
+      {/* Summary Stats - below chart */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-200">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Views</p>
+              <p className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</p>
+            </div>
+            <Eye className="w-8 h-8 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Avg per {dateRange.grouping === 'day' ? 'Day' : dateRange.grouping === 'week' ? 'Week' : 'Month'}
+              </p>
+              <p className="text-2xl font-bold text-gray-900">{avgViews.toLocaleString()}</p>
+            </div>
+            <Calendar className="w-8 h-8 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Peak Day</p>
+              <p className="text-2xl font-bold text-gray-900">{maxViews.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">max views in period</p>
+            </div>
+            <BarChart3 className="w-8 h-8 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Trend</p>
+              <div className="flex items-center gap-2">
+                <p className={`text-2xl font-bold ${trendPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {trendPercentage >= 0 ? '+' : ''}{trendPercentage.toFixed(1)}%
+                </p>
+                {trendPercentage >= 0 ? (
+                  <TrendingUp className="w-5 h-5 text-green-600" />
+                ) : (
+                  <TrendingUp className="w-5 h-5 text-red-600 rotate-180" />
+                )}
+              </div>
+              <p className="text-xs text-gray-500">vs first half</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
