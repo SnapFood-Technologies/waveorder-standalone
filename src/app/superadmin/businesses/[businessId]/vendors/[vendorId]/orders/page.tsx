@@ -122,6 +122,17 @@ export default function VendorOrdersStatsPage() {
   const businessId = params.businessId as string
   const vendorId = params.vendorId as string
 
+  const addParams = (path: string) => {
+    try {
+      const url = new URL(path, window.location.origin)
+      url.searchParams.set('impersonate', 'true')
+      url.searchParams.set('businessId', businessId)
+      return url.pathname + url.search
+    } catch {
+      return path
+    }
+  }
+
   const [business, setBusiness] = useState<{ businessType?: string } | null>(null)
   const [data, setData] = useState<VendorOrderStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -799,7 +810,7 @@ export default function VendorOrdersStatsPage() {
                       
                       <td className="px-6 py-4 text-right">
                         <Link
-                          href={`/admin/stores/${businessId}/orders/${order.id}`}
+                          href={addParams(`/admin/stores/${businessId}/orders/${order.id}`)}
                           className="inline-flex items-center px-3 py-1 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Eye className="w-3 h-3 mr-1" />
