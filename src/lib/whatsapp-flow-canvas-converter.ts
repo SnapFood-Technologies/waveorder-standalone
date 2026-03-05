@@ -19,6 +19,7 @@ export type CanvasNodeType =
   | 'condition'
 
 export interface TriggerNodeData {
+  [key: string]: unknown
   triggerType: 'first_message' | 'keyword' | 'button_click' | 'any_message'
   keywords?: string[]
   buttonPayload?: string
@@ -27,34 +28,41 @@ export interface TriggerNodeData {
 }
 
 export interface MessageNodeData {
+  [key: string]: unknown
   body: string
 }
 
 export interface ImageNodeData {
+  [key: string]: unknown
   body?: string
   mediaUrl?: string
 }
 
 export interface UrlNodeData {
+  [key: string]: unknown
   body?: string
   url?: string
 }
 
 export interface LocationNodeData {
+  [key: string]: unknown
   name?: string
   address?: string
   body?: string
 }
 
 export interface NotifyNodeData {
+  [key: string]: unknown
   message?: string
 }
 
 export interface DelayNodeData {
+  [key: string]: unknown
   delayMs?: number
 }
 
 export interface ConditionNodeData {
+  [key: string]: unknown
   conditionType: 'keyword_match' | 'business_hours'
   keywords?: string[]
 }

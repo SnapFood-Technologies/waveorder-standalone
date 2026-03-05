@@ -31,8 +31,6 @@ export interface FlowStep {
   keywords?: string[]
   trueSteps?: FlowStep[]
   falseSteps?: FlowStep[]
-  // Delay step
-  delayMs?: number
 }
 
 export interface FlowTrigger {
@@ -347,8 +345,8 @@ export async function runFlowEngine(context: FlowContext): Promise<string | null
     if (flow.type === 'welcome' && settings.welcomeFlowEnabled === false) continue
     if (flow.type === 'away' && settings.awayFlowEnabled === false) continue
 
-    const trigger = flow.trigger as FlowTrigger
-    const steps = flow.steps as FlowStep[]
+    const trigger = flow.trigger as unknown as FlowTrigger
+    const steps = flow.steps as unknown as FlowStep[]
 
     if (!trigger || !steps?.length) continue
 

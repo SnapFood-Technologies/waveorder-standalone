@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { GitBranch } from 'lucide-react'
 import type { ConditionNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const ConditionNode = memo(function ConditionNode({ data }: NodeProps<ConditionNodeData>) {
+export const ConditionNode = memo(function ConditionNode({ data }: NodeProps<Node<ConditionNodeData & Record<string, unknown>, 'condition'>>) {
   const label =
     data.conditionType === 'keyword_match'
       ? `Keyword${data.keywords?.length ? `: ${data.keywords?.slice(0, 2).join(', ')}` : ''}`

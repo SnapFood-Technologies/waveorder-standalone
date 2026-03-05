@@ -2814,9 +2814,9 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
         !storeData.serviceAllowRequestByWhatsApp && (
         <section className="max-w-[75rem] mx-auto px-5 py-8 mt-8 border-t border-gray-200">
           <div className="bg-gray-50 rounded-lg p-6 text-center">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">{translations.contactUs || 'Contact Us'}</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">{translations.contact || 'Contact'}</h2>
             <p className="text-sm text-gray-600 mb-4">
-              {translations.contactUsFallback || 'Get in touch with us directly:'}
+              {'Get in touch with us directly:'}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {storeData.phone && (

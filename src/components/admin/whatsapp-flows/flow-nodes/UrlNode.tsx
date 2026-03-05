@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { Link } from 'lucide-react'
 import type { UrlNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const UrlNode = memo(function UrlNode({ data }: NodeProps<UrlNodeData>) {
+export const UrlNode = memo(function UrlNode({ data }: NodeProps<Node<UrlNodeData & Record<string, unknown>, 'url'>>) {
   const preview = (data.url || 'URL...').slice(0, 35)
   return (
     <div className="px-4 py-3 bg-white border-2 border-blue-200 rounded-lg shadow min-w-[180px]">

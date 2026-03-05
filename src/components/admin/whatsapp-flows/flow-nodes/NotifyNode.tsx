@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { Bell } from 'lucide-react'
 import type { NotifyNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const NotifyNode = memo(function NotifyNode({ data }: NodeProps<NotifyNodeData>) {
+export const NotifyNode = memo(function NotifyNode({ data }: NodeProps<Node<NotifyNodeData & Record<string, unknown>, 'notify'>>) {
   const preview = (data.message || 'Notify team').slice(0, 35)
   return (
     <div className="px-4 py-3 bg-white border-2 border-purple-200 rounded-lg shadow min-w-[180px]">

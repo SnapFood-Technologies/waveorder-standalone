@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { MessageSquare } from 'lucide-react'
 import type { MessageNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const MessageNode = memo(function MessageNode({ data }: NodeProps<MessageNodeData>) {
+export const MessageNode = memo(function MessageNode({ data }: NodeProps<Node<MessageNodeData & Record<string, unknown>, 'message'>>) {
   const preview = (data.body || 'Message...').slice(0, 40)
   return (
     <div className="px-4 py-3 bg-white border-2 border-gray-300 rounded-lg shadow min-w-[180px]">

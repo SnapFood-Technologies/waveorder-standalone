@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { Clock } from 'lucide-react'
 import type { DelayNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const DelayNode = memo(function DelayNode({ data }: NodeProps<DelayNodeData>) {
+export const DelayNode = memo(function DelayNode({ data }: NodeProps<Node<DelayNodeData & Record<string, unknown>, 'delay'>>) {
   const ms = data.delayMs || 500
   const label = ms >= 1000 ? `${ms / 1000}s` : `${ms}ms`
   return (

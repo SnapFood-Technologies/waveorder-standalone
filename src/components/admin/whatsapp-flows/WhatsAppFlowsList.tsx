@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFlowTemplates } from '@/lib/whatsapp-flow-templates'
+import type { FlowCanvasNode, FlowCanvasEdge } from '@/lib/whatsapp-flow-canvas-converter'
 import { VisualFlowBuilder } from './VisualFlowBuilder'
 
 interface Flow {
@@ -439,8 +440,8 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
                   ? (editingFlow.trigger as { type: string; keywords?: string[]; buttonPayload?: string; businessHoursOnly?: boolean; outsideHoursOnly?: boolean })
                   : { type: 'first_message' }
               }
-              initialSteps={editingFlow ? (editingFlow.steps as object[]) : []}
-              initialCanvas={editingFlow?.editorType === 'visual' && editingFlow.canvasData ? (editingFlow.canvasData as { nodes: unknown[]; edges: unknown[] }) : null}
+              initialSteps={editingFlow ? (editingFlow.steps as Record<string, unknown>[]) : []}
+              initialCanvas={editingFlow?.editorType === 'visual' && editingFlow.canvasData ? (editingFlow.canvasData as { nodes: FlowCanvasNode[]; edges: FlowCanvasEdge[] }) : null}
               flowName={editingFlow?.name || formData.name}
               storeUrl={storeUrl}
               businessId={businessId}

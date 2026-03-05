@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { MapPin } from 'lucide-react'
 import type { LocationNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const LocationNode = memo(function LocationNode({ data }: NodeProps<LocationNodeData>) {
+export const LocationNode = memo(function LocationNode({ data }: NodeProps<Node<LocationNodeData & Record<string, unknown>, 'location'>>) {
   const preview = (data.name || data.address || 'Location').slice(0, 30)
   return (
     <div className="px-4 py-3 bg-white border-2 border-green-200 rounded-lg shadow min-w-[180px]">

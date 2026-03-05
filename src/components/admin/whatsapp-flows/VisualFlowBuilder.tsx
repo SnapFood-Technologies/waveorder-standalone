@@ -139,7 +139,7 @@ function VisualFlowBuilderInner({
 
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
       const template = NODE_TEMPLATES.find((t) => t.type === type)
-      const defaultData = template?.defaultData || {}
+      const defaultData: Record<string, unknown> = (template?.defaultData as Record<string, unknown>) ?? {}
 
       const newNode: Node = {
         id: generateNodeId(),
@@ -313,7 +313,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
 
   switch (node.type) {
     case 'trigger': {
-      const d = data as TriggerNodeData
+      const d = data as unknown as TriggerNodeData
       return (
         <div className="space-y-3">
           <div>
@@ -379,7 +379,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'message': {
-      const d = data as MessageNodeData
+      const d = data as unknown as MessageNodeData
       return (
         <div>
           <label className="block text-xs text-gray-500 mb-1">Message</label>
@@ -394,7 +394,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'image': {
-      const d = data as ImageNodeData
+      const d = data as unknown as ImageNodeData
       return (
         <div className="space-y-2">
           <label className="block text-xs text-gray-500 mb-1">Caption</label>
@@ -433,7 +433,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'url': {
-      const d = data as UrlNodeData
+      const d = data as unknown as UrlNodeData
       return (
         <div className="space-y-2">
           <label className="block text-xs text-gray-500 mb-1">URL</label>
@@ -456,7 +456,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'location': {
-      const d = data as LocationNodeData
+      const d = data as unknown as LocationNodeData
       return (
         <div className="space-y-2">
           <label className="block text-xs text-gray-500 mb-1">Place name</label>
@@ -487,7 +487,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'notify': {
-      const d = data as NotifyNodeData
+      const d = data as unknown as NotifyNodeData
       return (
         <div>
           <label className="block text-xs text-gray-500 mb-1">Notification message</label>
@@ -502,7 +502,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'delay': {
-      const d = data as DelayNodeData
+      const d = data as unknown as DelayNodeData
       return (
         <div>
           <label className="block text-xs text-gray-500 mb-1">Delay (ms)</label>
@@ -519,7 +519,7 @@ function NodeProperties({ node, onUpdate, onImageUpload, uploading, storeUrl }: 
       )
     }
     case 'condition': {
-      const d = data as ConditionNodeData
+      const d = data as unknown as ConditionNodeData
       return (
         <div className="space-y-2">
           <label className="block text-xs text-gray-500 mb-1">Condition type</label>

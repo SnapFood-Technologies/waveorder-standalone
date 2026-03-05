@@ -1,11 +1,11 @@
 'use client'
 
 import { memo } from 'react'
-import { Handle, type NodeProps, Position } from '@xyflow/react'
+import { Handle, type Node, type NodeProps, Position } from '@xyflow/react'
 import { Zap } from 'lucide-react'
 import type { TriggerNodeData } from '@/lib/whatsapp-flow-canvas-converter'
 
-export const TriggerNode = memo(function TriggerNode({ data }: NodeProps<TriggerNodeData>) {
+export const TriggerNode = memo(function TriggerNode({ data }: NodeProps<Node<TriggerNodeData & Record<string, unknown>, 'trigger'>>) {
   const label =
     data.triggerType === 'first_message'
       ? 'First message'
