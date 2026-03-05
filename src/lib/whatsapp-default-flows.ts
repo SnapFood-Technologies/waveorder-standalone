@@ -1,15 +1,17 @@
 /**
  * WaveOrder Flows - Auto-create default welcome and away flows
+ * Uses business storefrontLanguage for localized messages (en, sq, es, el).
  */
 
 import { prisma } from '@/lib/prisma'
+import { getDefaultFlowTranslations } from './whatsapp-default-flow-translations'
 import type { FlowStep, FlowTrigger } from './whatsapp-flow-engine'
 
 export async function ensureDefaultFlows(businessId: string): Promise<void> {
   const [business, settings, existingFlows] = await Promise.all([
     prisma.business.findUnique({
       where: { id: businessId },
-      select: { name: true, slug: true }
+      select: { name: true, slug: true, storefrontLanguage: true, language: true }
     }),
     prisma.whatsAppSettings.findUnique({
       where: { businessId }
@@ -22,11 +24,14 @@ export async function ensureDefaultFlows(businessId: string): Promise<void> {
 
   if (!business || !settings) return
 
+  const lang = business.storefrontLanguage || business.language || 'en'
+  const t = getDefaultFlowTranslations(lang)
+
   const baseUrl = process.env.NEXTAUTH_URL || 'https://waveorder.app'
   const storeUrl = `${baseUrl}/${business.slug}`
 
-  const hasWelcome = existingFlows.some((f) => f.type === 'welcome')
-  const hasAway = existingFlows.some((f) => f.type === 'away')
+  const hasWelcome = existingFlows.some((f: { type: string }) => f.type === 'welcome')
+  const hasAway = existingFlows.some((f: { type: string }) => f.type === 'away')
 
   if (settings.welcomeFlowEnabled && !hasWelcome) {
     const welcomeTrigger: FlowTrigger = {
@@ -36,11 +41,11 @@ export async function ensureDefaultFlows(businessId: string): Promise<void> {
     const welcomeSteps: FlowStep[] = [
       {
         type: 'send_text',
-        body: `👋 Welcome to ${business.name}!\n\nBrowse our catalog and place your order easily.`
+        body: t.welcomeMessage(business.name)
       },
       {
         type: 'send_url',
-        body: 'Order now:',
+        body: t.orderNow,
         url: storeUrl
       }
     ]
@@ -58,7 +63,12 @@ export async function ensureDefaultFlows(businessId: string): Promise<void> {
   }
 
   if (settings.awayFlowEnabled && !hasAway && settings.businessHoursStart && settings.businessHoursEnd) {
-    const hoursText = `We're currently closed. Our hours are ${settings.businessHoursStart}–${settings.businessHoursEnd} (${settings.businessHoursTimezone || 'local time'}). We'll reply as soon as we're back!`
+    const tz = settings.businessHoursTimezone || t.localTime
+    const awayBody = t.awayMessage(
+      settings.businessHoursStart,
+      settings.businessHoursEnd,
+      tz
+    )
     const awayTrigger: FlowTrigger = {
       type: 'any_message',
       outsideHoursOnly: true
@@ -66,7 +76,7 @@ export async function ensureDefaultFlows(businessId: string): Promise<void> {
     const awaySteps: FlowStep[] = [
       {
         type: 'send_text',
-        body: `Hi! Thanks for your message. ${hoursText}`
+        body: awayBody
       }
     ]
     await prisma.whatsAppFlow.create({

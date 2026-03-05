@@ -23,7 +23,7 @@ describe('TriggerNode', () => {
         dragHandle={null}
       />
     )
-    expect(screen.getByText('First message')).toBeInTheDocument()
+    expect(screen.getByText('First message')).toBeTruthy()
   })
 
   it('renders Keyword label with keywords', () => {
@@ -41,6 +41,6 @@ describe('TriggerNode', () => {
         dragHandle={null}
       />
     )
-    expect(screen.getByText(/Keyword: menu, catalog/)).toBeInTheDocument()
+    expect(screen.getByText(/Keyword: menu, catalog/)).toBeTruthy()
   })
 })
