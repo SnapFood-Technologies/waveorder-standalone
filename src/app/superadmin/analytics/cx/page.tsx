@@ -125,8 +125,15 @@ const ticketTypeLabels: Record<string, string> = {
   BUG_REPORT: 'Bug Report'
 }
 
+interface FlowsOverview {
+  flowsEnabled: number
+  businessPlanCount: number
+  adoptionRate: number
+}
+
 export default function CXAnalyticsPage() {
   const [data, setData] = useState<CXData | null>(null)
+  const [flowsOverview, setFlowsOverview] = useState<FlowsOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState('30d')
@@ -135,10 +142,17 @@ export default function CXAnalyticsPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/superadmin/analytics/cx?range=${timeRange}`)
-      if (!res.ok) throw new Error('Failed to fetch data')
-      const json = await res.json()
+      const [cxRes, flowsRes] = await Promise.all([
+        fetch(`/api/superadmin/analytics/cx?range=${timeRange}`),
+        fetch('/api/superadmin/system/flows-overview?period=month')
+      ])
+      if (!cxRes.ok) throw new Error('Failed to fetch data')
+      const json = await cxRes.json()
       setData(json)
+      if (flowsRes.ok) {
+        const flows = await flowsRes.json()
+        setFlowsOverview({ flowsEnabled: flows.flowsEnabled, businessPlanCount: flows.businessPlanCount, adoptionRate: flows.adoptionRate })
+      }
     } catch (err) {
       setError('Failed to load CX analytics')
       console.error(err)
@@ -272,7 +286,7 @@ export default function CXAnalyticsPage() {
       </div>
 
       {/* Top KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* NPS */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-2">
@@ -336,6 +350,19 @@ export default function CXAnalyticsPage() {
           <p className="text-xs text-gray-500 mt-1">Customer Lifetime Value</p>
           <p className="text-xs text-gray-400 mt-0.5">When from subscriptions: estimated revenue (monthly equivalent × tenure)</p>
         </div>
+
+        {/* Flows Adoption */}
+        <Link href="/superadmin/system/flows-usage" className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow block">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-500">Flows Adoption</span>
+            <MessageSquare className="w-4 h-4 text-teal-500" />
+          </div>
+          <p className="text-3xl font-bold text-gray-900">
+            {flowsOverview?.adoptionRate != null ? `${flowsOverview.adoptionRate.toFixed(1)}%` : 'N/A'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">WaveOrder Flows</p>
+          <p className="text-xs text-gray-400 mt-0.5">{flowsOverview?.flowsEnabled ?? 0} / {flowsOverview?.businessPlanCount ?? 0} BUSINESS plan enabled</p>
+        </Link>
       </div>
 
       {/* Main Content Grid */}

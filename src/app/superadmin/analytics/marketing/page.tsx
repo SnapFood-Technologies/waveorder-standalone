@@ -6,7 +6,8 @@ import {
   DollarSign, Clock, ArrowRight, RefreshCw, Calendar,
   ChevronDown, UserPlus, CheckCircle, XCircle, Mail,
   Phone, Globe, Share2, Building2, Zap, BarChart3,
-  PieChart, Activity, Award, AlertCircle, ExternalLink
+  PieChart, Activity, Award, AlertCircle, ExternalLink,
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -66,18 +67,32 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
   stale: { label: 'Stale', color: 'text-orange-700', bgColor: 'bg-orange-500' }
 }
 
+interface FlowsOverview {
+  flowsEnabled: number
+  businessPlanCount: number
+  adoptionRate: number
+}
+
 export default function MarketingAnalyticsPage() {
   const [stats, setStats] = useState<LeadStats | null>(null)
+  const [flowsOverview, setFlowsOverview] = useState<FlowsOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('30d')
 
   const fetchStats = async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/superadmin/leads/stats')
-      if (res.ok) {
-        const data = await res.json()
+      const [statsRes, flowsRes] = await Promise.all([
+        fetch('/api/superadmin/leads/stats'),
+        fetch('/api/superadmin/system/flows-overview?period=month')
+      ])
+      if (statsRes.ok) {
+        const data = await statsRes.json()
         setStats(data)
+      }
+      if (flowsRes.ok) {
+        const flows = await flowsRes.json()
+        setFlowsOverview({ flowsEnabled: flows.flowsEnabled, businessPlanCount: flows.businessPlanCount, adoptionRate: flows.adoptionRate })
       }
     } catch (error) {
       console.error('Error fetching stats:', error)
@@ -253,6 +268,16 @@ export default function MarketingAnalyticsPage() {
           <p className="text-2xl font-bold text-gray-900">{stats?.overview.unassignedLeads || 0}</p>
           <p className="text-sm text-gray-500">Unassigned</p>
         </div>
+
+        <Link href="/superadmin/system/flows-usage" className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <MessageSquare className="w-6 h-6 text-teal-500" />
+            <span className="text-xs text-teal-500">BUSINESS plan</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{flowsOverview?.adoptionRate?.toFixed(1) ?? '—'}%</p>
+          <p className="text-sm text-gray-500">Flows Adoption</p>
+          <p className="text-xs text-gray-400 mt-1">{flowsOverview?.flowsEnabled ?? 0} / {flowsOverview?.businessPlanCount ?? 0} enabled</p>
+        </Link>
       </div>
 
       {/* Main Content Grid */}

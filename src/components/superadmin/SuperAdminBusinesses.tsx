@@ -56,6 +56,7 @@ interface Business {
   testMode?: boolean;
   currency: string;
   whatsappNumber: string;
+  flowsEnabled?: boolean;
   address?: string;
   email?: string;
   phone?: string;
@@ -706,6 +707,9 @@ export function SuperAdminBusinesses() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       WhatsApp
                     </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Flows
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Plan
                     </th>
@@ -787,6 +791,17 @@ export function SuperAdminBusinesses() {
                       
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{business.whatsappNumber || 'Not provided'}</div>
+                      </td>
+                      
+                      <td className="px-6 py-4 text-center">
+                        {business.flowsEnabled ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 rounded-full" title="WaveOrder Flows enabled">
+                            <MessageSquare className="w-3 h-3" />
+                            On
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
                       </td>
                       
                       <td className="px-6 py-4">

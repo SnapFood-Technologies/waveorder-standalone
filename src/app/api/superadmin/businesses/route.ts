@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
               appointments: true,
               serviceRequests: true
             }
-          }
+          },
+          whatsappSettings: { select: { isEnabled: true } }
         },
         orderBy: { createdAt: 'desc' }
       })
@@ -226,7 +227,8 @@ _count: {
               appointments: true,
               serviceRequests: true
             }
-          }
+          },
+          whatsappSettings: { select: { isEnabled: true } }
         },
         orderBy: { createdAt: 'desc' },
         skip: offset,
@@ -352,6 +354,7 @@ _count: {
         currency: business.currency,
         language: business.language,
         whatsappNumber: business.whatsappNumber,
+        flowsEnabled: business.whatsappSettings?.isEnabled ?? false,
         address: business.address,
         logo: business.logo,
         createdAt: business.createdAt,

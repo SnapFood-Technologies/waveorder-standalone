@@ -14,7 +14,8 @@ import {
   Hash,
   XCircle,
   ArrowUpRight,
-  BarChart3
+  BarChart3,
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -72,8 +73,15 @@ const businessTypeLabels: Record<string, string> = {
   OTHER: 'Other'
 }
 
+interface FlowsOverview {
+  flowsEnabled: number
+  businessPlanCount: number
+  adoptionRate: number
+}
+
 export default function OperationsGeneralPage() {
   const [data, setData] = useState<GeneralData | null>(null)
+  const [flowsOverview, setFlowsOverview] = useState<FlowsOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -91,14 +99,22 @@ export default function OperationsGeneralPage() {
       setError(null)
 
       const params = new URLSearchParams({ period })
-      const response = await fetch(`/api/superadmin/operations/general?${params}`)
+      const [generalRes, flowsRes] = await Promise.all([
+        fetch(`/api/superadmin/operations/general?${params}`),
+        fetch('/api/superadmin/system/flows-overview?period=month')
+      ])
 
-      if (!response.ok) {
+      if (!generalRes.ok) {
         throw new Error('Failed to fetch data')
       }
 
-      const result = await response.json()
+      const result = await generalRes.json()
       setData(result)
+
+      if (flowsRes.ok) {
+        const flows = await flowsRes.json()
+        setFlowsOverview({ flowsEnabled: flows.flowsEnabled, businessPlanCount: flows.businessPlanCount, adoptionRate: flows.adoptionRate })
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load data')
     } finally {
@@ -184,7 +200,7 @@ export default function OperationsGeneralPage() {
       ) : data ? (
         <>
           {/* Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -241,6 +257,19 @@ export default function OperationsGeneralPage() {
                 <BarChart3 className="w-8 h-8 text-indigo-400" />
               </div>
             </div>
+
+            <Link href="/superadmin/system/flows-usage" className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow block">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Flows Adoption</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {flowsOverview?.adoptionRate != null ? `${flowsOverview.adoptionRate.toFixed(1)}%` : '—'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{flowsOverview?.flowsEnabled ?? 0} / {flowsOverview?.businessPlanCount ?? 0} enabled</p>
+                </div>
+                <MessageSquare className="w-8 h-8 text-teal-400" />
+              </div>
+            </Link>
           </div>
 
           {/* Search Trend Chart */}
