@@ -59,11 +59,20 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **Settings UI**: welcome/away toggles
 - **Steps supported**: send_text, send_image, send_url, notify_team
 
+## Phase 3 — Custom Flows ✅ (March 2026)
+
+- **Flows API**: GET/POST /flows, GET/PUT/DELETE /flows/[id], PATCH /flows/[id]/toggle
+- **Flows list page**: Table with name, type, status, edit/delete/toggle
+- **Flow editor**: Form-based modal with trigger config (type, keywords, button payload, hours) and step builder
+- **Step types**: send_text, send_image, send_url, send_location, notify_team
+- **Pre-built templates**: Welcome, Away, FAQ (menu), Order Redirect, Location
+- **send_location** in flow engine: sends text with address + Google Maps link (or address only)
+
 ## TODO Later
 
-- Unit tests for Phase 1 & 2
+- Unit tests for Phase 1, 2 & 3
 
-## Next Steps (Phase 3+)
+## Next Steps (Phase 4+)
 
 - Flow engine (welcome, away, keyword, button triggers)
 - `WhatsAppFlow` Prisma model

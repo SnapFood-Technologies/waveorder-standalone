@@ -451,23 +451,22 @@ Our flow engine handles this:
 - Customer messages business (first time, during hours) → gets welcome message + catalog link
 - Customer messages outside hours → gets away message with hours info
 
-### Phase 3 — Custom Flows
+### Phase 3 — Custom Flows ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- Flows list page (view all, toggle active/inactive)
-- Flow editor (form-based, step builder)
-- Keyword trigger support
-- Button reply trigger support
-- Step types: send_text, send_image, send_buttons, send_url, send_location
-- Pre-built flow templates (Welcome, Away, FAQ, Order Redirect)
-- Notify team action (email notification)
+- ✅ Flows list page (view all, toggle active/inactive, edit, delete)
+- ✅ Flow editor (form-based, step builder)
+- ✅ Keyword trigger support
+- ✅ Button reply trigger support
+- ✅ Step types: send_text, send_image, send_url, send_location, notify_team
+- ✅ Pre-built flow templates (Welcome, Away, FAQ, Order Redirect, Location)
+- ✅ Notify team action (email via Resend)
 
 **What works after Phase 3:**
-- Full flow automation matching ~90% of Viridian's ChatDaddy setup
-- Customer taps "Order Now" → gets catalog link
-- Customer taps "Location" → gets map/address
-- Customer types "menu" → gets catalog link
-- Team gets notified when customer needs human help
+- Full flow automation
+- Customer taps "Order Now" (button) → gets catalog link
+- Customer types "menu"/"catalog" → gets catalog link
+- Customer types "location"/"address" → gets location message
 
 ### Phase 4 — Polish & Extras
 
@@ -918,7 +917,7 @@ Admin Sidebar:
 |---|---|---|
 | **Phase 1** | Foundation — webhook, inbox, DB models, connection test | ✅ Complete |
 | **Phase 2** | Welcome & Away messages | ✅ Complete |
-| **Phase 3** | Custom Flows (form editor) | Pending |
+| **Phase 3** | Custom Flows (form editor) | ✅ Complete |
 | **Phase 4** | Polish, analytics, media, templates | Pending |
 | **Phase 5** | Visual Flow Builder | Pending |
 | **Phase 6** | AI Auto-Replies | Pending |

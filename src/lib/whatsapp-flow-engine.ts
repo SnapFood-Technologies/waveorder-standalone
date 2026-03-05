@@ -22,6 +22,10 @@ export interface FlowStep {
   delayMs?: number
   message?: string
   email?: string
+  latitude?: number
+  longitude?: number
+  name?: string
+  address?: string
 }
 
 export interface FlowTrigger {
@@ -217,9 +221,37 @@ async function executeStep(
       return { success: true }
     }
 
+    case 'send_location': {
+      const name = step.name || business.name
+      const address = step.address || ''
+      const lat = step.latitude
+      const lng = step.longitude
+      let body = step.body || ''
+      if (lat != null && lng != null) {
+        const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`
+        body = body ? `${body}\n\n📍 ${name}\n${address}\n\n${mapsUrl}` : `📍 ${name}\n${address}\n\nOpen in Maps: ${mapsUrl}`
+      } else if (address) {
+        body = body || `📍 ${name}\n${address}`
+      }
+      const result = await sendWhatsAppMessage(customerPhone, body)
+      if (result.success && result.messageId) {
+        await prisma.whatsAppMessage.create({
+          data: {
+            conversationId,
+            direction: 'outbound',
+            sender: 'flow',
+            messageType: 'text',
+            body,
+            twilioMessageId: result.messageId,
+            flowId
+          }
+        })
+      }
+      return { success: result.success, messageId: result.messageId }
+    }
+
     case 'send_buttons':
-    case 'send_location':
-      // Require approved templates - fallback to text
+      // Requires approved template - fallback to text
       if (step.body) {
         const result = await sendWhatsAppMessage(customerPhone, step.body)
         if (result.success && result.messageId) {
