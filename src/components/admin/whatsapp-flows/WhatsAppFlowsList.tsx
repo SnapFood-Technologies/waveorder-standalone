@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   Zap,
   Upload,
-  Workflow
+  Workflow,
+  BookOpen
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFlowTemplates } from '@/lib/whatsapp-flow-templates'
@@ -67,6 +68,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   const [saving, setSaving] = useState(false)
   const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(null)
   const [useVisualEditor, setUseVisualEditor] = useState(false)
+  const [showGuideModal, setShowGuideModal] = useState(false)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   const storeUrl = business ? `${baseUrl}/${business.slug}` : ''
@@ -427,12 +429,93 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
       {/* Flow Editor Modal */}
       {showEditor && useVisualEditor ? (
         <div className="fixed inset-0 bg-white z-50 flex flex-col">
-          <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Visual Flow Builder</h2>
-            <button onClick={closeEditor} className="text-gray-400 hover:text-gray-600 p-2">
-              <X className="w-5 h-5" />
-            </button>
+          <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <h2 className="text-lg font-bold text-gray-900">Visual Flow Builder</h2>
+              {business?.name && (
+                <span className="text-sm text-gray-500 truncate hidden sm:inline">— {business.name}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-teal-600 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+              >
+                <BookOpen className="w-4 h-4" />
+                Guide
+              </button>
+              <button onClick={closeEditor} className="text-gray-400 hover:text-gray-600 p-2">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
+          {/* Guide Modal */}
+          {showGuideModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
+              <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-teal-600" />
+                    Visual Flow Builder Guide
+                  </h3>
+                  <button
+                    onClick={() => setShowGuideModal(false)}
+                    className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="p-4 overflow-y-auto flex-1 space-y-4 text-sm text-gray-700">
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Getting Started</h4>
+                    <p>Flows automate WhatsApp responses. Each flow has a <strong>trigger</strong> (when it runs) and <strong>steps</strong> (what to send or do).</p>
+                  </section>
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Adding Nodes</h4>
+                    <p>Drag nodes from the left panel onto the canvas: Message, Image, URL, Location, Notify, Delay, or Condition. Connect them by dragging from one node&apos;s handle to another.</p>
+                  </section>
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Trigger Types</h4>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li><strong>First message</strong> — When a customer messages you for the first time</li>
+                      <li><strong>Keyword</strong> — When they send specific words (e.g. menu, catalog)</li>
+                      <li><strong>Button click</strong> — When they tap a WhatsApp button</li>
+                      <li><strong>Any message</strong> — On every message (use sparingly)</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Node Types</h4>
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li><strong>Message</strong> — Send text to the customer</li>
+                      <li><strong>Image</strong> — Send an image with optional caption</li>
+                      <li><strong>URL</strong> — Send a link (e.g. your store)</li>
+                      <li><strong>Location</strong> — Share your address</li>
+                      <li><strong>Notify</strong> — Alert your team</li>
+                      <li><strong>Delay</strong> — Wait before the next step</li>
+                      <li><strong>Condition</strong> — Branch based on keywords or other rules</li>
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Editing</h4>
+                    <p>Click a node to edit its properties in the right panel. Use the zoom controls (+/−) or scroll to zoom in and out. Pan by dragging the canvas background.</p>
+                  </section>
+                  <section>
+                    <h4 className="font-semibold text-gray-900 mb-2">Saving</h4>
+                    <p>Give your flow a name and click <strong>Save Flow</strong>. Activate it in the Flows list to start using it.</p>
+                  </section>
+                </div>
+                <div className="p-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowGuideModal(false)}
+                    className="w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 min-h-0 h-full">
             <VisualFlowBuilder
               initialTrigger={

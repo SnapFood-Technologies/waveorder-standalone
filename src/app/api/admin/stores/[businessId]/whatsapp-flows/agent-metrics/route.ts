@@ -33,8 +33,16 @@ export async function GET(
     const since = new Date()
     since.setDate(since.getDate() - days)
 
-    const members = await prisma.businessUser.findMany({
+    const settings = await prisma.whatsAppSettings.findUnique({
       where: { businessId },
+      select: { agentUserIds: true }
+    })
+    const agentIds = settings?.agentUserIds
+    const memberWhere = agentIds && agentIds.length > 0
+      ? { businessId, userId: { in: agentIds } }
+      : { businessId }
+    const members = await prisma.businessUser.findMany({
+      where: memberWhere,
       include: { user: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: 'asc' }
     })

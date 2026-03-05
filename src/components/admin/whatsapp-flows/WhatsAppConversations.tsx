@@ -159,10 +159,10 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
   useEffect(() => {
     if (selectedConversation) {
       Promise.all([
-        fetch(`/api/admin/stores/${businessId}/team/members`).then((r) => r.ok ? r.json() : []),
+        fetch(`/api/admin/stores/${businessId}/whatsapp-flows/agents`).then((r) => r.ok ? r.json() : { agents: [] }),
         fetch(`/api/admin/stores/${businessId}/whatsapp-flows/canned-responses`).then((r) => r.ok ? r.json() : { responses: [] })
-      ]).then(([teamData, cannedData]) => {
-        setTeamMembers((teamData.members || []).map((m: { userId: string; name: string }) => ({ userId: m.userId, name: m.name })))
+      ]).then(([agentsData, cannedData]) => {
+        setTeamMembers((agentsData.agents || []).map((m: { userId: string; name: string }) => ({ userId: m.userId, name: m.name })))
         setCannedResponses(cannedData.responses || [])
       })
     }
