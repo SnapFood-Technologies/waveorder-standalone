@@ -6,19 +6,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { runFlowEngine } from '@/lib/whatsapp-flow-engine'
 import { runWhatsAppAi } from '@/lib/whatsapp-ai-service'
+import { normalizePhone } from '@/lib/whatsapp-utils'
 
 const CONTEXT_MESSAGES = 10
-
-/**
- * Normalize phone number for matching (strip whatsapp: prefix and non-digits except +)
- */
-function normalizePhone(phone: string): string {
-  let cleaned = phone.replace(/^whatsapp:/i, '').replace(/[^\d+]/g, '')
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+' + cleaned
-  }
-  return cleaned
-}
 
 export async function POST(request: NextRequest) {
   try {

@@ -435,7 +435,7 @@ Our flow engine handles this:
 - Business can reply to customers from admin
 - Conversation history is stored
 
-**TODO later:** Unit tests for Phase 1 (webhook, API routes, components)
+**Unit tests (Phase 1):** Vitest + @testing-library/react. Tests: `normalizePhone`, `isWithinBusinessHours`, `getFlowTemplates`, webhook validation (400 when From/To missing), TriggerNode. Run: `npm run test`
 
 ### Phase 2 — Welcome & Away Messages ✅ COMPLETE (March 2026)
 

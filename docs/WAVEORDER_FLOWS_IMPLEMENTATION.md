@@ -113,6 +113,12 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **Campaign modal**: Name, template, segment (lastOrderDays), variable mapping ({{1}} → contact name/phone/custom)
 - **Variable interpolation**: `{{contact.name}}`, `{{contact.phone}}` replaced per contact
 
+## Unit Tests (Phase 1)
+
+- **Vitest** + @testing-library/react. Run `npm run test`
+- Tests: `whatsapp-utils` (normalizePhone), `whatsapp-flow-engine` (isWithinBusinessHours), `whatsapp-flow-templates`, webhook validation, TriggerNode component
+- Note: Run `npm install` first; if "Invalid Version" appears, fix dependency conflicts before running tests
+
 ## TODO Later
 
-- Unit tests for Phase 1–7
+- Expand test coverage for Phases 2–7

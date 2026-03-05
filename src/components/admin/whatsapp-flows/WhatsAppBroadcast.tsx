@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Papa from 'papaparse'
 import {
   Plus,
   Loader2,
@@ -59,7 +60,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
   const [loading, setLoading] = useState(true)
   const [optedOutCount, setOptedOutCount] = useState(0)
   const [showNewCampaign, setShowNewCampaign] = useState(false)
-  const [templateForm, setTemplateForm] = useState({ name: '', contentSid: '', bodyPreview: '' })
+  const [templateForm, setTemplateForm] = useState({ name: '', contentSid: '', bodyPreview: '', variableCount: 0 })
   const [templateSaving, setTemplateSaving] = useState(false)
   const [campaignForm, setCampaignForm] = useState({
     name: '',
@@ -69,6 +70,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
   })
   const [segmentCount, setSegmentCount] = useState<{ count: number; optedOutCount: number; estimatedCost: number } | null>(null)
   const [saving, setSaving] = useState(false)
+  const [csvImporting, setCsvImporting] = useState(false)
 
   const fetchContacts = useCallback(async () => {
     const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/contacts`)
@@ -133,6 +135,42 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
       fetchContacts()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Import failed')
+    }
+  }
+
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !file.name.toLowerCase().endsWith('.csv')) {
+      toast.error('Please select a CSV file')
+      return
+    }
+    try {
+      setCsvImporting(true)
+      const text = await file.text()
+      const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: true })
+      const rows = (parsed.data || []).map((row) => {
+        const phone = row.phone || row.Phone || row.PHONE || row.tel || ''
+        const name = row.name || row.Name || row.NAME || null
+        return { phone: phone.trim(), name: name?.trim() || undefined }
+      }).filter((r) => r.phone.length >= 10)
+      if (rows.length === 0) {
+        toast.error('No valid rows (need phone column with 10+ digits)')
+        return
+      }
+      const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/contacts/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: 'csv', rows })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message)
+      toast.success(`Imported ${data.imported} contacts from CSV`)
+      fetchContacts()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'CSV import failed')
+    } finally {
+      setCsvImporting(false)
+      e.target.value = ''
     }
   }
 
@@ -259,6 +297,17 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   <Upload className="w-4 h-4 mr-2" />
                   Import from Conversations
                 </button>
+                <label className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer ${csvImporting ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50'}`}>
+                  {csvImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                  {csvImporting ? 'Importing…' : 'Import from CSV'}
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="sr-only"
+                    onChange={handleCsvImport}
+                    disabled={csvImporting}
+                  />
+                </label>
                 <button
                   onClick={handleSyncOrders}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -267,8 +316,13 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   Sync Order Stats
                 </button>
               </div>
-              <div className="p-4 text-sm text-gray-500">
-                {contacts.length} contacts · {optedOutCount} opted out
+              <div className="p-4 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm text-gray-500">
+                  {contacts.length} contacts · {optedOutCount} opted out
+                </span>
+                <span className="text-xs text-gray-400">
+                  CSV: columns phone (or Phone), name (optional)
+                </span>
               </div>
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -338,12 +392,13 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                           body: JSON.stringify({
                             name: templateForm.name.trim(),
                             contentSid: templateForm.contentSid.trim(),
-                            bodyPreview: templateForm.bodyPreview.trim() || null
+                            bodyPreview: templateForm.bodyPreview.trim() || null,
+                            variableCount: templateForm.variableCount || 0
                           })
                         })
                         if (!res.ok) throw new Error((await res.json()).message)
                         toast.success('Template added')
-                        setTemplateForm({ name: '', contentSid: '', bodyPreview: '' })
+                        setTemplateForm({ name: '', contentSid: '', bodyPreview: '', variableCount: 0 })
                         fetchTemplates()
                       } catch (err) {
                         toast.error(err instanceof Error ? err.message : 'Failed')
@@ -357,13 +412,26 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                     {templateSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Add'}
                   </button>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Body preview (optional)"
-                  value={templateForm.bodyPreview}
-                  onChange={(e) => setTemplateForm((p) => ({ ...p, bodyPreview: e.target.value }))}
-                  className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
+                <div className="mt-2 flex gap-2 flex-wrap">
+                  <input
+                    type="text"
+                    placeholder="Body preview (optional)"
+                    value={templateForm.bodyPreview}
+                    onChange={(e) => setTemplateForm((p) => ({ ...p, bodyPreview: e.target.value }))}
+                    className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-gray-600">
+                    Variables ({{1}}, {{2}}…):
+                    <input
+                      type="number"
+                      min={0}
+                      value={templateForm.variableCount || ''}
+                      onChange={(e) => setTemplateForm((p) => ({ ...p, variableCount: parseInt(e.target.value, 10) || 0 }))}
+                      placeholder="0"
+                      className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </label>
+                </div>
               </div>
               <div className="space-y-3">
                 {templates.map((t) => (
@@ -526,6 +594,22 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   </div>
                 ) : null
               })()}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Segment: Tags (comma-separated)</label>
+                <input
+                  type="text"
+                  value={campaignForm.segmentFilter.tags?.join(', ') ?? ''}
+                  onChange={(e) => setCampaignForm((p) => ({
+                    ...p,
+                    segmentFilter: {
+                      ...p.segmentFilter,
+                      tags: e.target.value.split(',').map((t) => t.trim()).filter(Boolean)
+                    }
+                  }))}
+                  placeholder="e.g. vip, newsletter (leave empty for all)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Segment: Orders in last N days</label>
                 <input

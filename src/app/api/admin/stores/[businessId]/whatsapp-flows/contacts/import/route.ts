@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { normalizePhone } from '@/lib/whatsapp-utils'
 
 async function requireFlowsAccess(businessId: string) {
   const access = await checkBusinessAccess(businessId)
@@ -18,12 +19,6 @@ async function requireFlowsAccess(businessId: string) {
     return { ok: false as const, response: NextResponse.json({ message: 'WaveOrder Flows requires Business plan' }, { status: 403 }) }
   }
   return { ok: true as const }
-}
-
-function normalizePhone(phone: string): string {
-  let cleaned = phone.replace(/\D/g, '')
-  if (!cleaned.startsWith('+')) cleaned = '+' + cleaned
-  return cleaned
 }
 
 export async function POST(
