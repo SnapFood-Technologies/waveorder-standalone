@@ -785,9 +785,9 @@ model WhatsAppSettings {
   aiDailyLimit          Int     @default(50)
 
   // Phase 8 - Multi-agent
-  autoAssignEnabled Boolean   @default(false)
-  slaWarningMinutes Int       @default(15)
-  agentUserIds      String[]  @default([]) // User IDs who can be assigned. Empty = all team members.
+  autoAssignEnabled Boolean  @default(false)
+  slaWarningMinutes Int      @default(15)
+  agentUserIds      String[] @default([]) // User IDs who can be assigned. Empty = all team members.
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -2122,7 +2122,7 @@ enum TicketType {
   BILLING
   FEATURE_REQUEST
   BUG_REPORT
-  WHATSAPP_TEMPLATES  // WhatsApp templates / Broadcast setup - contact WaveOrder for help
+  WHATSAPP_TEMPLATES // WhatsApp templates / Broadcast setup - contact WaveOrder for help
 }
 
 enum NotificationType {
