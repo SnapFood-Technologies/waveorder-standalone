@@ -157,6 +157,30 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           />
           <span className="text-sm font-medium text-gray-700">Enable WaveOrder Flows</span>
         </label>
+        {formData.isEnabled && (
+          <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.welcomeFlowEnabled}
+                onChange={(e) => setFormData((prev) => ({ ...prev, welcomeFlowEnabled: e.target.checked }))}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Welcome message</span>
+            </label>
+            <p className="text-xs text-gray-500">Auto-send when a customer messages for the first time</p>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.awayFlowEnabled}
+                onChange={(e) => setFormData((prev) => ({ ...prev, awayFlowEnabled: e.target.checked }))}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Away message</span>
+            </label>
+            <p className="text-xs text-gray-500">Auto-send when customer messages outside business hours</p>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">

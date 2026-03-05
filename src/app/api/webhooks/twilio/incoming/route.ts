@@ -1,9 +1,10 @@
 // WaveOrder Flows - Twilio WhatsApp incoming webhook
-// Receives incoming WhatsApp messages and stores them for the Conversations inbox
+// Receives incoming WhatsApp messages, stores them, and runs flow engine
 // Configure this URL in Twilio Console: Messaging > Settings > Webhooks
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { runFlowEngine } from '@/lib/whatsapp-flow-engine'
 
 /**
  * Normalize phone number for matching (strip whatsapp: prefix and non-digits except +)
@@ -103,7 +104,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Store inbound message
     await prisma.whatsAppMessage.create({
       data: {
         conversationId: conversation.id,
@@ -116,8 +116,36 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // TODO Phase 2: Run flow engine (welcome, away, keyword, button triggers)
-    // For now, messages are stored and visible in inbox for manual reply
+    const messageCount = await prisma.whatsAppMessage.count({
+      where: { conversationId: conversation.id }
+    })
+    const isFirstMessage = messageCount === 1
+
+    const settings = resolvedBusiness.whatsappSettings
+    if (settings) {
+      const flowContext = {
+        businessId: resolvedBusiness.id,
+        conversationId: conversation.id,
+        customerPhone,
+        customerName: conversation.customerName,
+        isFirstMessage,
+        messageBody,
+        buttonPayload: buttonPayload || null,
+        settings: {
+          businessHoursStart: settings.businessHoursStart,
+          businessHoursEnd: settings.businessHoursEnd,
+          businessHoursTimezone: settings.businessHoursTimezone,
+          businessDays: settings.businessDays || [1, 2, 3, 4, 5],
+          welcomeFlowEnabled: settings.welcomeFlowEnabled,
+          awayFlowEnabled: settings.awayFlowEnabled
+        }
+      }
+      try {
+        await runFlowEngine(flowContext)
+      } catch (err) {
+        console.error('[Twilio webhook] Flow engine error:', err)
+      }
+    }
 
     return new NextResponse('', { status: 200 })
   } catch (error) {

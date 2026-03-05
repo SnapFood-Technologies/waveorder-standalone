@@ -48,11 +48,22 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 3. Ensure `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_NUMBER` are set
 4. Enable WaveOrder Flows in Settings and set your business WhatsApp number
 
+## Phase 2 — Welcome & Away Messages ✅ (March 2026)
+
+- **WhatsAppFlow** Prisma model
+- **Flow engine** (`src/lib/whatsapp-flow-engine.ts`): trigger matching, step execution
+- **Business hours** check with timezone support
+- **Default flows** (`src/lib/whatsapp-default-flows.ts`): auto-created on settings enable
+  - Welcome: first message + during hours → text + catalog URL
+  - Away: any message + outside hours → text with business hours
+- **Settings UI**: welcome/away toggles
+- **Steps supported**: send_text, send_image, send_url, notify_team
+
 ## TODO Later
 
-- Unit tests for Phase 1 (webhook, API routes, components)
+- Unit tests for Phase 1 & 2
 
-## Next Steps (Phase 2+)
+## Next Steps (Phase 3+)
 
 - Flow engine (welcome, away, keyword, button triggers)
 - `WhatsAppFlow` Prisma model

@@ -437,20 +437,19 @@ Our flow engine handles this:
 
 **TODO later:** Unit tests for Phase 1 (webhook, API routes, components)
 
-### Phase 2 — Welcome & Away Messages
+### Phase 2 — Welcome & Away Messages ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- `WhatsAppFlow` Prisma model
-- Flow engine (trigger matching + step execution)
-- Business hours check logic
-- Welcome flow: auto-created per business with default template
-- Away flow: auto-created per business with default template
-- Settings page: business hours configuration
+- ✅ `WhatsAppFlow` Prisma model
+- ✅ Flow engine (trigger matching + step execution)
+- ✅ Business hours check logic
+- ✅ Welcome flow: auto-created per business with default template
+- ✅ Away flow: auto-created per business with default template
+- ✅ Settings page: business hours + welcome/away toggles
 
 **What works after Phase 2:**
-- Customer messages business → gets welcome message with image + buttons
+- Customer messages business (first time, during hours) → gets welcome message + catalog link
 - Customer messages outside hours → gets away message with hours info
-- This matches Viridian's Screenshot 2 and Screenshot 3
 
 ### Phase 3 — Custom Flows
 
@@ -918,7 +917,7 @@ Admin Sidebar:
 | Phase | Scope | Status |
 |---|---|---|
 | **Phase 1** | Foundation — webhook, inbox, DB models, connection test | ✅ Complete |
-| **Phase 2** | Welcome & Away messages | Pending |
+| **Phase 2** | Welcome & Away messages | ✅ Complete |
 | **Phase 3** | Custom Flows (form editor) | Pending |
 | **Phase 4** | Polish, analytics, media, templates | Pending |
 | **Phase 5** | Visual Flow Builder | Pending |

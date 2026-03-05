@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { ensureDefaultFlows } from '@/lib/whatsapp-default-flows'
 
 async function requireFlowsAccess(businessId: string): Promise<
   | { ok: true; business: { whatsappNumber: string } | null }
@@ -107,6 +108,14 @@ export async function PUT(
       },
       update: updateData
     })
+
+    if (settings.isEnabled) {
+      try {
+        await ensureDefaultFlows(businessId)
+      } catch (err) {
+        console.error('[whatsapp-flows] ensureDefaultFlows:', err)
+      }
+    }
 
     return NextResponse.json({ settings })
   } catch (error) {

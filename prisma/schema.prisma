@@ -603,6 +603,7 @@ model Business {
   // WaveOrder Flows (WhatsApp messaging automation - Business plan)
   whatsappConversations WhatsAppConversation[]
   whatsappSettings       WhatsAppSettings?
+  whatsappFlows          WhatsAppFlow[]
 
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
@@ -667,6 +668,26 @@ model WhatsAppMessage {
   createdAt DateTime @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+model WhatsAppFlow {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String @db.ObjectId
+  name    String
+  type    String // "welcome" | "away" | "keyword" | "button_reply"
+  isActive Boolean @default(true)
+  priority Int    @default(0) // Higher = checked first
+
+  trigger Json // { type, keywords?, buttonPayload?, businessHoursOnly?, outsideHoursOnly? }
+  steps   Json // [{ type, body?, mediaUrl?, caption?, url?, buttons?, ... }]
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, isActive])
+  @@index([businessId, type])
 }
 
 model WhatsAppSettings {
