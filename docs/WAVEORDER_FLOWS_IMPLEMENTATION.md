@@ -76,11 +76,30 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **Mobile-responsive inbox**: On small screens, selecting a conversation shows thread full-width with back button; list hidden when thread visible
 - **businessStorage** flows folder: images resized 800×800, JPEG 90
 
+## Phase 5 — Visual Flow Builder ✅ (March 2026)
+
+- Drag-and-drop canvas with React Flow (@xyflow/react)
+- Custom nodes: Trigger, Message, Image, URL, Location, Notify, Delay, Condition
+- Canvas ↔ trigger+steps conversion for flow engine
+- Condition and delay steps in flow engine
+
+## Phase 6 — AI Auto-Replies ✅ (March 2026)
+
+- **OpenAI integration**: Intent classification + response generation (gpt-4o-mini by default)
+- **Intents**: product_inquiry, faq_question, order_status, complaint, unknown
+- **Context**: Products, FAQs, recent orders (by phone), last N messages
+- **Fallback**: Confidence < threshold → route to human, notify team via email
+- **Settings**: aiEnabled, aiPersonality (formal/friendly/custom), aiConfidenceThreshold (0.5–0.9), aiDailyLimit
+- **FAQ CRUD**: `/api/.../faqs` GET/POST, `/faqs/[id]` PUT/DELETE
+- **Usage tracking**: WhatsAppAiUsage (dateStr, replyCount) for daily limit
+- **Message metadata**: AI messages stored with sender='ai', metadata.{ intent, confidence }
+- **Webhook flow**: Run flows first → if no match and aiEnabled → runWhatsAppAi
+
 ## TODO Later
 
-- Unit tests for Phase 1, 2 & 3
+- Unit tests for Phase 1–6
 - Template management (view approved templates) — optional
 
-## Next Steps (Phase 5+)
+## Next Steps (Phase 7+)
 
-- Visual Flow Builder (drag-and-drop canvas)
+- Broadcast & Campaigns

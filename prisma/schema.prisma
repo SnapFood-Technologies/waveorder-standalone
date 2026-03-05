@@ -655,13 +655,14 @@ model WhatsAppMessage {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
   conversationId String  @db.ObjectId
   direction      String // "inbound" | "outbound"
-  sender         String // "customer" | "business" | "flow"
+  sender         String // "customer" | "business" | "flow" | "ai"
   messageType    String // "text" | "image" | "video" | "button_reply" | "interactive"
   body           String?
   mediaUrl       String?
   buttonPayload  String? // Button ID clicked by customer
   twilioMessageId String? // Twilio SID for tracking
   flowId         String?  @db.ObjectId // Which flow generated this (if auto-reply)
+  metadata       Json? // AI: { intent, confidence } etc.
 
   conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -712,10 +713,40 @@ model WhatsAppSettings {
   businessHoursTimezone String? // "Asia/Dubai"
   businessDays          Int[] // [1,2,3,4,5] (Monday=1, Sunday=7)
 
+  // AI Auto-Replies (Phase 6)
+  aiEnabled             Boolean  @default(false)
+  aiPersonality         String   @default("friendly") // "formal" | "friendly" | "custom"
+  aiPersonalityPrompt   String? // Custom prompt when aiPersonality is "custom"
+  aiConfidenceThreshold Float    @default(0.6)
+  aiDailyLimit          Int      @default(50)
+
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model WhatsAppFaq {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  question   String
+  answer    String
+  order     Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model WhatsAppAiUsage {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  dateStr    String   // "YYYY-MM-DD" for daily counting
+  replyCount Int      @default(0)
+
+  @@unique([businessId, dateStr])
+  @@index([businessId])
 }
 
 model OrderNotification {

@@ -258,8 +258,8 @@ export function WhatsAppConversations({ businessId }: WhatsAppConversationsProps
                             : 'bg-teal-600 text-white'
                         }`}
                       >
-                        {msg.sender === 'flow' && (
-                          <span className="text-xs opacity-75 mr-1">Flow</span>
+                        {(msg.sender === 'flow' || msg.sender === 'ai') && (
+                          <span className="text-xs opacity-75 mr-1">{msg.sender === 'ai' ? 'AI' : 'Flow'}</span>
                         )}
                         <p className="text-sm whitespace-pre-wrap">{msg.body || '[Media]'}</p>
                         <p

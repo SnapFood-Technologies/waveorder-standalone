@@ -5,6 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { runFlowEngine } from '@/lib/whatsapp-flow-engine'
+import { runWhatsAppAi } from '@/lib/whatsapp-ai-service'
+
+const CONTEXT_MESSAGES = 10
 
 /**
  * Normalize phone number for matching (strip whatsapp: prefix and non-digits except +)
@@ -141,7 +144,31 @@ export async function POST(request: NextRequest) {
         }
       }
       try {
-        await runFlowEngine(flowContext)
+        const flowMatched = await runFlowEngine(flowContext)
+        if (!flowMatched && settings.aiEnabled) {
+          const recentMessages = await prisma.whatsAppMessage.findMany({
+            where: { conversationId: conversation.id },
+            orderBy: { createdAt: 'desc' },
+            take: CONTEXT_MESSAGES,
+            select: { direction: true, sender: true, body: true }
+          })
+          const aiContext = {
+            businessId: resolvedBusiness.id,
+            conversationId: conversation.id,
+            customerPhone,
+            customerName: conversation.customerName,
+            messageBody: messageBody || '',
+            recentMessages: recentMessages.reverse().map((m) => ({
+              role: m.direction === 'inbound' ? ('customer' as const) : (m.sender as 'business' | 'flow' | 'ai'),
+              body: m.body || ''
+            }))
+          }
+          try {
+            await runWhatsAppAi(aiContext)
+          } catch (aiErr) {
+            console.error('[Twilio webhook] AI error:', aiErr)
+          }
+        }
       } catch (err) {
         console.error('[Twilio webhook] Flow engine error:', err)
       }

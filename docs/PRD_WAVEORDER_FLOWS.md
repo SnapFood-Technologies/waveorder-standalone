@@ -919,8 +919,8 @@ Admin Sidebar:
 | **Phase 2** | Welcome & Away messages | ✅ Complete |
 | **Phase 3** | Custom Flows (form editor) | ✅ Complete |
 | **Phase 4** | Polish, analytics, media, templates | Complete |
-| **Phase 5** | Visual Flow Builder | Pending |
-| **Phase 6** | AI Auto-Replies | Pending |
+| **Phase 5** | Visual Flow Builder | Complete |
+| **Phase 6** | AI Auto-Replies | Complete |
 | **Phase 7** | Broadcast & Campaigns | Pending |
 | **Phase 8** | Multi-Agent Inbox & Team | Pending |
 

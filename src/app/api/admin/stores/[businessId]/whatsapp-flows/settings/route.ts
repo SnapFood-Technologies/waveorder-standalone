@@ -86,7 +86,12 @@ export async function PUT(
       businessHoursStart,
       businessHoursEnd,
       businessHoursTimezone,
-      businessDays
+      businessDays,
+      aiEnabled,
+      aiPersonality,
+      aiPersonalityPrompt,
+      aiConfidenceThreshold,
+      aiDailyLimit
     } = body
 
     const updateData: Record<string, unknown> = {}
@@ -98,6 +103,11 @@ export async function PUT(
     if (typeof businessHoursEnd === 'string') updateData.businessHoursEnd = businessHoursEnd
     if (typeof businessHoursTimezone === 'string') updateData.businessHoursTimezone = businessHoursTimezone
     if (Array.isArray(businessDays)) updateData.businessDays = businessDays.filter((d: unknown) => typeof d === 'number' && d >= 1 && d <= 7)
+    if (typeof aiEnabled === 'boolean') updateData.aiEnabled = aiEnabled
+    if (['formal', 'friendly', 'custom'].includes(aiPersonality)) updateData.aiPersonality = aiPersonality
+    if (typeof aiPersonalityPrompt === 'string') updateData.aiPersonalityPrompt = aiPersonalityPrompt.trim() || null
+    if (typeof aiConfidenceThreshold === 'number' && aiConfidenceThreshold >= 0 && aiConfidenceThreshold <= 1) updateData.aiConfidenceThreshold = aiConfidenceThreshold
+    if (typeof aiDailyLimit === 'number' && aiDailyLimit >= 1 && aiDailyLimit <= 500) updateData.aiDailyLimit = aiDailyLimit
 
     const settings = await prisma.whatsAppSettings.upsert({
       where: { businessId },

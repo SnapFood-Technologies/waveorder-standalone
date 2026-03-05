@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Save, Loader2, AlertCircle, Copy, Check, Wifi } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Save, Loader2, AlertCircle, Copy, Check, Wifi, Plus, Trash2, Bot } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface WhatsAppSettings {
@@ -14,6 +14,18 @@ interface WhatsAppSettings {
   businessHoursEnd: string | null
   businessHoursTimezone: string | null
   businessDays: number[]
+  aiEnabled?: boolean
+  aiPersonality?: string
+  aiPersonalityPrompt?: string | null
+  aiConfidenceThreshold?: number
+  aiDailyLimit?: number
+}
+
+interface Faq {
+  id: string
+  question: string
+  answer: string
+  order: number
 }
 
 interface WhatsAppFlowsSettingsProps {
@@ -46,8 +58,27 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
     businessHoursStart: '09:00',
     businessHoursEnd: '22:00',
     businessHoursTimezone: 'UTC',
-    businessDays: [1, 2, 3, 4, 5]
+    businessDays: [1, 2, 3, 4, 5],
+    aiEnabled: false,
+    aiPersonality: 'friendly' as string,
+    aiPersonalityPrompt: '' as string,
+    aiConfidenceThreshold: 0.6,
+    aiDailyLimit: 50
   })
+  const [faqs, setFaqs] = useState<Faq[]>([])
+  const [faqForm, setFaqForm] = useState({ question: '', answer: '' })
+
+  const fetchFaqs = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/faqs`)
+      if (res.ok) {
+        const data = await res.json()
+        setFaqs(data.faqs || [])
+      }
+    } catch {
+      // ignore
+    }
+  }, [businessId])
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -67,7 +98,12 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             businessHoursStart: data.settings.businessHoursStart || '09:00',
             businessHoursEnd: data.settings.businessHoursEnd || '22:00',
             businessHoursTimezone: data.settings.businessHoursTimezone || 'UTC',
-            businessDays: Array.isArray(data.settings.businessDays) ? data.settings.businessDays : [1, 2, 3, 4, 5]
+            businessDays: Array.isArray(data.settings.businessDays) ? data.settings.businessDays : [1, 2, 3, 4, 5],
+            aiEnabled: data.settings.aiEnabled ?? false,
+            aiPersonality: data.settings.aiPersonality || 'friendly',
+            aiPersonalityPrompt: data.settings.aiPersonalityPrompt || '',
+            aiConfidenceThreshold: data.settings.aiConfidenceThreshold ?? 0.6,
+            aiDailyLimit: data.settings.aiDailyLimit ?? 50
           })
         }
       } catch (err) {
@@ -77,7 +113,8 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
       }
     }
     fetchSettings()
-  }, [businessId])
+    fetchFaqs()
+  }, [businessId, fetchFaqs])
 
   const handleSave = async () => {
     try {
@@ -87,7 +124,8 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          phoneNumber: formData.phoneNumber.trim() || null
+          phoneNumber: formData.phoneNumber.trim() || null,
+          aiPersonalityPrompt: formData.aiPersonality === 'custom' ? formData.aiPersonalityPrompt : null
         })
       })
       if (!res.ok) {
@@ -325,6 +363,149 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+            <Bot className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">AI Auto-Replies</h2>
+            <p className="text-sm text-gray-600">OpenAI-powered responses when no flow matches</p>
+          </div>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.aiEnabled}
+            onChange={(e) => setFormData((prev) => ({ ...prev, aiEnabled: e.target.checked }))}
+            className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+          />
+          <span className="text-sm font-medium text-gray-700">Enable AI Auto-Replies</span>
+        </label>
+        {formData.aiEnabled && (
+          <div className="pt-4 space-y-4 border-t border-gray-200">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Personality</label>
+              <select
+                value={formData.aiPersonality}
+                onChange={(e) => setFormData((prev) => ({ ...prev, aiPersonality: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="friendly">Friendly</option>
+                <option value="formal">Formal</option>
+                <option value="custom">Custom (use prompt below)</option>
+              </select>
+            </div>
+            {formData.aiPersonality === 'custom' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custom prompt</label>
+                <textarea
+                  value={formData.aiPersonalityPrompt}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, aiPersonalityPrompt: e.target.value }))}
+                  placeholder="e.g. Be warm and use emojis sparingly..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 text-sm"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confidence threshold ({formData.aiConfidenceThreshold})</label>
+              <input
+                type="range"
+                min={0.5}
+                max={0.9}
+                step={0.1}
+                value={formData.aiConfidenceThreshold}
+                onChange={(e) => setFormData((prev) => ({ ...prev, aiConfidenceThreshold: parseFloat(e.target.value) }))}
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">Below this, messages route to human</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Daily AI reply limit</label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={formData.aiDailyLimit}
+                onChange={(e) => setFormData((prev) => ({ ...prev, aiDailyLimit: Math.min(500, Math.max(1, parseInt(e.target.value, 10) || 50)) }))}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">FAQ (for AI)</h2>
+        <p className="text-sm text-gray-600">Add Q&amp;A pairs to help the AI answer common questions</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={faqForm.question}
+            onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))}
+            placeholder="Question"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <input
+            type="text"
+            value={faqForm.answer}
+            onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))}
+            placeholder="Answer"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!faqForm.question.trim() || !faqForm.answer.trim()) return
+              try {
+                const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/faqs`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ question: faqForm.question.trim(), answer: faqForm.answer.trim() })
+                })
+                if (!res.ok) throw new Error('Failed')
+                setFaqForm({ question: '', answer: '' })
+                fetchFaqs()
+                toast.success('FAQ added')
+              } catch {
+                toast.error('Failed to add FAQ')
+              }
+            }}
+            disabled={!faqForm.question.trim() || !faqForm.answer.trim()}
+            className="inline-flex items-center px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="space-y-2">
+          {faqs.map((faq) => (
+            <div key={faq.id} className="flex items-start gap-2 p-3 border border-gray-200 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{faq.question}</p>
+                <p className="text-sm text-gray-600">{faq.answer}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!confirm('Delete this FAQ?')) return
+                  try {
+                    const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/faqs/${faq.id}`, { method: 'DELETE' })
+                    if (!res.ok) throw new Error('Failed')
+                    fetchFaqs()
+                    toast.success('FAQ deleted')
+                  } catch {
+                    toast.error('Failed to delete')
+                  }
+                }}
+                className="text-red-600 hover:text-red-700 p-1"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+          {faqs.length === 0 && <p className="text-sm text-gray-500">No FAQs yet. Add some to improve AI responses.</p>}
         </div>
       </div>
 
