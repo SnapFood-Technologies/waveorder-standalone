@@ -9,10 +9,12 @@ import {
   X,
   AlertTriangle,
   Zap,
-  Upload
+  Upload,
+  Workflow
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { getFlowTemplates } from '@/lib/whatsapp-flow-templates'
+import { VisualFlowBuilder } from './VisualFlowBuilder'
 
 interface Flow {
   id: string
@@ -24,6 +26,8 @@ interface Flow {
   steps: unknown[]
   triggerCount: number
   lastTriggeredAt: string | null
+  editorType?: string
+  canvasData?: { nodes: unknown[]; edges: unknown[] } | null
 }
 
 interface WhatsAppFlowsListProps {
@@ -61,6 +65,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   })
   const [saving, setSaving] = useState(false)
   const [uploadingStepIndex, setUploadingStepIndex] = useState<number | null>(null)
+  const [useVisualEditor, setUseVisualEditor] = useState(false)
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
   const storeUrl = business ? `${baseUrl}/${business.slug}` : ''
@@ -91,8 +96,9 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
     fetchFlows()
   }, [businessId])
 
-  const openCreate = (templateId?: string) => {
-    if (templateId && business) {
+  const openCreate = (templateId?: string, visual = false) => {
+    setUseVisualEditor(visual)
+    if (templateId && business && !visual) {
       const templates = getFlowTemplates(storeUrl, business.name)
       const t = templates.find((x) => x.id === templateId)
       if (t) {
@@ -113,6 +119,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
   }
 
   const openEdit = (flow: Flow) => {
+    setUseVisualEditor(flow.editorType === 'visual')
     setFormData({
       name: flow.name,
       type: flow.type,
@@ -163,6 +170,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
         toast.success('Flow created')
       }
       setShowEditor(false)
+      setUseVisualEditor(false)
       resetForm()
       fetchFlows()
     } catch (err) {
@@ -170,6 +178,50 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleVisualSave = async (payload: {
+    name: string
+    type: string
+    trigger: object
+    steps: object[]
+    editorType: 'visual'
+    canvasData: object
+  }) => {
+    try {
+      setSaving(true)
+      if (editingFlow) {
+        const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/flows/${editingFlow.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (!res.ok) throw new Error((await res.json()).message)
+        toast.success('Flow updated')
+      } else {
+        const res = await fetch(`/api/admin/stores/${businessId}/whatsapp-flows/flows`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        if (!res.ok) throw new Error((await res.json()).message)
+        toast.success('Flow created')
+      }
+      setShowEditor(false)
+      setUseVisualEditor(false)
+      resetForm()
+      fetchFlows()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const closeEditor = () => {
+    setShowEditor(false)
+    setUseVisualEditor(false)
+    resetForm()
   }
 
   const handleDelete = async () => {
@@ -273,6 +325,13 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             <Plus className="w-4 h-4 mr-2" />
             Create Flow
           </button>
+          <button
+            onClick={() => openCreate(undefined, true)}
+            className="inline-flex items-center justify-center px-4 py-2 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 transition-colors w-full sm:w-auto"
+          >
+            <Workflow className="w-4 h-4 mr-2" />
+            Visual Editor
+          </button>
           {templates.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {templates.map((t) => (
@@ -365,12 +424,38 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
       </div>
 
       {/* Flow Editor Modal */}
-      {showEditor && (
+      {showEditor && useVisualEditor ? (
+        <div className="fixed inset-0 bg-white z-50 flex flex-col">
+          <div className="flex-shrink-0 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Visual Flow Builder</h2>
+            <button onClick={closeEditor} className="text-gray-400 hover:text-gray-600 p-2">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 h-full">
+            <VisualFlowBuilder
+              initialTrigger={
+                editingFlow
+                  ? (editingFlow.trigger as { type: string; keywords?: string[]; buttonPayload?: string; businessHoursOnly?: boolean; outsideHoursOnly?: boolean })
+                  : { type: 'first_message' }
+              }
+              initialSteps={editingFlow ? (editingFlow.steps as object[]) : []}
+              initialCanvas={editingFlow?.editorType === 'visual' && editingFlow.canvasData ? (editingFlow.canvasData as { nodes: unknown[]; edges: unknown[] }) : null}
+              flowName={editingFlow?.name || formData.name}
+              storeUrl={storeUrl}
+              businessId={businessId}
+              onSave={handleVisualSave}
+              onCancel={closeEditor}
+              saving={saving}
+            />
+          </div>
+        </div>
+      ) : showEditor ? (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">{editingFlow ? 'Edit Flow' : 'Create Flow'}</h2>
-              <button onClick={() => { setShowEditor(false); resetForm() }} className="text-gray-400 hover:text-gray-600">
+              <button onClick={closeEditor} className="text-gray-400 hover:text-gray-600">
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -564,7 +649,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             </div>
             <div className="p-6 border-t border-gray-200 flex justify-end gap-2">
               <button
-                onClick={() => { setShowEditor(false); resetForm() }}
+                onClick={closeEditor}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel

@@ -9,8 +9,8 @@ import { Resend } from 'resend'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-// Step types from PRD
-export type StepType = 'send_text' | 'send_image' | 'send_url' | 'send_buttons' | 'send_location' | 'notify_team'
+// Step types from PRD (condition, delay added for visual builder Phase 5)
+export type StepType = 'send_text' | 'send_image' | 'send_url' | 'send_buttons' | 'send_location' | 'notify_team' | 'condition' | 'delay'
 
 export interface FlowStep {
   type: StepType
@@ -26,6 +26,13 @@ export interface FlowStep {
   longitude?: number
   name?: string
   address?: string
+  // Condition step (from visual builder)
+  conditionType?: 'keyword_match' | 'business_hours'
+  keywords?: string[]
+  trueSteps?: FlowStep[]
+  falseSteps?: FlowStep[]
+  // Delay step
+  delayMs?: number
 }
 
 export interface FlowTrigger {
@@ -250,6 +257,12 @@ async function executeStep(
       return { success: result.success, messageId: result.messageId }
     }
 
+    case 'delay': {
+      const ms = step.delayMs && step.delayMs > 0 ? Math.min(step.delayMs, 5000) : 500
+      await sleep(ms)
+      return { success: true }
+    }
+
     case 'send_buttons':
       // Requires approved template - fallback to text
       if (step.body) {
@@ -273,6 +286,38 @@ async function executeStep(
 
     default:
       return { success: true }
+  }
+}
+
+/**
+ * Execute a list of steps (used for top-level and condition branches)
+ */
+async function executeSteps(
+  steps: FlowStep[],
+  customerPhone: string,
+  flowId: string,
+  conversationId: string,
+  business: { name: string; email: string | null; slug: string },
+  context: FlowContext
+): Promise<void> {
+  for (const step of steps) {
+    if (step.type === 'condition') {
+      const cond = step
+      let branch: FlowStep[] = cond.falseSteps || []
+      if (cond.conditionType === 'keyword_match' && cond.keywords?.length && context.messageBody) {
+        const bodyLower = context.messageBody.toLowerCase()
+        const matches = cond.keywords.some((kw) => bodyLower.includes(kw.toLowerCase()))
+        if (matches) branch = cond.trueSteps || []
+      } else if (cond.conditionType === 'business_hours') {
+        const inHours = isWithinBusinessHours(context.settings)
+        branch = inHours ? (cond.trueSteps || []) : (cond.falseSteps || [])
+      }
+      if (branch.length) {
+        await executeSteps(branch, customerPhone, flowId, conversationId, business, context)
+      }
+    } else {
+      await executeStep(step, customerPhone, flowId, conversationId, business)
+    }
   }
 }
 
@@ -309,9 +354,7 @@ export async function runFlowEngine(context: FlowContext): Promise<string | null
 
     if (!triggerMatches(trigger, context)) continue
 
-    for (const step of steps) {
-      await executeStep(step, customerPhone, flow.id, conversationId, business)
-    }
+    await executeSteps(steps, customerPhone, flow.id, conversationId, business, context)
 
     await prisma.whatsAppFlow.update({
       where: { id: flow.id },

@@ -54,7 +54,7 @@ export async function PUT(
     if (!access.ok) return access.response
 
     const body = await request.json().catch(() => ({}))
-    const { name, type, trigger, steps, priority } = body
+    const { name, type, trigger, steps, priority, editorType, canvasData } = body
 
     const updateData: Record<string, unknown> = {}
     if (typeof name === 'string' && name.trim()) updateData.name = name.trim()
@@ -62,6 +62,10 @@ export async function PUT(
     if (trigger && typeof trigger === 'object') updateData.trigger = trigger
     if (Array.isArray(steps)) updateData.steps = steps
     if (typeof priority === 'number') updateData.priority = priority
+    if (editorType === 'visual' && canvasData && typeof canvasData === 'object') {
+      updateData.editorType = 'visual'
+      updateData.canvasData = canvasData
+    }
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ message: 'No valid updates' }, { status: 400 })

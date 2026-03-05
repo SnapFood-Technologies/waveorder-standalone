@@ -51,7 +51,7 @@ export async function POST(
     if (!access.ok) return access.response
 
     const body = await request.json().catch(() => ({}))
-    const { name, type, trigger, steps } = body
+    const { name, type, trigger, steps, editorType, canvasData } = body
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return NextResponse.json({ message: 'Flow name is required' }, { status: 400 })
@@ -60,6 +60,8 @@ export async function POST(
     const flowType = validTypes.includes(type) ? type : 'keyword'
     const triggerObj = trigger && typeof trigger === 'object' ? trigger : { type: 'keyword', keywords: [] }
     const stepsArr = Array.isArray(steps) ? steps : []
+    const isVisual = editorType === 'visual'
+    const canvas = isVisual && canvasData && typeof canvasData === 'object' ? canvasData : undefined
 
     const flow = await prisma.whatsAppFlow.create({
       data: {
@@ -69,7 +71,9 @@ export async function POST(
         isActive: true,
         priority: 50,
         trigger: triggerObj as object,
-        steps: stepsArr as object
+        steps: stepsArr as object,
+        editorType: isVisual ? 'visual' : 'form',
+        canvasData: canvas ?? undefined
       }
     })
 

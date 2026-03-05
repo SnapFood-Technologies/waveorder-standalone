@@ -31,6 +31,7 @@
     "@tiptap/react": "^3.11.0",
     "@tiptap/starter-kit": "^3.11.0",
     "@types/qrcode": "^1.5.5",
+    "@xyflow/react": "^12.10.1",
     "ai": "^6.0.73",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
@@ -79,7 +80,7 @@
     "eslint-config-next": "15.5.7",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   },
   "browserslist": [
     "> 0.5%",

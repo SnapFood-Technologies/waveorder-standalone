@@ -684,6 +684,13 @@ model WhatsAppFlow {
   triggerCount   Int      @default(0)
   lastTriggeredAt DateTime?
 
+  // Visual flow builder (Phase 5)
+  editorType   String   @default("form") // "form" | "visual"
+  canvasData   Json?    // React Flow nodes + edges
+  version      Int      @default(1)
+  publishedAt  DateTime?
+  isDraft      Boolean  @default(false)
+
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

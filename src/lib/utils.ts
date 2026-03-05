@@ -5,6 +5,19 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Generate a short random ID (alphanumeric) */
+export function generateId(length = 8): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = crypto.getRandomValues(new Uint8Array(length))
+    for (let i = 0; i < length; i++) result += chars[bytes[i]! % chars.length]
+  } else {
+    for (let i = 0; i < length; i++) result += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return result
+}
+
 export function generateSlug(name: string): string {
   return name
     .toLowerCase()
