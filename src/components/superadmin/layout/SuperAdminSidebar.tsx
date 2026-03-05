@@ -227,6 +227,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Twilio Activities', 
           href: '/superadmin/system/twilio-activities', 
           icon: Send
+        },
+        { 
+          name: 'WaveOrder Flows', 
+          href: '/superadmin/system/flows-usage', 
+          icon: MessageSquare
         }
       ]
     },

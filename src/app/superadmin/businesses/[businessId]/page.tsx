@@ -44,13 +44,15 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
-  Zap
+  Zap,
+  Lightbulb
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
 import { BusinessFeedbackSection } from '@/components/superadmin/BusinessFeedbackSection'
 import { UpgradePlanModal } from '@/components/superadmin/UpgradePlanModal'
 import toast from 'react-hot-toast'
+import { getUseCasesForBusinessType } from '@/lib/whatsapp-flows-use-cases'
 
 interface BusinessDetails {
   id: string
@@ -911,35 +913,11 @@ export default function BusinessDetailsPage() {
           )}
 
           {/* WaveOrder Flows Usage */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Zap className="w-5 h-5 text-teal-600" />
-                WaveOrder Flows
-              </h2>
-              <Link
-                href={`/superadmin/businesses/${businessId}/whatsapp-flows-usage`}
-                className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
-              >
-                <MessageSquare className="w-4 h-4 mr-1" />
-                View Flows Usage
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <MessageSquare className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-gray-900">{business.whatsappFlowsUsage?.conversations ?? 0}</p>
-                <p className="text-xs text-gray-500">Conversations</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4 text-center">
-                <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm font-bold text-gray-900">
-                  {business.whatsappFlowsEnabled ? 'Enabled' : 'Disabled'}
-                </p>
-                <p className="text-xs text-gray-500">WaveOrder Flows</p>
-              </div>
-            </div>
-          </div>
+          <WaveOrderFlowsUsageCard
+            business={business}
+            businessId={businessId}
+            onUpdate={fetchBusinessDetails}
+          />
 
           {/* AI Assistant Usage */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -1656,6 +1634,11 @@ export default function BusinessDetailsPage() {
           {/* WhatsApp Settings */}
           <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
+          {/* WaveOrder Flows Settings - BUSINESS plan only, SuperAdmin can enable/disable */}
+          {business.subscriptionPlan === 'BUSINESS' && (
+            <WaveOrderFlowsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          )}
+
           {/* Happy Hour Settings - Hide for salons */}
           {business.businessType !== 'SALON' && business.businessType !== 'SERVICES' && (
             <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
@@ -2161,6 +2144,247 @@ function WhatsAppSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Traditional Flow:</span> Customers will be redirected to WhatsApp to send their order manually.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// WaveOrder Flows Usage Card (with SuperAdmin enable toggle + use cases modal)
+function WaveOrderFlowsUsageCard({
+  business,
+  businessId,
+  onUpdate
+}: {
+  business: BusinessDetails
+  businessId: string
+  onUpdate: () => void
+}) {
+  const [showUseCasesModal, setShowUseCasesModal] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const flowsEnabled = business.whatsappFlowsEnabled ?? false
+  const canEnable = business.subscriptionPlan === 'BUSINESS'
+  const useCases = getUseCasesForBusinessType(business.businessType || 'OTHER')
+  const BUSINESS_TYPE_LABELS: Record<string, string> = {
+    RESTAURANT: 'Restaurants',
+    CAFE: 'Cafes',
+    RETAIL: 'Retail',
+    GROCERY: 'Grocery',
+    SALON: 'Salons',
+    SERVICES: 'Services',
+    OTHER: 'this business'
+  }
+  const businessTypeLabel =
+    BUSINESS_TYPE_LABELS[business.businessType || 'OTHER'] || 'this business'
+
+  const handleToggle = async () => {
+    if (!canEnable) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${businessId}/whatsapp-flows-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isEnabled: !flowsEnabled })
+      })
+      if (res.ok) {
+        toast.success(!flowsEnabled ? 'WaveOrder Flows enabled' : 'WaveOrder Flows disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update')
+      }
+    } catch {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-teal-600" />
+          WaveOrder Flows
+        </h2>
+        <div className="flex items-center gap-2">
+          {canEnable && (
+            <button
+              onClick={handleToggle}
+              disabled={saving}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                flowsEnabled ? 'bg-teal-600' : 'bg-gray-200'
+              } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={flowsEnabled ? 'Disable' : 'Enable'}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  flowsEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          )}
+          <Link
+            href={`/superadmin/businesses/${businessId}/whatsapp-flows-usage`}
+            className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+          >
+            <MessageSquare className="w-4 h-4 mr-1" />
+            View Flows Usage
+          </Link>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <MessageSquare className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <p className="text-2xl font-bold text-gray-900">{business.whatsappFlowsUsage?.conversations ?? 0}</p>
+          <p className="text-xs text-gray-500">Conversations</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4 text-center">
+          <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm font-bold text-gray-900">{flowsEnabled ? 'Enabled' : 'Disabled'}</p>
+          <p className="text-xs text-gray-500">WaveOrder Flows</p>
+        </div>
+      </div>
+      {!flowsEnabled && canEnable && (
+        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+          <p className="text-sm text-amber-900">
+            <span className="font-medium">Encourage adoption:</span> WaveOrder Flows automate welcome messages, away
+            replies, and keyword-triggered flows for better customer engagement.
+          </p>
+          <p className="text-xs text-amber-800">
+            SuperAdmin can enable it above, or the business can enable it in Admin → WaveOrder Flows → Settings.
+          </p>
+          <button
+            onClick={() => setShowUseCasesModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors"
+          >
+            <Lightbulb className="w-4 h-4" />
+            View use cases for {businessTypeLabel}
+          </button>
+        </div>
+      )}
+      {showUseCasesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-teal-600" />
+                WaveOrder Flows – Use cases for {businessTypeLabel}
+              </h3>
+              <button
+                onClick={() => setShowUseCasesModal(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              {useCases.map((uc, i) => (
+                <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="font-medium text-gray-900">{uc.title}</p>
+                  <p className="text-sm text-gray-600 mt-1">{uc.description}</p>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowUseCasesModal(false)}
+                className="w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// WaveOrder Flows Settings Section (SuperAdmin can enable/disable for business)
+function WaveOrderFlowsSettingsSection({
+  business,
+  onUpdate
+}: {
+  business: BusinessDetails
+  onUpdate: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [flowsEnabled, setFlowsEnabled] = useState(business.whatsappFlowsEnabled ?? false)
+
+  useEffect(() => {
+    setFlowsEnabled(business.whatsappFlowsEnabled ?? false)
+  }, [business.whatsappFlowsEnabled])
+
+  const handleToggle = async () => {
+    const newValue = !flowsEnabled
+    setSaving(true)
+
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/whatsapp-flows-settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isEnabled: newValue })
+      })
+
+      if (res.ok) {
+        setFlowsEnabled(newValue)
+        toast.success(newValue ? 'WaveOrder Flows enabled' : 'WaveOrder Flows disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <Zap className="w-5 h-5 text-teal-600" />
+        WaveOrder Flows
+      </h3>
+
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable WaveOrder Flows</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, this business can use automated welcome, away, and keyword-triggered flows.
+            SuperAdmin can enable it here, or the business can enable it in Admin → WaveOrder Flows → Settings.
+          </p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            flowsEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              flowsEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+
+      {flowsEnabled && (
+        <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700">
+            <span className="font-medium">Enabled:</span> Business can manage flows in Admin → WaveOrder Flows.
+          </p>
+        </div>
+      )}
+
+      {!flowsEnabled && (
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-xs text-amber-800">
+            <span className="font-medium">Encourage adoption:</span> Suggest the business enable WaveOrder Flows to automate welcome messages, away replies, and keyword-triggered flows for better customer engagement. They can enable it in Admin → WaveOrder Flows → Settings.
           </p>
         </div>
       )}
