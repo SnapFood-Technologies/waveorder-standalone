@@ -664,7 +664,7 @@ export function WhatsAppFlowsList({ businessId }: WhatsAppFlowsListProps) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Delete Confirmation Modal */}
       {flowToDelete && (

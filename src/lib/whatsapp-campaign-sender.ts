@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { sendWhatsAppTemplateMessage } from '@/lib/twilio'
+import { logSystemEvent } from '@/lib/systemLog'
 
 const MESSAGES_PER_SECOND = 5
 const COST_PER_MESSAGE = 0.05 // Approximate Twilio WhatsApp cost
@@ -28,6 +29,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function runCampaignSend(campaignId: string): Promise<{ success: boolean; delivered: number; failed: number }> {
+  try {
   const campaign = await prisma.whatsAppCampaign.findUnique({
     where: { id: campaignId },
     include: { template: true, business: { select: { name: true } } }
@@ -107,7 +109,32 @@ export async function runCampaignSend(campaignId: string): Promise<{ success: bo
     }
   })
 
+  logSystemEvent({
+    logType: failed > 0 ? 'whatsapp_broadcast_sent' : 'whatsapp_broadcast_sent',
+    severity: 'info',
+    businessId: campaign.businessId,
+    endpoint: 'whatsapp-campaign-sender',
+    method: 'BACKGROUND',
+    url: 'internal/whatsapp-campaign-sender',
+    metadata: { campaignId, campaignName: campaign.name, delivered, failed, totalRecipients: contacts.length }
+  })
+
   return { success: true, delivered, failed }
+  } catch (err) {
+    const campaign = await prisma.whatsAppCampaign.findUnique({ where: { id: campaignId }, select: { businessId: true, name: true } }).catch(() => null)
+    logSystemEvent({
+      logType: 'whatsapp_broadcast_error',
+      severity: 'error',
+      businessId: campaign?.businessId || '',
+      endpoint: 'whatsapp-campaign-sender',
+      method: 'BACKGROUND',
+      statusCode: 500,
+      errorMessage: err instanceof Error ? err.message : 'Campaign send error',
+      url: 'internal/whatsapp-campaign-sender',
+      metadata: { campaignId, campaignName: campaign?.name }
+    })
+    throw err
+  }
 }
 
 export function estimateCampaignCost(recipientCount: number): number {

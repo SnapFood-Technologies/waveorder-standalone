@@ -8,10 +8,15 @@ import { runFlowEngine } from '@/lib/whatsapp-flow-engine'
 import { runWhatsAppAi } from '@/lib/whatsapp-ai-service'
 import { normalizePhone } from '@/lib/whatsapp-utils'
 import { roundRobinAssign } from '@/lib/whatsapp-auto-assign'
+import { logSystemEvent, extractIPAddress, getActualRequestUrl } from '@/lib/systemLog'
 
 const CONTEXT_MESSAGES = 10
 
 export async function POST(request: NextRequest) {
+  const ipAddress = extractIPAddress(request)
+  const userAgent = request.headers.get('user-agent') || undefined
+  const actualUrl = getActualRequestUrl(request, '/api/webhooks/twilio/incoming')
+
   try {
     // Twilio sends form-urlencoded data
     const formData = await request.formData()
@@ -115,6 +120,20 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Log incoming message for superadmin visibility
+    logSystemEvent({
+      logType: 'whatsapp_flow_message_in',
+      severity: 'info',
+      businessId: resolvedBusiness.id,
+      endpoint: '/api/webhooks/twilio/incoming',
+      method: 'POST',
+      statusCode: 200,
+      ipAddress,
+      userAgent,
+      url: actualUrl,
+      metadata: { conversationId: conversation.id, customerPhone, messageType }
+    })
+
     // Upsert contact for broadcast list (unless opting out)
     const optOutPattern = /^(stop|unsubscribe|cancel|end|quit|opt.?out)\s*$/i
     const isOptOut = messageBody && optOutPattern.test(messageBody.trim())
@@ -132,8 +151,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Opt-out: customer replies STOP, stop, unsubscribe, etc.
-    const optOutPattern = /^(stop|unsubscribe|cancel|end|quit|opt.?out)\s*$/i
-    if (messageBody && optOutPattern.test(messageBody.trim())) {
+    if (isOptOut) {
       await prisma.whatsAppContact.upsert({
         where: {
           businessId_phone: { businessId: resolvedBusiness.id, phone: customerPhone }
@@ -176,6 +194,20 @@ export async function POST(request: NextRequest) {
       }
       try {
         const flowMatched = await runFlowEngine(flowContext)
+        if (flowMatched) {
+          logSystemEvent({
+            logType: 'whatsapp_flow_message_out',
+            severity: 'info',
+            businessId: resolvedBusiness.id,
+            endpoint: '/api/webhooks/twilio/incoming',
+            method: 'POST',
+            statusCode: 200,
+            ipAddress,
+            userAgent,
+            url: actualUrl,
+            metadata: { conversationId: conversation.id, flowId: flowMatched, customerPhone }
+          })
+        }
         if (!flowMatched && settings.aiEnabled) {
           const recentMessages = await prisma.whatsAppMessage.findMany({
             where: { conversationId: conversation.id },
@@ -195,13 +227,53 @@ export async function POST(request: NextRequest) {
             }))
           }
           try {
-            await runWhatsAppAi(aiContext)
+            const aiResult = await runWhatsAppAi(aiContext)
+            if (aiResult.success && aiResult.messageId) {
+              logSystemEvent({
+                logType: 'whatsapp_ai_reply',
+                severity: 'info',
+                businessId: resolvedBusiness.id,
+                endpoint: '/api/webhooks/twilio/incoming',
+                method: 'POST',
+                statusCode: 200,
+                ipAddress,
+                userAgent,
+                url: actualUrl,
+                metadata: { conversationId: conversation.id, customerPhone, intent: aiResult.intent, confidence: aiResult.confidence }
+              })
+            }
           } catch (aiErr) {
             console.error('[Twilio webhook] AI error:', aiErr)
+            logSystemEvent({
+              logType: 'whatsapp_ai_error',
+              severity: 'error',
+              businessId: resolvedBusiness.id,
+              endpoint: '/api/webhooks/twilio/incoming',
+              method: 'POST',
+              statusCode: 500,
+              errorMessage: aiErr instanceof Error ? aiErr.message : 'AI error',
+              ipAddress,
+              userAgent,
+              url: actualUrl,
+              metadata: { conversationId: conversation.id, customerPhone }
+            })
           }
         }
       } catch (err) {
         console.error('[Twilio webhook] Flow engine error:', err)
+        logSystemEvent({
+          logType: 'whatsapp_flow_error',
+          severity: 'error',
+          businessId: resolvedBusiness.id,
+          endpoint: '/api/webhooks/twilio/incoming',
+          method: 'POST',
+          statusCode: 500,
+          errorMessage: err instanceof Error ? err.message : 'Flow engine error',
+          ipAddress,
+          userAgent,
+          url: actualUrl,
+          metadata: { conversationId: conversation.id, customerPhone }
+        })
       }
     }
 

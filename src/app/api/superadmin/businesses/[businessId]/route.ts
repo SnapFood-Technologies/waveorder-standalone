@@ -22,6 +22,7 @@ export async function GET(
     const business = await prisma.business.findUnique({
       where: { id: businessId },
       include: {
+        whatsappSettings: { select: { isEnabled: true } },
         users: {
           where: { role: 'OWNER' },
           include: {
@@ -313,6 +314,15 @@ export async function GET(
       lastUsedAt: aiLastMessage?.createdAt?.toISOString() ?? null
     }
 
+    // WaveOrder Flows usage
+    const whatsappFlowsConversations = await prisma.whatsAppConversation.count({
+      where: { businessId }
+    })
+    const whatsappFlowsEnabled = (business as any).whatsappSettings?.isEnabled ?? false
+    const whatsappFlowsUsage = {
+      conversations: whatsappFlowsConversations
+    }
+
     // Internal Invoice usage stats (when feature enabled)
     let invoiceUsage: { total: number; lastGeneratedAt: string | null } | undefined
     if (business.internalInvoiceEnabled) {
@@ -473,6 +483,8 @@ export async function GET(
         },
         aiAssistantEnabled: business.aiAssistantEnabled ?? false,
         aiUsage,
+        whatsappFlowsEnabled,
+        whatsappFlowsUsage,
         invoiceUsage
       }
     })

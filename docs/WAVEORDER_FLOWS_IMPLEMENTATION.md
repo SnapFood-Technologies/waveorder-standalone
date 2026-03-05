@@ -136,3 +136,22 @@ WaveOrder Flows is **Business plan only**. Starter and Pro plans see an upgrade 
 - **SLA timers**: `slaWarningMinutes` in Settings (default 15). Red "SLA" badge when customer wait exceeds threshold.
 - **Per-agent metrics**: GET /agent-metrics — assigned, resolved, resolution %, avg first-response time. "Agent metrics" toggle in inbox.
 - **Supervisor view**: View filter tabs — All | Mine | Unassigned.
+
+## SystemLog & Superadmin Visibility ✅ (March 2026)
+
+- **SystemLog entries** for WaveOrder Flows events (same traceability as orders/appointments):
+  - `whatsapp_flow_message_in` — incoming customer message
+  - `whatsapp_flow_message_out` — flow reply sent
+  - `whatsapp_flow_error` — flow engine error
+  - `whatsapp_broadcast_sent` — campaign completion (metadata: delivered, failed)
+  - `whatsapp_broadcast_error` — campaign send failure
+  - `whatsapp_ai_reply` — AI auto-reply sent
+  - `whatsapp_ai_error` — AI error
+
+- **Twilio Activities** (`/superadmin/system/twilio-activities`): Extended to include all WhatsApp/Flows log types (order notifications, flow inbound/outbound, broadcast, AI). Filter by business, status, date range.
+
+- **Per-business Flows usage** (`/superadmin/businesses/[id]/whatsapp-flows-usage`): Conversations, messages (inbound/outbound), flow replies, AI replies, broadcasts, unread count. Period filter: today/week/month/all.
+
+- **Business detail page**: WaveOrder Flows section with conversation count, enabled status, and link to full usage.
+
+- **Superadmin dashboard**: WaveOrder Flows card — businesses with Flows enabled, total conversations, messages in selected period. Links to Twilio/Flows Activities.

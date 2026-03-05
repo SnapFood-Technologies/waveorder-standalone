@@ -114,6 +114,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [businessType, setBusinessType] = useState<string | null>(null)
   const [whatsappUnreadCount, setWhatsappUnreadCount] = useState(0)
+  const [ordersPendingCount, setOrdersPendingCount] = useState(0)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -207,6 +208,10 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         .then((data) => setWhatsappUnreadCount(data.count || 0))
         .catch(() => {})
     }
+    fetch(`/api/admin/stores/${businessId}/orders/pending-count`)
+      .then((res) => res.ok ? res.json() : { count: 0 })
+      .then((data) => setOrdersPendingCount(data.count || 0))
+      .catch(() => {})
   }, [businessId, subscription.plan])
   
   // Check if user can access products (STAFF cannot)
@@ -747,7 +752,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
               {/* @ts-ignore */}
               {item.children.map(child => {
                 const isConversations = item.name === 'WaveOrder Flows' && child.name === 'Conversations'
-                const badge = isConversations && whatsappUnreadCount > 0 ? String(whatsappUnreadCount) : undefined
+                const isAllOrders = item.name === 'Orders' && child.name === 'All Orders'
+                const badge = isConversations && whatsappUnreadCount > 0
+                  ? String(whatsappUnreadCount)
+                  : isAllOrders && ordersPendingCount > 0
+                    ? String(ordersPendingCount)
+                    : undefined
                 return (
                   <Link
                     key={child.name}
@@ -775,6 +785,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       )
     }
 
+    const ordersBadge = item.name === 'Orders' && ordersPendingCount > 0 ? String(ordersPendingCount) : undefined
     return (
       <Link
         key={item.name}
@@ -794,6 +805,11 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           }`} />
           <span className="truncate">{item.name}</span>
         </div>
+        {ordersBadge && (
+          <span className="ml-2 min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center bg-red-500 text-white text-xs font-medium rounded-full">
+            {ordersBadge}
+          </span>
+        )}
       </Link>
     )
   }

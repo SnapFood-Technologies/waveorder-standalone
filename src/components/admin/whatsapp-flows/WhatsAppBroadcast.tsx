@@ -421,7 +421,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                     className="flex-1 min-w-[120px] px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   />
                   <label className="flex items-center gap-2 text-sm text-gray-600">
-                    Variables ({{1}}, {{2}}…):
+                    Variables ({'{{1}}'}, {'{{2}}'}…):
                     <input
                       type="number"
                       min={0}
@@ -548,7 +548,7 @@ export function WhatsAppBroadcast({ businessId }: WhatsAppBroadcastProps) {
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Template variables</label>
                     <p className="text-xs text-gray-500 mb-2">
-                      Map variables {{1}}, {{2}}, etc. Use presets or custom text. {{contact.name}} and {{contact.phone}} are replaced per contact.
+                      Map variables {'{{1}}'}, {'{{2}}'}, etc. Use presets or custom text. {'{{contact.name}}'} and {'{{contact.phone}}'} are replaced per contact.
                     </p>
                     {Array.from({ length: vCount }, (_, i) => {
                       const key = String(i + 1)
