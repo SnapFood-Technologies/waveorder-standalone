@@ -600,6 +600,10 @@ model Business {
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
 
+  // WaveOrder Flows (WhatsApp messaging automation - Business plan)
+  whatsappConversations WhatsAppConversation[]
+  whatsappSettings       WhatsAppSettings?
+
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
   setupWizardCompleted  Boolean   @default(false)
@@ -621,6 +625,66 @@ model Business {
 
   // Index for fast custom domain lookups in middleware
   @@index([customDomain, domainStatus, isActive])
+  @@index([whatsappNumber])
+}
+
+// WaveOrder Flows - WhatsApp messaging automation
+model WhatsAppConversation {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId    String   @db.ObjectId
+  customerPhone String
+  customerName  String?
+  lastMessageAt DateTime
+  lastMessageBy String // "customer" | "business" | "flow"
+  isRead        Boolean  @default(false)
+  status        String   @default("open") // "open" | "closed"
+
+  business  Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages  WhatsAppMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, customerPhone])
+  @@index([businessId, lastMessageAt])
+  @@index([businessId, isRead])
+}
+
+model WhatsAppMessage {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String  @db.ObjectId
+  direction      String // "inbound" | "outbound"
+  sender         String // "customer" | "business" | "flow"
+  messageType    String // "text" | "image" | "video" | "button_reply" | "interactive"
+  body           String?
+  mediaUrl       String?
+  buttonPayload  String? // Button ID clicked by customer
+  twilioMessageId String? // Twilio SID for tracking
+  flowId         String?  @db.ObjectId // Which flow generated this (if auto-reply)
+
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model WhatsAppSettings {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId            String   @unique @db.ObjectId
+  isEnabled             Boolean  @default(false)
+  phoneNumber           String? // Business WhatsApp number connected
+  welcomeFlowEnabled    Boolean  @default(true)
+  awayFlowEnabled       Boolean  @default(true)
+  businessHoursStart    String? // "09:00"
+  businessHoursEnd      String? // "22:00"
+  businessHoursTimezone String? // "Asia/Dubai"
+  businessDays          Int[] // [1,2,3,4,5] (Monday=1, Sunday=7)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderNotification {

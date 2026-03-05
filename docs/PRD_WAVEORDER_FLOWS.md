@@ -3,6 +3,7 @@
 **Version:** 1.0
 **Date:** February 22, 2026
 **Status:** Draft
+**Phase 1 Completed:** March 2026
 **Author:** WaveOrder Engineering
 
 ---
@@ -419,19 +420,22 @@ Our flow engine handles this:
 
 ## 9. Phased Delivery
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- Twilio incoming webhook endpoint (`/api/webhooks/twilio/incoming`)
-- Prisma models: `WhatsAppConversation`, `WhatsAppMessage`, `WhatsAppSettings`
-- Conversations inbox page (list + thread view + manual reply)
-- Admin sidebar entry: "WaveOrder Flows"
-- Settings page (enable/disable, phone number, webhook URL display)
+- ✅ Twilio incoming webhook endpoint (`/api/webhooks/twilio/incoming`)
+- ✅ Prisma models: `WhatsAppConversation`, `WhatsAppMessage`, `WhatsAppSettings`
+- ✅ Conversations inbox page (list + thread view + manual reply)
+- ✅ Admin sidebar entry: "WaveOrder Flows" (Conversations, Flows, Settings)
+- ✅ Settings page (enable/disable, phone number, webhook URL display)
+- ✅ Connection test button (verifies Twilio credentials via `checkTwilioHealth`)
 
 **What works after Phase 1:**
 - Business can see all incoming WhatsApp messages in admin
 - Business can reply to customers from admin
 - Conversation history is stored
+
+**TODO later:** Unit tests for Phase 1 (webhook, API routes, components)
 
 ### Phase 2 — Welcome & Away Messages
 
@@ -911,16 +915,16 @@ Admin Sidebar:
 
 ## 15. Phase Summary
 
-| Phase | Scope |
-|---|---|
-| **Phase 1** | Foundation — webhook, inbox, DB models |
-| **Phase 2** | Welcome & Away messages |
-| **Phase 3** | Custom Flows (form editor) |
-| **Phase 4** | Polish, analytics, media, templates |
-| **Phase 5** | Visual Flow Builder |
-| **Phase 6** | AI Auto-Replies |
-| **Phase 7** | Broadcast & Campaigns |
-| **Phase 8** | Multi-Agent Inbox & Team |
+| Phase | Scope | Status |
+|---|---|---|
+| **Phase 1** | Foundation — webhook, inbox, DB models, connection test | ✅ Complete |
+| **Phase 2** | Welcome & Away messages | Pending |
+| **Phase 3** | Custom Flows (form editor) | Pending |
+| **Phase 4** | Polish, analytics, media, templates | Pending |
+| **Phase 5** | Visual Flow Builder | Pending |
+| **Phase 6** | AI Auto-Replies | Pending |
+| **Phase 7** | Broadcast & Campaigns | Pending |
+| **Phase 8** | Multi-Agent Inbox & Team | Pending |
 
 **MVP** (Phases 1–4) covers inbox, auto-replies, and custom flows.
 **Full module** (Phases 1–8) delivers a complete WhatsApp automation platform.

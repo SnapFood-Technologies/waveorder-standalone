@@ -35,6 +35,7 @@ import {
   BookOpen,
   Ticket,
   MessageSquare,
+  MessageCircle,
   Tag,
   Layers,
   FolderTree,
@@ -487,6 +488,17 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         href: `${baseUrl}/api`, 
         icon: Key, 
         requiredPlan: 'BUSINESS' as Plan
+      },
+      // WaveOrder Flows - WhatsApp messaging automation
+      {
+        name: 'WaveOrder Flows',
+        icon: MessageCircle,
+        requiredPlan: 'BUSINESS' as Plan,
+        children: [
+          { name: 'Conversations', href: `${baseUrl}/whatsapp-flows/conversations`, icon: MessageSquare, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Flows', href: `${baseUrl}/whatsapp-flows/flows`, icon: Layers, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Settings', href: `${baseUrl}/whatsapp-flows/settings`, icon: Cog, requiredPlan: 'BUSINESS' as Plan }
+        ]
       },
     ] : []),
     
