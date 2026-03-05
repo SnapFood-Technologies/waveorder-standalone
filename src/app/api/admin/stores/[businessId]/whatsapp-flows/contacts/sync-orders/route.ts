@@ -1,5 +1,5 @@
-// Sync contact totalOrders and lastOrderAt from Order/Customer data
-// Business plan only
+// Sync contact totalOrders and lastOrderAt from Order/Appointment/ServiceRequest
+// Business plan only. Sources vary by business type: Order (restaurant/retail/salon), ServiceRequest (services)
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
@@ -12,12 +12,12 @@ async function requireFlowsAccess(businessId: string) {
   }
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { subscriptionPlan: true }
+    select: { subscriptionPlan: true, businessType: true }
   })
   if (!business || business.subscriptionPlan !== 'BUSINESS') {
     return { ok: false as const, response: NextResponse.json({ message: 'WaveOrder Flows requires Business plan' }, { status: 403 }) }
   }
-  return { ok: true as const }
+  return { ok: true as const, business }
 }
 
 function normalizePhone(phone: string): string {
@@ -32,23 +32,46 @@ export async function POST(
     const { businessId } = await params
     const access = await requireFlowsAccess(businessId)
     if (!access.ok) return access.response
-
-    const orders = await prisma.order.findMany({
-      where: { businessId },
-      include: { customer: { select: { phone: true } } }
-    })
+    const business = access.business
+    const businessType = business?.businessType?.toUpperCase()
 
     const byPhone = new Map<string, { totalOrders: number; lastOrderAt: Date }>()
-    for (const o of orders) {
-      const phone = o.customer?.phone || ''
-      const digits = normalizePhone(phone)
-      if (!digits) continue
-      const existing = byPhone.get(digits)
-      if (existing) {
-        existing.totalOrders++
-        if (o.createdAt > existing.lastOrderAt) existing.lastOrderAt = o.createdAt
-      } else {
-        byPhone.set(digits, { totalOrders: 1, lastOrderAt: o.createdAt })
+
+    // SERVICES: sync from ServiceRequest (phone field)
+    if (businessType === 'SERVICES') {
+      const requests = await prisma.serviceRequest.findMany({
+        where: { businessId },
+        select: { phone: true, createdAt: true }
+      })
+      for (const r of requests) {
+        const phone = r.phone || ''
+        const digits = normalizePhone(phone)
+        if (!digits || digits.length < 10) continue
+        const existing = byPhone.get(digits)
+        if (existing) {
+          existing.totalOrders++
+          if (r.createdAt > existing.lastOrderAt) existing.lastOrderAt = r.createdAt
+        } else {
+          byPhone.set(digits, { totalOrders: 1, lastOrderAt: r.createdAt })
+        }
+      }
+    } else {
+      // RESTAURANT, CAFE, RETAIL, GROCERY, SALON, OTHER: sync from Order (via customer)
+      const orders = await prisma.order.findMany({
+        where: { businessId },
+        include: { customer: { select: { phone: true } } }
+      })
+      for (const o of orders) {
+        const phone = o.customer?.phone || ''
+        const digits = normalizePhone(phone)
+        if (!digits) continue
+        const existing = byPhone.get(digits)
+        if (existing) {
+          existing.totalOrders++
+          if (o.createdAt > existing.lastOrderAt) existing.lastOrderAt = o.createdAt
+        } else {
+          byPhone.set(digits, { totalOrders: 1, lastOrderAt: o.createdAt })
+        }
       }
     }
 

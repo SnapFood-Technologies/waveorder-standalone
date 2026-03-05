@@ -415,6 +415,8 @@ export function getTicketTypeDisplayName(type: string): string {
       return 'Feature Request'
     case 'BUG_REPORT':
       return 'Bug Report'
+    case 'WHATSAPP_TEMPLATES':
+      return 'WhatsApp templates / Broadcast'
     default:
       return type
   }

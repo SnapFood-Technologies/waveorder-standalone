@@ -5,8 +5,16 @@
 import { prisma } from '@/lib/prisma'
 
 export async function roundRobinAssign(businessId: string): Promise<string | null> {
-  const members = await prisma.businessUser.findMany({
+  const settings = await prisma.whatsAppSettings.findUnique({
     where: { businessId },
+    select: { agentUserIds: true }
+  })
+  const agentIds = settings?.agentUserIds
+  const whereClause = agentIds && agentIds.length > 0
+    ? { businessId, userId: { in: agentIds } }
+    : { businessId }
+  const members = await prisma.businessUser.findMany({
+    where: whereClause,
     select: { userId: true },
     orderBy: { createdAt: 'asc' }
   })

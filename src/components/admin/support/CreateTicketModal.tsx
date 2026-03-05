@@ -8,14 +8,16 @@ interface CreateTicketModalProps {
   businessId: string
   onClose: () => void
   onTicketCreated: (ticket: any) => void
+  /** Pre-select ticket type when opened from Broadcast templates CTA */
+  initialType?: string
 }
 
-export function CreateTicketModal({ businessId, onClose, onTicketCreated }: CreateTicketModalProps) {
+export function CreateTicketModal({ businessId, onClose, onTicketCreated, initialType }: CreateTicketModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
-    type: 'GENERAL',
+    type: (initialType && ['GENERAL', 'TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'WHATSAPP_TEMPLATES'].includes(initialType) ? initialType : 'GENERAL') as string,
     priority: 'MEDIUM'
   })
   const [error, setError] = useState('')
@@ -60,7 +62,8 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated }: Crea
     { value: 'TECHNICAL', label: 'Technical Issue' },
     { value: 'BILLING', label: 'Billing & Payment' },
     { value: 'FEATURE_REQUEST', label: 'Feature Request' },
-    { value: 'BUG_REPORT', label: 'Bug Report' }
+    { value: 'BUG_REPORT', label: 'Bug Report' },
+    { value: 'WHATSAPP_TEMPLATES', label: 'WhatsApp templates / Broadcast setup' }
   ]
 
   const getPriorityOptions = () => [

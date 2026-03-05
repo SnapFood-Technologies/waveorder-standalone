@@ -240,6 +240,9 @@ function VisualFlowBuilderInner({
             onPaneClick={onPaneClick}
             nodeTypes={nodeTypes}
             fitView
+            fitViewOptions={{ padding: 0.4, minZoom: 0.35, maxZoom: 1.5 }}
+            minZoom={0.2}
+            maxZoom={2}
             className="bg-gray-100"
           >
             <Background variant={BackgroundVariant.Dots} gap={16} size={1} />

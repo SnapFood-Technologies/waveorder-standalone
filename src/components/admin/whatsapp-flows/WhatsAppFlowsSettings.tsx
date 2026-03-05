@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Save, Loader2, AlertCircle, Copy, Check, Wifi, Plus, Trash2, Bot, FileText } from 'lucide-react'
+import { Save, Loader2, AlertCircle, Copy, Check, Wifi, Plus, Trash2, Bot, FileText, Users, Phone, Clock, Zap, MessageSquare, Info } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface WhatsAppSettings {
@@ -19,6 +19,7 @@ interface WhatsAppSettings {
   aiPersonalityPrompt?: string | null
   aiConfidenceThreshold?: number
   aiDailyLimit?: number
+  agentUserIds?: string[]
 }
 
 interface Faq {
@@ -26,6 +27,13 @@ interface Faq {
   question: string
   answer: string
   order: number
+}
+
+interface TeamMember {
+  userId: string
+  name: string
+  email?: string
+  role?: string
 }
 
 interface WhatsAppFlowsSettingsProps {
@@ -40,6 +48,41 @@ const DAY_LABELS: Record<number, string> = {
   5: 'Fri',
   6: 'Sat',
   7: 'Sun'
+}
+
+/** Reusable section with main content + explanatory sidebar. Responsive: stacks on mobile. */
+function SettingsSection({
+  title,
+  icon: Icon,
+  explanation,
+  children
+}: {
+  title: string
+  icon: React.ElementType
+  explanation: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
+        <div className="lg:col-span-3 p-4 sm:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Icon className="w-5 h-5 text-teal-600" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          </div>
+          {children}
+        </div>
+        <div className="lg:col-span-1 bg-gray-50 p-4 sm:p-6 border-t lg:border-t-0 lg:border-l border-gray-200">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-gray-600">{explanation}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps) {
@@ -65,8 +108,10 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
     aiConfidenceThreshold: 0.6,
     aiDailyLimit: 50,
     autoAssignEnabled: false,
-    slaWarningMinutes: 15
+    slaWarningMinutes: 15,
+    agentUserIds: [] as string[]
   })
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [faqs, setFaqs] = useState<Faq[]>([])
   const [faqForm, setFaqForm] = useState({ question: '', answer: '' })
   const [cannedResponses, setCannedResponses] = useState<Array<{ id: string; title: string; body: string; shortcut?: string }>>([])
@@ -121,7 +166,8 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             aiConfidenceThreshold: data.settings.aiConfidenceThreshold ?? 0.6,
             aiDailyLimit: data.settings.aiDailyLimit ?? 50,
             autoAssignEnabled: data.settings.autoAssignEnabled ?? false,
-            slaWarningMinutes: data.settings.slaWarningMinutes ?? 15
+            slaWarningMinutes: data.settings.slaWarningMinutes ?? 15,
+            agentUserIds: Array.isArray(data.settings.agentUserIds) ? data.settings.agentUserIds : []
           })
         }
       } catch (err) {
@@ -133,6 +179,10 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
     fetchSettings()
     fetchFaqs()
     fetchCannedResponses()
+    fetch(`/api/admin/stores/${businessId}/team/members`)
+      .then((r) => r.ok ? r.json() : { members: [] })
+      .then((d) => setTeamMembers((d.members || []).map((m: { userId: string; name: string; email?: string }) => ({ userId: m.userId, name: m.name, email: m.email }))))
+      .catch(() => {})
   }, [businessId, fetchFaqs, fetchCannedResponses])
 
   const handleSave = async () => {
@@ -144,7 +194,8 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
         body: JSON.stringify({
           ...formData,
           phoneNumber: formData.phoneNumber.trim() || null,
-          aiPersonalityPrompt: formData.aiPersonality === 'custom' ? formData.aiPersonalityPrompt : null
+          aiPersonalityPrompt: formData.aiPersonality === 'custom' ? formData.aiPersonalityPrompt : null,
+          agentUserIds: formData.agentUserIds
         })
       })
       if (!res.ok) {
@@ -195,16 +246,11 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
         </p>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-            <AlertCircle className="w-5 h-5 text-teal-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Enable WaveOrder Flows</h2>
-            <p className="text-sm text-gray-600">Turn on to receive and reply to WhatsApp messages</p>
-          </div>
-        </div>
+      <SettingsSection
+        title="Enable WaveOrder Flows"
+        icon={AlertCircle}
+        explanation="Turn on to receive and reply to WhatsApp messages. When enabled, you can use welcome messages, away replies, and keyword flows to automate responses."
+      >
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -238,10 +284,13 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             <p className="text-xs text-gray-500">Auto-send when customer messages outside business hours</p>
           </div>
         )}
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">WhatsApp Number</h2>
+      <SettingsSection
+        title="WhatsApp Number"
+        icon={Phone}
+        explanation="Your business WhatsApp number. Incoming messages are matched to your business using this number. Must match the number configured in Twilio."
+      >
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Business WhatsApp Number</label>
           <input
@@ -251,23 +300,20 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             placeholder="+355 69 123 4567"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Your WhatsApp Business number. Used to match incoming messages to your business.
-          </p>
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Twilio Webhook</h2>
-        <p className="text-sm text-gray-600">
-          Configure this URL in your Twilio Console under Messaging → Settings → Webhook URL for &quot;A MESSAGE COMES IN&quot;.
-        </p>
-        <div className="flex gap-2">
+      <SettingsSection
+        title="Twilio Webhook"
+        icon={Wifi}
+        explanation="Copy this URL into your Twilio Console under Messaging → Settings. Twilio sends incoming WhatsApp messages to this URL so WaveOrder can process them."
+      >
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={webhookUrl}
             readOnly
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
+            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm font-mono"
           />
           <button
             onClick={copyWebhook}
@@ -323,11 +369,13 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             </span>
           )}
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Business Hours</h2>
-        <p className="text-sm text-gray-600">Used for away messages (Phase 2)</p>
+      <SettingsSection
+        title="Business Hours"
+        icon={Clock}
+        explanation="Defines when you're open. Used for away messages—when a customer messages outside these hours, they receive an automated reply with your opening times."
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
@@ -383,18 +431,13 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             ))}
           </div>
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-            <Bot className="w-5 h-5 text-amber-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">AI Auto-Replies</h2>
-            <p className="text-sm text-gray-600">OpenAI-powered responses when no flow matches</p>
-          </div>
-        </div>
+      <SettingsSection
+        title="AI Auto-Replies"
+        icon={Bot}
+        explanation="When no flow matches a customer message, AI can reply automatically using your FAQs and business context. Saves time on common questions."
+      >
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -456,11 +499,53 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
             </div>
           </div>
         )}
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Multi-Agent Inbox</h2>
-        <p className="text-sm text-gray-600">Round-robin auto-assignment and SLA alerts</p>
+      <SettingsSection
+        title="Agents"
+        icon={Users}
+        explanation="Select which team members can be assigned to WhatsApp conversations. Only agents appear in the assign dropdown and Performance by agent. Leave all unchecked to allow all team members."
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">Team members who can reply to customer conversations:</p>
+          {teamMembers.length === 0 ? (
+            <p className="text-sm text-gray-500">No team members. Add members in Admin → Team.</p>
+          ) : (
+            <div className="space-y-2">
+              {teamMembers.map((m) => (
+                <label key={m.userId} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={formData.agentUserIds.includes(m.userId)}
+                    onChange={(e) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        agentUserIds: e.target.checked
+                          ? [...prev.agentUserIds, m.userId]
+                          : prev.agentUserIds.filter((id) => id !== m.userId)
+                      }))
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 flex-shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-medium text-gray-900 block truncate">{m.name}</span>
+                    {m.email && <span className="text-xs text-gray-500 block truncate">{m.email}</span>}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+          {formData.agentUserIds.length === 0 && teamMembers.length > 0 && (
+            <p className="text-xs text-amber-600">All team members are agents when none are selected.</p>
+          )}
+        </div>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Multi-Agent Inbox"
+        icon={Users}
+        explanation="Auto-assign distributes new conversations evenly among agents. SLA warning highlights conversations where the customer has waited too long for a reply."
+      >
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -482,25 +567,27 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           />
           <p className="text-xs text-gray-500 mt-1">Show warning when customer waits longer than this for a reply</p>
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">FAQ (for AI)</h2>
-        <p className="text-sm text-gray-600">Add Q&amp;A pairs to help the AI answer common questions</p>
-        <div className="flex gap-2">
+      <SettingsSection
+        title="FAQ (for AI)"
+        icon={FileText}
+        explanation="Q&A pairs that the AI uses to answer customer questions. Add common questions like delivery times, prices, or return policy to improve AI accuracy."
+      >
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={faqForm.question}
             onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))}
             placeholder="Question"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <input
             type="text"
             value={faqForm.answer}
             onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))}
             placeholder="Answer"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <button
             onClick={async () => {
@@ -552,39 +639,34 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           ))}
           {faqs.length === 0 && <p className="text-sm text-gray-500">No FAQs yet. Add some to improve AI responses.</p>}
         </div>
-      </div>
+      </SettingsSection>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Canned Responses</h2>
-            <p className="text-sm text-gray-600">Quick reply snippets for the team inbox</p>
-          </div>
-        </div>
+      <SettingsSection
+        title="Canned Responses"
+        icon={MessageSquare}
+        explanation="Pre-written snippets agents can insert with a shortcut (e.g. /thanks). Speeds up replies for common phrases like greetings or order confirmations."
+      >
         <div className="flex gap-2 flex-wrap">
           <input
             type="text"
             value={cannedForm.title}
             onChange={(e) => setCannedForm((p) => ({ ...p, title: e.target.value }))}
             placeholder="Title (e.g. Greeting)"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-32"
+            className="w-full sm:w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <input
             type="text"
             value={cannedForm.shortcut}
             onChange={(e) => setCannedForm((p) => ({ ...p, shortcut: e.target.value }))}
             placeholder="Shortcut (e.g. /thanks)"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-28"
+            className="w-full sm:w-28 px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <input
             type="text"
             value={cannedForm.body}
             onChange={(e) => setCannedForm((p) => ({ ...p, body: e.target.value }))}
             placeholder="Message body"
-            className="flex-1 min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="flex-1 min-w-0 w-full sm:min-w-[200px] px-3 py-2 border border-gray-300 rounded-lg text-sm"
           />
           <button
             onClick={async () => {
@@ -640,13 +722,13 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           ))}
           {cannedResponses.length === 0 && <p className="text-sm text-gray-500">No canned responses. Add snippets for quick replies in the inbox.</p>}
         </div>
-      </div>
+      </SettingsSection>
 
       <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
+          className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
         >
           {saving ? (
             <>
