@@ -25,8 +25,7 @@ import {
   ArrowUpRight,
   Info,
   X,
-  Store,
-  MessageSquare
+  Store
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import { StorefrontViewsChart } from './StorefrontViewsChart';
@@ -38,9 +37,6 @@ interface DashboardStats {
   monthlyGrowth: number;
   recentSignups: number;
   totalPageViews: number;
-  flowsEnabled?: number;
-  flowsConversations?: number;
-  flowsMessagesInPeriod?: number;
 }
 
 interface RecentBusiness {
@@ -373,7 +369,7 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/superadmin/businesses" className="block h-full">
           <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group h-full min-h-[160px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
@@ -442,39 +438,6 @@ export function SuperAdminDashboard() {
             <span className="text-gray-500 text-sm">
               Across all storefronts
             </span>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg border border-gray-200 h-full min-h-[160px] flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">WaveOrder Flows</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.flowsEnabled ?? 0}</p>
-            </div>
-            <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-teal-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
-            <span className="text-gray-500 text-sm">
-              {stats.flowsConversations ?? 0} convos · {stats.flowsMessagesInPeriod ?? 0} msgs
-            </span>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/superadmin/system/flows-usage"
-                className="inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
-              >
-                Overview
-                <ArrowUpRight className="w-3 h-3" />
-              </Link>
-              <Link
-                href="/superadmin/system/twilio-activities"
-                className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-700"
-              >
-                Twilio
-                <ArrowUpRight className="w-3 h-3" />
-              </Link>
-            </div>
           </div>
         </div>
       </div>
