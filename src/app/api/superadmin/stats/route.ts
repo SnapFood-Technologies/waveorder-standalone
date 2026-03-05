@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
       lastMonthBusinesses,
       recentSignups,
       oldPageViews,
-      newPageViews
+      newPageViews,
+      flowsEnabledCount,
+      flowsConversationsTotal,
+      flowsMessagesInPeriod
     ] = await Promise.all([
       // Total businesses (all time, excluding test)
       prisma.business.count({
@@ -196,6 +199,20 @@ export async function GET(request: NextRequest) {
           },
           business: excludeTestCondition
         }
+      }),
+
+      // WaveOrder Flows metrics
+      prisma.whatsAppSettings.count({
+        where: { isEnabled: true, business: excludeTestCondition }
+      }),
+      prisma.whatsAppConversation.count({
+        where: { business: excludeTestCondition }
+      }),
+      prisma.whatsAppMessage.count({
+        where: {
+          createdAt: { gte: startDate, lte: endDate },
+          conversation: { business: excludeTestCondition }
+        }
       })
     ])
 
@@ -240,7 +257,11 @@ export async function GET(request: NextRequest) {
       monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
       // Recent signups this week (not affected by date filter, only with active businesses)
       recentSignups: activeRecentSignups.length,
-      totalPageViews: (oldPageViews?._sum.visitors || 0) + (newPageViews || 0)
+      totalPageViews: (oldPageViews?._sum.visitors || 0) + (newPageViews || 0),
+      // WaveOrder Flows
+      flowsEnabled: flowsEnabledCount,
+      flowsConversations: flowsConversationsTotal,
+      flowsMessagesInPeriod
     }
 
     return NextResponse.json(stats)

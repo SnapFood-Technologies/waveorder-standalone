@@ -25,7 +25,8 @@ import {
   ArrowUpRight,
   Info,
   X,
-  Store
+  Store,
+  MessageSquare
 } from 'lucide-react';
 import { AuthMethodIcon } from './AuthMethodIcon';
 import { StorefrontViewsChart } from './StorefrontViewsChart';
@@ -37,6 +38,9 @@ interface DashboardStats {
   monthlyGrowth: number;
   recentSignups: number;
   totalPageViews: number;
+  flowsEnabled?: number;
+  flowsConversations?: number;
+  flowsMessagesInPeriod?: number;
 }
 
 interface RecentBusiness {
@@ -369,7 +373,7 @@ export function SuperAdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Link href="/superadmin/businesses" className="block">
           <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group">
             <div className="flex items-center justify-between">
@@ -440,6 +444,26 @@ export function SuperAdminDashboard() {
             </span>
           </div>
         </div>
+
+        <Link href="/superadmin/system/twilio-activities" className="block">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">WaveOrder Flows</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.flowsEnabled ?? 0}</p>
+              </div>
+              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center group-hover:bg-teal-200 transition-colors">
+                <MessageSquare className="w-6 h-6 text-teal-600" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-gray-500 text-sm">
+                {stats.flowsConversations ?? 0} conversations · {stats.flowsMessagesInPeriod ?? 0} msgs (period)
+              </span>
+              <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" />
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Recent Business Registrations */}

@@ -11,7 +11,9 @@
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "populate:naia-postal": "tsx scripts/populate-postal-pricing-naia-studio.ts"
+    "populate:naia-postal": "tsx scripts/populate-postal-pricing-naia-studio.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
@@ -31,6 +33,7 @@
     "@tiptap/react": "^3.11.0",
     "@tiptap/starter-kit": "^3.11.0",
     "@types/qrcode": "^1.5.5",
+    "@xyflow/react": "^12.10.1",
     "ai": "^6.0.73",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
@@ -79,7 +82,13 @@
     "eslint-config-next": "15.5.7",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
-    "typescript": "^5"
+    "typescript": "5.9.3",
+    "vitest": "^2.1.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "@testing-library/react": "^16.0.1",
+    "@testing-library/dom": "^10.4.0",
+    "vite-tsconfig-paths": "^5.1.0"
   },
   "browserslist": [
     "> 0.5%",

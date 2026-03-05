@@ -2,8 +2,11 @@
 
 **Version:** 1.0
 **Date:** February 22, 2026
-**Status:** Draft
+**Status:** Implemented (Phases 1–8 Complete)
+**Last Updated:** March 2026
 **Author:** WaveOrder Engineering
+
+> Implementation details: [WAVEORDER_FLOWS_IMPLEMENTATION.md](./WAVEORDER_FLOWS_IMPLEMENTATION.md)
 
 ---
 
@@ -273,9 +276,10 @@ Admin Sidebar:
 ├── Customers
 ├── ...
 ├── WaveOrder Flows        ← NEW (icon: MessageCircle or Zap)
-│   ├── Conversations        (inbox view)
+│   ├── Conversations        (inbox — read/reply/assign, notes, SLA)
 │   ├── Flows                (manage automation flows)
-│   └── Settings             (phone, hours, enable/disable)
+│   ├── Broadcast            (Contacts, Templates, Campaigns tabs)
+│   └── Settings             (phone, hours, AI, Canned Responses, Multi-agent)
 ├── Settings
 ```
 
@@ -419,54 +423,55 @@ Our flow engine handles this:
 
 ## 9. Phased Delivery
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- Twilio incoming webhook endpoint (`/api/webhooks/twilio/incoming`)
-- Prisma models: `WhatsAppConversation`, `WhatsAppMessage`, `WhatsAppSettings`
-- Conversations inbox page (list + thread view + manual reply)
-- Admin sidebar entry: "WaveOrder Flows"
-- Settings page (enable/disable, phone number, webhook URL display)
+- ✅ Twilio incoming webhook endpoint (`/api/webhooks/twilio/incoming`)
+- ✅ Prisma models: `WhatsAppConversation`, `WhatsAppMessage`, `WhatsAppSettings`
+- ✅ Conversations inbox page (list + thread view + manual reply)
+- ✅ Admin sidebar entry: "WaveOrder Flows" (Conversations, Flows, Settings)
+- ✅ Settings page (enable/disable, phone number, webhook URL display)
+- ✅ Connection test button (verifies Twilio credentials via `checkTwilioHealth`)
 
 **What works after Phase 1:**
 - Business can see all incoming WhatsApp messages in admin
 - Business can reply to customers from admin
 - Conversation history is stored
 
-### Phase 2 — Welcome & Away Messages
+**Unit tests (Phase 1):** Vitest + @testing-library/react. Tests: `normalizePhone`, `isWithinBusinessHours`, `getFlowTemplates`, webhook validation (400 when From/To missing), TriggerNode. Run: `npm run test`
+
+### Phase 2 — Welcome & Away Messages ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- `WhatsAppFlow` Prisma model
-- Flow engine (trigger matching + step execution)
-- Business hours check logic
-- Welcome flow: auto-created per business with default template
-- Away flow: auto-created per business with default template
-- Settings page: business hours configuration
+- ✅ `WhatsAppFlow` Prisma model
+- ✅ Flow engine (trigger matching + step execution)
+- ✅ Business hours check logic
+- ✅ Welcome flow: auto-created per business with default template
+- ✅ Away flow: auto-created per business with default template
+- ✅ Settings page: business hours + welcome/away toggles
 
 **What works after Phase 2:**
-- Customer messages business → gets welcome message with image + buttons
+- Customer messages business (first time, during hours) → gets welcome message + catalog link
 - Customer messages outside hours → gets away message with hours info
-- This matches Viridian's Screenshot 2 and Screenshot 3
 
-### Phase 3 — Custom Flows
+### Phase 3 — Custom Flows ✅ COMPLETE (March 2026)
 
 **Deliverables:**
-- Flows list page (view all, toggle active/inactive)
-- Flow editor (form-based, step builder)
-- Keyword trigger support
-- Button reply trigger support
-- Step types: send_text, send_image, send_buttons, send_url, send_location
-- Pre-built flow templates (Welcome, Away, FAQ, Order Redirect)
-- Notify team action (email notification)
+- ✅ Flows list page (view all, toggle active/inactive, edit, delete)
+- ✅ Flow editor (form-based, step builder)
+- ✅ Keyword trigger support
+- ✅ Button reply trigger support
+- ✅ Step types: send_text, send_image, send_url, send_location, notify_team
+- ✅ Pre-built flow templates (Welcome, Away, FAQ, Order Redirect, Location)
+- ✅ Notify team action (email via Resend)
 
 **What works after Phase 3:**
-- Full flow automation matching ~90% of Viridian's ChatDaddy setup
-- Customer taps "Order Now" → gets catalog link
-- Customer taps "Location" → gets map/address
-- Customer types "menu" → gets catalog link
-- Team gets notified when customer needs human help
+- Full flow automation
+- Customer taps "Order Now" (button) → gets catalog link
+- Customer types "menu"/"catalog" → gets catalog link
+- Customer types "location"/"address" → gets location message
 
-### Phase 4 — Polish & Extras
+### Phase 4 — Polish & Extras ✅ COMPLETE (March 2026)
 
 **Deliverables:**
 - Unread message count badge in sidebar
@@ -476,7 +481,7 @@ Our flow engine handles this:
 - Connection health check
 - Mobile-responsive inbox
 
-### Phase 5 — Visual Flow Builder
+### Phase 5 — Visual Flow Builder ✅ COMPLETE (March 2026)
 
 A drag-and-drop canvas for building flows visually, similar to ChatDaddy's interface.
 
@@ -542,7 +547,7 @@ model WhatsAppFlow {
 }
 ```
 
-### Phase 6 — AI Auto-Replies
+### Phase 6 — AI Auto-Replies ✅ COMPLETE (March 2026)
 
 AI-powered responses that understand customer intent using the business's product catalog and FAQ data.
 
@@ -579,7 +584,7 @@ Incoming message
 - Daily AI reply limit per business
 - "Train AI" section: upload FAQ pairs, review AI responses, thumbs up/down feedback
 
-### Phase 7 — Broadcast & Campaigns
+### Phase 7 — Broadcast & Campaigns ✅ COMPLETE (March 2026)
 
 Send promotional messages to customer lists using Meta-approved templates.
 
@@ -659,20 +664,16 @@ model WhatsAppContact {
 }
 
 model WhatsAppTemplate {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  businessId    String   @db.ObjectId
-  name          String
-  language      String   @default("en")
-  category      String   // "MARKETING" | "UTILITY" | "AUTHENTICATION"
-  status        String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
-  headerType    String?  // "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT"
-  headerContent String?
-  body          String
-  footer        String?
-  buttons       Json?    // [{ type: "URL", text: "Order Now", url: "https://..." }]
-  variables     Json?    // [{ key: "{{1}}", description: "Customer name", sample: "John" }]
-  metaTemplateId String? // Meta's template ID after approval
-  rejectionReason String?
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId     String   @db.ObjectId
+  name           String
+  contentSid     String   // Twilio Content SID (Meta-approved template) — implementation uses this
+  language       String   @default("en")
+  category       String   @default("MARKETING")
+  status         String   @default("APPROVED")  // PENDING | APPROVED | REJECTED
+  bodyPreview    String?  // Human-readable preview for UI
+  variableCount  Int      @default(0)  // Number of {{1}}, {{2}}, etc.
+  sampleVariables Json?   // [{ "1": "John" }, { "2": "Store" }] for preview
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
@@ -681,6 +682,7 @@ model WhatsAppTemplate {
 
   @@index([businessId, status])
 }
+// Note: Templates use Twilio Content SID; UI adds by name + contentSid + bodyPreview
 
 model WhatsAppCampaign {
   id            String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -709,7 +711,7 @@ model WhatsAppCampaign {
 }
 ```
 
-### Phase 8 — Multi-Agent Inbox & Team Collaboration
+### Phase 8 — Multi-Agent Inbox & Team Collaboration ✅ COMPLETE (March 2026)
 
 Shared inbox with assignment, internal notes, and team routing.
 
@@ -730,7 +732,7 @@ model WhatsAppConversation {
   // ... existing fields ...
 
   assignedTo    String?  @db.ObjectId // User ID of assigned agent
-  status        String   @default("open") // "open" | "assigned" | "waiting" | "resolved"
+  status        String   @default("open") // "open" | "assigned" | "waiting" | "resolved" | "closed"
   priority      String   @default("normal") // "low" | "normal" | "high" | "urgent"
   resolvedAt    DateTime?
   firstResponseAt DateTime? // For SLA tracking
@@ -767,7 +769,31 @@ model WhatsAppCannedResponse {
 
   @@index([businessId])
 }
+
+// Phase 8 Extended: Agent presence and round-robin
+model WhatsAppAgentPresence {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String   @db.ObjectId
+  userId      String   @db.ObjectId // BusinessUser ID
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([businessId, userId])
+  @@index([businessId])
+}
+
+model WhatsAppAssignmentState {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String   @db.ObjectId
+  lastAssignedTo String? @db.ObjectId
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId])
+}
 ```
+
+**WhatsAppSettings extensions (Phase 8):**
+- `autoAssignEnabled` — Boolean, enables round-robin auto-assign on new conversations
+- `slaWarningMinutes` — Int (default 15), threshold for SLA warning badge
 
 ---
 
@@ -805,11 +831,14 @@ WaveOrder Flows is exclusively available on the **Business plan**. Starter and P
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/admin/stores/[businessId]/whatsapp-flows/conversations` | List conversations |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/conversations` | List conversations (filters: status, assigned, view: all\|mine\|unassigned) |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/unread-count` | Get unread count for badge |
 | GET | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]` | Get conversation with messages |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]/notes` | Get conversation notes |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]/reply` | Send manual reply |
 | PATCH | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]` | Mark read/closed/assign |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]/notes` | Add internal note |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/conversations/[id]/auto-assign` | Trigger round-robin assignment |
 
 ### Admin API — Flows
 
@@ -820,34 +849,74 @@ WaveOrder Flows is exclusively available on the **Business plan**. Starter and P
 | PUT | `/api/admin/stores/[businessId]/whatsapp-flows/flows/[id]` | Update flow |
 | DELETE | `/api/admin/stores/[businessId]/whatsapp-flows/flows/[id]` | Delete flow |
 | PATCH | `/api/admin/stores/[businessId]/whatsapp-flows/flows/[id]/toggle` | Toggle active |
-| POST | `/api/admin/stores/[businessId]/whatsapp-flows/flows/[id]/publish` | Publish visual flow |
 
 ### Admin API — Templates & Campaigns
+
+Templates use Twilio Content SID (Meta-approved). Add via name + contentSid + body preview.
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/admin/stores/[businessId]/whatsapp-flows/templates` | List templates |
-| POST | `/api/admin/stores/[businessId]/whatsapp-flows/templates` | Create & submit template |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/templates` | Create template (name, contentSid, bodyPreview) |
 | DELETE | `/api/admin/stores/[businessId]/whatsapp-flows/templates/[id]` | Delete template |
-| GET | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns` | List campaigns |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns` | List campaigns (includes delivered, read, replied, failed per campaign) |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns` | Create campaign |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns/[id]/send` | Send/schedule campaign |
-| GET | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns/[id]/stats` | Campaign analytics |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/campaigns/segment-count` | Get segment count for targeting |
+
+### Admin API — FAQs (Phase 6 AI)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/faqs` | List FAQs |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/faqs` | Create FAQ |
+| PUT | `/api/admin/stores/[businessId]/whatsapp-flows/faqs/[id]` | Update FAQ |
+| DELETE | `/api/admin/stores/[businessId]/whatsapp-flows/faqs/[id]` | Delete FAQ |
 
 ### Admin API — Contacts & Settings
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/admin/stores/[businessId]/whatsapp-flows/contacts` | List contacts |
-| POST | `/api/admin/stores/[businessId]/whatsapp-flows/contacts/import` | Import contacts (CSV) |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/contacts` | Create/upsert contact |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/contacts/import` | Import contacts (CSV/conversations) |
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/contacts/sync-orders` | Sync order stats from WaveOrder |
 | PATCH | `/api/admin/stores/[businessId]/whatsapp-flows/contacts/[id]` | Update contact (tags, opt-out) |
 | GET | `/api/admin/stores/[businessId]/whatsapp-flows/settings` | Get settings |
 | PUT | `/api/admin/stores/[businessId]/whatsapp-flows/settings` | Update settings |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/test` | Send test message |
 | GET | `/api/admin/stores/[businessId]/whatsapp-flows/canned-responses` | List canned responses |
 | POST | `/api/admin/stores/[businessId]/whatsapp-flows/canned-responses` | Create canned response |
-| PUT | `/api/admin/stores/[businessId]/whatsapp-flows/canned-responses/[id]` | Update canned response |
 | DELETE | `/api/admin/stores/[businessId]/whatsapp-flows/canned-responses/[id]` | Delete canned response |
+
+### Admin API — Presence & Agent Metrics (Phase 8 Extended)
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/admin/stores/[businessId]/whatsapp-flows/presence` | Heartbeat (mark agent online) |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/presence` | List agents online (5-min threshold) |
+| GET | `/api/admin/stores/[businessId]/whatsapp-flows/agent-metrics` | Per-agent metrics (assigned, resolved, resolution %, avg first-response) |
+
+---
+
+## 11.1 SystemLog & Superadmin (Implementation)
+
+WaveOrder Flows events are logged to SystemLog for traceability (same as orders, appointments):
+
+| Log Type | When |
+|----------|------|
+| `whatsapp_flow_message_in` | Incoming customer message stored |
+| `whatsapp_flow_message_out` | Flow reply sent |
+| `whatsapp_flow_error` | Flow engine error |
+| `whatsapp_broadcast_sent` | Campaign completed |
+| `whatsapp_broadcast_error` | Campaign send failed |
+| `whatsapp_ai_reply` | AI auto-reply sent |
+| `whatsapp_ai_error` | AI error |
+
+**Superadmin visibility:**
+- Twilio & Flows Activities (`/superadmin/system/twilio-activities`) — all WhatsApp/Flows events
+- Per-business usage (`/superadmin/businesses/[id]/whatsapp-flows-usage`) — conversations, messages, broadcasts, AI
+- Dashboard card — Flows-enabled businesses, conversation/message counts
 
 ---
 
@@ -886,7 +955,7 @@ WaveOrder Flows is exclusively available on the **Business plan**. Starter and P
 
 ---
 
-## 14. Full Sidebar Structure
+## 14. Full Sidebar Structure (Implementation)
 
 ```
 Admin Sidebar:
@@ -896,31 +965,29 @@ Admin Sidebar:
 ├── Customers
 ├── ...
 ├── WaveOrder Flows                    ← NEW MODULE
-│   ├── Conversations                    (inbox — read/reply/assign)
+│   ├── Conversations                    (inbox — read/reply/assign, notes, SLA badges)
 │   ├── Flows                            (form editor + visual builder)
-│   ├── Contacts                         (customer list, tags, segments)
-│   ├── Templates                        (WhatsApp message templates)
-│   ├── Campaigns                        (broadcast messaging)
-│   ├── Canned Responses                 (quick reply snippets)
-│   ├── AI Settings                      (auto-reply config, FAQ training)
-│   └── Settings                         (phone, hours, team, connection)
+│   ├── Broadcast                        (tabs: Contacts, Templates, Campaigns)
+│   └── Settings                         (phone, hours; AI, Canned Responses, Multi-agent)
 ├── Settings
 ```
+
+**Note:** Templates use Twilio Content SID; Broadcast UI has Contacts, Templates, and Campaigns as tabs. Settings includes AI (auto-reply config, FAQ training), Canned Responses, and Multi-agent (auto-assign, SLA timers).
 
 ---
 
 ## 15. Phase Summary
 
-| Phase | Scope |
-|---|---|
-| **Phase 1** | Foundation — webhook, inbox, DB models |
-| **Phase 2** | Welcome & Away messages |
-| **Phase 3** | Custom Flows (form editor) |
-| **Phase 4** | Polish, analytics, media, templates |
-| **Phase 5** | Visual Flow Builder |
-| **Phase 6** | AI Auto-Replies |
-| **Phase 7** | Broadcast & Campaigns |
-| **Phase 8** | Multi-Agent Inbox & Team |
+| Phase | Scope | Status |
+|---|---|---|
+| **Phase 1** | Foundation — webhook, inbox, DB models, connection test | ✅ Complete |
+| **Phase 2** | Welcome & Away messages | ✅ Complete |
+| **Phase 3** | Custom Flows (form editor) | ✅ Complete |
+| **Phase 4** | Polish, analytics, media, templates | ✅ Complete |
+| **Phase 5** | Visual Flow Builder | ✅ Complete |
+| **Phase 6** | AI Auto-Replies | ✅ Complete |
+| **Phase 7** | Broadcast & Campaigns | ✅ Complete |
+| **Phase 8** | Multi-Agent Inbox & Team (incl. presence, SLA, metrics, supervisor) | ✅ Complete |
 
 **MVP** (Phases 1–4) covers inbox, auto-replies, and custom flows.
 **Full module** (Phases 1–8) delivers a complete WhatsApp automation platform.

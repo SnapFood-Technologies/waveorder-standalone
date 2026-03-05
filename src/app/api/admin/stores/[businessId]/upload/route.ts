@@ -20,6 +20,8 @@ export async function POST(
     const formData = await request.formData()
     const file = formData.get('image') as File
     const folder = formData.get('folder') as string || 'categories'
+    const validFolders = ['logo', 'cover', 'favicon', 'ogImage', 'categories', 'products', 'flows']
+    const uploadFolder = validFolders.includes(folder) ? folder : 'categories'
     const oldImageUrl = formData.get('oldImageUrl') as string | null
     const crop = formData.get('crop') as string | null
 
@@ -30,9 +32,9 @@ export async function POST(
     const result = await uploadBusinessImage(
       file, 
       businessId, 
-      folder as 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products',
+      uploadFolder as 'logo' | 'cover' | 'favicon' | 'ogImage' | 'categories' | 'products' | 'flows',
       oldImageUrl || undefined,
-      folder === 'cover' ? { crop: crop !== 'false' } : undefined
+      uploadFolder === 'cover' ? { crop: crop !== 'false' } : undefined
     )
 
     if (!result.success) {

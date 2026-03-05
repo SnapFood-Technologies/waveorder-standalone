@@ -35,6 +35,7 @@ import {
   BookOpen,
   Ticket,
   MessageSquare,
+  MessageCircle,
   Tag,
   Layers,
   FolderTree,
@@ -112,6 +113,8 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
   const [showStoreSwitcher, setShowStoreSwitcher] = useState(false)
   const [businessType, setBusinessType] = useState<string | null>(null)
+  const [whatsappUnreadCount, setWhatsappUnreadCount] = useState(0)
+  const [ordersPendingCount, setOrdersPendingCount] = useState(0)
 
   // Check if SuperAdmin is impersonating
   const isImpersonating = 
@@ -198,7 +201,18 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     fetchFeatureFlags()
     fetchUserRole()
     fetchStores()
-  }, [businessId])
+
+    if (subscription.plan === 'BUSINESS') {
+      fetch(`/api/admin/stores/${businessId}/whatsapp-flows/unread-count`)
+        .then((res) => res.ok ? res.json() : { count: 0 })
+        .then((data) => setWhatsappUnreadCount(data.count || 0))
+        .catch(() => {})
+    }
+    fetch(`/api/admin/stores/${businessId}/orders/pending-count`)
+      .then((res) => res.ok ? res.json() : { count: 0 })
+      .then((data) => setOrdersPendingCount(data.count || 0))
+      .catch(() => {})
+  }, [businessId, subscription.plan])
   
   // Check if user can access products (STAFF cannot)
   const canAccessProducts = userRole !== 'STAFF'
@@ -488,6 +502,18 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: Key, 
         requiredPlan: 'BUSINESS' as Plan
       },
+      // WaveOrder Flows - WhatsApp messaging automation
+      {
+        name: 'WaveOrder Flows',
+        icon: MessageCircle,
+        requiredPlan: 'BUSINESS' as Plan,
+        children: [
+          { name: 'Conversations', href: `${baseUrl}/whatsapp-flows/conversations`, icon: MessageSquare, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Flows', href: `${baseUrl}/whatsapp-flows/flows`, icon: Layers, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Broadcast', href: `${baseUrl}/whatsapp-flows/broadcast`, icon: Megaphone, requiredPlan: 'BUSINESS' as Plan },
+          { name: 'Settings', href: `${baseUrl}/whatsapp-flows/settings`, icon: Cog, requiredPlan: 'BUSINESS' as Plan }
+        ]
+      },
     ] : []),
     
     // Cost & Margins - only shown when enabled by SuperAdmin
@@ -724,27 +750,42 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           {isExpanded && (
             <div className="ml-8 mt-1 space-y-1">
               {/* @ts-ignore */}
-              {item.children.map(child => (
-                <Link
-                  key={child.name}
-                  href={addImpersonationParams(child.href || '#')}
-                  onClick={onClose}
-                  className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                    isActive(child.href!)
-                      ? 'bg-teal-100 text-teal-700 font-medium'
-                      : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700'
-                  }`}
-                >
-                  <child.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                  <span className="truncate">{child.name}</span>
-                </Link>
-              ))}
+              {item.children.map(child => {
+                const isConversations = item.name === 'WaveOrder Flows' && child.name === 'Conversations'
+                const isAllOrders = item.name === 'Orders' && child.name === 'All Orders'
+                const badge = isConversations && whatsappUnreadCount > 0
+                  ? String(whatsappUnreadCount)
+                  : isAllOrders && ordersPendingCount > 0
+                    ? String(ordersPendingCount)
+                    : undefined
+                return (
+                  <Link
+                    key={child.name}
+                    href={addImpersonationParams(child.href || '#')}
+                    onClick={onClose}
+                    className={`flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      isActive(child.href!)
+                        ? 'bg-teal-100 text-teal-700 font-medium'
+                        : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700'
+                    }`}
+                  >
+                    <child.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                    <span className="truncate flex-1">{child.name}</span>
+                    {badge && (
+                      <span className="ml-2 min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center bg-red-500 text-white text-xs font-medium rounded-full">
+                        {badge}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>
       )
     }
 
+    const ordersBadge = item.name === 'Orders' && ordersPendingCount > 0 ? String(ordersPendingCount) : undefined
     return (
       <Link
         key={item.name}
@@ -764,6 +805,11 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           }`} />
           <span className="truncate">{item.name}</span>
         </div>
+        {ordersBadge && (
+          <span className="ml-2 min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center bg-red-500 text-white text-xs font-medium rounded-full">
+            {ordersBadge}
+          </span>
+        )}
       </Link>
     )
   }

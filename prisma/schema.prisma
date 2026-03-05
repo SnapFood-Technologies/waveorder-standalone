@@ -115,6 +115,9 @@ model User {
   // Events created by this user
   createdEvents Event[]
 
+  // WaveOrder Flows - Assigned conversations (Phase 8)
+  assignedWhatsAppConversations WhatsAppConversation[] @relation("WhatsAppAssignee")
+
   // SuperAdmin notes created by this user
   superAdminNotes SuperAdminNote[] @relation("SuperAdminNotes")
 
@@ -600,6 +603,15 @@ model Business {
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
 
+  // WaveOrder Flows (WhatsApp messaging automation - Business plan)
+  whatsappConversations   WhatsAppConversation[]
+  whatsappSettings        WhatsAppSettings?
+  whatsappFlows           WhatsAppFlow[]
+  whatsappContacts        WhatsAppContact[]
+  whatsappTemplates       WhatsAppTemplate[]
+  whatsappCampaigns       WhatsAppCampaign[]
+  whatsappCannedResponses WhatsAppCannedResponse[]
+
   onboardingCompleted   Boolean   @default(false)
   onboardingStep        Int       @default(0)
   setupWizardCompleted  Boolean   @default(false)
@@ -621,6 +633,258 @@ model Business {
 
   // Index for fast custom domain lookups in middleware
   @@index([customDomain, domainStatus, isActive])
+  @@index([whatsappNumber])
+}
+
+// WaveOrder Flows - WhatsApp messaging automation
+model WhatsAppConversation {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId    String   @db.ObjectId
+  customerPhone String
+  customerName  String?
+  lastMessageAt DateTime
+  lastMessageBy String // "customer" | "business" | "flow"
+  isRead        Boolean  @default(false)
+  status        String   @default("open") // "open" | "assigned" | "waiting" | "resolved" | "closed"
+
+  // Phase 8 - Multi-agent inbox
+  assignedTo      String?   @db.ObjectId // User ID of assigned agent
+  priority        String    @default("normal") // "low" | "normal" | "high" | "urgent"
+  resolvedAt      DateTime?
+  firstResponseAt DateTime?
+
+  business Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  messages WhatsAppMessage[]
+  notes    WhatsAppNote[]
+
+  assignedToUser User? @relation("WhatsAppAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, customerPhone])
+  @@index([businessId, lastMessageAt])
+  @@index([businessId, isRead])
+  @@index([businessId, status])
+  @@index([assignedTo])
+}
+
+model WhatsAppNote {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String  @db.ObjectId
+  authorId       String  @db.ObjectId
+  body           String
+  isInternal     Boolean @default(true)
+
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model WhatsAppCannedResponse {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String  @db.ObjectId
+  title      String
+  body       String
+  shortcut   String?
+  category   String? // "greeting" | "support" | "order" | "general"
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model WhatsAppAgentPresence {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  businessId String   @db.ObjectId
+  lastSeenAt DateTime @default(now())
+
+  @@unique([userId, businessId])
+  @@index([businessId, lastSeenAt])
+}
+
+model WhatsAppAssignmentState {
+  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId         String  @unique @db.ObjectId
+  lastAssignedUserId String? @db.ObjectId
+}
+
+model WhatsAppMessage {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId  String  @db.ObjectId
+  direction       String // "inbound" | "outbound"
+  sender          String // "customer" | "business" | "flow" | "ai"
+  messageType     String // "text" | "image" | "video" | "button_reply" | "interactive"
+  body            String?
+  mediaUrl        String?
+  buttonPayload   String? // Button ID clicked by customer
+  twilioMessageId String? // Twilio SID for tracking
+  flowId          String? @db.ObjectId // Which flow generated this (if auto-reply)
+  metadata        Json? // AI: { intent, confidence } etc.
+
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model WhatsAppFlow {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String  @db.ObjectId
+  name       String
+  type       String // "welcome" | "away" | "keyword" | "button_reply"
+  isActive   Boolean @default(true)
+  priority   Int     @default(0) // Higher = checked first
+
+  trigger Json // { type, keywords?, buttonPayload?, businessHoursOnly?, outsideHoursOnly? }
+  steps   Json // [{ type, body?, mediaUrl?, caption?, url?, buttons?, ... }]
+
+  triggerCount    Int       @default(0)
+  lastTriggeredAt DateTime?
+
+  // Visual flow builder (Phase 5)
+  editorType  String    @default("form") // "form" | "visual"
+  canvasData  Json? // React Flow nodes + edges
+  version     Int       @default(1)
+  publishedAt DateTime?
+  isDraft     Boolean   @default(false)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, isActive])
+  @@index([businessId, type])
+}
+
+model WhatsAppSettings {
+  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId            String  @unique @db.ObjectId
+  isEnabled             Boolean @default(false)
+  phoneNumber           String? // Business WhatsApp number connected
+  welcomeFlowEnabled    Boolean @default(true)
+  awayFlowEnabled       Boolean @default(true)
+  businessHoursStart    String? // "09:00"
+  businessHoursEnd      String? // "22:00"
+  businessHoursTimezone String? // "Asia/Dubai"
+  businessDays          Int[] // [1,2,3,4,5] (Monday=1, Sunday=7)
+
+  // AI Auto-Replies (Phase 6)
+  aiEnabled             Boolean @default(false)
+  aiPersonality         String  @default("friendly") // "formal" | "friendly" | "custom"
+  aiPersonalityPrompt   String? // Custom prompt when aiPersonality is "custom"
+  aiConfidenceThreshold Float   @default(0.6)
+  aiDailyLimit          Int     @default(50)
+
+  // Phase 8 - Multi-agent
+  autoAssignEnabled Boolean @default(false)
+  slaWarningMinutes Int     @default(15)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WhatsAppFaq {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String @db.ObjectId
+  question   String
+  answer     String
+  order      Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+}
+
+model WhatsAppAiUsage {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String @db.ObjectId
+  dateStr    String // "YYYY-MM-DD" for daily counting
+  replyCount Int    @default(0)
+
+  @@unique([businessId, dateStr])
+  @@index([businessId])
+}
+
+model WhatsAppContact {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId  String    @db.ObjectId
+  phone       String
+  name        String?
+  tags        String[]
+  optedOut    Boolean   @default(false)
+  optedOutAt  DateTime?
+  totalOrders Int       @default(0)
+  lastOrderAt DateTime?
+  source      String    @default("conversation") // "conversation" | "import" | "manual"
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, phone])
+  @@index([businessId, optedOut])
+  @@index([businessId, tags])
+}
+
+model WhatsAppTemplate {
+  id              String  @id @default(auto()) @map("_id") @db.ObjectId
+  businessId      String  @db.ObjectId
+  name            String
+  contentSid      String // Twilio Content SID (Meta-approved template)
+  language        String  @default("en")
+  category        String  @default("MARKETING")
+  status          String  @default("APPROVED") // PENDING | APPROVED | REJECTED
+  bodyPreview     String? // Human-readable preview for UI
+  variableCount   Int     @default(0) // Number of {{1}}, {{2}}, etc.
+  sampleVariables Json? // [{ "1": "John" }, { "2": "Store" }] for preview
+
+  business  Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaigns WhatsAppCampaign[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+}
+
+model WhatsAppCampaign {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  businessId      String    @db.ObjectId
+  name            String
+  templateId      String    @db.ObjectId
+  segmentFilter   Json? // { tags: [], lastOrderDays: number | null }
+  variableValues  Json // { "1": "VALENTINE20", "2": "Store Name" } - static values
+  status          String    @default("draft") // draft | scheduled | sending | sent | failed
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  totalRecipients Int       @default(0)
+  delivered       Int       @default(0)
+  read            Int       @default(0)
+  replied         Int       @default(0)
+  failed          Int       @default(0)
+  estimatedCost   Float     @default(0)
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  template WhatsAppTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId, status])
+  @@index([status, scheduledAt])
 }
 
 model OrderNotification {

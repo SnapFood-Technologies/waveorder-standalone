@@ -358,6 +358,51 @@ export async function sendWhatsAppMessage(
 }
 
 /**
+ * Send WhatsApp message with optional image (for WaveOrder Flows)
+ * Uses freeform - only works within 24hr conversation window
+ */
+export async function sendWhatsAppMessageWithMedia(
+  toNumber: string,
+  message: string,
+  mediaUrl?: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const config = getTwilioConfig()
+  if (!config) {
+    return { success: false, error: 'Twilio not configured' }
+  }
+
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`
+    const formData = new URLSearchParams()
+    formData.append('From', formatWhatsAppNumber(config.whatsappNumber))
+    formData.append('To', formatWhatsAppNumber(toNumber))
+    formData.append('Body', message || ' ')
+    if (mediaUrl) formData.append('MediaUrl', mediaUrl)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    })
+
+    const result = await response.json()
+    if (response.ok) {
+      return { success: true, messageId: result.sid }
+    }
+    return {
+      success: false,
+      error: result.message || 'Failed to send message'
+    }
+  } catch (error) {
+    console.error('Twilio send with media error:', error)
+    return { success: false, error: (error as Error).message }
+  }
+}
+
+/**
  * Build debug payload for order notification (ContentSid + ContentVariables) without sending.
  * Used for resend modal debug display.
  */

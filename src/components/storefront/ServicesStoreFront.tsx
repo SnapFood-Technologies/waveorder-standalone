@@ -2808,6 +2808,52 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
         translations={translations}
       />
 
+      {/* Fallback: when no booking or request options enabled, show contact CTA */}
+      {!(storeData.serviceAllowAppointmentBooking !== false) &&
+        !storeData.serviceAllowRequestByEmail &&
+        !storeData.serviceAllowRequestByWhatsApp && (
+        <section className="max-w-[75rem] mx-auto px-5 py-8 mt-8 border-t border-gray-200">
+          <div className="bg-gray-50 rounded-lg p-6 text-center">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">{translations.contact || 'Contact'}</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              {'Get in touch with us directly:'}
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {storeData.phone && (
+                <a
+                  href={`tel:${storeData.phone}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 hover:border-gray-300 text-sm font-medium text-gray-700"
+                >
+                  <Phone className="w-4 h-4" />
+                  {storeData.phone}
+                </a>
+              )}
+              {storeData.email && (
+                <a
+                  href={`mailto:${storeData.email}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-200 hover:border-gray-300 text-sm font-medium text-gray-700"
+                >
+                  <Mail className="w-4 h-4" />
+                  {storeData.email}
+                </a>
+              )}
+              {storeData.whatsappNumber && (
+                <a
+                  href={`https://wa.me/${storeData.whatsappNumber.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90"
+                  style={{ backgroundColor: '#25D366' }}
+                >
+                  <FaWhatsapp className="w-4 h-4" />
+                  WhatsApp
+                </a>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Service request form (SERVICES: Request by email / WhatsApp) */}
       {(storeData.serviceAllowRequestByEmail || storeData.serviceAllowRequestByWhatsApp) && (
         <section className="max-w-[75rem] mx-auto px-5 py-8 mt-8 border-t border-gray-200">

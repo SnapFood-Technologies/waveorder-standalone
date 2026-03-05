@@ -113,8 +113,8 @@ export default function TwilioActivitiesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Twilio Activities</h1>
-        <p className="text-gray-600 mt-1">WhatsApp message sends and errors across all businesses</p>
+        <h1 className="text-2xl font-bold text-gray-900">Twilio & WaveOrder Flows Activities</h1>
+        <p className="text-gray-600 mt-1">WhatsApp messages (orders, flows, broadcasts, AI) across all businesses</p>
       </div>
 
       {/* Filters */}
