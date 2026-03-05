@@ -724,6 +724,40 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
         </div>
       </SettingsSection>
 
+      {/* Twilio disclaimer */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 sm:p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-2">Powered by Twilio</h3>
+        <p className="text-sm text-gray-600 mb-3">
+          WaveOrder uses Twilio to deliver WhatsApp messaging. Your webhook, templates, and messages are sent through Twilio&apos;s infrastructure.
+        </p>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <a
+            href="https://www.twilio.com/docs/whatsapp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:text-teal-700 font-medium"
+          >
+            Twilio WhatsApp docs →
+          </a>
+          <a
+            href="https://www.twilio.com/docs/content/manage-your-templates-with-the-content-template-builder"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:text-teal-700 font-medium"
+          >
+            Content Template Builder →
+          </a>
+          <a
+            href="https://console.twilio.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:text-teal-700 font-medium"
+          >
+            Twilio Console →
+          </a>
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <button
           onClick={handleSave}
