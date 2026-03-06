@@ -371,7 +371,7 @@ export function SuperAdminDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Link href="/superadmin/businesses" className="block h-full">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group h-full min-h-[160px] flex flex-col justify-between">
+          <div className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group h-full min-h-[140px] flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">New Businesses</p>
