@@ -25,6 +25,8 @@ interface User {
   role: string
   authMethod: 'google' | 'email' | 'magic-link' | 'oauth'
   createdAt: string
+  subscriptionPlan?: string
+  billingType?: 'monthly' | 'yearly' | 'free' | null
   businesses: {
     businessId: string
     businessName: string
@@ -46,6 +48,7 @@ export function SuperAdminUsers() {
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
+  const [payingOnly, setPayingOnly] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -69,7 +72,7 @@ export function SuperAdminUsers() {
   // Fetch users
   useEffect(() => {
     fetchUsers()
-  }, [debouncedSearchQuery, roleFilter, currentPage])
+  }, [debouncedSearchQuery, roleFilter, payingOnly, currentPage])
 
   const fetchUsers = async () => {
     try {
@@ -78,8 +81,8 @@ export function SuperAdminUsers() {
 
       const params = new URLSearchParams({
         search: debouncedSearchQuery,
-        // role: roleFilter, // Commented out - role filter removed
-        role: 'all', // Always use 'all' since role filter is disabled
+        role: 'all',
+        payingOnly: payingOnly.toString(),
         page: currentPage.toString(),
         limit: pagination.limit.toString()
       })
@@ -185,17 +188,15 @@ export function SuperAdminUsers() {
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            {/* Role filter - commented out */}
-            {/* <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-            >
-              <option value="all">All Roles</option>
-              <option value="SUPER_ADMIN">Super Admin</option>
-              <option value="BUSINESS_OWNER">Business Owner</option>
-            </select> */}
-
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={payingOnly}
+                onChange={(e) => { setPayingOnly(e.target.checked); setCurrentPage(1) }}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm text-gray-700">Paying only</span>
+            </label>
             <div className="text-sm text-gray-600">
               {pagination.total} users
             </div>
@@ -219,12 +220,11 @@ export function SuperAdminUsers() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User
                     </th>
-                    {/* Role column - commented out */}
-                    {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th> */}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Businesses
+                      Business(es)
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Plan
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Joined
@@ -253,12 +253,6 @@ export function SuperAdminUsers() {
                           </div>
                         </div>
                       </td>
-                      {/* Role column - commented out */}
-                      {/* <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(user.role)}`}>
-                          {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Business Owner'}
-                        </span>
-                      </td> */}
                       <td className="px-6 py-4">
                         {user.businesses.length > 0 ? (
                           <div className="space-y-1">
@@ -269,7 +263,7 @@ export function SuperAdminUsers() {
                             )}
                             {user.businesses.slice(0, 2).map((business) => (
                               <div key={business.businessId} className="flex items-center text-sm">
-                                <Building2 className="w-3 h-3 mr-2 text-gray-400" />
+                                <Building2 className="w-3 h-3 mr-2 text-gray-400 flex-shrink-0" />
                                 <span className="text-gray-900">{business.businessName}</span>
                                 <span className="ml-2 text-xs text-gray-500">({business.role})</span>
                               </div>
@@ -281,8 +275,22 @@ export function SuperAdminUsers() {
                             )}
                           </div>
                         ) : (
-                          <span className="text-sm text-gray-500">No businesses</span>
+                          <span className="text-sm text-gray-500">—</span>
                         )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
+                          user.subscriptionPlan === 'BUSINESS'
+                            ? 'bg-indigo-100 text-indigo-800'
+                            : user.subscriptionPlan === 'PRO'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {user.subscriptionPlan ?? 'STARTER'}
+                          <span className="font-normal opacity-75">
+                            — {user.billingType === 'free' ? 'Free' : user.billingType === 'yearly' ? 'Yearly' : user.billingType === 'monthly' ? 'Monthly' : '—'}
+                          </span>
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         <div className="flex items-center">

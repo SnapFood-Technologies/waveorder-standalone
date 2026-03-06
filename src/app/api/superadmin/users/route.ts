@@ -3,12 +3,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-
+import { getBillingTypeFromPriceId } from '@/lib/stripe'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search') || ''
     const role = searchParams.get('role') || 'all'
+    const payingOnly = searchParams.get('payingOnly') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
@@ -48,6 +49,11 @@ export async function GET(request: NextRequest) {
             type: true
           }
         },
+        subscription: {
+          select: {
+            priceId: true
+          }
+        },
         businesses: {
           include: {
             business: {
@@ -56,7 +62,8 @@ export async function GET(request: NextRequest) {
                 name: true,
                 slug: true,
                 isActive: true,
-                deactivatedAt: true
+                deactivatedAt: true,
+                subscriptionPlan: true
               }
             }
           }
@@ -65,43 +72,46 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Filter users first (before formatting and pagination) to ensure we only process users with active businesses
+    // Filter users: active businesses required; optionally paying only
     const filteredUsers = allUsers.filter(user => {
-      // Filter out users with no businesses or only inactive/deactivated businesses
-      if (!user.businesses || user.businesses.length === 0) {
-        return false
-      }
-      
-      // Check if user has at least one active, non-deactivated business
-      const hasActiveBusiness = user.businesses.some(bu => 
-        bu.business.isActive && 
+      if (!user.businesses || user.businesses.length === 0) return false
+
+      const hasActiveBusiness = user.businesses.some(bu =>
+        bu.business.isActive &&
         (!bu.business.deactivatedAt || bu.business.deactivatedAt === null)
       )
-      
-      return hasActiveBusiness
+      if (!hasActiveBusiness) return false
+
+      if (payingOnly) {
+        const billingType = user.subscription?.priceId
+          ? getBillingTypeFromPriceId(user.subscription.priceId)
+          : null
+        const isPaying = billingType === 'monthly' || billingType === 'yearly'
+        if (!isPaying) return false
+      }
+
+      return true
     })
 
-    // Apply pagination after filtering
     const totalCount = filteredUsers.length
     const paginatedUsers = filteredUsers.slice(offset, offset + limit)
 
-    // Format response with auth method detection
     const formattedUsers = paginatedUsers.map(user => {
-      // Determine auth method
       let authMethod: 'google' | 'email' | 'magic-link' | 'oauth' = 'email'
-      
       if (user.accounts?.length > 0) {
         const googleAccount = user.accounts.find(acc => acc.provider === 'google')
-        if (googleAccount) {
-          authMethod = 'google'
-        } else {
-          authMethod = 'oauth'
-        }
+        authMethod = googleAccount ? 'google' : 'oauth'
       } else if (user.password) {
         authMethod = 'email'
       } else {
         authMethod = 'magic-link'
       }
+
+      const billingType = user.subscription?.priceId
+        ? getBillingTypeFromPriceId(user.subscription.priceId)
+        : null
+      const primaryBusiness = user.businesses[0]?.business
+      const subscriptionPlan = primaryBusiness?.subscriptionPlan ?? 'STARTER'
 
       return {
         id: user.id,
@@ -110,6 +120,8 @@ export async function GET(request: NextRequest) {
         role: user.role,
         authMethod,
         createdAt: user.createdAt,
+        subscriptionPlan,
+        billingType,
         businesses: user.businesses.map(bu => ({
           businessId: bu.business.id,
           businessName: bu.business.name,

@@ -397,7 +397,7 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+          <label className="block text-sm font-medium text-gray-700 mt-2 mb-1">Timezone</label>
           <select
             value={formData.businessHoursTimezone}
             onChange={(e) => setFormData((prev) => ({ ...prev, businessHoursTimezone: e.target.value }))}
@@ -413,7 +413,7 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Business days</label>
+          <label className="block text-sm font-medium text-gray-700 mt-2 mb-1">Business days</label>
           <div className="flex gap-2 flex-wrap">
             {[1, 2, 3, 4, 5, 6, 7].map((day) => (
               <button
@@ -637,7 +637,7 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
               </button>
             </div>
           ))}
-          {faqs.length === 0 && <p className="text-sm text-gray-500">No FAQs yet. Add some to improve AI responses.</p>}
+          {faqs.length === 0 && <p className="text-sm mt-2 text-gray-500">No FAQs yet. Add some to improve AI responses.</p>}
         </div>
       </SettingsSection>
 
@@ -720,7 +720,7 @@ export function WhatsAppFlowsSettings({ businessId }: WhatsAppFlowsSettingsProps
               </button>
             </div>
           ))}
-          {cannedResponses.length === 0 && <p className="text-sm text-gray-500">No canned responses. Add snippets for quick replies in the inbox.</p>}
+          {cannedResponses.length === 0 && <p className="text-sm mt-2 text-gray-500">No canned responses. Add snippets for quick replies in the inbox.</p>}
         </div>
       </SettingsSection>
 
