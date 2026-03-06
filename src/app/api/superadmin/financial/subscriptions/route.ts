@@ -78,7 +78,15 @@ export async function GET() {
     // Filter to WaveOrder-only subscriptions
     const waveOrderSubs = rawSubscriptions.filter((s) => isWaveOrderSubscription(s))
 
-    const items: SubscriptionItem[] = waveOrderSubs.map((sub) => {
+    // Only include subscriptions for customers who have at least one non-test business
+    const validCustomerIds = new Set(customerIdToInfo.keys())
+
+    const items: SubscriptionItem[] = waveOrderSubs
+      .filter((sub) => {
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? ''
+        return validCustomerIds.has(customerId)
+      })
+      .map((sub) => {
       const customerId =
         typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? ''
       const customer =
