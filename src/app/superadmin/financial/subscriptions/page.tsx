@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Calendar,
   Search,
+  Building2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -17,6 +18,7 @@ interface Subscription {
   customerId: string
   customerEmail: string | null
   customerName: string | null
+  businessNames: string[]
   plan: string
   billingType: string
   status: string
@@ -40,6 +42,7 @@ export default function SubscriptionsPage() {
   const [data, setData] = useState<SubscriptionsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('active')
+  const [payingOnly, setPayingOnly] = useState(true)
   const [search, setSearch] = useState('')
 
   const fetchSubscriptions = useCallback(async () => {
@@ -79,6 +82,7 @@ export default function SubscriptionsPage() {
 
   const filtered =
     data?.subscriptions.filter((s) => {
+      if (payingOnly && s.billingType === 'free') return false
       const matchStatus =
         statusFilter === 'all' ||
         (statusFilter === 'active' && s.status === 'active') ||
@@ -95,7 +99,8 @@ export default function SubscriptionsPage() {
         (s.customerName?.toLowerCase().includes(q) ?? false) ||
         s.customerId.toLowerCase().includes(q) ||
         s.stripeSubscriptionId.toLowerCase().includes(q) ||
-        s.plan.toLowerCase().includes(q)
+        s.plan.toLowerCase().includes(q) ||
+        s.businessNames.some((b) => b.toLowerCase().includes(q))
       )
     }) ?? []
 
@@ -118,19 +123,23 @@ export default function SubscriptionsPage() {
     )
   }
 
-  const planBadge = (plan: string) => {
+  const planBadge = (plan: string, billingType: string) => {
     const styles: Record<string, string> = {
       BUSINESS: 'bg-indigo-100 text-indigo-700',
       PRO: 'bg-purple-100 text-purple-700',
       STARTER: 'bg-gray-100 text-gray-700',
     }
+    const typeLabel = billingType === 'free' ? 'Free' : billingType === 'yearly' ? 'Yearly' : billingType === 'monthly' ? 'Monthly' : ''
     return (
       <span
-        className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
+        className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
           styles[plan] ?? 'bg-gray-100 text-gray-700'
         }`}
       >
         {plan}
+        <span className="font-normal opacity-75">
+          {typeLabel ? `— ${typeLabel}` : ''}
+        </span>
       </span>
     )
   }
@@ -165,6 +174,15 @@ export default function SubscriptionsPage() {
             </div>
           )}
           <div className="flex flex-wrap gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={payingOnly}
+                onChange={(e) => setPayingOnly(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              />
+              <span className="text-sm text-gray-700">Paying only</span>
+            </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -275,12 +293,26 @@ export default function SubscriptionsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-0.5">
-                        {planBadge(s.plan)}
-                        <span className="text-xs text-gray-500 capitalize">
-                          {s.billingType}
-                        </span>
-                      </div>
+                      {s.businessNames.length > 0 ? (
+                        <div className="space-y-1">
+                          {s.businessNames.slice(0, 2).map((name) => (
+                            <div key={name} className="flex items-center text-sm">
+                              <Building2 className="w-3 h-3 mr-2 text-gray-400 flex-shrink-0" />
+                              <span className="text-gray-900">{name}</span>
+                            </div>
+                          ))}
+                          {s.businessNames.length > 2 && (
+                            <span className="text-xs text-gray-500">
+                              +{s.businessNames.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {planBadge(s.plan, s.billingType)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="text-sm font-medium text-gray-900">

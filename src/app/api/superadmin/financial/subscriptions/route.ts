@@ -17,6 +17,7 @@ export interface SubscriptionItem {
   customerId: string
   customerEmail: string | null
   customerName: string | null
+  businessNames: string[]
   plan: string
   billingType: string
   status: string
@@ -33,7 +34,7 @@ export async function GET() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Build customer lookup from our DB (for name/email when Stripe customer not expanded)
+    // Build customer lookup from our DB (for name/email + businesses when Stripe customer not expanded)
     const waveOrderUsers = await prisma.user.findMany({
       where: {
         stripeCustomerId: { not: null },
@@ -43,14 +44,19 @@ export async function GET() {
         stripeCustomerId: true,
         name: true,
         email: true,
+        businesses: {
+          select: { business: { select: { name: true } } },
+        },
       },
     })
-    const customerIdToInfo = new Map<string, { name: string | null; email: string }>()
+    const customerIdToInfo = new Map<string, { name: string | null; email: string; businessNames: string[] }>()
     waveOrderUsers.forEach((u) => {
       if (u.stripeCustomerId) {
+        const businessNames = u.businesses.map((bu) => bu.business.name)
         customerIdToInfo.set(u.stripeCustomerId, {
           name: u.name || null,
           email: u.email,
+          businessNames,
         })
       }
     })
@@ -85,6 +91,7 @@ export async function GET() {
         customer?.email ?? dbInfo?.email ?? null
       const customerName =
         customer?.name ?? dbInfo?.name ?? null
+      const businessNames = dbInfo?.businessNames ?? []
 
       const price = sub.items.data[0]?.price
       const unitAmount = price?.unit_amount ?? 0
@@ -108,6 +115,7 @@ export async function GET() {
         customerId,
         customerEmail,
         customerName,
+        businessNames,
         plan,
         billingType,
         status: sub.status,
