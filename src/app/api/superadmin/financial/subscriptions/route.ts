@@ -69,8 +69,8 @@ export async function GET() {
       return [] as Stripe.Subscription[]
     })
 
-    // Filter to WaveOrder-only subscriptions (cast to Stripe.Subscription to avoid Prisma Subscription type shadowing)
-    const waveOrderSubs = rawSubscriptions.filter((s) => isWaveOrderSubscription(s)) as Stripe.Subscription[]
+    // Filter to WaveOrder-only subscriptions
+    const waveOrderSubs = rawSubscriptions.filter((s) => isWaveOrderSubscription(s))
 
     const items: SubscriptionItem[] = waveOrderSubs.map((sub) => {
       const customerId =
@@ -97,7 +97,7 @@ export async function GET() {
       const plan = mapStripePlanToDb(priceId)
       const billingType = getBillingTypeFromPriceId(priceId) ?? 'monthly'
 
-      const periodEnd = (sub as Stripe.Subscription).current_period_end
+      const periodEnd = (sub as any).current_period_end
       const renewalDate = periodEnd
         ? new Date(periodEnd * 1000).toISOString()
         : ''
