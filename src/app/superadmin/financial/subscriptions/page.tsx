@@ -271,6 +271,7 @@ export default function SubscriptionsPage() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Business(es)</th>
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3 text-right">Amount</th>
                   <th className="px-4 py-3">Status</th>
