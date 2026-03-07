@@ -39,6 +39,7 @@ export async function GET(
         invoiceReceiptSelectionEnabled: true,
         packagingTrackingEnabled: true,
         internalInvoiceEnabled: true,
+        internalExpensesEnabled: true,
         enableAffiliateSystem: true,
         enableTeamPaymentTracking: true,
         legalPagesEnabled: true,
@@ -126,6 +127,7 @@ export async function GET(
         invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: business.packagingTrackingEnabled,
         internalInvoiceEnabled: business.internalInvoiceEnabled,
+        internalExpensesEnabled: business.internalExpensesEnabled,
         enableAffiliateSystem: business.enableAffiliateSystem,
         enableTeamPaymentTracking: business.enableTeamPaymentTracking,
         legalPagesEnabled: business.legalPagesEnabled
@@ -168,7 +170,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, internalInvoiceEnabled, enableAffiliateSystem, enableTeamPaymentTracking, legalPagesEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, internalInvoiceEnabled, internalExpensesEnabled, enableAffiliateSystem, enableTeamPaymentTracking, legalPagesEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -196,6 +198,9 @@ export async function PATCH(
     if (internalInvoiceEnabled !== undefined) {
       updateData.internalInvoiceEnabled = internalInvoiceEnabled === true
     }
+    if (internalExpensesEnabled !== undefined) {
+      updateData.internalExpensesEnabled = internalExpensesEnabled === true
+    }
     if (enableAffiliateSystem !== undefined) {
       updateData.enableAffiliateSystem = enableAffiliateSystem === true
     }
@@ -218,6 +223,7 @@ export async function PATCH(
         invoiceReceiptSelectionEnabled: true,
         packagingTrackingEnabled: true,
         internalInvoiceEnabled: true,
+        internalExpensesEnabled: true,
         enableAffiliateSystem: true,
         enableTeamPaymentTracking: true,
         legalPagesEnabled: true
@@ -240,6 +246,9 @@ export async function PATCH(
     if (internalInvoiceEnabled !== undefined) {
       messages.push(`Internal Invoice System ${updatedBusiness.internalInvoiceEnabled ? 'enabled' : 'disabled'}`)
     }
+    if (internalExpensesEnabled !== undefined) {
+      messages.push(`Internal Expenses ${updatedBusiness.internalExpensesEnabled ? 'enabled' : 'disabled'}`)
+    }
     if (enableAffiliateSystem !== undefined) {
       messages.push(`Affiliate System ${updatedBusiness.enableAffiliateSystem ? 'enabled' : 'disabled'}`)
     }
@@ -259,6 +268,7 @@ export async function PATCH(
         invoiceReceiptSelectionEnabled: updatedBusiness.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: updatedBusiness.packagingTrackingEnabled,
         internalInvoiceEnabled: updatedBusiness.internalInvoiceEnabled,
+        internalExpensesEnabled: updatedBusiness.internalExpensesEnabled,
         enableAffiliateSystem: updatedBusiness.enableAffiliateSystem,
         enableTeamPaymentTracking: updatedBusiness.enableTeamPaymentTracking,
         legalPagesEnabled: updatedBusiness.legalPagesEnabled

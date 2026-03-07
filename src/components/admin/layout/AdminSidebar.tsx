@@ -51,7 +51,8 @@ import {
   Calendar,
   CalendarClock,
   Shield,
-  FileText
+  FileText,
+  Receipt
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -103,6 +104,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [enableDeliveryManagement, setEnableDeliveryManagement] = useState(false)
   const [packagingTrackingEnabled, setPackagingTrackingEnabled] = useState(false)
   const [internalInvoiceEnabled, setInternalInvoiceEnabled] = useState(false)
+  const [internalExpensesEnabled, setInternalExpensesEnabled] = useState(false)
   const [enableAffiliateSystem, setEnableAffiliateSystem] = useState(false)
   const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
@@ -150,6 +152,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setEnableDeliveryManagement(data.business?.enableDeliveryManagement || false)
           setPackagingTrackingEnabled(data.business?.packagingTrackingEnabled || false)
           setInternalInvoiceEnabled(data.business?.internalInvoiceEnabled || false)
+          setInternalExpensesEnabled(data.business?.internalExpensesEnabled || false)
           setEnableAffiliateSystem(data.business?.enableAffiliateSystem || false)
           setEnableTeamPaymentTracking(data.business?.enableTeamPaymentTracking || false)
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
@@ -673,6 +676,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Invoices',
           href: `${baseUrl}/settings/invoices`,
           icon: FileText,
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(internalExpensesEnabled ? [{
+          name: 'Internal Expenses',
+          href: `${baseUrl}/settings/internal-expenses`,
+          icon: Receipt,
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

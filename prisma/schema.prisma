@@ -537,6 +537,9 @@ model Business {
   // Internal Invoice System (SuperAdmin enables on Business Details)
   internalInvoiceEnabled Boolean @default(false) // When enabled, business admin can generate invoices for completed, paid orders
 
+  // Internal Expenses (SuperAdmin enables on Business Details)
+  internalExpensesEnabled Boolean @default(false) // When enabled, business admin can track internal expenses (rent, utilities, etc.)
+
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
   customFilterSettings Json? // Filter configuration settings
@@ -584,6 +587,9 @@ model Business {
 
   // Internal Invoice System
   orderInvoices OrderInvoice[]
+
+  // Internal Expenses (when internalExpensesEnabled)
+  internalExpenses InternalExpense[]
 
   // Supplier Payments (for Cost & Margins feature)
   supplierPayments SupplierPayment[]
@@ -981,6 +987,24 @@ model SupplierPayment {
   @@index([businessId])
   @@index([businessId, supplierName])
   @@index([businessId, paidAt])
+}
+
+model InternalExpense {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  amount   Float // Required
+  date     DateTime? // Optional - defaults to createdAt if not set
+  category String // Required - e.g. "Rent", "Utilities", "Supplies"
+  notes    String? // Optional
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
+  @@index([businessId, date])
+  @@index([businessId, category])
 }
 
 model DeliveryEarning {

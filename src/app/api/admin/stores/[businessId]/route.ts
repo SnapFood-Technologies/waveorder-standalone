@@ -144,6 +144,7 @@ export async function GET(
         enableTeamPaymentTracking: true, // For Team Payment Tracking feature
         legalPagesEnabled: true, // For Legal Pages feature
         internalInvoiceEnabled: true, // For Internal Invoice System
+        internalExpensesEnabled: true, // For Internal Expenses feature
         
         // Inventory display
         showStockBadge: true,

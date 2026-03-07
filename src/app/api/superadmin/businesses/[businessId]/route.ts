@@ -407,6 +407,7 @@ export async function GET(
         invoiceReceiptSelectionEnabled: business.invoiceReceiptSelectionEnabled,
         packagingTrackingEnabled: business.packagingTrackingEnabled,
         internalInvoiceEnabled: business.internalInvoiceEnabled ?? false,
+        internalExpensesEnabled: business.internalExpensesEnabled ?? false,
         enableAffiliateSystem: business.enableAffiliateSystem,
         enableTeamPaymentTracking: business.enableTeamPaymentTracking ?? false,
         legalPagesEnabled: business.legalPagesEnabled,
