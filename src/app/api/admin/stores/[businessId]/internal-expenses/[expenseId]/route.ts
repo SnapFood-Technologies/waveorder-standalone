@@ -34,9 +34,13 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { amount, date, category, notes } = body
+    const { amount, date, category, notes, type } = body
 
-    const updateData: { amount?: number; date?: Date | null; category?: string; notes?: string | null } = {}
+    const updateData: { amount?: number; date?: Date | null; category?: string; notes?: string | null; type?: string } = {}
+
+    if (type !== undefined && (type === 'EXPENSE' || type === 'INJECTION')) {
+      updateData.type = type
+    }
 
     if (amount !== undefined && amount !== null) {
       const amountNum = parseFloat(amount)
@@ -74,6 +78,7 @@ export async function PATCH(
       data: updateData,
       select: {
         id: true,
+        type: true,
         amount: true,
         date: true,
         category: true,
@@ -87,6 +92,7 @@ export async function PATCH(
       success: true,
       expense: {
         id: expense.id,
+        type: expense.type || 'EXPENSE',
         amount: expense.amount,
         date: expense.date?.toISOString() ?? null,
         category: expense.category,

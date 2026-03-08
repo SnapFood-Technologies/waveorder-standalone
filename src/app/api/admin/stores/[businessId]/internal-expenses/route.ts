@@ -31,13 +31,13 @@ export async function GET(
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
     const skip = (page - 1) * limit
     const category = searchParams.get('category') || undefined
+    const typeFilter = searchParams.get('type') || undefined // "EXPENSE" | "INJECTION"
 
-    const where = { businessId } as { businessId: string; category?: string }
-    if (category) {
-      where.category = category
-    }
+    const where = { businessId } as { businessId: string; category?: string; type?: string }
+    if (category) where.category = category
+    if (typeFilter === 'EXPENSE' || typeFilter === 'INJECTION') where.type = typeFilter
 
-    const [expenses, total, stats] = await Promise.all([
+    const [expenses, total, expensesAgg, injectionsAgg, byCategory] = await Promise.all([
       prisma.internalExpense.findMany({
         where,
         orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
@@ -45,6 +45,7 @@ export async function GET(
         take: limit,
         select: {
           id: true,
+          type: true,
           amount: true,
           date: true,
           category: true,
@@ -54,20 +55,28 @@ export async function GET(
         }
       }),
       prisma.internalExpense.count({ where }),
+      // Expenses: type=EXPENSE or legacy (no type)
       prisma.internalExpense.aggregate({
-        where: { businessId },
+        where: { businessId, type: { not: 'INJECTION' } },
+        _sum: { amount: true },
+        _count: true
+      }),
+      prisma.internalExpense.aggregate({
+        where: { businessId, type: 'INJECTION' },
+        _sum: { amount: true },
+        _count: true
+      }),
+      prisma.internalExpense.groupBy({
+        by: ['category'],
+        where: { businessId, type: { not: 'INJECTION' } },
         _sum: { amount: true },
         _count: true
       })
     ])
 
-    // Stats by category
-    const byCategory = await prisma.internalExpense.groupBy({
-      by: ['category'],
-      where: { businessId },
-      _sum: { amount: true },
-      _count: true
-    })
+    const totalExpenses = expensesAgg._sum.amount ?? 0
+    const totalInjections = injectionsAgg._sum.amount ?? 0
+    const net = totalInjections - totalExpenses
 
     return NextResponse.json({
       enabled: true,
@@ -75,6 +84,7 @@ export async function GET(
       data: {
         expenses: expenses.map((e) => ({
           id: e.id,
+          type: e.type || 'EXPENSE',
           amount: e.amount,
           date: e.date?.toISOString() ?? null,
           category: e.category,
@@ -89,8 +99,10 @@ export async function GET(
           totalPages: Math.ceil(total / limit)
         },
         stats: {
-          totalAmount: stats._sum.amount ?? 0,
-          totalCount: stats._count,
+          totalExpenses,
+          totalInjections,
+          net,
+          totalCount: expensesAgg._count + injectionsAgg._count,
           byCategory: byCategory.map((c) => ({
             category: c.category,
             total: c._sum.amount ?? 0,
@@ -131,7 +143,7 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { amount, date, category, notes } = body
+    const { amount, date, category, notes, type } = body
 
     if (amount === undefined || amount === null) {
       return NextResponse.json({ error: 'Amount is required' }, { status: 400 })
@@ -145,6 +157,8 @@ export async function POST(
       return NextResponse.json({ error: 'Category is required' }, { status: 400 })
     }
 
+    const movementType = type === 'INJECTION' ? 'INJECTION' : 'EXPENSE'
+
     let expenseDate: Date | null = null
     if (date) {
       expenseDate = new Date(date)
@@ -156,6 +170,7 @@ export async function POST(
     const expense = await prisma.internalExpense.create({
       data: {
         businessId,
+        type: movementType,
         amount: amountNum,
         date: expenseDate,
         category: category.trim(),
@@ -163,6 +178,7 @@ export async function POST(
       },
       select: {
         id: true,
+        type: true,
         amount: true,
         date: true,
         category: true,
@@ -176,6 +192,7 @@ export async function POST(
       success: true,
       expense: {
         id: expense.id,
+        type: expense.type || 'EXPENSE',
         amount: expense.amount,
         date: expense.date?.toISOString() ?? null,
         category: expense.category,

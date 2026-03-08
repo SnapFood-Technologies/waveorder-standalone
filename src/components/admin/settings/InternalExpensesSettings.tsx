@@ -15,8 +15,11 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+type MovementType = 'EXPENSE' | 'INJECTION'
+
 interface InternalExpense {
   id: string
+  type: MovementType
   amount: number
   date: string | null
   category: string
@@ -26,7 +29,9 @@ interface InternalExpense {
 }
 
 interface Stats {
-  totalAmount: number
+  totalExpenses: number
+  totalInjections: number
+  net: number
   totalCount: number
   byCategory: Array<{ category: string; total: number; count: number }>
 }
@@ -35,7 +40,8 @@ interface InternalExpensesSettingsProps {
   businessId: string
 }
 
-const DEFAULT_CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Equipment', 'Marketing', 'Salaries', 'Other']
+const DEFAULT_EXPENSE_CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Equipment', 'Marketing', 'Salaries', 'Other']
+const DEFAULT_INJECTION_CATEGORIES = ['Cash Injection', 'Owner Contribution', 'Bank Transfer', 'Adjustment', 'Other']
 
 function formatCurrency(amount: number, currency = 'EUR'): string {
   return new Intl.NumberFormat('en-US', {
@@ -63,6 +69,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [typeFilter, setTypeFilter] = useState<string>('') // '' | 'EXPENSE' | 'INJECTION'
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingExpense, setEditingExpense] = useState<InternalExpense | null>(null)
   const [deleteModalExpense, setDeleteModalExpense] = useState<InternalExpense | null>(null)
@@ -70,6 +77,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
   const [saving, setSaving] = useState(false)
 
   const [form, setForm] = useState({
+    type: 'EXPENSE' as MovementType,
     amount: '',
     date: '',
     category: '',
@@ -78,6 +86,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
 
   const resetForm = () => {
     setForm({
+      type: 'EXPENSE',
       amount: '',
       date: new Date().toISOString().split('T')[0],
       category: '',
@@ -92,6 +101,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
       params.set('page', page.toString())
       params.set('limit', '20')
       if (categoryFilter) params.set('category', categoryFilter)
+      if (typeFilter === 'EXPENSE' || typeFilter === 'INJECTION') params.set('type', typeFilter)
 
       const res = await fetch(`/api/admin/stores/${businessId}/internal-expenses?${params}`)
       const data = await res.json()
@@ -117,7 +127,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
     } finally {
       setLoading(false)
     }
-  }, [businessId, page, categoryFilter])
+  }, [businessId, page, categoryFilter, typeFilter])
 
   useEffect(() => {
     fetchData()
@@ -140,6 +150,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          type: form.type,
           amount: amountNum,
           date: form.date || null,
           category: form.category.trim(),
@@ -148,7 +159,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
       })
       const data = await res.json()
       if (res.ok) {
-        toast.success('Expense added')
+        toast.success(form.type === 'INJECTION' ? 'Cash injection added' : 'Expense added')
         setShowAddModal(false)
         resetForm()
         fetchData()
@@ -182,6 +193,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            type: form.type,
             amount: amountNum,
             date: form.date || null,
             category: form.category.trim(),
@@ -231,6 +243,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
   const openEditModal = (expense: InternalExpense) => {
     setEditingExpense(expense)
     setForm({
+      type: expense.type || 'EXPENSE',
       amount: expense.amount.toString(),
       date: expense.date ? expense.date.split('T')[0] : '',
       category: expense.category,
@@ -248,8 +261,8 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Internal Expenses</h1>
-          <p className="text-gray-600 mt-1">Track internal expenses (rent, utilities, supplies, etc.)</p>
+          <h1 className="text-2xl font-bold text-gray-900">Cash Movements</h1>
+          <p className="text-gray-600 mt-1">Track expenses and cash injections (rent, utilities, owner contributions, etc.)</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
           <div className="flex items-start gap-4">
@@ -270,9 +283,9 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Internal Expenses</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Cash Movements</h1>
           <p className="text-gray-600 mt-1">
-            Track internal expenses (rent, utilities, supplies, etc.) with amount, date, category, and notes.
+            Track expenses and cash injections with amount, date, category, and notes.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -288,7 +301,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
             className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add Expense
+            Add
           </button>
         </div>
       </div>
@@ -298,14 +311,40 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <Receipt className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(stats.totalExpenses, currency)}
+                </p>
+                <p className="text-sm text-gray-500">Total Expenses</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Receipt className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(stats.totalInjections, currency)}
+                </p>
+                <p className="text-sm text-gray-500">Total Injections</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
               <div className="p-2 bg-teal-100 rounded-lg">
                 <Receipt className="w-5 h-5 text-teal-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(stats.totalAmount, currency)}
+                <p className={`text-2xl font-bold ${stats.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats.net, currency)}
                 </p>
-                <p className="text-sm text-gray-500">Total Expenses</p>
+                <p className="text-sm text-gray-500">Net</p>
               </div>
             </div>
           </div>
@@ -320,34 +359,44 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
               </div>
             </div>
           </div>
-          {stats.byCategory.slice(0, 2).map((c) => (
-            <div key={c.category} className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-sm font-medium text-gray-500">{c.category}</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(c.total, currency)}</p>
-              <p className="text-xs text-gray-500">{c.count} entries</p>
-            </div>
-          ))}
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <label className="text-sm font-medium text-gray-700">Category:</label>
-        <select
-          value={categoryFilter}
-          onChange={(e) => {
-            setCategoryFilter(e.target.value)
-            setPage(1)
-          }}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-        >
-          <option value="">All</option>
-          {stats?.byCategory.map((c) => (
-            <option key={c.category} value={c.category}>
-              {c.category}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Type:</label>
+          <select
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value)
+              setPage(1)
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+          >
+            <option value="">All</option>
+            <option value="EXPENSE">Expenses only</option>
+            <option value="INJECTION">Injections only</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Category:</label>
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value)
+              setPage(1)
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+          >
+            <option value="">All</option>
+            {stats?.byCategory.map((c) => (
+              <option key={c.category} value={c.category}>
+                {c.category}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -360,16 +409,16 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
         ) : expenses.length === 0 ? (
           <div className="p-12 text-center">
             <Receipt className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No cash movements yet</h3>
             <p className="text-gray-600 mb-4">
-              Add your first internal expense to start tracking rent, utilities, supplies, and more.
+              Add your first expense or cash injection to start tracking.
             </p>
             <button
               onClick={openAddModal}
               className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Expense
+              Add
             </button>
           </div>
         ) : (
@@ -378,6 +427,9 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
@@ -398,13 +450,29 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
                 <tbody className="bg-white divide-y divide-gray-200">
                   {expenses.map((exp) => (
                     <tr key={exp.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
+                            (exp.type || 'EXPENSE') === 'INJECTION'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {(exp.type || 'EXPENSE') === 'INJECTION' ? 'Injection' : 'Expense'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(exp.date)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {exp.category}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
+                      <td
+                        className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${
+                          (exp.type || 'EXPENSE') === 'INJECTION' ? 'text-green-600' : 'text-gray-900'
+                        }`}
+                      >
+                        {(exp.type || 'EXPENSE') === 'INJECTION' ? '+' : ''}
                         {formatCurrency(exp.amount, currency)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600 max-w-[200px] truncate">
@@ -467,8 +535,25 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Expense</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Cash Movement</h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                <select
+                  value={form.type}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      type: e.target.value as MovementType,
+                      category: e.target.value === 'INJECTION' ? '' : f.category
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="EXPENSE">Expense (money out)</option>
+                  <option value="INJECTION">Injection (money in)</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
                 <input
@@ -497,11 +582,18 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-                  placeholder="e.g. Rent, Utilities"
-                  list="expense-categories"
+                  placeholder={
+                    form.type === 'INJECTION' ? 'e.g. Cash Injection' : 'e.g. Rent, Utilities'
+                  }
+                  list={form.type === 'INJECTION' ? 'injection-categories' : 'expense-categories'}
                 />
                 <datalist id="expense-categories">
-                  {DEFAULT_CATEGORIES.map((c) => (
+                  {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+                <datalist id="injection-categories">
+                  {DEFAULT_INJECTION_CATEGORIES.map((c) => (
                     <option key={c} value={c} />
                   ))}
                 </datalist>
@@ -531,7 +623,7 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
                 className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2"
               >
                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Add Expense
+                Add
               </button>
             </div>
           </div>
@@ -542,8 +634,21 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
       {editingExpense && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Expense</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Cash Movement</h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+                <select
+                  value={form.type}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, type: e.target.value as MovementType }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
+                >
+                  <option value="EXPENSE">Expense (money out)</option>
+                  <option value="INJECTION">Injection (money in)</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
                 <input
@@ -571,10 +676,15 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-gray-900"
-                  list="expense-categories-edit"
+                  list={form.type === 'INJECTION' ? 'injection-categories-edit' : 'expense-categories-edit'}
                 />
                 <datalist id="expense-categories-edit">
-                  {DEFAULT_CATEGORIES.map((c) => (
+                  {DEFAULT_EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+                <datalist id="injection-categories-edit">
+                  {DEFAULT_INJECTION_CATEGORIES.map((c) => (
                     <option key={c} value={c} />
                   ))}
                 </datalist>
@@ -624,8 +734,8 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
               </div>
             </div>
             <p className="text-gray-700 mb-6">
-              Are you sure you want to delete this expense? ({formatCurrency(deleteModalExpense.amount, currency)}{' '}
-              - {deleteModalExpense.category})
+              Are you sure you want to delete this {deleteModalExpense.type === 'INJECTION' ? 'injection' : 'expense'}? (
+              {formatCurrency(deleteModalExpense.amount, currency)} - {deleteModalExpense.category})
             </p>
             <div className="flex gap-3 justify-end">
               <button

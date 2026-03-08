@@ -994,15 +994,17 @@ model InternalExpense {
   businessId String   @db.ObjectId
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
-  amount   Float // Required
+  type     String    @default("EXPENSE") // "EXPENSE" = money out, "INJECTION" = money in (cash flow)
+  amount   Float // Required, always positive
   date     DateTime? // Optional - defaults to createdAt if not set
-  category String // Required - e.g. "Rent", "Utilities", "Supplies"
+  category String // Required - e.g. "Rent", "Utilities", "Cash Injection"
   notes    String? // Optional
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([businessId])
+  @@index([businessId, type])
   @@index([businessId, date])
   @@index([businessId, category])
 }
