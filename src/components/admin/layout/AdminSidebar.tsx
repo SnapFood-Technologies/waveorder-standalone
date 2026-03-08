@@ -52,7 +52,8 @@ import {
   CalendarClock,
   Shield,
   FileText,
-  Receipt
+  Receipt,
+  DollarSign
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -612,6 +613,15 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       ]
     }] : []),
     
+    // Financial - top-level, above Settings (when internalExpensesEnabled)
+    // @ts-ignore
+    ...(internalExpensesEnabled ? [{
+      name: 'Financial',
+      href: `${baseUrl}/financial`,
+      icon: DollarSign,
+      requiredPlan: 'STARTER' as Plan
+    }] : []),
+    
     { 
       name: 'Settings', 
       icon: Settings, 
@@ -676,13 +686,6 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           name: 'Invoices',
           href: `${baseUrl}/settings/invoices`,
           icon: FileText,
-          requiredPlan: 'STARTER' as Plan
-        }] : []),
-        // @ts-ignore
-        ...(internalExpensesEnabled ? [{
-          name: 'Internal Expenses',
-          href: `${baseUrl}/settings/internal-expenses`,
-          icon: Receipt,
           requiredPlan: 'STARTER' as Plan
         }] : []),
       ]

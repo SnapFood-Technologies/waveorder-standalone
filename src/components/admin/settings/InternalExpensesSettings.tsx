@@ -38,6 +38,8 @@ interface Stats {
 
 interface InternalExpensesSettingsProps {
   businessId: string
+  /** When true, renders as embedded section (e.g. inside Financial page) with smaller header */
+  embedded?: boolean
 }
 
 const DEFAULT_EXPENSE_CATEGORIES = ['Rent', 'Utilities', 'Supplies', 'Equipment', 'Marketing', 'Salaries', 'Other']
@@ -59,7 +61,7 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export function InternalExpensesSettings({ businessId }: InternalExpensesSettingsProps) {
+export function InternalExpensesSettings({ businessId, embedded = false }: InternalExpensesSettingsProps) {
   const [loading, setLoading] = useState(true)
   const [enabled, setEnabled] = useState(true)
   const [currency, setCurrency] = useState('EUR')
@@ -261,7 +263,9 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cash Movements</h1>
+          <h2 className={embedded ? 'text-xl font-bold text-gray-900' : 'text-2xl font-bold text-gray-900'}>
+            Cash Movements
+          </h2>
           <p className="text-gray-600 mt-1">Track expenses and cash injections (rent, utilities, owner contributions, etc.)</p>
         </div>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
@@ -283,7 +287,9 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
     <div className="space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cash Movements</h1>
+          <h2 className={embedded ? 'text-xl font-bold text-gray-900' : 'text-2xl font-bold text-gray-900'}>
+            Cash Movements
+          </h2>
           <p className="text-gray-600 mt-1">
             Track expenses and cash injections with amount, date, category, and notes.
           </p>
@@ -306,8 +312,8 @@ export function InternalExpensesSettings({ businessId }: InternalExpensesSetting
         </div>
       </div>
 
-      {/* Stats */}
-      {stats && (
+      {/* Stats - hide when embedded (parent shows overview) */}
+      {stats && !embedded && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center gap-3">

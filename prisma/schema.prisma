@@ -538,7 +538,8 @@ model Business {
   internalInvoiceEnabled Boolean @default(false) // When enabled, business admin can generate invoices for completed, paid orders
 
   // Internal Expenses (SuperAdmin enables on Business Details)
-  internalExpensesEnabled Boolean @default(false) // When enabled, business admin can track internal expenses (rent, utilities, etc.)
+  internalExpensesEnabled        Boolean   @default(false) // When enabled, business admin can track internal expenses (rent, utilities, etc.)
+  financialReportLastGeneratedAt DateTime? // When financial PDF report was last downloaded
 
   // Custom Menu & Filtering Data (JSON)
   customMenuItems      Json? // Array of custom menu items
