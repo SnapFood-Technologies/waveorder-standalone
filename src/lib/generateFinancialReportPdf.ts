@@ -121,7 +121,7 @@ export interface FinancialReportData {
 
 export async function generateFinancialReportPdf(report: FinancialReportData): Promise<void> {
   const doc = new jsPDF()
-  const { business, overview, cashMovements, generatedAt } = report
+  const { business, overview, cashMovements, teamPayments = [], generatedAt } = report
   const currency = business.currency || 'EUR'
 
   let fontName = 'helvetica'

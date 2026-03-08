@@ -31,6 +31,7 @@ import {
   BarChart3
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { fetchAndDownloadSupplierPaymentsReportPdf } from '@/lib/generateSupplierPaymentsReportPdf'
 
 interface CostMarginsProps {
   businessId: string
@@ -140,6 +141,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
   const [editingPayment, setEditingPayment] = useState<string | null>(null)
   const [deletingPayment, setDeletingPayment] = useState<string | null>(null)
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
 
   // Overview data
   const [overviewData, setOverviewData] = useState<any>(null)
@@ -260,6 +262,22 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
       fetchPayments()
     }
   }, [enabled, activeTab, fetchPayments])
+
+  const handleDownloadSupplierPdf = async () => {
+    setPdfGenerating(true)
+    const toastId = toast.loading(
+      'Generating PDF... This may take a moment if you have many payments. Please be patient.',
+      { duration: 5000 }
+    )
+    try {
+      await fetchAndDownloadSupplierPaymentsReportPdf(businessId)
+      toast.success('PDF downloaded', { id: toastId })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate PDF', { id: toastId })
+    } finally {
+      setPdfGenerating(false)
+    }
+  }
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -943,19 +961,38 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
       {activeTab === 'payments' && (
         <div className="space-y-6">
           {/* Add Payment Button */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-3">
             <div>
               <p className="text-sm text-gray-600">
                 Total paid to suppliers: <span className="font-semibold text-gray-900">{formatCurrency(grandTotal)}</span>
               </p>
             </div>
-            <button
-              onClick={() => setShowAddPayment(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Add Payment
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadSupplierPdf}
+                disabled={pdfGenerating}
+                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {pdfGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowAddPayment(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add Payment
+              </button>
+            </div>
           </div>
 
           {/* Add Payment Form */}
