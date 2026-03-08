@@ -1,13 +1,9 @@
-// Financial Report PDF - Business logo, WaveOrder fallback
+// Financial Report PDF - Header matches invoice (no logo)
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
 
 const NOTO_SANS_URL = '/fonts/NotoSans-Regular.ttf'
-const WAVEORDER_LOGO_URL = '/images/waveorderlogo.png'
 let notoSansBase64: string | null = null
-
-const MAX_LOGO_WIDTH = 50
-const MAX_LOGO_HEIGHT = 14
 
 async function loadNotoSansFont(): Promise<string> {
   if (notoSansBase64) return notoSansBase64
@@ -23,43 +19,6 @@ async function loadNotoSansFont(): Promise<string> {
   }
   notoSansBase64 = btoa(binary)
   return notoSansBase64
-}
-
-/** Load logo image and return base64 + dimensions for aspect-ratio-preserving draw */
-async function loadLogo(logoUrl: string | null | undefined): Promise<{ base64: string; width: number; height: number } | null> {
-  const urlsToTry = logoUrl ? [logoUrl, WAVEORDER_LOGO_URL] : [WAVEORDER_LOGO_URL]
-  for (const url of urlsToTry) {
-    try {
-    const res = await fetch(url)
-    if (!res.ok) continue
-    const blob = await res.blob()
-    const objectUrl = URL.createObjectURL(blob)
-    const img = new Image()
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('Image load failed'))
-      img.src = objectUrl
-    })
-    URL.revokeObjectURL(objectUrl)
-    const w = img.naturalWidth
-    const h = img.naturalHeight
-    if (!w || !h) continue
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    const ctx = canvas.getContext('2d')
-    if (!ctx) continue
-    ctx.drawImage(img, 0, 0)
-    const dataUrl = canvas.toDataURL('image/png')
-    const base64 = dataUrl.split(',')[1]
-    if (!base64) continue
-    const scale = Math.min(MAX_LOGO_WIDTH / w, MAX_LOGO_HEIGHT / h)
-    return { base64, width: w * scale, height: h * scale }
-    } catch {
-      continue
-    }
-  }
-  return null
 }
 
 function formatCurrency(amount: number, currency = 'EUR'): string {
@@ -140,47 +99,24 @@ export async function generateFinancialReportPdf(report: FinancialReportData): P
   const tableWidth = right - pad // 176 - match invoice
   let y = pad
 
-  // Header - match invoice: logo left, business name right of logo, report title right
-  const logoWidth = 40
-  const logoHeight = 12
-  const logoData = await loadLogo(business.logo)
-  if (logoData) {
-    try {
-      const lw = Math.min(logoData.width, logoWidth)
-      const lh = Math.min(logoData.height, logoHeight)
-      doc.addImage(logoData.base64, 'PNG', pad, y, lw, lh)
-    } catch {
-      // Skip if image fails
-    }
-  }
-  const textLeft = logoData ? pad + logoWidth + 8 : pad
-  const nameY = logoData ? y + logoHeight + 4 : y
+  // Header - match invoice: business left, report title right, no logo
   doc.setFontSize(18)
   doc.setTextColor(TEAL[0], TEAL[1], TEAL[2])
-  doc.text(business.name, textLeft, nameY)
+  doc.text(business.name, pad, y)
+  y += 6
+
   doc.setFontSize(10)
   doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
-  let textY = nameY + 6
-  if (business.address) {
-    doc.text(business.address, textLeft, textY)
-    textY += 5
-  }
-  if (business.phone) {
-    doc.text(business.phone, textLeft, textY)
-    textY += 5
-  }
-  if (business.email) {
-    doc.text(business.email, textLeft, textY)
-    textY += 5
-  }
-  y = Math.max(textY + 4, y + (logoData ? logoHeight + 8 : 10))
+  if (business.address) { doc.text(business.address, pad, y); y += 5 }
+  if (business.phone) { doc.text(business.phone, pad, y); y += 5 }
+  if (business.email) { doc.text(business.email, pad, y); y += 6 }
 
   doc.setFontSize(18)
   doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
-  doc.text('Financial Report', right, pad + 6, { align: 'right' })
+  doc.text('Financial Report', right, pad, { align: 'right' })
   doc.setFontSize(10)
   doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
-  doc.text(`As of ${formatDate(generatedAt)}`, right, pad + 12, { align: 'right' })
+  doc.text(`As of ${formatDate(generatedAt)}`, right, pad + 8, { align: 'right' })
 
   doc.setDrawColor(TEAL[0], TEAL[1], TEAL[2])
   doc.setLineWidth(0.5)
