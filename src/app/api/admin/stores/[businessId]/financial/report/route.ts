@@ -19,6 +19,7 @@ export async function GET(
       where: { id: businessId },
       select: {
         name: true,
+        logo: true,
         address: true,
         phone: true,
         email: true,
@@ -183,6 +184,7 @@ export async function GET(
     return NextResponse.json({
       business: {
         name: business.name,
+        logo: business.logo,
         address: business.address,
         phone: business.phone,
         email: business.email,

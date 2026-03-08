@@ -1,11 +1,13 @@
-// Financial Report PDF - WaveOrder branded, business content
+// Financial Report PDF - Business logo, WaveOrder fallback
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
 
 const NOTO_SANS_URL = '/fonts/NotoSans-Regular.ttf'
 const WAVEORDER_LOGO_URL = '/images/waveorderlogo.png'
 let notoSansBase64: string | null = null
-let logoBase64: string | null = null
+
+const MAX_LOGO_WIDTH = 50
+const MAX_LOGO_HEIGHT = 14
 
 async function loadNotoSansFont(): Promise<string> {
   if (notoSansBase64) return notoSansBase64
@@ -23,24 +25,41 @@ async function loadNotoSansFont(): Promise<string> {
   return notoSansBase64
 }
 
-async function loadLogo(): Promise<string | null> {
-  if (logoBase64) return logoBase64
-  try {
-    const res = await fetch(WAVEORDER_LOGO_URL)
-    if (!res.ok) return null
-    const buffer = await res.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
-    let binary = ''
-    const chunkSize = 8192
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
-      binary += String.fromCharCode.apply(null, Array.from(chunk))
+/** Load logo image and return base64 + dimensions for aspect-ratio-preserving draw */
+async function loadLogo(logoUrl: string | null | undefined): Promise<{ base64: string; width: number; height: number } | null> {
+  const urlsToTry = logoUrl ? [logoUrl, WAVEORDER_LOGO_URL] : [WAVEORDER_LOGO_URL]
+  for (const url of urlsToTry) {
+    try {
+    const res = await fetch(url)
+    if (!res.ok) continue
+    const blob = await res.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const img = new Image()
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('Image load failed'))
+      img.src = objectUrl
+    })
+    URL.revokeObjectURL(objectUrl)
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    if (!w || !h) continue
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) continue
+    ctx.drawImage(img, 0, 0)
+    const dataUrl = canvas.toDataURL('image/png')
+    const base64 = dataUrl.split(',')[1]
+    if (!base64) continue
+    const scale = Math.min(MAX_LOGO_WIDTH / w, MAX_LOGO_HEIGHT / h)
+    return { base64, width: w * scale, height: h * scale }
+    } catch {
+      continue
     }
-    logoBase64 = btoa(binary)
-    return logoBase64
-  } catch {
-    return null
   }
+  return null
 }
 
 function formatCurrency(amount: number, currency = 'EUR'): string {
@@ -64,7 +83,7 @@ const GRAY_600: [number, number, number] = [107, 114, 128]
 const GRAY_900: [number, number, number] = [17, 24, 39]
 
 export interface FinancialReportData {
-  business: { name: string; address?: string | null; phone?: string | null; email?: string | null; currency: string }
+  business: { name: string; logo?: string | null; address?: string | null; phone?: string | null; email?: string | null; currency: string }
   overview: {
     orderRevenue: number
     netOrderRevenue: number
@@ -111,11 +130,11 @@ export async function generateFinancialReportPdf(report: FinancialReportData): P
   const right = 193
   let y = pad
 
-  // WaveOrder logo (left)
-  const logoData = await loadLogo()
+  // Business logo (left), aspect ratio preserved; fallback to WaveOrder if none
+  const logoData = await loadLogo(business.logo)
   if (logoData) {
     try {
-      doc.addImage(logoData, 'PNG', pad, y - 2, 24, 10)
+      doc.addImage(logoData.base64, 'PNG', pad, y - 2, logoData.width, logoData.height)
     } catch {
       // Skip if image fails
     }
