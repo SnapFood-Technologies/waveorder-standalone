@@ -70,6 +70,7 @@ export function TeamPayments({ businessId }: TeamPaymentsProps) {
   const [members, setMembers] = useState<TeamMember[]>([])
   const [showAddPayment, setShowAddPayment] = useState(false)
   const [addingPayment, setAddingPayment] = useState(false)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
   const [newPayment, setNewPayment] = useState({
     userId: '',
     amount: '',
