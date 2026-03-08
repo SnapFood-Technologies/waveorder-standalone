@@ -11,8 +11,10 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
-  Users
+  Users,
+  Download
 } from 'lucide-react'
+import { fetchAndDownloadTeamPaymentsReportPdf } from '@/lib/generateTeamPaymentsReportPdf'
 import { toast } from 'react-hot-toast'
 
 interface TeamPaymentsProps {
@@ -218,6 +220,22 @@ export function TeamPayments({ businessId }: TeamPaymentsProps) {
     }).format(amount)
   }
 
+  const handleDownloadPdf = async () => {
+    setPdfGenerating(true)
+    const toastId = toast.loading(
+      'Generating PDF... This may take a moment if you have many payments. Please be patient.',
+      { duration: 5000 }
+    )
+    try {
+      await fetchAndDownloadTeamPaymentsReportPdf(businessId)
+      toast.success('PDF downloaded', { id: toastId })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate PDF', { id: toastId })
+    } finally {
+      setPdfGenerating(false)
+    }
+  }
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -274,7 +292,24 @@ export function TeamPayments({ businessId }: TeamPaymentsProps) {
             Record and track internal payments to team members
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfGenerating}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pdfGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </>
+            )}
+          </button>
           <button
             onClick={fetchPayments}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"

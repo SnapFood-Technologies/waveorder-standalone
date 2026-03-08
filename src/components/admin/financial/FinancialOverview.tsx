@@ -49,10 +49,12 @@ interface OverviewData {
   supplierOwed: number
   supplierPaid: number
   supplierOutstanding: number
+  totalTeamPayments: number
   features: {
     internalExpensesEnabled: boolean
     enableAffiliateSystem: boolean
     enableDeliveryManagement: boolean
+    enableTeamPaymentTracking: boolean
     showCostPrice: boolean
   }
 }
@@ -146,6 +148,7 @@ export function FinancialOverview({ businessId }: FinancialOverviewProps) {
     data.affiliatePayable > 0 ||
     data.deliveryPayable > 0 ||
     data.supplierOutstanding > 0 ||
+    (data.totalTeamPayments ?? 0) > 0 ||
     data.totalExpenses > 0 ||
     data.totalInjections > 0
 
@@ -219,6 +222,14 @@ export function FinancialOverview({ businessId }: FinancialOverviewProps) {
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Add Cash Movement
+              </Link>
+            )}
+            {features.enableTeamPaymentTracking && (
+              <Link
+                href={`/admin/stores/${businessId}/team-payments`}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Team Payments
               </Link>
             )}
           </div>
@@ -332,6 +343,29 @@ export function FinancialOverview({ businessId }: FinancialOverviewProps) {
                   Earned: {formatCurrency(data.deliveryEarnings, currency)} · Paid:{' '}
                   {formatCurrency(data.deliveryPayments, currency)}
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {features.enableTeamPaymentTracking && (
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <Receipt className="w-5 h-5 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(data.totalTeamPayments ?? 0, currency)}
+                </p>
+                <p className="text-sm text-gray-500">Team Payments</p>
+                <Link
+                  href={`/admin/stores/${businessId}/team-payments`}
+                  className="text-xs text-teal-600 hover:text-teal-700 hover:underline mt-1 inline-flex items-center gap-1"
+                >
+                  View details
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
               </div>
             </div>
           </div>

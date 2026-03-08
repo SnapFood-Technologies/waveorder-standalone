@@ -21,6 +21,7 @@ export async function GET(
         internalExpensesEnabled: true,
         enableAffiliateSystem: true,
         enableDeliveryManagement: true,
+        enableTeamPaymentTracking: true,
         showCostPrice: true,
         businessType: true,
         currency: true,
@@ -167,6 +168,16 @@ export async function GET(
     const affiliatePayable = Math.max(0, affiliateEarningsTotal - affiliatePaymentsTotal)
     const deliveryPayable = Math.max(0, deliveryEarningsTotal - deliveryPaymentsTotal)
 
+    // 7. Team payments (when enabled)
+    let totalTeamPayments = 0
+    if (business.enableTeamPaymentTracking) {
+      const agg = await prisma.teamMemberPayment.aggregate({
+        where: { businessId },
+        _sum: { amount: true }
+      })
+      totalTeamPayments = agg._sum.amount ?? 0
+    }
+
     return NextResponse.json({
       enabled: true,
       currency,
@@ -186,10 +197,12 @@ export async function GET(
         supplierOwed: Math.round(supplierOwed * 100) / 100,
         supplierPaid: Math.round(supplierPaid * 100) / 100,
         supplierOutstanding: Math.round(supplierOutstanding * 100) / 100,
+        totalTeamPayments: Math.round(totalTeamPayments * 100) / 100,
         features: {
           internalExpensesEnabled: business.internalExpensesEnabled,
           enableAffiliateSystem: business.enableAffiliateSystem,
           enableDeliveryManagement: business.enableDeliveryManagement,
+          enableTeamPaymentTracking: business.enableTeamPaymentTracking,
           showCostPrice: business.showCostPrice
         }
       }

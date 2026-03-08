@@ -97,14 +97,23 @@ export interface FinancialReportData {
       internalExpensesEnabled: boolean
       enableAffiliateSystem: boolean
       enableDeliveryManagement: boolean
+      enableTeamPaymentTracking: boolean
       showCostPrice: boolean
     }
+    totalTeamPayments?: number
   }
   cashMovements: Array<{
     type: string
     amount: number
     date: string | null
     category: string
+    notes: string | null
+  }>
+  teamPayments?: Array<{
+    recipientName: string
+    amount: number
+    paidAt: string | null
+    paymentMethod: string
     notes: string | null
   }>
   generatedAt: string
@@ -223,6 +232,14 @@ export async function generateFinancialReportPdf(report: FinancialReportData): P
     y += 6
   }
 
+  if (overview.features.enableTeamPaymentTracking && overview.totalTeamPayments != null) {
+    doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
+    doc.text('Team Payments (total)', summaryLeft, y)
+    doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
+    doc.text(formatCurrency(overview.totalTeamPayments, currency), summaryRight, y, { align: 'right' })
+    y += 6
+  }
+
   if (overview.features.internalExpensesEnabled) {
     doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
     doc.text('Internal Expenses', summaryLeft, y)
@@ -282,6 +299,53 @@ export async function generateFinancialReportPdf(report: FinancialReportData): P
         2: { cellWidth: 40 },
         3: { cellWidth: 38, halign: 'right' },
         4: { cellWidth: 35 }
+      },
+      tableLineColor: [229, 231, 235],
+      tableLineWidth: 0.1,
+      pageBreak: 'auto'
+    })
+
+    y = (doc as any).lastAutoTable?.finalY ?? y
+    y += 12
+  }
+
+  // Team payments table
+  if (overview.features.enableTeamPaymentTracking && teamPayments.length > 0) {
+    doc.setFontSize(12)
+    doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
+    doc.text('Team Payments', pad, y)
+    y += 8
+
+    const teamTableData = teamPayments.map((p) => [
+      p.recipientName.slice(0, 30),
+      formatDate(p.paidAt),
+      p.paymentMethod,
+      formatCurrency(p.amount, currency),
+      (p.notes || '—').slice(0, 35)
+    ])
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Recipient', 'Date', 'Method', 'Amount', 'Notes']],
+      body: teamTableData,
+      theme: 'plain',
+      tableWidth: right - pad,
+      margin: { left: pad, right: pad },
+      headStyles: {
+        fillColor: [243, 244, 246] as [number, number, number],
+        textColor: GRAY_600,
+        fontStyle: 'normal',
+        font: fontName,
+        fontSize: 9,
+        cellPadding: 3
+      },
+      styles: { fontSize: 8, textColor: GRAY_900, font: fontName, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 38, halign: 'right' },
+        4: { cellWidth: 40 }
       },
       tableLineColor: [229, 231, 235],
       tableLineWidth: 0.1,

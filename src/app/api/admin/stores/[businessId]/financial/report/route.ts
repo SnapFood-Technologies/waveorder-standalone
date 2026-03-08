@@ -27,6 +27,7 @@ export async function GET(
         internalExpensesEnabled: true,
         enableAffiliateSystem: true,
         enableDeliveryManagement: true,
+        enableTeamPaymentTracking: true,
         showCostPrice: true,
         businessType: true
       }
@@ -181,6 +182,31 @@ export async function GET(
     const deliveryPayable = Math.max(0, deliveryEarningsTotal - deliveryPaymentsTotal)
     const netCashFlow = totalInjections - totalExpenses
 
+    // Team payments (when enabled)
+    let totalTeamPayments = 0
+    let teamPayments: Array<{ recipientName: string; amount: number; paidAt: string | null; paymentMethod: string; notes: string | null }> = []
+    if (business.enableTeamPaymentTracking) {
+      const [agg, payments] = await Promise.all([
+        prisma.teamMemberPayment.aggregate({
+          where: { businessId },
+          _sum: { amount: true }
+        }),
+        prisma.teamMemberPayment.findMany({
+          where: { businessId },
+          include: { user: { select: { name: true } } },
+          orderBy: { paidAt: 'desc' }
+        })
+      ])
+      totalTeamPayments = agg._sum.amount ?? 0
+      teamPayments = payments.map((p) => ({
+        recipientName: p.user?.name || 'Unknown',
+        amount: p.amount,
+        paidAt: p.paidAt?.toISOString() ?? null,
+        paymentMethod: p.paymentMethod,
+        notes: p.notes
+      }))
+    }
+
     return NextResponse.json({
       business: {
         name: business.name,
@@ -199,14 +225,17 @@ export async function GET(
         totalExpenses,
         totalInjections,
         netCashFlow,
+        totalTeamPayments: Math.round(totalTeamPayments * 100) / 100,
         features: {
           internalExpensesEnabled: business.internalExpensesEnabled,
           enableAffiliateSystem: business.enableAffiliateSystem,
           enableDeliveryManagement: business.enableDeliveryManagement,
+          enableTeamPaymentTracking: business.enableTeamPaymentTracking,
           showCostPrice: business.showCostPrice
         }
       },
       cashMovements,
+      teamPayments,
       generatedAt: new Date().toISOString()
     })
   } catch (error) {
