@@ -1,4 +1,4 @@
-// Supplier Payments Report PDF - Business logo, all supplier payments
+// Affiliate Payments Report PDF - Business logo, all affiliate payments
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
 
@@ -81,7 +81,7 @@ const TEAL: [number, number, number] = [13, 148, 136]
 const GRAY_600: [number, number, number] = [107, 114, 128]
 const GRAY_900: [number, number, number] = [17, 24, 39]
 
-export interface SupplierPaymentsReportData {
+export interface AffiliatePaymentsReportData {
   business: {
     name: string
     logo?: string | null
@@ -91,13 +91,15 @@ export interface SupplierPaymentsReportData {
     currency: string
   }
   grandTotal: number
-  totalsBySupplier: Array<{
-    supplierName: string
+  totalsByAffiliate: Array<{
+    affiliateName: string
+    affiliateEmail: string | null
     totalPaid: number
     paymentCount: number
   }>
   payments: Array<{
-    supplierName: string
+    affiliateName: string
+    affiliateEmail: string | null
     amount: number
     paidAt: string | null
     paymentMethod: string | null
@@ -109,9 +111,9 @@ export interface SupplierPaymentsReportData {
   generatedAt: string
 }
 
-export async function generateSupplierPaymentsReportPdf(report: SupplierPaymentsReportData): Promise<void> {
+export async function generateAffiliatePaymentsReportPdf(report: AffiliatePaymentsReportData): Promise<void> {
   const doc = new jsPDF()
-  const { business, grandTotal, totalsBySupplier, payments, generatedAt } = report
+  const { business, grandTotal, totalsByAffiliate, payments, generatedAt } = report
   const currency = business.currency || 'EUR'
 
   let fontName = 'helvetica'
@@ -127,10 +129,9 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
 
   const pad = 17
   const right = 193
-  const tableWidth = right - pad // 176 - match invoice
+  const tableWidth = right - pad
   let y = pad
 
-  // Header - match invoice: logo left, business name right of logo, report title right
   const logoWidth = 40
   const logoHeight = 12
   const logoData = await loadLogo(business.logo)
@@ -167,7 +168,7 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
 
   doc.setFontSize(18)
   doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
-  doc.text('Supplier Payments Report', right, pad + 6, { align: 'right' })
+  doc.text('Affiliate Payments Report', right, pad + 6, { align: 'right' })
   doc.setFontSize(10)
   doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
   doc.text(`As of ${formatDate(generatedAt)}`, right, pad + 12, { align: 'right' })
@@ -177,7 +178,6 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
   doc.line(pad, y + 2, right, y + 2)
   y += 18
 
-  // Summary
   doc.setFontSize(12)
   doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
   doc.text('Summary', pad, y)
@@ -187,28 +187,27 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
   const summaryLeft = pad + 5
   const summaryRight = right - 5
   doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
-  doc.text('Total Paid to Suppliers', summaryLeft, y)
+  doc.text('Total Paid to Affiliates', summaryLeft, y)
   doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
   doc.text(formatCurrency(grandTotal, currency), summaryRight, y, { align: 'right' })
   y += 12
 
-  // Totals by supplier
-  if (totalsBySupplier.length > 0) {
+  if (totalsByAffiliate.length > 0) {
     doc.setFontSize(12)
     doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
-    doc.text('Totals by Supplier', pad, y)
+    doc.text('Totals by Affiliate', pad, y)
     y += 8
 
-    const supplierTableData = totalsBySupplier.map((s) => [
-      s.supplierName.slice(0, 40),
-      s.paymentCount.toString(),
-      formatCurrency(s.totalPaid, currency)
+    const affiliateTableData = totalsByAffiliate.map((a) => [
+      a.affiliateName.slice(0, 40),
+      a.paymentCount.toString(),
+      formatCurrency(a.totalPaid, currency)
     ])
 
     autoTable(doc, {
       startY: y,
-      head: [['Supplier', 'Payments', 'Total Paid']],
-      body: supplierTableData,
+      head: [['Affiliate', 'Payments', 'Total Paid']],
+      body: affiliateTableData,
       theme: 'plain',
       tableWidth,
       margin: { left: pad, right: pad },
@@ -236,7 +235,6 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
     y += 12
   }
 
-  // Payment history table
   if (payments.length > 0) {
     doc.setFontSize(12)
     doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
@@ -245,7 +243,7 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
 
     const tableData = payments.map((p) => [
       formatDate(p.paidAt),
-      p.supplierName.slice(0, 22),
+      p.affiliateName.slice(0, 22),
       formatCurrency(p.amount, currency),
       (p.paymentMethod || '—').replace('_', ' ').slice(0, 10),
       (p.reference || '—').slice(0, 12),
@@ -254,7 +252,7 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
 
     autoTable(doc, {
       startY: y,
-      head: [['Date', 'Supplier', 'Amount', 'Method', 'Ref', 'Notes']],
+      head: [['Date', 'Affiliate', 'Amount', 'Method', 'Ref', 'Notes']],
       body: tableData,
       theme: 'plain',
       tableWidth,
@@ -286,7 +284,6 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
     y += 12
   }
 
-  // Footer
   const pageHeight = doc.internal.pageSize.height
   doc.setDrawColor(229, 231, 235)
   doc.setLineWidth(0.2)
@@ -298,16 +295,15 @@ export async function generateSupplierPaymentsReportPdf(report: SupplierPayments
   doc.text(`Generated ${formatDate(generatedAt)}`, 105, pageHeight - 8, { align: 'center' })
 
   const safeName = business.name.replace(/[^a-z0-9]/gi, '-').slice(0, 30)
-  doc.save(`supplier-payments-report-${safeName}-${new Date(generatedAt).toISOString().split('T')[0]}.pdf`)
+  doc.save(`affiliate-payments-report-${safeName}-${new Date(generatedAt).toISOString().split('T')[0]}.pdf`)
 }
 
-/** Fetch report from API and trigger PDF download */
-export async function fetchAndDownloadSupplierPaymentsReportPdf(businessId: string): Promise<void> {
-  const res = await fetch(`/api/admin/stores/${businessId}/cost-margins/supplier-payments/report`)
+export async function fetchAndDownloadAffiliatePaymentsReportPdf(businessId: string): Promise<void> {
+  const res = await fetch(`/api/admin/stores/${businessId}/affiliates/payments/report`)
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.error || 'Failed to load supplier payments report')
+    throw new Error(err.error || 'Failed to load affiliate payments report')
   }
   const report = await res.json()
-  await generateSupplierPaymentsReportPdf(report)
+  await generateAffiliatePaymentsReportPdf(report)
 }

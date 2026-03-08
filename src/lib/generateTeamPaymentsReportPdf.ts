@@ -127,20 +127,46 @@ export async function generateTeamPaymentsReportPdf(report: TeamPaymentsReportDa
 
   const pad = 17
   const right = 193
+  const tableWidth = right - pad // 176 - match invoice
   let y = pad
 
-  // Business logo
+  // Header - match invoice: business left, report title right (no logo overlap)
+  const logoWidth = 40
+  const logoHeight = 12
   const logoData = await loadLogo(business.logo)
   if (logoData) {
     try {
-      doc.addImage(logoData.base64, 'PNG', pad, y - 2, logoData.width, logoData.height)
+      const lw = Math.min(logoData.width, logoWidth)
+      const lh = Math.min(logoData.height, logoHeight)
+      doc.addImage(logoData.base64, 'PNG', pad, y, lw, lh)
     } catch {
       // Skip if image fails
     }
   }
-  y += 14
+  // Business name - right of logo to avoid overlap (invoice: business name first)
+  const textLeft = logoData ? pad + logoWidth + 8 : pad
+  const nameY = logoData ? y + logoHeight + 4 : y
+  doc.setFontSize(18)
+  doc.setTextColor(TEAL[0], TEAL[1], TEAL[2])
+  doc.text(business.name, textLeft, nameY)
+  doc.setFontSize(10)
+  doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
+  let textY = nameY + 6
+  if (business.address) {
+    doc.text(business.address, textLeft, textY)
+    textY += 5
+  }
+  if (business.phone) {
+    doc.text(business.phone, textLeft, textY)
+    textY += 5
+  }
+  if (business.email) {
+    doc.text(business.email, textLeft, textY)
+    textY += 5
+  }
+  y = Math.max(textY + 4, y + (logoData ? logoHeight + 8 : 10))
 
-  // Report title
+  // Report title right-aligned (match invoice: INVOICE # on right)
   doc.setFontSize(18)
   doc.setTextColor(GRAY_900[0], GRAY_900[1], GRAY_900[2])
   doc.text('Team Payments Report', right, pad + 6, { align: 'right' })
@@ -148,33 +174,11 @@ export async function generateTeamPaymentsReportPdf(report: TeamPaymentsReportDa
   doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
   doc.text(`As of ${formatDate(generatedAt)}`, right, pad + 12, { align: 'right' })
 
-  // Business name
-  doc.setFontSize(14)
-  doc.setTextColor(TEAL[0], TEAL[1], TEAL[2])
-  doc.text(business.name, pad, y)
-  y += 6
-
-  doc.setFontSize(10)
-  doc.setTextColor(GRAY_600[0], GRAY_600[1], GRAY_600[2])
-  if (business.address) {
-    doc.text(business.address, pad, y)
-    y += 5
-  }
-  if (business.phone) {
-    doc.text(business.phone, pad, y)
-    y += 5
-  }
-  if (business.email) {
-    doc.text(business.email, pad, y)
-    y += 5
-  }
-  y += 8
-
-  // Divider
+  // Divider (match invoice: border-b-2)
   doc.setDrawColor(TEAL[0], TEAL[1], TEAL[2])
   doc.setLineWidth(0.5)
-  doc.line(pad, y, right, y)
-  y += 12
+  doc.line(pad, y + 2, right, y + 2)
+  y += 18
 
   // Summary
   doc.setFontSize(12)
@@ -209,24 +213,26 @@ export async function generateTeamPaymentsReportPdf(report: TeamPaymentsReportDa
       head: [['Team Member', 'Payments', 'Total Paid']],
       body: memberTableData,
       theme: 'plain',
-      tableWidth: right - pad,
+      tableWidth,
       margin: { left: pad, right: pad },
       headStyles: {
-        fillColor: [243, 244, 246] as [number, number, number],
-        textColor: GRAY_600,
+        fillColor: [255, 255, 255],
+        textColor: [55, 65, 81],
         fontStyle: 'normal',
         font: fontName,
-        fontSize: 9,
-        cellPadding: 3
+        lineWidth: 0.1,
+        lineColor: [229, 231, 235],
+        cellPadding: 2
       },
-      styles: { fontSize: 8, textColor: GRAY_900, font: fontName, cellPadding: 2 },
+      styles: { fontSize: 9, textColor: [17, 24, 39], font: fontName, cellPadding: 2 },
       columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 35, halign: 'center' },
-        2: { cellWidth: 45, halign: 'right' }
+        0: { cellWidth: 100 },
+        1: { cellWidth: 36, halign: 'center' },
+        2: { cellWidth: 40, halign: 'right' }
       },
       tableLineColor: [229, 231, 235],
-      tableLineWidth: 0.1
+      tableLineWidth: 0.1,
+      pageBreak: 'auto'
     })
 
     y = (doc as any).lastAutoTable?.finalY ?? y
@@ -241,37 +247,38 @@ export async function generateTeamPaymentsReportPdf(report: TeamPaymentsReportDa
     y += 8
 
     const tableData = payments.map((p) => [
-      p.recipientName.slice(0, 25),
+      p.recipientName.slice(0, 20),
       formatDate(p.paidAt),
       p.paymentMethod,
       formatCurrency(p.amount, currency),
-      (p.paidFrom || '—').slice(0, 20),
-      (p.notes || '—').slice(0, 30)
+      (p.paidFrom || '—').slice(0, 12),
+      (p.notes || '—').slice(0, 20)
     ])
 
     autoTable(doc, {
       startY: y,
-      head: [['Recipient', 'Date', 'Method', 'Amount', 'Paid From', 'Notes']],
+      head: [['Recipient', 'Date', 'Method', 'Amount', 'From', 'Notes']],
       body: tableData,
       theme: 'plain',
-      tableWidth: right - pad,
+      tableWidth,
       margin: { left: pad, right: pad },
       headStyles: {
-        fillColor: [243, 244, 246] as [number, number, number],
-        textColor: GRAY_600,
+        fillColor: [255, 255, 255],
+        textColor: [55, 65, 81],
         fontStyle: 'normal',
         font: fontName,
-        fontSize: 9,
-        cellPadding: 3
+        lineWidth: 0.1,
+        lineColor: [229, 231, 235],
+        cellPadding: 2
       },
-      styles: { fontSize: 8, textColor: GRAY_900, font: fontName, cellPadding: 2 },
+      styles: { fontSize: 9, textColor: [17, 24, 39], font: fontName, cellPadding: 2 },
       columnStyles: {
         0: { cellWidth: 38 },
-        1: { cellWidth: 32 },
-        2: { cellWidth: 25 },
+        1: { cellWidth: 28 },
+        2: { cellWidth: 24 },
         3: { cellWidth: 32, halign: 'right' },
-        4: { cellWidth: 32 },
-        5: { cellWidth: 35 }
+        4: { cellWidth: 26 },
+        5: { cellWidth: 28 }
       },
       tableLineColor: [229, 231, 235],
       tableLineWidth: 0.1,

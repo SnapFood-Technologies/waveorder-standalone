@@ -11,9 +11,11 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { fetchAndDownloadAffiliatePaymentsReportPdf } from '@/lib/generateAffiliatePaymentsReportPdf'
 
 interface AffiliatePaymentsProps {
   businessId: string
@@ -59,6 +61,7 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
   const [affiliates, setAffiliates] = useState<Array<{ id: string; name: string; email: string | null }>>([])
   const [showAddPayment, setShowAddPayment] = useState(false)
   const [addingPayment, setAddingPayment] = useState(false)
+  const [pdfGenerating, setPdfGenerating] = useState(false)
   const [newPayment, setNewPayment] = useState({
     affiliateId: '',
     amount: '',
@@ -192,6 +195,22 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
     }
   }
 
+  const handleDownloadPdf = async () => {
+    setPdfGenerating(true)
+    const toastId = toast.loading(
+      'Generating PDF... This may take a moment if you have many payments. Please be patient.',
+      { duration: 5000 }
+    )
+    try {
+      await fetchAndDownloadAffiliatePaymentsReportPdf(businessId)
+      toast.success('PDF downloaded', { id: toastId })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to generate PDF', { id: toastId })
+    } finally {
+      setPdfGenerating(false)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -255,7 +274,24 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Affiliate Payments</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Record and track payments made to affiliates</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfGenerating}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pdfGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </>
+            )}
+          </button>
           <button
             onClick={fetchPayments}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
