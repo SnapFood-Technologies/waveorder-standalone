@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Coins
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   id: string
@@ -409,7 +410,13 @@ export default function SuperAdminAiUsagePage() {
                           {m.role === 'user' ? 'Customer' : 'AI'}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</p>
+                          {m.role === 'assistant' ? (
+                            <div className="text-sm text-gray-900 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:space-y-0.5 [&_li]:my-0 [&_strong]:font-semibold prose prose-sm max-w-none">
+                              <ReactMarkdown>{m.content}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap">{m.content}</p>
+                          )}
                           <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <p className="text-xs text-gray-500 flex items-center gap-1">
                               <Calendar className="w-3 h-3" />
