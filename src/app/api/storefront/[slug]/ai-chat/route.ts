@@ -110,7 +110,7 @@ function buildSystemPrompt(storeData: {
   showServiceDuration?: boolean
   products: ProductContext[]
   productCountNote?: string
-  postalPricing?: Array<{ cityName: string; price: number; deliveryTime?: string | null; deliveryTimeEl?: string | null }>
+  postalPricing?: Array<{ cityName: string; price: number; deliveryTime?: string | null; deliveryTimeAl?: string | null; deliveryTimeEl?: string | null; postalName?: string }>
   deliveryZones?: Array<{ name: string; maxDistance: number; fee: number }>
 }): string {
   const lang = storeData.storefrontLanguage || 'en'
@@ -167,11 +167,11 @@ function buildSystemPrompt(storeData: {
       ? `Delivery zones (address autocomplete detects zone by distance - ONLY these zones; if outside, say to contact store): ${storeData.deliveryZones?.map((z) => `${z.name}: up to ${z.maxDistance}km, ${storeData.currency} ${z.fee}`).join('; ')}`
       : '',
     storeData.postalPricing?.length
-      ? `City-specific delivery (RETAIL - ONLY these cities have pricing; if asked about another city, say to contact store): ${storeData.postalPricing
-          .map(
-            (p) =>
-              `${p.cityName}: ${storeData.currency} ${p.price}${p.deliveryTimeEl || p.deliveryTime ? `, ${p.deliveryTimeEl || p.deliveryTime}` : ''}`
-          )
+      ? `City-specific delivery (RETAIL - ONLY these cities have pricing; if asked about another city, say to contact store). NEVER use business deliveryFee when this list exists: ${storeData.postalPricing
+          .map((p) => {
+            const time = storeData.storefrontLanguage === 'el' ? (p.deliveryTimeEl || p.deliveryTime) : storeData.storefrontLanguage === 'sq' || storeData.storefrontLanguage === 'al' ? (p.deliveryTimeAl || p.deliveryTime) : p.deliveryTime
+            return `${p.cityName}: ${storeData.currency} ${p.price}${time ? `, ${time}` : ''}${p.postalName ? ` (${p.postalName})` : ''}`
+          })
           .join('; ')}`
       : storeData.businessType === 'RETAIL' && storeData.deliveryEnabled
         ? 'RETAIL with delivery but no city pricing in data - recommend customer contact store for quote.'
@@ -245,7 +245,7 @@ function buildSystemPrompt(storeData: {
       notificationStr
   }
 
-  // Format product/service for prompt - full format with variants/modifiers/description
+  // Format product/service for prompt - name, price, category, variants/modifiers. NO description (avoids cropped/inconsistent list output).
   const formatItemFull = (p: ProductContext): string => {
     const base = `${p.name}: ${storeData.currency} ${p.price}`
     const extras: string[] = []
@@ -259,7 +259,6 @@ function buildSystemPrompt(storeData: {
       const modStr = p.modifiers.map((m) => `${m.name} ${storeData.currency} ${m.price}`).join(', ')
       extras.push(`Add-ons: ${modStr}`)
     }
-    if (p.description) extras.push(p.description.slice(0, 60) + (p.description.length > 60 ? '...' : ''))
     return `- ${base}${extras.length ? ' ' + extras.join(' | ') : ''}`
   }
 
@@ -355,16 +354,19 @@ CRITICAL - LANGUAGE HANDLING (check this FIRST before answering):
 - If the user writes in the SAME language as the store, respond directly in that language.
 - Only after the user has chosen (or wrote in the same language) should you answer their question.
 
+CONTEXT - WHERE THE USER IS:
+- The user is chatting from WITHIN the WaveOrder storefront — the chat is embedded on the same page they are viewing. When suggesting they browse more products, say "browse the categories on this page", "scroll through the store above", or "use the category filters here" — NOT "our website", "internet page", "faqen tonë të internetit", or similar. They are already on the store.
+
 RULES:
 - Only answer questions about this store. Politely decline unrelated questions.
 - If asked about a product/service that doesn't exist, say so honestly.
 - When mentioning products or services, include the price and duration (for services).
-- FORMATTING: When listing products or services, use clear bullet points. Format each item on its own line with a dash, e.g. "- Product Name: EUR 10" or "- Service Name: EUR 20 (30 min)". Put a blank line before the list if it follows introductory text. Do not run multiple items together on one line.
+- FORMATTING: When listing products or services, ALWAYS use this exact format. One item per line with a dash. Product names in bold with **. NO descriptions in the list. Example: "- **Product Name**: CURRENCY price" or "- **Service Name**: CURRENCY price (30 min)". Use names and prices only — do NOT include product descriptions in lists (they get cropped and look inconsistent). Put a blank line before the list if it follows introductory text. Do not run multiple items together on one line.
 - If asked how to order or book, explain: ${orderingInstructions}
 - Keep answers concise (2-3 sentences unless more detail is requested).
 - Never make up information not provided in the store data.
 - Do not discuss competitor stores or other businesses.
-- CRITICAL for delivery: Use ONLY the delivery fee and time from the data above. If city-specific or zone data exists, use it. Do NOT assume values (e.g. "30-45 min" or "free delivery" unless in data).
+- CRITICAL for delivery: Use ONLY the delivery fee and time from the data above. If "City-specific delivery" list exists, ALWAYS use that — list the cities with their prices. NEVER say delivery is 0 or use business deliveryFee when city-specific pricing is provided. If city-specific or zone data exists, use it. Do NOT assume values (e.g. "30-45 min" or "free delivery" unless in data).
 - If asked about delivery to a city/location NOT in the data: say "I don't have pricing for that area. Please contact the store directly for a quote."
 - If data is missing or unclear: say "For the most accurate information, I recommend confirming with the store via WhatsApp or phone."
 - Do NOT echo or confirm incorrect information from the user. If they state something wrong (e.g. "I heard delivery is 30 min"), correct it using the data.
@@ -498,20 +500,36 @@ export async function POST(
 
     const businessIds = [business.id]
 
-    // For RETAIL: fetch city-specific postal pricing (fee + delivery time per city)
-    let postalPricing: Array<{ cityName: string; price: number; deliveryTime?: string | null; deliveryTimeEl?: string | null }> = []
+    // For RETAIL: fetch city-specific postal pricing (matches storefront logic - filter deletedAt in memory)
+    let postalPricing: Array<{ cityName: string; price: number; deliveryTime?: string | null; deliveryTimeAl?: string | null; deliveryTimeEl?: string | null; postalName?: string }> = []
     if (business.businessType === 'RETAIL') {
-      const postal = await prisma.postalPricing.findMany({
-        where: { businessId: business.id, deletedAt: null, type: 'normal' },
-        select: { cityName: true, price: true, deliveryTime: true, deliveryTimeEl: true },
-        take: 100
+      const storefrontLang = business.storefrontLanguage || business.language || 'en'
+      const rawPostal = await prisma.postalPricing.findMany({
+        where: { businessId: business.id, type: 'normal' },
+        select: {
+          cityName: true,
+          price: true,
+          deliveryTime: true,
+          deliveryTimeAl: true,
+          deliveryTimeEl: true,
+          deletedAt: true,
+          postal: { select: { name: true, nameAl: true, nameEl: true, isActive: true } }
+        },
+        orderBy: [{ cityName: 'asc' }, { price: 'asc' }],
+        take: 200
       })
-      postalPricing = postal.map((p) => ({
-        cityName: p.cityName,
-        price: p.price,
-        deliveryTime: p.deliveryTime,
-        deliveryTimeEl: p.deliveryTimeEl
-      }))
+      const active = rawPostal.filter((p) => !p.deletedAt && p.postal?.isActive)
+      postalPricing = active.map((p) => {
+        const postalName = storefrontLang === 'el' ? (p.postal?.nameEl || p.postal?.name) : storefrontLang === 'sq' || storefrontLang === 'al' ? (p.postal?.nameAl || p.postal?.name) : p.postal?.name
+        return {
+          cityName: p.cityName,
+          price: p.price,
+          deliveryTime: p.deliveryTime,
+          deliveryTimeAl: p.deliveryTimeAl,
+          deliveryTimeEl: p.deliveryTimeEl,
+          postalName: postalName || undefined
+        }
+      })
     }
 
     // For RESTAURANT/CAFE/GROCERY: fetch delivery zones (distance-based fee)
@@ -575,7 +593,7 @@ export async function POST(
       )
       const categoryProductArrays = await Promise.all(productPromises)
       products = categoryProductArrays.flat().slice(0, MAX_SAMPLED_PRODUCTS)
-      productCountNote = `This store has ${totalProductCount} products. Below is a representative sample by category. For specific product requests, suggest browsing by category on the storefront.`
+      productCountNote = `This store has ${totalProductCount} products. Below is a representative sample by category. When suggesting users see more: they are ALREADY on the store page — say "browse the categories on this page" or "scroll through the store above", NOT "our website" or "internet page".`
     }
 
     const storefrontLang = business.storefrontLanguage || business.language || 'en'

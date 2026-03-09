@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { MessageSquare, HelpCircle, Bot, X, Send, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 export type AiChatIconType = 'message' | 'help' | 'robot'
 export type AiChatIconSizeType = 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
@@ -316,14 +317,14 @@ export function AiChatBubble({
                 className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                     m.role === 'user'
-                      ? 'text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'text-white whitespace-pre-wrap'
+                      : 'bg-gray-100 text-gray-900 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:my-0.5 [&_strong]:font-semibold'
                   }`}
                   style={m.role === 'user' ? { backgroundColor: primaryColor } : {}}
                 >
-                  {m.content}
+                  {m.role === 'user' ? m.content : <ReactMarkdown>{m.content}</ReactMarkdown>}
                 </div>
                 {m.role === 'assistant' && m.messageId && (
                   <div className="flex gap-1 mt-1">
