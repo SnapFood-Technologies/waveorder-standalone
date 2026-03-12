@@ -400,7 +400,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                 className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
               >
                 <Share2 className="w-4 h-4 mr-2" />
-                Export for Meta
+                Export for Meta Catalog
               </button>
             )}
             

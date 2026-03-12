@@ -18,7 +18,7 @@ interface ExportMetaCatalogModalProps {
   onClose: () => void
 }
 
-type ExportScope = 'all' | 'categories' | 'selection'
+type ExportScope = 'all' | 'categories' | 'selection' | 'storefront'
 
 export function ExportMetaCatalogModal({
   businessId,
@@ -73,6 +73,7 @@ export function ExportMetaCatalogModal({
 
   const canExport =
     scope === 'all' ||
+    scope === 'storefront' ||
     (scope === 'categories' && selectedCategoryIds.length > 0) ||
     (scope === 'selection' && selectedProductIds.length > 0)
 
@@ -146,6 +147,22 @@ export function ExportMetaCatalogModal({
                 ))}
               </div>
             )}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="radio"
+                name="scope"
+                checked={scope === 'storefront'}
+                onChange={() => setScope('storefront')}
+                className="mt-1 text-teal-600"
+              />
+              <div>
+                <span className="font-medium text-gray-900">StoreFront visible products</span>
+                <p className="text-xs text-gray-500">
+                  Only products that match storefront visibility (e.g. with photos if enabled, in stock)
+                </p>
+              </div>
+            </label>
 
             <label className="flex items-start gap-3 cursor-pointer">
               <input

@@ -21,7 +21,9 @@ export async function GET(
         slug: true,
         name: true,
         currency: true,
-        metaCatalogExportEnabled: true
+        metaCatalogExportEnabled: true,
+        hideProductsWithoutPhotos: true,
+        showStockBadge: true
       }
     })
 
@@ -56,7 +58,20 @@ export async function GET(
       where.id = { in: productIds }
     }
 
-    const products = await prisma.product.findMany({
+    // StoreFront visible: apply same visibility rules as storefront
+    if (scope === 'storefront') {
+      if (business.hideProductsWithoutPhotos) {
+        where.images = { isEmpty: false }
+      }
+      if (!business.showStockBadge) {
+        where.OR = [
+          { trackInventory: false },
+          { trackInventory: true, stock: { gt: 0 } }
+        ]
+      }
+    }
+
+    let products = await prisma.product.findMany({
       where,
       include: {
         category: { select: { name: true } },
@@ -65,6 +80,17 @@ export async function GET(
       } as const,
       orderBy: [{ category: { name: 'asc' } }, { name: 'asc' }]
     })
+
+    // StoreFront: filter products with variants by variant stock (same as storefront)
+    if (scope === 'storefront' && !business.showStockBadge) {
+      products = products.filter((p) => {
+        if (!p.trackInventory) return true
+        if (p.variants && p.variants.length > 0) {
+          return p.variants.some((v) => (v.stock ?? 0) > 0)
+        }
+        return (p.stock ?? 0) > 0
+      })
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://waveorder.app'
     const currency = business.currency || 'USD'
