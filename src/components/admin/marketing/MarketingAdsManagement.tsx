@@ -307,6 +307,47 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
           <ExternalLink className="w-4 h-4 mr-1" />
           Meta Pixel – Get started
         </a>
+
+        {/* How to verify */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <p className="text-sm font-medium text-gray-700 mb-2">How to verify the pixel is working</p>
+          {metaPixelId && (
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center mb-3 text-sm text-teal-600 hover:text-teal-700 font-medium"
+            >
+              <ExternalLink className="w-4 h-4 mr-1" />
+              Open your store in a new tab to test
+            </a>
+          )}
+          <ol className="list-decimal list-inside text-sm text-gray-600 space-y-1">
+            <li>
+              <a
+                href="https://chromewebstore.google.com/detail/meta-pixel-helper/fdgfkebogiimcoedlicjlajpkdmockpc"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 hover:text-teal-700"
+              >
+                Install Meta Pixel Helper
+              </a>
+              {' '}(Chrome extension), then visit your storefront – it should show &quot;PageView&quot; when the pixel fires.
+            </li>
+            <li>
+              In{' '}
+              <a
+                href="https://business.facebook.com/events_manager2/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 hover:text-teal-700"
+              >
+                Events Manager
+              </a>
+              , open your Pixel → Test Events, then load your store – PageView events should appear within a few minutes.
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
   )

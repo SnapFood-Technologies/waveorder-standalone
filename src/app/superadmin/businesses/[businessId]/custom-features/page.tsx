@@ -554,6 +554,15 @@ export default function ManageCustomFeaturesPage() {
                 <ExternalLink className="w-3.5 h-3.5" />
                 Meta Pixel – Get started
               </a>
+              <a
+                href="https://developers.facebook.com/docs/meta-pixel/get-started/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-teal-600 hover:text-teal-700"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Get your Pixel ID
+              </a>
             </div>
           </div>
 
