@@ -196,7 +196,7 @@ export async function GET(
 
     const csvData = rows.map((r) => headerKeys.map((k) => r[k] ?? ''))
     const csv = Papa.unparse({
-      fields: headerKeys,
+      fields: [...headerKeys],
       data: csvData
     })
     const csvWithBom = '\uFEFF' + csv // UTF-8 BOM for Excel/Meta compatibility
