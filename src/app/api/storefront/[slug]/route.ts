@@ -818,6 +818,8 @@ export async function GET(
       
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
+      metaPixelEnabled: business.metaPixelEnabled || false,
+      metaPixelId: business.metaPixelId || null,
       aiChatIcon: business.aiChatIcon || 'message',
       aiChatIconSize: business.aiChatIconSize || 'medium',
       aiChatName: business.aiChatName || 'AI Assistant',
