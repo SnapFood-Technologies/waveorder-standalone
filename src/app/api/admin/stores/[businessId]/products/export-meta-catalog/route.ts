@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import Papa from 'papaparse'
 
 export async function GET(
   request: NextRequest,
@@ -95,13 +96,12 @@ export async function GET(
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://waveorder.app'
     const currency = business.currency || 'USD'
 
-    const escapeCsv = (val: string | number | undefined | null): string => {
+    const cleanText = (val: string | undefined | null): string => {
       if (val === undefined || val === null) return ''
-      const s = String(val)
-      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
-        return `"${s.replace(/"/g, '""')}"`
-      }
-      return s
+      return String(val)
+        .replace(/<[^>]*>/g, ' ') // Strip HTML
+        .replace(/\s+/g, ' ')
+        .trim()
     }
 
     const formatPrice = (price: number) => `${price.toFixed(2)} ${currency}`
@@ -114,13 +114,22 @@ export async function GET(
       return `${s}/${e}`
     }
 
-    const rows: string[][] = []
+    const headerKeys = [
+      'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link',
+      'brand', 'google_product_category', 'fb_product_category', 'quantity_to_sell_on_facebook',
+      'sale_price', 'sale_price_effective_date', 'item_group_id', 'gender', 'color', 'size',
+      'age_group', 'material', 'pattern', 'shipping', 'shipping_weight',
+      'video[0].url', 'video[0].tag[0]', 'gtin', 'product_tags[0]', 'product_tags[1]', 'style[0]'
+    ] as const
+
+    const rows: Record<string, string>[] = []
 
     for (const p of products) {
-      const productLink = `${baseUrl}/${business.slug}?ps=${p.id}`
       const imageLink = p.images?.[0] || ''
-      const desc = (p.description || '').replace(/\s+/g, ' ').trim().slice(0, 9999)
-      const title = p.name.slice(0, 200)
+      if (!imageLink) continue // Meta requires image_link; skip products without images
+      const productLink = `${baseUrl}/${business.slug}?ps=${p.id}`
+      const desc = cleanText(p.description).slice(0, 9999)
+      const title = cleanText(p.name).slice(0, 200)
       const availability = p.trackInventory
         ? (p.stock > 0 ? 'in stock' : 'out of stock')
         : 'in stock'
@@ -131,118 +140,83 @@ export async function GET(
       const salePriceEffectiveDate = isOnSale && p.saleStartDate && p.saleEndDate ? formatSaleDate(p.saleStartDate, p.saleEndDate) : ''
 
       const brand = p.brand?.name || business.name
-      const categoryName = (p.category as { name?: string })?.name || ''
+      const categoryName = cleanText((p.category as { name?: string })?.name || '')
       const quantity = p.trackInventory ? Math.max(0, p.stock) : 999
+
+      const emptyRow = (): Record<string, string> => {
+        const r: Record<string, string> = {}
+        headerKeys.forEach((k) => { r[k] = '' })
+        return r
+      }
 
       if (p.variants && p.variants.length > 0) {
         for (const v of p.variants) {
           const variantId = v.sku || `${p.id}-${v.id}`
-          const variantTitle = `${title} - ${v.name}`.slice(0, 200)
+          const variantTitle = `${title} - ${cleanText(v.name)}`.slice(0, 200)
           const variantPrice = v.price
           const variantStock = p.trackInventory ? (v.stock ?? 0) : 999
           const variantAvailability = p.trackInventory ? (variantStock > 0 ? 'in stock' : 'out of stock') : 'in stock'
 
-          rows.push([
-            escapeCsv(variantId),
-            escapeCsv(variantTitle),
-            escapeCsv(desc),
-            variantAvailability,
-            'new',
-            formatPrice(variantPrice),
-            productLink,
-            imageLink,
-            escapeCsv(brand),
-            escapeCsv(categoryName),
-            escapeCsv(categoryName),
-            String(variantStock),
-            '',
-            '',
-            p.id,
-            '',
-            escapeCsv(v.name),
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            ''
-          ])
+          const row = emptyRow()
+        'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link',
+        'brand', 'google_product_category', 'fb_product_category', 'quantity_to_sell_on_facebook',
+        'sale_price', 'sale_price_effective_date', 'item_group_id', 'gender', 'color', 'size',
+        'age_group', 'material', 'pattern', 'shipping', 'shipping_weight',
+        'video[0].url', 'video[0].tag[0]', 'gtin', 'product_tags[0]', 'product_tags[1]', 'style[0]'
+      ] as const
+
+      if (p.variants && p.variants.length > 0) {
+        for (const v of p.variants) {
+          const variantId = v.sku || `${p.id}-${v.id}`
+          const variantTitle = `${title} - ${cleanText(v.name)}`.slice(0, 200)
+          const variantPrice = v.price
+          const variantStock = p.trackInventory ? (v.stock ?? 0) : 999
+          const variantAvailability = p.trackInventory ? (variantStock > 0 ? 'in stock' : 'out of stock') : 'in stock'
+
+          row.id = variantId
+          row.title = variantTitle
+          row.description = desc
+          row.availability = variantAvailability
+          row.condition = 'new'
+          row.price = formatPrice(variantPrice)
+          row.link = productLink
+          row.image_link = imageLink
+          row.brand = brand
+          row.google_product_category = categoryName
+          row.fb_product_category = categoryName
+          row.quantity_to_sell_on_facebook = String(variantStock)
+          row.item_group_id = p.id
+          row.size = cleanText(v.name)
+          rows.push(row)
         }
       } else {
-        rows.push([
-          escapeCsv(p.sku || p.id),
-          escapeCsv(title),
-          escapeCsv(desc),
-          availability,
-          'new',
-          formatPrice(regularPrice),
-          productLink,
-          imageLink,
-          escapeCsv(brand),
-          escapeCsv(categoryName),
-          escapeCsv(categoryName),
-          String(quantity),
-          salePrice,
-          salePriceEffectiveDate,
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          '',
-          ''
-        ])
+        const row = emptyRow()
+        row.id = p.sku || p.id
+        row.title = title
+        row.description = desc
+        row.availability = availability
+        row.condition = 'new'
+        row.price = formatPrice(regularPrice)
+        row.link = productLink
+        row.image_link = imageLink
+        row.brand = brand
+        row.google_product_category = categoryName
+        row.fb_product_category = categoryName
+        row.quantity_to_sell_on_facebook = String(quantity)
+        row.sale_price = salePrice
+        row.sale_price_effective_date = salePriceEffectiveDate
+        rows.push(row)
       }
     }
 
-    const header = [
-      'id',
-      'title',
-      'description',
-      'availability',
-      'condition',
-      'price',
-      'link',
-      'image_link',
-      'brand',
-      'google_product_category',
-      'fb_product_category',
-      'quantity_to_sell_on_facebook',
-      'sale_price',
-      'sale_price_effective_date',
-      'item_group_id',
-      'gender',
-      'color',
-      'size',
-      'age_group',
-      'material',
-      'pattern',
-      'shipping',
-      'shipping_weight',
-      'video[0].url',
-      'video[0].tag[0]',
-      'gtin',
-      'product_tags[0]',
-      'product_tags[1]',
-      'style[0]'
-    ]
+    const csvData = rows.map((r) => headerKeys.map((k) => r[k] ?? ''))
+    const csv = Papa.unparse({
+      fields: headerKeys,
+      data: csvData
+    })
+    const csvWithBom = '\uFEFF' + csv // UTF-8 BOM for Excel/Meta compatibility
 
-    const csvLines = [header.join(','), ...rows.map((r) => r.join(','))]
-    const csv = csvLines.join('\n')
-
-    return new Response(csv, {
+    return new Response(csvWithBom, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': `attachment; filename="catalog_products_${business.slug}.csv"`
