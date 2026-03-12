@@ -158,21 +158,6 @@ export async function GET(
           const variantAvailability = p.trackInventory ? (variantStock > 0 ? 'in stock' : 'out of stock') : 'in stock'
 
           const row = emptyRow()
-        'id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link',
-        'brand', 'google_product_category', 'fb_product_category', 'quantity_to_sell_on_facebook',
-        'sale_price', 'sale_price_effective_date', 'item_group_id', 'gender', 'color', 'size',
-        'age_group', 'material', 'pattern', 'shipping', 'shipping_weight',
-        'video[0].url', 'video[0].tag[0]', 'gtin', 'product_tags[0]', 'product_tags[1]', 'style[0]'
-      ] as const
-
-      if (p.variants && p.variants.length > 0) {
-        for (const v of p.variants) {
-          const variantId = v.sku || `${p.id}-${v.id}`
-          const variantTitle = `${title} - ${cleanText(v.name)}`.slice(0, 200)
-          const variantPrice = v.price
-          const variantStock = p.trackInventory ? (v.stock ?? 0) : 999
-          const variantAvailability = p.trackInventory ? (variantStock > 0 ? 'in stock' : 'out of stock') : 'in stock'
-
           row.id = variantId
           row.title = variantTitle
           row.description = desc
