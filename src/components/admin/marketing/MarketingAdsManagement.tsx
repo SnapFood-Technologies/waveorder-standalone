@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Share2, Copy, Check, ExternalLink, Target, Code } from 'lucide-react'
+import { Share2, Copy, Check, ExternalLink, Target, Code, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 
 interface MarketingAdsManagementProps {
   businessId: string
@@ -27,6 +27,9 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
   const [copied, setCopied] = useState(false)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [showSnippetExtractor, setShowSnippetExtractor] = useState(false)
+  const [snippetPaste, setSnippetPaste] = useState('')
+  const [extractError, setExtractError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -58,6 +61,33 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('Failed to copy:', error)
+    }
+  }
+
+  /** Extract Pixel ID from Meta's full snippet (fbq('init', 'ID') or id=ID in noscript img) */
+  const extractPixelIdFromSnippet = (text: string): string | null => {
+    if (!text || !text.trim()) return null
+    const s = text.trim()
+    // Match fbq('init', '1234567890123456') or fbq("init", "1234567890123456")
+    const fbqMatch = s.match(/fbq\s*\(\s*['"]init['"]\s*,\s*['"]?(\d{15,20})['"]?\s*\)/)
+    if (fbqMatch) return fbqMatch[1]
+    // Match id=1234567890123456 in facebook.com/tr URL
+    const idMatch = s.match(/facebook\.com\/tr\?[^"'\s]*id=(\d{15,20})/)
+    if (idMatch) return idMatch[1]
+    // Fallback: any long digit sequence that looks like a Pixel ID (15-20 digits)
+    const fallback = s.match(/\b(\d{15,20})\b/)
+    return fallback ? fallback[1] : null
+  }
+
+  const handleExtractAndApply = () => {
+    setExtractError(null)
+    const id = extractPixelIdFromSnippet(snippetPaste)
+    if (id) {
+      setMetaPixelId(id)
+      setSnippetPaste('')
+      setShowSnippetExtractor(false)
+    } else {
+      setExtractError('Could not find a Pixel ID in the pasted code. Make sure you pasted the full Meta Pixel snippet from Events Manager.')
     }
   }
 
@@ -154,13 +184,13 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
           </ul>
         </div>
         <a
-          href="https://www.facebook.com/business/help/331612538028890"
+          href="https://developers.facebook.com/docs/meta-pixel/get-started/"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center mt-4 text-sm text-teal-600 hover:text-teal-700"
         >
           <ExternalLink className="w-4 h-4 mr-1" />
-          Meta guide: Set up the Meta Pixel
+          Meta Pixel – Get started
         </a>
       </div>
 
@@ -171,7 +201,7 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
           <h2 className="text-lg font-semibold text-gray-900">Configure Meta Pixel</h2>
         </div>
         <p className="text-gray-600 mb-4">
-          Enter your Meta Pixel ID to enable tracking on your storefront. The pixel will fire on page views, add to cart, and purchases. Get your Pixel ID from Meta Events Manager.
+          Enter your Meta Pixel ID to enable tracking on your storefront. WaveOrder injects the base code automatically – you only need the ID (e.g. 2116713132419922), not the full script. The pixel fires PageView on every page load. Get your Pixel ID from Meta Events Manager.
         </p>
 
         {successMessage && (
@@ -186,6 +216,53 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
         )}
 
         <div className="space-y-4">
+          {/* Snippet extractor – paste full Meta code, we extract the ID */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => {
+                setShowSnippetExtractor(!showSnippetExtractor)
+                setExtractError(null)
+              }}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left text-sm font-medium text-gray-700"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Have the full Meta Pixel code? Paste it here and we&apos;ll extract the ID for you
+              </span>
+              {showSnippetExtractor ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {showSnippetExtractor && (
+              <div className="p-4 border-t border-gray-200 bg-white">
+                <p className="text-sm text-gray-600 mb-2">
+                  Paste the full Meta Pixel snippet from Events Manager (the code between &lt;script&gt; and &lt;/script&gt;, or the entire block). We&apos;ll extract your Pixel ID and apply it.
+                </p>
+                <textarea
+                  value={snippetPaste}
+                  onChange={(e) => {
+                    setSnippetPaste(e.target.value)
+                    setExtractError(null)
+                  }}
+                  placeholder={`Paste your Meta Pixel code here, e.g.:\nfbq('init', '2116713132419922');\nfbq('track', 'PageView');`}
+                  rows={4}
+                  className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:border-teal-500 focus:ring-teal-500"
+                />
+                {extractError && (
+                  <p className="mt-2 text-sm text-red-600">{extractError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleExtractAndApply}
+                  disabled={!snippetPaste.trim()}
+                  className="mt-3 inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Extract Pixel ID & Apply
+                </button>
+              </div>
+            )}
+          </div>
+
           <div>
             <label htmlFor="metaPixelId" className="block text-sm font-medium text-gray-700 mb-1">
               Meta Pixel ID
@@ -199,7 +276,7 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
               className="block w-full max-w-md rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-teal-500"
             />
             <p className="mt-1 text-xs text-gray-500">
-              Leave empty to disable the pixel. Find your Pixel ID in Meta Events Manager → Data Sources → Your Pixel.
+              Leave empty to disable the pixel. Or use the helper above to paste the full Meta snippet and extract it.
             </p>
           </div>
           <button
@@ -222,13 +299,13 @@ export default function MarketingAdsManagement({ businessId }: MarketingAdsManag
         </div>
 
         <a
-          href="https://www.facebook.com/business/help/952192354843755"
+          href="https://developers.facebook.com/docs/meta-pixel/get-started/"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center mt-4 text-sm text-teal-600 hover:text-teal-700"
         >
           <ExternalLink className="w-4 h-4 mr-1" />
-          Meta guide: Add the Pixel to your website
+          Meta Pixel – Get started
         </a>
       </div>
     </div>

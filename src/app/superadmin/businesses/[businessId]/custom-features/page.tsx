@@ -546,22 +546,13 @@ export default function ManageCustomFeaturesPage() {
             <div className="space-y-2 text-xs">
               <p className="font-medium text-gray-700">Guides for business:</p>
               <a
-                href="https://www.facebook.com/business/help/952192354843755"
+                href="https://developers.facebook.com/docs/meta-pixel/get-started/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-teal-600 hover:text-teal-700"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Meta Pixel setup
-              </a>
-              <a
-                href="https://www.facebook.com/business/help/331612538028890"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-teal-600 hover:text-teal-700"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Get your Pixel ID
+                Meta Pixel – Get started
               </a>
             </div>
           </div>
