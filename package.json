@@ -71,6 +71,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.16",
     "@types/papaparse": "^5.3.16",
@@ -78,17 +80,15 @@
     "@types/react-dom": "^19",
     "@types/stripe": "^8.0.416",
     "@types/uuid": "^11.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9",
     "eslint-config-next": "15.5.7",
+    "jsdom": "^25.0.1",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
     "typescript": "5.9.3",
-    "vitest": "^2.1.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "jsdom": "^25.0.1",
-    "@testing-library/react": "^16.0.1",
-    "@testing-library/dom": "^10.4.0",
-    "vite-tsconfig-paths": "^5.1.0"
+    "vite-tsconfig-paths": "^5.1.0",
+    "vitest": "^2.1.0"
   },
   "browserslist": [
     "> 0.5%",

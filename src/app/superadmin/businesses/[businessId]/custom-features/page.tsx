@@ -13,7 +13,8 @@ import {
   Filter,
   AlertCircle,
   CheckCircle,
-  MessageSquare
+  MessageSquare,
+  Share2
 } from 'lucide-react'
 
 const AI_CHAT_MODELS = [
@@ -45,6 +46,7 @@ interface CustomFeatures {
   customFilteringEnabled: boolean
   aiAssistantEnabled: boolean
   aiChatModel: string | null
+  metaCatalogExportEnabled: boolean
 }
 
 interface Business {
@@ -65,7 +67,8 @@ export default function ManageCustomFeaturesPage() {
     customMenuEnabled: false,
     customFilteringEnabled: false,
     aiAssistantEnabled: false,
-    aiChatModel: null
+    aiChatModel: null,
+    metaCatalogExportEnabled: false
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -393,6 +396,39 @@ export default function ManageCustomFeaturesPage() {
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                     features.aiAssistantEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Meta Catalog Export Feature */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Share2 className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Export for Meta Commerce Manager</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Allow business to export products as CSV for Meta Commerce Manager / Facebook Catalog. Export all products, by category, or custom selection.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 rounded">Meta Catalog</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded">CSV Export</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleToggle('metaCatalogExportEnabled')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                  features.metaCatalogExportEnabled ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    features.metaCatalogExportEnabled ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
