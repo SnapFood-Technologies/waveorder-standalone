@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
 import SalonStoreFront from '@/components/storefront/SalonStoreFront'
 import ServicesStoreFront from '@/components/storefront/ServicesStoreFront'
+import MetaPixel from '@/components/storefront/MetaPixel'
 import type { Metadata } from 'next'
 
 interface PageProps {
@@ -516,6 +517,9 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       {/* Canonical URL */}
       <link rel="canonical" href={storeData.canonicalUrl || `https://waveorder.app/${slug}`} />
     
+      {storeData.metaPixelEnabled && storeData.metaPixelId && (
+        <MetaPixel pixelId={storeData.metaPixelId} enabled={true} />
+      )}
       {storeData.businessType === 'SALON' ? (
         <SalonStoreFront storeData={storeData} />
       ) : storeData.businessType === 'SERVICES' ? (

@@ -522,6 +522,10 @@ model Business {
   // Meta Catalog Export (SuperAdmin enables) - Export products for Meta Commerce Manager
   metaCatalogExportEnabled Boolean @default(false)
 
+  // Meta Pixel (SuperAdmin enables) - Client-side tracking for Meta/Facebook Ads
+  metaPixelEnabled Boolean @default(false)
+  metaPixelId     String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
+
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
   legalPagesCtaEnabled Boolean @default(false) // Admin: Show informative CTA above search bar

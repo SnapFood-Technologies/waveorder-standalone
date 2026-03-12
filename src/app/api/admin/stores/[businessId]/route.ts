@@ -146,6 +146,8 @@ export async function GET(
         internalInvoiceEnabled: true, // For Internal Invoice System
         internalExpensesEnabled: true, // For Internal Expenses feature
         metaCatalogExportEnabled: true, // For Meta Commerce Manager export
+        metaPixelEnabled: true, // For Meta Pixel (Ads tracking)
+        metaPixelId: true,
         
         // Inventory display
         showStockBadge: true,

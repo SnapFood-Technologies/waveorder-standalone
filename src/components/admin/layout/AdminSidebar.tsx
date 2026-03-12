@@ -111,6 +111,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false)
+  const [metaPixelEnabled, setMetaPixelEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -159,6 +160,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           setAiAssistantEnabled(data.business?.aiAssistantEnabled || false)
+          setMetaPixelEnabled(data.business?.metaPixelEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -377,13 +379,22 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       // @ts-ignore
       requiredPlan: 'STARTER' as Plan
     },
-    { 
-      name: 'Marketing', 
-      href: `${baseUrl}/marketing`, 
-      icon: Megaphone, 
-      // @ts-ignore
+    // Marketing: when metaPixelEnabled, show General + Ads; otherwise single link
+    // @ts-ignore
+    ...(metaPixelEnabled ? [{
+      name: 'Marketing',
+      icon: Megaphone,
+      requiredPlan: 'STARTER' as Plan,
+      children: [
+        { name: 'General', href: `${baseUrl}/marketing`, icon: Megaphone, requiredPlan: 'STARTER' as Plan },
+        { name: 'Ads', href: `${baseUrl}/marketing/ads`, icon: TrendingUp, requiredPlan: 'STARTER' as Plan }
+      ]
+    }] : [{
+      name: 'Marketing',
+      href: `${baseUrl}/marketing`,
+      icon: Megaphone,
       requiredPlan: 'STARTER' as Plan
-    },
+    }]),
     
     // Help & Support (only show when not impersonating)
     // @ts-ignore
@@ -726,6 +737,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       document.body.style.overflow = 'unset'
     }
   }, [isOpen])
+
+  // Auto-expand Marketing when on marketing/ads and metaPixelEnabled
+  useEffect(() => {
+    if (metaPixelEnabled && pathname?.includes('/marketing')) {
+      setExpandedItems(prev => (prev.includes('Marketing') ? prev : [...prev, 'Marketing']))
+    }
+  }, [metaPixelEnabled, pathname])
 
   const renderNavigationItem = (item: NavigationItem) => {
     const available = isFeatureAvailable(item.requiredPlan)

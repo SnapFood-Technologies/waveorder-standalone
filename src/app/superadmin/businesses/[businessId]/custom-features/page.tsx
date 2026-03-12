@@ -14,7 +14,9 @@ import {
   AlertCircle,
   CheckCircle,
   MessageSquare,
-  Share2
+  Share2,
+  Megaphone,
+  ExternalLink
 } from 'lucide-react'
 
 const AI_CHAT_MODELS = [
@@ -47,6 +49,7 @@ interface CustomFeatures {
   aiAssistantEnabled: boolean
   aiChatModel: string | null
   metaCatalogExportEnabled: boolean
+  metaPixelEnabled: boolean
 }
 
 interface Business {
@@ -68,7 +71,8 @@ export default function ManageCustomFeaturesPage() {
     customFilteringEnabled: false,
     aiAssistantEnabled: false,
     aiChatModel: null,
-    metaCatalogExportEnabled: false
+    metaCatalogExportEnabled: false,
+    metaPixelEnabled: false
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -435,6 +439,39 @@ export default function ManageCustomFeaturesPage() {
             </div>
           </div>
 
+          {/* Meta Pixel Feature */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <Megaphone className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Meta Pixel (Ads Tracking)</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Allow business to add their Meta Pixel to the storefront for ad tracking and retargeting. Minimal version: client-side pixel only. Business configures Pixel ID in Admin → Marketing → Ads.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 rounded">Meta Ads</span>
+                    <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">Minimal v1</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleToggle('metaPixelEnabled')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                  features.metaPixelEnabled ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    features.metaPixelEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Custom Filtering Feature */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start justify-between">
@@ -494,6 +531,38 @@ export default function ManageCustomFeaturesPage() {
                 <CheckCircle className="w-4 h-4 text-teal-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-gray-600">Changes take effect immediately</p>
               </div>
+            </div>
+          </div>
+
+          {/* Meta Pixel / Ads Guide */}
+          <div className="bg-amber-50 rounded-lg border border-amber-200 p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Megaphone className="w-5 h-5 text-amber-600" />
+              <h3 className="font-semibold text-gray-900">Meta Pixel – Minimal Version</h3>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">
+              This is the minimal v1: client-side Meta Pixel only. Business configures their Pixel ID in Admin → Marketing → Ads.
+            </p>
+            <div className="space-y-2 text-xs">
+              <p className="font-medium text-gray-700">Guides for business:</p>
+              <a
+                href="https://www.facebook.com/business/help/952192354843755"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-teal-600 hover:text-teal-700"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Meta Pixel setup
+              </a>
+              <a
+                href="https://www.facebook.com/business/help/331612538028890"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-teal-600 hover:text-teal-700"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Get your Pixel ID
+              </a>
             </div>
           </div>
 
@@ -559,6 +628,16 @@ export default function ManageCustomFeaturesPage() {
                     : 'bg-gray-100 text-gray-500'
                 }`}>
                   {features.aiAssistantEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Meta Pixel</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.metaPixelEnabled 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.metaPixelEnabled ? 'ON' : 'OFF'}
                 </span>
               </div>
               {features.aiAssistantEnabled && (
