@@ -23,9 +23,11 @@ import {
   Settings,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react'
 import Link from 'next/link'
+import { ExportMetaCatalogModal } from './ExportMetaCatalogModal'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useImpersonation } from '@/lib/impersonation'
 
@@ -83,6 +85,7 @@ interface Category {
 
 interface Business {
   currency: string
+  metaCatalogExportEnabled?: boolean
 }
 
 interface ProductsPageProps {
@@ -112,6 +115,7 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
   const [deleteModalProduct, setDeleteModalProduct] = useState<Product | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [showExportMetaModal, setShowExportMetaModal] = useState(false)
   const pageFromUrl = searchParams.get('page')
   const initialPage = pageFromUrl ? Math.max(1, parseInt(pageFromUrl, 10) || 1) : 1
   const [currentPage, setCurrentPage] = useState(initialPage)
@@ -174,7 +178,10 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const data = await response.json()
-        setBusiness({ currency: data.business.currency })
+        setBusiness({
+          currency: data.business.currency,
+          metaCatalogExportEnabled: data.business.metaCatalogExportEnabled
+        })
       }
     } catch (error) {
       console.error('Error fetching business data:', error)
@@ -386,6 +393,16 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
                 <Download className="w-4 h-4 mr-2" />
                 Export
             </button>
+
+            {business.metaCatalogExportEnabled && (
+              <button
+                onClick={() => setShowExportMetaModal(true)}
+                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Export for Meta
+              </button>
+            )}
             
             <Link
                 href={addParams(`/admin/stores/${businessId}/products/import`)}
@@ -405,6 +422,16 @@ export default function ProductsManagement({ businessId }: ProductsPageProps) {
             </Link>
         </div>
         </div>
+
+      {showExportMetaModal && (
+        <ExportMetaCatalogModal
+          businessId={businessId}
+          categories={categories}
+          selectedProductIds={selectedProducts}
+          totalProductCount={pagination.total}
+          onClose={() => setShowExportMetaModal(false)}
+        />
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

@@ -38,7 +38,8 @@ export async function GET(
         customMenuEnabled: true,
         customFilteringEnabled: true,
         aiAssistantEnabled: true,
-        aiChatModel: true
+        aiChatModel: true,
+        metaCatalogExportEnabled: true
       }
     })
 
@@ -59,7 +60,8 @@ export async function GET(
         customMenuEnabled: business.customMenuEnabled,
         customFilteringEnabled: business.customFilteringEnabled,
         aiAssistantEnabled: business.aiAssistantEnabled,
-        aiChatModel: business.aiChatModel
+        aiChatModel: business.aiChatModel,
+        metaCatalogExportEnabled: business.metaCatalogExportEnabled
       }
     })
   } catch (error) {
@@ -102,7 +104,8 @@ export async function PATCH(
       customMenuEnabled, 
       customFilteringEnabled,
       aiAssistantEnabled,
-      aiChatModel
+      aiChatModel,
+      metaCatalogExportEnabled
     } = body
 
     // Validate business exists
@@ -123,6 +126,7 @@ export async function PATCH(
     if (customFilteringEnabled !== undefined) updateData.customFilteringEnabled = customFilteringEnabled
     if (aiAssistantEnabled !== undefined) updateData.aiAssistantEnabled = aiAssistantEnabled
     if (aiChatModel !== undefined) updateData.aiChatModel = aiChatModel || null
+    if (metaCatalogExportEnabled !== undefined) updateData.metaCatalogExportEnabled = metaCatalogExportEnabled
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -137,7 +141,8 @@ export async function PATCH(
         customMenuEnabled: true,
         customFilteringEnabled: true,
         aiAssistantEnabled: true,
-        aiChatModel: true
+        aiChatModel: true,
+        metaCatalogExportEnabled: true
       }
     })
 
@@ -151,7 +156,8 @@ export async function PATCH(
         customMenuEnabled: updatedBusiness.customMenuEnabled,
         customFilteringEnabled: updatedBusiness.customFilteringEnabled,
         aiAssistantEnabled: updatedBusiness.aiAssistantEnabled,
-        aiChatModel: updatedBusiness.aiChatModel
+        aiChatModel: updatedBusiness.aiChatModel,
+        metaCatalogExportEnabled: updatedBusiness.metaCatalogExportEnabled
       }
     })
   } catch (error) {

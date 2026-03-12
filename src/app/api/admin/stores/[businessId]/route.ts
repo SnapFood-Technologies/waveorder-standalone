@@ -145,6 +145,7 @@ export async function GET(
         legalPagesEnabled: true, // For Legal Pages feature
         internalInvoiceEnabled: true, // For Internal Invoice System
         internalExpensesEnabled: true, // For Internal Expenses feature
+        metaCatalogExportEnabled: true, // For Meta Commerce Manager export
         
         // Inventory display
         showStockBadge: true,

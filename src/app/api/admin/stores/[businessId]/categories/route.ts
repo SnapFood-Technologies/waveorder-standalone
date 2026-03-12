@@ -49,14 +49,15 @@ export async function GET(
           nameEl: true,
           parentId: true,
           isActive: true,
-          sortOrder: true
+          sortOrder: true,
+          _count: { select: { products: true } }
         },
         orderBy: [
           { parentId: 'asc' },
           { sortOrder: 'asc' }
         ]
       })
-      
+
       return NextResponse.json({ categories })
     }
 
