@@ -201,6 +201,12 @@ export async function GET(
     })
     const csvWithBom = '\uFEFF' + csv // UTF-8 BOM for Excel/Meta compatibility
 
+    // Track last export for SuperAdmin "used" status
+    await prisma.business.update({
+      where: { id: businessId },
+      data: { metaCatalogLastExportedAt: new Date() }
+    })
+
     return new Response(csvWithBom, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

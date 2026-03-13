@@ -520,7 +520,8 @@ model Business {
   enableTeamPaymentTracking Boolean @default(false) // When enabled, business admin can record internal payments to team members
 
   // Meta Catalog Export (SuperAdmin enables) - Export products for Meta Commerce Manager
-  metaCatalogExportEnabled Boolean @default(false)
+  metaCatalogExportEnabled   Boolean   @default(false)
+  metaCatalogLastExportedAt DateTime? // When business last exported catalog (used = has exported)
 
   // Meta Pixel (SuperAdmin enables) - Client-side tracking for Meta/Facebook Ads
   metaPixelEnabled Boolean @default(false)
