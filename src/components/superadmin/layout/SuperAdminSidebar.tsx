@@ -25,6 +25,7 @@ import {
   Globe,
   DollarSign,
   Megaphone,
+  Target,
   LayoutDashboard,
   UserPlus,
   UsersRound,
@@ -87,6 +88,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Feedback', 
           href: '/superadmin/marketing/feedback', 
           icon: Star
+        },
+        { 
+          name: 'Meta', 
+          href: '/superadmin/marketing/meta', 
+          icon: Target
         }
       ]
     },
