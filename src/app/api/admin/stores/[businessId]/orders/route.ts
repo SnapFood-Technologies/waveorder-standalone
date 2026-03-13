@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { phoneNumbersMatch, normalizePhoneNumber, isValidPhoneNumber } from '@/lib/phone-utils'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import {
+  sendSuperAdminOrderNotification,
+  sendSuperAdminBookingNotification
+} from '@/lib/superadmin-email-notification'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 
@@ -672,6 +676,32 @@ export async function POST(
     } catch (emailError) {
       // Don't fail order creation if email fails
       console.error('Order notification email failed for admin-created order:', emailError)
+    }
+
+    // SuperAdmin copy notifications (independent of admin settings)
+    try {
+      const biz = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { businessType: true, currency: true }
+      })
+      if (biz) {
+        const isSalon = biz.businessType === 'SALON' || biz.businessType === 'SERVICES'
+        if (isSalon) {
+          await sendSuperAdminBookingNotification(businessId, {
+            orderNumber: order.orderNumber,
+            appointmentDateTime: order.deliveryTime || order.createdAt
+          })
+        } else {
+          await sendSuperAdminOrderNotification(businessId, {
+            orderNumber: order.orderNumber,
+            total: order.total,
+            currency: biz.currency || 'USD',
+            createdAt: order.createdAt
+          })
+        }
+      }
+    } catch (superAdminErr) {
+      console.error('SuperAdmin notification email failed for admin-created order:', superAdminErr)
     }
 
     // Log successful order creation

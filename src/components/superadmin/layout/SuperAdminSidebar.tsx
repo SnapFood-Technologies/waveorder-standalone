@@ -45,8 +45,9 @@ import {
     StickyNote,
     Banknote,
     ArrowRightLeft,
-    Map,
-    CreditCard
+  Map,
+  CreditCard,
+  Bell
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -210,6 +211,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
       name: 'System', 
       icon: Server,
       children: [
+        { 
+          name: 'Notifications', 
+          href: '/superadmin/system/notifications', 
+          icon: Bell
+        },
         { 
           name: 'General Logs', 
           href: '/superadmin/system/logs', 

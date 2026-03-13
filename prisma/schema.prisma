@@ -520,12 +520,12 @@ model Business {
   enableTeamPaymentTracking Boolean @default(false) // When enabled, business admin can record internal payments to team members
 
   // Meta Catalog Export (SuperAdmin enables) - Export products for Meta Commerce Manager
-  metaCatalogExportEnabled   Boolean   @default(false)
+  metaCatalogExportEnabled  Boolean   @default(false)
   metaCatalogLastExportedAt DateTime? // When business last exported catalog (used = has exported)
 
   // Meta Pixel (SuperAdmin enables) - Client-side tracking for Meta/Facebook Ads
   metaPixelEnabled Boolean @default(false)
-  metaPixelId     String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
+  metaPixelId      String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
 
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
@@ -617,6 +617,9 @@ model Business {
 
   // API Keys (for Business Plan API Access)
   apiKeys ApiKey[]
+
+  // SuperAdmin notification copies (order/booking/service request emails to SuperAdmin-chosen addresses)
+  superAdminNotificationSettings SuperAdminNotificationSettings?
 
   // WaveOrder Flows (WhatsApp messaging automation - Business plan)
   whatsappConversations   WhatsAppConversation[]
@@ -2222,6 +2225,24 @@ model WorkingHours {
 
   settingsId String             @unique @db.ObjectId
   settings   SuperAdminSettings @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// SuperAdmin notification copies per business - emails sent to SuperAdmin-chosen addresses
+model SuperAdminNotificationSettings {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  businessId String   @unique @db.ObjectId
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // Emails to receive order/booking/service request notifications
+  notificationEmails String[] @default([])
+
+  // Per-type toggles (independent of admin notification settings)
+  orderNotificationsEnabled          Boolean @default(false)
+  bookingNotificationsEnabled        Boolean @default(false) // SALON/SERVICES appointments
+  serviceRequestNotificationsEnabled Boolean @default(false) // SERVICES form submissions
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
