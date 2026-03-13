@@ -2,6 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
+import {
+  sendSuperAdminOrderNotification,
+  sendSuperAdminBookingNotification
+} from '@/lib/superadmin-email-notification'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
@@ -2174,6 +2178,25 @@ try {
     console.error('Order notification email failed:', emailError)
   }
 
+  // SuperAdmin copy notifications (independent of admin settings)
+  try {
+    const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
+    if (isSalon) {
+      await sendSuperAdminBookingNotification(business.id, {
+        orderNumber: order.orderNumber,
+        appointmentDateTime: order.deliveryTime || order.createdAt
+      })
+    } else {
+      await sendSuperAdminOrderNotification(business.id, {
+        orderNumber: order.orderNumber,
+        total: order.total,
+        currency: business.currency,
+        createdAt: order.createdAt
+      })
+    }
+  } catch (superAdminErr) {
+    console.error('SuperAdmin notification email failed:', superAdminErr)
+  }
 
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({

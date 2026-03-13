@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendServiceRequestEmailNotification } from '@/lib/orderNotificationService'
+import { sendSuperAdminServiceRequestNotification } from '@/lib/superadmin-email-notification'
 import {
   sendServiceRequestNotification,
   getTwilioConfig,
@@ -176,6 +177,16 @@ export async function POST(
           }
         }
       }
+
+    // SuperAdmin copy notification (independent of admin settings)
+    try {
+      await sendSuperAdminServiceRequestNotification(business.id, {
+        contactName,
+        createdAt: serviceRequest.createdAt
+      })
+    } catch (superAdminErr) {
+      console.error('SuperAdmin service request notification failed:', superAdminErr)
+    }
 
     logSystemEvent({
       logType: 'service_request_created',
