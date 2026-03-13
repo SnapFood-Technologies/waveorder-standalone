@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'all' // all | pixel | catalog
 
     const where: any = {
-      isActive: true
+      isActive: true,
+      NOT: { testMode: true } // Exclude test businesses (same as businesses list)
     }
 
     if (search) {
