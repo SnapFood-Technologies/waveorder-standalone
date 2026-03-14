@@ -12,9 +12,6 @@ Disallow: /setup/
 Disallow: /_next/
 Disallow: /auth/
 
-# Block dynamic business catalog pages (will be crawled via dynamic generation)
-Disallow: /*/
-
 # Allow important public pages for SEO
 Allow: /
 Allow: /features
@@ -29,6 +26,11 @@ Allow: /auth/login
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
+Allow: /instagram-sellers
+Allow: /restaurants
+Allow: /retail
+Allow: /salons
+Allow: /roadmap
 
 # Sitemap location
 Sitemap: https://waveorder.app/sitemap.xml
