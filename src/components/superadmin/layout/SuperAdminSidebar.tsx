@@ -47,7 +47,8 @@ import {
     ArrowRightLeft,
   Map,
   CreditCard,
-  Bell
+  Bell,
+  Workflow
 } from 'lucide-react';
 
 interface SuperAdminSidebarProps {
@@ -61,6 +62,7 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
   const [expandedItems, setExpandedItems] = useState<string[]>(() => {
     const items: string[] = []
     if (pathname?.startsWith('/superadmin/system')) items.push('System')
+    if (pathname?.startsWith('/superadmin/system/flows') || pathname?.startsWith('/superadmin/system/notifications')) items.push('Flows')
     if (pathname?.startsWith('/superadmin/financial')) items.push('Financial')
     if (pathname?.startsWith('/superadmin/analytics')) items.push('Analytics')
     if (pathname?.startsWith('/superadmin/operations')) items.push('Operations Analytics')
@@ -208,14 +210,25 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
       ]
     },
     { 
-      name: 'System', 
-      icon: Server,
+      name: 'Flows', 
+      icon: Workflow,
       children: [
+        { 
+          name: 'WaveOrder Flows', 
+          href: '/superadmin/system/flows-usage', 
+          icon: MessageSquare
+        },
         { 
           name: 'Notifications', 
           href: '/superadmin/system/notifications', 
           icon: Bell
-        },
+        }
+      ]
+    },
+    { 
+      name: 'System', 
+      icon: Server,
+      children: [
         { 
           name: 'General Logs', 
           href: '/superadmin/system/logs', 
@@ -245,11 +258,6 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'Twilio Activities', 
           href: '/superadmin/system/twilio-activities', 
           icon: Send
-        },
-        { 
-          name: 'WaveOrder Flows', 
-          href: '/superadmin/system/flows-usage', 
-          icon: MessageSquare
         }
       ]
     },
