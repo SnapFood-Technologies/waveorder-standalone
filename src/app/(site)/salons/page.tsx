@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description: 'Create a professional service menu, let clients book appointments via WhatsApp, and manage your salon business effortlessly. Perfect for hair salons, beauty studios, and spas.',
   keywords: 'salon booking, beauty salon, hair salon, spa booking, whatsapp booking, service menu, appointment scheduling, salon management',
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   alternates: {
     canonical: 'https://waveorder.app/salons',
