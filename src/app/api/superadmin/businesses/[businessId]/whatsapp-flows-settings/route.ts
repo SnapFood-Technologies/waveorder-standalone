@@ -37,9 +37,9 @@ export async function PATCH(
       return NextResponse.json({ message: 'Business not found' }, { status: 404 })
     }
 
-    if (business.subscriptionPlan !== 'BUSINESS') {
+    if (business.subscriptionPlan !== 'PRO' && business.subscriptionPlan !== 'BUSINESS') {
       return NextResponse.json(
-        { message: 'WaveOrder Flows requires Business plan' },
+        { message: 'WaveOrder Flows requires Pro or Business plan' },
         { status: 400 }
       )
     }

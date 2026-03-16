@@ -15,8 +15,8 @@ async function requireFlowsAccess(businessId: string) {
     where: { id: businessId },
     select: { subscriptionPlan: true }
   })
-  if (!business || business.subscriptionPlan !== 'BUSINESS') {
-    return { ok: false as const, response: NextResponse.json({ message: 'WaveOrder Flows requires Business plan' }, { status: 403 }) }
+  if (!business || !['PRO', 'BUSINESS'].includes(business.subscriptionPlan)) {
+    return { ok: false as const, response: NextResponse.json({ message: 'WaveOrder Flows requires Pro or Business plan' }, { status: 403 }) }
   }
   return { ok: true as const }
 }

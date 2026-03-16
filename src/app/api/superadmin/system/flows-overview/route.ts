@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.business.count({
         where: {
-          subscriptionPlan: 'BUSINESS',
+          subscriptionPlan: { in: ['PRO', 'BUSINESS'] },
           isActive: true,
           ...excludeTest
         }
