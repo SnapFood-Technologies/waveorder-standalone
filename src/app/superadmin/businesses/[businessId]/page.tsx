@@ -1637,8 +1637,8 @@ export default function BusinessDetailsPage() {
           {/* WhatsApp Settings */}
           <WhatsAppSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
-          {/* WaveOrder Flows Settings - BUSINESS plan only, SuperAdmin can enable/disable */}
-          {business.subscriptionPlan === 'BUSINESS' && (
+          {/* WaveOrder Flows Settings - PRO and BUSINESS plan, SuperAdmin can enable/disable */}
+          {(business.subscriptionPlan === 'PRO' || business.subscriptionPlan === 'BUSINESS') && (
             <WaveOrderFlowsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
@@ -2170,7 +2170,7 @@ function WaveOrderFlowsUsageCard({
   const [showUseCasesModal, setShowUseCasesModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const flowsEnabled = business.whatsappFlowsEnabled ?? false
-  const canEnable = business.subscriptionPlan === 'BUSINESS'
+  const canEnable = business.subscriptionPlan === 'PRO' || business.subscriptionPlan === 'BUSINESS'
   const useCases = getUseCasesForBusinessType(business.businessType || 'OTHER')
   const BUSINESS_TYPE_LABELS: Record<string, string> = {
     RESTAURANT: 'Restaurants',

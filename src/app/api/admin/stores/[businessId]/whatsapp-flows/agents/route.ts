@@ -17,8 +17,8 @@ export async function GET(
       where: { id: businessId },
       select: { subscriptionPlan: true }
     })
-    if (!business || business.subscriptionPlan !== 'BUSINESS') {
-      return NextResponse.json({ message: 'WaveOrder Flows requires Business plan' }, { status: 403 })
+    if (!business || !['PRO', 'BUSINESS'].includes(business.subscriptionPlan)) {
+      return NextResponse.json({ message: 'WaveOrder Flows requires Pro or Business plan' }, { status: 403 })
     }
 
     const settings = await prisma.whatsAppSettings.findUnique({

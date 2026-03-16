@@ -11,7 +11,7 @@ interface PageProps {
 export default async function ConversationsPage({ params }: PageProps) {
   const { businessId } = await params
   return (
-    <SubscriptionGuard requiredPlan="BUSINESS">
+    <SubscriptionGuard requiredPlan="PRO">
       <WhatsAppConversations businessId={businessId} />
     </SubscriptionGuard>
   )

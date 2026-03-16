@@ -11,7 +11,7 @@ interface PageProps {
 export default async function BroadcastPage({ params }: PageProps) {
   const { businessId } = await params
   return (
-    <SubscriptionGuard requiredPlan="BUSINESS">
+    <SubscriptionGuard requiredPlan="PRO">
       <WhatsAppBroadcast businessId={businessId} />
     </SubscriptionGuard>
   )
