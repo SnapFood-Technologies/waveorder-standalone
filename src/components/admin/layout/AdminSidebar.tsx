@@ -517,16 +517,16 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
         icon: Key, 
         requiredPlan: 'BUSINESS' as Plan
       },
-      // WaveOrder Flows - WhatsApp messaging automation
+      // WaveOrder Flows - WhatsApp messaging automation (PRO and BUSINESS)
       {
         name: 'WaveOrder Flows',
         icon: MessageCircle,
-        requiredPlan: 'BUSINESS' as Plan,
+        requiredPlan: 'PRO' as Plan,
         children: [
-          { name: 'Conversations', href: `${baseUrl}/whatsapp-flows/conversations`, icon: MessageSquare, requiredPlan: 'BUSINESS' as Plan },
-          { name: 'Flows', href: `${baseUrl}/whatsapp-flows/flows`, icon: Layers, requiredPlan: 'BUSINESS' as Plan },
-          { name: 'Broadcast', href: `${baseUrl}/whatsapp-flows/broadcast`, icon: Megaphone, requiredPlan: 'BUSINESS' as Plan },
-          { name: 'Settings', href: `${baseUrl}/whatsapp-flows/settings`, icon: Cog, requiredPlan: 'BUSINESS' as Plan }
+          { name: 'Conversations', href: `${baseUrl}/whatsapp-flows/conversations`, icon: MessageSquare, requiredPlan: 'PRO' as Plan },
+          { name: 'Flows', href: `${baseUrl}/whatsapp-flows/flows`, icon: Layers, requiredPlan: 'PRO' as Plan },
+          { name: 'Broadcast', href: `${baseUrl}/whatsapp-flows/broadcast`, icon: Megaphone, requiredPlan: 'PRO' as Plan },
+          { name: 'Settings', href: `${baseUrl}/whatsapp-flows/settings`, icon: Cog, requiredPlan: 'PRO' as Plan }
         ]
       },
     ] : []),

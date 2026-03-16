@@ -11,7 +11,7 @@ interface PageProps {
 export default async function WhatsAppFlowsSettingsPage({ params }: PageProps) {
   const { businessId } = await params
   return (
-    <SubscriptionGuard requiredPlan="BUSINESS">
+    <SubscriptionGuard requiredPlan="PRO">
       <WhatsAppFlowsSettings businessId={businessId} />
     </SubscriptionGuard>
   )
