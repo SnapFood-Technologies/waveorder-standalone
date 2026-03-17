@@ -103,7 +103,7 @@ export default function Terms() {
               <p className="text-lg text-gray-700 leading-relaxed">
                 By accessing or using WaveOrder ("Service"), you agree to be bound by these Terms of Service ("Terms"). 
                 If you disagree with any part of these terms, you may not access the Service. These terms create a 
-                legally binding agreement between you and Electral Shpk.
+                legally binding agreement between you and VenueBoost.
               </p>
             </div>
           </div>
@@ -575,7 +575,7 @@ export default function Terms() {
                 <Shield className="w-5 h-5 text-blue-600 mr-3" />
                 <div>
                   <div className="font-medium text-gray-900">Company</div>
-                  <div className="text-gray-600">Electral Shpk.</div>
+                  <div className="text-gray-600">VenueBoost.</div>
                 </div>
               </div>
             </div>
@@ -594,7 +594,7 @@ export default function Terms() {
                   Important Legal Notice
                 </h3>
                 <p className="text-amber-800 leading-relaxed mb-4">
-                  These Terms of Service constitute a legally binding agreement between you and Electral Shpk. 
+                  These Terms of Service constitute a legally binding agreement between you and VenueBoost. 
                   Please read them carefully and ensure you understand all provisions before using our service.
                 </p>
                 <p className="text-amber-700 text-sm">
