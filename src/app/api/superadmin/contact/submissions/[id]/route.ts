@@ -121,7 +121,7 @@ export async function PUT(
               </p>
             </div>
             <div style="padding: 20px; text-align: center; background: #f9fafb; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
-              <p style="font-size: 12px; color: #9ca3af; margin: 0;">&copy; ${new Date().getFullYear()} WaveOrder. All rights reserved.</p>
+              <p style="font-size: 12px; color: #9ca3af; margin: 0;">&copy; ${new Date().getFullYear()} VenueBoost Inc. All rights reserved.</p>
             </div>
           </div>
         `

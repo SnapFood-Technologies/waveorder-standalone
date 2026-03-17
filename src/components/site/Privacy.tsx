@@ -101,7 +101,7 @@ export default function Privacy() {
             </div>
             <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-2xl p-8 border border-teal-100">
               <p className="text-lg text-gray-700 leading-relaxed">
-              VenueBoost ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp ordering platform service. We believe transparency builds trust, and we want you to understand exactly how we handle your data.
+              VenueBoost Inc. ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our WhatsApp ordering platform service. We believe transparency builds trust, and we want you to understand exactly how we handle your data.
               </p>
             </div>
           </div>
@@ -490,7 +490,7 @@ export default function Privacy() {
                 <Shield className="w-5 h-5 text-teal-600 mr-3" />
                 <div>
                   <div className="font-medium text-gray-900">Company</div>
-                  <div className="text-gray-600">VenueBoost.</div>
+                  <div className="text-gray-600">VenueBoost Inc.</div>
                 </div>
               </div>
             </div>

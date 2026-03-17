@@ -696,7 +696,7 @@ function createOrderNotificationEmail({
         <a href="${process.env.NEXTAUTH_URL}/auth/login" style="color: #0d9488; text-decoration: none;">${labels.manageSettings}</a>
       </p>
       <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">
-        © 2026 VenueBoost. All rights reserved.
+        © 2026 VenueBoost Inc. All rights reserved.
       </p>
     </div>
     

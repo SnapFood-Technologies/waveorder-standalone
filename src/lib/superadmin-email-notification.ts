@@ -69,7 +69,7 @@ function createEmailTemplate(content: string, title: string) {
       <p style="color: #6b7280; margin: 0; font-size: 14px;">
         Questions? Contact <a href="mailto:contact@waveorder.app" style="color: #0d9488; text-decoration: none;">contact@waveorder.app</a>
       </p>
-      <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">© 2026 WaveOrder. All rights reserved.</p>
+      <p style="color: #9ca3af; margin: 12px 0 0; font-size: 12px;">© 2026 VenueBoost Inc. All rights reserved.</p>
     </div>
   </div>
 </body>
