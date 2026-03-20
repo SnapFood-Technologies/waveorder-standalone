@@ -12,6 +12,7 @@ import {
   notifyFinancialSubscriptionCanceled,
   notifyFinancialPaymentFailed,
   planTier,
+  userQualifiesForFinancialSuperadminAlerts,
 } from '@/lib/financial-superadmin-notifications'
 import Stripe from 'stripe'
 
@@ -311,10 +312,11 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       }
     })
 
-    // SuperAdmin financial alert: new paid / trial signup (excludes free Stripe price)
+    // SuperAdmin financial alert: new paid / trial signup (excludes free Stripe price, test/deactivated-only orgs)
     if (
       !isFreeStripePriceId(priceId) &&
-      (sub.status === 'active' || sub.status === 'trialing')
+      (sub.status === 'active' || sub.status === 'trialing') &&
+      (await userQualifiesForFinancialSuperadminAlerts(user.id))
     ) {
       try {
         await notifyFinancialNewPaidSignup({
@@ -467,8 +469,12 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
         console.error('❌ Failed to send subscription update email:', emailError)
       }
 
-      // SuperAdmin financial alerts (skip comp/free Stripe prices)
-      if (user && !isFreeStripePriceId(priceId)) {
+      // SuperAdmin financial alerts (skip comp/free Stripe prices; test/deactivated-only orgs)
+      if (
+        user &&
+        !isFreeStripePriceId(priceId) &&
+        (await userQualifiesForFinancialSuperadminAlerts(user.id))
+      ) {
         try {
           const oldT = planTier(oldPlan)
           const newT = planTier(plan)
@@ -588,7 +594,11 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
       }
     }
 
-    if (user && !isFreeStripePriceId(priceId)) {
+    if (
+      user &&
+      !isFreeStripePriceId(priceId) &&
+      (await userQualifiesForFinancialSuperadminAlerts(user.id))
+    ) {
       try {
         await notifyFinancialSubscriptionCanceled({
           customerEmail: user.email,
@@ -722,7 +732,11 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
       } catch {
         // ignore
       }
-      if (subPriceId && !isFreeStripePriceId(subPriceId)) {
+      if (
+        subPriceId &&
+        !isFreeStripePriceId(subPriceId) &&
+        (await userQualifiesForFinancialSuperadminAlerts(user.id))
+      ) {
         try {
           await notifyFinancialPaymentFailed({
             customerEmail: user.email,

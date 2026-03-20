@@ -2,6 +2,7 @@
  * SuperAdmin financial / subscription email alerts (platform-wide).
  * Recipients and toggles live in PlatformFinancialNotificationSettings (DB).
  * Excludes Stripe free-price (SuperAdmin comp) subscriptions.
+ * Skips users whose only businesses are test / deactivated / inactive (aligned with financial APIs).
  */
 import { Resend } from 'resend'
 import { prisma } from '@/lib/prisma'
@@ -10,6 +11,7 @@ import {
   addUtcDays,
   normalizeFinancialNotificationEmails,
   planTier,
+  userQualifiesForFinancialSuperadminAlertsFromBusinesses,
   utcDayRange,
 } from '@/lib/financial-superadmin-notification-utils'
 
@@ -22,6 +24,23 @@ const BASE_URL = process.env.NEXTAUTH_URL || 'https://waveorder.app'
 export function isFreeStripePriceId(priceId: string | null | undefined): boolean {
   if (!priceId) return true
   return getBillingTypeFromPriceId(priceId) === 'free'
+}
+
+/**
+ * Load the user's businesses and apply the same eligibility rules as financial subscription alerts.
+ */
+export async function userQualifiesForFinancialSuperadminAlerts(userId: string): Promise<boolean> {
+  const links = await prisma.businessUser.findMany({
+    where: { userId },
+    select: {
+      business: {
+        select: { testMode: true, isActive: true, deactivatedAt: true },
+      },
+    },
+  })
+  return userQualifiesForFinancialSuperadminAlertsFromBusinesses(
+    links.map((l) => l.business)
+  )
 }
 
 function escapeHtml(s: string): string {
@@ -72,6 +91,8 @@ export {
   addUtcDays,
   normalizeFinancialNotificationEmails,
   planTier,
+  userQualifiesForFinancialSuperadminAlertsFromBusinesses,
+  type BusinessFinancialAlertEligibility,
   utcDayRange,
 } from '@/lib/financial-superadmin-notification-utils'
 
@@ -225,6 +246,7 @@ export async function runFinancialTrialRemindersCron(): Promise<{ sent: number }
     if (isFreeStripePriceId(sub.priceId)) continue
     const user = sub.users[0]
     if (!user?.email || !user.trialEndsAt) continue
+    if (!(await userQualifiesForFinancialSuperadminAlerts(user.id))) continue
     const te = new Date(user.trialEndsAt)
     if (te < start || te >= end) continue
     if (
@@ -283,6 +305,7 @@ export async function runFinancialRenewalRemindersCron(): Promise<{ sent: number
     }
     const user = sub.users[0]
     if (!user?.email) continue
+    if (!(await userQualifiesForFinancialSuperadminAlerts(user.id))) continue
     await notifyFinancialRenewalApproaching({
       customerEmail: user.email,
       customerName: user.name,

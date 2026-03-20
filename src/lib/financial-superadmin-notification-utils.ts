@@ -2,6 +2,28 @@
  * Pure helpers for SuperAdmin financial notifications (no Stripe client / Prisma).
  * planTier order must stay aligned with PLAN_HIERARCHY in lib/stripe.ts.
  */
+
+/** Shape of Business fields used to decide if subscription alerts count as "real" revenue. */
+export type BusinessFinancialAlertEligibility = {
+  testMode: boolean
+  isActive: boolean
+  deactivatedAt: Date | null
+}
+
+/**
+ * Whether SuperAdmin financial emails should fire for this account's businesses.
+ * Matches Financial → Subscriptions spirit: exclude test stores, deactivated, and inactive businesses.
+ * If the user has no business memberships yet (onboarding), returns true so real signups still alert.
+ */
+export function userQualifiesForFinancialSuperadminAlertsFromBusinesses(
+  businesses: BusinessFinancialAlertEligibility[]
+): boolean {
+  if (businesses.length === 0) return true
+  return businesses.some(
+    (b) => !b.testMode && b.isActive && b.deactivatedAt == null
+  )
+}
+
 const PLAN_HIERARCHY_ORDER: Record<string, number> = {
   STARTER: 1,
   PRO: 2,
