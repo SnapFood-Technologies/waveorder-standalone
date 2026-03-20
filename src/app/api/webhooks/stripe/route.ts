@@ -5,6 +5,15 @@ import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId, cancelSubscri
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { logSystemEvent } from '@/lib/systemLog'
 import { prisma } from '@/lib/prisma'
+import {
+  isFreeStripePriceId,
+  notifyFinancialNewPaidSignup,
+  notifyFinancialPlanChange,
+  notifyFinancialSubscriptionCanceled,
+  notifyFinancialPaymentFailed,
+  planTier,
+  userQualifiesForFinancialSuperadminAlerts,
+} from '@/lib/financial-superadmin-notifications'
 import Stripe from 'stripe'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
@@ -303,6 +312,24 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       }
     })
 
+    // SuperAdmin financial alert: new paid / trial signup (excludes free Stripe price, test/deactivated-only orgs)
+    if (
+      !isFreeStripePriceId(priceId) &&
+      (sub.status === 'active' || sub.status === 'trialing') &&
+      (await userQualifiesForFinancialSuperadminAlerts(user.id))
+    ) {
+      try {
+        await notifyFinancialNewPaidSignup({
+          customerEmail: user.email,
+          customerName: user.name,
+          plan,
+          status: sub.status,
+        })
+      } catch (e) {
+        console.error('SuperAdmin new signup notify:', e)
+      }
+    }
+
   } catch (error) {
     console.error('❌ Error handling subscription created:', error)
     throw error
@@ -442,6 +469,37 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
         console.error('❌ Failed to send subscription update email:', emailError)
       }
 
+      // SuperAdmin financial alerts (skip comp/free Stripe prices; test/deactivated-only orgs)
+      if (
+        user &&
+        !isFreeStripePriceId(priceId) &&
+        (await userQualifiesForFinancialSuperadminAlerts(user.id))
+      ) {
+        try {
+          const oldT = planTier(oldPlan)
+          const newT = planTier(plan)
+          if (newT > oldT) {
+            await notifyFinancialPlanChange({
+              customerEmail: user.email,
+              customerName: user.name,
+              direction: 'upgrade',
+              oldPlan,
+              newPlan: plan,
+            })
+          } else if (newT < oldT) {
+            await notifyFinancialPlanChange({
+              customerEmail: user.email,
+              customerName: user.name,
+              direction: 'downgrade',
+              oldPlan,
+              newPlan: plan,
+            })
+          }
+        } catch (e) {
+          console.error('SuperAdmin plan change notify:', e)
+        }
+      }
+
       // Log subscription change event
       logSystemEvent({
         logType: 'subscription_changed',
@@ -482,6 +540,7 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
     }
 
     const oldPlan = subscription.plan
+    const priceId = subscription.priceId
     const user = subscription.users[0] // Get first user for email
 
     await prisma.$transaction(async (tx) => {
@@ -532,6 +591,22 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
         console.log('✅ Sent cancellation email to:', user.email)
       } catch (emailError) {
         console.error('❌ Failed to send cancellation email:', emailError)
+      }
+    }
+
+    if (
+      user &&
+      !isFreeStripePriceId(priceId) &&
+      (await userQualifiesForFinancialSuperadminAlerts(user.id))
+    ) {
+      try {
+        await notifyFinancialSubscriptionCanceled({
+          customerEmail: user.email,
+          customerName: user.name,
+          previousPlan: oldPlan,
+        })
+      } catch (e) {
+        console.error('SuperAdmin canceled notify:', e)
       }
     }
 
@@ -642,6 +717,36 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         console.log('✅ Sent payment failed email to:', user.email)
       } catch (emailError) {
         console.error('❌ Failed to send payment failed email:', emailError)
+      }
+
+      let subPriceId: string | undefined
+      try {
+        const inv = invoice as any
+        const subId =
+          (typeof inv.subscription === 'string' ? inv.subscription : null) ||
+          inv.parent?.subscription_details?.subscription
+        if (subId) {
+          const stripeSub = await stripe.subscriptions.retrieve(subId as string)
+          subPriceId = stripeSub.items.data[0]?.price?.id
+        }
+      } catch {
+        // ignore
+      }
+      if (
+        subPriceId &&
+        !isFreeStripePriceId(subPriceId) &&
+        (await userQualifiesForFinancialSuperadminAlerts(user.id))
+      ) {
+        try {
+          await notifyFinancialPaymentFailed({
+            customerEmail: user.email,
+            customerName: user.name,
+            amount: invoice.amount_due / 100,
+            currency: invoice.currency || 'usd',
+          })
+        } catch (e) {
+          console.error('SuperAdmin payment failed notify:', e)
+        }
       }
     }
   } catch (error) {
