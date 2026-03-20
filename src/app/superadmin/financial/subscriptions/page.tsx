@@ -455,15 +455,20 @@ export default function SubscriptionsPage() {
                   </div>
 
                   <p className="text-xs text-gray-500">
-                    Schedule a daily request to{' '}
+                    Same as low-stock:{' '}
+                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                      POST /api/integrations/…/services/financial-superadmin-reminders
+                    </code>{' '}
+                    with{' '}
+                    <code className="bg-gray-100 px-1 rounded text-[11px]">
+                      Authorization: Bearer wo_int_…
+                    </code>
+                    . Optional legacy:{' '}
                     <code className="bg-gray-100 px-1 rounded text-[11px]">
                       GET /api/cron/financial-superadmin-reminders
                     </code>{' '}
-                    with header{' '}
-                    <code className="bg-gray-100 px-1 rounded text-[11px]">
-                      Authorization: Bearer CRON_SECRET
-                    </code>
-                    .
+                    with the same integration key or{' '}
+                    <code className="bg-gray-100 px-1 rounded text-[11px]">CRON_SECRET</code>.
                   </p>
                 </>
               )}
