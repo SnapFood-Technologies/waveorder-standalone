@@ -173,6 +173,10 @@ model Subscription {
   cancelAtPeriodEnd Boolean   @default(false)
   canceledAt        DateTime?
 
+  // SuperAdmin financial alerts dedupe (one email per trial end / billing period)
+  financialTrialNoticeForTrialEnd     DateTime?
+  financialRenewalNoticeForPeriodEnd DateTime?
+
   // Relations
   users User[]
 
@@ -181,6 +185,31 @@ model Subscription {
   updatedAt DateTime @updatedAt
 
   @@map("subscriptions")
+}
+
+// Singleton row (key = "default") — SuperAdmin financial subscription email alerts
+model PlatformFinancialNotificationSettings {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  key String @unique @default("default")
+
+  financialNotificationEmails String[] @default([])
+
+  notifyNewPaidSignup          Boolean @default(true)
+  notifyPlanUpgrade            Boolean @default(true)
+  notifyPlanDowngrade          Boolean @default(true)
+  notifySubscriptionCanceled   Boolean @default(true)
+  notifyPaymentFailed          Boolean @default(true)
+  notifyTrialEnding            Boolean @default(true)
+  notifyRenewalApproaching     Boolean @default(true)
+
+  trialDaysBefore    Int @default(3)
+  renewalDaysBefore  Int @default(3)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_financial_notification_settings")
 }
 
 model StripeTransaction {
