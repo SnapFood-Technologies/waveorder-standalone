@@ -46,6 +46,7 @@ interface TeamMember {
   userId: string
   name: string
   email: string
+  phone?: string
   role: 'OWNER' | 'MANAGER' | 'STAFF' | 'DELIVERY'
   joinedAt: string
   lastActive: string

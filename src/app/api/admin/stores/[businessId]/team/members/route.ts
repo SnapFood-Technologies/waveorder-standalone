@@ -44,6 +44,7 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+            phone: true,
             updatedAt: true
           }
         }
@@ -54,14 +55,15 @@ export async function GET(
       ]
     })
 
-    const formattedMembers = members.map(member => ({
+    const formattedMembers = members.map((member) => ({
       id: member.id,
       userId: member.userId,
       name: member.user.name || 'Unknown',
       email: member.user.email,
+      ...(member.user.phone ? { phone: member.user.phone } : {}),
       role: member.role,
       joinedAt: member.createdAt,
-      lastActive: member.user.updatedAt
+      lastActive: member.user.updatedAt,
     }))
 
     return NextResponse.json({ members: formattedMembers })

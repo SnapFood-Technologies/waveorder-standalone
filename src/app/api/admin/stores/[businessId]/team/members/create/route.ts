@@ -152,6 +152,14 @@ export async function POST(
         }
       })
 
+      // Optional phone from form — store on user when provided (team list / API)
+      if (typeof phone === 'string' && phone.trim()) {
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { phone: phone.trim() },
+        })
+      }
+
       // Log audit event
       await logTeamAudit({
         businessId,
@@ -185,6 +193,7 @@ export async function POST(
       data: {
         name: name.trim(),
         email: email.trim().toLowerCase(),
+        ...(typeof phone === 'string' && phone.trim() ? { phone: phone.trim() } : {}),
         password: hashedPassword,
         role: 'BUSINESS_OWNER', // Default role, actual access controlled by BusinessUser
         emailVerified: new Date() // Auto-verify for manually created accounts
