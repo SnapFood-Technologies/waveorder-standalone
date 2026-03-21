@@ -1,14 +1,16 @@
 // src/components/admin/team/TeamMemberCard.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   MoreVertical, 
   Edit3, 
   Trash2, 
   User,
   Calendar,
-  Clock
+  Clock,
+  Phone,
+  Pencil,
 } from 'lucide-react'
 import { getRoleDisplayName, getRoleBadgeColor } from '@/lib/permissions'
 
@@ -17,6 +19,7 @@ interface TeamMember {
   userId: string
   name: string
   email: string
+  phone?: string
   role: 'OWNER' | 'MANAGER' | 'STAFF' | 'DELIVERY'
   joinedAt: string
   lastActive: string
@@ -30,6 +33,8 @@ interface TeamMemberCardProps {
   businessType?: string
   onUpdateRole: (userId: string, newRole: string) => void
   onRemove: (userId: string) => void
+  /** Owner-only: edit name + phone for non-owner members */
+  onEditProfile?: (userId: string, data: { name?: string; phone?: string | null }) => Promise<void>
 }
 
 export function TeamMemberCard({ 
@@ -39,16 +44,52 @@ export function TeamMemberCard({
   currentUserId,
   businessType = 'RESTAURANT',
   onUpdateRole,
-  onRemove 
+  onRemove,
+  onEditProfile,
 }: TeamMemberCardProps) {
   const [showActions, setShowActions] = useState(false)
   const [showRoleModal, setShowRoleModal] = useState(false)
   const [showRemoveModal, setShowRemoveModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editName, setEditName] = useState(member.name)
+  const [editPhone, setEditPhone] = useState(member.phone || '')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const isCurrentUser = member.userId === currentUserId
   const canEditThisUser = !isCurrentUser && member.role !== 'OWNER'
   const canRemoveThisUser = !isCurrentUser && member.role !== 'OWNER'
+  const canEditProfileHere = Boolean(onEditProfile) && canUpdateRoles && canEditThisUser
 
+  useEffect(() => {
+    if (showEditModal) {
+      setEditName(member.name)
+      setEditPhone(member.phone || '')
+      setEditError(null)
+    }
+  }, [showEditModal, member.name, member.phone])
+
+  const handleEditSave = async () => {
+    if (!onEditProfile) return
+    if (!editName.trim()) {
+      setEditError('Name is required')
+      return
+    }
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      await onEditProfile(member.userId, {
+        name: editName.trim(),
+        phone: editPhone.trim() ? editPhone.trim() : null,
+      })
+      setShowEditModal(false)
+      setShowActions(false)
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setEditSaving(false)
+    }
+  }
 
   const handleRoleChange = (newRole: string) => {
     onUpdateRole(member.userId, newRole)
@@ -118,6 +159,12 @@ export function TeamMemberCard({
                 )}
               </div>
               <p className="text-sm text-gray-600">{member.email}</p>
+              {member.phone ? (
+                <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
+                  <Phone className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />
+                  {member.phone}
+                </p>
+              ) : null}
               <div className="flex items-center space-x-4 mt-1">
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
                   {getRoleDisplayName(member.role)}
@@ -144,8 +191,18 @@ export function TeamMemberCard({
     </button>
     
     {showActions && (
-      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+      <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
         <div className="py-1">
+          {canEditProfileHere && (
+            <button
+              type="button"
+              onClick={() => setShowEditModal(true)}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+            >
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit details
+            </button>
+          )}
           {canUpdateRoles && canEditThisUser && (
             <button
               onClick={() => setShowRoleModal(true)}
@@ -172,6 +229,68 @@ export function TeamMemberCard({
 )}
         </div>
       </div>
+
+      {/* Edit name / phone */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              Edit team member
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">{member.email}</p>
+            {editError && (
+              <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {editError}
+              </div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone (optional)
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="+1234567890"
+                    className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={editSaving}
+                onClick={handleEditSave}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {editSaving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Role Change Modal */}
       {showRoleModal && (
