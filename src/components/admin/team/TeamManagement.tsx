@@ -64,7 +64,14 @@ interface TeamInvitation {
 interface AuditLog {
   id: string
   actorEmail: string
-  action: 'MEMBER_INVITED' | 'MEMBER_ROLE_CHANGED' | 'MEMBER_REMOVED' | 'INVITATION_RESENT' | 'INVITATION_CANCELLED' | 'INVITATION_ACCEPTED'
+  action:
+    | 'MEMBER_INVITED'
+    | 'MEMBER_ROLE_CHANGED'
+    | 'MEMBER_PROFILE_UPDATED'
+    | 'MEMBER_REMOVED'
+    | 'INVITATION_RESENT'
+    | 'INVITATION_CANCELLED'
+    | 'INVITATION_ACCEPTED'
   targetEmail?: string
   details?: {
     role?: string
@@ -223,6 +230,8 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
         return <UserPlus className="w-4 h-4 text-teal-600" />
       case 'MEMBER_ROLE_CHANGED':
         return <UserCog className="w-4 h-4 text-blue-600" />
+      case 'MEMBER_PROFILE_UPDATED':
+        return <Edit3 className="w-4 h-4 text-indigo-600" />
       case 'MEMBER_REMOVED':
         return <UserMinus className="w-4 h-4 text-red-600" />
       case 'INVITATION_RESENT':
@@ -242,6 +251,8 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
         return `invited ${log.targetEmail} as ${log.details?.role || 'member'}`
       case 'MEMBER_ROLE_CHANGED':
         return `changed ${log.targetEmail}'s role from ${log.details?.oldRole} to ${log.details?.newRole}`
+      case 'MEMBER_PROFILE_UPDATED':
+        return `updated profile for ${log.targetEmail || 'member'}`
       case 'MEMBER_REMOVED':
         return `removed ${log.targetEmail} from the team`
       case 'INVITATION_RESENT':
@@ -340,6 +351,26 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
       console.error('Error updating role:', error)
       showError(error instanceof Error ? error.message : 'Failed to update role')
     }
+  }
+
+  const handleEditProfile = async (
+    userId: string,
+    data: { name?: string; phone?: string | null }
+  ) => {
+    const response = await fetch(
+      `/api/admin/stores/${businessId}/team/members/${userId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }
+    )
+    const json = await response.json()
+    if (!response.ok) {
+      throw new Error(json.message || 'Failed to update member')
+    }
+    await fetchMembers()
+    showSuccess(json.message || 'Member updated successfully!')
   }
 
   const handleRemoveMember = async (userId: string) => {
@@ -603,6 +634,7 @@ export function TeamManagement({ businessId }: TeamManagementProps) {
                 businessType={businessType}
                 onUpdateRole={handleUpdateRole}
                 onRemove={handleRemoveMember}
+                onEditProfile={canUpdateRoles ? handleEditProfile : undefined}
               />
             ))
           )}

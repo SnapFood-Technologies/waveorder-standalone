@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { canUpdateMemberRoles, canRemoveMembers, canManageUserRole, canRemoveUser } from '@/lib/permissions'
+import {
+  canUpdateMemberRoles,
+  canRemoveMembers,
+  canManageUserRole,
+  canRemoveUser,
+  canEditMemberProfile,
+} from '@/lib/permissions'
 import { sendRoleChangedEmail, sendTeamMemberRemovedEmail } from '@/lib/email'
 import { logTeamAudit } from '@/lib/team-audit'
 
@@ -32,14 +38,102 @@ export async function PATCH(
       return NextResponse.json({ message: 'Access denied' }, { status: 403 })
     }
 
-    const { role: newRole } = await request.json()
+    const body = await request.json()
+    const isRoleUpdate = typeof body?.role === 'string' && body.role.length > 0
 
-    if (!newRole) {
-      return NextResponse.json(
-        { message: 'Role is required' },
-        { status: 400 }
-      )
+    // Get target membership once (role + profile flows)
+    const targetUser = await prisma.businessUser.findFirst({
+      where: {
+        userId,
+        businessId,
+      },
+    })
+
+    if (!targetUser) {
+      return NextResponse.json({ message: 'Team member not found' }, { status: 404 })
     }
+
+    // ── Update display name / phone (owner only; not other owners; not self) ──
+    if (!isRoleUpdate) {
+      const hasName = 'name' in body
+      const hasPhone = 'phone' in body
+      if (!hasName && !hasPhone) {
+        return NextResponse.json(
+          { message: 'Provide role, or name and/or phone to update' },
+          { status: 400 }
+        )
+      }
+
+      const { canEdit, reason } = canEditMemberProfile(
+        managerUser.role,
+        targetUser.role,
+        userId,
+        session.user.id
+      )
+      if (!canEdit) {
+        return NextResponse.json({ message: reason }, { status: 403 })
+      }
+
+      const updateData: { name?: string; phone?: string | null } = {}
+      if (hasName) {
+        if (typeof body.name !== 'string' || !body.name.trim()) {
+          return NextResponse.json({ message: 'Name must be a non-empty string' }, { status: 400 })
+        }
+        updateData.name = body.name.trim()
+      }
+      if (hasPhone) {
+        if (body.phone === null || body.phone === '') {
+          updateData.phone = null
+        } else if (typeof body.phone === 'string') {
+          updateData.phone = body.phone.trim() || null
+        } else {
+          return NextResponse.json({ message: 'Invalid phone' }, { status: 400 })
+        }
+      }
+
+      const before = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, phone: true, email: true },
+      })
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+      })
+
+      const after = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true, phone: true, email: true },
+      })
+
+      await logTeamAudit({
+        businessId,
+        actorId: session.user.id,
+        actorEmail: session.user.email || '',
+        action: 'MEMBER_PROFILE_UPDATED',
+        targetId: userId,
+        targetEmail: after?.email || before?.email || '',
+        details: {
+          before: { name: before?.name, phone: before?.phone },
+          after: { name: after?.name, phone: after?.phone },
+        },
+        request,
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Member updated successfully',
+        member: {
+          userId,
+          name: after?.name || '',
+          email: after?.email,
+          ...(after?.phone ? { phone: after.phone } : {}),
+        },
+      })
+    }
+
+    // ── Role change (existing behaviour) ──
+    const newRole = body.role as string
 
     // Validate role
     if (!['MANAGER', 'STAFF'].includes(newRole)) {
@@ -49,23 +143,8 @@ export async function PATCH(
       )
     }
 
-    // Get target user's current role
-    const targetUser = await prisma.businessUser.findFirst({
-      where: {
-        userId,
-        businessId
-      }
-    })
-
-    if (!targetUser) {
-      return NextResponse.json(
-        { message: 'Team member not found' },
-        { status: 404 }
-      )
-    }
-
     // Check if manager can update this user's role
-    const { canManage, reason } = canManageUserRole(
+    const { canManage, reason: roleReason } = canManageUserRole(
       managerUser.role,
       targetUser.role,
       userId,
@@ -74,7 +153,7 @@ export async function PATCH(
 
     if (!canManage) {
       return NextResponse.json(
-        { message: reason },
+        { message: roleReason },
         { status: 403 }
       )
     }

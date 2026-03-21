@@ -5,6 +5,7 @@ import { logSystemEvent, extractIPAddress, getActualRequestUrl } from '@/lib/sys
 type TeamAuditAction = 
   | 'MEMBER_INVITED'
   | 'MEMBER_ROLE_CHANGED'
+  | 'MEMBER_PROFILE_UPDATED'
   | 'MEMBER_REMOVED'
   | 'INVITATION_RESENT'
   | 'INVITATION_CANCELLED'

@@ -172,6 +172,25 @@ export function canManageUserRole(
   return { canManage: true }
 }
 
+/** Owner may edit display name / phone for non-owner team members (not self — use profile). */
+export function canEditMemberProfile(
+  managerRole: BusinessRole,
+  targetRole: BusinessRole,
+  targetUserId: string,
+  currentUserId: string
+): { canEdit: boolean; reason?: string } {
+  if (targetUserId === currentUserId) {
+    return { canEdit: false, reason: 'Use your account profile to update your own details' }
+  }
+  if (managerRole !== 'OWNER') {
+    return { canEdit: false, reason: 'Only business owners can edit team member details' }
+  }
+  if (targetRole === 'OWNER') {
+    return { canEdit: false, reason: 'Cannot edit another business owner here' }
+  }
+  return { canEdit: true }
+}
+
 export function canRemoveUser(
   managerRole: BusinessRole,
   targetRole: BusinessRole,
