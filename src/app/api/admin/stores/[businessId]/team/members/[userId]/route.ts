@@ -12,7 +12,7 @@ import {
 } from '@/lib/permissions'
 import { sendRoleChangedEmail, sendTeamMemberRemovedEmail } from '@/lib/email'
 import { logTeamAudit } from '@/lib/team-audit'
-
+import type { BusinessRole } from '@prisma/client'
 
 export async function PATCH(
   request: NextRequest,
@@ -133,15 +133,16 @@ export async function PATCH(
     }
 
     // ── Role change (existing behaviour) ──
-    const newRole = body.role as string
+    const rawRole = body.role as string
 
     // Validate role
-    if (!['MANAGER', 'STAFF'].includes(newRole)) {
+    if (rawRole !== 'MANAGER' && rawRole !== 'STAFF') {
       return NextResponse.json(
         { message: 'Invalid role. Must be MANAGER or STAFF' },
         { status: 400 }
       )
     }
+    const newRole: BusinessRole = rawRole
 
     // Check if manager can update this user's role
     const { canManage, reason: roleReason } = canManageUserRole(
@@ -164,7 +165,7 @@ export async function PATCH(
         id: targetUser.id
       },
       data: {
-        role: newRole
+        role: newRole,
       }
     })
 
