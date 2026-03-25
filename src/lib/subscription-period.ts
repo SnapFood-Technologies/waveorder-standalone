@@ -1,13 +1,22 @@
-import type Stripe from 'stripe'
+/**
+ * Minimal Stripe subscription shape for period fields only.
+ * (Named explicitly to avoid clashing with Prisma's `Subscription` model in TS.)
+ */
+export type StripeSubscriptionPeriodSource = {
+  current_period_start?: number
+  current_period_end?: number | null
+  start_date?: number
+  cancel_at?: number | null
+  items?: { data?: Array<{ current_period_end?: number }> }
+}
 
 /**
  * Resolve billing period bounds from a Stripe Subscription (item fallbacks for edge cases).
  */
-export function getSubscriptionPeriodBounds(sub: Stripe.Subscription): { start: Date; end: Date } {
-  const subAny = sub as Stripe.Subscription & {
-    items?: { data?: Array<{ current_period_end?: number }> }
-  }
-  const periodEndFromItem = subAny.items?.data?.[0]?.current_period_end
+export function getSubscriptionPeriodBounds(
+  sub: StripeSubscriptionPeriodSource
+): { start: Date; end: Date } {
+  const periodEndFromItem = sub.items?.data?.[0]?.current_period_end
   const startTs =
     sub.current_period_start ??
     sub.start_date ??
