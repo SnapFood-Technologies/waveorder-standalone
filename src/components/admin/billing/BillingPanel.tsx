@@ -97,6 +97,9 @@ interface BillingPanelProps {
 
 export function BillingPanel({ businessId }: BillingPanelProps) {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const portalSyncDone = useRef(false)
   const { data: session } = useSession()
   const isImpersonating =
     (session?.user as { role?: string })?.role === 'SUPER_ADMIN' &&
