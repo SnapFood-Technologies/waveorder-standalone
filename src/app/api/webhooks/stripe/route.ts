@@ -5,12 +5,14 @@ import { stripe, mapStripePlanToDb, PLANS, PLAN_HIERARCHY, PlanId, cancelSubscri
 import { sendSubscriptionChangeEmail, sendPaymentFailedEmail } from '@/lib/email'
 import { logSystemEvent } from '@/lib/systemLog'
 import { prisma } from '@/lib/prisma'
+import { shouldNotifyPaymentSucceededSuperadmin } from '@/lib/financial-superadmin-notification-utils'
 import {
   isFreeStripePriceId,
   notifyFinancialNewPaidSignup,
   notifyFinancialPlanChange,
   notifyFinancialSubscriptionCanceled,
   notifyFinancialPaymentFailed,
+  notifyFinancialPaymentSucceeded,
   planTier,
   userQualifiesForFinancialSuperadminAlerts,
 } from '@/lib/financial-superadmin-notifications'
@@ -680,6 +682,34 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       }
       
       await handleSubscriptionUpdated(sub)
+
+      // SuperAdmin: successful paid invoice (billing portal, renewals, updates) — skip first invoice (new signup alert)
+      const amountPaidCents = invoice.amount_paid ?? 0
+      const amountPaid = amountPaidCents / 100
+      if (shouldNotifyPaymentSucceededSuperadmin(invoice.billing_reason, amountPaidCents)) {
+        const userForNotify = await prisma.user.findFirst({
+          where: { stripeCustomerId: customerId },
+        })
+        const priceId = sub.items.data[0]?.price?.id
+        if (
+          userForNotify &&
+          priceId &&
+          !isFreeStripePriceId(priceId) &&
+          (await userQualifiesForFinancialSuperadminAlerts(userForNotify.id))
+        ) {
+          try {
+            await notifyFinancialPaymentSucceeded({
+              customerEmail: userForNotify.email,
+              customerName: userForNotify.name,
+              amount: amountPaid,
+              currency: invoice.currency || 'usd',
+              billingReason: invoice.billing_reason ?? null,
+            })
+          } catch (e) {
+            console.error('SuperAdmin payment succeeded notify:', e)
+          }
+        }
+      }
     }
   } catch (error) {
     console.error('❌ Error handling payment succeeded:', error)

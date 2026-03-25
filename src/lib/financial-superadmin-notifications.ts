@@ -186,6 +186,32 @@ export async function notifyFinancialPaymentFailed(params: {
   await sendToRecipients(`WaveOrder: Payment failed — ${params.customerEmail}`, html, s.financialNotificationEmails)
 }
 
+export async function notifyFinancialPaymentSucceeded(params: {
+  customerEmail: string
+  customerName: string | null
+  amount: number
+  currency: string
+  billingReason: string | null
+}) {
+  const s = await getPlatformFinancialNotificationSettings()
+  if (!s.notifyPaymentSucceeded || !s.financialNotificationEmails.length) return
+  const reasonLabel = params.billingReason
+    ? escapeHtml(params.billingReason.replace(/_/g, ' '))
+    : '—'
+  const html = wrapFinancialEmail(
+    'Payment received',
+    `<p><strong>${escapeHtml(params.customerName || params.customerEmail)}</strong> (${escapeHtml(params.customerEmail)})</p>
+     <p>Amount paid: <strong>${params.amount.toFixed(2)} ${params.currency.toUpperCase()}</strong></p>
+     <p>Invoice billing reason: <strong>${reasonLabel}</strong></p>
+     <p><a href="${BASE_URL}/superadmin/financial/subscriptions" style="color:#0d9488;">Open Subscriptions</a></p>`
+  )
+  await sendToRecipients(
+    `WaveOrder: Payment received — ${params.customerEmail}`,
+    html,
+    s.financialNotificationEmails
+  )
+}
+
 export async function notifyFinancialTrialEnding(params: {
   customerEmail: string
   customerName: string | null

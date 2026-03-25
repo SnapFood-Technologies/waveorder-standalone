@@ -5,6 +5,7 @@ import {
   addUtcDays,
   planTier,
   userQualifiesForFinancialSuperadminAlertsFromBusinesses,
+  shouldNotifyPaymentSucceededSuperadmin,
 } from '@/lib/financial-superadmin-notification-utils'
 
 describe('normalizeFinancialNotificationEmails', () => {
@@ -40,6 +41,22 @@ describe('planTier', () => {
   it('orders STARTER < PRO < BUSINESS', () => {
     expect(planTier('STARTER')).toBeLessThan(planTier('PRO'))
     expect(planTier('PRO')).toBeLessThan(planTier('BUSINESS'))
+  })
+})
+
+describe('shouldNotifyPaymentSucceededSuperadmin', () => {
+  it('returns false for zero amount', () => {
+    expect(shouldNotifyPaymentSucceededSuperadmin('subscription_cycle', 0)).toBe(false)
+  })
+
+  it('returns false for subscription_create (first invoice)', () => {
+    expect(shouldNotifyPaymentSucceededSuperadmin('subscription_create', 1900)).toBe(false)
+  })
+
+  it('returns true for renewal and portal-style reasons', () => {
+    expect(shouldNotifyPaymentSucceededSuperadmin('subscription_cycle', 1900)).toBe(true)
+    expect(shouldNotifyPaymentSucceededSuperadmin('subscription_update', 500)).toBe(true)
+    expect(shouldNotifyPaymentSucceededSuperadmin('manual', 100)).toBe(true)
   })
 })
 

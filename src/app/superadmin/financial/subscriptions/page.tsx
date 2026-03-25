@@ -22,6 +22,7 @@ interface FinancialNotifSettings {
   notifyPlanDowngrade: boolean
   notifySubscriptionCanceled: boolean
   notifyPaymentFailed: boolean
+  notifyPaymentSucceeded: boolean
   notifyTrialEnding: boolean
   notifyRenewalApproaching: boolean
   trialDaysBefore: number
@@ -61,6 +62,7 @@ const defaultNotifSettings: FinancialNotifSettings = {
   notifyPlanDowngrade: true,
   notifySubscriptionCanceled: true,
   notifyPaymentFailed: true,
+  notifyPaymentSucceeded: false,
   notifyTrialEnding: true,
   notifyRenewalApproaching: true,
   trialDaysBefore: 3,
@@ -110,6 +112,7 @@ export default function SubscriptionsPage() {
         notifyPlanDowngrade: json.notifyPlanDowngrade ?? true,
         notifySubscriptionCanceled: json.notifySubscriptionCanceled ?? true,
         notifyPaymentFailed: json.notifyPaymentFailed ?? true,
+        notifyPaymentSucceeded: json.notifyPaymentSucceeded ?? false,
         notifyTrialEnding: json.notifyTrialEnding ?? true,
         notifyRenewalApproaching: json.notifyRenewalApproaching ?? true,
         trialDaysBefore: json.trialDaysBefore ?? 3,
@@ -143,6 +146,7 @@ export default function SubscriptionsPage() {
         notifyPlanDowngrade: json.notifyPlanDowngrade,
         notifySubscriptionCanceled: json.notifySubscriptionCanceled,
         notifyPaymentFailed: json.notifyPaymentFailed,
+        notifyPaymentSucceeded: json.notifyPaymentSucceeded,
         notifyTrialEnding: json.notifyTrialEnding,
         notifyRenewalApproaching: json.notifyRenewalApproaching,
         trialDaysBefore: json.trialDaysBefore,
@@ -399,6 +403,12 @@ export default function SubscriptionsPage() {
                         (v) => setNotifForm((f) => ({ ...f, notifyPaymentFailed: v })),
                         'Payment failed',
                         'Stripe invoice payment failed.'
+                      )}
+                      {triggerRow(
+                        notifForm.notifyPaymentSucceeded,
+                        (v) => setNotifForm((f) => ({ ...f, notifyPaymentSucceeded: v })),
+                        'Payment received',
+                        'Successful invoice payment (renewals, billing portal, plan updates). Does not include the first subscription invoice (use New paid signup).'
                       )}
                       {triggerRow(
                         notifForm.notifyTrialEnding,

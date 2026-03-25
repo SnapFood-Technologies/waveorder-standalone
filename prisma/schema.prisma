@@ -175,7 +175,7 @@ model Subscription {
   canceledAt        DateTime?
 
   // SuperAdmin financial alerts dedupe (one email per trial end / billing period)
-  financialTrialNoticeForTrialEnd     DateTime?
+  financialTrialNoticeForTrialEnd    DateTime?
   financialRenewalNoticeForPeriodEnd DateTime?
 
   // Relations
@@ -196,16 +196,18 @@ model PlatformFinancialNotificationSettings {
 
   financialNotificationEmails String[] @default([])
 
-  notifyNewPaidSignup          Boolean @default(true)
-  notifyPlanUpgrade            Boolean @default(true)
-  notifyPlanDowngrade          Boolean @default(true)
-  notifySubscriptionCanceled   Boolean @default(true)
-  notifyPaymentFailed          Boolean @default(true)
-  notifyTrialEnding            Boolean @default(true)
-  notifyRenewalApproaching     Boolean @default(true)
+  notifyNewPaidSignup        Boolean @default(true)
+  notifyPlanUpgrade          Boolean @default(true)
+  notifyPlanDowngrade        Boolean @default(true)
+  notifySubscriptionCanceled Boolean @default(true)
+  notifyPaymentFailed        Boolean @default(true)
+  /// Successful invoice payment (renewals, portal pay, etc.) — excludes first invoice (subscription_create) to avoid overlap with new paid signup.
+  notifyPaymentSucceeded     Boolean @default(false)
+  notifyTrialEnding          Boolean @default(true)
+  notifyRenewalApproaching   Boolean @default(true)
 
-  trialDaysBefore    Int @default(3)
-  renewalDaysBefore  Int @default(3)
+  trialDaysBefore   Int @default(3)
+  renewalDaysBefore Int @default(3)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
