@@ -6,10 +6,19 @@ import { authOptions } from '@/lib/auth'
 import SessionProvider from '@/components/SessionProvider'
 import GoogleAnalytics from '@/components/site/GoogleAnalytics'
 import MicrosoftClarity from '@/components/site/MicrosoftClarity'
+import { waveOrderDefaultIcons } from '@/lib/site-icons'
 
 export const metadata: Metadata = {
   title: 'WaveOrder - WhatsApp Ordering Made Easy',
   description: 'Create beautiful catalogs and receive orders directly on WhatsApp',
+  manifest: '/manifest.json',
+  icons: waveOrderDefaultIcons,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'WaveOrder',
+  },
+  themeColor: '#0d9488',
 }
 
 export default async function RootLayout({

@@ -6,6 +6,7 @@ import SalonStoreFront from '@/components/storefront/SalonStoreFront'
 import ServicesStoreFront from '@/components/storefront/ServicesStoreFront'
 import MetaPixel from '@/components/storefront/MetaPixel'
 import type { Metadata } from 'next'
+import { waveOrderDefaultIcons } from '@/lib/site-icons'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -398,12 +399,14 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       'business:contact_data:phone_number': storeData.phone || '',
       'business:contact_data:website': storeData.website || '',
     },
-    // Add favicon if available
-    icons: storeData.favicon ? {
-      icon: storeData.favicon,
-      shortcut: storeData.favicon,
-      apple: storeData.favicon,
-    } : undefined
+    // Tab icon: store favicon when set; otherwise platform defaults from /public (see site-icons.ts)
+    icons: storeData.favicon
+      ? {
+          icon: storeData.favicon,
+          shortcut: storeData.favicon,
+          apple: storeData.favicon,
+        }
+      : waveOrderDefaultIcons
   }
 }
 
