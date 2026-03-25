@@ -5,9 +5,10 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { stripe, mapStripePlanToDb, PLANS, PlanId } from '@/lib/stripe'
 import { logSystemEvent } from '@/lib/systemLog'
+import { syncSubscriptionFromStripe, syncSubscriptionFromStripeForBusinessOwner } from '@/lib/subscription'
 
 interface SyncIssue {
-  type: 'missing_subscription' | 'plan_mismatch' | 'status_mismatch' | 'price_id_mismatch' | 'duplicate_subs' | 'no_stripe_customer' | 'orphaned_db_record'
+  type: 'missing_subscription' | 'plan_mismatch' | 'status_mismatch' | 'price_id_mismatch' | 'period_mismatch' | 'duplicate_subs' | 'no_stripe_customer' | 'orphaned_db_record'
   severity: 'critical' | 'warning' | 'info'
   description: string
   stripeData?: any
@@ -38,6 +39,8 @@ interface SyncAnalysis {
     status: string
     plan: string
     priceId: string
+    currentPeriodStart: string
+    currentPeriodEnd: string
   } | null
   dbPlan: string
   dbStatus: string
@@ -85,6 +88,14 @@ export async function POST(
     }
 
     const { businessId } = await params
+
+    // Refresh billing periods + price/status from Stripe first (portal changes, renewals)
+    try {
+      await syncSubscriptionFromStripeForBusinessOwner(businessId)
+    } catch (e) {
+      console.warn('[stripe-sync POST] period pre-sync:', e)
+    }
+
     const analysis = await analyseBusinessSync(businessId)
 
     if (analysis.status === 'in_sync') {
@@ -109,6 +120,15 @@ export async function POST(
     for (const issue of analysis.issues) {
       try {
         switch (issue.type) {
+          case 'period_mismatch': {
+            if (analysis.dbSubscription?.stripeId) {
+              await syncSubscriptionFromStripe(analysis.dbSubscription.stripeId)
+              fixResults.push('Synced billing period dates from Stripe')
+              fixesApplied++
+            }
+            break
+          }
+
           case 'duplicate_subs': {
             // Cancel all but the most recent subscription
             const subs = analysis.stripeSubscriptions
@@ -360,6 +380,8 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
       status: dbSubscription.status,
       plan: dbSubscription.plan,
       priceId: dbSubscription.priceId,
+      currentPeriodStart: dbSubscription.currentPeriodStart.toISOString(),
+      currentPeriodEnd: dbSubscription.currentPeriodEnd.toISOString(),
     } : null,
     dbPlan: business.subscriptionPlan,
     dbStatus: business.subscriptionStatus,
@@ -556,6 +578,36 @@ async function analyseBusinessSync(businessId: string): Promise<SyncAnalysis> {
       dbData: { priceId: dbSubscription.priceId },
       fix: 'Update DB Subscription priceId and period from Stripe'
     })
+  }
+
+  // Issue: billing period drift (renewal, Customer Portal, or webhook lag)
+  if (
+    primaryStripeSub &&
+    dbSubscription &&
+    ['active', 'trialing', 'past_due'].includes(primaryStripeSub.status)
+  ) {
+    const stripeEnd = new Date(primaryStripeSub.current_period_end * 1000)
+    const stripeStart = new Date(primaryStripeSub.current_period_start * 1000)
+    const driftMs = 5000
+    const endDiff = Math.abs(dbSubscription.currentPeriodEnd.getTime() - stripeEnd.getTime())
+    const startDiff = Math.abs(dbSubscription.currentPeriodStart.getTime() - stripeStart.getTime())
+    if (endDiff > driftMs || startDiff > driftMs) {
+      issues.push({
+        type: 'period_mismatch',
+        severity: 'warning',
+        description:
+          'DB billing period dates differ from Stripe (e.g. after renewal or billing portal change)',
+        stripeData: {
+          currentPeriodStart: stripeStart.toISOString(),
+          currentPeriodEnd: stripeEnd.toISOString(),
+        },
+        dbData: {
+          currentPeriodStart: dbSubscription.currentPeriodStart.toISOString(),
+          currentPeriodEnd: dbSubscription.currentPeriodEnd.toISOString(),
+        },
+        fix: 'Update currentPeriodStart/End from Stripe subscription',
+      })
+    }
   }
 
   result.issues = issues

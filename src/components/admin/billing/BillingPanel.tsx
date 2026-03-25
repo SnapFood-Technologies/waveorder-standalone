@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
   Check,
@@ -120,6 +120,27 @@ export function BillingPanel({ businessId }: BillingPanelProps) {
     fetchSubscription()
     fetchBusinessType()
   }, [businessId, isImpersonating])
+
+  // After Stripe Customer Portal: refresh billing periods from Stripe into DB (webhook may lag)
+  useEffect(() => {
+    if (searchParams.get('portal_return') !== '1' || portalSyncDone.current) return
+    portalSyncDone.current = true
+    ;(async () => {
+      try {
+        await fetch('/api/billing/sync-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ businessId })
+        })
+      } catch (e) {
+        console.error('Billing portal return sync failed:', e)
+      } finally {
+        const base = pathname?.split('?')[0] ?? `/admin/stores/${businessId}/settings/billing`
+        router.replace(base)
+        fetchSubscription()
+      }
+    })()
+  }, [businessId, pathname, router, searchParams])
   
   const fetchBusinessType = async () => {
     try {
