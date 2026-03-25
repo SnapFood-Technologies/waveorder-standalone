@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 6. Return URL for this specific business
-    const returnUrl = `${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/settings/billing`
+    const returnUrl = `${process.env.NEXTAUTH_URL}/admin/stores/${businessId}/settings/billing?portal_return=1`
 
     console.log('🔗 [BILLING PORTAL] Return URL:', returnUrl)
 

@@ -8,8 +8,11 @@ import {
   cancelSubscription,
   PLANS,
   getBillingTypeFromPriceId,
+  stripe,
+  mapStripePlanToDb,
   type PlanId 
 } from './stripe'
+import { getSubscriptionPeriodBounds } from './subscription-period'
 
 const prisma = new PrismaClient()
 
@@ -286,11 +289,16 @@ export async function getUserSubscriptionStatus(userId: string) {
   }
 }
 
+export { getSubscriptionPeriodBounds } from './subscription-period'
+
+/**
+ * Pull latest subscription fields from Stripe into the DB (plan, price, status, billing periods).
+ * Use after Customer Portal return, webhooks, or SuperAdmin sync.
+ */
 export async function syncSubscriptionFromStripe(stripeSubscriptionId: string) {
   try {
-    const stripe = require('./stripe').stripe
     const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId)
-    
+
     const subscription = await prisma.subscription.findUnique({
       where: { stripeId: stripeSubscriptionId },
       include: { users: true }
@@ -300,32 +308,34 @@ export async function syncSubscriptionFromStripe(stripeSubscriptionId: string) {
       throw new Error('Subscription not found in database')
     }
 
-    // Map Stripe price to our plan
-    const { mapStripePlanToDb } = require('./stripe')
-    const plan = mapStripePlanToDb(stripeSubscription.items.data[0].price.id)
+    const priceId = stripeSubscription.items.data[0]?.price?.id
+    if (!priceId) {
+      throw new Error('Stripe subscription has no price on first item')
+    }
+    const plan = mapStripePlanToDb(priceId)
+    const { start, end } = getSubscriptionPeriodBounds(stripeSubscription)
 
-    // Update subscription and user
     await prisma.$transaction(async (tx) => {
       await tx.subscription.update({
         where: { id: subscription.id },
         data: {
           status: stripeSubscription.status,
+          priceId,
           plan,
-           // @ts-ignore
-          currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-           // @ts-ignore
-          currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+          currentPeriodStart: start,
+          currentPeriodEnd: end,
           cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+          canceledAt: stripeSubscription.canceled_at
+            ? new Date(stripeSubscription.canceled_at * 1000)
+            : null,
         }
       })
 
-      // Update all users on this subscription
       await tx.user.updateMany({
         where: { subscriptionId: subscription.id },
         data: { plan }
       })
 
-      // Sync all businesses owned by these users
       const users = subscription.users.map(u => u.id)
       await tx.business.updateMany({
         where: {
@@ -347,4 +357,28 @@ export async function syncSubscriptionFromStripe(stripeSubscriptionId: string) {
     console.error('Error syncing subscription from Stripe:', error)
     throw error
   }
+}
+
+/**
+ * Sync owner subscription from Stripe for a business (billing portal return, SuperAdmin tools).
+ */
+export async function syncSubscriptionFromStripeForBusinessOwner(
+  businessId: string
+): Promise<{ ok: boolean; skipped?: boolean; reason?: string }> {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    include: {
+      users: {
+        where: { role: 'OWNER' },
+        include: { user: { include: { subscription: true } } }
+      }
+    }
+  })
+  const owner = business?.users[0]?.user
+  const stripeSubId = owner?.subscription?.stripeId
+  if (!owner || !stripeSubId) {
+    return { ok: true, skipped: true, reason: 'no_owner_or_subscription' }
+  }
+  await syncSubscriptionFromStripe(stripeSubId)
+  return { ok: true }
 }
