@@ -65,3 +65,16 @@ export function addUtcDays(from: Date, days: number): Date {
 export function planTier(plan: string): number {
   return PLAN_HIERARCHY_ORDER[plan] ?? 0
 }
+
+/**
+ * SuperAdmin "payment received" email: skip $0 and first subscription invoice
+ * (new paid signup covers subscription_create).
+ */
+export function shouldNotifyPaymentSucceededSuperadmin(
+  billingReason: string | null | undefined,
+  amountPaidCents: number
+): boolean {
+  if (amountPaidCents <= 0) return false
+  if (billingReason === 'subscription_create') return false
+  return true
+}
