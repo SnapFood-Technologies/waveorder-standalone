@@ -8,6 +8,7 @@ import {
 } from '@/lib/superadmin-email-notification'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
+import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
 import * as Sentry from '@sentry/nextjs'
@@ -994,6 +995,8 @@ export async function POST(
         translateContentToBusinessLanguage: true,
         enableAffiliateSystem: true,
         timezone: true,
+        minimumOrder: true,
+        invoiceMinimumOrderValue: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -1111,6 +1114,13 @@ export async function POST(
       return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
     }
 
+    if (!isStorefrontPhoneComplete(customerPhone.trim())) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
+      logValidationError('Invalid phone number format')
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
@@ -1150,6 +1160,59 @@ export async function POST(
       // For RETAIL businesses, require postal pricing selection
       if (business.businessType === 'RETAIL' && !postalPricingId) {
         return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+      }
+
+      const minimumOrder = business.minimumOrder ?? 0
+      const subtotalNum = Number(subtotal)
+      if (Number.isNaN(subtotalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid subtotal')
+        return NextResponse.json({ error: 'Valid subtotal is required' }, { status: 400 })
+      }
+      if (subtotalNum < minimumOrder) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order subtotal below minimum for delivery')
+        return NextResponse.json(
+          {
+            error: 'Order does not meet minimum amount for delivery',
+            minimumOrder
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (invoiceType === 'INVOICE') {
+      const totalNum = Number(total)
+      if (Number.isNaN(totalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid order total for invoice')
+        return NextResponse.json({ error: 'Valid order total is required' }, { status: 400 })
+      }
+      if (
+        business.invoiceMinimumOrderValue != null &&
+        totalNum < business.invoiceMinimumOrderValue
+      ) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order total below minimum for invoice')
+        return NextResponse.json(
+          {
+            error: 'Order total does not meet minimum for invoice selection',
+            invoiceMinimumOrderValue: business.invoiceMinimumOrderValue
+          },
+          { status: 400 }
+        )
+      }
+      const afm = invoiceAfm != null ? String(invoiceAfm).trim() : ''
+      if (afm.length !== 9 || !/^\d{9}$/.test(afm)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid invoice tax ID (AFM)')
+        return NextResponse.json({ error: 'Valid tax ID (AFM) with 9 digits is required for invoice' }, { status: 400 })
       }
     }
 
@@ -1401,14 +1464,7 @@ export async function POST(
     }
 
     // Enhanced customer creation/retrieval logic with normalized phone matching
-    // Normalize the incoming phone number for matching
     const normalizedPhone = normalizePhoneNumber(customerPhone)
-    
-    if (!normalizedPhone || normalizedPhone.length < 10) {
-      Sentry.setTag('error_type', 'validation_error')
-      Sentry.setTag('status_code', '400')
-      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
-    }
 
     // Find customer by matching normalized phone numbers
     // Get all customers for this business and match by normalized phone
