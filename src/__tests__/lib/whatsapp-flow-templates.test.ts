@@ -13,7 +13,8 @@ describe('getFlowTemplates', () => {
   })
 
   it('includes FAQ menu template with keywords', () => {
-    const templates = getFlowTemplates('', 'Biz')
+    // RESTAURANT (and CAFE) define id `faq-menu`; default business type OTHER uses `faq-catalog` instead.
+    const templates = getFlowTemplates('', 'Biz', 'RESTAURANT')
     const faq = templates.find((t) => t.id === 'faq-menu')
     expect(faq).toBeDefined()
     expect(faq?.trigger.type).toBe('keyword')
