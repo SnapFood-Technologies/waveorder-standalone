@@ -9,6 +9,7 @@ import {
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
 import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
 import * as Sentry from '@sentry/nextjs'
@@ -966,9 +967,9 @@ export async function POST(
     Sentry.setTag('api_type', 'storefront')
     Sentry.setTag('method', 'POST')
 
-    // Find business and check if it's closed
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business and check if it's closed (slug match is case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: {
         id: true,
         name: true,
@@ -2847,9 +2848,9 @@ export async function PATCH(
     const { slug } = await context.params
     const { customerLat, customerLng } = await request.json()
 
-    // Find business
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business (case-insensitive slug)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: { id: true, isTemporarilyClosed: true }
     })
 

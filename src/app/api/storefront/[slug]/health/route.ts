@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 // Lightweight health check - just 1 product
 export async function GET(
@@ -11,8 +12,8 @@ export async function GET(
 
   try {
     // 1 query: business exists?
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: {
         id: true,
         name: true,

@@ -1,6 +1,7 @@
 // src/app/api/storefront/[slug]/postal-pricing/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 // GET - Get postal pricing for a city (public endpoint)
 export async function GET(
@@ -18,9 +19,9 @@ export async function GET(
       )
     }
 
-    // Get business by slug
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    // Get business by slug (case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: {
         id: true,
         businessType: true,

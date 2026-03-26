@@ -2,6 +2,7 @@
 // Product event tracking API - tracks views and add-to-cart events
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 // Valid event types
 const VALID_EVENT_TYPES = ['view', 'add_to_cart'] as const
@@ -115,9 +116,9 @@ export async function POST(
       )
     }
 
-    // Find business by slug (lightweight query)
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    // Find business by slug (lightweight query; case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: { id: true, isActive: true }
     })
 
@@ -230,9 +231,9 @@ export async function PUT(
       )
     }
 
-    // Find business by slug
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    // Find business by slug (case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: { id: true, isActive: true }
     })
 

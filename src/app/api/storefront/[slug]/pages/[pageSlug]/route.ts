@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 // GET - Get single page content for storefront
 export async function GET(
@@ -9,8 +10,8 @@ export async function GET(
   try {
     const { slug, pageSlug } = await params
 
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: {
         id: true,
         name: true,

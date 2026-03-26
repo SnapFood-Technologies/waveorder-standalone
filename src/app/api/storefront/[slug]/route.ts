@@ -1,6 +1,7 @@
 // app/api/storefront/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
@@ -176,10 +177,10 @@ export async function GET(
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
 
-    // Find business by slug (optimized for connected businesses)
-    const business = await prisma.business.findUnique({
+    // Find business by slug (case-insensitive; canonical slug is stored on business)
+    const business = await prisma.business.findFirst({
       where: { 
-        slug,
+        slug: businessSlugFilter(slug),
         isActive: true,
         setupWizardCompleted: true
       }

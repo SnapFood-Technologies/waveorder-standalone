@@ -1,6 +1,7 @@
 // AI Chat feedback - thumbs up/down on assistant responses
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 export async function POST(
   request: NextRequest,
@@ -15,8 +16,8 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid messageId or feedback' }, { status: 400 })
     }
 
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true, setupWizardCompleted: true },
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true, setupWizardCompleted: true },
       select: { id: true }
     })
 

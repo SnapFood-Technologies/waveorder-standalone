@@ -2,6 +2,7 @@
 // PERFORMANCE OPTIMIZED: Separate endpoint for products with filtering, search, and pagination
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 
 // Albanian to English product term translations
@@ -203,10 +204,10 @@ export async function GET(
     const brandIds = searchParams.get('brands') ? searchParams.get('brands')!.split(',').filter(id => id.trim()) : []
     const sortBy = searchParams.get('sortBy') || 'stock-desc'
     
-    // Find business by slug
-    const businessData = await prisma.business.findUnique({
+    // Find business by slug (case-insensitive)
+    const businessData = await prisma.business.findFirst({
       where: { 
-        slug,
+        slug: businessSlugFilter(slug),
         isActive: true,
         setupWizardCompleted: true
       }

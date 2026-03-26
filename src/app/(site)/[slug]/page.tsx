@@ -1,5 +1,5 @@
 // app/[slug]/page.tsx
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import StoreFront from '@/components/storefront/StoreFront'
 import SalonStoreFront from '@/components/storefront/SalonStoreFront'
@@ -391,7 +391,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       images: primaryImage ? [primaryImage] : [],
     },
     alternates: {
-      canonical: storeData.canonicalUrl || `https://waveorder.app/${slug}`,
+      canonical: storeData.canonicalUrl || `https://waveorder.app/${storeData.slug || slug}`,
     },
     other: {
       'business:contact_data:street_address': storeData.address || '',
@@ -417,6 +417,21 @@ export default async function StorePage({ params, searchParams }: PageProps) {
 
   if (!storeData) {
     notFound()
+  }
+
+  // Canonical URL: redirect /Swarovski → /swarovski (stored slug)
+  if (typeof storeData.slug === 'string' && storeData.slug !== slug) {
+    const qs = new URLSearchParams()
+    for (const [key, value] of Object.entries(resolvedSearchParams)) {
+      if (value === undefined) continue
+      if (Array.isArray(value)) {
+        for (const v of value) qs.append(key, v)
+      } else {
+        qs.set(key, value)
+      }
+    }
+    const q = qs.toString()
+    redirect(`/${storeData.slug}${q ? `?${q}` : ''}`)
   }
 
   // FIXED: Use store's language setting from database
