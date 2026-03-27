@@ -47,6 +47,7 @@ import {
   Megaphone
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
+import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import {
   canSubmitStorefrontOrder,
   formatStorefrontOrderButtonLabel,
@@ -3651,23 +3652,33 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           directNotification: result.directNotification || false
         })
         
-        // Check if this is a direct notification (Twilio) or traditional wa.me flow
-        if (result.directNotification) {
-          // Direct notification - business was notified automatically via Twilio
-          // No redirect needed, just show success message longer
+        const redirectMs = 5000
+        if (result.directNotification && result.customerFollowUpWhatsappUrl) {
           setTimeout(() => {
-            setOrderSuccessMessage(null)
-          }, 15000) // Show for 15 seconds since no redirect
-        } else {
-          // Traditional flow - redirect to WhatsApp after delay
+            logStorefrontWhatsAppOrderRedirect({
+              slug: storeData.slug,
+              businessId: storeData.id,
+              orderId: result.orderId,
+              orderNumber: result.orderNumber,
+              variant: 'mix_follow_up',
+            })
+            window.location.href = result.customerFollowUpWhatsappUrl
+          }, redirectMs)
+          setTimeout(() => setOrderSuccessMessage(null), 15000)
+        } else if (result.directNotification) {
+          setTimeout(() => setOrderSuccessMessage(null), 15000)
+        } else if (result.whatsappUrl) {
           setTimeout(() => {
+            logStorefrontWhatsAppOrderRedirect({
+              slug: storeData.slug,
+              businessId: storeData.id,
+              orderId: result.orderId,
+              orderNumber: result.orderNumber,
+              variant: 'classic_wa_me',
+            })
             window.location.href = result.whatsappUrl
-          }, 5000)
-          
-          // Hide success message after 10 seconds
-          setTimeout(() => {
-            setOrderSuccessMessage(null)
-          }, 10000)
+          }, redirectMs)
+          setTimeout(() => setOrderSuccessMessage(null), 10000)
         }
       } else {
         // Display the error message from the API, or fallback to default message

@@ -292,6 +292,10 @@ model Business {
   website                     String?
   whatsappNumber              String
   whatsappDirectNotifications Boolean            @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
+  /// When true (and direct notifications on), after order: WaveOrder notifies store + customer gets follow-up wa.me link
+  orderWhatsAppMixEnabled     Boolean            @default(false)
+  /// Merchant-editable template; placeholders: {orderNumber}, {businessName}, {orderId}
+  orderWhatsAppMixFollowUpTemplate String?
   businessType                BusinessType       @default(RESTAURANT)
   industry                    String? // Optional industry categorization (e.g., "Food & Beverage", "Hardware & Construction")
   subscriptionPlan            SubscriptionPlan   @default(STARTER)
@@ -2201,6 +2205,7 @@ enum TicketType {
   FEATURE_REQUEST
   BUG_REPORT
   WHATSAPP_TEMPLATES // WhatsApp templates / Broadcast setup - contact WaveOrder for help
+  WHATSAPP_ORDER_CHANNEL // New order WhatsApp channel (direct vs customer link vs mix) — contact WaveOrder to change
 }
 
 enum NotificationType {

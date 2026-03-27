@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 import { 
   Bell, 
@@ -116,7 +117,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     notifyDineInOnConfirmed: false,
     notifyDineInOnPreparing: false,
     notifyDineInOnReady: true,
-    notifyDineInOnDelivered: false
+    notifyDineInOnDelivered: false,
+    whatsappDirectNotifications: false,
+    orderWhatsAppMixEnabled: false,
+    orderWhatsAppMixFollowUpTemplate: ''
   })
   
   const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
@@ -176,7 +180,10 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           notifyDineInOnConfirmed: data.business.notifyDineInOnConfirmed ?? false,
           notifyDineInOnPreparing: data.business.notifyDineInOnPreparing ?? false,
           notifyDineInOnReady: data.business.notifyDineInOnReady ?? true,
-          notifyDineInOnDelivered: data.business.notifyDineInOnDelivered ?? false
+          notifyDineInOnDelivered: data.business.notifyDineInOnDelivered ?? false,
+          whatsappDirectNotifications: data.business.whatsappDirectNotifications ?? false,
+          orderWhatsAppMixEnabled: data.business.orderWhatsAppMixEnabled ?? false,
+          orderWhatsAppMixFollowUpTemplate: data.business.orderWhatsAppMixFollowUpTemplate ?? ''
         })
         setBusiness({ 
           currency: data.business.currency,
@@ -283,7 +290,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
     })
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target
     setSettings(prev => ({
       ...prev,
@@ -306,7 +313,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         const data = await response.json()
         setSettings(prev => ({
           ...prev,
-          orderNotificationLastUpdate: data.business.orderNotificationLastUpdate
+          orderNotificationLastUpdate: data.business.orderNotificationLastUpdate,
+          orderWhatsAppMixFollowUpTemplate:
+            data.business.orderWhatsAppMixFollowUpTemplate ?? prev.orderWhatsAppMixFollowUpTemplate
         }))
         
         setSuccessMessage('Notification settings updated successfully')
@@ -393,6 +402,68 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
           </div>
         </div>
       )}
+
+      {/* WhatsApp channel for new orders (read-only mode + mix template) */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900">New order WhatsApp channel</h2>
+        <p className="text-sm text-gray-600">
+          This shows how WaveOrder delivers new {business.businessType === 'SALON' || business.businessType === 'SERVICES' ? 'bookings' : 'orders'} to WhatsApp. Changing the channel is done by WaveOrder support.
+        </p>
+        {settings.whatsappDirectNotifications && !settings.orderWhatsAppMixEnabled && (
+          <div className="rounded-lg border border-teal-100 bg-teal-50/80 p-4 text-sm text-gray-800">
+            <p className="font-medium text-gray-900">Direct delivery to your store WhatsApp</p>
+            <p className="mt-1">
+              WaveOrder sends the new {business.businessType === 'SALON' || business.businessType === 'SERVICES' ? 'booking' : 'order'} to your business WhatsApp number. The customer does not need to start a chat for you to receive it.
+            </p>
+            <p className="mt-3 text-sm">
+              <Link href={`/admin/stores/${businessId}/help`} className="text-teal-700 font-medium hover:underline">
+                Help &amp; Support
+              </Link>
+              {' — '}To switch to customer-initiated WhatsApp or another option, contact WaveOrder support (ticket type: New order WhatsApp channel).
+            </p>
+          </div>
+        )}
+        {!settings.whatsappDirectNotifications && !settings.orderWhatsAppMixEnabled && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-800">
+            <p className="font-medium text-gray-900">Customer opens WhatsApp (pre-filled message)</p>
+            <p className="mt-1">
+              WaveOrder does not send a separate new-order message to your store WhatsApp. After checkout, the customer is taken to WhatsApp with a pre-filled message so they start the chat.
+            </p>
+            <p className="mt-3 text-sm">
+              <Link href={`/admin/stores/${businessId}/help`} className="text-teal-700 font-medium hover:underline">
+                Help &amp; Support
+              </Link>
+              {' — '}To enable direct delivery to your WhatsApp, contact WaveOrder support.
+            </p>
+          </div>
+        )}
+        {settings.whatsappDirectNotifications && settings.orderWhatsAppMixEnabled && (
+          <div className="rounded-lg border border-teal-100 bg-teal-50/80 p-4 text-sm text-gray-800 space-y-3">
+            <p className="font-medium text-gray-900">Mix: direct delivery + customer follow-up link</p>
+            <p>
+              WaveOrder notifies your store WhatsApp for each new {business.businessType === 'SALON' || business.businessType === 'SERVICES' ? 'booking' : 'order'}, and the customer also receives a follow-up WhatsApp link after checkout (message below).
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up message template</label>
+              <p className="text-xs text-gray-500 mb-2">Placeholders: {'{orderNumber}'}, {'{businessName}'}, {'{orderId}'}</p>
+              <textarea
+                name="orderWhatsAppMixFollowUpTemplate"
+                value={settings.orderWhatsAppMixFollowUpTemplate}
+                onChange={handleInputChange}
+                rows={4}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
+                placeholder="Quick follow-up on order #{orderNumber} via WaveOrder — {businessName}"
+              />
+            </div>
+            <p className="text-sm">
+              <Link href={`/admin/stores/${businessId}/help`} className="text-teal-700 font-medium hover:underline">
+                Help &amp; Support
+              </Link>
+              {' — '}To turn off mix or change channel, contact WaveOrder support.
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Settings Form */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">

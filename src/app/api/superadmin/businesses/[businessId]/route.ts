@@ -413,6 +413,8 @@ export async function GET(
         currency: business.currency,
         whatsappNumber: business.whatsappNumber,
         whatsappDirectNotifications: business.whatsappDirectNotifications,
+        orderWhatsAppMixEnabled: business.orderWhatsAppMixEnabled ?? false,
+        orderWhatsAppMixFollowUpTemplate: business.orderWhatsAppMixFollowUpTemplate ?? null,
         happyHourEnabled: business.happyHourEnabled,
         showSearchAnalytics: business.showSearchAnalytics,
         showCostPrice: business.showCostPrice,

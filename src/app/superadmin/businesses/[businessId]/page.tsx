@@ -76,6 +76,8 @@ interface BusinessDetails {
   currency: string
   whatsappNumber: string
   whatsappDirectNotifications?: boolean
+  orderWhatsAppMixEnabled?: boolean
+  orderWhatsAppMixFollowUpTemplate?: string | null
   happyHourEnabled?: boolean
   showSearchAnalytics?: boolean
   showCostPrice?: boolean
@@ -2119,31 +2121,53 @@ function WhatsAppSettingsSection({
 }) {
   const [saving, setSaving] = useState(false)
   const [directNotifications, setDirectNotifications] = useState(business.whatsappDirectNotifications || false)
+  const [mixEnabled, setMixEnabled] = useState(business.orderWhatsAppMixEnabled || false)
 
-  const handleToggle = async () => {
-    const newValue = !directNotifications
+  useEffect(() => {
+    setDirectNotifications(business.whatsappDirectNotifications || false)
+    setMixEnabled(business.orderWhatsAppMixEnabled || false)
+  }, [business.whatsappDirectNotifications, business.orderWhatsAppMixEnabled])
+
+  const patchWhatsApp = async (body: Record<string, boolean>) => {
     setSaving(true)
-    
     try {
       const res = await fetch(`/api/superadmin/businesses/${business.id}/whatsapp-settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsappDirectNotifications: newValue })
+        body: JSON.stringify(body),
       })
-      
       if (res.ok) {
-        setDirectNotifications(newValue)
-        toast.success(newValue ? 'Direct notifications enabled' : 'Direct notifications disabled')
+        const data = await res.json()
+        if (data.business?.whatsappDirectNotifications !== undefined) {
+          setDirectNotifications(data.business.whatsappDirectNotifications)
+        }
+        if (data.business?.orderWhatsAppMixEnabled !== undefined) {
+          setMixEnabled(data.business.orderWhatsAppMixEnabled)
+        }
+        toast.success('WhatsApp settings updated')
         onUpdate()
       } else {
         const data = await res.json()
         toast.error(data.message || 'Failed to update setting')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error updating setting')
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDirectToggle = () => {
+    const newValue = !directNotifications
+    patchWhatsApp({ whatsappDirectNotifications: newValue })
+  }
+
+  const handleMixToggle = () => {
+    if (!directNotifications) {
+      toast.error('Enable direct new-order WhatsApp delivery first')
+      return
+    }
+    patchWhatsApp({ orderWhatsAppMixEnabled: !mixEnabled })
   }
 
   return (
@@ -2156,15 +2180,15 @@ function WhatsAppSettingsSection({
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">
-            Direct {business.businessType === 'SERVICES' ? 'Service request & appointment' : (business.businessType === 'SALON' ? 'Appointment' : 'Order')} Notifications (Twilio)
+            Direct {business.businessType === 'SERVICES' ? 'service request & appointment' : (business.businessType === 'SALON' ? 'appointment' : 'order')} notifications (WaveOrder → your WhatsApp)
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, {business.businessType === 'SERVICES' ? 'service requests and appointments' : (business.businessType === 'SALON' ? 'appointments' : 'orders')} are sent directly to the business via Twilio WhatsApp API.
-            When disabled, customers use the traditional wa.me link.
+            When enabled, WaveOrder sends new {business.businessType === 'SERVICES' ? 'requests and bookings' : (business.businessType === 'SALON' ? 'bookings' : 'orders')} to your store WhatsApp number automatically. When disabled, the customer opens WhatsApp with a pre-filled message (customer starts the chat).
           </p>
         </div>
         <button
-          onClick={handleToggle}
+          type="button"
+          onClick={handleDirectToggle}
           disabled={saving}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
             directNotifications ? 'bg-teal-600' : 'bg-gray-200'
@@ -2177,11 +2201,34 @@ function WhatsAppSettingsSection({
           />
         </button>
       </div>
+
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mt-3">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Mix: direct notify + customer follow-up link</p>
+          <p className="text-xs text-gray-500 mt-1">
+            After checkout, WaveOrder still notifies your WhatsApp as above, and the customer also gets a follow-up WhatsApp link (message template is editable in Admin → Settings → Notifications). Only available when direct delivery above is on.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleMixToggle}
+          disabled={saving || !directNotifications}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            mixEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving || !directNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              mixEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
       
       {directNotifications && (
         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700">
-            <span className="font-medium">Active:</span> {business.businessType === 'SERVICES' ? 'Service requests and appointments' : (business.businessType === 'SALON' ? 'Appointments' : 'Orders')} will be sent automatically to {business.whatsappNumber} via Twilio.
+            <span className="font-medium">Direct delivery on:</span> {business.businessType === 'SERVICES' ? 'Service requests and appointments' : (business.businessType === 'SALON' ? 'Appointments' : 'Orders')} are sent to {business.whatsappNumber} by WaveOrder when customers submit.
           </p>
         </div>
       )}
@@ -2189,7 +2236,7 @@ function WhatsAppSettingsSection({
       {!directNotifications && (
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
-            <span className="font-medium">Traditional Flow:</span> Customers will be redirected to WhatsApp to send their order manually.
+            <span className="font-medium">Customer-initiated chat:</span> After checkout, the customer is sent to WhatsApp with a pre-filled message; your store is not notified by WaveOrder on WhatsApp for that step.
           </p>
         </div>
       )}

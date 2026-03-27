@@ -211,6 +211,7 @@ export default function SystemLogsPage() {
       storefront_404: 'Storefront 404',
       storefront_error: 'Storefront Error',
       storefront_success: 'Storefront Success',
+      storefront_order_whatsapp_redirect: 'Storefront WhatsApp order redirect',
       products_error: 'Products Error',
       order_created: 'Order Created',
       order_error: 'Order Error',
@@ -391,6 +392,7 @@ export default function SystemLogsPage() {
                   <option value="storefront_success">Storefront Success</option>
                   <option value="storefront_404">Storefront 404</option>
                   <option value="storefront_error">Storefront Error</option>
+                  <option value="storefront_order_whatsapp_redirect">Storefront WhatsApp order redirect</option>
                   <option value="products_error">Products Error</option>
                 </optgroup>
                 <optgroup label="Orders &amp; Appointments">

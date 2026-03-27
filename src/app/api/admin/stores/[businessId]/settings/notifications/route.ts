@@ -52,7 +52,10 @@ export async function GET(
         email: true,
         currency: true,
         timeFormat: true,
-        businessType: true
+        businessType: true,
+        whatsappDirectNotifications: true,
+        orderWhatsAppMixEnabled: true,
+        orderWhatsAppMixFollowUpTemplate: true,
       }
     })
 
@@ -92,6 +95,9 @@ export async function PUT(
     const updatedBusiness = await prisma.business.update({
       where: { id: businessId },
       data: {
+        ...(data.orderWhatsAppMixFollowUpTemplate !== undefined
+          ? { orderWhatsAppMixFollowUpTemplate: data.orderWhatsAppMixFollowUpTemplate }
+          : {}),
         orderNotificationsEnabled: data.orderNotificationsEnabled || false,
         orderNotificationEmail: data.orderNotificationsEnabled 
           ? data.orderNotificationEmail?.trim() || null 
@@ -157,7 +163,10 @@ export async function PUT(
         email: true,
         currency: true,
         timeFormat: true,
-        businessType: true
+        businessType: true,
+        whatsappDirectNotifications: true,
+        orderWhatsAppMixEnabled: true,
+        orderWhatsAppMixFollowUpTemplate: true,
       }
     })
 

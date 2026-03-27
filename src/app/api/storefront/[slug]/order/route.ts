@@ -12,6 +12,8 @@ import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
 import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
+import { buildWaMeUrlWithText } from '@/lib/whatsapp-wa-me-url'
+import { buildCustomerFollowUpWhatsappUrl } from '@/lib/whatsapp-mix-followup'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -980,6 +982,8 @@ export async function POST(
         address: true,
         whatsappNumber: true,
         whatsappDirectNotifications: true,
+        orderWhatsAppMixEnabled: true,
+        orderWhatsAppMixFollowUpTemplate: true,
         orderNumberFormat: true,
         website: true,
         deliveryEnabled: true,
@@ -2469,9 +2473,26 @@ try {
       }
     }
 
+    let customerFollowUpWhatsappUrl: string | undefined
+    if (
+      useDirectNotification &&
+      twilioMessageSent &&
+      business.orderWhatsAppMixEnabled
+    ) {
+      customerFollowUpWhatsappUrl = buildCustomerFollowUpWhatsappUrl(
+        business.whatsappNumber,
+        business.orderWhatsAppMixFollowUpTemplate,
+        {
+          orderNumber: order.orderNumber,
+          businessName: business.name,
+          orderId: order.id,
+        }
+      )
+    }
+
     // Return response based on notification type
     if (useDirectNotification && twilioMessageSent) {
-      // Direct notification sent successfully - no wa.me redirect needed
+      // Direct notification sent successfully - optional mix follow-up URL for customer
       return NextResponse.json({
         success: true,
         orderId: order.id,
@@ -2480,7 +2501,10 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: true,
-        message: 'Order sent! The business has been notified.'
+        message: 'Order sent! The business has been notified.',
+        ...(customerFollowUpWhatsappUrl
+          ? { customerFollowUpWhatsappUrl }
+          : {}),
       })
     } else {
       // Use traditional wa.me redirect (either by preference or as fallback)
@@ -2492,7 +2516,7 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: false,
-        whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
+        whatsappUrl: buildWaMeUrlWithText(business.whatsappNumber, whatsappMessage),
       })
     }
 

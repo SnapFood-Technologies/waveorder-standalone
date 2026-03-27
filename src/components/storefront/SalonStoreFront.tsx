@@ -48,6 +48,7 @@ import { FaXTwitter } from 'react-icons/fa6'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
+import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import { PhoneInput } from '../site/PhoneInput'
 import { encodeBase62, decodeBase62, isValidBase62 } from '@/utils/base62'
 
@@ -1053,15 +1054,33 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
         directNotification: result.directNotification || false
       })
 
-      // Auto-hide success message after 15 seconds for direct notification, 8 seconds otherwise
-      const hideDelay = result.directNotification ? 15000 : 8000
-      setTimeout(() => {
-        setBookingSuccessMessage(null)
-      }, hideDelay)
-      
-      // Open WhatsApp if not direct notification (traditional wa.me flow)
-      if (!result.directNotification && result.whatsappUrl) {
-        window.open(result.whatsappUrl, '_blank')
+      const redirectMs = 5000
+      if (result.directNotification && result.customerFollowUpWhatsappUrl) {
+        setTimeout(() => {
+          logStorefrontWhatsAppOrderRedirect({
+            slug: storeData.slug,
+            businessId: storeData.id,
+            orderId: result.orderId,
+            orderNumber: result.orderNumber,
+            variant: 'mix_follow_up',
+          })
+          window.location.href = result.customerFollowUpWhatsappUrl
+        }, redirectMs)
+        setTimeout(() => setBookingSuccessMessage(null), 15000)
+      } else if (result.directNotification) {
+        setTimeout(() => setBookingSuccessMessage(null), 15000)
+      } else if (result.whatsappUrl) {
+        setTimeout(() => {
+          logStorefrontWhatsAppOrderRedirect({
+            slug: storeData.slug,
+            businessId: storeData.id,
+            orderId: result.orderId,
+            orderNumber: result.orderNumber,
+            variant: 'classic_wa_me',
+          })
+          window.location.href = result.whatsappUrl
+        }, redirectMs)
+        setTimeout(() => setBookingSuccessMessage(null), 10000)
       }
 
       // Save customer info for returning customers (only if enabled for this business)
