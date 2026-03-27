@@ -32,8 +32,8 @@ yarn vitest run \
 
 | Metric | Value |
 |--------|------:|
-| Test files | 18 |
-| Tests (cases) | 94 |
+| Test files | 21 |
+| Tests (cases) | 114 |
 
 ---
 
@@ -237,6 +237,42 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 
 ---
 
+### 19. `storefront-catalog-aggregates.test.ts` (3 tests)
+
+*Added: Mar 2026*
+
+**Purpose:** **Country-based catalog** admin/SuperAdmin aggregates: products with visible/hidden country rules per business (including connected businesses).
+
+**Covers:** Empty state (`rows`, `visibleCountryRows`, `excludedCountryRows`, `products`, summary); `countryBasedCatalogEnabled` passthrough from business; per-code visible/hidden counts plus `visibleCountryRows` / `excludedCountryRows` with `productIds` and `productCount`.
+
+**Implementation:** `src/lib/catalog-country-aggregates.ts`
+
+---
+
+### 20. `visitor-country-catalog.test.ts` (14 tests)
+
+*Added: Mar 2026*
+
+**Purpose:** **Storefront visitor country** rules: when a product is shown for an ISO2, Prisma `where` merge for filtered queries, query-param parsing, admin PATCH normalization.
+
+**Covers:** `productVisibleForVisitorCountry` (null visitor, hidden wins, worldwide visible, allowlists, case); `mergeProductWhereVisitorCountry` (no-op when disabled/no visitor, append AND, merge with existing AND); `parseVisitorCountryFromSearchParams` (`cc` / `visitorCountry`); `normalizeCountryCodeList` (undefined, filter/dedupe, empty array).
+
+**Implementation:** `src/lib/visitor-country-catalog.ts`
+
+---
+
+### 21. `catalog-country-options.test.ts` (3 tests)
+
+*Added: Mar 2026*
+
+**Purpose:** **Fixed ISO2 allowlist** for product country multiselects (aligned list and order).
+
+**Covers:** `CATALOG_COUNTRY_OPTIONS` order and count; `filterToCatalogCountryCodes` drops unknown codes and preserves catalog order; empty/null inputs.
+
+**Implementation:** `src/lib/catalog-country-options.ts`
+
+---
+
 ## Product area map
 
 | Area | Test files |
@@ -249,6 +285,7 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | Marketing / website embed | 15, 17 |
 | WhatsApp mix (order follow-up) | 16 |
 | SuperAdmin system logs (storefront 404 spam rules) | 18 |
+| Country-based catalog (aggregates, visitor rules, ISO allowlist) | 19–21 |
 
 ---
 
@@ -282,6 +319,9 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | `website-embed-settings.test.ts` | `src/lib/website-embed-settings.ts` |
 | `storefront-404-spam.test.ts` | `src/lib/storefront-404-spam.ts` |
 | `whatsapp-mix-followup.test.ts` | `src/lib/whatsapp-mix-followup.ts` |
+| `storefront-catalog-aggregates.test.ts` | `src/lib/catalog-country-aggregates.ts` |
+| `visitor-country-catalog.test.ts` | `src/lib/visitor-country-catalog.ts` |
+| `catalog-country-options.test.ts` | `src/lib/catalog-country-options.ts` |
 
 ---
 

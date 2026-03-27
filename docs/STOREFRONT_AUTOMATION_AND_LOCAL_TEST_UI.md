@@ -2,7 +2,7 @@
 
 This document describes work done for **more automation around the end-user / storefront experience** (not admin dashboards), plus the **Vitest browser UI** for local development.
 
-For the **full test inventory** (all 18 files, 94 cases, including non-storefront areas), see [`TEST_SUITE.md`](./TEST_SUITE.md).
+For the **full test inventory** (all files and case counts, including non-storefront areas), see [`TEST_SUITE.md`](./TEST_SUITE.md) — currently **21 files**, **114** tests.
 
 ---
 
@@ -22,6 +22,8 @@ For the **full test inventory** (all 18 files, 94 cases, including non-storefron
 **Total for this slice:** **51 tests** in **6 files** (counts match Vitest when you run the storefront subset command below).
 
 **Related but not “customer UI”:** `storefront-404-spam.test.ts` exercises **SuperAdmin system log** filtering for probe/scanner URLs (`src/lib/storefront-404-spam.ts`). It lives in the same suite but targets **operations/admin visibility**, not the storefront checkout UI.
+
+**Country-based catalog (storefront product visibility by visitor country)** is covered in **`TEST_SUITE.md`** §19–21: `storefront-catalog-aggregates.test.ts`, `visitor-country-catalog.test.ts`, `catalog-country-options.test.ts` (`src/lib/catalog-country-aggregates.ts`, `visitor-country-catalog.ts`, `catalog-country-options.ts`).
 
 ---
 
@@ -91,4 +93,4 @@ yarn test:ui       # Vitest UI
 
 ## 5. Revision note
 
-Document reflects the automation work completed **March 2026** (storefront test expansion, CI, Vitest UI + jest-dom). Update the **51 / 6 files** figures if you add or remove storefront-facing tests.
+Document reflects the automation work completed **March 2026** (storefront test expansion, CI, Vitest UI + jest-dom). Update the **51 / 6 files** slice figures if you add or remove storefront-facing tests; use **`TEST_SUITE.md`** for repo-wide file and test counts.

@@ -152,6 +152,7 @@ export async function GET(
         
         // Inventory display
         showStockBadge: true,
+        countryBasedCatalogEnabled: true,
         
         // Status
         isActive: true,

@@ -317,6 +317,9 @@ model Business {
   happyHourDiscountPercent Float? // Discount percentage (e.g., 20 for 20% off)
   happyHourProductIds      String[] // Product IDs that get the discount
 
+  /// When true, storefront catalog filters products by visitor country (visibleCountryCodes / hiddenCountryCodes on Product)
+  countryBasedCatalogEnabled Boolean @default(false)
+
   // SERVICES business type: which request options are enabled (only used when businessType === SERVICES)
   serviceAllowAppointmentBooking Boolean? @default(true)
   serviceAllowRequestByEmail     Boolean? @default(false)
@@ -1254,6 +1257,11 @@ model Product {
 
   // Marketplace/Multi-business support - businesses that can also sell this product
   connectedBusinesses String[] @db.ObjectId
+
+  /// ISO 3166-1 alpha-2, uppercase (e.g. ES, GR). Empty = visible in all countries (subject to hiddenCountryCodes).
+  visibleCountryCodes String[] @default([])
+  /// If visitor country is in this list, product is hidden (exclude wins over empty visible list).
+  hiddenCountryCodes  String[] @default([])
 
   inventoryActivities InventoryActivity[]
 

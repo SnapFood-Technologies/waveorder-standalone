@@ -111,6 +111,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [enableTeamPaymentTracking, setEnableTeamPaymentTracking] = useState(false)
   const [enableManualTeamCreation, setEnableManualTeamCreation] = useState(false)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
+  const [countryBasedCatalogEnabled, setCountryBasedCatalogEnabled] = useState(false)
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false)
   const [metaPixelEnabled, setMetaPixelEnabled] = useState(false)
   const [websiteEmbedEnabled, setWebsiteEmbedEnabled] = useState(false)
@@ -164,6 +165,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setAiAssistantEnabled(data.business?.aiAssistantEnabled || false)
           setMetaPixelEnabled(data.business?.metaPixelEnabled || false)
           setWebsiteEmbedEnabled(data.business?.websiteEmbedEnabled || false)
+          setCountryBasedCatalogEnabled(data.business?.countryBasedCatalogEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -329,6 +331,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
             icon: Boxes, 
             requiredPlan: 'STARTER'
           },
+          // @ts-ignore
+          ...(countryBasedCatalogEnabled ? [{
+            name: 'Country Based',
+            href: `${baseUrl}/catalog/countries`,
+            icon: Globe,
+            requiredPlan: 'STARTER' as Plan
+          }] : []),
           // @ts-ignore
           ...(brandsEnabled ? [{
             name: 'Brands', 

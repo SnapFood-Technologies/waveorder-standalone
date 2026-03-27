@@ -2,6 +2,8 @@
 
 export interface LocationData {
   country: string | null
+  /** ISO 3166-1 alpha-2 when available (e.g. GR, ES) — use for catalog / rules */
+  countryCode: string | null
   city: string | null
   region: string | null
   latitude: number | null
@@ -143,8 +145,13 @@ export async function getLocationFromIP(ip: string): Promise<LocationData | null
           throw new Error(`ipapi.co error: ${data.reason || 'Unknown error'}`)
         }
         
+        const code =
+          typeof data.country_code === 'string' && data.country_code.length >= 2
+            ? data.country_code.toUpperCase().slice(0, 2)
+            : null
         return {
           country: data.country_name || null,
+          countryCode: code,
           city: data.city || null,
           region: data.region || data.region_code || null,
           latitude: data.latitude || null,
@@ -163,7 +170,9 @@ export async function getLocationFromIP(ip: string): Promise<LocationData | null
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
       
-      const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,city,regionName,lat,lon`, {
+      const response = await fetch(
+        `http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,city,regionName,lat,lon`,
+        {
         signal: controller.signal,
         cache: 'no-store'
       })
@@ -174,8 +183,13 @@ export async function getLocationFromIP(ip: string): Promise<LocationData | null
         const data = await response.json()
         
         if (data.status === 'success') {
+          const code =
+            typeof data.countryCode === 'string' && data.countryCode.length >= 2
+              ? data.countryCode.toUpperCase().slice(0, 2)
+              : null
           return {
             country: data.country || null,
+            countryCode: code,
             city: data.city || null,
             region: data.regionName || null,
             latitude: data.lat || null,

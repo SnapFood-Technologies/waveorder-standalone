@@ -49,6 +49,10 @@ import {
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import {
+  persistCatalogVisitorCookie,
+  readCatalogVisitorIsoFromBrowser
+} from '@/lib/storefront-catalog-visitor'
+import {
   canSubmitStorefrontOrder,
   formatStorefrontOrderButtonLabel,
   formatStorefrontOrderFooterHint,
@@ -1852,6 +1856,7 @@ interface StoreData {
   bannerFontSize?: string
   rememberCustomerEnabled?: boolean
   timezone?: string
+  countryBasedCatalogEnabled?: boolean
   aiAssistantEnabled?: boolean
   aiChatIcon?: 'message' | 'help' | 'robot'
   aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
@@ -1997,6 +2002,24 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // URL params for product sharing
   const searchParams = useSearchParams()
+
+  /** Resolved ISO2 for country-based catalog (query ?cc / ?visitorCountry, then cookie). */
+  const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!storeData.countryBasedCatalogEnabled) {
+      setCatalogVisitorIso(null)
+      return
+    }
+    const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
+    if (cc && /^[a-zA-Z]{2}$/.test(cc)) {
+      const iso = cc.toUpperCase()
+      setCatalogVisitorIso(iso)
+      persistCatalogVisitorCookie(iso)
+      return
+    }
+    setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
+  }, [storeData.countryBasedCatalogEnabled, storeData.slug, searchParams])
   
   // Capture UTM parameters from URL for affiliate tracking
   const [utmParams, setUtmParams] = useState<{
@@ -2403,7 +2426,12 @@ const trackProductEvent = useCallback((
         // Product not in loaded products - fetch it directly from API
         const fetchSharedProduct = async () => {
           try {
-            const response = await fetch(`/api/storefront/${storeData.slug}/products?productId=${productId}`)
+            const sp = new URLSearchParams()
+            sp.set('productId', productId!)
+            if (storeData.countryBasedCatalogEnabled && catalogVisitorIso) {
+              sp.set('visitorCountry', catalogVisitorIso)
+            }
+            const response = await fetch(`/api/storefront/${storeData.slug}/products?${sp.toString()}`)
             if (response.ok) {
               const data = await response.json()
               if (data.products && data.products.length > 0) {
@@ -2422,7 +2450,7 @@ const trackProductEvent = useCallback((
         fetchSharedProduct()
       }
     }
-  }, [searchParams, products, storeData.slug])
+  }, [searchParams, products, storeData.slug, storeData.countryBasedCatalogEnabled, catalogVisitorIso])
 
   // Share product handler - creates URL with encoded product ID and tracking params
   const handleShareProduct = useCallback((productId: string) => {
@@ -2575,6 +2603,10 @@ const trackProductEvent = useCallback((
       params.set('sortBy', sortBy)
       params.set('page', page.toString())
       params.set('limit', '50') // Load 50 products per page for better performance
+
+      if (storeData.countryBasedCatalogEnabled && catalogVisitorIso) {
+        params.set('visitorCountry', catalogVisitorIso)
+      }
       
       const response = await fetch(`/api/storefront/${storeData.slug}/products?${params.toString()}`)
       
@@ -2608,7 +2640,7 @@ const trackProductEvent = useCallback((
       // Clear ref when fetch completes (allows next scroll-triggered fetch)
       isFetchingRef.current = false
     }
-  }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [storeData.slug, storeData.countryBasedCatalogEnabled, catalogVisitorIso, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
   // Initial products load - skip if we already have initialProducts from server
   useEffect(() => {
@@ -2617,7 +2649,7 @@ const trackProductEvent = useCallback((
       fetchProducts(1, true)
     }
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
-  }, [storeData.slug]) // Only run when slug changes
+  }, [storeData.slug, catalogVisitorIso, storeData.countryBasedCatalogEnabled]) // Slug or visitor override for country catalog
 
   // Debounce search term - wait 400ms after user stops typing
   useEffect(() => {
@@ -2668,7 +2700,7 @@ const trackProductEvent = useCallback((
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [debouncedSearchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [debouncedSearchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands, catalogVisitorIso, storeData.countryBasedCatalogEnabled])
 
   // Update displayed count when products are loaded
   useEffect(() => {

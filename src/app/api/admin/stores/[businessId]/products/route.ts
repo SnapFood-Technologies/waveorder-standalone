@@ -5,6 +5,7 @@ import { checkBusinessAccess } from '@/lib/api-helpers'
 import { syncProductToOmniGateway } from '@/lib/omnigateway'
 import { canAddProduct, getPlanLimits } from '@/lib/stripe'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { normalizeCountryCodeList } from '@/lib/visitor-country-catalog'
 
 
 export async function GET(
@@ -314,6 +315,9 @@ export async function POST(
       }
     }
 
+    const visibleCountryCodes = normalizeCountryCodeList(productData.visibleCountryCodes)
+    const hiddenCountryCodes = normalizeCountryCodeList(productData.hiddenCountryCodes)
+
     const product = await prisma.product.create({
       data: {
         name: productData.name,
@@ -338,6 +342,8 @@ export async function POST(
         metaDescription: productData.metaDescription || null,
         businessId,
         categoryId: productData.categoryId,
+        ...(visibleCountryCodes !== undefined && { visibleCountryCodes }),
+        ...(hiddenCountryCodes !== undefined && { hiddenCountryCodes }),
         variants: {
           create: productData.variants?.map((variant: any) => {
             const metadata: any = {}

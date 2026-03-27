@@ -5,6 +5,7 @@ import { businessSlugFilter } from '@/lib/storefront-slug'
 import { getLocationFromIP, parseUserAgent, extractUTMParams } from '@/lib/geolocation'
 import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { mergeProductWhereVisitorCountry, resolveVisitorCountryIso } from '@/lib/visitor-country-catalog'
 import * as Sentry from '@sentry/nextjs'
 
 function formatBusinessHours(businessHours: any): string | null {
@@ -222,6 +223,31 @@ export async function GET(
       ? [business.id, ...business.connectedBusinesses]
       : [business.id]
 
+    let visitorIso: string | null = null
+    if (business.countryBasedCatalogEnabled) {
+      visitorIso = await resolveVisitorCountryIso(request)
+    }
+    const countryCatalogOpts = {
+      enabled: !!business.countryBasedCatalogEnabled,
+      visitorIso
+    }
+
+    const categoryProductCountWhere: Record<string, unknown> = {
+      businessId: { in: businessIds },
+      isActive: true,
+      price: { gt: 0 },
+      ...(!business.showStockBadge && {
+        OR: [
+          { trackInventory: false },
+          { trackInventory: true, stock: { gt: 0 } }
+        ]
+      }),
+      ...(business.hideProductsWithoutPhotos && {
+        images: { isEmpty: false }
+      })
+    }
+    mergeProductWhereVisitorCountry(categoryProductCountWhere, countryCatalogOpts)
+
     // PERFORMANCE OPTIMIZATION: Fetch categories WITHOUT products initially
     // Products will be loaded on-demand via separate API endpoint
     const categories = await prisma.category.findMany({
@@ -275,22 +301,7 @@ export async function GET(
         _count: {
           select: {
             products: {
-              where: {
-                businessId: { in: businessIds },
-                isActive: true,
-                price: { gt: 0 },
-                // Only filter by stock if showStockBadge is disabled (default behavior)
-                // When showStockBadge is enabled, include all products (even out of stock)
-                ...(!business.showStockBadge && {
-                  OR: [
-                    { trackInventory: false }, // Products that don't track inventory always show
-                    { trackInventory: true, stock: { gt: 0 } } // Products that track inventory must have stock > 0
-                  ]
-                }),
-                ...(business.hideProductsWithoutPhotos && {
-                  images: { isEmpty: false }
-                })
-              }
+              where: categoryProductCountWhere
             }
           }
         }
@@ -316,6 +327,8 @@ export async function GET(
           isEmpty: false
         }
       }
+
+      mergeProductWhereVisitorCountry(productWhere, countryCatalogOpts)
 
       // Fetch more products initially to account for stock filtering
       // We'll filter out products with no stock, so fetch 50 to ensure we get at least 24 after filtering
@@ -816,7 +829,8 @@ export async function GET(
       
       // Inventory display settings
       showStockBadge: business.showStockBadge ?? false,
-      
+      countryBasedCatalogEnabled: business.countryBasedCatalogEnabled ?? false,
+
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
       metaPixelEnabled: business.metaPixelEnabled || false,

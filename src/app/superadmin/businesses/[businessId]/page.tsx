@@ -79,6 +79,7 @@ interface BusinessDetails {
   orderWhatsAppMixEnabled?: boolean
   orderWhatsAppMixFollowUpTemplate?: string | null
   happyHourEnabled?: boolean
+  countryBasedCatalogEnabled?: boolean
   showSearchAnalytics?: boolean
   showCostPrice?: boolean
   showProductionPlanning?: boolean
@@ -1688,6 +1689,8 @@ export default function BusinessDetailsPage() {
             <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
+          <CountryBasedCatalogSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Search Analytics Settings */}
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
@@ -2325,6 +2328,15 @@ function WaveOrderFlowsUsageCard({
             <MessageSquare className="w-4 h-4 mr-1" />
             View Flows Usage
           </Link>
+          {business.countryBasedCatalogEnabled && (
+            <Link
+              href={`/superadmin/businesses/${businessId}/country-catalog`}
+              className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+            >
+              <Globe className="w-4 h-4 mr-1" />
+              Country catalog
+            </Link>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2499,6 +2511,121 @@ function WaveOrderFlowsSettingsSection({
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+// Country-based catalog (SuperAdmin enables; merchant edits products)
+function CountryBasedCatalogSection({
+  business,
+  onUpdate
+}: {
+  business: BusinessDetails
+  onUpdate: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [enabled, setEnabled] = useState(business.countryBasedCatalogEnabled || false)
+  const [stats, setStats] = useState<{
+    distinctCountryCodes: number
+    productsWithAnyCountryRule: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (!enabled) {
+      setStats(null)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/superadmin/businesses/${business.id}/catalog/countries`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.summary) setStats(d.summary)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, business.id])
+
+  useEffect(() => {
+    setEnabled(business.countryBasedCatalogEnabled || false)
+  }, [business.countryBasedCatalogEnabled])
+
+  const handleToggle = async () => {
+    const newValue = !enabled
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ countryBasedCatalogEnabled: newValue })
+      })
+      if (res.ok) {
+        setEnabled(newValue)
+        toast.success(
+          newValue ? 'Country-based catalog enabled for this business' : 'Country-based catalog disabled'
+        )
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Globe className="w-5 h-5 mr-2 text-teal-600" />
+        Country-based catalog
+      </h3>
+      <p className="text-sm text-gray-600 mb-4">
+        When enabled, the storefront can filter products by visitor country. Merchants set ISO country lists per
+        product in Admin → Products. Use <span className="font-mono text-xs">?cc=GR</span> or cookie{' '}
+        <span className="font-mono text-xs">wo_visitor_country</span> for QA.
+      </p>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable for this business</p>
+          <p className="text-xs text-gray-500 mt-1">Off = identical catalog behavior to before (no filtering).</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            enabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      {enabled && stats && (
+        <div className="mt-4 p-3 bg-teal-50 border border-teal-100 rounded-lg text-xs text-teal-900">
+          <span className="font-medium">Summary:</span> {stats.distinctCountryCodes} country code
+          {stats.distinctCountryCodes === 1 ? '' : 's'}, {stats.productsWithAnyCountryRule} product
+          {stats.productsWithAnyCountryRule === 1 ? '' : 's'} with rules.
+        </div>
+      )}
+      <div className="mt-4 flex flex-col gap-2">
+        <Link
+          href={`/superadmin/businesses/${business.id}/country-catalog`}
+          className="text-sm text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1"
+        >
+          View country catalog stats <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
+        <p className="text-xs text-gray-500">
+          Merchants manage assignments in Admin → Products → Country Based (when the feature is on).
+        </p>
+      </div>
     </div>
   )
 }

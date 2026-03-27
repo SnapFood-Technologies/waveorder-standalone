@@ -24,9 +24,12 @@ import {
   Tag,
   Search,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Globe
 } from 'lucide-react'
 import Link from 'next/link'
+import { filterToCatalogCountryCodes } from '@/lib/catalog-country-options'
+import { CatalogCountryMultiselect } from '@/components/admin/products/CatalogCountryMultiselect'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
@@ -84,6 +87,7 @@ interface Business {
   brandsFeatureEnabled?: boolean
   collectionsFeatureEnabled?: boolean
   groupsFeatureEnabled?: boolean
+  countryBasedCatalogEnabled?: boolean
 }
 
 interface ProductForm {
@@ -113,6 +117,8 @@ interface ProductForm {
   modifiers: ProductModifier[]
   metaTitle: string
   metaDescription: string
+  visibleCountryCodes: string[]
+  hiddenCountryCodes: string[]
 }
 
 // Searchable Category Select Component
@@ -257,7 +263,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     variants: [],
     modifiers: [],
     metaTitle: '',
-    metaDescription: ''
+    metaDescription: '',
+    visibleCountryCodes: [],
+    hiddenCountryCodes: []
   })
 
   const [categories, setCategories] = useState<Category[]>([])
@@ -270,7 +278,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
     storefrontLanguage: 'en',
     brandsFeatureEnabled: false,
     collectionsFeatureEnabled: false,
-    groupsFeatureEnabled: false
+    groupsFeatureEnabled: false,
+    countryBasedCatalogEnabled: false
   })
   const [loading, setLoading] = useState(isEditing)
   const [saving, setSaving] = useState(false)
@@ -308,7 +317,8 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           storefrontLanguage: data.business.storefrontLanguage || data.business.language || 'en',
           brandsFeatureEnabled: data.business.brandsFeatureEnabled || false,
           collectionsFeatureEnabled: data.business.collectionsFeatureEnabled || false,
-          groupsFeatureEnabled: data.business.groupsFeatureEnabled || false
+          groupsFeatureEnabled: data.business.groupsFeatureEnabled || false,
+          countryBasedCatalogEnabled: data.business.countryBasedCatalogEnabled || false
         })
         // Set default language based on business language
         if (data.business.language === 'sq' || data.business.storefrontLanguage === 'sq' || 
@@ -411,7 +421,9 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
           lowStockAlert: data.product.lowStockAlert || undefined,
           brandId: data.product.brandId || undefined,
           collectionIds: data.product.collectionIds || [],
-          groupIds: data.product.groupIds || []
+          groupIds: data.product.groupIds || [],
+          visibleCountryCodes: filterToCatalogCountryCodes(data.product.visibleCountryCodes),
+          hiddenCountryCodes: filterToCatalogCountryCodes(data.product.hiddenCountryCodes)
         })
       }
     } catch (error) {
@@ -1360,6 +1372,36 @@ export function ProductForm({ businessId, productId }: ProductFormProps) {
                     <p className="text-sm text-green-700 mt-2">
                       Customers save {formatCurrency(calculateSavings()?.amount || 0)}
                     </p>
+                  </div>
+                )}
+
+                {business.countryBasedCatalogEnabled && (
+                  <div className="border border-teal-100 rounded-lg p-4 bg-teal-50/50 space-y-4">
+                    <div className="flex items-center gap-2 text-teal-900 font-medium">
+                      <Globe className="w-4 h-4" />
+                      Country catalog
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      Empty visible list = worldwide. Hidden list overrides for those countries.
+                    </p>
+                    <CatalogCountryMultiselect
+                      id="catalog-visible-countries"
+                      label="Visible in countries"
+                      helperText="Leave none selected for worldwide visibility (unless hidden applies)."
+                      value={form.visibleCountryCodes}
+                      onChange={(codes) =>
+                        setForm((prev) => ({ ...prev, visibleCountryCodes: codes }))
+                      }
+                    />
+                    <CatalogCountryMultiselect
+                      id="catalog-hidden-countries"
+                      label="Hidden in countries"
+                      helperText="Optional — hide this product for visitors from these countries."
+                      value={form.hiddenCountryCodes}
+                      onChange={(codes) =>
+                        setForm((prev) => ({ ...prev, hiddenCountryCodes: codes }))
+                      }
+                    />
                   </div>
                 )}
 

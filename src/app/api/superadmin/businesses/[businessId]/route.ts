@@ -428,6 +428,7 @@ export async function GET(
         enableAffiliateSystem: business.enableAffiliateSystem,
         enableTeamPaymentTracking: business.enableTeamPaymentTracking ?? false,
         legalPagesEnabled: business.legalPagesEnabled,
+        countryBasedCatalogEnabled: business.countryBasedCatalogEnabled ?? false,
         address: business.address,
         email: business.email,
         phone: business.phone,
