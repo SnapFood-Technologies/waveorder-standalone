@@ -9,16 +9,16 @@
 
 Order:
 
-1. Query `?cc=` or `?visitorCountry=` (QA / explicit).
-2. Cookie `wo_visitor_country` (set by storefront when `?cc=` / `?visitorCountry=` is present).
-3. Edge headers: `x-vercel-ip-country`, `cf-ipcountry` / `CF-IPCountry`, `x-visitor-country`, `visitor-country`, `CloudFront-Viewer-Country`.
-4. Fallback: async IP geolocation (`getLocationFromIP`), same path as analytics.
+1. Query `?cc=` or `?visitorCountry=` on this request (including API calls where the client appends `visitorCountry`).
+2. Async IP geolocation (`getLocationFromIP`) when the query has no ISO2.
+
+There is **no** server-side parsing of cookies or CDN/edge headers (Cloudflare/Vercel/etc.); use query params or rely on IP.
 
 If no ISO2 is resolved, **no country filter** is applied (same catalog as before the feature).
 
 ## Storefront client
 
-When `countryBasedCatalogEnabled` is true in `storeData`, product list requests append `visitorCountry=<ISO2>` when a value is known from the URL or cookie.
+When `countryBasedCatalogEnabled` is true in `storeData`, product list requests append `visitorCountry=<ISO2>` when a value is known from the URL or from the browser cookie (set when `?cc` / `?visitorCountry` was used). The client sends country as a **query param** on fetches so the server does not need to read the cookie header.
 
 ## Admin / SuperAdmin
 

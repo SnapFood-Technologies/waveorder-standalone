@@ -140,7 +140,9 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
   const htmlSnippet = useMemo(() => {
     const escUrl = escapeHtmlAttr(orderUrl)
     const escLabel = escapeHtmlText(buttonLabel)
-    return `<a href="${escUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 18px;background:${bgColor};color:${textColor};font-family:sans-serif;font-weight:600;text-decoration:none;border-radius:${rounded ? '9999px' : '4px'}">${escLabel}</a>`
+    const escBg = escapeHtmlAttr(bgColor)
+    const escFg = escapeHtmlAttr(textColor)
+    return `<a href="${escUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 18px;background:${escBg};color:${escFg};font-family:sans-serif;font-weight:600;text-decoration:none;border-radius:${rounded ? '9999px' : '4px'}">${escLabel}</a>`
   }, [orderUrl, buttonLabel, bgColor, textColor, rounded])
 
   const scriptSnippet = useMemo(() => {

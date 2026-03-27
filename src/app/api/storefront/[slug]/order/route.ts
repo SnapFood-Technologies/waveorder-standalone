@@ -1162,9 +1162,17 @@ export async function POST(
       if (business.businessType !== 'RETAIL' && (!latitude || !longitude)) {
       return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
       }
-      // For RETAIL businesses, require postal pricing selection
-      if (business.businessType === 'RETAIL' && !postalPricingId) {
-        return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+      // For RETAIL businesses, require country, city, and postal pricing selection
+      if (business.businessType === 'RETAIL') {
+        if (!countryCode?.trim()) {
+          return NextResponse.json({ error: 'Please select a country' }, { status: 400 })
+        }
+        if (!city?.trim()) {
+          return NextResponse.json({ error: 'Please select a city' }, { status: 400 })
+        }
+        if (!postalPricingId) {
+          return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+        }
       }
 
       const minimumOrder = business.minimumOrder ?? 0
@@ -2822,33 +2830,6 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   }
   
   return message
-}
-
-function formatWhatsAppNumber(phoneNumber: string): string {
-  // Remove all non-numeric characters
-  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
-  
-  // WhatsApp API expects numbers without + prefix
-  // But we need to ensure it's a valid international format
-  if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
-    // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
-    // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
-    // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
-    // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('34') && cleanNumber.length >= 11) {
-    // Spanish number: +34XXXXXXXXX -> 34XXXXXXXXX
-    return cleanNumber
-  }
-  
-  // For other countries, just return the clean number
-  return cleanNumber
 }
 
 function getCurrencySymbol(currency: string) {

@@ -78,7 +78,7 @@ export function canSubmitStorefrontOrder(ctx: StorefrontOrderValidationContext):
   if (ctx.deliveryType === 'delivery') {
     if (!ctx.customerAddress?.trim()) return false
     if (ctx.deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
-    if (!meetsDeliveryMinimum(ctx) && !ctx.deliveryError) return false
+    if (!meetsDeliveryMinimum(ctx)) return false
     if (ctx.businessType !== 'RETAIL' && ctx.customerAddress?.trim() && (ctx.latitude == null || ctx.longitude == null)) {
       return false
     }
@@ -113,14 +113,14 @@ export function getPrimaryStorefrontOrderBlockerForDisplay(
   ctx: StorefrontOrderValidationContext
 ): StorefrontOrderBlocker | null {
   if (ctx.isTemporarilyClosed) return 'STORE_CLOSED'
-  if (ctx.deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return 'OUTSIDE_DELIVERY_AREA'
-  if (ctx.deliveryError) return 'DELIVERY_UNAVAILABLE'
   if (ctx.isOrderLoading) return 'ORDER_LOADING'
   if (ctx.cartItemCount === 0) return 'CART_EMPTY'
   if (!ctx.customerName?.trim() || !ctx.customerPhone?.trim()) return 'MISSING_NAME_OR_PHONE'
   if (!isStorefrontPhoneComplete(ctx.customerPhone)) return 'PHONE_INVALID'
 
   if (ctx.deliveryType === 'delivery') {
+    if (ctx.deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return 'OUTSIDE_DELIVERY_AREA'
+    if (ctx.deliveryError) return 'DELIVERY_UNAVAILABLE'
     if (!ctx.customerAddress?.trim()) return 'DELIVERY_ADDRESS_REQUIRED'
     if (addressNeedsCoordinatesConfirmation(ctx)) return 'CONFIRM_DELIVERY_COORDINATES'
     if (ctx.businessType === 'RETAIL') {
@@ -128,7 +128,7 @@ export function getPrimaryStorefrontOrderBlockerForDisplay(
       if (!ctx.city?.trim()) return 'RETAIL_CITY_REQUIRED'
       if (!ctx.postalPricingId) return 'RETAIL_POSTAL_PRICING_REQUIRED'
     }
-    if (!meetsDeliveryMinimum(ctx) && !ctx.deliveryError) return 'MINIMUM_ORDER_NOT_MET'
+    if (!meetsDeliveryMinimum(ctx)) return 'MINIMUM_ORDER_NOT_MET'
   }
 
   if (ctx.invoiceType === 'INVOICE') {
@@ -206,10 +206,10 @@ export function formatStorefrontOrderFooterHint(
   translations: Record<string, string | undefined>
 ): string {
   const blocker = getPrimaryStorefrontOrderBlockerForDisplay(ctx)
-  if (ctx.isTemporarilyClosed) {
+  if (blocker === 'STORE_CLOSED') {
     return translations.storeClosedMessage || 'We apologize for any inconvenience.'
   }
-  if (ctx.deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
+  if (blocker === 'OUTSIDE_DELIVERY_AREA') {
     return translations.selectDifferentArea || 'Please select an address within our delivery area'
   }
   if (blocker === 'CONFIRM_DELIVERY_COORDINATES') {

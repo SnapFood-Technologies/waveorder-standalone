@@ -488,7 +488,7 @@ export default async function StorePage({ params, searchParams }: PageProps) {
             "description": businessDescription,
             "image": primaryImage,
             "logo": storeData.logo,
-            "url": storeData.canonicalUrl || `https://waveorder.app/${slug}`,
+            "url": storeData.canonicalUrl || `https://waveorder.app/${storeData.slug || slug}`,
             "telephone": storeData.phone,
             "email": storeData.email,
             "priceRange": priceRange,
@@ -529,11 +529,11 @@ export default async function StorePage({ params, searchParams }: PageProps) {
       )}
 
       {/* Language Alternates */}
-      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang={isAlbanian ? "sq" : isGreek ? "el" : isSpanish ? "es" : "en"} />
-      <link rel="alternate" href={`https://waveorder.app/${slug}`} hrefLang="x-default" />
+      <link rel="alternate" href={`https://waveorder.app/${storeData.slug || slug}`} hrefLang={isAlbanian ? "sq" : isGreek ? "el" : isSpanish ? "es" : "en"} />
+      <link rel="alternate" href={`https://waveorder.app/${storeData.slug || slug}`} hrefLang="x-default" />
       
       {/* Canonical URL */}
-      <link rel="canonical" href={storeData.canonicalUrl || `https://waveorder.app/${slug}`} />
+      <link rel="canonical" href={storeData.canonicalUrl || `https://waveorder.app/${storeData.slug || slug}`} />
     
       {storeData.metaPixelEnabled && storeData.metaPixelId && (
         <MetaPixel pixelId={storeData.metaPixelId} enabled={true} />

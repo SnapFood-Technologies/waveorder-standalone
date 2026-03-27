@@ -87,7 +87,7 @@ describe('canSubmitStorefrontOrder', () => {
     ).toBe(true)
   })
 
-  it('blocks delivery below minimum unless deliveryError set', () => {
+  it('blocks delivery below minimum even when deliveryError is set', () => {
     const low = base({
       deliveryType: 'delivery',
       customerAddress: 'A',
@@ -102,7 +102,7 @@ describe('canSubmitStorefrontOrder', () => {
         ...low,
         deliveryError: { type: 'DELIVERY_NOT_AVAILABLE', message: 'x' }
       })
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('validates invoice AFM and minimum', () => {
