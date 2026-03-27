@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Code2, Copy, Check, ExternalLink, Info, Save } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 import { buildWebsiteEmbedOrderUrl, getPublicSiteBaseUrl } from '@/lib/website-embed-url'
+import type { WebsiteEmbedSettingsJson } from '@/lib/website-embed-settings'
+import { logWebsiteEmbedCopy } from '@/lib/client-system-log'
 import { canViewAnalytics } from '@/lib/permissions'
 
 interface Props {

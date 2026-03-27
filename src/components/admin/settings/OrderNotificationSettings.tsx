@@ -57,6 +57,10 @@ interface NotificationSettings {
   notifyDineInOnPreparing: boolean
   notifyDineInOnReady: boolean
   notifyDineInOnDelivered: boolean
+  /** Mirrors Business.whatsappDirectNotifications (read-only in UI; set via support) */
+  whatsappDirectNotifications: boolean
+  orderWhatsAppMixEnabled: boolean
+  orderWhatsAppMixFollowUpTemplate: string
 }
 
 interface OrderNotification {
@@ -291,11 +295,14 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target
-    setSettings(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
+    const el = e.target
+    if (el instanceof HTMLInputElement && el.type === 'checkbox') {
+      const { name, checked } = el
+      setSettings(prev => ({ ...prev, [name]: checked }))
+      return
+    }
+    const { name, value } = el
+    setSettings(prev => ({ ...prev, [name]: value }))
   }
 
   const saveSettings = async () => {

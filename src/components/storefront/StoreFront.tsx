@@ -54,6 +54,7 @@ import {
   formatStorefrontOrderFooterHint,
   getPrimaryStorefrontOrderBlockerForDisplay,
   getStorefrontOrderSubmitErrorMessage,
+  type StorefrontDeliveryErrorState,
   type StorefrontOrderValidationContext
 } from '@/lib/storefront-order-validation'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
@@ -2137,11 +2138,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     return 'pickup' // Fallback
   }
 
-  const [deliveryError, setDeliveryError] = useState<{
-    type: 'OUTSIDE_DELIVERY_AREA' | 'DELIVERY_NOT_AVAILABLE' | 'CALCULATION_FAILED' | null
-    message: string
-    maxDistance?: number
-  } | null>(null)
+  const [deliveryError, setDeliveryError] = useState<StorefrontDeliveryErrorState>(null)
 
 
   // Helper function to show errors
@@ -2894,7 +2891,7 @@ const trackProductEvent = useCallback((
     () =>
       formatStorefrontOrderButtonLabel(
         storefrontOrderValidationContext,
-        translations as Record<string, string | undefined>,
+        translations as unknown as Record<string, string | undefined>,
         currencySymbol
       ),
     [storefrontOrderValidationContext, translations, currencySymbol]
@@ -2904,7 +2901,7 @@ const trackProductEvent = useCallback((
     () =>
       formatStorefrontOrderFooterHint(
         storefrontOrderValidationContext,
-        translations as Record<string, string | undefined>
+        translations as unknown as Record<string, string | undefined>
       ),
     [storefrontOrderValidationContext, translations]
   )
@@ -3492,7 +3489,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       if (blocker) {
         const msg = getStorefrontOrderSubmitErrorMessage(
           blocker,
-          translations as Record<string, string | undefined>,
+          translations as unknown as Record<string, string | undefined>,
           {
             currencySymbol,
             minimumOrder: storeData.minimumOrder,
