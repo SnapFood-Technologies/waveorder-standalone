@@ -24,8 +24,8 @@ yarn vitest run \
 
 | Metric | Value |
 |--------|------:|
-| Test files | 17 |
-| Tests (cases) | 69 |
+| Test files | 18 |
+| Tests (cases) | 72 |
 
 ---
 
@@ -217,6 +217,18 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 
 ---
 
+### 18. `storefront-404-spam.test.ts` (3 tests)
+
+*Added: 27 Mar 2026*
+
+**Purpose:** **SuperAdmin system logs** — which `storefront_404` URL slugs are treated as scanner/probe spam and hidden from the main log list.
+
+**Covers:** Known probe slugs flagged; normal hyphenated store slugs not flagged; probe list export sanity.
+
+**Implementation:** `src/lib/storefront-404-spam.ts`
+
+---
+
 ## Product area map
 
 | Area | Test files |
@@ -228,6 +240,7 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | Twilio inbound webhook | 14 |
 | Marketing / website embed | 15, 17 |
 | WhatsApp mix (order follow-up) | 16 |
+| SuperAdmin system logs (storefront 404 spam rules) | 18 |
 
 ---
 
@@ -259,6 +272,7 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | `twilio/incoming.test.ts` | `src/app/api/webhooks/twilio/incoming/route.ts` |
 | `website-embed-url.test.ts` | `src/lib/website-embed-url.ts` |
 | `website-embed-settings.test.ts` | `src/lib/website-embed-settings.ts` |
+| `storefront-404-spam.test.ts` | `src/lib/storefront-404-spam.ts` |
 | `whatsapp-mix-followup.test.ts` | `src/lib/whatsapp-mix-followup.ts` |
 
 ---
