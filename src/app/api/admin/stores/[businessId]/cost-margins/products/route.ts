@@ -123,6 +123,30 @@ export async function GET(
       .filter((s): s is string => s !== null)
       .sort()
 
+    // Find the most recent order for each product (via OrderItem → Order)
+    const productIds = products.map(p => p.id)
+    const recentOrderItems = productIds.length > 0
+      ? await prisma.orderItem.findMany({
+          where: { productId: { in: productIds } },
+          orderBy: { createdAt: 'desc' },
+          distinct: ['productId'],
+          select: {
+            productId: true,
+            order: {
+              select: {
+                id: true,
+                orderNumber: true,
+                createdAt: true,
+              }
+            }
+          }
+        })
+      : []
+
+    const recentOrderByProduct = new Map(
+      recentOrderItems.map(item => [item.productId, item.order])
+    )
+
     // Calculate margin for each product
     const productsWithMargin = products.map(product => {
       let margin = null
@@ -132,11 +156,18 @@ export async function GET(
         margin = ((product.price - product.costPrice) / product.price) * 100
         profit = product.price - product.costPrice
       }
+
+      const lastOrder = recentOrderByProduct.get(product.id) || null
       
       return {
         ...product,
         margin: margin !== null ? Math.round(margin * 10) / 10 : null,
-        profit: profit !== null ? Math.round(profit * 100) / 100 : null
+        profit: profit !== null ? Math.round(profit * 100) / 100 : null,
+        lastOrder: lastOrder ? {
+          id: lastOrder.id,
+          orderNumber: lastOrder.orderNumber,
+          createdAt: lastOrder.createdAt.toISOString(),
+        } : null,
       }
     })
 
