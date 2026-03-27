@@ -7,17 +7,25 @@ Automated tests run with **Vitest** (`yarn test` / `npm test`). They run in **de
 | Command | What it does |
 |--------|----------------|
 | `yarn test` | Run **all** tests once |
+| `yarn test:ui` | Vitest browser UI (local debugging) |
 | `yarn vitest` | Watch mode (re-runs when files change) |
 | `yarn vitest run <path> …` | Run specific test file(s) |
+| `yarn typecheck` | TypeScript check (`tsc --noEmit`) — also run in CI |
 
-**Example — subset (storefront only):**
+**CI:** Pull requests and pushes to `stage` / `main` run `.github/workflows/ci.yml`: install → `prisma generate` → `yarn test` → `yarn lint` → `yarn typecheck`. If any step fails, the workflow fails (red checks).
+
+**DOM matchers:** `vitest.setup.ts` imports `@testing-library/jest-dom/vitest`. `@vitest/ui` is pinned to Vitest 2.x in `package.json` (see [Storefront automation + local test UI](./STOREFRONT_AUTOMATION_AND_LOCAL_TEST_UI.md)).
+
+**Example — subset (storefront + website embed):**
 
 ```bash
 yarn vitest run \
   src/__tests__/lib/storefront-order-validation.test.ts \
   src/__tests__/lib/storefront-phone.test.ts \
   src/__tests__/lib/storefront-slug.test.ts \
-  src/__tests__/components/StorefrontOrderSubmitButton.test.tsx
+  src/__tests__/components/StorefrontOrderSubmitButton.test.tsx \
+  src/__tests__/lib/website-embed-url.test.ts \
+  src/__tests__/lib/website-embed-settings.test.ts
 ```
 
 ## Inventory
@@ -25,7 +33,7 @@ yarn vitest run \
 | Metric | Value |
 |--------|------:|
 | Test files | 18 |
-| Tests (cases) | 72 |
+| Tests (cases) | 94 |
 
 ---
 
@@ -33,13 +41,13 @@ yarn vitest run \
 
 Plain-language behavior. Use this to map failures (file + test name) to product areas.
 
-### 1. `storefront-order-validation.test.ts` (11 tests)
+### 1. `storefront-order-validation.test.ts` (33 tests)
 
-*Initial tests added: 26 Mar 2026*
+*Initial tests added: 26 Mar 2026 · Expanded: 27 Mar 2026*
 
-**Purpose:** Rules for **whether a customer can submit** a storefront order, and **which problem** to show first.
+**Purpose:** Rules for **whether a customer can submit** a storefront order, **primary blocker codes** for UX, and **button / footer / toast copy** helpers.
 
-**Covers:** Temporarily closed store; empty cart; bad phone; pickup OK path; delivery needs address + map pins (non-retail); retail delivery needs country, city, postal/delivery method; minimum order for delivery; invoice AFM + invoice minimum; forced schedule needs a time; “bad phone” can rank before “missing address” for messaging.
+**Covers:** Same as before (closed store, cart, phone, pickup, delivery + coords, retail fields, delivery minimum + error bypass, invoice, forced schedule) plus missing name, dine-in, outside delivery area; **every** `getPrimaryStorefrontOrderBlockerForDisplay` blocker; `formatStorefrontOrderButtonLabel`, `formatStorefrontOrderFooterHint`, `getStorefrontOrderSubmitErrorMessage` smoke checks.
 
 **Implementation:** `src/lib/storefront-order-validation.ts`
 
