@@ -153,8 +153,8 @@ export default function CatalogCountriesPage({
 
       {!loading && !error && enabled && hasAnyRules && (
         <div className="space-y-8">
-          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 bg-teal-50 border-b border-teal-100">
+          <section className="bg-white rounded-xl border border-gray-200">
+            <div className="px-4 py-3 bg-teal-50 border-b border-teal-100 rounded-t-xl">
               <h2 className="font-semibold text-teal-900 flex items-center gap-2">
                 <Settings2 className="w-5 h-5" />
                 Shown in (visible list)
@@ -167,6 +167,7 @@ export default function CatalogCountriesPage({
             {visibleRows.length === 0 ? (
               <p className="p-6 text-sm text-gray-500">No visible-country assignments yet.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -195,11 +196,12 @@ export default function CatalogCountriesPage({
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </section>
 
-          <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 bg-amber-50 border-b border-amber-100">
+          <section className="bg-white rounded-xl border border-gray-200">
+            <div className="px-4 py-3 bg-amber-50 border-b border-amber-100 rounded-t-xl">
               <h2 className="font-semibold text-amber-900">Excluded (hidden list)</h2>
               <p className="text-xs text-amber-900/80 mt-1">
                 Countries where at least one product is explicitly hidden for visitors.
@@ -208,6 +210,7 @@ export default function CatalogCountriesPage({
             {excludedRows.length === 0 ? (
               <p className="p-6 text-sm text-gray-500">No excluded-country assignments yet.</p>
             ) : (
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -236,6 +239,7 @@ export default function CatalogCountriesPage({
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </section>
         </div>

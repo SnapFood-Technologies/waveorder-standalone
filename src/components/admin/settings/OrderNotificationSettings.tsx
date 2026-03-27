@@ -929,14 +929,14 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                   className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border border-transparent hover:border-teal-200"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
+                    <div className="flex items-start space-x-4 flex-1 min-w-0">
                       <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
                         <ShoppingBag className="w-5 h-5 text-teal-600" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         {/* Header */}
-                        <div className="flex items-center space-x-3 mb-2">
+                        <div className="flex items-center flex-wrap gap-2 mb-2">
                           <h4 className="font-semibold text-gray-900 flex items-center">
                             {notification.orderNumber}
                             <ExternalLink className="w-3 h-3 ml-1 text-gray-400" />

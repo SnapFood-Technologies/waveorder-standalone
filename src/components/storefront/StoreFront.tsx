@@ -568,6 +568,9 @@ function OrderSuccessMessage({
                   <div>3. {translations.weWillPrepareOrder || 'We\'ll prepare your order once confirmed'}</div>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {translations.youCanCloseThisPage || 'You can safely close this page'}
+              </p>
             </div>
           </div>
           <button
@@ -3677,7 +3680,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
-          orderNumber: result.orderNumber,
+          orderNumber: result.orderNumber || '',
           directNotification: result.directNotification || false
         })
         
